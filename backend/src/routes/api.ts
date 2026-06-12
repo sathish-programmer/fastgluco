@@ -1,0 +1,205 @@
+import { Router } from 'express';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import { AuthController } from '../controllers/authController';
+import { ProfileController } from '../controllers/profileController';
+import { FoodController } from '../controllers/foodController';
+import { GlucoseController } from '../controllers/glucoseController';
+import { EducationalController } from '../controllers/educationalController';
+import { AdminController } from '../controllers/adminController';
+import { ReportController } from '../controllers/reportController';
+import { CoachingController } from '../controllers/coachingController';
+import { SubscriptionController } from '../controllers/subscriptionController';
+import { PlanAdminController } from '../controllers/planAdminController';
+import { PaymentAdminController } from '../controllers/paymentAdminController';
+import { CouponAdminController } from '../controllers/couponAdminController';
+import { SupportController } from '../controllers/supportController';
+import { authenticateToken, requireRole } from '../middlewares/authMiddleware';
+import { requireSubscriptionFeature } from '../middlewares/subscriptionMiddleware';
+
+const router = Router();
+
+// --- MULTER STORAGE SETUP FOR REPORT UPLOADS ---
+const uploadDir = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const fileFilter = (req: any, file: any, cb: any) => {
+  const allowedExtensions = ['.csv', '.pdf'];
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (allowedExtensions.includes(ext)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only Abbott CGM export formats (.csv, .pdf) are allowed.'));
+  }
+};
+
+const upload = multer({ 
+  storage, 
+  fileFilter,
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+});
+
+// ==========================================
+// 1. PUBLIC AUTHENTICATION ENDPOINTS
+// ==========================================
+router.post('/auth/register', AuthController.register);
+router.post('/auth/login', AuthController.login);
+router.post('/auth/refresh', AuthController.refresh);
+router.post('/auth/forgot-password', AuthController.forgotPassword);
+router.post('/auth/reset-password', AuthController.resetPassword);
+
+// ==========================================
+// 1.5. SUBSCRIPTION PUBLIC & USER ENDPOINTS
+// ==========================================
+// Public plans listing
+router.get('/subscriptions/plans', SubscriptionController.listActivePlans);
+
+// User-protected subscription routes
+router.use('/subscriptions', authenticateToken, requireRole(['User']));
+router.get('/subscriptions/current', SubscriptionController.getCurrentSubscription);
+router.post('/subscriptions/validate-coupon', SubscriptionController.validateCoupon);
+router.post('/subscriptions/create-order', SubscriptionController.createOrder);
+router.post('/subscriptions/verify-payment', SubscriptionController.verifyPayment);
+router.post('/subscriptions/mock-verify', SubscriptionController.verifyMockPayment);
+router.post('/subscriptions/cancel', SubscriptionController.cancelSubscription);
+router.post('/subscriptions/reactivate', SubscriptionController.reactivateSubscription);
+router.get('/subscriptions/invoices/:id/download', SubscriptionController.downloadInvoicePdf);
+
+// ==========================================
+// 2. PATIENT PROTECTED ENDPOINTS (JWT required)
+// ==========================================
+router.use('/users', authenticateToken, requireRole(['User']));
+router.get('/users/profile', ProfileController.getProfile);
+router.put('/users/profile', ProfileController.updateProfile);
+
+router.use('/food-library', authenticateToken, requireRole(['User', 'SuperAdmin', 'Admin', 'Editor']));
+router.get('/food-library', FoodController.searchLibrary);
+
+router.use('/food-logs', authenticateToken, requireRole(['User']));
+router.get('/food-logs', FoodController.getLogs);
+router.post('/food-logs', FoodController.createLog);
+router.post('/food-logs/:id/feedback', FoodController.recordFeedback);
+router.delete('/food-logs/:id', FoodController.deleteLog);
+
+router.use('/reports', authenticateToken, requireRole(['User']));
+router.post('/reports/upload', upload.single('report'), requireSubscriptionFeature('unlimitedReports'), ReportController.uploadReport);
+router.get('/reports', ReportController.getHistory);
+router.post('/reports/:id/reprocess', ReportController.reprocess);
+router.get('/reports/:id/download', requireSubscriptionFeature('exportReports'), ReportController.downloadReport);
+router.delete('/reports/:id', ReportController.deleteReport);
+
+router.use('/glucose', authenticateToken, requireRole(['User']));
+router.post('/glucose/manual', GlucoseController.logManualReading);
+router.get('/glucose', GlucoseController.getReadings);
+router.get('/glucose/export', requireSubscriptionFeature('exportReports'), GlucoseController.exportAbbottFormatCSV);
+router.get('/glucose/analysis', requireSubscriptionFeature('advancedAnalysis'), GlucoseController.getSpikeAnalysis);
+router.get('/glucose/top-foods', requireSubscriptionFeature('foodInsights'), GlucoseController.getTopFoods);
+
+// Public Educational & Support content fetches
+router.get('/guides', EducationalController.getGuides);
+router.get('/guides/:id', EducationalController.getGuideById);
+router.get('/videos', EducationalController.getVideos);
+
+router.use('/coaching', authenticateToken, requireRole(['User']));
+router.get('/coaching/sessions', CoachingController.getSessions);
+router.post('/coaching/sessions/:id/reply', CoachingController.replyToSession);
+router.post('/coaching/sessions/:id/dismiss', CoachingController.dismissSession);
+
+router.get('/faqs', SupportController.getPublicFAQs);
+router.post('/support', SupportController.submitTicket);
+router.get('/legal/:type', AdminController.getLegalDocument);
+
+// ==========================================
+// 3. ADMIN PORTAL ENDPOINTS
+// ==========================================
+router.post('/admin/auth/login', AdminController.login);
+
+// Admin Authorized Area
+router.use('/admin', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']));
+
+router.get('/admin/stats', AdminController.getStats);
+router.get('/admin/users', AdminController.getUsers);
+router.get('/admin/users/:id/activity', AdminController.getUserActivity);
+router.get('/admin/users/:userId/coaching', CoachingController.getSessionsForUser);
+router.put('/admin/users/:id/block', AdminController.toggleUserBlock);
+router.delete('/admin/reports/:id', ReportController.deleteReportAsAdmin);
+
+// Subscription Plans Management (Admin)
+router.get('/admin/payments/plans', PlanAdminController.listPlans);
+router.post('/admin/payments/plans', PlanAdminController.createPlan);
+router.put('/admin/payments/plans/:id', PlanAdminController.updatePlan);
+router.delete('/admin/payments/plans/:id', PlanAdminController.deletePlan);
+
+// Payment Configurations (Admin)
+router.get('/admin/payments/config', PaymentAdminController.getConfig);
+router.put('/admin/payments/config', PaymentAdminController.updateConfig);
+
+// Payment Analytics Dashboard (Admin)
+router.get('/admin/payments/dashboard', PaymentAdminController.getDashboardStats);
+
+// Payment Transactions Directory (Admin)
+router.get('/admin/payments/transactions', PaymentAdminController.getTransactions);
+router.get('/admin/payments/transactions/:id', PaymentAdminController.getTransactionById);
+router.post('/admin/payments/transactions/:id/refund', PaymentAdminController.refundTransaction);
+
+// Coupon Management (Admin)
+router.get('/admin/payments/coupons', CouponAdminController.listCoupons);
+router.post('/admin/payments/coupons', CouponAdminController.createCoupon);
+router.put('/admin/payments/coupons/:id', CouponAdminController.updateCoupon);
+router.delete('/admin/payments/coupons/:id', CouponAdminController.deleteCoupon);
+
+// Subscription Override Management (Admin)
+router.post('/admin/payments/subscriptions/:id/cancel', PaymentAdminController.forceCancelSubscription);
+router.post('/admin/payments/subscriptions/:id/extend', PaymentAdminController.extendSubscription);
+router.post('/admin/payments/subscriptions/:id/change-plan', PaymentAdminController.changeUserPlan);
+
+// Food template management
+router.get('/admin/food-library', AdminController.getFoods);
+router.post('/admin/food-library', AdminController.addFoodMaster);
+router.post('/admin/food-library/bulk-import', upload.single('file'), AdminController.bulkImportFoods);
+router.put('/admin/food-library/:id', AdminController.updateFoodMaster);
+router.delete('/admin/food-library/:id', AdminController.deleteFoodMaster);
+
+// Educational materials management
+router.post('/admin/videos', AdminController.addVideo);
+router.put('/admin/videos/:id', AdminController.updateVideo);
+router.delete('/admin/videos/:id', AdminController.deleteVideo);
+
+// Educational articles management
+router.post('/admin/guides', AdminController.addGuide);
+router.put('/admin/guides/:id', AdminController.updateGuide);
+router.delete('/admin/guides/:id', AdminController.deleteGuide);
+
+// Push notifications and emails management
+router.post('/admin/notifications/send', AdminController.sendPush);
+router.post('/admin/notifications/schedule', AdminController.scheduleNotification);
+router.post('/admin/notifications/email', AdminController.sendManualEmail);
+
+// FAQ Management
+router.get('/admin/faqs', AdminController.getFAQs);
+router.post('/admin/faqs', AdminController.addFAQ);
+router.put('/admin/faqs/:id', AdminController.updateFAQ);
+router.delete('/admin/faqs/:id', AdminController.deleteFAQ);
+
+// Support Q&A Management
+router.get('/admin/support/tickets', AdminController.getTickets);
+router.post('/admin/support/tickets/:id/answer', AdminController.answerTicket);
+
+// Legal Documents Management
+router.get('/admin/legal/:type', AdminController.getLegalDocument);
+router.put('/admin/legal/:type', AdminController.updateLegalDocument);
+
+export default router;

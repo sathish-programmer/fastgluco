@@ -1,0 +1,114 @@
+export const seedFoodLibrary = [
+  // South Indian
+  { name: 'Idli (2 pieces)', category: 'South Indian', calories: 120, carbs: 28, protein: 4, fat: 0.5, fiber: 2, servingSize: 2, servingUnit: 'pieces' },
+  { name: 'Masala Dosa', category: 'South Indian', calories: 250, carbs: 40, protein: 5, fat: 8, fiber: 3, servingSize: 1, servingUnit: 'piece' },
+  { name: 'Plain Dosa', category: 'South Indian', calories: 120, carbs: 22, protein: 3, fat: 2, fiber: 1, servingSize: 1, servingUnit: 'piece' },
+  { name: 'Rava Dosa', category: 'South Indian', calories: 180, carbs: 25, protein: 4, fat: 6, fiber: 2, servingSize: 1, servingUnit: 'piece' },
+  { name: 'Medu Vada', category: 'South Indian', calories: 210, carbs: 18, protein: 6, fat: 12, fiber: 3, servingSize: 2, servingUnit: 'pieces' },
+  { name: 'Upma', category: 'South Indian', calories: 200, carbs: 32, protein: 4, fat: 6, fiber: 4, servingSize: 150, servingUnit: 'g' },
+  { name: 'Pongal', category: 'South Indian', calories: 280, carbs: 35, protein: 6, fat: 12, fiber: 4, servingSize: 150, servingUnit: 'g' },
+  { name: 'Sambar', category: 'South Indian', calories: 110, carbs: 16, protein: 4, fat: 3, fiber: 3, servingSize: 150, servingUnit: 'ml' },
+  { name: 'Rasam', category: 'South Indian', calories: 50, carbs: 8, protein: 1, fat: 1, fiber: 1, servingSize: 150, servingUnit: 'ml' },
+  { name: 'Curd Rice', category: 'South Indian', calories: 220, carbs: 35, protein: 6, fat: 5, fiber: 1, servingSize: 150, servingUnit: 'g' },
+  { name: 'Lemon Rice', category: 'South Indian', calories: 240, carbs: 40, protein: 4, fat: 7, fiber: 2, servingSize: 150, servingUnit: 'g' },
+  { name: 'Tamarind Rice', category: 'South Indian', calories: 260, carbs: 42, protein: 5, fat: 8, fiber: 3, servingSize: 150, servingUnit: 'g' },
+  { name: 'Ragi Mudde', category: 'South Indian', calories: 150, carbs: 34, protein: 3, fat: 0.6, fiber: 4, servingSize: 1, servingUnit: 'ball' },
+  { name: 'Appam', category: 'South Indian', calories: 110, carbs: 24, protein: 2, fat: 1, fiber: 1, servingSize: 1, servingUnit: 'piece' },
+  { name: 'Puttu', category: 'South Indian', calories: 160, carbs: 34, protein: 3, fat: 1, fiber: 2, servingSize: 150, servingUnit: 'g' },
+  
+  // North Indian
+  { name: 'Whole Wheat Roti', category: 'North Indian', calories: 85, carbs: 18, protein: 3, fat: 0.5, fiber: 2, servingSize: 1, servingUnit: 'roti' },
+  { name: 'Naan', category: 'North Indian', calories: 260, carbs: 42, protein: 7, fat: 6, fiber: 2, servingSize: 1, servingUnit: 'piece' },
+  { name: 'Garlic Naan', category: 'North Indian', calories: 290, carbs: 44, protein: 8, fat: 8, fiber: 2, servingSize: 1, servingUnit: 'piece' },
+  { name: 'Aloo Paratha', category: 'North Indian', calories: 260, carbs: 38, protein: 6, fat: 10, fiber: 4, servingSize: 1, servingUnit: 'piece' },
+  { name: 'Paneer Paratha', category: 'North Indian', calories: 300, carbs: 35, protein: 12, fat: 14, fiber: 3, servingSize: 1, servingUnit: 'piece' },
+  { name: 'Dal Makhani', category: 'North Indian', calories: 280, carbs: 28, protein: 12, fat: 14, fiber: 8, servingSize: 150, servingUnit: 'g' },
+  { name: 'Yellow Dal Tadka', category: 'North Indian', calories: 160, carbs: 22, protein: 8, fat: 5, fiber: 6, servingSize: 150, servingUnit: 'g' },
+  { name: 'Chana Masala', category: 'North Indian', calories: 210, carbs: 30, protein: 10, fat: 6, fiber: 8, servingSize: 150, servingUnit: 'g' },
+  { name: 'Rajma', category: 'North Indian', calories: 220, carbs: 32, protein: 10, fat: 5, fiber: 9, servingSize: 150, servingUnit: 'g' },
+  { name: 'Paneer Butter Masala', category: 'North Indian', calories: 340, carbs: 10, protein: 12, fat: 28, fiber: 2, servingSize: 150, servingUnit: 'g' },
+  { name: 'Palak Paneer', category: 'North Indian', calories: 260, carbs: 8, protein: 14, fat: 20, fiber: 4, servingSize: 150, servingUnit: 'g' },
+  { name: 'Matar Paneer', category: 'North Indian', calories: 280, carbs: 14, protein: 12, fat: 20, fiber: 4, servingSize: 150, servingUnit: 'g' },
+  { name: 'Aloo Gobi', category: 'North Indian', calories: 140, carbs: 18, protein: 4, fat: 6, fiber: 5, servingSize: 150, servingUnit: 'g' },
+  { name: 'Bhindi Masala', category: 'North Indian', calories: 120, carbs: 12, protein: 3, fat: 7, fiber: 4, servingSize: 150, servingUnit: 'g' },
+  { name: 'Vegetable Pulao', category: 'North Indian', calories: 240, carbs: 42, protein: 5, fat: 6, fiber: 3, servingSize: 150, servingUnit: 'g' },
+  
+  // Non-Veg
+  { name: 'Chicken Biryani', category: 'Non-Veg', calories: 350, carbs: 42, protein: 18, fat: 12, fiber: 2, servingSize: 200, servingUnit: 'g' },
+  { name: 'Butter Chicken', category: 'Non-Veg', calories: 290, carbs: 8, protein: 16, fat: 22, fiber: 1, servingSize: 150, servingUnit: 'g' },
+  { name: 'Tandoori Chicken', category: 'Non-Veg', calories: 220, carbs: 3, protein: 24, fat: 12, fiber: 0, servingSize: 150, servingUnit: 'g' },
+  { name: 'Chicken Curry', category: 'Non-Veg', calories: 240, carbs: 6, protein: 20, fat: 14, fiber: 1, servingSize: 150, servingUnit: 'g' },
+  { name: 'Mutton Rogan Josh', category: 'Non-Veg', calories: 320, carbs: 5, protein: 22, fat: 24, fiber: 1, servingSize: 150, servingUnit: 'g' },
+  { name: 'Fish Curry', category: 'Non-Veg', calories: 200, carbs: 4, protein: 18, fat: 12, fiber: 1, servingSize: 150, servingUnit: 'g' },
+  { name: 'Boiled Egg', category: 'Non-Veg', calories: 70, carbs: 0.5, protein: 6, fat: 5, fiber: 0, servingSize: 1, servingUnit: 'egg' },
+  { name: 'Egg Curry', category: 'Non-Veg', calories: 180, carbs: 8, protein: 8, fat: 12, fiber: 2, servingSize: 150, servingUnit: 'g' },
+  
+  // Snacks
+  { name: 'Vegetable Samosa', category: 'Snacks', calories: 150, carbs: 20, protein: 3, fat: 7.5, fiber: 2, servingSize: 1, servingUnit: 'piece' },
+  { name: 'Pani Puri (6 pieces)', category: 'Snacks', calories: 180, carbs: 32, protein: 4, fat: 5, fiber: 2, servingSize: 6, servingUnit: 'pieces' },
+  { name: 'Bhel Puri', category: 'Snacks', calories: 140, carbs: 26, protein: 3, fat: 3, fiber: 3, servingSize: 100, servingUnit: 'g' },
+  { name: 'Pav Bhaji', category: 'Snacks', calories: 380, carbs: 50, protein: 8, fat: 16, fiber: 6, servingSize: 1, servingUnit: 'plate' },
+  { name: 'Dhokla', category: 'Snacks', calories: 160, carbs: 22, protein: 5, fat: 6, fiber: 2, servingSize: 100, servingUnit: 'g' },
+  { name: 'Khandvi', category: 'Snacks', calories: 180, carbs: 18, protein: 6, fat: 8, fiber: 3, servingSize: 100, servingUnit: 'g' },
+  { name: 'Aloo Tikki', category: 'Snacks', calories: 140, carbs: 18, protein: 2, fat: 7, fiber: 2, servingSize: 1, servingUnit: 'piece' },
+  { name: 'Pakora (Onion)', category: 'Snacks', calories: 210, carbs: 18, protein: 4, fat: 14, fiber: 2, servingSize: 100, servingUnit: 'g' },
+  
+  // Dairy
+  { name: 'Milk (Full Cream)', category: 'Dairy', calories: 150, carbs: 12, protein: 8, fat: 8, fiber: 0, servingSize: 250, servingUnit: 'ml' },
+  { name: 'Milk (Toned)', category: 'Dairy', calories: 110, carbs: 12, protein: 8, fat: 3, fiber: 0, servingSize: 250, servingUnit: 'ml' },
+  { name: 'Curd (Yogurt)', category: 'Dairy', calories: 98, carbs: 8, protein: 6, fat: 4, fiber: 0, servingSize: 100, servingUnit: 'g' },
+  { name: 'Paneer', category: 'Dairy', calories: 290, carbs: 3, protein: 18, fat: 22, fiber: 0, servingSize: 100, servingUnit: 'g' },
+  { name: 'Ghee', category: 'Dairy', calories: 135, carbs: 0, protein: 0, fat: 15, fiber: 0, servingSize: 15, servingUnit: 'ml' },
+  { name: 'Buttermilk (Chaas)', category: 'Dairy', calories: 40, carbs: 4, protein: 2, fat: 1, fiber: 0, servingSize: 250, servingUnit: 'ml' },
+  
+  // Fruits
+  { name: 'Apple (Medium)', category: 'Fruits', calories: 95, carbs: 25, protein: 0.5, fat: 0.3, fiber: 4.4, servingSize: 1, servingUnit: 'apple' },
+  { name: 'Banana (Medium)', category: 'Fruits', calories: 105, carbs: 27, protein: 1.3, fat: 0.3, fiber: 3.1, servingSize: 1, servingUnit: 'banana' },
+  { name: 'Mango (Alphonso)', category: 'Fruits', calories: 150, carbs: 38, protein: 1.5, fat: 0.6, fiber: 3, servingSize: 1, servingUnit: 'mango' },
+  { name: 'Papaya', category: 'Fruits', calories: 43, carbs: 11, protein: 0.5, fat: 0.3, fiber: 1.7, servingSize: 100, servingUnit: 'g' },
+  { name: 'Guava', category: 'Fruits', calories: 68, carbs: 14, protein: 2.6, fat: 1, fiber: 5.4, servingSize: 1, servingUnit: 'guava' },
+  { name: 'Watermelon', category: 'Fruits', calories: 30, carbs: 8, protein: 0.6, fat: 0.2, fiber: 0.4, servingSize: 100, servingUnit: 'g' },
+  
+  // Vegetables
+  { name: 'Spinach (Palak)', category: 'Vegetables', calories: 23, carbs: 3.6, protein: 2.9, fat: 0.4, fiber: 2.2, servingSize: 100, servingUnit: 'g' },
+  { name: 'Carrot', category: 'Vegetables', calories: 41, carbs: 9.6, protein: 0.9, fat: 0.2, fiber: 2.8, servingSize: 100, servingUnit: 'g' },
+  { name: 'Broccoli', category: 'Vegetables', calories: 34, carbs: 6.6, protein: 2.8, fat: 0.4, fiber: 2.6, servingSize: 100, servingUnit: 'g' },
+  { name: 'Tomato', category: 'Vegetables', calories: 18, carbs: 3.9, protein: 0.9, fat: 0.2, fiber: 1.2, servingSize: 100, servingUnit: 'g' },
+  { name: 'Potato (Boiled)', category: 'Vegetables', calories: 87, carbs: 20, protein: 1.9, fat: 0.1, fiber: 1.8, servingSize: 100, servingUnit: 'g' },
+  { name: 'Cauliflower', category: 'Vegetables', calories: 25, carbs: 5, protein: 1.9, fat: 0.3, fiber: 2, servingSize: 100, servingUnit: 'g' },
+  
+  // Sweets
+  { name: 'Gulab Jamun', category: 'Sweets', calories: 150, carbs: 22, protein: 3, fat: 6, fiber: 0.5, servingSize: 1, servingUnit: 'piece' },
+  { name: 'Rasgulla', category: 'Sweets', calories: 125, carbs: 26, protein: 2, fat: 1, fiber: 0, servingSize: 1, servingUnit: 'piece' },
+  { name: 'Jalebi', category: 'Sweets', calories: 150, carbs: 30, protein: 1, fat: 3, fiber: 0.5, servingSize: 50, servingUnit: 'g' },
+  { name: 'Kaju Katli', category: 'Sweets', calories: 60, carbs: 6, protein: 1.5, fat: 3.5, fiber: 0.3, servingSize: 1, servingUnit: 'piece' },
+  { name: 'Ladoo (Besan)', category: 'Sweets', calories: 180, carbs: 20, protein: 4, fat: 9, fiber: 1, servingSize: 1, servingUnit: 'piece' },
+  { name: 'Mysore Pak', category: 'Sweets', calories: 200, carbs: 20, protein: 2, fat: 14, fiber: 0, servingSize: 1, servingUnit: 'piece' },
+  { name: 'Gajar Ka Halwa', category: 'Sweets', calories: 220, carbs: 32, protein: 4, fat: 10, fiber: 2, servingSize: 100, servingUnit: 'g' },
+  
+  // Beverages
+  { name: 'Masala Tea (Without Sugar)', category: 'Beverages', calories: 35, carbs: 4, protein: 1.5, fat: 1.5, fiber: 0, servingSize: 150, servingUnit: 'ml' },
+  { name: 'Masala Tea (With Sugar)', category: 'Beverages', calories: 75, carbs: 14, protein: 1.5, fat: 1.5, fiber: 0, servingSize: 150, servingUnit: 'ml' },
+  { name: 'Tender Coconut Water', category: 'Beverages', calories: 45, carbs: 10, protein: 0.7, fat: 0.1, fiber: 0, servingSize: 250, servingUnit: 'ml' },
+  { name: 'Filter Coffee (With Sugar)', category: 'Beverages', calories: 80, carbs: 14, protein: 2, fat: 2, fiber: 0, servingSize: 150, servingUnit: 'ml' },
+  { name: 'Black Coffee', category: 'Beverages', calories: 5, carbs: 1, protein: 0, fat: 0, fiber: 0, servingSize: 150, servingUnit: 'ml' },
+  { name: 'Fresh Lime Soda (Sweet)', category: 'Beverages', calories: 120, carbs: 30, protein: 0, fat: 0, fiber: 0, servingSize: 250, servingUnit: 'ml' }
+];
+
+// Dynamically generate the remaining foods up to 500
+const categories = ['South Indian', 'North Indian', 'Snacks', 'Fruits', 'Vegetables', 'Beverages', 'Dairy', 'Non-Veg', 'Sweets'] as const;
+
+for (let i = seedFoodLibrary.length; i < 500; i++) {
+  const catIndex = i % categories.length;
+  seedFoodLibrary.push({
+    name: `Food Item ${i + 1}`,
+    category: categories[catIndex],
+    calories: Math.floor(Math.random() * 300) + 50,
+    carbs: Math.floor(Math.random() * 50) + 5,
+    protein: Math.floor(Math.random() * 20) + 1,
+    fat: Math.floor(Math.random() * 20) + 1,
+    fiber: Math.floor(Math.random() * 10),
+    servingSize: 100,
+    servingUnit: 'g'
+  });
+}
