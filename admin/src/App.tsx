@@ -264,6 +264,7 @@ const AdminPanelContent: React.FC = () => {
     planId: '',
     billingCycle: 'monthly' as 'monthly' | 'yearly'
   });
+  const [paymentTab, setPaymentTab] = useState<'billing' | 'common' | 'transactions'>('billing');
 
   // Fetch data depending on active view
   useEffect(() => {
@@ -347,6 +348,18 @@ const AdminPanelContent: React.FC = () => {
   };
 
   const handleToggleUserBlock = async (userId: string, currentBlockStatus: boolean) => {
+    let reason = '';
+    if (!currentBlockStatus) {
+      // Prompt for reason only when blocking the user
+      const promptReason = prompt('Please enter the reason for blocking this user account:');
+      if (promptReason === null) return; // Cancel if prompt is cancelled
+      reason = promptReason.trim();
+      if (!reason) {
+        alert('A block reason is required.');
+        return;
+      }
+    }
+
     try {
       const response = await fetch(`${apiUrl}/admin/users/${userId}/block`, {
         method: 'PUT',
@@ -354,7 +367,7 @@ const AdminPanelContent: React.FC = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ isBlocked: !currentBlockStatus })
+        body: JSON.stringify({ isBlocked: !currentBlockStatus, reason })
       });
       if (response.ok) {
         fetchUsers(pagination.page);
@@ -2823,374 +2836,475 @@ const AdminPanelContent: React.FC = () => {
         {/* VIEW 8: PAYMENTS AND SUBSCRIPTIONS AUDIT & WIDGETS */}
         {activeView === 'payments' && (
           <div className="space-y-6">
-            <h2 className="text-xl font-bold text-slate-800">Billing & Subscriptions Control</h2>
-
-            {/* Gateway Toggle Config Form */}
-            {paymentConfig && (
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft">
-                <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wider mb-4 flex items-center space-x-1.5">
-                  <CreditCard className="h-4 w-4" />
-                  <span>Gateway Integrations Settings</span>
-                </h3>
-                <form onSubmit={handleConfigSubmit} className="space-y-4">
-                  <div className="grid grid-cols-3 gap-6">
-                    <div>
-                      <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-600 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={paymentConfig.enableSubscriptions}
-                          onChange={(e) => setPaymentConfig({ ...paymentConfig, enableSubscriptions: e.target.checked })}
-                          className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
-                        />
-                        <span>Enforce Subscription Wall globally</span>
-                      </label>
-                      <p className="text-[10px] text-slate-400 font-semibold mt-1">If unchecked, all app premium sections are available freely.</p>
-                    </div>
-
-                    <div>
-                      <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-600 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={paymentConfig.enablePayments}
-                          onChange={(e) => setPaymentConfig({ ...paymentConfig, enablePayments: e.target.checked })}
-                          className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
-                        />
-                        <span>Enable Live Razorpay checkout</span>
-                      </label>
-                      <p className="text-[10px] text-slate-400 font-semibold mt-1">If unchecked, checkout runs mock success modes.</p>
-                    </div>
-
-                    <div>
-                      <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-600 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={!paymentConfig.isSandbox}
-                          onChange={(e) => setPaymentConfig({ ...paymentConfig, isSandbox: !e.target.checked })}
-                          className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
-                        />
-                        <span>Production Live Gateway Mode</span>
-                      </label>
-                      <p className="text-[10px] text-slate-400 font-semibold mt-1">Sandbox toggle for API client runs.</p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-4 gap-6 pt-3 border-t border-slate-100">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">GST Tax Percentage (%)</label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        required
-                        value={paymentConfig.gstPercentage !== undefined ? paymentConfig.gstPercentage : 18}
-                        onChange={(e) => setPaymentConfig({ ...paymentConfig, gstPercentage: parseInt(e.target.value) || 0 })}
-                        placeholder="18"
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
-                      />
-                      <p className="text-[10px] text-slate-400 font-semibold mt-1">Calculated as exclusive tax on top of subscription prices.</p>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Safe Glucose Limit (mg/dL)</label>
-                      <input
-                        type="number"
-                        min="50"
-                        max="200"
-                        required
-                        value={paymentConfig.safeGlucoseThreshold !== undefined ? paymentConfig.safeGlucoseThreshold : 90}
-                        onChange={(e) => setPaymentConfig({ ...paymentConfig, safeGlucoseThreshold: parseInt(e.target.value) || 0 })}
-                        placeholder="90"
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
-                      />
-                      <p className="text-[10px] text-slate-400 font-semibold mt-1">Blood sugar levels at or below this are marked as Safe.</p>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Moderate Glucose Limit (mg/dL)</label>
-                      <input
-                        type="number"
-                        min="50"
-                        max="300"
-                        required
-                        value={paymentConfig.moderateGlucoseThreshold !== undefined ? paymentConfig.moderateGlucoseThreshold : 110}
-                        onChange={(e) => setPaymentConfig({ ...paymentConfig, moderateGlucoseThreshold: parseInt(e.target.value) || 0 })}
-                        placeholder="110"
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
-                      />
-                      <p className="text-[10px] text-slate-400 font-semibold mt-1">Levels above this are Avoid; levels in between are Moderate.</p>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Alert Min Interval (hours)</label>
-                      <input
-                        type="number"
-                        min="1"
-                        max="24"
-                        required
-                        value={paymentConfig.glucoseAlertMinIntervalHours !== undefined ? paymentConfig.glucoseAlertMinIntervalHours : 2}
-                        onChange={(e) => setPaymentConfig({ ...paymentConfig, glucoseAlertMinIntervalHours: parseInt(e.target.value) || 2 })}
-                        placeholder="2"
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
-                      />
-                      <p className="text-[10px] text-slate-400 font-semibold mt-1">Prevents alert emails from spamming; consecutive alerts wait at least this long.</p>
-                    </div>
-                  </div>
-
-                  {paymentConfig.enablePayments && (
-                    <div className="grid grid-cols-2 gap-4 pt-3 border-t border-slate-100">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Razorpay Key ID</label>
-                        <input
-                          type="text"
-                          required
-                          value={paymentConfig.razorpayKeyId || ''}
-                          onChange={(e) => setPaymentConfig({ ...paymentConfig, razorpayKeyId: e.target.value })}
-                          placeholder="rzp_test_..."
-                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Razorpay Key Secret</label>
-                        <input
-                          type="password"
-                          required
-                          value={paymentConfig.razorpayKeySecret || ''}
-                          onChange={(e) => setPaymentConfig({ ...paymentConfig, razorpayKeySecret: e.target.value })}
-                          placeholder="••••••••••••"
-                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex justify-end">
-                    <button
-                      type="submit"
-                      className="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-5 rounded-xl text-xs shadow-soft transition-all"
-                    >
-                      Save Integration Settings
-                    </button>
-                  </div>
-                </form>
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold text-slate-800">Billing & Subscriptions Control</h2>
+              {/* Sub-tab navigation */}
+              <div className="flex bg-slate-100 p-1.5 rounded-xl border border-slate-200">
+                <button
+                  onClick={() => setPaymentTab('billing')}
+                  className={`py-1.5 px-4 font-bold text-xs rounded-lg uppercase tracking-wider transition-all ${
+                    paymentTab === 'billing'
+                      ? 'bg-white text-primary shadow-sm'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  Billing & Gateway
+                </button>
+                <button
+                  onClick={() => setPaymentTab('common')}
+                  className={`py-1.5 px-4 font-bold text-xs rounded-lg uppercase tracking-wider transition-all ${
+                    paymentTab === 'common'
+                      ? 'bg-white text-primary shadow-sm'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  General App Config
+                </button>
+                <button
+                  onClick={() => setPaymentTab('transactions')}
+                  className={`py-1.5 px-4 font-bold text-xs rounded-lg uppercase tracking-wider transition-all ${
+                    paymentTab === 'transactions'
+                      ? 'bg-white text-primary shadow-sm'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  Transactions & Manual Control
+                </button>
               </div>
-            )}
-
-            {/* Aggregates Dashboard widgets */}
-            {paymentStats && (
-              <div className="space-y-6">
-                <div className="grid grid-cols-4 gap-6">
-                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft flex items-center space-x-4">
-                    <div className="p-3 bg-blue-50 text-primary rounded-xl">
-                      <DollarSign className="h-6 w-6" />
-                    </div>
-                    <div>
-                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Total Revenue</span>
-                      <span className="text-2xl font-extrabold text-slate-800">₹{paymentStats.totalRevenue}</span>
-                    </div>
-                  </div>
-
-                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft flex items-center space-x-4">
-                    <div className="p-3 bg-teal-50 text-secondary rounded-xl">
-                      <Users className="h-6 w-6" />
-                    </div>
-                    <div>
-                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Active Subscribers</span>
-                      <span className="text-2xl font-extrabold text-slate-800">{paymentStats.activeSubscribers}</span>
-                    </div>
-                  </div>
-
-                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft flex items-center space-x-4">
-                    <div className="p-3 bg-orange-50 text-warning rounded-xl">
-                      <Percent className="h-6 w-6" />
-                    </div>
-                    <div>
-                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Monthly Revenue</span>
-                      <span className="text-2xl font-extrabold text-slate-800">₹{paymentStats.monthlyRevenue}</span>
-                    </div>
-                  </div>
-
-                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft flex items-center space-x-4">
-                    <div className="p-3 bg-purple-50 text-purple-600 rounded-xl">
-                      <Award className="h-6 w-6" />
-                    </div>
-                    <div>
-                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Today's Sales</span>
-                      <span className="text-2xl font-extrabold text-slate-800">₹{paymentStats.todayRevenue}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Graphs for analytics */}
-                <div className="grid grid-cols-2 gap-6">
-                  {/* Revenue Trend line */}
-                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft">
-                    <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wider mb-4">6-Month Revenue Trend (INR)</h3>
-                    <div className="h-64">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={paymentStats.revenueTrend}>
-                          <XAxis dataKey="month" tick={{ fontSize: 11, fontWeight: 'semibold' }} axisLine={false} tickLine={false} />
-                          <YAxis tick={{ fontSize: 11, fontWeight: 'semibold' }} axisLine={false} tickLine={false} />
-                          <Tooltip />
-                          <Bar dataKey="revenue" fill="#3B82F6" radius={[6, 6, 0, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-
-                  {/* Plan share distributions */}
-                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft">
-                    <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wider mb-4">Plan Share Distribution</h3>
-                    <div className="h-64 flex justify-center items-center">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={paymentStats.planWiseRevenue}
-                            dataKey="value"
-                            nameKey="name"
-                            cx="50%"
-                            cy="50%"
-                            outerRadius={80}
-                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                          >
-                            {paymentStats.planWiseRevenue.map((_: any, index: number) => (
-                              <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                            ))}
-                          </Pie>
-                          <Tooltip />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Transactions directory */}
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wider">Transaction Records & Manual Controls</h3>
-                <div className="relative w-64">
-                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-                    <Search className="h-4 w-4" />
-                  </span>
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search order or email..."
-                    className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm bg-white"
-                  />
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-soft overflow-x-auto">
-                <table className="min-w-full divide-y divide-slate-200">
-                  <thead className="bg-slate-50 text-slate-400 text-xs font-bold uppercase tracking-wider text-left">
-                    <tr>
-                      <th className="px-6 py-4">User</th>
-                      <th className="px-6 py-4">Plan & Cycle</th>
-                      <th className="px-6 py-4">Amount</th>
-                      <th className="px-6 py-4">Date</th>
-                      <th className="px-6 py-4">Gateway Info</th>
-                      <th className="px-6 py-4">Status</th>
-                      <th className="px-6 py-4 text-center">Manage</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-sm font-semibold text-slate-700">
-                    {transactions.length === 0 ? (
-                      <tr>
-                        <td colSpan={7} className="text-center py-8 text-slate-400">No payment transaction logs matching criteria.</td>
-                      </tr>
-                    ) : (
-                      transactions.map((tx) => (
-                        <tr key={tx._id} className="hover:bg-slate-50/50">
-                          <td className="px-6 py-4">
-                            <span className="text-slate-800 font-bold block">{tx.userId?.name || 'FastGluco Patient'}</span>
-                            <span className="text-[10px] text-slate-400 block">{tx.userId?.email || '--'}</span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className="text-slate-800 uppercase font-bold block">{tx.planId?.name || '--'}</span>
-                            <span className="text-[10px] text-slate-400 capitalize block">{tx.billingCycle || 'monthly'}</span>
-                          </td>
-                          <td className="px-6 py-4 text-slate-800 font-extrabold">₹{tx.amount}</td>
-                          <td className="px-6 py-4 text-xs font-medium text-slate-400">
-                            {new Date(tx.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className="text-xs text-slate-500 font-semibold block">Order: {tx.gatewayOrderId || '--'}</span>
-                            <span className="text-[9px] text-slate-400 font-semibold block">Pay ID: {tx.gatewayPaymentId || '--'}</span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${tx.status === 'success' ? 'bg-green-50 text-success border-green-100' :
-                              tx.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                                tx.status === 'refunded' ? 'bg-purple-50 text-purple-600 border-purple-100' :
-                                  'bg-red-50 text-danger border-red-100'
-                              }`}>
-                              {tx.status}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-center">
-                            <div className="flex justify-center space-x-2">
-                              {tx.status === 'success' && (
-                                <button
-                                  onClick={() => {
-                                    setSelectedTx(tx);
-                                    setRefundAmount(tx.amount.toString());
-                                  }}
-                                  className="px-2 py-1 bg-purple-50 hover:bg-purple-100 border border-purple-100 rounded-lg text-xs font-bold text-purple-700 transition-all"
-                                >
-                                  Refund
-                                </button>
-                              )}
-                              {tx.subscriptionId && (
-                                <button
-                                  onClick={() => {
-                                    setSelectedSubId(tx.subscriptionId);
-                                    setOverrideForm({
-                                      action: 'extend',
-                                      days: 30,
-                                      planId: plans[0]?._id || '',
-                                      billingCycle: 'monthly'
-                                    });
-                                    setShowOverrideModal(true);
-                                  }}
-                                  className="px-2 py-1 bg-blue-50 hover:bg-blue-100 border border-blue-100 rounded-lg text-xs font-bold text-primary transition-all"
-                                >
-                                  Override
-                                </button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Tx Pagination */}
-              {txPagination.pages > 1 && (
-                <div className="flex justify-between items-center pt-2">
-                  <span className="text-xs font-bold text-slate-400">Total: {txPagination.total} payments</span>
-                  <div className="flex space-x-2">
-                    <button
-                      disabled={txPagination.page === 1}
-                      onClick={() => fetchTransactions(txPagination.page - 1)}
-                      className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold disabled:opacity-50"
-                    >
-                      Prev
-                    </button>
-                    <span className="text-xs font-bold text-slate-600 px-3 py-1">
-                      Page {txPagination.page} of {txPagination.pages}
-                    </span>
-                    <button
-                      disabled={txPagination.page === txPagination.pages}
-                      onClick={() => fetchTransactions(txPagination.page + 1)}
-                      className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold disabled:opacity-50"
-                    >
-                      Next
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
+
+            {/* TAB 1: BILLING & GATEWAY SETTINGS */}
+            {paymentTab === 'billing' && (
+              <div className="space-y-6 animate-fadeIn">
+                {/* Gateway Toggle Config Form (Billing Only) */}
+                {paymentConfig && (
+                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft">
+                    <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wider mb-4 flex items-center space-x-1.5">
+                      <CreditCard className="h-4 w-4" />
+                      <span>Gateway Integrations Settings</span>
+                    </h3>
+                    <form onSubmit={handleConfigSubmit} className="space-y-4">
+                      <div className="grid grid-cols-3 gap-6">
+                        <div>
+                          <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-600 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={paymentConfig.enableSubscriptions}
+                              onChange={(e) => setPaymentConfig({ ...paymentConfig, enableSubscriptions: e.target.checked })}
+                              className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
+                            />
+                            <span>Enforce Subscription Wall globally</span>
+                          </label>
+                          <p className="text-[10px] text-slate-400 font-semibold mt-1">If unchecked, all app premium sections are available freely.</p>
+                        </div>
+
+                        <div>
+                          <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-600 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={paymentConfig.enablePayments}
+                              onChange={(e) => setPaymentConfig({ ...paymentConfig, enablePayments: e.target.checked })}
+                              className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
+                            />
+                            <span>Enable Live Razorpay checkout</span>
+                          </label>
+                          <p className="text-[10px] text-slate-400 font-semibold mt-1">If unchecked, checkout runs mock success modes.</p>
+                        </div>
+
+                        <div>
+                          <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-600 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={!paymentConfig.isSandbox}
+                              onChange={(e) => setPaymentConfig({ ...paymentConfig, isSandbox: !e.target.checked })}
+                              className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
+                            />
+                            <span>Production Live Gateway Mode</span>
+                          </label>
+                          <p className="text-[10px] text-slate-400 font-semibold mt-1">Sandbox toggle for API client runs.</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-4 gap-6 pt-3 border-t border-slate-100">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">GST Tax Percentage (%)</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            required
+                            value={paymentConfig.gstPercentage !== undefined ? paymentConfig.gstPercentage : 18}
+                            onChange={(e) => setPaymentConfig({ ...paymentConfig, gstPercentage: parseInt(e.target.value) || 0 })}
+                            placeholder="18"
+                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
+                          />
+                          <p className="text-[10px] text-slate-400 font-semibold mt-1">Calculated as exclusive tax on top of subscription prices.</p>
+                        </div>
+                      </div>
+
+                      {paymentConfig.enablePayments && (
+                        <div className="grid grid-cols-2 gap-4 pt-3 border-t border-slate-100">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Razorpay Key ID</label>
+                            <input
+                              type="text"
+                              required
+                              value={paymentConfig.razorpayKeyId || ''}
+                              onChange={(e) => setPaymentConfig({ ...paymentConfig, razorpayKeyId: e.target.value })}
+                              placeholder="rzp_test_..."
+                              className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Razorpay Key Secret</label>
+                            <input
+                              type="password"
+                              required
+                              value={paymentConfig.razorpayKeySecret || ''}
+                              onChange={(e) => setPaymentConfig({ ...paymentConfig, razorpayKeySecret: e.target.value })}
+                              placeholder="••••••••••••"
+                              className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex justify-end">
+                        <button
+                          type="submit"
+                          className="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-5 rounded-xl text-xs shadow-soft transition-all"
+                        >
+                          Save Integration Settings
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
+
+                {/* Aggregates Dashboard widgets */}
+                {paymentStats && (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-4 gap-6">
+                      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft flex items-center space-x-4">
+                        <div className="p-3 bg-blue-50 text-primary rounded-xl">
+                          <DollarSign className="h-6 w-6" />
+                        </div>
+                        <div>
+                          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Total Revenue</span>
+                          <span className="text-2xl font-extrabold text-slate-800">₹{paymentStats.totalRevenue}</span>
+                        </div>
+                      </div>
+
+                      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft flex items-center space-x-4">
+                        <div className="p-3 bg-teal-50 text-secondary rounded-xl">
+                          <Users className="h-6 w-6" />
+                        </div>
+                        <div>
+                          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Active Subscribers</span>
+                          <span className="text-2xl font-extrabold text-slate-800">{paymentStats.activeSubscribers}</span>
+                        </div>
+                      </div>
+
+                      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft flex items-center space-x-4">
+                        <div className="p-3 bg-orange-50 text-warning rounded-xl">
+                          <Percent className="h-6 w-6" />
+                        </div>
+                        <div>
+                          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Monthly Revenue</span>
+                          <span className="text-2xl font-extrabold text-slate-800">₹{paymentStats.monthlyRevenue}</span>
+                        </div>
+                      </div>
+
+                      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft flex items-center space-x-4">
+                        <div className="p-3 bg-purple-50 text-purple-600 rounded-xl">
+                          <Award className="h-6 w-6" />
+                        </div>
+                        <div>
+                          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Today's Sales</span>
+                          <span className="text-2xl font-extrabold text-slate-800">₹{paymentStats.todayRevenue}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Graphs for analytics */}
+                    <div className="grid grid-cols-2 gap-6">
+                      {/* Revenue Trend line */}
+                      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft">
+                        <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wider mb-4">6-Month Revenue Trend (INR)</h3>
+                        <div className="h-64">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={paymentStats.revenueTrend}>
+                              <XAxis dataKey="month" tick={{ fontSize: 11, fontWeight: 'semibold' }} axisLine={false} tickLine={false} />
+                              <YAxis tick={{ fontSize: 11, fontWeight: 'semibold' }} axisLine={false} tickLine={false} />
+                              <Tooltip />
+                              <Bar dataKey="revenue" fill="#3B82F6" radius={[6, 6, 0, 0]} />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+
+                      {/* Plan share distributions */}
+                      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft">
+                        <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wider mb-4">Plan Share Distribution</h3>
+                        <div className="h-64 flex justify-center items-center">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                              <Pie
+                                data={paymentStats.planWiseRevenue}
+                                dataKey="value"
+                                nameKey="name"
+                                cx="50%"
+                                cy="50%"
+                                outerRadius={80}
+                                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                              >
+                                {paymentStats.planWiseRevenue.map((_: any, index: number) => (
+                                  <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                                ))}
+                              </Pie>
+                              <Tooltip />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB 2: GENERAL APP CONFIG (Glucose Limits & Alerts) */}
+            {paymentTab === 'common' && (
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft animate-fadeIn">
+                <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wider mb-4 flex items-center space-x-1.5">
+                  <Activity className="h-4 w-4 text-primary" />
+                  <span>General App Configuration Settings</span>
+                </h3>
+                {paymentConfig ? (
+                  <form onSubmit={handleConfigSubmit} className="space-y-4">
+                    <div className="grid grid-cols-3 gap-6">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Safe Glucose Limit (mg/dL)</label>
+                        <input
+                          type="number"
+                          min="50"
+                          max="200"
+                          required
+                          value={paymentConfig.safeGlucoseThreshold !== undefined ? paymentConfig.safeGlucoseThreshold : 90}
+                          onChange={(e) => setPaymentConfig({ ...paymentConfig, safeGlucoseThreshold: parseInt(e.target.value) || 0 })}
+                          placeholder="90"
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
+                        />
+                        <p className="text-[10px] text-slate-400 font-semibold mt-1">Blood sugar levels at or below this are marked as Safe.</p>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Moderate Glucose Limit (mg/dL)</label>
+                        <input
+                          type="number"
+                          min="50"
+                          max="300"
+                          required
+                          value={paymentConfig.moderateGlucoseThreshold !== undefined ? paymentConfig.moderateGlucoseThreshold : 110}
+                          onChange={(e) => setPaymentConfig({ ...paymentConfig, moderateGlucoseThreshold: parseInt(e.target.value) || 0 })}
+                          placeholder="110"
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
+                        />
+                        <p className="text-[10px] text-slate-400 font-semibold mt-1">Levels above this are Avoid; levels in between are Moderate.</p>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Alert Min Interval (hours)</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="24"
+                          required
+                          value={paymentConfig.glucoseAlertMinIntervalHours !== undefined ? paymentConfig.glucoseAlertMinIntervalHours : 2}
+                          onChange={(e) => setPaymentConfig({ ...paymentConfig, glucoseAlertMinIntervalHours: parseInt(e.target.value) || 2 })}
+                          placeholder="2"
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
+                        />
+                        <p className="text-[10px] text-slate-400 font-semibold mt-1">Prevents alert emails from spamming; consecutive alerts wait at least this long.</p>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end">
+                      <button
+                        type="submit"
+                        disabled={savingPaymentConfig}
+                        className="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-5 rounded-xl text-xs shadow-soft transition-all"
+                      >
+                        {savingPaymentConfig ? 'Saving Settings...' : 'Save Settings'}
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <p className="text-xs font-bold text-slate-400">Loading configurations...</p>
+                )}
+              </div>
+            )}
+
+            {/* TAB 3: TRANSACTIONS DIRECTORY & MANUAL OVERRIDES */}
+            {paymentTab === 'transactions' && (
+              <div className="space-y-4 animate-fadeIn">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wider">Transaction Records & Manual Controls</h3>
+                  <div className="relative w-64">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                      <Search className="h-4 w-4" />
+                    </span>
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search order or email..."
+                      className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-soft overflow-x-auto">
+                  <table className="min-w-full divide-y divide-slate-200">
+                    <thead className="bg-slate-50 text-slate-400 text-xs font-bold uppercase tracking-wider text-left">
+                      <tr>
+                        <th className="px-6 py-4">User</th>
+                        <th className="px-6 py-4">Plan & Cycle</th>
+                        <th className="px-6 py-4">Amount</th>
+                        <th className="px-6 py-4">Date</th>
+                        <th className="px-6 py-4">Gateway Info</th>
+                        <th className="px-6 py-4">Status</th>
+                        <th className="px-6 py-4 text-center">Manage</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-sm font-semibold text-slate-700">
+                      {transactions.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="text-center py-8 text-slate-400">No payment transaction logs matching criteria.</td>
+                        </tr>
+                      ) : (
+                        transactions.map((tx) => (
+                          <tr key={tx._id} className="hover:bg-slate-50/50">
+                            <td className="px-6 py-4">
+                              <span className="text-slate-800 font-bold block">{tx.userId?.name || 'FastGluco Patient'}</span>
+                              <span className="text-[10px] text-slate-400 block">{tx.userId?.email || '--'}</span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className="text-slate-800 uppercase font-bold block">{tx.planId?.name || '--'}</span>
+                              <span className="text-[10px] text-slate-400 capitalize block">{tx.billingCycle || 'monthly'}</span>
+                            </td>
+                            <td className="px-6 py-4 text-slate-800 font-extrabold">₹{tx.amount}</td>
+                            <td className="px-6 py-4 text-xs font-medium text-slate-400">
+                              {new Date(tx.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className="text-xs text-slate-500 font-semibold block">Order: {tx.gatewayOrderId || '--'}</span>
+                              <span className="text-[9px] text-slate-400 font-semibold block">Pay ID: {tx.gatewayPaymentId || '--'}</span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${tx.status === 'success' ? 'bg-green-50 text-success border-green-100' :
+                                tx.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                                  tx.status === 'refunded' ? 'bg-purple-50 text-purple-600 border-purple-100' :
+                                    'bg-red-50 text-danger border-red-100'
+                                }`}>
+                                {tx.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-center">
+                              <div className="flex justify-center space-x-2">
+                                {tx.status === 'success' && (
+                                  <button
+                                    onClick={() => {
+                                      setSelectedTx(tx);
+                                      setRefundAmount(tx.amount.toString());
+                                    }}
+                                    className="px-2 py-1 bg-purple-50 hover:bg-purple-100 border border-purple-100 rounded-lg text-xs font-bold text-purple-700 transition-all"
+                                  >
+                                    Refund
+                                  </button>
+                                )}
+                                {tx.subscriptionId && (
+                                  <>
+                                    <button
+                                      onClick={() => {
+                                        setSelectedSubId(tx.subscriptionId);
+                                        setOverrideForm({
+                                          action: 'extend',
+                                          days: 30,
+                                          planId: plans[0]?._id || '',
+                                          billingCycle: 'monthly'
+                                        });
+                                        setShowOverrideModal(true);
+                                      }}
+                                      className="px-2 py-1 bg-blue-50 hover:bg-blue-100 border border-blue-100 rounded-lg text-xs font-bold text-primary transition-all"
+                                    >
+                                      Override
+                                    </button>
+                                    <button
+                                      onClick={async () => {
+                                        if (confirm('Are you sure you want to cancel and force-expire this user subscription immediately?')) {
+                                          try {
+                                            const response = await fetch(`${apiUrl}/admin/payments/subscriptions/${tx.subscriptionId}/cancel`, {
+                                              method: 'POST',
+                                              headers: {
+                                                'Content-Type': 'application/json',
+                                                'Authorization': `Bearer ${token}`
+                                              }
+                                            });
+                                            const data = await response.json();
+                                            if (response.ok) {
+                                              alert('Subscription cancelled successfully.');
+                                              fetchTransactions(txPagination.page);
+                                              fetchPaymentStats();
+                                            } else {
+                                              alert(data.message || 'Failed to cancel subscription.');
+                                            }
+                                          } catch (err) {
+                                            console.error(err);
+                                            alert('Error cancelling subscription.');
+                                          }
+                                        }
+                                      }}
+                                      className="px-2 py-1 bg-red-50 hover:bg-red-100 border border-red-100 rounded-lg text-xs font-bold text-danger transition-all"
+                                    >
+                                      Cancel Sub
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Tx Pagination */}
+                {txPagination.pages > 1 && (
+                  <div className="flex justify-between items-center pt-2">
+                    <span className="text-xs font-bold text-slate-400">Total: {txPagination.total} payments</span>
+                    <div className="flex space-x-2">
+                      <button
+                        disabled={txPagination.page === 1}
+                        onClick={() => fetchTransactions(txPagination.page - 1)}
+                        className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold disabled:opacity-50"
+                      >
+                        Prev
+                      </button>
+                      <span className="text-xs font-bold text-slate-600 px-3 py-1">
+                        Page {txPagination.page} of {txPagination.pages}
+                      </span>
+                      <button
+                        disabled={txPagination.page === txPagination.pages}
+                        onClick={() => fetchTransactions(txPagination.page + 1)}
+                        className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold disabled:opacity-50"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 

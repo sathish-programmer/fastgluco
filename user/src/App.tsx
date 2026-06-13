@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { GlobalAICoachPopup } from './components/GlobalAICoachPopup';
 import { NotificationBell } from './components/NotificationBell';
+import { OnboardingTour } from './components/OnboardingTour';
 
 const MainAppContent: React.FC = () => {
   const { isAuthenticated, isLoading, token, apiUrl, logout } = useAuth();
@@ -30,6 +31,7 @@ const MainAppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('Home');
   const [authView, setAuthView] = useState<'login' | 'register'>('login');
   const [resetToken, setResetToken] = useState<string | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -41,10 +43,14 @@ const MainAppContent: React.FC = () => {
     }
   }, []);
 
-  // Reset tab to Home dashboard upon successful authentication
+  // Reset tab to Home and trigger onboarding tour for new users upon successful authentication
   useEffect(() => {
     if (isAuthenticated) {
       setActiveTab('Home');
+      const completed = localStorage.getItem('fastgluco_onboarding_completed');
+      if (!completed) {
+        setShowOnboarding(true);
+      }
     }
   }, [isAuthenticated]);
 
@@ -133,6 +139,14 @@ const MainAppContent: React.FC = () => {
 
   return (
     <div className="bg-white min-h-screen flex flex-col justify-between">
+      {showOnboarding && (
+        <OnboardingTour
+          onComplete={() => {
+            localStorage.setItem('fastgluco_onboarding_completed', 'true');
+            setShowOnboarding(false);
+          }}
+        />
+      )}
       {/* Dynamic Header with safe area padding for mobile notches */}
       <header className="sticky top-0 bg-white/95 backdrop-blur-md border-b border-slate-100 z-10 px-4 pt-[calc(env(safe-area-inset-top)+12px)] pb-3 max-w-lg w-full mx-auto flex items-center justify-between">
         <div className="flex items-center space-x-2">
