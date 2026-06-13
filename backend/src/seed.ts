@@ -38,8 +38,8 @@ const SEED_VIDEOS = [
   {
     title: 'How to Attach and Pair Abbott CGM Sensor',
     description: 'A step-by-step video guide explaining sensor application, cleaning the skin site, and scanning to activate.',
-    url: 'https://www.youtube.com/embed/SceJu7p2g8k',
-    thumbnailUrl: 'https://img.youtube.com/vi/SceJu7p2g8k/0.jpg',
+    url: 'https://www.youtube.com/embed/mlOQWxjDr-4',
+    thumbnailUrl: 'https://img.youtube.com/vi/mlOQWxjDr-4/0.jpg',
     category: 'CGM Guide'
   }
 ];
@@ -217,7 +217,8 @@ const seed = async () => {
       enablePayments: !!(envKeyId && envKeySecret), // Enable real payments if keys are present in .env
       enableSubscriptions: true, // Subscriptions required globally
       razorpayKeyId: envKeyId || undefined,
-      razorpayKeySecret: envKeySecret || undefined
+      razorpayKeySecret: envKeySecret || undefined,
+      glucoseAlertMinIntervalHours: 2
     });
     console.log(`Created default payment gateway configuration (Real Payments Active: ${!!(envKeyId && envKeySecret)}, Subscriptions required).`);
 

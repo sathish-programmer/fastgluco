@@ -172,23 +172,24 @@ export default function App() {
                   <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Glucose</span>
                     <div className="flex items-baseline space-x-0.5">
-                      <span className="text-2xl font-extrabold text-slate-800">88</span>
+                      <span className="text-2xl font-extrabold text-slate-800">200</span>
                       <span className="text-[10px] font-bold text-slate-400">mg/dL</span>
                     </div>
+                    <span className="text-[8px] font-bold text-red-500 block mt-0.5">⚠️ Very High</span>
                   </div>
 
                   {/* Meal Spike */}
                   <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
                     <div className="flex justify-between items-start">
                       <div>
-                        <span className="text-[9px] font-bold text-slate-400 block uppercase">Masala Dosa</span>
+                        <span className="text-[9px] font-bold text-slate-400 block uppercase line-clamp-1">Brownie Slice</span>
                         <span className="text-[8px] text-slate-400 font-bold block">Breakfast</span>
                       </div>
                       <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-red-50 text-danger border border-red-100">Avoid</span>
                     </div>
                     <div className="flex justify-between items-center mt-2 text-[9px] font-bold text-slate-500">
-                      <span>Before: 88</span>
-                      <span>Peak: 115</span>
+                      <span>Before: 95</span>
+                      <span>Peak: 200</span>
                     </div>
                   </div>
                 </div>
@@ -264,10 +265,11 @@ export default function App() {
               <div className="aspect-[9/16] bg-slate-50 border border-slate-100 rounded-2xl p-3 flex flex-col justify-between text-slate-700 text-xs">
                 <div>
                   <span className="text-[9px] font-bold text-slate-400 block uppercase">Latest Glucose</span>
-                  <span className="text-xl font-extrabold">88 mg/dL</span>
+                  <span className="text-xl font-extrabold">200 mg/dL</span>
+                  <span className="text-[8px] font-bold text-red-500 block mt-1">⚠️ Very High</span>
                 </div>
-                <div className="p-2 bg-green-50 text-success font-bold text-[9px] rounded-xl border border-green-100 text-center">
-                  Time in Range: 85%
+                <div className="p-2 bg-red-50 text-danger font-bold text-[9px] rounded-xl border border-red-100 text-center">
+                  Time in Range: 71%
                 </div>
               </div>
             </div>
@@ -279,7 +281,7 @@ export default function App() {
                 <div>
                   <span className="text-[9px] font-bold text-slate-400 block uppercase">Report Import</span>
                   <h4 className="font-bold text-[10px] mt-1">Abbott Libre CSV</h4>
-                  <span className="text-[8px] text-slate-400">Processed 500 records</span>
+                  <span className="text-[8px] text-slate-400">Processed 466 records</span>
                 </div>
                 <div className="p-2 bg-blue-50 text-primary font-bold text-[9px] rounded-xl border border-blue-100 text-center">
                   Analyze Spikes
@@ -293,9 +295,9 @@ export default function App() {
               <div className="aspect-[9/16] bg-slate-50 border border-slate-100 rounded-2xl p-3 flex flex-col justify-between text-slate-700 text-xs">
                 <div>
                   <span className="text-[9px] font-bold text-slate-400 block uppercase">Meal Analyzer</span>
-                  <h4 className="font-bold text-[10px] mt-1">Masala Dosa</h4>
-                  <span className="text-[8px] text-slate-400 block">Baseline: 88 mg/dL</span>
-                  <span className="text-[8px] text-slate-400 block">Peak Post: 115 mg/dL</span>
+                  <h4 className="font-bold text-[10px] mt-1 line-clamp-1">Brownie Slice</h4>
+                  <span className="text-[8px] text-slate-400 block mt-0.5">Baseline: 95 mg/dL</span>
+                  <span className="text-[8px] text-slate-400 block">Peak Post: 200 mg/dL</span>
                 </div>
                 <div className="p-2 bg-red-50 text-danger font-bold text-[9px] rounded-xl border border-red-100 text-center">
                   Level: Avoid
@@ -308,10 +310,10 @@ export default function App() {
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">4. Top Foods</span>
               <div className="aspect-[9/16] bg-slate-50 border border-slate-100 rounded-2xl p-3 flex flex-col justify-between text-slate-700 text-xs">
                 <div className="space-y-2">
-                  <span className="text-[9px] font-bold text-slate-400 block uppercase">Safest Indian Diets</span>
+                  <span className="text-[9px] font-bold text-slate-400 block uppercase">Safest Portion Diets</span>
                   <div className="space-y-1 text-[8px] font-bold">
-                    <div className="flex justify-between text-green-700"><span>Ragi Mudde</span><span>85 mg/dL</span></div>
-                    <div className="flex justify-between text-green-700"><span>Whole Wheat Roti</span><span>88 mg/dL</span></div>
+                    <div className="flex justify-between text-green-700"><span>Boiled Egg</span><span>70 mg/dL</span></div>
+                    <div className="flex justify-between text-green-700"><span>Whole Wheat Roti</span><span>85 mg/dL</span></div>
                   </div>
                 </div>
                 <div className="p-2 bg-teal-50 text-secondary font-bold text-[9px] rounded-xl border border-teal-100 text-center">

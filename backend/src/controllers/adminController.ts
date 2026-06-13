@@ -22,6 +22,12 @@ import { FCMService } from '../services/fcmService';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_12345!';
 
+const getYoutubeId = (url: string): string | null => {
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+};
+
 export class AdminController {
   /**
    * Admin Login
@@ -399,7 +405,24 @@ export class AdminController {
         return res.status(400).json({ message: 'Title, URL, and category are required.' });
       }
 
-      const video = new Video({ title, description, url, thumbnailUrl, category, targetPlatform: targetPlatform || 'Both' });
+      let processedUrl = url;
+      let processedThumbnail = thumbnailUrl;
+      const ytId = getYoutubeId(url);
+      if (ytId) {
+        processedUrl = `https://www.youtube.com/embed/${ytId}`;
+        if (!processedThumbnail) {
+          processedThumbnail = `https://img.youtube.com/vi/${ytId}/0.jpg`;
+        }
+      }
+
+      const video = new Video({ 
+        title, 
+        description, 
+        url: processedUrl, 
+        thumbnailUrl: processedThumbnail, 
+        category, 
+        targetPlatform: targetPlatform || 'Both' 
+      });
       await video.save();
 
       await AuditLog.create({
@@ -421,8 +444,31 @@ export class AdminController {
   public static async updateVideo(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
-      const video = await Video.findByIdAndUpdate(id, req.body, { new: true });
+      const { title, description, url, thumbnailUrl, category, targetPlatform } = req.body;
+      const video = await Video.findById(id);
       if (!video) return res.status(404).json({ message: 'Video not found.' });
+
+      if (title !== undefined) video.title = title;
+      if (description !== undefined) video.description = description;
+      if (category !== undefined) video.category = category;
+      if (targetPlatform !== undefined) video.targetPlatform = targetPlatform;
+      
+      if (url !== undefined) {
+        video.url = url;
+        const ytId = getYoutubeId(url);
+        if (ytId) {
+          video.url = `https://www.youtube.com/embed/${ytId}`;
+          if (!thumbnailUrl) {
+            video.thumbnailUrl = `https://img.youtube.com/vi/${ytId}/0.jpg`;
+          }
+        }
+      }
+
+      if (thumbnailUrl !== undefined) {
+        video.thumbnailUrl = thumbnailUrl || video.thumbnailUrl;
+      }
+
+      await video.save();
 
       await AuditLog.create({
         adminId: req.user?.id,

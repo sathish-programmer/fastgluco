@@ -37,7 +37,7 @@ export class PaymentAdminController {
    */
   public static async updateConfig(req: AuthRequest, res: Response) {
     try {
-      const { razorpayKeyId, razorpayKeySecret, isSandbox, enablePayments, enableSubscriptions, gstPercentage, safeGlucoseThreshold, moderateGlucoseThreshold, aiSpikeThreshold, aiQuestions, aiCompletionMessage } = req.body;
+      const { razorpayKeyId, razorpayKeySecret, isSandbox, enablePayments, enableSubscriptions, gstPercentage, safeGlucoseThreshold, moderateGlucoseThreshold, aiSpikeThreshold, aiQuestions, aiCompletionMessage, glucoseAlertMinIntervalHours } = req.body;
 
       let config = await PaymentGatewayConfig.findOne();
       if (!config) {
@@ -55,6 +55,7 @@ export class PaymentAdminController {
       if (aiSpikeThreshold !== undefined) config.aiSpikeThreshold = aiSpikeThreshold;
       if (aiQuestions !== undefined) config.aiQuestions = aiQuestions;
       if (aiCompletionMessage !== undefined) config.aiCompletionMessage = aiCompletionMessage;
+      if (glucoseAlertMinIntervalHours !== undefined) config.glucoseAlertMinIntervalHours = glucoseAlertMinIntervalHours;
       config.updatedBy = req.user?.id as any;
 
       await config.save();

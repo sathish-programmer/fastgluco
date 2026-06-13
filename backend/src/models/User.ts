@@ -14,6 +14,7 @@ export interface IUser extends Document {
   fcmToken?: string;
   spikeThreshold: number; // default: 90 mg/dL
   currency?: 'INR' | 'USD';
+  lastGlucoseAlertSentAt?: Date;
   isBlocked: boolean;
   isDeleted: boolean;
   createdAt: Date;
@@ -41,6 +42,7 @@ const userSchema = new Schema<IUser>(
     fcmToken: { type: String },
     spikeThreshold: { type: Number, default: 90 },
     currency: { type: String, enum: ['INR', 'USD'], default: 'INR' },
+    lastGlucoseAlertSentAt: { type: Date },
     isBlocked: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false }
   },

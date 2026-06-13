@@ -12,6 +12,7 @@ export interface IPaymentGatewayConfig extends Document {
   aiSpikeThreshold: number; // AI triggers coaching above this
   aiQuestions: string[]; // Array of questions to ask sequentially
   aiCompletionMessage: string; // Final message when all answered
+  glucoseAlertMinIntervalHours: number; // Minimum hours between consecutive alert emails to prevent spamming
   updatedBy?: Schema.Types.ObjectId; // ref: AdminUser
   createdAt: Date;
   updatedAt: Date;
@@ -33,6 +34,7 @@ const paymentGatewayConfigSchema = new Schema<IPaymentGatewayConfig>(
       default: ["You recently logged a food that spiked your glucose. Why did you consume this when it's advised to avoid it?", "Did you take a walk afterwards?"] 
     },
     aiCompletionMessage: { type: String, default: "Thank you for sharing this context. We have recorded your activity. Remember to stay hydrated and walk 15 mins after heavy meals!" },
+    glucoseAlertMinIntervalHours: { type: Number, default: 2, required: true },
     updatedBy: { type: Schema.Types.ObjectId, ref: 'AdminUser' }
   },
   {

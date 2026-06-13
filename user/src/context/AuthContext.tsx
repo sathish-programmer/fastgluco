@@ -47,11 +47,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       try {
-        const response = await fetch(`${apiUrl}/users/profile`, {
+        let currentToken = token;
+        let response = await fetch(`${apiUrl}/users/profile`, {
           headers: {
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${currentToken}`
           }
         });
+
+        if (response.status === 401) {
+          const refreshToken = localStorage.getItem('fastgluco_refresh_token');
+          if (refreshToken) {
+            const refreshRes = await fetch(`${apiUrl}/auth/refresh`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ refreshToken })
+            });
+            if (refreshRes.ok) {
+              const data = await refreshRes.json();
+              localStorage.setItem('fastgluco_token', data.accessToken);
+              currentToken = data.accessToken;
+              setToken(currentToken);
+              
+              // Retry with new token
+              response = await fetch(`${apiUrl}/users/profile`, {
+                headers: {
+                  'Authorization': `Bearer ${currentToken}`
+                }
+              });
+            }
+          }
+        }
 
         if (response.ok) {
           const profile = await response.json();

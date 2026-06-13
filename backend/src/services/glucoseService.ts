@@ -85,13 +85,28 @@ export class GlucoseService {
     if (status === 'Avoid') {
       const user = await User.findById(userId);
       if (user && user.email) {
-        EmailService.sendHighSpikeAlert(
-          user.email,
-          user.name || 'FastGluco User',
-          peakGlucose,
-          moderateLimit,
-          peakReading.timestamp.toISOString()
-        ).catch(console.error);
+        const intervalHours = config?.glucoseAlertMinIntervalHours ?? 2;
+        let shouldSendAlert = true;
+        if (user.lastGlucoseAlertSentAt) {
+          const hoursSinceLastAlert = (Date.now() - user.lastGlucoseAlertSentAt.getTime()) / (1000 * 60 * 60);
+          if (hoursSinceLastAlert < intervalHours) {
+            shouldSendAlert = false;
+            console.log(`Skipping high spike alert email for user ${user.email} (last alert sent ${hoursSinceLastAlert.toFixed(2)} hours ago, limit is ${intervalHours} hours).`);
+          }
+        }
+
+        if (shouldSendAlert) {
+          EmailService.sendHighSpikeAlert(
+            user.email,
+            user.name || 'FastGluco User',
+            peakGlucose,
+            user.spikeThreshold ?? 90,
+            peakReading.timestamp.toISOString()
+          ).catch(console.error);
+
+          user.lastGlucoseAlertSentAt = new Date();
+          await user.save();
+        }
       }
     }
 

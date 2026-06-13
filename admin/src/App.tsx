@@ -76,7 +76,6 @@ const AdminPanelContent: React.FC = () => {
   const [foods, setFoods] = useState<any[]>([]);
   const [videos, setVideos] = useState<any[]>([]);
   const [guides, setGuides] = useState<any[]>([]);
-  const [aiQuestions, setAiQuestions] = useState<any[]>([]);
 
   // CRUD Form states
   const [showFoodModal, setShowFoodModal] = useState(false);
@@ -2721,7 +2720,7 @@ const AdminPanelContent: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-6 pt-3 border-t border-slate-100">
+                  <div className="grid grid-cols-4 gap-6 pt-3 border-t border-slate-100">
                     <div>
                       <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">GST Tax Percentage (%)</label>
                       <input
@@ -2763,6 +2762,20 @@ const AdminPanelContent: React.FC = () => {
                         className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
                       />
                       <p className="text-[10px] text-slate-400 font-semibold mt-1">Levels above this are Avoid; levels in between are Moderate.</p>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Alert Min Interval (hours)</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="24"
+                        required
+                        value={paymentConfig.glucoseAlertMinIntervalHours !== undefined ? paymentConfig.glucoseAlertMinIntervalHours : 2}
+                        onChange={(e) => setPaymentConfig({ ...paymentConfig, glucoseAlertMinIntervalHours: parseInt(e.target.value) || 2 })}
+                        placeholder="2"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
+                      />
+                      <p className="text-[10px] text-slate-400 font-semibold mt-1">Prevents alert emails from spamming; consecutive alerts wait at least this long.</p>
                     </div>
                   </div>
 
