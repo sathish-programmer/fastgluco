@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 
 export const GlobalAICoachPopup: React.FC = () => {
   const { isAuthenticated, token, apiUrl } = useAuth();
-  const [sessions, setSessions] = useState<any[]>([]);
+
   const [activeSession, setActiveSession] = useState<any | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [replyText, setReplyText] = useState('');
@@ -21,7 +21,7 @@ export const GlobalAICoachPopup: React.FC = () => {
           if (res.ok) {
             const data = await res.json();
             const active = data.filter((s: any) => s.status === 'active');
-            setSessions(active);
+
             if (active.length > 0 && !activeSession) {
               setActiveSession(active[0]);
               setIsOpen(true);
@@ -51,7 +51,7 @@ export const GlobalAICoachPopup: React.FC = () => {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       // Remove from local state so it doesn't reopen on next poll
-      setSessions(prev => prev.filter(s => s._id !== activeSession._id));
+
       setActiveSession(null);
     } catch (err) {
       console.error(err);
@@ -76,7 +76,7 @@ export const GlobalAICoachPopup: React.FC = () => {
       if (response.ok) {
         const updatedSession = await response.json();
         setActiveSession(updatedSession);
-        setSessions(prev => prev.map(s => s._id === updatedSession._id ? updatedSession : s));
+
         setReplyText('');
         // If session is now resolved, close popup after a short delay
         if (updatedSession.status === 'resolved') {

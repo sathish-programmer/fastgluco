@@ -13,7 +13,7 @@ import {
 import { Educational } from './Educational'; // import the sub-view
 import { Subscription } from './Subscription';
 
-export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({ onNavigateToTab }) => {
+export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = () => {
   const { user, logout, updateProfile, isLoading, error } = useAuth();
   
   // Tabs for profile section: 'settings' or 'education' or 'subscription'
@@ -29,7 +29,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
   const [activityLevel, setActivityLevel] = useState(user?.activityLevel || 'Moderately active');
   const [goal, setGoal] = useState(user?.goal || 'Maintain weight');
   const [spikeThreshold, setSpikeThreshold] = useState(user?.spikeThreshold || 90);
-  const [currency, setCurrency] = useState<'INR' | 'USD'>(user?.currency || 'INR');
+  const [currency, setCurrency] = useState<'INR' | 'USD'>((user?.currency as 'INR' | 'USD') || 'INR');
   
   const [saveSuccess, setSaveSuccess] = useState(false);
 

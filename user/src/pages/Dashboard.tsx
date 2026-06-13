@@ -11,15 +11,7 @@ import {
   UtensilsCrossed,
   RefreshCw
 } from 'lucide-react';
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  Tooltip, 
-  ResponsiveContainer,
-  ReferenceLine
-} from 'recharts';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 
 interface DashboardProps {
   onNavigateToTab: (tab: string) => void;
@@ -38,6 +30,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<'day' | 'week' | 'month'>('day');
   const [exporting, setExporting] = useState(false);
+  const [healthInsight, setHealthInsight] = useState<string>('Walking for 10-15 minutes after major meals helps clear circulating glucose, reducing the severity of peak spikes. Try swapping white rice for millets.');
 
   useEffect(() => {
     fetchDashboardData();
@@ -88,6 +81,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
       if (reportRes.ok) {
         const history = await reportRes.json();
         setReportsCount(history.length);
+      }
+
+      // 4. Fetch current active Health Insight
+      try {
+        const insightRes = await fetch(`${apiUrl}/health-insights/current`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (insightRes.ok) {
+          const insightData = await insightRes.json();
+          if (insightData && insightData.content) {
+            setHealthInsight(insightData.content);
+          }
+        }
+      } catch (insightErr) {
+        console.error('Error fetching health insight:', insightErr);
       }
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
@@ -262,33 +270,42 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
         ) : (
           <div className="h-64 w-full -ml-4">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={formatChartData()} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+              {/* Line chart with monotone curve */}
+              <LineChart data={formatChartData()} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                {/* Gradient definition */}
                 <defs>
-                  <linearGradient id="colorGlucose" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#2563EB" stopOpacity={0.15}/>
-                    <stop offset="95%" stopColor="#2563EB" stopOpacity={0.01}/>
+                  <linearGradient id="glucoseGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#2563EB" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#2563EB" stopOpacity={0.02} />
                   </linearGradient>
                 </defs>
-                <XAxis 
-                  dataKey={glucoseReadings[0]?.timestamp ? 'timestamp' : 'timeLabel'} 
+                <XAxis
+                  dataKey={glucoseReadings[0]?.timestamp ? 'timestamp' : 'timeLabel'}
+                  tickFormatter={(value) => {
+                    const d = new Date(value);
+                    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                  }}
                   tick={{ fontSize: 10, fill: '#94A3B8', fontWeight: 600 }}
                   axisLine={false}
                   tickLine={false}
                 />
-                <YAxis 
-                  domain={[40, 180]} 
+                <YAxis
+                  domain={[40, 180]}
                   tick={{ fontSize: 10, fill: '#94A3B8', fontWeight: 600 }}
                   axisLine={false}
                   tickLine={false}
                 />
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
-                  labelStyle={{ fontWeight: 'bold', fontSize: '12px' }}
-                  itemStyle={{ color: '#2563EB', fontWeight: 'semibold', fontSize: '12px' }}
+                  labelFormatter={(label) => {
+                    const d = new Date(label);
+                    return d.toLocaleString();
+                  }}
+                  formatter={(value) => [`${value} mg/dL`, 'Glucose']}
                 />
                 <ReferenceLine y={90} stroke="#14B8A6" strokeDasharray="3 3" label={{ value: 'Spike threshold', fill: '#14B8A6', fontSize: 9, position: 'insideBottomRight' }} />
-                <Area type="monotone" dataKey="value" stroke="#2563EB" strokeWidth={3} fillOpacity={1} fill="url(#colorGlucose)" />
-              </AreaChart>
+                <Line type="monotone" dataKey="value" stroke="#2563EB" strokeWidth={3} dot={false} fillOpacity={1} fill="url(#glucoseGradient)" />
+              </LineChart>
             </ResponsiveContainer>
           </div>
         )}
@@ -324,7 +341,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
         <div>
           <h4 className="text-xs font-bold text-secondary-dark uppercase tracking-wider mb-1">Health Insights</h4>
           <p className="text-xs text-slate-600 leading-relaxed font-medium">
-            Walking for 10-15 minutes after major meals helps clear circulating glucose, reducing the severity of peak spikes. Try swapping white rice for millets.
+            {healthInsight}
           </p>
         </div>
       </div>

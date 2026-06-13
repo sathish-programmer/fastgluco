@@ -6,7 +6,7 @@ interface CoachingProps {
   onNavigateToTab?: (tab: string) => void;
 }
 
-export const Coaching: React.FC<CoachingProps> = ({ onNavigateToTab }) => {
+export const Coaching: React.FC<CoachingProps> = () => {
   const { token, apiUrl } = useAuth();
   const [sessions, setSessions] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);

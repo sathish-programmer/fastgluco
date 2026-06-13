@@ -63,7 +63,7 @@ export class EmailService {
   /**
    * Send Subscription Invoice and Details
    */
-  public static async sendSubscriptionInvoiceEmail(email: string, name: string, planName: string, amount: number, currency: 'INR' | 'USD' = 'INR') {
+  public static async sendSubscriptionInvoiceEmail(email: string, name: string, planName: string, amount: number, currency: 'INR' | 'USD' = 'INR', pdfBuffer?: Buffer, invoiceNumber?: string) {
     const symbol = currency === 'USD' ? '$' : '₹';
     const html = generateEmailTemplate('Payment Confirmation', `
       <p>Hi ${name},</p>
@@ -72,10 +72,29 @@ export class EmailService {
         <p style="margin: 0; font-size: 14px; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;">Transaction Details</p>
         <p style="margin: 4px 0 0 0; color: #1d4ed8;">Amount Processed: ${symbol}${amount.toFixed(2)}</p>
       </div>
-      <p>You can view your full invoice details and manage your subscription in your FastGluco Profile under "Billing".</p>
+      <p>We have attached your invoice PDF to this email.</p>
+      <p>You can also view your full invoice details and manage your subscription in your FastGluco Profile under "Billing".</p>
       <p>Enjoy your premium features!</p>
     `);
-    try { await transporter.sendMail({ from: '"FastGluco Billing" <billing@fastgluco.com>', to: email, subject: 'Your FastGluco Subscription Confirmed', html }); } catch (err) { console.error(err); }
+
+    const mailOptions: any = {
+      from: '"FastGluco Billing" <billing@fastgluco.com>',
+      to: email,
+      subject: 'Your FastGluco Subscription Confirmed',
+      html
+    };
+
+    if (pdfBuffer && invoiceNumber) {
+      mailOptions.attachments = [
+        {
+          filename: `Invoice-${invoiceNumber}.pdf`,
+          content: pdfBuffer,
+          contentType: 'application/pdf'
+        }
+      ];
+    }
+
+    try { await transporter.sendMail(mailOptions); } catch (err) { console.error(err); }
   }
 
   /**

@@ -657,15 +657,22 @@ export class SubscriptionController {
 
     await invoice.save();
 
-    // Trigger invoice email asynchronously
+    // Trigger invoice email asynchronously with PDF attachment
     if (user && user.email) {
-      EmailService.sendSubscriptionInvoiceEmail(
-        user.email,
-        user.name || 'FastGluco Patient',
-        plan.name || 'Subscription',
-        total,
-        user.currency || 'INR'
-      ).catch(err => console.error('Error triggering invoice email:', err));
+      const planName = plan.name || 'Subscription';
+      SubscriptionController.generateInvoicePdfBuffer(invoice, planName)
+        .then(pdfBuffer => {
+          return EmailService.sendSubscriptionInvoiceEmail(
+            user.email,
+            user.name || 'FastGluco Patient',
+            planName,
+            total,
+            user.currency || 'INR',
+            pdfBuffer,
+            invoice.invoiceNumber
+          );
+        })
+        .catch(err => console.error('Error generating/sending attached invoice email:', err));
     }
 
     return invoice;
@@ -788,5 +795,92 @@ export class SubscriptionController {
         return res.status(500).json({ message: error.message || 'Error generating invoice PDF.' });
       }
     }
+  }
+
+  private static async generateInvoicePdfBuffer(invoice: any, planName: string): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({ margin: 50 });
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', (err) => reject(err));
+
+      const safeNum = (val: any, fallback: number = 0): number => {
+        const n = Number(val);
+        return isNaN(n) || val === null || val === undefined ? fallback : n;
+      };
+      const fmt = (val: any, fallback?: number): string => safeNum(val, fallback).toFixed(2);
+
+      // Logo / Title Header
+      doc.fillColor('#0284C7').fontSize(24).font('Helvetica-Bold').text('FastGluco', 50, 50);
+      doc.fillColor('#64748B').fontSize(10).font('Helvetica-Bold').text('HEALTH & DIABETES TRACKING', 50, 78);
+
+      doc.fillColor('#1E293B').fontSize(20).font('Helvetica-Bold').text('INVOICE', 400, 50, { align: 'right' });
+      doc.fillColor('#64748B').fontSize(10).font('Helvetica').text(`Invoice #: ${invoice.invoiceNumber}`, 400, 75, { align: 'right' });
+      doc.text(`Date: ${new Date(invoice.createdAt).toLocaleDateString()}`, 400, 90, { align: 'right' });
+
+      // Horizontal Line divider
+      doc.moveTo(50, 115).lineTo(550, 115).strokeColor('#E2E8F0').lineWidth(1).stroke();
+
+      // Bill To details
+      doc.fillColor('#1E293B').fontSize(12).font('Helvetica-Bold').text('Billed To:', 50, 135);
+      doc.fillColor('#334155').fontSize(10).font('Helvetica').text(invoice.billingName, 50, 155);
+      doc.text(invoice.billingEmail, 50, 170);
+
+      // Issued By details
+      doc.fillColor('#1E293B').fontSize(12).font('Helvetica-Bold').text('Issued By:', 300, 135);
+      doc.fillColor('#334155').fontSize(10).font('Helvetica').text('FastGluco Platform Inc.', 300, 155);
+      doc.text('support@fastgluco.com', 300, 170);
+      doc.text('Bangalore, Karnataka, India', 300, 185);
+
+      // Table Header
+      const tableTop = 230;
+      doc.rect(50, tableTop, 500, 25).fill('#F8FAFC');
+      doc.fillColor('#475569').fontSize(10).font('Helvetica-Bold').text('Description', 60, tableTop + 7);
+      doc.text('Amount (INR)', 450, tableTop + 7, { align: 'right' });
+
+      // Table Row
+      const rowTop = tableTop + 25;
+      doc.fillColor('#1E293B').fontSize(10).font('Helvetica').text(`FastGluco Premium Subscription - ${planName}`, 60, rowTop + 10);
+      doc.text(`Rs.${fmt(invoice.originalAmount, safeNum(invoice.totalAmount))}`, 450, rowTop + 10, { align: 'right' });
+
+      // Table Row underline
+      doc.moveTo(50, rowTop + 30).lineTo(550, rowTop + 30).strokeColor('#F1F5F9').lineWidth(1).stroke();
+
+      // Calculation breakdown
+      const calcTop = rowTop + 45;
+      doc.fillColor('#64748B').fontSize(10).text('Subtotal:', 350, calcTop);
+      doc.fillColor('#1E293B').text(`Rs.${fmt(invoice.originalAmount, safeNum(invoice.totalAmount))}`, 450, calcTop, { align: 'right' });
+
+      const discountAmt = safeNum(invoice.discountAmount);
+      if (discountAmt > 0) {
+        doc.fillColor('#64748B').text(`Discount (${invoice.couponCode || 'Promo'}):`, 350, calcTop + 20);
+        doc.fillColor('#EF4444').text(`-Rs.${fmt(invoice.discountAmount)}`, 450, calcTop + 20, { align: 'right' });
+      }
+
+      const nextCalcTop = calcTop + (discountAmt > 0 ? 40 : 20);
+      doc.fillColor('#64748B').text('Taxable Base Price:', 350, nextCalcTop);
+      doc.fillColor('#1E293B').text(`Rs.${fmt(invoice.amount, safeNum(invoice.totalAmount))}`, 450, nextCalcTop, { align: 'right' });
+
+      // Dynamically calculate dynamic GST percent
+      const invoiceAmount = safeNum(invoice.amount, 1);
+      const invoiceTax = safeNum(invoice.taxAmount);
+      const gstPercent = invoiceAmount > 0 ? Math.round((invoiceTax / invoiceAmount) * 100) : 18;
+      doc.fillColor('#64748B').text(`GST (${gstPercent}%):`, 350, nextCalcTop + 20);
+      doc.fillColor('#1E293B').text(`Rs.${fmt(invoice.taxAmount)}`, 450, nextCalcTop + 20, { align: 'right' });
+
+      // Divider line
+      doc.moveTo(350, nextCalcTop + 38).lineTo(550, nextCalcTop + 38).strokeColor('#E2E8F0').stroke();
+
+      // Total Paid
+      doc.fillColor('#1E293B').fontSize(12).font('Helvetica-Bold').text('Total Paid:', 350, nextCalcTop + 45);
+      doc.fillColor('#0284C7').fontSize(14).text(`Rs.${fmt(invoice.totalAmount)}`, 450, nextCalcTop + 44, { align: 'right' });
+
+      // Footer notice
+      doc.fillColor('#94A3B8').fontSize(9).font('Helvetica').text('This is a computer generated invoice and does not require a signature.', 50, 480, { align: 'center', width: 500 });
+      doc.text('FastGluco Platform - Glucose & Metabolic Monitoring', 50, 495, { align: 'center', width: 500 });
+
+      doc.end();
+    });
   }
 }

@@ -122,6 +122,11 @@ const AdminPanelContent: React.FC = () => {
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
   const [ticketAnswer, setTicketAnswer] = useState('');
 
+  // Health Insights state
+  const [healthInsights, setHealthInsights] = useState<any[]>([]);
+  const [activeInsightText, setActiveInsightText] = useState('');
+  const [insightSaving, setInsightSaving] = useState(false);
+
   // Legal Docs state
   const [privacyPolicy, setPrivacyPolicy] = useState('');
   const [termsOfService, setTermsOfService] = useState('');
@@ -258,6 +263,7 @@ const AdminPanelContent: React.FC = () => {
       if (activeView === 'plans') fetchPlans();
       if (activeView === 'coupons') fetchCoupons();
       if (activeView === 'legal') fetchLegalDocuments();
+      if (activeView === 'healthInsights') fetchHealthInsights();
       if (activeView === 'payments') {
         fetchPaymentConfig();
         fetchPaymentStats();
@@ -666,6 +672,57 @@ const AdminPanelContent: React.FC = () => {
       const response = await fetch(`${apiUrl}/admin/faqs/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
       if (response.ok) fetchFaqs();
     } catch (e) { console.error(e); }
+  };
+
+  // --- Health Insights API ---
+  const fetchHealthInsights = async () => {
+    try {
+      const res = await fetch(`${apiUrl}/admin/health-insights`, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (res.ok) {
+        const data = await res.json();
+        setHealthInsights(data);
+        const active = data.find((insight: any) => insight.isActive);
+        if (active) {
+          setActiveInsightText(active.content);
+        }
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  const handleSetInsightActive = async (id: string) => {
+    try {
+      setInsightSaving(true);
+      const res = await fetch(`${apiUrl}/admin/health-insights/set-active`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ id })
+      });
+      if (res.ok) {
+        alert('Active insight updated successfully!');
+        fetchHealthInsights();
+      }
+    } catch (e) { console.error(e); } finally {
+      setInsightSaving(false);
+    }
+  };
+
+  const handleCustomInsightSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeInsightText.trim()) return;
+    try {
+      setInsightSaving(true);
+      const res = await fetch(`${apiUrl}/admin/health-insights/set-active`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ content: activeInsightText })
+      });
+      if (res.ok) {
+        alert('Custom active health insight set successfully!');
+        fetchHealthInsights();
+      }
+    } catch (e) { console.error(e); } finally {
+      setInsightSaving(false);
+    }
   };
 
   // --- TICKETS API ---
@@ -1138,6 +1195,15 @@ const AdminPanelContent: React.FC = () => {
             >
               <HelpCircle className="h-5 w-5" />
               <span>Dynamic FAQs</span>
+            </button>
+
+            <button
+              onClick={() => { setActiveView('healthInsights'); setSearchQuery(''); }}
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${activeView === 'healthInsights' ? 'bg-primary text-white' : 'hover:bg-slate-800'
+                }`}
+            >
+              <Activity className="h-5 w-5" />
+              <span>Health Insights</span>
             </button>
 
             <button
@@ -2166,6 +2232,88 @@ const AdminPanelContent: React.FC = () => {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* VIEW 6.1b: HEALTH INSIGHTS */}
+        {activeView === 'healthInsights' && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-bold text-slate-800">Health Insights</h2>
+              <p className="text-xs text-slate-400 font-semibold mt-0.5">Manage the daily health insight shown on the patient dashboard.</p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Active Daily Insight Form */}
+              <div className="lg:col-span-2 bg-white p-6 rounded-3xl border border-slate-200 shadow-soft">
+                <h3 className="text-sm font-black text-slate-800 mb-4 flex items-center space-x-2">
+                  <Activity className="h-5 w-5 text-primary" />
+                  <span>Active Daily Insight</span>
+                </h3>
+                <form onSubmit={handleCustomInsightSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Insight Text Content</label>
+                    <textarea
+                      required
+                      value={activeInsightText}
+                      onChange={(e) => setActiveInsightText(e.target.value)}
+                      placeholder="Type a custom daily tip or select one from the templates..."
+                      className="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm font-medium h-32 focus:outline-none focus:border-primary transition-all leading-relaxed"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={insightSaving}
+                    className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-3.5 px-4 rounded-xl shadow-soft flex items-center justify-center space-x-2 transition-all disabled:opacity-50"
+                  >
+                    {insightSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+                    <span>{insightSaving ? 'Saving...' : 'Set Active for Patients'}</span>
+                  </button>
+                </form>
+              </div>
+
+              {/* Templated / Prefilled Insights */}
+              <div className="bg-slate-50 p-6 rounded-3xl border border-slate-200/60">
+                <h3 className="text-sm font-black text-slate-800 mb-4 flex items-center space-x-2">
+                  <Award className="h-5 w-5 text-secondary" />
+                  <span>Easy Access Templates</span>
+                </h3>
+                <p className="text-xs text-slate-400 font-semibold mb-4">Click any template below to load it into the editor or activate it directly.</p>
+                <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1">
+                  {healthInsights.map((insight) => (
+                    <div
+                      key={insight._id}
+                      onClick={() => setActiveInsightText(insight.content)}
+                      className={`p-3.5 rounded-2xl border text-xs font-semibold leading-relaxed transition-all cursor-pointer ${
+                        insight.isActive
+                          ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                          : 'bg-white border-slate-200 hover:border-slate-300 text-slate-600'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${
+                          insight.isActive ? 'bg-emerald-200 text-emerald-900' : 'bg-slate-100 text-slate-500'
+                        }`}>
+                          {insight.isActive ? 'Active Now' : insight.isTemplate ? 'Template' : 'Custom'}
+                        </span>
+                        {!insight.isActive && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSetInsightActive(insight._id);
+                            }}
+                            className="text-[9px] font-extrabold text-primary hover:underline"
+                          >
+                            Set Active
+                          </button>
+                        )}
+                      </div>
+                      <p>{insight.content}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

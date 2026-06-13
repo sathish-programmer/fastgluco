@@ -15,6 +15,8 @@ import { PlanAdminController } from '../controllers/planAdminController';
 import { PaymentAdminController } from '../controllers/paymentAdminController';
 import { CouponAdminController } from '../controllers/couponAdminController';
 import { SupportController } from '../controllers/supportController';
+import { HealthInsightController } from '../controllers/healthInsightController';
+import { NotificationController } from '../controllers/notificationController';
 import { authenticateToken, requireRole } from '../middlewares/authMiddleware';
 import { requireSubscriptionFeature } from '../middlewares/subscriptionMiddleware';
 
@@ -108,6 +110,11 @@ router.get('/glucose/export', requireSubscriptionFeature('exportReports'), Gluco
 router.get('/glucose/analysis', requireSubscriptionFeature('advancedAnalysis'), GlucoseController.getSpikeAnalysis);
 router.get('/glucose/top-foods', requireSubscriptionFeature('foodInsights'), GlucoseController.getTopFoods);
 
+router.use('/notifications', authenticateToken, requireRole(['User']));
+router.get('/notifications/unread-count', NotificationController.getUnreadCount);
+router.get('/notifications', NotificationController.listRecent);
+router.post('/notifications/:id/read', NotificationController.markAsRead);
+
 // Public Educational & Support content fetches
 router.get('/guides', EducationalController.getGuides);
 router.get('/guides/:id', EducationalController.getGuideById);
@@ -121,6 +128,7 @@ router.post('/coaching/sessions/:id/dismiss', CoachingController.dismissSession)
 router.get('/faqs', SupportController.getPublicFAQs);
 router.post('/support', SupportController.submitTicket);
 router.get('/legal/:type', AdminController.getLegalDocument);
+router.get('/health-insights/current', authenticateToken, requireRole(['User', 'SuperAdmin', 'Admin', 'Editor']), HealthInsightController.getCurrentInsight);
 
 // ==========================================
 // 3. ADMIN PORTAL ENDPOINTS
@@ -201,5 +209,9 @@ router.post('/admin/support/tickets/:id/answer', AdminController.answerTicket);
 // Legal Documents Management
 router.get('/admin/legal/:type', AdminController.getLegalDocument);
 router.put('/admin/legal/:type', AdminController.updateLegalDocument);
+
+// Health Insights Management (Admin)
+router.get('/admin/health-insights', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), HealthInsightController.listInsights);
+router.post('/admin/health-insights/set-active', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), HealthInsightController.updateActiveInsight);
 
 export default router;

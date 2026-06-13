@@ -12,7 +12,6 @@ import { Legal } from './pages/Legal';
 import { Educational } from './pages/Educational';
 import { Coaching } from './pages/Coaching';
 import {
-  Bot,
   Home,
   FileText,
   Utensils,
@@ -21,6 +20,7 @@ import {
   Heart
 } from 'lucide-react';
 import { GlobalAICoachPopup } from './components/GlobalAICoachPopup';
+import { NotificationBell } from './components/NotificationBell';
 
 const MainAppContent: React.FC = () => {
   const { isAuthenticated, isLoading, token, apiUrl, logout } = useAuth();
@@ -107,8 +107,8 @@ const MainAppContent: React.FC = () => {
 
   return (
     <div className="bg-white min-h-screen flex flex-col justify-between">
-      {/* Dynamic Header */}
-      <header className="sticky top-0 bg-white/95 backdrop-blur-md border-b border-slate-100 z-10 px-4 py-3 max-w-lg w-full mx-auto flex items-center justify-between">
+      {/* Dynamic Header with safe area padding for mobile notches */}
+      <header className="sticky top-0 bg-white/95 backdrop-blur-md border-b border-slate-100 z-10 px-4 pt-[calc(env(safe-area-inset-top)+12px)] pb-3 max-w-lg w-full mx-auto flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Heart className="h-5 w-5 fill-primary text-primary" />
           <h1 className="text-lg font-extrabold text-slate-800 tracking-tight">FastGluco</h1>
@@ -117,17 +117,12 @@ const MainAppContent: React.FC = () => {
           </span>
         </div>
         <div className="flex items-center space-x-2">
-          <button 
-            onClick={() => setActiveTab('Coaching')}
-            className={`p-1.5 rounded-full bg-primary/10 text-primary transition-all ${activeTab === 'Coaching' ? 'ring-2 ring-primary ring-offset-1' : ''}`}
-          >
-            <Bot className="h-5 w-5" />
-          </button>
+          <NotificationBell />
         </div>
       </header>
 
       {/* Main Tab Screen Content Area */}
-      <main className="flex-1 w-full max-w-lg mx-auto overflow-y-auto no-scrollbar">
+      <main className="flex-1 w-full max-w-lg mx-auto overflow-y-auto no-scrollbar pb-[calc(env(safe-area-inset-bottom)+70px)]">
         {activeTab === 'Home' && <Dashboard onNavigateToTab={(tab) => setActiveTab(tab)} features={planFeatures} />}
         {activeTab === 'Reports' && <Reports onNavigateToTab={(tab) => setActiveTab(tab)} features={planFeatures} />}
         {activeTab === 'Food Log' && <FoodLog />}
@@ -141,8 +136,8 @@ const MainAppContent: React.FC = () => {
 
       <GlobalAICoachPopup />
 
-      {/* Accessability-first Bottom Tab Navigation Menu */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-10 py-2 shadow-lg">
+      {/* Accessability-first Bottom Tab Navigation Menu with safe area padding */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-10 pt-2 pb-[calc(env(safe-area-inset-bottom)+8px)] shadow-lg">
         <div className="max-w-lg mx-auto flex justify-around items-center">
 
           {/* Home Tab */}
