@@ -113,7 +113,10 @@ router.get('/glucose/top-foods', requireSubscriptionFeature('foodInsights'), Glu
 router.use('/notifications', authenticateToken, requireRole(['User']));
 router.get('/notifications/unread-count', NotificationController.getUnreadCount);
 router.get('/notifications', NotificationController.listRecent);
+router.post('/notifications/read-all', NotificationController.markAllAsRead);
 router.post('/notifications/:id/read', NotificationController.markAsRead);
+router.delete('/notifications/:id', NotificationController.deleteNotification);
+router.delete('/notifications', NotificationController.clearAll);
 
 // Public Educational & Support content fetches
 router.get('/guides', EducationalController.getGuides);
@@ -143,6 +146,7 @@ router.get('/admin/users', AdminController.getUsers);
 router.get('/admin/users/:id/activity', AdminController.getUserActivity);
 router.get('/admin/users/:userId/coaching', CoachingController.getSessionsForUser);
 router.put('/admin/users/:id/block', AdminController.toggleUserBlock);
+router.delete('/admin/users/:id', AdminController.deleteUser);
 router.delete('/admin/reports/:id', ReportController.deleteReportAsAdmin);
 
 // Subscription Plans Management (Admin)

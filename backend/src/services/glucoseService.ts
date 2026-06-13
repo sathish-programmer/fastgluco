@@ -160,15 +160,32 @@ export class GlucoseService {
   /**
    * Aggregates food logs to rank Top Safe, Moderate, and Avoid foods for the Food Analysis Screen.
    */
-  public static async getTopFoodsReport(userId: string): Promise<{
+  public static async getTopFoodsReport(userId: string, range?: string): Promise<{
     safe: Array<{ name: string; count: number; avgPeak: number }>;
     moderate: Array<{ name: string; count: number; avgPeak: number }>;
     avoid: Array<{ name: string; count: number; avgPeak: number }>;
   }> {
-    const logs = await FoodLog.find({
+    const query: any = {
       userId,
       'glucoseAnalysis.status': { $exists: true }
-    });
+    };
+
+    if (range && range !== 'all') {
+      const now = new Date();
+      let limitDate = new Date();
+      if (range === 'day') {
+        limitDate.setHours(0, 0, 0, 0);
+        query.loggedAt = { $gte: limitDate };
+      } else if (range === 'week') {
+        limitDate.setDate(now.getDate() - 7);
+        query.loggedAt = { $gte: limitDate };
+      } else if (range === 'month') {
+        limitDate.setMonth(now.getMonth() - 1);
+        query.loggedAt = { $gte: limitDate };
+      }
+    }
+
+    const logs = await FoodLog.find(query);
 
     const foodGroups: Record<string, { name: string; peaks: number[]; status: 'Safe' | 'Moderate' | 'Avoid' }> = {};
 

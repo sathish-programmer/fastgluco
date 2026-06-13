@@ -8,6 +8,7 @@ import { SubscriptionPlan } from '../models/SubscriptionPlan';
 import { User } from '../models/User';
 import { AuditLog } from '../models/AuditLog';
 import { FCMService } from '../services/fcmService';
+import { EmailService } from '../services/emailService';
 
 export class PaymentAdminController {
   /**
@@ -318,6 +319,12 @@ export class PaymentAdminController {
         'RefundProcessed' as any
       );
 
+      // Send refund email confirmation
+      const user = await User.findById(transaction.userId);
+      if (user && user.email) {
+        EmailService.sendRefundEmail(user.email, user.name || 'FastGluco Patient', refundValue).catch(err => console.error('Error sending refund email:', err));
+      }
+
       return res.status(200).json({ message: 'Refund processed successfully.', transaction });
     } catch (error: any) {
       console.error('Refund processing error:', error);
@@ -354,6 +361,17 @@ export class PaymentAdminController {
         'Your subscription plan has been cancelled by an administrator.',
         'SubscriptionExpired' as any
       );
+
+      // Send email notification
+      const user = await User.findById(subscription.userId);
+      if (user && user.email) {
+        EmailService.sendSubscriptionOverrideEmail(
+          user.email,
+          user.name || 'FastGluco Patient',
+          'cancelled',
+          'Your active premium subscription plan has been cancelled by a FastGluco system administrator.'
+        ).catch(err => console.error('Error sending cancellation override email:', err));
+      }
 
       return res.status(200).json({ message: 'Subscription cancelled successfully.', subscription });
     } catch (error: any) {
@@ -397,6 +415,17 @@ export class PaymentAdminController {
         `Your subscription validation period has been extended by ${days} days! Enjoy premium features!`,
         'SubscriptionActivated' as any
       );
+
+      // Send email notification
+      const user = await User.findById(subscription.userId);
+      if (user && user.email) {
+        EmailService.sendSubscriptionOverrideEmail(
+          user.email,
+          user.name || 'FastGluco Patient',
+          'extended',
+          `Your subscription validation period has been extended by ${days} days! Enjoy premium features!`
+        ).catch(err => console.error('Error sending extension override email:', err));
+      }
 
       return res.status(200).json({ message: `Subscription extended by ${days} days successfully.`, subscription });
     } catch (error: any) {
@@ -454,6 +483,17 @@ export class PaymentAdminController {
         `Your subscription tier has been adjusted to: ${plan.name}.`,
         'SubscriptionActivated' as any
       );
+
+      // Send email notification
+      const user = await User.findById(subscription.userId);
+      if (user && user.email) {
+        EmailService.sendSubscriptionOverrideEmail(
+          user.email,
+          user.name || 'FastGluco Patient',
+          'changed',
+          `Your subscription plan tier has been adjusted to: ${plan.name} (${billingCycle} billing cycle).`
+        ).catch(err => console.error('Error sending change override email:', err));
+      }
 
       return res.status(200).json({ message: `Subscription plan manual override succeeded.`, subscription });
     } catch (error: any) {

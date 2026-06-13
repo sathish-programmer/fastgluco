@@ -15,6 +15,10 @@ export const seedFoodLibrary = [
   { name: 'Ragi Mudde', category: 'South Indian', calories: 150, carbs: 34, protein: 3, fat: 0.6, fiber: 4, servingSize: 1, servingUnit: 'ball' },
   { name: 'Appam', category: 'South Indian', calories: 110, carbs: 24, protein: 2, fat: 1, fiber: 1, servingSize: 1, servingUnit: 'piece' },
   { name: 'Puttu', category: 'South Indian', calories: 160, carbs: 34, protein: 3, fat: 1, fiber: 2, servingSize: 150, servingUnit: 'g' },
+  { name: 'White Rice (Cooked)', category: 'South Indian', calories: 130, carbs: 28, protein: 2.7, fat: 0.3, fiber: 0.4, servingSize: 100, servingUnit: 'g' },
+  { name: 'Brown Rice (Cooked)', category: 'South Indian', calories: 112, carbs: 24, protein: 2.3, fat: 0.8, fiber: 1.8, servingSize: 100, servingUnit: 'g' },
+  { name: 'Poha', category: 'South Indian', calories: 180, carbs: 35, protein: 3, fat: 4, fiber: 1.5, servingSize: 150, servingUnit: 'g' },
+  { name: 'Rava Khichdi', category: 'South Indian', calories: 220, carbs: 30, protein: 4, fat: 8, fiber: 3, servingSize: 150, servingUnit: 'g' },
   
   // North Indian
   { name: 'Whole Wheat Roti', category: 'North Indian', calories: 85, carbs: 18, protein: 3, fat: 0.5, fiber: 2, servingSize: 1, servingUnit: 'roti' },
@@ -32,6 +36,7 @@ export const seedFoodLibrary = [
   { name: 'Aloo Gobi', category: 'North Indian', calories: 140, carbs: 18, protein: 4, fat: 6, fiber: 5, servingSize: 150, servingUnit: 'g' },
   { name: 'Bhindi Masala', category: 'North Indian', calories: 120, carbs: 12, protein: 3, fat: 7, fiber: 4, servingSize: 150, servingUnit: 'g' },
   { name: 'Vegetable Pulao', category: 'North Indian', calories: 240, carbs: 42, protein: 5, fat: 6, fiber: 3, servingSize: 150, servingUnit: 'g' },
+  { name: 'Chappati', category: 'North Indian', calories: 70, carbs: 15, protein: 2.5, fat: 0.4, fiber: 2, servingSize: 1, servingUnit: 'piece' },
   
   // Non-Veg
   { name: 'Chicken Biryani', category: 'Non-Veg', calories: 350, carbs: 42, protein: 18, fat: 12, fiber: 2, servingSize: 200, servingUnit: 'g' },
@@ -42,8 +47,10 @@ export const seedFoodLibrary = [
   { name: 'Fish Curry', category: 'Non-Veg', calories: 200, carbs: 4, protein: 18, fat: 12, fiber: 1, servingSize: 150, servingUnit: 'g' },
   { name: 'Boiled Egg', category: 'Non-Veg', calories: 70, carbs: 0.5, protein: 6, fat: 5, fiber: 0, servingSize: 1, servingUnit: 'egg' },
   { name: 'Egg Curry', category: 'Non-Veg', calories: 180, carbs: 8, protein: 8, fat: 12, fiber: 2, servingSize: 150, servingUnit: 'g' },
+  { name: 'Grilled Chicken Breast', category: 'Non-Veg', calories: 165, carbs: 0, protein: 31, fat: 3.6, fiber: 0, servingSize: 100, servingUnit: 'g' },
+  { name: 'Salmon Fillet (Baked)', category: 'Non-Veg', calories: 200, carbs: 0, protein: 22, fat: 12, fiber: 0, servingSize: 100, servingUnit: 'g' },
   
-  // Snacks
+  // Snacks / US Fast Food
   { name: 'Vegetable Samosa', category: 'Snacks', calories: 150, carbs: 20, protein: 3, fat: 7.5, fiber: 2, servingSize: 1, servingUnit: 'piece' },
   { name: 'Pani Puri (6 pieces)', category: 'Snacks', calories: 180, carbs: 32, protein: 4, fat: 5, fiber: 2, servingSize: 6, servingUnit: 'pieces' },
   { name: 'Bhel Puri', category: 'Snacks', calories: 140, carbs: 26, protein: 3, fat: 3, fiber: 3, servingSize: 100, servingUnit: 'g' },
@@ -52,6 +59,17 @@ export const seedFoodLibrary = [
   { name: 'Khandvi', category: 'Snacks', calories: 180, carbs: 18, protein: 6, fat: 8, fiber: 3, servingSize: 100, servingUnit: 'g' },
   { name: 'Aloo Tikki', category: 'Snacks', calories: 140, carbs: 18, protein: 2, fat: 7, fiber: 2, servingSize: 1, servingUnit: 'piece' },
   { name: 'Pakora (Onion)', category: 'Snacks', calories: 210, carbs: 18, protein: 4, fat: 14, fiber: 2, servingSize: 100, servingUnit: 'g' },
+  { name: 'Cheeseburger', category: 'Snacks', calories: 300, carbs: 32, protein: 15, fat: 12, fiber: 1.5, servingSize: 1, servingUnit: 'burger' },
+  { name: 'Pepperoni Pizza Slice', category: 'Snacks', calories: 290, carbs: 32, protein: 12, fat: 12, fiber: 2.5, servingSize: 1, servingUnit: 'slice' },
+  { name: 'French Fries', category: 'Snacks', calories: 312, carbs: 41, protein: 3.4, fat: 15, fiber: 3.8, servingSize: 100, servingUnit: 'g' },
+  { name: 'Oatmeal (Cooked)', category: 'Snacks', calories: 150, carbs: 27, protein: 5, fat: 2.5, fiber: 4, servingSize: 150, servingUnit: 'g' },
+  { name: 'White Bread Slice', category: 'Snacks', calories: 75, carbs: 15, protein: 2, fat: 1, fiber: 0.6, servingSize: 1, servingUnit: 'slice' },
+  { name: 'Whole Wheat Bread Slice', category: 'Snacks', calories: 80, carbs: 14, protein: 3.5, fat: 1, fiber: 2, servingSize: 1, servingUnit: 'slice' },
+  { name: 'Caesar Salad', category: 'Vegetables', calories: 170, carbs: 8, protein: 4, fat: 14, fiber: 1.6, servingSize: 150, servingUnit: 'g' },
+  { name: 'Macaroni and Cheese', category: 'Snacks', calories: 310, carbs: 38, protein: 11, fat: 13, fiber: 1.5, servingSize: 150, servingUnit: 'g' },
+  { name: 'Spaghetti Bolognese', category: 'Snacks', calories: 280, carbs: 35, protein: 14, fat: 9, fiber: 2.5, servingSize: 150, servingUnit: 'g' },
+  { name: 'Mashed Potatoes', category: 'Vegetables', calories: 110, carbs: 17, protein: 2, fat: 4, fiber: 1.6, servingSize: 100, servingUnit: 'g' },
+  { name: 'Pancakes (with Syrup)', category: 'Sweets', calories: 350, carbs: 68, protein: 6, fat: 5, fiber: 1.5, servingSize: 2, servingUnit: 'pancakes' },
   
   // Dairy
   { name: 'Milk (Full Cream)', category: 'Dairy', calories: 150, carbs: 12, protein: 8, fat: 8, fiber: 0, servingSize: 250, servingUnit: 'ml' },
@@ -60,6 +78,7 @@ export const seedFoodLibrary = [
   { name: 'Paneer', category: 'Dairy', calories: 290, carbs: 3, protein: 18, fat: 22, fiber: 0, servingSize: 100, servingUnit: 'g' },
   { name: 'Ghee', category: 'Dairy', calories: 135, carbs: 0, protein: 0, fat: 15, fiber: 0, servingSize: 15, servingUnit: 'ml' },
   { name: 'Buttermilk (Chaas)', category: 'Dairy', calories: 40, carbs: 4, protein: 2, fat: 1, fiber: 0, servingSize: 250, servingUnit: 'ml' },
+  { name: 'Greek Yogurt (Plain)', category: 'Dairy', calories: 100, carbs: 3.6, protein: 10, fat: 5, fiber: 0, servingSize: 100, servingUnit: 'g' },
   
   // Fruits
   { name: 'Apple (Medium)', category: 'Fruits', calories: 95, carbs: 25, protein: 0.5, fat: 0.3, fiber: 4.4, servingSize: 1, servingUnit: 'apple' },
@@ -95,14 +114,38 @@ export const seedFoodLibrary = [
   { name: 'Fresh Lime Soda (Sweet)', category: 'Beverages', calories: 120, carbs: 30, protein: 0, fat: 0, fiber: 0, servingSize: 250, servingUnit: 'ml' }
 ];
 
-// Dynamically generate the remaining foods up to 500
+// Dynamically generate the remaining foods with realistic names and portions up to 500
 const categories = ['South Indian', 'North Indian', 'Snacks', 'Fruits', 'Vegetables', 'Beverages', 'Dairy', 'Non-Veg', 'Sweets'] as const;
+const adjectives = ['Classic', 'Fresh', 'Spicy', 'Healthy', 'Steamed', 'Grilled', 'Baked', 'Roasted', 'Crispy', 'Homemade', 'Special', 'Traditional', 'Organic', 'Low Fat'];
+const styles = ['Premium', 'Gourmet', 'Deluxe', 'Rustic', 'Artisanal', 'Local', 'Natural', 'Signature', 'House', 'Chef Special'];
+const portions = ['1 serving', '100g portion', 'standard cup', 'medium bowl', 'large portion', 'small serving', 'single piece', 'standard plate'];
+
+const baseNames: Record<string, string[]> = {
+  'South Indian': ['Idli', 'Dosa', 'Uttapam', 'Vada', 'Upma', 'Pongal', 'Lemon Rice', 'Curd Rice', 'Puttu', 'Appam', 'Sambar Rice', 'Rava Kesari', 'Ragi Mudde'],
+  'North Indian': ['Paneer Tikka', 'Aloo Gobi', 'Chana Masala', 'Rajma Chawal', 'Dal Tadka', 'Jeera Rice', 'Roti', 'Naan', 'Paratha', 'Palak Paneer', 'Malai Kofta', 'Bhindi Fry', 'Aloo Baingan'],
+  'Snacks': ['Samosa', 'Pakora', 'Dhokla', 'Aloo Tikki', 'Pani Puri', 'Bhel Puri', 'Pav Bhaji', 'French Fries', 'Cheeseburger', 'Pizza Slice', 'Potato Chips', 'Popcorn', 'Spring Roll'],
+  'Fruits': ['Apple', 'Banana', 'Mango', 'Papaya', 'Guava', 'Watermelon', 'Pineapple', 'Grapes', 'Pomegranate', 'Orange', 'Strawberry', 'Peach'],
+  'Vegetables': ['Mixed Veg Curry', 'Broccoli Florets', 'Sauteed Spinach', 'Roasted Cauliflower', 'Green Salad', 'Boiled Potato', 'Grilled Asparagus', 'Sauteed Mushrooms', 'Stir-fried Green Beans'],
+  'Beverages': ['Filter Coffee', 'Masala Chai', 'Green Tea', 'Buttermilk', 'Mango Lassi', 'Lemonade', 'Tender Coconut Water', 'Orange Juice', 'Apple Juice', 'Black Coffee'],
+  'Dairy': ['Greek Yogurt', 'Paneer', 'Cheese Slice', 'Cottage Cheese', 'Butter', 'Fresh Cream', 'Whipped Cream', 'Mozzarella Cheese'],
+  'Non-Veg': ['Chicken Tikka', 'Tandoori Chicken', 'Chicken Curry', 'Fish Fry', 'Mutton Curry', 'Egg Bhurji', 'Scrambled Eggs', 'Boiled Egg', 'Grilled Chicken Salad', 'Chicken Biryani', 'Butter Chicken'],
+  'Sweets': ['Gulab Jamun', 'Rasgulla', 'Kaju Katli', 'Jalebi', 'Besan Ladoo', 'Mysore Pak', 'Gajar Halwa', 'Chocolate Chip Cookie', 'Apple Pie', 'Vanilla Ice Cream', 'Brownie Slice']
+};
 
 for (let i = seedFoodLibrary.length; i < 500; i++) {
-  const catIndex = i % categories.length;
+  const cat = categories[i % categories.length];
+  const adj = adjectives[Math.floor((i * 7) % adjectives.length)];
+  const style = styles[Math.floor((i * 11) % styles.length)];
+  const bases = baseNames[cat];
+  const base = bases[Math.floor((i * 13) % bases.length)];
+  const portion = portions[Math.floor((i * 17) % portions.length)];
+  
+  // Build a highly realistic and unique name, e.g. "Gourmet Fresh Brownie Slice (1 serving)"
+  const name = `${style} ${adj} ${base} (${portion})`;
+  
   seedFoodLibrary.push({
-    name: `Food Item ${i + 1}`,
-    category: categories[catIndex],
+    name,
+    category: cat,
     calories: Math.floor(Math.random() * 300) + 50,
     carbs: Math.floor(Math.random() * 50) + 5,
     protein: Math.floor(Math.random() * 20) + 1,

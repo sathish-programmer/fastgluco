@@ -182,4 +182,38 @@ export class EmailService {
     `);
     try { await transporter.sendMail({ from: '"FastGluco Admin" <admin@fastgluco.com>', to: email, subject: title, html }); } catch (err) { console.error(err); }
   }
+
+  /**
+   * Send Refund Processed Email
+   */
+  public static async sendRefundEmail(email: string, name: string, refundAmount: number) {
+    const html = generateEmailTemplate('Refund Processed Successfully', `
+      <p>Hi ${name},</p>
+      <p>We are writing to inform you that a refund has been processed for your subscription transaction.</p>
+      <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #22c55e; padding: 16px; border-radius: 8px; margin: 20px 0;">
+        <p style="margin: 0; color: #166534; font-weight: 600;">Refund Details:</p>
+        <p style="margin: 4px 0 0 0; color: #15803d;">Amount Credited: ₹${refundAmount.toFixed(2)}</p>
+      </div>
+      <p>The refunded amount will reflect in your original payment source within 5-7 business days.</p>
+      <p>If you have any questions, please contact our support team.</p>
+    `);
+    try { await transporter.sendMail({ from: '"FastGluco Billing" <billing@fastgluco.com>', to: email, subject: 'FastGluco Refund Processed', html }); } catch (err) { console.error(err); }
+  }
+
+  /**
+   * Send Subscription Override Alert Email
+   */
+  public static async sendSubscriptionOverrideEmail(email: string, name: string, actionName: 'cancelled' | 'extended' | 'changed', details: string) {
+    const title = actionName === 'cancelled' ? 'Subscription Cancelled' : actionName === 'extended' ? 'Subscription Extended' : 'Subscription Tier Adjusted';
+    const html = generateEmailTemplate(title, `
+      <p>Hi ${name},</p>
+      <p>An administrator has manually updated your FastGluco subscription status.</p>
+      <div style="background-color: #f1f5f9; padding: 20px; border-radius: 12px; margin: 24px 0;">
+        <p style="margin: 0; font-size: 14px; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;">Override Details</p>
+        <p style="margin: 4px 0 0 0; color: #1e293b;">${details}</p>
+      </div>
+      <p>You can check your current subscription validity anytime under "Profile" > "Billing" in the app.</p>
+    `);
+    try { await transporter.sendMail({ from: '"FastGluco Billing" <billing@fastgluco.com>', to: email, subject: `FastGluco Alert: ${title}`, html }); } catch (err) { console.error(err); }
+  }
 }

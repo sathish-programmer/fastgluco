@@ -10,7 +10,8 @@ import {
   ShoppingBag, 
   Activity, 
   Wheat, 
-  Smile 
+  Smile,
+  Calendar
 } from 'lucide-react';
 
 export const FoodLog: React.FC = () => {
@@ -20,6 +21,27 @@ export const FoodLog: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [libraryFoods, setLibraryFoods] = useState<any[]>([]);
   const [selectedLibraryFood, setSelectedLibraryFood] = useState<any | null>(null);
+
+  // Helper to get local date strings
+  const getTodayLocalDateStr = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const getCurrentLocalTimeStr = () => {
+    const d = new Date();
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
+  // Date states
+  const [selectedViewDate, setSelectedViewDate] = useState<string>(getTodayLocalDateStr());
+  const [logDate, setLogDate] = useState<string>(getTodayLocalDateStr());
+  const [logTime, setLogTime] = useState<string>(getCurrentLocalTimeStr());
 
   // New log form state
   const [customName, setCustomName] = useState('');
@@ -37,7 +59,7 @@ export const FoodLog: React.FC = () => {
 
   useEffect(() => {
     fetchLogs();
-  }, [token]);
+  }, [token, selectedViewDate]);
 
   useEffect(() => {
     const delaySearch = setTimeout(() => {
@@ -50,9 +72,12 @@ export const FoodLog: React.FC = () => {
   const fetchLogs = async () => {
     if (!token) return;
     try {
-      const startOfDay = new Date();
-      startOfDay.setHours(0, 0, 0, 0);
-      const response = await fetch(`${apiUrl}/food-logs?startDate=${startOfDay.toISOString()}`, {
+      const start = new Date(selectedViewDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(selectedViewDate);
+      end.setHours(23, 59, 59, 999);
+
+      const response = await fetch(`${apiUrl}/food-logs?startDate=${start.toISOString()}&endDate=${end.toISOString()}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -115,6 +140,18 @@ export const FoodLog: React.FC = () => {
     const mealName = selectedLibraryFood ? selectedLibraryFood.name : customName;
     if (!mealName) return;
 
+    let loggedAtStr = new Date().toISOString();
+    try {
+      if (logDate && logTime) {
+        const [year, month, day] = logDate.split('-').map(Number);
+        const [hour, minute] = logTime.split(':').map(Number);
+        const mealDateTime = new Date(year, month - 1, day, hour, minute);
+        loggedAtStr = mealDateTime.toISOString();
+      }
+    } catch (err) {
+      console.error('Error parsing loggedAt date:', err);
+    }
+
     const payload = {
       name: mealName,
       category,
@@ -126,7 +163,7 @@ export const FoodLog: React.FC = () => {
       fiber,
       quantity,
       unit,
-      loggedAt: new Date().toISOString()
+      loggedAt: loggedAtStr
     };
 
     const res = await SyncService.logMeal(payload, token, apiUrl);
@@ -141,7 +178,13 @@ export const FoodLog: React.FC = () => {
       // Reset form
       handleClearSelected();
       setQuantity(1);
-      fetchLogs();
+      
+      // If user logged meal on a different date, switch view date to match
+      if (logDate !== selectedViewDate) {
+        setSelectedViewDate(logDate);
+      } else {
+        fetchLogs();
+      }
       
       setTimeout(() => setMessage(null), 4000);
     } else {
@@ -248,13 +291,37 @@ export const FoodLog: React.FC = () => {
               </div>
             )}
 
+            {/* Backdating inputs */}
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Date of Meal</label>
+                <input
+                  type="date"
+                  required
+                  value={logDate}
+                  onChange={(e) => setLogDate(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-xs font-semibold text-slate-600 bg-white"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Time of Meal</label>
+                <input
+                  type="time"
+                  required
+                  value={logTime}
+                  onChange={(e) => setLogTime(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-xs font-semibold text-slate-600 bg-white"
+                />
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Meal Category</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Meal Period</label>
                 <select
                   value={mealType}
                   onChange={(e: any) => setMealType(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-xs font-semibold text-slate-600"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-xs font-semibold text-slate-600 bg-white"
                 >
                   <option value="Breakfast">Breakfast</option>
                   <option value="Lunch">Lunch</option>
@@ -269,7 +336,7 @@ export const FoodLog: React.FC = () => {
                   <select
                     value={category}
                     onChange={(e: any) => setCategory(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-xs font-semibold text-slate-600"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-xs font-semibold text-slate-600 bg-white"
                   >
                     <option value="South Indian">South Indian</option>
                     <option value="North Indian">North Indian</option>
@@ -378,17 +445,29 @@ export const FoodLog: React.FC = () => {
         </form>
       </div>
 
-      {/* Today's logged meals list */}
+      {/* Log History list */}
       <div>
-        <h3 className="text-base font-bold text-slate-700 mb-4 flex items-center space-x-2">
-          <Smile className="h-5 w-5 text-primary" />
-          <span>Today's Meal Log</span>
-        </h3>
+        <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <h3 className="text-base font-bold text-slate-700 flex items-center space-x-2">
+            <Smile className="h-5 w-5 text-primary" />
+            <span>Meal Log History</span>
+          </h3>
+          <div className="flex items-center space-x-2 bg-slate-50 border border-slate-200 rounded-2xl px-3 py-1.5 self-start sm:self-auto">
+            <Calendar className="h-4 w-4 text-slate-400" />
+            <span className="text-[10px] font-bold text-slate-500 uppercase">View Date:</span>
+            <input
+              type="date"
+              value={selectedViewDate}
+              onChange={(e) => setSelectedViewDate(e.target.value)}
+              className="text-xs font-bold text-slate-700 bg-transparent focus:outline-none border-none cursor-pointer"
+            />
+          </div>
+        </div>
 
         <div className="space-y-3">
           {logs.length === 0 ? (
             <div className="text-center p-8 bg-cardBg border border-slate-100 rounded-3xl text-sm font-semibold text-slate-400">
-              No foods logged yet today.
+              No foods logged for {new Date(selectedViewDate + 'T12:00:00').toLocaleDateString([], { dateStyle: 'medium' })}.
             </div>
           ) : (
             logs.map((log) => (
@@ -401,8 +480,13 @@ export const FoodLog: React.FC = () => {
                     <Wheat className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-700">{log.name}</h4>
-                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    <div className="flex items-center space-x-2">
+                      <h4 className="text-xs font-bold text-slate-700">{log.name}</h4>
+                      <span className="text-[9px] text-slate-400 font-bold bg-white px-1.5 py-0.5 rounded border border-slate-100">
+                        {new Date(log.loggedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mt-0.5">
                       {log.mealType} • {log.quantity} {log.unit}
                     </span>
                     <div className="flex items-center space-x-3 mt-1.5 text-[10px] text-slate-500 font-semibold bg-white px-3 py-1 rounded-xl border border-slate-50">

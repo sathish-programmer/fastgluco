@@ -29,16 +29,18 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
   const [submittingFeedbackId, setSubmittingFeedbackId] = useState<string | null>(null);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
 
+  const [range, setRange] = useState<string>('all');
+
   useEffect(() => {
     fetchAnalysisData();
-  }, [token]);
+  }, [token, range]);
 
   const fetchAnalysisData = async () => {
     if (!token) return;
     setLoading(true);
     try {
       // 1. Fetch Food Spike Correlations
-      const spikeRes = await fetch(`${apiUrl}/glucose/analysis`, {
+      const spikeRes = await fetch(`${apiUrl}/glucose/analysis?range=${range}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (spikeRes.status === 402 || spikeRes.status === 403) {
@@ -52,7 +54,7 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
       }
 
       // 2. Fetch Top Foods Aggregates
-      const topRes = await fetch(`${apiUrl}/glucose/top-foods`, {
+      const topRes = await fetch(`${apiUrl}/glucose/top-foods?range=${range}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (topRes.status === 402 || topRes.status === 403) {
@@ -122,12 +124,27 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
 
   return (
     <div className="pb-24 pt-4 px-4 max-w-lg mx-auto bg-white min-h-screen">
-      {/* Title */}
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-slate-800">Glucose & Food Analysis</h2>
-        <p className="text-sm text-slate-500 font-medium mt-1">
-          Review glycemic impacts and build your safe food profiles
-        </p>
+      {/* Title and Timeframe Selector */}
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-800">Glucose & Food Analysis</h2>
+          <p className="text-sm text-slate-500 font-medium mt-1">
+            Review glycemic impacts and build your safe food profiles
+          </p>
+        </div>
+        <div className="flex items-center space-x-2 bg-slate-50 border border-slate-200 rounded-2xl px-3 py-1.5 self-start sm:self-auto shrink-0">
+          <span className="text-[10px] font-bold text-slate-500 uppercase">Timeframe:</span>
+          <select
+            value={range}
+            onChange={(e) => setRange(e.target.value)}
+            className="text-xs font-bold text-slate-700 bg-transparent focus:outline-none border-none cursor-pointer"
+          >
+            <option value="all">All Time</option>
+            <option value="day">Today</option>
+            <option value="week">Last 7 Days</option>
+            <option value="month">Last 30 Days</option>
+          </select>
+        </div>
       </div>
 
       {loading ? (

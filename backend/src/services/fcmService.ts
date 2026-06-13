@@ -54,15 +54,19 @@ export class FCMService {
    */
   public static async broadcastNotification(title: string, body: string): Promise<number> {
     try {
-      // Create notification log in database
-      await Notification.create({
-        title,
-        body,
-        type: 'General',
-        isRead: false,
-        sentAt: new Date(),
-        isSent: true
-      });
+      // Create notification log in database for each user
+      const allUsers = await User.find({});
+      for (const u of allUsers) {
+        await Notification.create({
+          userId: u._id,
+          title,
+          body,
+          type: 'General',
+          isRead: false,
+          sentAt: new Date(),
+          isSent: true
+        });
+      }
 
       const users = await User.find({ fcmToken: { $exists: true, $ne: '' } });
       console.log(`\n--- [BROADCAST NOTIFICATION MOCK] ---`);

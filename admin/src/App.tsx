@@ -329,6 +329,27 @@ const AdminPanelContent: React.FC = () => {
     }
   };
 
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm('Are you sure you want to permanently delete this user and all their food logs, reports, and notifications? This action cannot be undone.')) return;
+    try {
+      const response = await fetch(`${apiUrl}/admin/users/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        alert('User account deleted successfully.');
+        fetchUsers(pagination.page);
+      } else {
+        const err = await response.json();
+        alert(err.message || 'Error deleting user.');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const handleSearchUsers = () => {
     fetchUsers(1);
   };
@@ -1473,6 +1494,13 @@ const AdminPanelContent: React.FC = () => {
                                   <span>Block</span>
                                 </>
                               )}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteUser(u._id)}
+                              className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 bg-red-100 hover:bg-red-200 text-red-700"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              <span>Delete</span>
                             </button>
                           </div>
                         </td>

@@ -184,6 +184,39 @@ export class AdminController {
   }
 
   /**
+   * Delete User account and records permanently
+   */
+  public static async deleteUser(req: AuthRequest, res: Response) {
+    try {
+      const { id } = req.params;
+      const user = await User.findById(id);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found.' });
+      }
+
+      await User.deleteOne({ _id: id });
+      
+      // Clean up related user records to prevent orphan data
+      await FoodLog.deleteMany({ userId: id });
+      await CGMReport.deleteMany({ userId: id });
+      await Notification.deleteMany({ userId: id });
+
+      await AuditLog.create({
+        adminId: req.user?.id,
+        action: 'DELETE_USER',
+        details: `Deleted user account and records for: ${user.email}`,
+        ipAddress: req.ip
+      });
+
+      return res.status(200).json({
+        message: 'User account and associated records have been successfully deleted.'
+      });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message || 'Error deleting user.' });
+    }
+  }
+
+  /**
    * Food Library - Add Food
    */
   public static async addFoodMaster(req: AuthRequest, res: Response) {
@@ -502,9 +535,6 @@ export class AdminController {
     }
   }
 
-  /**
-   * Send Push Notification
-   */
   public static async sendPush(req: AuthRequest, res: Response) {
     try {
       const { userId, title, body } = req.body;
@@ -512,10 +542,33 @@ export class AdminController {
         return res.status(400).json({ message: 'Notification title and body are required.' });
       }
 
-      if (userId) {
-        const sent = await FCMService.sendPushNotification(userId, title, body, 'General');
+      if (userId && userId.trim()) {
+        const trimmed = userId.trim();
+        let resolvedUserId = '';
+
+        if (trimmed.includes('@')) {
+          // Resolve by Email
+          const user = await User.findOne({ email: trimmed });
+          if (!user) {
+            return res.status(404).json({ message: `User with email "${trimmed}" not found.` });
+          }
+          resolvedUserId = user._id.toString();
+        } else if (mongoose.Types.ObjectId.isValid(trimmed)) {
+          // Resolve by exact ObjectId
+          resolvedUserId = trimmed;
+        } else {
+          // Resolve by Name
+          const user = await User.findOne({ name: trimmed });
+          if (!user) {
+            return res.status(400).json({ message: `Could not resolve user identifier "${trimmed}" to a valid Email or ID.` });
+          }
+          resolvedUserId = user._id.toString();
+        }
+
+        const sent = await FCMService.sendPushNotification(resolvedUserId, title, body, 'General');
         return res.status(200).json({ message: sent ? 'Notification sent.' : 'Mock sent (user lacks device token).' });
       } else {
+        // Broadcast to all (handled internally by FCMService, creating a single broadcast record)
         const count = await FCMService.broadcastNotification(title, body);
         return res.status(200).json({ message: `Broadcasted notification to ${count} devices.` });
       }

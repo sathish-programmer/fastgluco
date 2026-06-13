@@ -85,20 +85,35 @@ export class GlucoseController {
     }
   }
 
-  /**
-   * Get Food Spike Correlations (Glucose-Food Correlation)
-   */
   public static async getSpikeAnalysis(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
+      const { range } = req.query;
 
       // Trigger analysis for any pending logs before returning list
       await GlucoseService.analyzeAllUserFoodLogs(userId!);
 
-      const logs = await FoodLog.find({
+      const query: any = {
         userId,
         glucoseAnalysis: { $exists: true }
-      }).sort({ loggedAt: -1 });
+      };
+
+      if (range && range !== 'all') {
+        const now = new Date();
+        let limitDate = new Date();
+        if (range === 'day') {
+          limitDate.setHours(0, 0, 0, 0);
+          query.loggedAt = { $gte: limitDate };
+        } else if (range === 'week') {
+          limitDate.setDate(now.getDate() - 7);
+          query.loggedAt = { $gte: limitDate };
+        } else if (range === 'month') {
+          limitDate.setMonth(now.getMonth() - 1);
+          query.loggedAt = { $gte: limitDate };
+        }
+      }
+
+      const logs = await FoodLog.find(query).sort({ loggedAt: -1 });
 
       return res.status(200).json(logs);
     } catch (error: any) {
@@ -109,7 +124,8 @@ export class GlucoseController {
   public static async getTopFoods(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
-      const analysisReport = await GlucoseService.getTopFoodsReport(userId!);
+      const { range } = req.query;
+      const analysisReport = await GlucoseService.getTopFoodsReport(userId!, range as string);
       const config = await PaymentGatewayConfig.findOne();
       return res.status(200).json({
         ...analysisReport,
