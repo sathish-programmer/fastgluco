@@ -124,7 +124,8 @@ const seed = async () => {
           premiumVideos: false,
           foodInsights: true,
           exportReports: false,
-          notifications: true
+          notifications: true,
+          aiCoaching: false
         }
       },
       {
@@ -145,7 +146,8 @@ const seed = async () => {
           premiumVideos: true,
           foodInsights: true,
           exportReports: true,
-          notifications: true
+          notifications: true,
+          aiCoaching: true
         }
       }
     ]);

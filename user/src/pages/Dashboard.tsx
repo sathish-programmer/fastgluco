@@ -9,7 +9,9 @@ import {
   Info, 
   Activity, 
   UtensilsCrossed,
-  RefreshCw
+  RefreshCw,
+  AlertTriangle,
+  AlertCircle
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 
@@ -210,10 +212,46 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
               <span className="text-4xl font-extrabold text-slate-800">{currentGlucose || '--'}</span>
               <span className="text-xs font-bold text-slate-400 ml-1">mg/dL</span>
             </div>
-            <span className="text-xs font-bold text-success flex items-center mt-1">
-              <CheckCircle className="h-3.5 w-3.5 mr-1" />
-              Stable
-            </span>
+            {(() => {
+              if (!currentGlucose) {
+                return (
+                  <span className="text-xs font-bold text-slate-400 flex items-center mt-1">
+                    <Info className="h-3.5 w-3.5 mr-1" />
+                    No Data
+                  </span>
+                );
+              }
+              if (currentGlucose < 70) {
+                return (
+                  <span className="text-xs font-bold text-sky-600 flex items-center mt-1 animate-pulse">
+                    <AlertCircle className="h-3.5 w-3.5 mr-1" />
+                    Low
+                  </span>
+                );
+              }
+              if (currentGlucose <= 140) {
+                return (
+                  <span className="text-xs font-bold text-success flex items-center mt-1">
+                    <CheckCircle className="h-3.5 w-3.5 mr-1" />
+                    Stable
+                  </span>
+                );
+              }
+              if (currentGlucose <= 180) {
+                return (
+                  <span className="text-xs font-bold text-amber-500 flex items-center mt-1">
+                    <AlertTriangle className="h-3.5 w-3.5 mr-1" />
+                    High
+                  </span>
+                );
+              }
+              return (
+                <span className="text-xs font-bold text-red-500 flex items-center mt-1 animate-bounce">
+                  <AlertTriangle className="h-3.5 w-3.5 mr-1" />
+                  Very High
+                </span>
+              );
+            })()}
           </div>
         </div>
 
