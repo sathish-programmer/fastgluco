@@ -54,23 +54,102 @@ export class AdminController {
         return res.status(401).json({ message: 'Invalid admin credentials.' });
       }
 
-      const token = jwt.sign(
-        { id: admin._id, email: admin.email, role: admin.role },
-        JWT_SECRET,
-        { expiresIn: '12h' }
-      );
+      const token = jwt.sign({ id: admin._id, email: admin.email, role: admin.role }, JWT_SECRET, { expiresIn: '24h' });
+
+      // Determine platform context (location/device/time)
+      const ip = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '').split(',')[0].trim();
+      let location = 'Unknown Location';
+      if (ip === '::1' || ip === '127.0.0.1' || ip.startsWith('127.') || ip.startsWith('192.168.') || ip.startsWith('10.')) {
+        location = `Localhost/Local Network (${ip})`;
+      } else {
+        location = `${ip} (Estimated Location)`;
+      }
+
+      const userAgent = req.headers['user-agent'] || '';
+      let device = 'Browser / Web App';
+      if (/okhttp|retrofit|dart|flutter|react-native|expo|android|iphone|ipad/i.test(userAgent)) {
+        device = 'Mobile App';
+      }
+      if (userAgent) {
+        let browser = 'Unknown Browser';
+        if (userAgent.includes('Firefox')) {
+          browser = 'Firefox';
+        } else if (userAgent.includes('Chrome') && !userAgent.includes('Chromium')) {
+          browser = 'Chrome';
+        } else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) {
+          browser = 'Safari';
+        } else if (userAgent.includes('Edge')) {
+          browser = 'Edge';
+        } else if (userAgent.includes('Postman')) {
+          browser = 'Postman API Client';
+        }
+        device = `${device} (${browser})`;
+      }
+
+      const time = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'medium' }) + ' (IST)';
+
+      // Dispatch security notification email with 2-hour rate-limiting
+      const now = new Date();
+      const loginAlertIntervalMs = 2 * 60 * 60 * 1000; // 2 hours
+      let shouldSendEmail = true;
+      if (admin.lastLoginAlertSentAt) {
+        const timeDiff = now.getTime() - new Date(admin.lastLoginAlertSentAt).getTime();
+        if (timeDiff < loginAlertIntervalMs) {
+          shouldSendEmail = false;
+        }
+      }
+
+      if (shouldSendEmail) {
+        admin.lastLoginAlertSentAt = now;
+        await admin.save();
+        EmailService.sendLoginNotificationEmail(admin.email, admin.name || 'FastGluco Admin', { time, location, device }).catch(console.error);
+      }
 
       return res.status(200).json({
         token,
-        admin: {
-          id: admin._id,
-          name: admin.name,
-          email: admin.email,
-          role: admin.role
-        }
+        admin: { id: admin._id, name: admin.name, email: admin.email, role: admin.role }
       });
     } catch (error: any) {
-      return res.status(500).json({ message: error.message || 'Error occurred during admin login.' });
+      return res.status(500).json({ message: error.message || 'An error occurred during admin login.' });
+    }
+  }
+
+  /**
+   * Admin Registration
+   */
+  public static async register(req: Request, res: Response) {
+    try {
+      const { name, email, password, role } = req.body;
+      if (!name || !email || !password) {
+        return res.status(400).json({ message: 'Name, email, and password are required.' });
+      }
+
+      // Check if admin already exists
+      const existingAdmin = await AdminUser.findOne({ email });
+      if (existingAdmin) {
+        return res.status(409).json({ message: 'Email is already registered.' });
+      }
+
+      const salt = await bcrypt.genSalt(10);
+      const passwordHash = await bcrypt.hash(password, salt);
+
+      const admin = new AdminUser({
+        name,
+        email,
+        passwordHash,
+        role: role || 'Admin'
+      });
+
+      await admin.save();
+
+      const token = jwt.sign({ id: admin._id, email: admin.email, role: admin.role }, JWT_SECRET, { expiresIn: '24h' });
+      return res.status(201).json({
+        message: 'Admin account created successfully.',
+        token,
+        admin: { id: admin._id, name: admin.name, email: admin.email, role: admin.role }
+      });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message || 'An error occurred during admin registration.' });
     }
   }
 
@@ -158,7 +237,7 @@ export class AdminController {
   public static async toggleUserBlock(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
-      const { isBlocked } = req.body; // true to block, false to unblock
+      const { isBlocked, reason } = req.body; // true to block, false to unblock
 
       if (isBlocked === undefined) {
         return res.status(400).json({ message: 'isBlocked status is required.' });
@@ -172,11 +251,16 @@ export class AdminController {
       user.isBlocked = isBlocked;
       await user.save();
 
+      if (isBlocked && user.email) {
+        const blockReason = reason || 'Account policy violation or administrative action.';
+        EmailService.sendBlockNotificationEmail(user.email, user.name, blockReason).catch(console.error);
+      }
+
       // Log the activity to administrative audit logs
       await AuditLog.create({
         adminId: req.user?.id,
         action: isBlocked ? 'BLOCK_USER' : 'UNBLOCK_USER',
-        details: `${isBlocked ? 'Blocked' : 'Unblocked'} user account for: ${user.email}`,
+        details: `${isBlocked ? 'Blocked' : 'Unblocked'} user account for: ${user.email}. Reason: ${reason || 'N/A'}`,
         ipAddress: req.ip
       });
 

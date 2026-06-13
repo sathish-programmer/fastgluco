@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { BookOpen, Video, Eye, HelpCircle, MessageSquare, Send } from 'lucide-react';
 
 const getEmbedUrl = (url: string) => {
@@ -14,6 +15,7 @@ const getEmbedUrl = (url: string) => {
 
 export const Educational: React.FC = () => {
   const { token, apiUrl } = useAuth();
+  const { showToast } = useToast();
   
   const [guides, setGuides] = useState<any[]>([]);
   const [videos, setVideos] = useState<any[]>([]);
@@ -66,13 +68,15 @@ export const Educational: React.FC = () => {
       });
       const data = await response.json();
       if (response.ok) {
+        showToast('Question submitted successfully!', 'success');
         setSupportStatus('Question submitted! Our team will email you back soon.');
         setSupportForm({ name: '', email: '', question: '' });
       } else {
-        alert(data.message || 'Error submitting question.');
+        showToast(data.message || 'Error submitting question.', 'error');
       }
     } catch (err) {
       console.error(err);
+      showToast('An error occurred. Please try again.', 'error');
     }
   };
 

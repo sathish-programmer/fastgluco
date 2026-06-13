@@ -28,7 +28,7 @@ export class ProfileController {
   public static async updateProfile(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
-      const { name, email, gender, age, height, weight, activityLevel, goal, fcmToken, spikeThreshold, currency } = req.body;
+      const { name, email, mobile, gender, age, height, weight, activityLevel, goal, fcmToken, spikeThreshold, currency } = req.body;
 
       const user = await User.findById(userId);
       if (!user) {
@@ -38,6 +38,7 @@ export class ProfileController {
       // Update fields if provided
       if (name !== undefined) user.name = name;
       if (email !== undefined) user.email = email;
+      if (mobile !== undefined) user.mobile = mobile;
       if (gender !== undefined) user.gender = gender;
       if (age !== undefined) user.age = age;
       if (height !== undefined) user.height = height;

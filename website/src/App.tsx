@@ -9,6 +9,7 @@ import {
   Play,
   Mail,
   User,
+  Phone,
   ExternalLink
 } from 'lucide-react';
 
@@ -57,6 +58,7 @@ export default function App() {
   // Contact Form State
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
+  const [contactMobile, setContactMobile] = useState('');
   const [contactMessage, setContactMessage] = useState('');
   const [formSuccess, setFormSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -69,12 +71,13 @@ export default function App() {
       const res = await fetch(`${baseUrl}/support`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: contactName, email: contactEmail, question: contactMessage })
+        body: JSON.stringify({ name: contactName, email: contactEmail, mobile: contactMobile, question: contactMessage })
       });
       if (res.ok) {
         setFormSuccess(true);
         setContactName('');
         setContactEmail('');
+        setContactMobile('');
         setContactMessage('');
         setTimeout(() => setFormSuccess(false), 4000);
       }
@@ -413,6 +416,23 @@ export default function App() {
                   value={contactEmail}
                   onChange={(e) => setContactEmail(e.target.value)}
                   placeholder="name@example.com"
+                  className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-sm"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Mobile Number</label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                  <Phone className="h-4 w-4" />
+                </span>
+                <input
+                  type="tel"
+                  required
+                  value={contactMobile}
+                  onChange={(e) => setContactMobile(e.target.value)}
+                  placeholder="+91 98765 43210"
                   className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-sm"
                 />
               </div>

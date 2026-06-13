@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { 
   ChevronRight, 
   LogOut, 
@@ -15,6 +16,7 @@ import { Subscription } from './Subscription';
 
 export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = () => {
   const { user, logout, updateProfile, isLoading, error } = useAuth();
+  const { showToast } = useToast();
   
   // Tabs for profile section: 'settings' or 'education' or 'subscription'
   const [subView, setSubView] = useState<'settings' | 'education' | 'subscription'>('settings');
@@ -22,6 +24,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
   // Input states
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
+  const [mobile, setMobile] = useState(user?.mobile || '');
   const [age, setAge] = useState(user?.age || 30);
   const [height, setHeight] = useState(user?.height || 170);
   const [weight, setWeight] = useState(user?.weight || 70);
@@ -39,6 +42,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
     const success = await updateProfile({
       name,
       email,
+      mobile,
       age,
       height,
       weight,
@@ -49,8 +53,11 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
       currency
     });
     if (success) {
+      showToast('Profile updated successfully!', 'success');
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
+    } else {
+      showToast('Failed to update profile.', 'error');
     }
   };
 
@@ -86,7 +93,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
           {user?.name ? user.name.charAt(0) : 'P'}
         </div>
         <h2 className="text-xl font-bold text-slate-800">{user?.name || 'Patient'}</h2>
-        <p className="text-xs text-slate-400 font-semibold">{user?.email}</p>
+        <p className="text-xs text-slate-400 font-semibold">{user?.email} {user?.mobile && `• ${user.mobile}`}</p>
       </div>
 
       {saveSuccess && (
@@ -166,6 +173,17 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold text-slate-700 bg-white"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Mobile Number</label>
+            <input
+              type="tel"
+              required
+              value={mobile}
+              onChange={(e) => setMobile(e.target.value)}
               className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold text-slate-700 bg-white"
             />
           </div>

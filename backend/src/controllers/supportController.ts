@@ -9,7 +9,7 @@ export class SupportController {
    */
   public static async submitTicket(req: AuthRequest, res: Response) {
     try {
-      const { name, email, question } = req.body;
+      const { name, email, mobile, question } = req.body;
       if (!name || !email || !question) {
         return res.status(400).json({ message: 'Name, email, and question are required.' });
       }
@@ -18,6 +18,7 @@ export class SupportController {
         userId: req.user?.id, // Optional, if they are logged in
         name,
         email,
+        mobile,
         question
       });
 

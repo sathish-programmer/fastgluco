@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ToastProvider } from './context/ToastContext';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
@@ -28,6 +29,25 @@ const MainAppContent: React.FC = () => {
   // Navigation tabs: 'Home' | 'Reports' | 'Food Log' | 'Analysis' | 'Profile'
   const [activeTab, setActiveTab] = useState<string>('Home');
   const [authView, setAuthView] = useState<'login' | 'register'>('login');
+  const [resetToken, setResetToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tokenParam = params.get('token');
+    if (tokenParam) {
+      setResetToken(tokenParam);
+      // Remove query parameter from browser address bar silently
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
+  // Reset tab to Home dashboard upon successful authentication
+  useEffect(() => {
+    if (isAuthenticated) {
+      setActiveTab('Home');
+    }
+  }, [isAuthenticated]);
+
 
   const [isSubscribed, setIsSubscribed] = useState<boolean | null>(null);
   const [checkingSub, setCheckingSub] = useState<boolean>(false);
@@ -92,7 +112,13 @@ const MainAppContent: React.FC = () => {
     if (authView === 'register') {
       return <Register onNavigateToLogin={() => setAuthView('login')} />;
     }
-    return <Login onNavigateToRegister={() => setAuthView('register')} />;
+    return (
+      <Login 
+        onNavigateToRegister={() => setAuthView('register')} 
+        resetToken={resetToken}
+        onClearResetToken={() => setResetToken(null)}
+      />
+    );
   }
 
   if (isSubscribed === false) {
@@ -194,7 +220,9 @@ const MainAppContent: React.FC = () => {
 export default function App() {
   return (
     <AuthProvider>
-      <MainAppContent />
+      <ToastProvider>
+        <MainAppContent />
+      </ToastProvider>
     </AuthProvider>
   );
 }

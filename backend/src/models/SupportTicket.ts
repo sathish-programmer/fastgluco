@@ -4,6 +4,7 @@ export interface ISupportTicket extends Document {
   userId?: Schema.Types.ObjectId; // Optional, might be from public website
   name: string;
   email: string;
+  mobile?: string;
   question: string;
   answer?: string;
   status: 'Open' | 'Answered';
@@ -17,6 +18,7 @@ const supportTicketSchema = new Schema<ISupportTicket>(
     userId: { type: Schema.Types.ObjectId, ref: 'User' },
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, trim: true, lowercase: true },
+    mobile: { type: String, trim: true },
     question: { type: String, required: true, trim: true },
     answer: { type: String, trim: true },
     status: { type: String, enum: ['Open', 'Answered'], default: 'Open' },

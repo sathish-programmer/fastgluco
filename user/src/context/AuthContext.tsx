@@ -4,6 +4,7 @@ export interface UserProfile {
   id: string;
   name: string;
   email: string;
+  mobile?: string;
   gender?: 'Male' | 'Female' | 'Other';
   age?: number;
   height?: number;
@@ -22,7 +23,7 @@ interface AuthContextType {
   isLoading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<boolean>;
-  register: (name: string, email: string, password: string, additional?: Partial<UserProfile>) => Promise<boolean>;
+  register: (name: string, email: string, mobile: string, password: string, additional?: Partial<UserProfile>) => Promise<boolean>;
   logout: () => void;
   updateProfile: (profileUpdates: Partial<UserProfile>) => Promise<boolean>;
   clearError: () => void;
@@ -124,14 +125,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (name: string, email: string, password: string, additional?: Partial<UserProfile>): Promise<boolean> => {
+  const register = async (name: string, email: string, mobile: string, password: string, additional?: Partial<UserProfile>): Promise<boolean> => {
     setIsLoading(true);
     setError(null);
     try {
       const response = await fetch(`${apiUrl}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, ...additional })
+        body: JSON.stringify({ name, email, mobile, password, ...additional })
       });
 
       const data = await response.json();

@@ -13,16 +13,24 @@ export class AuthController {
    */
   public static async register(req: Request, res: Response) {
     try {
-      const { name, email, password, gender, age, height, weight, activityLevel, goal } = req.body;
+      const { name, email, mobile, password, gender, age, height, weight, activityLevel, goal } = req.body;
 
-      if (!name || !email || !password) {
-        return res.status(400).json({ message: 'Name, email, and password are required.' });
+      if (!name || !email || !mobile || !password) {
+        return res.status(400).json({ message: 'Name, email, mobile, and password are required.' });
       }
 
-      // Check if user already exists
-      const existingUser = await User.findOne({ email });
+      // Check if user already exists by email or mobile
+      const existingUser = await User.findOne({
+        $or: [
+          { email: email.toLowerCase() },
+          { mobile: mobile.trim() }
+        ]
+      });
       if (existingUser) {
-        return res.status(409).json({ message: 'Email is already registered.' });
+        if (existingUser.email === email.toLowerCase()) {
+          return res.status(409).json({ message: 'Email is already registered.' });
+        }
+        return res.status(409).json({ message: 'Mobile number is already registered.' });
       }
 
       // Hash password
@@ -33,6 +41,7 @@ export class AuthController {
       const user = new User({
         name,
         email,
+        mobile: mobile.trim(),
         passwordHash,
         gender,
         age,
@@ -65,6 +74,7 @@ export class AuthController {
           id: user._id,
           name: user.name,
           email: user.email,
+          mobile: user.mobile,
           dailyCalorieTarget: user.dailyCalorieTarget
         }
       });
@@ -78,15 +88,20 @@ export class AuthController {
    */
   public static async login(req: Request, res: Response) {
     try {
-      const { email, password } = req.body;
+      const { email, password } = req.body; // email field accepts either email or mobile
 
       if (!email || !password) {
-        return res.status(400).json({ message: 'Email and password are required.' });
+        return res.status(400).json({ message: 'Email/Mobile and password are required.' });
       }
 
-      const user = await User.findOne({ email });
+      const user = await User.findOne({
+        $or: [
+          { email: email.toLowerCase() },
+          { mobile: email.trim() }
+        ]
+      });
       if (!user) {
-        return res.status(401).json({ message: 'Invalid email or password.' });
+        return res.status(401).json({ message: 'Invalid email, mobile number, or password.' });
       }
 
       if (user.isBlocked) {
@@ -96,12 +111,61 @@ export class AuthController {
       // Validate password
       const isMatch = await bcrypt.compare(password, user.passwordHash);
       if (!isMatch) {
-        return res.status(401).json({ message: 'Invalid email or password.' });
+        return res.status(401).json({ message: 'Invalid email, mobile number, or password.' });
       }
 
       // Generate tokens
       const accessToken = jwt.sign({ id: user._id, email: user.email, role: 'User' }, JWT_SECRET, { expiresIn: '1h' });
       const refreshToken = jwt.sign({ id: user._id, email: user.email, role: 'User' }, JWT_REFRESH_SECRET, { expiresIn: '7d' });
+
+      // Determine platform context (location/device/time)
+      const ip = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '').split(',')[0].trim();
+      let location = 'Unknown Location';
+      if (ip === '::1' || ip === '127.0.0.1' || ip.startsWith('127.') || ip.startsWith('192.168.') || ip.startsWith('10.')) {
+        location = `Localhost/Local Network (${ip})`;
+      } else {
+        location = `${ip} (Estimated Location)`;
+      }
+
+      const userAgent = req.headers['user-agent'] || '';
+      let device = 'Browser / Web App';
+      if (/okhttp|retrofit|dart|flutter|react-native|expo|android|iphone|ipad/i.test(userAgent)) {
+        device = 'Mobile App';
+      }
+      if (userAgent) {
+        let browser = 'Unknown Browser';
+        if (userAgent.includes('Firefox')) {
+          browser = 'Firefox';
+        } else if (userAgent.includes('Chrome') && !userAgent.includes('Chromium')) {
+          browser = 'Chrome';
+        } else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) {
+          browser = 'Safari';
+        } else if (userAgent.includes('Edge')) {
+          browser = 'Edge';
+        } else if (userAgent.includes('Postman')) {
+          browser = 'Postman API Client';
+        }
+        device = `${device} (${browser})`;
+      }
+
+      const time = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'medium' }) + ' (IST)';
+
+      // Dispatch security notification email with 2-hour rate-limiting
+      const now = new Date();
+      const loginAlertIntervalMs = 2 * 60 * 60 * 1000; // 2 hours
+      let shouldSendEmail = true;
+      if (user.lastLoginAlertSentAt) {
+        const timeDiff = now.getTime() - new Date(user.lastLoginAlertSentAt).getTime();
+        if (timeDiff < loginAlertIntervalMs) {
+          shouldSendEmail = false;
+        }
+      }
+
+      if (shouldSendEmail) {
+        user.lastLoginAlertSentAt = now;
+        await user.save();
+        EmailService.sendLoginNotificationEmail(user.email, user.name || 'FastGluco User', { time, location, device }).catch(console.error);
+      }
 
       return res.status(200).json({
         accessToken,
@@ -110,6 +174,7 @@ export class AuthController {
           id: user._id,
           name: user.name,
           email: user.email,
+          mobile: user.mobile,
           gender: user.gender,
           age: user.age,
           height: user.height,
@@ -164,13 +229,12 @@ export class AuthController {
         return res.status(200).json({ message: 'If the email exists, a password reset link has been dispatched.' });
       }
 
-      // Mock reset token dispatch
+      // Generate reset token and link
       const resetToken = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '30m' });
-      console.log(`\n--- [PASSWORD RESET MOCK LINK] ---`);
-      console.log(`To: ${email}`);
-      console.log(`Reset Token: ${resetToken}`);
-      console.log(`Url: http://localhost:5173/reset-password?token=${resetToken}`);
-      console.log(`----------------------------------\n`);
+      const resetLink = `http://localhost:5173/?token=${resetToken}`;
+
+      // Send actual email to user
+      await EmailService.sendPasswordResetEmail(user.email, user.name || 'FastGluco User', resetLink);
 
       return res.status(200).json({ message: 'If the email exists, a password reset link has been dispatched.' });
     } catch (error: any) {

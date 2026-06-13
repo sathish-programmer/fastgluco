@@ -7,6 +7,7 @@ export interface IAdminUser extends Document {
   role: 'SuperAdmin' | 'Admin' | 'Editor';
   isBlocked: boolean;
   isDeleted: boolean;
+  lastLoginAlertSentAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -22,7 +23,8 @@ const adminUserSchema = new Schema<IAdminUser>(
       default: 'Admin' 
     },
     isBlocked: { type: Boolean, default: false },
-    isDeleted: { type: Boolean, default: false }
+    isDeleted: { type: Boolean, default: false },
+    lastLoginAlertSentAt: { type: Date }
   },
   {
     timestamps: true

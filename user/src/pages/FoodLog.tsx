@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { SyncService } from '../services/syncService';
+import { useToast } from '../context/ToastContext';
 import { 
   Search, 
   Plus, 
@@ -16,6 +17,7 @@ import {
 
 export const FoodLog: React.FC = () => {
   const { token, apiUrl } = useAuth();
+  const { showToast } = useToast();
 
   const [logs, setLogs] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -172,6 +174,7 @@ export const FoodLog: React.FC = () => {
       if (res.offline) {
         setMessage('Device offline: Meal saved locally to sync queue.');
       } else {
+        showToast('Meal logged successfully!', 'success');
         setMessage('Meal logged successfully.');
       }
       
@@ -188,7 +191,7 @@ export const FoodLog: React.FC = () => {
       
       setTimeout(() => setMessage(null), 4000);
     } else {
-      alert('Error occurred while logging meal.');
+      showToast('Error occurred while logging meal.', 'error');
     }
   };
 

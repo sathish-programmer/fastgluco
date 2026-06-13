@@ -15,6 +15,8 @@ export interface IUser extends Document {
   spikeThreshold: number; // default: 90 mg/dL
   currency?: 'INR' | 'USD';
   lastGlucoseAlertSentAt?: Date;
+  lastLoginAlertSentAt?: Date;
+  mobile?: string;
   isBlocked: boolean;
   isDeleted: boolean;
   createdAt: Date;
@@ -43,6 +45,8 @@ const userSchema = new Schema<IUser>(
     spikeThreshold: { type: Number, default: 90 },
     currency: { type: String, enum: ['INR', 'USD'], default: 'INR' },
     lastGlucoseAlertSentAt: { type: Date },
+    lastLoginAlertSentAt: { type: Date },
+    mobile: { type: String, unique: true, sparse: true, trim: true },
     isBlocked: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false }
   },

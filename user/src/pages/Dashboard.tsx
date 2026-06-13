@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { SyncService } from '../services/syncService';
+import { useToast } from '../context/ToastContext';
 import { 
   TrendingUp, 
   Plus, 
@@ -22,6 +23,7 @@ interface DashboardProps {
 
 export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features }) => {
   const { token, user, apiUrl } = useAuth();
+  const { showToast } = useToast();
   
   const [currentGlucose, setCurrentGlucose] = useState<number | null>(null);
   const [glucoseReadings, setGlucoseReadings] = useState<any[]>([]);
@@ -132,7 +134,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
       a.click();
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      alert('Failed to export data.');
+      showToast('Failed to export data.', 'error');
     } finally {
       setExporting(false);
     }

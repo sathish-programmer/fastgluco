@@ -42,7 +42,9 @@ import {
   Save,
   MessageSquare,
   Crown,
-  Bot
+  Bot,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import {
   BarChart,
@@ -57,12 +59,26 @@ import {
 } from 'recharts';
 
 const AdminPanelContent: React.FC = () => {
-  const { admin, token, isAuthenticated, login, logout, error, apiUrl } = useAdminAuth();
+  const { admin, token, isAuthenticated, login, register, logout, error, clearError, apiUrl } = useAdminAuth();
 
   // Login form state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loggingIn, setLoggingIn] = useState(false);
+
+  // Registration form state
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [regName, setRegName] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regRole, setRegRole] = useState<'Admin' | 'Editor'>('Admin');
+  const [regPassword, setRegPassword] = useState('');
+  const [regConfirmPassword, setRegConfirmPassword] = useState('');
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  // Password visibility states
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegPassword, setShowRegPassword] = useState(false);
+  const [showRegConfirmPassword, setShowRegConfirmPassword] = useState(false);
 
   // Active view: 'dashboard' | 'users' | 'foods' | 'videos' | 'guides' | 'notifications'
   const [activeView, setActiveView] = useState<string>('dashboard');
@@ -277,9 +293,29 @@ const AdminPanelContent: React.FC = () => {
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setValidationError(null);
     setLoggingIn(true);
     await login(email, password);
     setLoggingIn(false);
+  };
+
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setValidationError(null);
+    if (regPassword !== regConfirmPassword) {
+      setValidationError('Passwords do not match.');
+      return;
+    }
+    setLoggingIn(true);
+    const success = await register(regName, regEmail, regRole, regPassword);
+    setLoggingIn(false);
+    if (success) {
+      setRegName('');
+      setRegEmail('');
+      setRegPassword('');
+      setRegConfirmPassword('');
+      setIsRegistering(false);
+    }
   };
 
   // --- API OPERATIONS ---
@@ -1077,6 +1113,7 @@ const AdminPanelContent: React.FC = () => {
 
   // RENDER SPLIT FOR AUTHENTICATION
   if (!isAuthenticated) {
+    const displayedError = validationError || error;
     return (
       <div className="min-h-screen bg-slate-100 flex items-center justify-center px-4 py-8">
         <div className="bg-white p-8 rounded-3xl shadow-lg border border-slate-200 w-full max-w-md">
@@ -1084,40 +1121,143 @@ const AdminPanelContent: React.FC = () => {
             <span className="inline-flex items-center justify-center p-3 bg-blue-50 text-primary rounded-2xl mb-3">
               <ShieldAlert className="h-8 w-8 text-primary" />
             </span>
-            <h2 className="text-2xl font-bold text-slate-800">Admin Console</h2>
-            <p className="text-xs text-slate-400 font-semibold mt-1">FastGluco Central Management Portal</p>
+            <h2 className="text-2xl font-bold text-slate-800">
+              {isRegistering ? 'Create Admin Account' : 'Admin Console'}
+            </h2>
+            <p className="text-xs text-slate-400 font-semibold mt-1">
+              {isRegistering ? 'Register a new administrative console user' : 'Central Management Portal'}
+            </p>
           </div>
 
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 text-danger text-xs font-semibold rounded-xl border border-red-100">
-              {error}
+          {displayedError && (
+            <div className="mb-4 p-3 bg-red-50 text-danger text-xs font-semibold rounded-xl border border-red-100 flex justify-between items-center">
+              <span>{displayedError}</span>
+              <button 
+                onClick={() => { setValidationError(null); clearError(); }} 
+                className="text-red-500 hover:text-red-700 font-bold ml-2"
+              >
+                ✕
+              </button>
             </div>
           )}
 
-          <form onSubmit={handleLoginSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Admin Email</label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@fastgluco.com"
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm"
-              />
-            </div>
+          <form onSubmit={isRegistering ? handleRegisterSubmit : handleLoginSubmit} className="space-y-4">
+            {isRegistering ? (
+              <>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Full Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={regName}
+                    onChange={(e) => setRegName(e.target.value)}
+                    placeholder="John Doe"
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-medium"
+                  />
+                </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Admin Password</label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm"
-              />
-            </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Admin Email</label>
+                  <input
+                    type="email"
+                    required
+                    value={regEmail}
+                    onChange={(e) => setRegEmail(e.target.value)}
+                    placeholder="admin@fastgluco.com"
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Role Type</label>
+                  <select
+                    value={regRole}
+                    onChange={(e: any) => setRegRole(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-medium bg-white"
+                  >
+                    <option value="Admin">Admin (Full Control)</option>
+                    <option value="Editor">Editor (Limited Control)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Password</label>
+                  <div className="relative">
+                    <input
+                      type={showRegPassword ? "text" : "password"}
+                      required
+                      value={regPassword}
+                      onChange={(e) => setRegPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full pl-3 pr-10 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-medium"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowRegPassword(!showRegPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 font-semibold"
+                    >
+                      {showRegPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Confirm Password</label>
+                  <div className="relative">
+                    <input
+                      type={showRegConfirmPassword ? "text" : "password"}
+                      required
+                      value={regConfirmPassword}
+                      onChange={(e) => setRegConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full pl-3 pr-10 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-medium"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowRegConfirmPassword(!showRegConfirmPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 font-semibold"
+                    >
+                      {showRegConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Admin Email</label>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="admin@fastgluco.com"
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Admin Password</label>
+                  <div className="relative">
+                    <input
+                      type={showLoginPassword ? "text" : "password"}
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full pl-3 pr-10 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-medium"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowLoginPassword(!showLoginPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 font-semibold"
+                    >
+                      {showLoginPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
 
             <button
               type="submit"
@@ -1127,13 +1267,27 @@ const AdminPanelContent: React.FC = () => {
               {loggingIn ? (
                 <>
                   <Loader2 className="h-5 w-5 animate-spin" />
-                  <span>Logging in...</span>
+                  <span>{isRegistering ? 'Registering...' : 'Logging in...'}</span>
                 </>
               ) : (
-                <span>Console Sign In</span>
+                <span>{isRegistering ? 'Console Register' : 'Console Sign In'}</span>
               )}
             </button>
           </form>
+
+          <div className="text-center mt-6">
+            <button
+              type="button"
+              onClick={() => {
+                setIsRegistering(!isRegistering);
+                setValidationError(null);
+                clearError();
+              }}
+              className="text-xs font-bold text-primary hover:underline focus:outline-none"
+            >
+              {isRegistering ? 'Already have an account? Sign In' : 'Create Admin Account'}
+            </button>
+          </div>
         </div>
       </div>
     );

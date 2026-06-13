@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { 
   FileUp, 
   History, 
@@ -21,6 +22,7 @@ interface ReportsProps {
 
 export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) => {
   const { token, apiUrl } = useAuth();
+  const { showToast } = useToast();
   
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -89,6 +91,7 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
       const data = await response.json();
 
       if (response.ok) {
+        showToast(`Report uploaded: Loaded ${data.readingsCount} readings.`, 'success');
         setMessage({ text: `Success: Loaded ${data.readingsCount} readings.`, isError: false });
         setFile(null);
         // Clear input element
@@ -99,6 +102,7 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
         throw new Error(data.message || data.error || 'Failed to parse file.');
       }
     } catch (err: any) {
+      showToast(err.message || 'Error occurred during parsing.', 'error');
       setMessage({ text: err.message || 'Error occurred during parsing.', isError: true });
     } finally {
       setUploading(false);
@@ -116,12 +120,14 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
 
       const data = await response.json();
       if (response.ok) {
+        showToast('Report reprocessing started.', 'success');
         fetchHistory();
       } else {
-        alert(data.message || 'Reprocessing failed.');
+        showToast(data.message || 'Reprocessing failed.', 'error');
       }
     } catch (err) {
       console.error(err);
+      showToast('Error reprocessing report.', 'error');
     } finally {
       setReprocessingId(null);
     }
@@ -136,14 +142,15 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
+        showToast('Report deleted successfully.', 'success');
         setHistory(prev => prev.filter(r => r._id !== reportId));
       } else {
         const data = await response.json();
-        alert(data.message || 'Delete failed.');
+        showToast(data.message || 'Delete failed.', 'error');
       }
     } catch (err) {
       console.error(err);
-      alert('Error deleting report.');
+      showToast('Error deleting report.', 'error');
     } finally {
       setDeletingId(null);
     }
@@ -161,6 +168,7 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
         return;
       }
       if (response.ok) {
+        showToast('Report download started.', 'success');
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -172,11 +180,11 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
         window.URL.revokeObjectURL(url);
       } else {
         const data = await response.json();
-        alert(data.message || 'Download failed.');
+        showToast(data.message || 'Download failed.', 'error');
       }
     } catch (err) {
       console.error(err);
-      alert('Error downloading file.');
+      showToast('Error downloading file.', 'error');
     }
   };
 

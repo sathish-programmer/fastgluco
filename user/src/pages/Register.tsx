@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { KeyRound, Mail, User, Activity, Goal, ChevronRight, ChevronLeft, Heart } from 'lucide-react';
+import { KeyRound, Mail, Phone, User, Activity, Goal, ChevronRight, ChevronLeft, Heart, Eye, EyeOff } from 'lucide-react';
 
 interface RegisterProps {
   onNavigateToLogin: () => void;
@@ -12,7 +12,9 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   // Demographics state
   const [gender, setGender] = useState<'Male' | 'Female' | 'Other'>('Male');
@@ -23,7 +25,7 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
   const [goal, setGoal] = useState<'Lose weight' | 'Maintain weight' | 'Gain weight'>('Maintain weight');
 
   const handleNext = () => {
-    if (step === 1 && (!name || !email || !password)) return;
+    if (step === 1 && (!name || !email || !mobile || !password)) return;
     setStep(prev => prev + 1);
   };
 
@@ -33,7 +35,7 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await register(name, email, password, {
+    await register(name, email, mobile, password, {
       gender,
       age,
       height,
@@ -100,19 +102,43 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
               </div>
 
               <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Mobile Number</label>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                    <Phone className="h-5 w-5" />
+                  </span>
+                  <input
+                    type="tel"
+                    required
+                    value={mobile}
+                    onChange={(e) => setMobile(e.target.value)}
+                    placeholder="+91 98765 43210"
+                    className="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-slate-800 font-medium"
+                  />
+                </div>
+              </div>
+
+              <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Password</label>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
                     <KeyRound className="h-5 w-5" />
                   </span>
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-slate-800 font-medium"
+                    className="w-full pl-11 pr-10 py-3 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-slate-800 font-medium"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600"
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
                 </div>
               </div>
 

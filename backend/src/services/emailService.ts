@@ -145,6 +145,37 @@ export class EmailService {
   }
 
   /**
+   * Send Account Blocked Notification Email
+   */
+  public static async sendBlockNotificationEmail(email: string, name: string, reason: string) {
+    const html = generateEmailTemplate('Account Suspended', `
+      <p>Hi ${name},</p>
+      <p>We are writing to inform you that your FastGluco account has been suspended.</p>
+      <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-left: 4px solid #ef4444; padding: 16px; border-radius: 8px; margin: 20px 0;">
+        <p style="margin: 0; color: #991b1b; font-weight: 600;">Reason for Suspension:</p>
+        <p style="margin: 8px 0 0 0; color: #b91c1c;">${reason}</p>
+      </div>
+      <p>If you believe this is a mistake or have questions, please contact our support team.</p>
+    `);
+    try { await transporter.sendMail({ from: '"FastGluco Security" <security@fastgluco.com>', to: email, subject: 'FastGluco Account Suspended', html }); } catch (err) { console.error(err); }
+  }
+
+  /**
+   * Send Password Reset Link Email
+   */
+  public static async sendPasswordResetEmail(email: string, name: string, resetLink: string) {
+    const html = generateEmailTemplate('Password Reset Request', `
+      <p>Hi ${name},</p>
+      <p>We received a request to reset your password for your FastGluco account. You can reset your password by clicking the link below:</p>
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${resetLink}" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">Reset Password</a>
+      </div>
+      <p>This reset link will expire in 30 minutes. If you did not make this request, you can safely ignore this email.</p>
+    `);
+    try { await transporter.sendMail({ from: '"FastGluco Security" <security@fastgluco.com>', to: email, subject: 'FastGluco Password Reset Link', html }); } catch (err) { console.error(err); }
+  }
+
+  /**
    * Send an answer to a support ticket
    */
   public static async sendSupportAnswerEmail(email: string, name: string, question: string, answer: string) {
@@ -216,4 +247,45 @@ export class EmailService {
     `);
     try { await transporter.sendMail({ from: '"FastGluco Billing" <billing@fastgluco.com>', to: email, subject: `FastGluco Alert: ${title}`, html }); } catch (err) { console.error(err); }
   }
+
+  /**
+   * Send Login Notification Email
+   */
+  public static async sendLoginNotificationEmail(email: string, name: string, details: { time: string; location: string; device: string }) {
+    console.log(`[EmailService] Attempting to send login notification email to: ${email}`);
+    const html = generateEmailTemplate('New Login Detected', `
+      <p>Hi ${name},</p>
+      <p>We detected a new login to your FastGluco account.</p>
+      <div style="background-color: #f1f5f9; padding: 20px; border-radius: 12px; margin: 24px 0; font-size: 14px;">
+        <p style="margin: 0; color: #475569; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">Login Details</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 6px 0; color: #64748b; font-weight: 600; width: 120px;">Time:</td>
+            <td style="padding: 6px 0; color: #1e293b; font-weight: 700;">${details.time}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #64748b; font-weight: 600;">Location:</td>
+            <td style="padding: 6px 0; color: #1e293b; font-weight: 700;">${details.location}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #64748b; font-weight: 600;">Device/Browser:</td>
+            <td style="padding: 6px 0; color: #1e293b; font-weight: 700;">${details.device}</td>
+          </tr>
+        </table>
+      </div>
+      <p style="color: #64748b; font-size: 13px;">If this was you, you can safely ignore this email. If you do not recognize this activity, please reset your password immediately or contact support.</p>
+    `);
+    try {
+      await transporter.sendMail({
+        from: '"FastGluco Security" <security@fastgluco.com>',
+        to: email,
+        subject: 'Security Alert: New Login to FastGluco',
+        html
+      });
+      console.log(`[EmailService] Login notification email sent successfully to: ${email}`);
+    } catch (err) {
+      console.error('[EmailService] Failed to send login notification email:', err);
+    }
+  }
 }
+

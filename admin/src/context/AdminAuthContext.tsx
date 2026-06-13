@@ -14,6 +14,7 @@ interface AdminAuthContextType {
   isLoading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<boolean>;
+  register: (name: string, email: string, role: 'Admin' | 'Editor', password: string) => Promise<boolean>;
   logout: () => void;
   clearError: () => void;
   apiUrl: string;
@@ -71,6 +72,35 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
+  const register = async (name: string, email: string, role: 'Admin' | 'Editor', password: string): Promise<boolean> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`${apiUrl}/admin/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, role, password })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Admin registration failed.');
+      }
+
+      localStorage.setItem('fastgluco_admin_token', data.token);
+      localStorage.setItem('fastgluco_admin_profile', JSON.stringify(data.admin));
+      setToken(data.token);
+      setAdmin(data.admin);
+      return true;
+    } catch (err: any) {
+      setError(err.message || 'An error occurred during admin registration.');
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('fastgluco_admin_token');
     localStorage.removeItem('fastgluco_admin_profile');
@@ -92,6 +122,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         isLoading,
         error,
         login,
+        register,
         logout,
         clearError,
         apiUrl

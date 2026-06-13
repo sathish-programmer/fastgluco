@@ -137,6 +137,7 @@ router.get('/health-insights/current', authenticateToken, requireRole(['User', '
 // 3. ADMIN PORTAL ENDPOINTS
 // ==========================================
 router.post('/admin/auth/login', AdminController.login);
+router.post('/admin/auth/register', AdminController.register);
 
 // Admin Authorized Area
 router.use('/admin', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']));
