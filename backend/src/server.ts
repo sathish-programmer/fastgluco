@@ -8,6 +8,7 @@ import app from './app';
 import { connectDB } from './config/db';
 import cron from 'node-cron';
 import { SubscriptionCron } from './cron/subscriptionCron';
+import { LibreSyncService } from './services/libreSyncService';
 
 const PORT = process.env.PORT || 5001;
 
@@ -28,6 +29,17 @@ const bootstrap = async () => {
       cron.schedule('0 0 * * *', () => {
         console.log('Running daily cron jobs...');
         SubscriptionCron.checkExpiringSubscriptions();
+      });
+
+      // LLU auto-sync cron job every 10 minutes
+      cron.schedule('*/10 * * * *', async () => {
+        console.log('Running background LibreLinkUp sync...');
+        try {
+          const stats = await LibreSyncService.runGlobalBackgroundSync();
+          console.log(`LibreLinkUp sync complete: ${stats.succeeded} users succeeded, ${stats.failed} users failed.`);
+        } catch (err) {
+          console.error('LibreLinkUp background sync failed:', err);
+        }
       });
       console.log('Cron jobs scheduled successfully.');
 

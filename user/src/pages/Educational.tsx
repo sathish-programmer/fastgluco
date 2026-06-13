@@ -23,6 +23,7 @@ export const Educational: React.FC = () => {
   const [activeGuideId, setActiveGuideId] = useState<string | null>(null);
   const [activeGuideContent, setActiveGuideContent] = useState<any | null>(null);
   const [activeCategory, setActiveCategory] = useState<'all' | 'guides' | 'videos' | 'faqs' | 'support'>('all');
+  const [openFaqId, setOpenFaqId] = useState<string | null>(null);
   const [supportForm, setSupportForm] = useState({ name: '', email: '', question: '' });
   const [supportStatus, setSupportStatus] = useState<string | null>(null);
 
@@ -245,12 +246,28 @@ export const Educational: React.FC = () => {
                 {faqs.length === 0 ? (
                   <p className="text-xs text-slate-400 font-semibold pl-2">No FAQs available.</p>
                 ) : (
-                  faqs.map((faq) => (
-                    <div key={faq._id} className="bg-cardBg p-4 rounded-2xl border border-slate-100 shadow-soft">
-                      <h4 className="text-sm font-bold text-slate-800 mb-2">{faq.question}</h4>
-                      <p className="text-xs text-slate-600 font-medium whitespace-pre-line">{faq.answer}</p>
-                    </div>
-                  ))
+                  faqs.map((faq) => {
+                    const isOpen = openFaqId === faq._id;
+                    return (
+                      <div key={faq._id} className="bg-cardBg rounded-2xl border border-slate-100 shadow-soft overflow-hidden transition-all">
+                        <button
+                          onClick={() => setOpenFaqId(isOpen ? null : faq._id)}
+                          className="w-full flex justify-between items-center p-4 text-left hover:bg-slate-50 transition-all focus:outline-none"
+                        >
+                          <span className="text-sm font-bold text-slate-800">{faq.question}</span>
+                          <span className="text-slate-400 text-[10px] ml-3">
+                            {isOpen ? '▲' : '▼'}
+                          </span>
+                        </button>
+                        {isOpen && (
+                          <div 
+                            className="px-4 pb-4 pt-2 text-xs text-slate-600 border-t border-slate-50 leading-relaxed whitespace-pre-line"
+                            dangerouslySetInnerHTML={{ __html: faq.answer }}
+                          />
+                        )}
+                      </div>
+                    );
+                  })
                 )}
               </div>
             </div>

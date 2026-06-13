@@ -17,6 +17,11 @@ export interface IUser extends Document {
   lastGlucoseAlertSentAt?: Date;
   lastLoginAlertSentAt?: Date;
   mobile?: string;
+  libreEmail?: string;
+  librePassword?: string;
+  libreRegion?: string;
+  libreActive?: boolean;
+  libreLastSyncAt?: Date;
   isBlocked: boolean;
   isDeleted: boolean;
   createdAt: Date;
@@ -47,6 +52,11 @@ const userSchema = new Schema<IUser>(
     lastGlucoseAlertSentAt: { type: Date },
     lastLoginAlertSentAt: { type: Date },
     mobile: { type: String, unique: true, sparse: true, trim: true },
+    libreEmail: { type: String, trim: true },
+    librePassword: { type: String },
+    libreRegion: { type: String, default: 'ap' },
+    libreActive: { type: Boolean, default: false },
+    libreLastSyncAt: { type: Date },
     isBlocked: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false }
   },

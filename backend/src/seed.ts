@@ -13,6 +13,7 @@ import { Video } from './models/Video';
 import { SubscriptionPlan } from './models/SubscriptionPlan';
 import { PaymentGatewayConfig } from './models/PaymentGatewayConfig';
 import { Coupon } from './models/Coupon';
+import { FAQ } from './models/FAQ';
 import { seedFoodLibrary } from './seedFoodLibrary';
 
 // Removed Open Food Facts API fetching in favor of comprehensive local seed data.
@@ -41,6 +42,64 @@ const SEED_VIDEOS = [
     url: 'https://www.youtube.com/embed/mlOQWxjDr-4',
     thumbnailUrl: 'https://img.youtube.com/vi/mlOQWxjDr-4/0.jpg',
     category: 'CGM Guide'
+  }
+];
+
+const SEED_FAQS = [
+  {
+    question: 'How do I connect my FreeStyle Libre CGM sensor to the app?',
+    answer: `<p>To connect your Abbott FreeStyle Libre sensor for automatic live tracking:</p>
+<ol>
+  <li>Open the official <strong>FreeStyle Libre</strong> app on your smartphone.</li>
+  <li>Navigate to the side menu and select <strong>Connected Apps</strong> → <strong>LibreLinkUp</strong>.</li>
+  <li>Tap <strong>Add Connection</strong> and invite a secondary email address you own (must be different from your primary LibreView email).</li>
+  <li>Open the invitation email, download the <strong>LibreLinkUp app</strong>, sign up with that secondary email, and accept the caregiver invitation.</li>
+  <li>Open our app, navigate to the <strong>Profile Configuration</strong> tab, enable <strong>LibreLinkUp Syncing</strong>, and enter those secondary caregiver credentials.</li>
+</ol>`,
+    platform: 'Both',
+    category: 'General',
+    isActive: true,
+    order: 1
+  },
+  {
+    question: 'How often does my glucose data sync?',
+    answer: 'Once configured and enabled, our background worker automatically refreshes and imports your CGM data every 10 minutes. You can also trigger an immediate sync manually by clicking the "Sync Now" button inside your Profile settings.',
+    platform: 'Both',
+    category: 'General',
+    isActive: true,
+    order: 2
+  },
+  {
+    question: 'What is FastGluco and how does it help?',
+    answer: 'FastGluco is an intelligent metabolic health platform that combines real-time continuous glucose monitor (CGM) data with meal logging. It calculates your spike thresholds, scores foods, and uses AI coaching to help you discover which specific meals cause blood sugar spikes.',
+    platform: 'Both',
+    category: 'General',
+    isActive: true,
+    order: 3
+  },
+  {
+    question: 'Can I log my meals and view glucose insights manually?',
+    answer: 'Yes! Even without a live CGM connection, you can upload historical Abbott Libre report CSV/PDF files or log foods manually. The app automatically correlates your food logs with your glucose logs to analyze glycemic status.',
+    platform: 'Both',
+    category: 'General',
+    isActive: true,
+    order: 4
+  },
+  {
+    question: 'Is my health data secure?',
+    answer: 'Absolutely. We prioritize your privacy. All credentials, personal demographics, and metabolic data are encrypted in transit and at rest in compliance with secure healthcare standard practices.',
+    platform: 'Both',
+    category: 'General',
+    isActive: true,
+    order: 5
+  },
+  {
+    question: 'How do I upgrade to the Premium Plan?',
+    answer: 'You can upgrade directly inside the app by going to your Profile, clicking "My Subscription & Billing", and selecting the Premium Plan. Upgrading unlocks unlimited report uploads, advanced spikes analysis, premium educational content, and the AI Coaching Assistant.',
+    platform: 'Both',
+    category: 'General',
+    isActive: true,
+    order: 6
   }
 ];
 
@@ -98,6 +157,12 @@ const seed = async () => {
     await Video.deleteMany({});
     await Video.insertMany(SEED_VIDEOS);
     console.log(`Successfully seeded ${SEED_VIDEOS.length} educational videos.`);
+
+    // 4.5. Seed FAQs
+    console.log('Seeding support FAQs...');
+    await FAQ.deleteMany({});
+    await FAQ.insertMany(SEED_FAQS);
+    console.log(`Successfully seeded ${SEED_FAQS.length} support FAQs.`);
 
     // 5. Seed Subscription Plans
     console.log('Seeding subscription plans...');

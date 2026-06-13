@@ -2409,11 +2409,20 @@ const AdminPanelContent: React.FC = () => {
 
             {showFaqModal && (
               <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                <div className="bg-white p-6 rounded-3xl border border-slate-200 max-w-md w-full shadow-lg">
+                <div className="bg-white p-6 rounded-3xl border border-slate-200 max-w-2xl w-full shadow-lg">
                   <h3 className="text-base font-bold text-slate-800 mb-4">{editingFaqId ? 'Edit FAQ' : 'Add FAQ'}</h3>
                   <form onSubmit={handleFaqSubmit} className="space-y-4">
                     <div><label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Question</label><input type="text" required value={faqForm.question} onChange={e => setFaqForm({ ...faqForm, question: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm" /></div>
-                    <div><label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Answer</label><textarea required value={faqForm.answer} onChange={e => setFaqForm({ ...faqForm, answer: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm h-20" /></div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Answer</label>
+                      <ReactQuill
+                        theme="snow"
+                        value={faqForm.answer}
+                        onChange={value => setFaqForm({ ...faqForm, answer: value })}
+                        className="bg-white rounded-xl overflow-hidden border border-slate-200"
+                        style={{ height: '220px', marginBottom: '45px' }}
+                      />
+                    </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div><label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Platform</label><select value={faqForm.platform} onChange={e => setFaqForm({ ...faqForm, platform: e.target.value as any })} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm"><option value="App">App</option><option value="Website">Website</option><option value="Both">Both</option></select></div>
                       <div><label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Category</label><input type="text" required value={faqForm.category} onChange={e => setFaqForm({ ...faqForm, category: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm" /></div>

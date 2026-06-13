@@ -31,6 +31,7 @@ export default function App() {
   const [termsData, setTermsData] = useState<string>('Loading terms of service...');
   const [faqsData, setFaqsData] = useState<any[]>([]);
   const [videosData, setVideosData] = useState<any[]>([]);
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -362,12 +363,28 @@ export default function App() {
             <p className="text-sm text-slate-400 font-semibold mt-2">Answers to common questions about FastGluco.</p>
           </div>
           <div className="space-y-4">
-            {faqsData.map((faq, idx) => (
-              <div key={idx} className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                <h3 className="text-base font-bold text-slate-800">{faq.question}</h3>
-                <p className="text-sm text-slate-600 mt-2 whitespace-pre-wrap">{faq.answer}</p>
-              </div>
-            ))}
+            {faqsData.map((faq, idx) => {
+              const isOpen = openFaqIndex === idx;
+              return (
+                <div key={idx} className="bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden transition-all shadow-sm">
+                  <button
+                    onClick={() => setOpenFaqIndex(isOpen ? null : idx)}
+                    className="w-full flex justify-between items-center p-6 text-left hover:bg-slate-100/80 transition-all focus:outline-none"
+                  >
+                    <span className="text-base font-bold text-slate-800">{faq.question}</span>
+                    <span className="text-slate-400 font-bold ml-4 text-xs">
+                      {isOpen ? '▲' : '▼'}
+                    </span>
+                  </button>
+                  {isOpen && (
+                    <div 
+                      className="px-6 pb-6 pt-3 text-sm text-slate-600 border-t border-slate-200/50 leading-relaxed whitespace-pre-line"
+                      dangerouslySetInnerHTML={{ __html: faq.answer }}
+                    />
+                  )}
+                </div>
+              );
+            })}
           </div>
         </section>
       )}

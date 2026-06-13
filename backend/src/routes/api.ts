@@ -86,6 +86,7 @@ router.get('/subscriptions/invoices/:id/download', SubscriptionController.downlo
 router.use('/users', authenticateToken, requireRole(['User']));
 router.get('/users/profile', ProfileController.getProfile);
 router.put('/users/profile', ProfileController.updateProfile);
+router.post('/users/profile/sync-libre', ProfileController.triggerSync);
 
 router.use('/food-library', authenticateToken, requireRole(['User', 'SuperAdmin', 'Admin', 'Editor']));
 router.get('/food-library', FoodController.searchLibrary);

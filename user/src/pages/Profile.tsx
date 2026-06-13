@@ -9,13 +9,16 @@ import {
   BookOpen, 
   Sparkles, 
   Save,
-  CreditCard
+  CreditCard,
+  RefreshCw,
+  Globe,
+  Activity
 } from 'lucide-react';
 import { Educational } from './Educational'; // import the sub-view
 import { Subscription } from './Subscription';
 
 export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = () => {
-  const { user, logout, updateProfile, isLoading, error } = useAuth();
+  const { user, token, apiUrl, logout, updateProfile, isLoading, error } = useAuth();
   const { showToast } = useToast();
   
   // Tabs for profile section: 'settings' or 'education' or 'subscription'
@@ -34,6 +37,14 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
   const [spikeThreshold, setSpikeThreshold] = useState(user?.spikeThreshold || 90);
   const [currency, setCurrency] = useState<'INR' | 'USD'>((user?.currency as 'INR' | 'USD') || 'INR');
   
+  // LibreLinkUp states
+  const [libreEmail, setLibreEmail] = useState(user?.libreEmail || '');
+  const [librePassword, setLibrePassword] = useState(user?.librePassword || '');
+  const [libreRegion, setLibreRegion] = useState(user?.libreRegion || 'ap');
+  const [libreActive, setLibreActive] = useState(user?.libreActive || false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
+  
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   const handleSave = async (e: React.FormEvent) => {
@@ -50,7 +61,11 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
       activityLevel,
       goal,
       spikeThreshold,
-      currency
+      currency,
+      libreEmail,
+      librePassword,
+      libreRegion,
+      libreActive
     });
     if (success) {
       showToast('Profile updated successfully!', 'success');
@@ -58,6 +73,30 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
       setTimeout(() => setSaveSuccess(false), 3000);
     } else {
       showToast('Failed to update profile.', 'error');
+    }
+  };
+
+  const handleTriggerSync = async () => {
+    if (!token) return;
+    setIsSyncing(true);
+    try {
+      const response = await fetch(`${apiUrl}/users/profile/sync-libre`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (response.ok) {
+        showToast(data.message || 'Sync completed successfully.', 'success');
+      } else {
+        showToast(data.message || 'Sync failed.', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Connection error during sync.', 'error');
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -290,6 +329,117 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
               <option value="INR">INR (₹)</option>
               <option value="USD">USD ($)</option>
             </select>
+          </div>
+
+          <div className="pt-4 mt-2 border-t border-slate-100 space-y-4">
+            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center space-x-1.5">
+              <Activity className="h-4 w-4 text-primary" />
+              <span>Abbott LibreLinkUp Sync</span>
+            </h4>
+            
+            <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-600 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={libreActive}
+                onChange={(e) => setLibreActive(e.target.checked)}
+                className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
+              />
+              <span>Enable Automatic LibreLinkUp Syncing</span>
+            </label>
+            <p className="text-[10px] text-slate-400 font-semibold leading-relaxed">
+              When enabled, our app will automatically fetch your real-time glucose measurements from Abbott cloud servers every 10 minutes.
+            </p>
+
+            {libreActive && (
+              <div className="border border-slate-200 rounded-2xl overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setShowGuide(!showGuide)}
+                  className="w-full bg-slate-50 hover:bg-slate-100 px-4 py-2.5 text-left text-xs font-bold text-slate-700 flex items-center justify-between transition-all"
+                >
+                  <span>💡 How to connect your CGM sensor</span>
+                  <span className="text-slate-400">{showGuide ? 'Hide instructions ▲' : 'Show instructions ▼'}</span>
+                </button>
+                {showGuide && (
+                  <div className="bg-white p-3.5 border-t border-slate-100 space-y-2 text-[10px] text-slate-600 font-semibold leading-relaxed">
+                    <ol className="list-decimal pl-4 space-y-1.5">
+                      <li>Open the official <strong>FreeStyle Libre</strong> mobile app on your phone.</li>
+                      <li>Open the side menu and go to <strong>Connected Apps</strong> → <strong>LibreLinkUp</strong>.</li>
+                      <li>Tap <strong>Add Connection</strong> and invite a secondary email address that you own (must be different from your main LibreView email).</li>
+                      <li>Check your secondary email inbox, download the <strong>LibreLinkUp mobile app</strong>, sign up with that email, and accept the caregiver invitation.</li>
+                      <li>Enter that secondary email, caregiver password, and select your region in the fields below.</li>
+                    </ol>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {libreActive && (
+              <div className="space-y-3 pt-2">
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">LibreLinkUp Caregiver Email</label>
+                  <input
+                    type="email"
+                    required={libreActive}
+                    value={libreEmail}
+                    onChange={(e) => setLibreEmail(e.target.value)}
+                    placeholder="caregiver@email.com"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold text-slate-700 bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">LibreLinkUp Caregiver Password</label>
+                  <input
+                    type="password"
+                    required={libreActive}
+                    value={librePassword}
+                    onChange={(e) => setLibrePassword(e.target.value)}
+                    placeholder="••••••••••••"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold text-slate-700 bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center space-x-1">
+                    <Globe className="h-3.5 w-3.5" />
+                    <span>Abbott Cloud Region</span>
+                  </label>
+                  <select
+                    value={libreRegion}
+                    onChange={(e) => setLibreRegion(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold text-slate-700 bg-white"
+                  >
+                    <option value="ap">Asia Pacific / India (AP)</option>
+                    <option value="us">United States (US)</option>
+                    <option value="eu">Europe (EU)</option>
+                    <option value="de">Germany (DE)</option>
+                    <option value="fr">France (FR)</option>
+                    <option value="jp">Japan (JP)</option>
+                    <option value="au">Australia (AU)</option>
+                  </select>
+                </div>
+
+                {user?.libreActive && (
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={handleTriggerSync}
+                      disabled={isSyncing}
+                      className="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl flex items-center justify-center space-x-2 transition-all border border-slate-200"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                      <span>{isSyncing ? 'Syncing readings...' : 'Sync Now'}</span>
+                    </button>
+                    {user?.libreLastSyncAt && (
+                      <p className="text-[9px] text-slate-400 font-bold text-center mt-1">
+                        Last synced: {new Date(user.libreLastSyncAt).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <button

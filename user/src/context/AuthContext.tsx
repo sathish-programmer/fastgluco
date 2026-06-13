@@ -14,6 +14,11 @@ export interface UserProfile {
   dailyCalorieTarget?: number;
   spikeThreshold: number;
   currency?: string;
+  libreEmail?: string;
+  librePassword?: string;
+  libreRegion?: string;
+  libreActive?: boolean;
+  libreLastSyncAt?: string;
 }
 
 interface AuthContextType {
