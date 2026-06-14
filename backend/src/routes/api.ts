@@ -94,15 +94,18 @@ router.get('/food-library', FoodController.searchLibrary);
 router.use('/food-logs', authenticateToken, requireRole(['User']));
 router.get('/food-logs', FoodController.getLogs);
 router.post('/food-logs', FoodController.createLog);
+router.put('/food-logs/:id', FoodController.updateLog);
 router.post('/food-logs/:id/feedback', FoodController.recordFeedback);
 router.delete('/food-logs/:id', FoodController.deleteLog);
 
 router.use('/reports', authenticateToken, requireRole(['User']));
 router.post('/reports/upload', upload.single('report'), requireSubscriptionFeature('unlimitedReports'), ReportController.uploadReport);
+router.get('/reports/user-pdf', ReportController.downloadUserPDFReport);
 router.get('/reports', ReportController.getHistory);
 router.post('/reports/:id/reprocess', ReportController.reprocess);
 router.get('/reports/:id/download', requireSubscriptionFeature('exportReports'), ReportController.downloadReport);
 router.delete('/reports/:id', ReportController.deleteReport);
+
 
 router.use('/glucose', authenticateToken, requireRole(['User']));
 router.post('/glucose/manual', GlucoseController.logManualReading);

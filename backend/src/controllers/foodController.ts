@@ -147,6 +147,56 @@ export class FoodController {
   }
 
   /**
+   * Update Food Log
+   */
+  public static async updateLog(req: AuthRequest, res: Response) {
+    try {
+      const userId = req.user?.id;
+      const { id } = req.params;
+      const { name, category, mealType, calories, carbs, protein, fat, fiber, quantity, unit, loggedAt } = req.body;
+
+      if (!name || !category || !mealType || calories === undefined || carbs === undefined || protein === undefined || fat === undefined || !quantity || !unit) {
+        return res.status(400).json({ message: 'Missing required fields for meal updating.' });
+      }
+
+      const log = await FoodLog.findOne({ _id: id, userId });
+      if (!log) {
+        return res.status(404).json({ message: 'Food log not found.' });
+      }
+
+      log.name = name;
+      log.category = category;
+      log.mealType = mealType;
+      log.calories = calories;
+      log.carbs = carbs;
+      log.protein = protein;
+      log.fat = fat;
+      log.fiber = fiber !== undefined ? fiber : 0;
+      log.quantity = quantity;
+      log.unit = unit;
+      if (loggedAt) {
+        log.loggedAt = new Date(loggedAt);
+      }
+
+      await log.save();
+
+      try {
+        await GlucoseService.analyzeFoodLog(log.id);
+      } catch (err) {
+        console.error('Spike analyzer parsing warning:', err);
+      }
+
+      const savedLog = await FoodLog.findById(log.id);
+      return res.status(200).json({
+        message: 'Meal log updated successfully.',
+        log: savedLog
+      });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message || 'Error updating food log.' });
+    }
+  }
+
+  /**
    * Soft Delete Food Log
    */
   public static async deleteLog(req: AuthRequest, res: Response) {

@@ -59,9 +59,9 @@ export class AuthController {
 
       await user.save();
 
-      // Generate tokens
-      const accessToken = jwt.sign({ id: user._id, email: user.email, role: 'User' }, JWT_SECRET, { expiresIn: '15m' });
-      const refreshToken = jwt.sign({ id: user._id, email: user.email, role: 'User' }, JWT_REFRESH_SECRET, { expiresIn: '7d' });
+      // Generate tokens (long-lived — user controls logout manually)
+      const accessToken = jwt.sign({ id: user._id, email: user.email, role: 'User' }, JWT_SECRET, { expiresIn: '365d' });
+      const refreshToken = jwt.sign({ id: user._id, email: user.email, role: 'User' }, JWT_REFRESH_SECRET, { expiresIn: '365d' });
 
       // Send Welcome Email asynchronously
       EmailService.sendWelcomeEmail(user.email, user.name).catch(console.error);
@@ -115,8 +115,8 @@ export class AuthController {
       }
 
       // Generate tokens
-      const accessToken = jwt.sign({ id: user._id, email: user.email, role: 'User' }, JWT_SECRET, { expiresIn: '1h' });
-      const refreshToken = jwt.sign({ id: user._id, email: user.email, role: 'User' }, JWT_REFRESH_SECRET, { expiresIn: '7d' });
+      const accessToken = jwt.sign({ id: user._id, email: user.email, role: 'User' }, JWT_SECRET, { expiresIn: '365d' });
+      const refreshToken = jwt.sign({ id: user._id, email: user.email, role: 'User' }, JWT_REFRESH_SECRET, { expiresIn: '365d' });
 
       // Determine platform context (location/device/time)
       const ip = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '').split(',')[0].trim();
@@ -205,7 +205,7 @@ export class AuthController {
           return res.status(403).json({ message: 'Invalid or expired refresh token.' });
         }
 
-        const accessToken = jwt.sign({ id: decoded.id, email: decoded.email, role: decoded.role || 'User' }, JWT_SECRET, { expiresIn: '15m' });
+        const accessToken = jwt.sign({ id: decoded.id, email: decoded.email, role: decoded.role || 'User' }, JWT_SECRET, { expiresIn: '365d' });
         return res.status(200).json({ accessToken });
       });
     } catch (error: any) {

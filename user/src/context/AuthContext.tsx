@@ -87,10 +87,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (response.ok) {
           const profile = await response.json();
           setUser(profile);
-        } else {
-          // Token expired or invalid
-          logout();
         }
+        // No auto-logout — user must manually log out
       } catch (err) {
         console.error('Failed to load profile:', err);
       } finally {

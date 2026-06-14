@@ -31,6 +31,8 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
   const [reprocessingId, setReprocessingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+  const [exportRange, setExportRange] = useState<string>('week');
+  const [downloadingReport, setDownloadingReport] = useState<boolean>(false);
 
   useEffect(() => {
     fetchHistory();
@@ -188,6 +190,38 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
     }
   };
 
+  const handleDownloadUserReport = async () => {
+    if (!token) return;
+    setDownloadingReport(true);
+    try {
+      showToast('Generating report PDF. Please wait...', 'info');
+      const response = await fetch(`${apiUrl}/reports/user-pdf?range=${exportRange}`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `FastGluco-Health-Report-${exportRange}-${new Date().toISOString().split('T')[0]}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        showToast('Report downloaded successfully.', 'success');
+      } else {
+        const data = await response.json();
+        showToast(data.message || 'Failed to generate report PDF.', 'error');
+      }
+    } catch (err: any) {
+      console.error(err);
+      showToast(err.message || 'Error generating report.', 'error');
+    } finally {
+      setDownloadingReport(false);
+    }
+  };
+
   if (showUpgradePrompt) {
     return (
       <div className="pb-24 pt-12 px-6 max-w-lg mx-auto bg-white min-h-[80vh] flex flex-col items-center justify-center text-center">
@@ -298,6 +332,48 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
             )}
           </button>
         </form>
+      </div>
+
+      {/* Export Custom PDF Report Card */}
+      <div className="bg-gradient-to-br from-primary/5 to-primary/10 p-5 rounded-3xl border border-primary/10 shadow-soft mb-6">
+        <h3 className="text-sm font-bold text-slate-700 flex items-center space-x-1.5 mb-2">
+          <DownloadCloud className="h-4.5 w-4.5 text-primary" />
+          <span>Export Health Summary PDF</span>
+        </h3>
+        <p className="text-xs text-slate-500 font-medium mb-4">
+          Generate a beautiful, comprehensive PDF report with your matched food and glucose trends.
+        </p>
+        <div className="flex items-center space-x-3">
+          <div className="flex-1">
+            <select
+              value={exportRange}
+              onChange={(e) => setExportRange(e.target.value)}
+              className="w-full text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-primary/50"
+            >
+              <option value="day">Today</option>
+              <option value="week">Last 7 Days</option>
+              <option value="month">Last 30 Days</option>
+              <option value="all">All Time</option>
+            </select>
+          </div>
+          <button
+            onClick={handleDownloadUserReport}
+            disabled={downloadingReport}
+            className="bg-primary hover:bg-primary-dark text-white text-xs font-extrabold px-5 py-2.5 rounded-xl shadow-soft transition-all flex items-center justify-center shrink-0 disabled:opacity-50"
+          >
+            {downloadingReport ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <FileText className="h-3.5 w-3.5 mr-1.5" />
+                Download PDF
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Upload History list */}
