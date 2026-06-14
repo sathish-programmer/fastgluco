@@ -83,6 +83,18 @@ export class GlucoseService {
     await foodLog.save();
 
     if (status === 'Avoid') {
+      try {
+        await Notification.create({
+          userId,
+          title: 'Walk Reminder 🚶',
+          body: `Your glucose is rising after ${foodLog.name || 'your meal'}. A quick 10-minute walk right now can help drop it back into your safe zone!`,
+          type: 'General',
+          isSent: true
+        });
+      } catch (notiErr) {
+        console.error('Failed to create walk reminder notification:', notiErr);
+      }
+
       const user = await User.findById(userId);
       if (user && user.email) {
         const intervalHours = config?.glucoseAlertMinIntervalHours ?? 2;

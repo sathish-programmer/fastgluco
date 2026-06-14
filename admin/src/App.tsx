@@ -4262,6 +4262,72 @@ const AdminPanelContent: React.FC = () => {
                     <p className="text-[11px] text-slate-400 font-semibold mt-1">The automated response sent immediately after the user answers the final question.</p>
                   </div>
 
+                  {/* Hydration Tracker Settings */}
+                  <div className="border-t border-slate-100 pt-6">
+                    <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center space-x-2">
+                      <span>💧</span>
+                      <span>Hydration Tracker Configuration</span>
+                    </h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Enable Hydration Tracker</label>
+                        <div className="flex items-center space-x-3 mt-1">
+                          <input
+                            type="checkbox"
+                            checked={paymentConfig.enableHydrationTracker !== false}
+                            onChange={(e) => setPaymentConfig({ ...paymentConfig, enableHydrationTracker: e.target.checked })}
+                            className="h-5 w-5 text-primary border-slate-300 rounded focus:ring-primary"
+                            id="enableHydrationTracker"
+                          />
+                          <label htmlFor="enableHydrationTracker" className="text-xs font-bold text-slate-600">
+                            {paymentConfig.enableHydrationTracker !== false ? 'Enabled (ON)' : 'Disabled (OFF)'}
+                          </label>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Daily Hydration Target Goal (ml)</label>
+                        <input
+                          type="number"
+                          min="500"
+                          max="10000"
+                          step="50"
+                          required
+                          value={paymentConfig.hydrationDailyLimitMl !== undefined ? paymentConfig.hydrationDailyLimitMl : 3000}
+                          onChange={(e) => setPaymentConfig({ ...paymentConfig, hydrationDailyLimitMl: parseInt(e.target.value) || 0 })}
+                          className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-primary/20"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Workout Tracker Settings */}
+                  <div className="border-t border-slate-100 pt-6">
+                    <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center space-x-2">
+                      <span>🏃</span>
+                      <span>Workout Tracker Configuration</span>
+                    </h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Enable Workout Tracker</label>
+                        <div className="flex items-center space-x-3 mt-1">
+                          <input
+                            type="checkbox"
+                            checked={paymentConfig.enableWorkoutTracker !== false}
+                            onChange={(e) => setPaymentConfig({ ...paymentConfig, enableWorkoutTracker: e.target.checked })}
+                            className="h-5 w-5 text-primary border-slate-300 rounded focus:ring-primary"
+                            id="enableWorkoutTracker"
+                          />
+                          <label htmlFor="enableWorkoutTracker" className="text-xs font-bold text-slate-600">
+                            {paymentConfig.enableWorkoutTracker !== false ? 'Enabled (ON)' : 'Disabled (OFF)'}
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="flex justify-end pt-4">
                     <button
                       type="submit"

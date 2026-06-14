@@ -283,7 +283,9 @@ const seed = async () => {
       enableSubscriptions: true, // Subscriptions required globally
       razorpayKeyId: envKeyId || undefined,
       razorpayKeySecret: envKeySecret || undefined,
-      glucoseAlertMinIntervalHours: 2
+      glucoseAlertMinIntervalHours: 2,
+      enableHydrationTracker: true,
+      enableWorkoutTracker: true
     });
     console.log(`Created default payment gateway configuration (Real Payments Active: ${!!(envKeyId && envKeySecret)}, Subscriptions required).`);
 

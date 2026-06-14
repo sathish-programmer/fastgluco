@@ -6,6 +6,17 @@ interface CoachingProps {
   onNavigateToTab?: (tab: string) => void;
 }
 
+const formatMessageContent = (content: string) => {
+  if (!content) return '';
+  const parts = content.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, index) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={index} className="font-extrabold text-slate-900">{part.slice(2, -2)}</strong>;
+    }
+    return part;
+  });
+};
+
 export const Coaching: React.FC<CoachingProps> = () => {
   const { token, apiUrl } = useAuth();
   const [sessions, setSessions] = useState<any[]>([]);
@@ -116,12 +127,12 @@ export const Coaching: React.FC<CoachingProps> = () => {
                         </div>
                       )}
                       
-                      <div className={`p-3 text-[13px] leading-relaxed shadow-sm ${
+                      <div className={`p-3 text-[13px] leading-relaxed shadow-sm whitespace-pre-wrap ${
                         msg.role === 'user' 
                           ? 'bg-gradient-to-r from-primary to-primary-dark text-white rounded-[20px] rounded-br-sm' 
                           : 'bg-white border border-slate-100 text-slate-700 rounded-[20px] rounded-bl-sm'
                       }`}>
-                        {msg.content}
+                        {formatMessageContent(msg.content)}
                       </div>
 
                       {msg.role === 'user' && (

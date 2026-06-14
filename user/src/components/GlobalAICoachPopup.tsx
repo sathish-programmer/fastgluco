@@ -1,6 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Bot, Send, Loader2, User as UserIcon, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+
+const formatMessageContent = (content: string) => {
+  if (!content) return '';
+  const parts = content.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, index) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={index} className="font-extrabold text-slate-900">{part.slice(2, -2)}</strong>;
+    }
+    return part;
+  });
+};
 
 export const GlobalAICoachPopup: React.FC = () => {
   const { isAuthenticated, token, apiUrl } = useAuth();
@@ -9,6 +20,14 @@ export const GlobalAICoachPopup: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [sending, setSending] = useState(false);
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [activeSession?.messages?.length]);
 
   useEffect(() => {
     let interval: any;
@@ -27,8 +46,10 @@ export const GlobalAICoachPopup: React.FC = () => {
               setIsOpen(true);
             }
             if (active.length === 0) {
-              setIsOpen(false);
-              setActiveSession(null);
+              if (!activeSession || activeSession.status === 'active') {
+                setIsOpen(false);
+                setActiveSession(null);
+              }
             }
           }
         } catch (err) {
@@ -78,12 +99,12 @@ export const GlobalAICoachPopup: React.FC = () => {
         setActiveSession(updatedSession);
 
         setReplyText('');
-        // If session is now resolved, close popup after a short delay
+        // If session is now resolved, close popup after a 20s delay so user can read the final message
         if (updatedSession.status === 'resolved') {
           setTimeout(() => {
             setIsOpen(false);
             setActiveSession(null);
-          }, 2000);
+          }, 20000);
         }
       }
     } catch (err) {
@@ -128,12 +149,12 @@ export const GlobalAICoachPopup: React.FC = () => {
                 </div>
               )}
               
-              <div className={`p-3 text-[12px] leading-relaxed shadow-sm ${
+              <div className={`p-3 text-[12px] leading-relaxed shadow-sm whitespace-pre-wrap ${
                 msg.role === 'user' 
                   ? 'bg-gradient-to-r from-primary to-primary-dark text-white rounded-[20px] rounded-br-sm' 
                   : 'bg-white border border-slate-100 text-slate-700 rounded-[20px] rounded-bl-sm'
               }`}>
-                {msg.content}
+                {formatMessageContent(msg.content)}
               </div>
 
               {msg.role === 'user' && (
@@ -144,6 +165,7 @@ export const GlobalAICoachPopup: React.FC = () => {
             </div>
           </div>
         ))}
+        <div ref={messagesEndRef} />
       </div>
 
       <div className="p-3 bg-white border-t border-slate-100 flex items-center space-x-2">

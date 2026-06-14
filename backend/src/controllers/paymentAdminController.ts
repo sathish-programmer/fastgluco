@@ -22,7 +22,10 @@ export class PaymentAdminController {
         config = new PaymentGatewayConfig({
           isSandbox: true,
           enablePayments: false,
-          enableSubscriptions: false
+          enableSubscriptions: false,
+          enableHydrationTracker: true,
+          hydrationDailyLimitMl: 3000,
+          enableWorkoutTracker: true
         });
         await config.save();
       }
@@ -37,7 +40,23 @@ export class PaymentAdminController {
    */
   public static async updateConfig(req: AuthRequest, res: Response) {
     try {
-      const { razorpayKeyId, razorpayKeySecret, isSandbox, enablePayments, enableSubscriptions, gstPercentage, safeGlucoseThreshold, moderateGlucoseThreshold, aiSpikeThreshold, aiQuestions, aiCompletionMessage, glucoseAlertMinIntervalHours } = req.body;
+      const { 
+        razorpayKeyId, 
+        razorpayKeySecret, 
+        isSandbox, 
+        enablePayments, 
+        enableSubscriptions, 
+        gstPercentage, 
+        safeGlucoseThreshold, 
+        moderateGlucoseThreshold, 
+        aiSpikeThreshold, 
+        aiQuestions, 
+        aiCompletionMessage, 
+        glucoseAlertMinIntervalHours,
+        enableHydrationTracker,
+        hydrationDailyLimitMl,
+        enableWorkoutTracker
+      } = req.body;
 
       let config = await PaymentGatewayConfig.findOne();
       if (!config) {
@@ -56,6 +75,9 @@ export class PaymentAdminController {
       if (aiQuestions !== undefined) config.aiQuestions = aiQuestions;
       if (aiCompletionMessage !== undefined) config.aiCompletionMessage = aiCompletionMessage;
       if (glucoseAlertMinIntervalHours !== undefined) config.glucoseAlertMinIntervalHours = glucoseAlertMinIntervalHours;
+      if (enableHydrationTracker !== undefined) config.enableHydrationTracker = enableHydrationTracker;
+      if (hydrationDailyLimitMl !== undefined) config.hydrationDailyLimitMl = hydrationDailyLimitMl;
+      if (enableWorkoutTracker !== undefined) config.enableWorkoutTracker = enableWorkoutTracker;
       config.updatedBy = req.user?.id as any;
 
       await config.save();

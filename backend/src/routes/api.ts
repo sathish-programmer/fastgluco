@@ -17,8 +17,10 @@ import { CouponAdminController } from '../controllers/couponAdminController';
 import { SupportController } from '../controllers/supportController';
 import { HealthInsightController } from '../controllers/healthInsightController';
 import { NotificationController } from '../controllers/notificationController';
+import { ActivityController } from '../controllers/activityController';
 import { authenticateToken, requireRole } from '../middlewares/authMiddleware';
 import { requireSubscriptionFeature } from '../middlewares/subscriptionMiddleware';
+import { PaymentGatewayConfig } from '../models/PaymentGatewayConfig';
 
 const router = Router();
 
@@ -62,6 +64,31 @@ router.post('/auth/login', AuthController.login);
 router.post('/auth/refresh', AuthController.refresh);
 router.post('/auth/forgot-password', AuthController.forgotPassword);
 router.post('/auth/reset-password', AuthController.resetPassword);
+
+// Public System Configuration Endpoint
+router.get('/config/public', async (req, res) => {
+  try {
+    let config = await PaymentGatewayConfig.findOne();
+    if (!config) {
+      config = new PaymentGatewayConfig({
+        enableHydrationTracker: true,
+        hydrationDailyLimitMl: 3000,
+        enableWorkoutTracker: true
+      });
+      await config.save();
+    }
+    return res.status(200).json({
+      enableHydrationTracker: config.enableHydrationTracker ?? true,
+      hydrationDailyLimitMl: config.hydrationDailyLimitMl ?? 3000,
+      enableWorkoutTracker: config.enableWorkoutTracker ?? true,
+      aiSpikeThreshold: config.aiSpikeThreshold ?? 110,
+      enableSubscriptions: config.enableSubscriptions,
+      enablePayments: config.enablePayments
+    });
+  } catch (error: any) {
+    return res.status(500).json({ message: error.message || 'Error fetching system configurations.' });
+  }
+});
 
 // ==========================================
 // 1.5. SUBSCRIPTION PUBLIC & USER ENDPOINTS
@@ -113,6 +140,10 @@ router.get('/glucose', GlucoseController.getReadings);
 router.get('/glucose/export', requireSubscriptionFeature('exportReports'), GlucoseController.exportAbbottFormatCSV);
 router.get('/glucose/analysis', requireSubscriptionFeature('advancedAnalysis'), GlucoseController.getSpikeAnalysis);
 router.get('/glucose/top-foods', requireSubscriptionFeature('foodInsights'), GlucoseController.getTopFoods);
+
+router.use('/activity-logs', authenticateToken, requireRole(['User']));
+router.post('/activity-logs', ActivityController.logActivity);
+router.get('/activity-logs', ActivityController.getActivities);
 
 router.use('/notifications', authenticateToken, requireRole(['User']));
 router.get('/notifications/unread-count', NotificationController.getUnreadCount);

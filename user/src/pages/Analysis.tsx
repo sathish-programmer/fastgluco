@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { 
-  Activity, 
-  ThumbsUp, 
-  ThumbsDown, 
-  Smile, 
-  Frown, 
+import {
+  Activity,
+  ThumbsUp,
+  ThumbsDown,
+  Smile,
+  Frown,
   AlertTriangle,
   CreditCard
 } from 'lucide-react';
@@ -16,7 +16,7 @@ interface AnalysisProps {
 
 export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
   const { token, apiUrl } = useAuth();
-  
+
   const [spikeLogs, setSpikeLogs] = useState<any[]>([]);
   const [topFoods, setTopFoods] = useState<{
     safe: any[];
@@ -29,7 +29,7 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
   const [submittingFeedbackId, setSubmittingFeedbackId] = useState<string | null>(null);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
 
-  const [range, setRange] = useState<string>('all');
+  const [range, setRange] = useState<string>('day');
 
   useEffect(() => {
     fetchAnalysisData();
@@ -153,11 +153,11 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
         </div>
       ) : (
         <div className="space-y-8">
-          
+
           {/* Section 1: Food GI aggregates lists (Top Foods Screen) */}
           <div>
             <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wider mb-4">My Food Profiles</h3>
-            
+
             <div className="grid grid-cols-1 gap-4">
               {/* Safe Foods */}
               <div className="bg-green-50/40 border border-green-100 rounded-3xl p-4 shadow-soft">
@@ -243,7 +243,7 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
                 spikeLogs.map((log) => {
                   const analysis = log.glucoseAnalysis;
                   return (
-                    <div 
+                    <div
                       key={log._id}
                       className="bg-cardBg border border-slate-100 rounded-3xl p-4 shadow-soft"
                     >
@@ -254,11 +254,10 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
                             {new Date(log.loggedAt).toLocaleDateString([], { dateStyle: 'medium' })} • {log.mealType}
                           </span>
                         </div>
-                        <span className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                          analysis.status === 'Safe' ? 'bg-green-50 text-success border-green-100' :
-                          analysis.status === 'Moderate' ? 'bg-orange-50 text-warning border-orange-100' :
-                          'bg-red-50 text-danger border-red-100'
-                        }`}>
+                        <span className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border ${analysis.status === 'Safe' ? 'bg-green-50 text-success border-green-100' :
+                            analysis.status === 'Moderate' ? 'bg-orange-50 text-warning border-orange-100' :
+                              'bg-red-50 text-danger border-red-100'
+                          }`}>
                           {analysis.status}
                         </span>
                       </div>
@@ -284,7 +283,7 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
                       {/* User Feedback Panel */}
                       <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                         <span className="text-[10px] font-bold text-slate-400 uppercase">Was this spike accurate?</span>
-                        
+
                         {log.feedback ? (
                           <span className="text-xs font-semibold text-slate-500 flex items-center space-x-1">
                             <span>User response:</span>

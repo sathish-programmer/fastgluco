@@ -13,6 +13,9 @@ export interface IPaymentGatewayConfig extends Document {
   aiQuestions: string[]; // Array of questions to ask sequentially
   aiCompletionMessage: string; // Final message when all answered
   glucoseAlertMinIntervalHours: number; // Minimum hours between consecutive alert emails to prevent spamming
+  enableHydrationTracker: boolean; // Hydration Tracker ON/OFF
+  hydrationDailyLimitMl: number; // Daily hydration goal limit in ml
+  enableWorkoutTracker: boolean; // Workout Tracker ON/OFF
   updatedBy?: Schema.Types.ObjectId; // ref: AdminUser
   createdAt: Date;
   updatedAt: Date;
@@ -29,6 +32,9 @@ const paymentGatewayConfigSchema = new Schema<IPaymentGatewayConfig>(
     safeGlucoseThreshold: { type: Number, default: 90, required: true },
     moderateGlucoseThreshold: { type: Number, default: 110, required: true },
     aiSpikeThreshold: { type: Number, default: 110 },
+    enableHydrationTracker: { type: Boolean, default: true, required: true },
+    hydrationDailyLimitMl: { type: Number, default: 3000, required: true },
+    enableWorkoutTracker: { type: Boolean, default: true, required: true },
     aiQuestions: { 
       type: [String], 
       default: ["You recently logged a food that spiked your glucose. Why did you consume this when it's advised to avoid it?", "Did you take a walk afterwards?"] 
