@@ -17,6 +17,7 @@ export class GlucoseService {
 
     const mealTime = foodLog.loggedAt;
     const userId = foodLog.userId;
+    const user = await User.findById(userId);
 
     // 1. Find Before Glucose: Closest reading in range [mealTime - 45 min, mealTime]
     const fortyFiveMinutesAgo = new Date(mealTime.getTime() - 45 * 60 * 1000);
@@ -53,7 +54,7 @@ export class GlucoseService {
     const netRise = peakGlucose - beforeGlucose;
 
     const config = await PaymentGatewayConfig.findOne();
-    const safeLimit = config?.safeGlucoseThreshold ?? 90;      // mg/dL rise threshold for Safe
+    const safeLimit = user?.spikeThreshold ?? config?.safeGlucoseThreshold ?? 90;      // mg/dL rise threshold for Safe
     const moderateLimit = config?.moderateGlucoseThreshold ?? 110; // mg/dL rise threshold for Moderate
 
     // Spike status is based on net glucose RISE from before-meal baseline.
@@ -95,7 +96,6 @@ export class GlucoseService {
         console.error('Failed to create walk reminder notification:', notiErr);
       }
 
-      const user = await User.findById(userId);
       if (user && user.email) {
         const intervalHours = config?.glucoseAlertMinIntervalHours ?? 2;
         let shouldSendAlert = true;

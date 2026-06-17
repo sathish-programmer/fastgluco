@@ -412,457 +412,134 @@ export const FoodLog: React.FC = () => {
     }
   };
 
-  return (
-    <div className="pb-24 pt-4 px-4 max-w-lg mx-auto bg-slate-50/40 min-h-screen">
-      {/* Title */}
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-black text-slate-800 tracking-tight">Diet Log</h2>
-          <p className="text-xs text-slate-500 font-semibold mt-0.5">
-            Identify meal items causing glucose spikes
-          </p>
-        </div>
-        <div className="bg-primary/10 text-primary p-2 rounded-2xl">
-          <Activity className="h-5 w-5" />
-        </div>
-      </div>
+    const totalCalories = logs.reduce((acc, log) => acc + Math.round(log.calories * log.quantity), 0);
+    const totalCarbs = logs.reduce((acc, log) => acc + Math.round(log.carbs * log.quantity), 0);
+    const totalProtein = logs.reduce((acc, log) => acc + Math.round(log.protein * log.quantity), 0);
+    const totalFat = logs.reduce((acc, log) => acc + Math.round(log.fat * log.quantity), 0);
+    const totalFiber = logs.reduce((acc, log) => acc + Math.round((log.fiber || 0) * log.quantity), 0);
 
-      {message && (
-        <div className="mb-4 p-3.5 bg-emerald-50 border border-emerald-100 text-emerald-800 text-xs font-bold rounded-2xl shadow-sm animate-in fade-in duration-200">
-          {message}
-        </div>
-      )}
-
-      {/* Log Form Card */}
-      <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-md mb-6">
-        <form onSubmit={handleLogSubmit} className="space-y-4">
-          <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Log a Meal</h3>
-
-          {/* Search Indian Database */}
-          <div className="relative">
-            <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
-              <Search className="h-4 w-4" />
-            </span>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search Indian database (idli, roti, papaya...)"
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm font-semibold bg-slate-50/50"
-            />
-
-            {/* Auto-suggestion overlay */}
-            {libraryFoods.length > 0 && (
-              <div className="absolute left-0 right-0 mt-1 bg-white border border-slate-100 rounded-2xl shadow-xl max-h-56 overflow-y-auto z-10 divide-y divide-slate-50 overflow-hidden">
-                {libraryFoods.map((food) => (
-                  <div
-                    key={food._id}
-                    onClick={() => handleSelectLibraryFood(food)}
-                    className="p-3 hover:bg-slate-50 cursor-pointer flex justify-between items-center text-sm transition-all"
-                  >
-                    <span className="font-bold text-slate-700">{food.name}</span>
-                    <span className="text-[10px] font-extrabold text-slate-400 bg-slate-100/80 px-2 py-1 rounded-lg flex items-center gap-1.5">
-                      {food.category}
-                      <span className="text-[9px] bg-white border border-slate-100 px-1 py-0.5 rounded font-black text-primary">
-                        {food.calories} kcal / {food.servingSize}{food.servingUnit}
-                      </span>
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
+    return (
+      <div className="pb-24 pt-4 px-4 max-w-lg mx-auto bg-slate-50/70 min-h-screen font-sans antialiased text-slate-800">
+        {/* Title */}
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-bold text-slate-850">Diet Log</h2>
+            <p className="text-xs text-slate-400 font-semibold mt-1">
+              Identify meal items causing glucose spikes
+            </p>
           </div>
+          <div className="bg-white border border-slate-150 p-2 rounded-2xl shadow-sm text-primary">
+            <Activity className="h-5 w-5" />
+          </div>
+        </div>
 
-          {/* Core meal inputs */}
-          <div className="space-y-3.5 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
-            {selectedLibraryFood ? (
-              <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-indigo-50/80 border border-blue-100 rounded-xl">
-                <div>
-                  <span className="text-[9px] font-black text-primary uppercase tracking-wider block">Selected Template</span>
-                  <span className="text-sm font-black text-slate-800">{selectedLibraryFood.name}</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleClearSelected}
-                  className="text-xs font-extrabold text-rose-500 hover:text-rose-600 transition-all bg-white shadow-sm px-2.5 py-1 rounded-lg border border-rose-100"
-                >
-                  Clear
-                </button>
-              </div>
-            ) : (
-              <div>
-                <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">Meal Name</label>
-                <input
-                  type="text"
-                  required
-                  value={customName}
-                  onChange={(e) => setCustomName(e.target.value)}
-                  placeholder="Rice and Dal, boiled egg..."
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm font-semibold bg-white"
-                />
-              </div>
-            )}
+        {message && (
+          <div className="mb-4 p-3 bg-emerald-50 border border-emerald-100 text-emerald-800 text-xs font-bold rounded-2xl shadow-sm animate-in fade-in duration-200">
+            {message}
+          </div>
+        )}
 
-            {/* Backdating inputs */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">Date of Meal</label>
-                <input
-                  type="date"
-                  required
-                  value={logDate}
-                  onChange={(e) => setLogDate(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-xs font-bold text-slate-600 bg-white cursor-pointer"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">Time of Meal</label>
-                <input
-                  type="time"
-                  required
-                  value={logTime}
-                  onChange={(e) => setLogTime(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-xs font-bold text-slate-600 bg-white cursor-pointer"
-                />
-              </div>
-            </div>
+        {/* Log Form Card */}
+        <div className="bg-white border border-slate-100 shadow-[0_12px_24px_rgba(0,0,0,0.02)] rounded-3xl p-5 mb-6">
+          <form onSubmit={handleLogSubmit} className="space-y-4">
+            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Log a Meal</h3>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">Meal Period</label>
-                <select
-                  value={mealType}
-                  onChange={(e: any) => setMealType(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-xs font-bold text-slate-600 bg-white cursor-pointer"
-                >
-                  <option value="Breakfast">Breakfast</option>
-                  <option value="Lunch">Lunch</option>
-                  <option value="Dinner">Dinner</option>
-                  <option value="Snack">Snack</option>
-                </select>
-              </div>
+            {/* Search Indian Database */}
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                <Search className="h-4 w-4" />
+              </span>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search Indian database (idli, roti, papaya...)"
+                className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-semibold bg-slate-50/30 transition-all"
+              />
 
-              {!selectedLibraryFood && (
-                <div>
-                  <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">Food Category</label>
-                  <select
-                    value={category}
-                    onChange={(e: any) => setCategory(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-xs font-bold text-slate-600 bg-white cursor-pointer"
-                  >
-                    <option value="South Indian">South Indian</option>
-                    <option value="North Indian">North Indian</option>
-                    <option value="Snacks">Snacks</option>
-                    <option value="Fruits">Fruits</option>
-                    <option value="Vegetables">Vegetables</option>
-                    <option value="Beverages">Beverages</option>
-                    <option value="Dairy">Dairy</option>
-                    <option value="Non-Veg">Non-Veg</option>
-                    <option value="Sweets">Sweets</option>
-                    <option value="Custom">Custom Entry</option>
-                  </select>
+              {/* Auto-suggestion overlay */}
+              {libraryFoods.length > 0 && (
+                <div className="absolute left-0 right-0 mt-2 bg-white border border-slate-100 rounded-3xl shadow-[0_12px_30px_rgba(0,0,0,0.08)] max-h-56 overflow-y-auto z-10 divide-y divide-slate-100 overflow-hidden">
+                  {libraryFoods.map((food) => (
+                    <div
+                      key={food._id}
+                      onClick={() => handleSelectLibraryFood(food)}
+                      className="p-3 hover:bg-slate-50 cursor-pointer flex justify-between items-center text-sm transition-all"
+                    >
+                      <span className="font-bold text-slate-700">{food.name}</span>
+                      <span className="text-[10px] font-extrabold text-slate-400 bg-slate-100/80 px-2 py-1 rounded-lg flex items-center gap-1.5">
+                        {food.category}
+                        <span className="text-[9px] bg-white border border-slate-100 px-1 py-0.5 rounded font-black text-primary">
+                          {food.calories} kcal / {food.servingSize}{food.servingUnit}
+                        </span>
+                      </span>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
 
-            {/* Nutrients inputs (shown if manual entry or pre-populated by library selection) */}
-            <div className="pt-3.5 border-t border-slate-200/60">
-              <span className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2">Nutritional Breakdown</span>
-              <div className="grid grid-cols-5 gap-2">
-                {/* Calories */}
-                <div className={`p-2 rounded-xl text-center border transition-all ${
-                  selectedLibraryFood ? 'bg-orange-50/40 border-orange-100' : 'bg-white border-slate-200 focus-within:border-orange-300'
-                }`}>
-                  <span className="text-[8px] font-black text-orange-600 block uppercase tracking-wider">Calories</span>
-                  {selectedLibraryFood ? (
-                    <span className="text-xs font-extrabold text-orange-700 block mt-0.5">
-                      {Math.round((selectedLibraryFood.calories / selectedLibraryFood.servingSize) * quantity)}
-                    </span>
-                  ) : (
-                    <input
-                      type="number"
-                      value={calories}
-                      onChange={(e) => setCalories(parseFloat(e.target.value) || 0)}
-                      className="w-full text-center font-bold text-slate-700 text-xs mt-0.5 bg-transparent focus:outline-none"
-                    />
-                  )}
-                </div>
-                {/* Carbs */}
-                <div className={`p-2 rounded-xl text-center border transition-all ${
-                  selectedLibraryFood ? 'bg-blue-50/40 border-blue-100' : 'bg-white border-slate-200 focus-within:border-blue-300'
-                }`}>
-                  <span className="text-[8px] font-black text-blue-600 block uppercase tracking-wider">Carbs (g)</span>
-                  {selectedLibraryFood ? (
-                    <span className="text-xs font-extrabold text-blue-700 block mt-0.5">
-                      {Math.round((selectedLibraryFood.carbs / selectedLibraryFood.servingSize) * quantity)}g
-                    </span>
-                  ) : (
-                    <input
-                      type="number"
-                      value={carbs}
-                      onChange={(e) => setCarbs(parseFloat(e.target.value) || 0)}
-                      className="w-full text-center font-bold text-slate-700 text-xs mt-0.5 bg-transparent focus:outline-none"
-                    />
-                  )}
-                </div>
-                {/* Protein */}
-                <div className={`p-2 rounded-xl text-center border transition-all ${
-                  selectedLibraryFood ? 'bg-indigo-50/40 border-indigo-100' : 'bg-white border-slate-200 focus-within:border-indigo-300'
-                }`}>
-                  <span className="text-[8px] font-black text-indigo-600 block uppercase tracking-wider">Protein</span>
-                  {selectedLibraryFood ? (
-                    <span className="text-xs font-extrabold text-indigo-700 block mt-0.5">
-                      {Math.round((selectedLibraryFood.protein / selectedLibraryFood.servingSize) * quantity)}g
-                    </span>
-                  ) : (
-                    <input
-                      type="number"
-                      value={protein}
-                      onChange={(e) => setProtein(parseFloat(e.target.value) || 0)}
-                      className="w-full text-center font-bold text-slate-700 text-xs mt-0.5 bg-transparent focus:outline-none"
-                    />
-                  )}
-                </div>
-                {/* Fat */}
-                <div className={`p-2 rounded-xl text-center border transition-all ${
-                  selectedLibraryFood ? 'bg-amber-50/40 border-amber-100' : 'bg-white border-slate-200 focus-within:border-amber-300'
-                }`}>
-                  <span className="text-[8px] font-black text-amber-600 block uppercase tracking-wider">Fat (g)</span>
-                  {selectedLibraryFood ? (
-                    <span className="text-xs font-extrabold text-amber-700 block mt-0.5">
-                      {Math.round((selectedLibraryFood.fat / selectedLibraryFood.servingSize) * quantity)}g
-                    </span>
-                  ) : (
-                    <input
-                      type="number"
-                      value={fat}
-                      onChange={(e) => setFat(parseFloat(e.target.value) || 0)}
-                      className="w-full text-center font-bold text-slate-700 text-xs mt-0.5 bg-transparent focus:outline-none"
-                    />
-                  )}
-                </div>
-                {/* Fiber */}
-                <div className={`p-2 rounded-xl text-center border transition-all ${
-                  selectedLibraryFood ? 'bg-emerald-50/40 border-emerald-100' : 'bg-white border-slate-200 focus-within:border-emerald-300'
-                }`}>
-                  <span className="text-[8px] font-black text-emerald-600 block uppercase tracking-wider">Fiber (g)</span>
-                  {selectedLibraryFood ? (
-                    <span className="text-xs font-extrabold text-emerald-700 block mt-0.5">
-                      {Math.round(((selectedLibraryFood.fiber || 0) / selectedLibraryFood.servingSize) * quantity)}g
-                    </span>
-                  ) : (
-                    <input
-                      type="number"
-                      value={fiber}
-                      onChange={(e) => setFiber(parseFloat(e.target.value) || 0)}
-                      className="w-full text-center font-bold text-slate-700 text-xs mt-0.5 bg-transparent focus:outline-none"
-                    />
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Serving size sizing controls */}
-            <div className="grid grid-cols-2 gap-3 pt-2">
-              <div>
-                <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">Serving Qty</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0.1"
-                  required
-                  value={quantity}
-                  onChange={(e) => setQuantity(parseFloat(e.target.value) || 1)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm font-black text-slate-700 bg-white"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">Unit</label>
-                <input
-                  type="text"
-                  required
-                  value={unit}
-                  onChange={(e) => setUnit(e.target.value)}
-                  disabled={!!selectedLibraryFood}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm font-semibold text-slate-500 disabled:bg-slate-100/60 disabled:cursor-not-allowed"
-                />
-              </div>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-primary hover:bg-primary-dark text-white font-extrabold py-3.5 px-4 rounded-2xl shadow-soft flex items-center justify-center space-x-2 transition-all hover:shadow-lg active:scale-[0.98]"
-          >
-            <Plus className="h-5 w-5" />
-            <span>Log Meal Log</span>
-          </button>
-        </form>
-      </div>
-
-      {/* Log History list */}
-      <div>
-        <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <h3 className="text-base font-extrabold text-slate-700 flex items-center space-x-2">
-            <Smile className="h-5 w-5 text-primary" />
-            <span>Meal Log History</span>
-          </h3>
-          <div className="flex items-center space-x-2 bg-white border border-slate-100 rounded-2xl px-3.5 py-1.5 self-start sm:self-auto shadow-sm">
-            <Calendar className="h-3.5 w-3.5 text-slate-400" />
-            <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">View Date:</span>
-            <input
-              type="date"
-              value={selectedViewDate}
-              onChange={(e) => setSelectedViewDate(e.target.value)}
-              className="text-xs font-bold text-slate-700 bg-transparent focus:outline-none border-none cursor-pointer"
-            />
-          </div>
-        </div>
-
-        <div className="space-y-3.5">
-          {logs.length === 0 ? (
-            <div className="text-center p-9 bg-white border border-slate-100 rounded-3xl text-sm font-bold text-slate-400 shadow-sm">
-              No foods logged for {new Date(selectedViewDate + 'T12:00:00').toLocaleDateString([], { dateStyle: 'medium' })}.
-            </div>
-          ) : (
-            logs.map((log) => (
-              <div 
-                key={log._id} 
-                className="bg-white p-4 rounded-3xl border border-slate-100 shadow-soft flex items-center justify-between transition-all hover:shadow-md"
-              >
-                <div className="flex items-center space-x-3.5 max-w-[82%]">
-                  <div className={`p-3 border rounded-2xl shrink-0 ${getCategoryIconContainerClass(log.category)}`}>
-                    {getCategoryIcon(log.category)}
-                  </div>
+            {/* Core meal inputs */}
+            <div className="space-y-3.5 bg-slate-50/30 p-4 rounded-2xl border border-slate-100/70">
+              {selectedLibraryFood ? (
+                <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-150 rounded-xl">
                   <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="text-sm font-bold text-slate-800 tracking-tight leading-tight">{log.name}</h4>
-                      <span className="text-[9px] text-slate-400 font-extrabold bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
-                        {new Date(log.loggedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block mt-0.5">
-                      {log.mealType} • {log.quantity} {log.unit}
-                    </span>
-                    <div className="flex items-center space-x-2.5 mt-2 flex-wrap gap-y-1">
-                      <span className="inline-flex items-center text-[10px] text-orange-600 font-extrabold bg-orange-50/50 px-2 py-0.5 rounded-lg border border-orange-100/50">
-                        <Flame className="h-3 w-3 mr-0.5 fill-orange-100" />
-                        {Math.round(log.calories * log.quantity)} kcal
-                      </span>
-                      <span className="inline-flex items-center text-[10px] text-blue-600 font-extrabold bg-blue-50/50 px-2 py-0.5 rounded-lg border border-blue-100/50">
-                        <Scale className="h-3 w-3 mr-0.5" />
-                        {Math.round(log.carbs * log.quantity)}g carbs
-                      </span>
-                      <span className="inline-flex items-center text-[10px] text-indigo-600 font-extrabold bg-indigo-50/50 px-2 py-0.5 rounded-lg border border-indigo-100/50">
-                        <ShoppingBag className="h-3 w-3 mr-0.5" />
-                        {Math.round(log.protein * log.quantity)}g pro
-                      </span>
-                      {log.fiber > 0 && (
-                        <span className="inline-flex items-center text-[10px] text-emerald-600 font-extrabold bg-emerald-50/50 px-2 py-0.5 rounded-lg border border-emerald-100/50">
-                          <Wheat className="h-3 w-3 mr-0.5" />
-                          {Math.round(log.fiber * log.quantity)}g fib
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Spike Correlation Quick Indicator */}
-                    {log.glucoseAnalysis && (
-                      <span className={`inline-flex items-center text-[9px] font-black px-2.5 py-0.5 rounded-full mt-2 border ${
-                        log.glucoseAnalysis.status === 'Safe' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                        log.glucoseAnalysis.status === 'Moderate' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                        'bg-rose-50 text-rose-600 border-rose-100'
-                      }`}>
-                        <Activity className="h-2.5 w-2.5 mr-1" />
-                        {log.glucoseAnalysis.status.toUpperCase()} SPIKE ({log.glucoseAnalysis.peakGlucose} mg/dL)
-                      </span>
-                    )}
+                    <span className="text-[9px] font-bold text-primary uppercase tracking-wider block">Selected Template</span>
+                    <span className="text-sm font-bold text-slate-800">{selectedLibraryFood.name}</span>
                   </div>
-                </div>
-
-                <div className="flex items-center space-x-1 shrink-0">
                   <button
-                    onClick={() => handleOpenEditModal(log)}
-                    className="p-2 hover:bg-slate-50 text-slate-400 hover:text-primary rounded-xl transition-all"
-                    title="Edit Log"
+                    type="button"
+                    onClick={handleClearSelected}
+                    className="text-xs font-bold text-rose-500 hover:text-rose-600 transition-all bg-white shadow-sm px-2.5 py-1 rounded-lg border border-rose-100"
                   >
-                    <Pencil className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteLog(log._id)}
-                    className="p-2 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-xl transition-all"
-                    title="Delete Log"
-                  >
-                    <Trash2 className="h-4 w-4" />
+                    Clear
                   </button>
                 </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
+              ) : (
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Meal Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={customName}
+                    onChange={(e) => setCustomName(e.target.value)}
+                    placeholder="Rice and Dal, boiled egg..."
+                    className="w-full px-3.5 py-2 rounded-2xl border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-semibold bg-white"
+                  />
+                </div>
+              )}
 
-      {/* Edit Food Log Modal */}
-      {isEditModalOpen && editingLog && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl border border-slate-100 overflow-hidden transform transition-all animate-in zoom-in-95 duration-200">
-            {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-              <div>
-                <h3 className="text-base font-extrabold text-slate-800">Edit Food Log</h3>
-                <p className="text-xs text-slate-400 font-medium mt-0.5">Modify meal entry details</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => { setIsEditModalOpen(false); setEditingLog(null); }}
-                className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-all"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            {/* Modal Body / Form */}
-            <form onSubmit={handleEditSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">Meal Name</label>
-                <input
-                  type="text"
-                  required
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm font-semibold text-slate-700 bg-white"
-                />
-              </div>
-
+              {/* Backdating inputs */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">Date of Meal</label>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Date of Meal</label>
                   <input
                     type="date"
                     required
-                    value={editDate}
-                    onChange={(e) => setEditDate(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-xs font-semibold text-slate-600 bg-white cursor-pointer"
+                    value={logDate}
+                    onChange={(e) => setLogDate(e.target.value)}
+                    className="w-full px-3 py-2 rounded-2xl border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-xs font-bold text-slate-600 bg-white cursor-pointer"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">Time of Meal</label>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Time of Meal</label>
                   <input
                     type="time"
                     required
-                    value={editTime}
-                    onChange={(e) => setEditTime(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-xs font-semibold text-slate-600 bg-white cursor-pointer"
+                    value={logTime}
+                    onChange={(e) => setLogTime(e.target.value)}
+                    className="w-full px-3 py-2 rounded-2xl border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-xs font-bold text-slate-600 bg-white cursor-pointer"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">Meal Period</label>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Meal Period</label>
                   <select
-                    value={editMealType}
-                    onChange={(e: any) => setEditMealType(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-xs font-semibold text-slate-600 bg-white cursor-pointer"
+                    value={mealType}
+                    onChange={(e: any) => setMealType(e.target.value)}
+                    className="w-full px-3 py-2 rounded-2xl border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-xs font-bold text-slate-600 bg-white cursor-pointer"
                   >
                     <option value="Breakfast">Breakfast</option>
                     <option value="Lunch">Lunch</option>
@@ -870,125 +547,483 @@ export const FoodLog: React.FC = () => {
                     <option value="Snack">Snack</option>
                   </select>
                 </div>
-                <div>
-                  <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">Food Category</label>
-                  <select
-                    value={editCategory}
-                    onChange={(e) => setEditCategory(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-xs font-semibold text-slate-600 bg-white cursor-pointer"
-                  >
-                    <option value="South Indian">South Indian</option>
-                    <option value="North Indian">North Indian</option>
-                    <option value="Snacks">Snacks</option>
-                    <option value="Fruits">Fruits</option>
-                    <option value="Vegetables">Vegetables</option>
-                    <option value="Beverages">Beverages</option>
-                    <option value="Dairy">Dairy</option>
-                    <option value="Non-Veg">Non-Veg</option>
-                    <option value="Sweets">Sweets</option>
-                    <option value="Custom">Custom Entry</option>
-                  </select>
+
+                {!selectedLibraryFood && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Food Category</label>
+                    <select
+                      value={category}
+                      onChange={(e: any) => setCategory(e.target.value)}
+                      className="w-full px-3 py-2 rounded-2xl border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-xs font-bold text-slate-600 bg-white cursor-pointer"
+                    >
+                      <option value="South Indian">South Indian</option>
+                      <option value="North Indian">North Indian</option>
+                      <option value="Snacks">Snacks</option>
+                      <option value="Fruits">Fruits</option>
+                      <option value="Vegetables">Vegetables</option>
+                      <option value="Beverages">Beverages</option>
+                      <option value="Dairy">Dairy</option>
+                      <option value="Non-Veg">Non-Veg</option>
+                      <option value="Sweets">Sweets</option>
+                      <option value="Custom">Custom Entry</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              {/* Nutrients inputs */}
+              <div className="pt-3 border-t border-slate-200/60">
+                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Nutritional Breakdown</span>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {/* Calories */}
+                  <div className={`p-2 rounded-xl text-center border transition-all ${
+                    selectedLibraryFood ? 'bg-slate-50 border-slate-100' : 'bg-white border-slate-200/80 focus-within:border-primary/40'
+                  }`}>
+                    <span className="text-[8px] font-bold text-slate-400 block uppercase">Calories</span>
+                    {selectedLibraryFood ? (
+                      <span className="text-xs font-bold text-slate-700 block mt-0.5">
+                        {Math.round((selectedLibraryFood.calories / selectedLibraryFood.servingSize) * quantity)}
+                      </span>
+                    ) : (
+                      <input
+                        type="number"
+                        value={calories}
+                        onChange={(e) => setCalories(parseFloat(e.target.value) || 0)}
+                        className="w-full text-center font-bold text-slate-700 text-xs mt-0.5 bg-transparent focus:outline-none"
+                      />
+                    )}
+                  </div>
+                  {/* Carbs */}
+                  <div className={`p-2 rounded-xl text-center border transition-all ${
+                    selectedLibraryFood ? 'bg-slate-50 border-slate-100' : 'bg-white border-slate-200/80 focus-within:border-primary/40'
+                  }`}>
+                    <span className="text-[8px] font-bold text-slate-400 block uppercase">Carbs</span>
+                    {selectedLibraryFood ? (
+                      <span className="text-xs font-bold text-slate-700 block mt-0.5">
+                        {Math.round((selectedLibraryFood.carbs / selectedLibraryFood.servingSize) * quantity)}g
+                      </span>
+                    ) : (
+                      <input
+                        type="number"
+                        value={carbs}
+                        onChange={(e) => setCarbs(parseFloat(e.target.value) || 0)}
+                        className="w-full text-center font-bold text-slate-700 text-xs mt-0.5 bg-transparent focus:outline-none"
+                      />
+                    )}
+                  </div>
+                  {/* Protein */}
+                  <div className={`p-2 rounded-xl text-center border transition-all ${
+                    selectedLibraryFood ? 'bg-slate-50 border-slate-100' : 'bg-white border-slate-200/80 focus-within:border-primary/40'
+                  }`}>
+                    <span className="text-[8px] font-bold text-slate-400 block uppercase">Protein</span>
+                    {selectedLibraryFood ? (
+                      <span className="text-xs font-bold text-slate-700 block mt-0.5">
+                        {Math.round((selectedLibraryFood.protein / selectedLibraryFood.servingSize) * quantity)}g
+                      </span>
+                    ) : (
+                      <input
+                        type="number"
+                        value={protein}
+                        onChange={(e) => setProtein(parseFloat(e.target.value) || 0)}
+                        className="w-full text-center font-bold text-slate-700 text-xs mt-0.5 bg-transparent focus:outline-none"
+                      />
+                    )}
+                  </div>
+                  {/* Fat */}
+                  <div className={`p-2 rounded-xl text-center border transition-all ${
+                    selectedLibraryFood ? 'bg-slate-50 border-slate-100' : 'bg-white border-slate-200/80 focus-within:border-primary/40'
+                  }`}>
+                    <span className="text-[8px] font-bold text-slate-400 block uppercase">Fat</span>
+                    {selectedLibraryFood ? (
+                      <span className="text-xs font-bold text-slate-700 block mt-0.5">
+                        {Math.round((selectedLibraryFood.fat / selectedLibraryFood.servingSize) * quantity)}g
+                      </span>
+                    ) : (
+                      <input
+                        type="number"
+                        value={fat}
+                        onChange={(e) => setFat(parseFloat(e.target.value) || 0)}
+                        className="w-full text-center font-bold text-slate-700 text-xs mt-0.5 bg-transparent focus:outline-none"
+                      />
+                    )}
+                  </div>
+                  {/* Fiber */}
+                  <div className={`p-2 rounded-xl text-center border transition-all ${
+                    selectedLibraryFood ? 'bg-slate-50 border-slate-100' : 'bg-white border-slate-200/80 focus-within:border-primary/40'
+                  }`}>
+                    <span className="text-[8px] font-bold text-slate-400 block uppercase">Fiber</span>
+                    {selectedLibraryFood ? (
+                      <span className="text-xs font-bold text-slate-700 block mt-0.5">
+                        {Math.round(((selectedLibraryFood.fiber || 0) / selectedLibraryFood.servingSize) * quantity)}g
+                      </span>
+                    ) : (
+                      <input
+                        type="number"
+                        value={fiber}
+                        onChange={(e) => setFiber(parseFloat(e.target.value) || 0)}
+                        className="w-full text-center font-bold text-slate-700 text-xs mt-0.5 bg-transparent focus:outline-none"
+                      />
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Quantity / Unit */}
+              {/* Serving size sizing controls */}
               <div className="grid grid-cols-2 gap-3 pt-1">
                 <div>
-                  <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">Serving Qty</label>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Serving Qty</label>
                   <input
                     type="number"
                     step="0.1"
                     min="0.1"
                     required
-                    value={editQuantity}
-                    onChange={(e) => handleEditQuantityChange(parseFloat(e.target.value) || 1)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm font-bold text-slate-700 bg-white"
+                    value={quantity}
+                    onChange={(e) => setQuantity(parseFloat(e.target.value) || 1)}
+                    className="w-full px-3 py-2 rounded-2xl border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-bold text-slate-700 bg-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">Unit</label>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Unit</label>
                   <input
                     type="text"
                     required
-                    value={editUnit}
-                    onChange={(e) => setEditUnit(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm font-semibold text-slate-600 bg-white"
+                    value={unit}
+                    onChange={(e) => setUnit(e.target.value)}
+                    disabled={!!selectedLibraryFood}
+                    className="w-full px-3 py-2 rounded-2xl border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-semibold text-slate-500 disabled:bg-slate-100/50 disabled:cursor-not-allowed"
                   />
                 </div>
               </div>
+            </div>
 
-              {/* Macros inputs */}
-              <div className="pt-3.5 border-t border-slate-200/60">
-                <span className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2">Nutritional Values (Total)</span>
-                <div className="grid grid-cols-5 gap-2">
-                  <div className="p-2 rounded-xl text-center border bg-orange-50/40 border-orange-100 focus-within:border-orange-300 transition-all">
-                    <span className="text-[8px] font-black text-orange-600 block uppercase tracking-wider">Calories</span>
-                    <input
-                      type="number"
-                      value={editCalories}
-                      onChange={(e) => handleEditCaloriesChange(parseFloat(e.target.value) || 0)}
-                      className="w-full text-center font-bold text-slate-700 text-xs mt-0.5 bg-transparent focus:outline-none"
-                    />
-                  </div>
-                  <div className="p-2 rounded-xl text-center border bg-blue-50/40 border-blue-100 focus-within:border-blue-300 transition-all">
-                    <span className="text-[8px] font-black text-blue-600 block uppercase tracking-wider">Carbs</span>
-                    <input
-                      type="number"
-                      value={editCarbs}
-                      onChange={(e) => handleEditCarbsChange(parseFloat(e.target.value) || 0)}
-                      className="w-full text-center font-bold text-slate-700 text-xs mt-0.5 bg-transparent focus:outline-none"
-                    />
-                  </div>
-                  <div className="p-2 rounded-xl text-center border bg-indigo-50/40 border-indigo-100 focus-within:border-indigo-300 transition-all">
-                    <span className="text-[8px] font-black text-indigo-600 block uppercase tracking-wider">Protein</span>
-                    <input
-                      type="number"
-                      value={editProtein}
-                      onChange={(e) => handleEditProteinChange(parseFloat(e.target.value) || 0)}
-                      className="w-full text-center font-bold text-slate-700 text-xs mt-0.5 bg-transparent focus:outline-none"
-                    />
-                  </div>
-                  <div className="p-2 rounded-xl text-center border bg-amber-50/40 border-amber-100 focus-within:border-amber-300 transition-all">
-                    <span className="text-[8px] font-black text-amber-600 block uppercase tracking-wider">Fat</span>
-                    <input
-                      type="number"
-                      value={editFat}
-                      onChange={(e) => handleEditFatChange(parseFloat(e.target.value) || 0)}
-                      className="w-full text-center font-bold text-slate-700 text-xs mt-0.5 bg-transparent focus:outline-none"
-                    />
-                  </div>
-                  <div className="p-2 rounded-xl text-center border bg-emerald-50/40 border-emerald-100 focus-within:border-emerald-300 transition-all">
-                    <span className="text-[8px] font-black text-emerald-600 block uppercase tracking-wider">Fiber</span>
-                    <input
-                      type="number"
-                      value={editFiber}
-                      onChange={(e) => handleEditFiberChange(parseFloat(e.target.value) || 0)}
-                      className="w-full text-center font-bold text-slate-700 text-xs mt-0.5 bg-transparent focus:outline-none"
-                    />
-                  </div>
+            <button
+              type="submit"
+              className="w-full bg-primary hover:bg-primary/95 text-white font-bold py-3 px-4 rounded-2xl shadow-soft flex items-center justify-center space-x-2 transition-all hover:shadow-md active:scale-[0.98]"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Log Meal</span>
+            </button>
+          </form>
+        </div>
+
+        {/* Log History list */}
+        <div>
+          <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <h3 className="text-sm font-bold text-slate-800 flex items-center space-x-2">
+              <Smile className="h-4 w-4 text-primary" />
+              <span>Meal Log History</span>
+            </h3>
+            <div className="flex items-center space-x-2 bg-white border border-slate-100 rounded-2xl px-3 py-1.5 self-start sm:self-auto shadow-sm">
+              <Calendar className="h-3.5 w-3.5 text-slate-400" />
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">View Date:</span>
+              <input
+                type="date"
+                value={selectedViewDate}
+                onChange={(e) => setSelectedViewDate(e.target.value)}
+                className="text-xs font-bold text-slate-600 bg-transparent focus:outline-none border-none cursor-pointer"
+              />
+            </div>
+          </div>
+
+          {/* Daily Nutrient Summary Card */}
+          {logs.length > 0 && (
+            <div className="bg-white border border-slate-100 shadow-[0_12px_24px_rgba(0,0,0,0.02)] rounded-3xl p-4 mb-4">
+              <h4 className="text-[10px] font-bold text-slate-450 uppercase tracking-wider mb-3">Daily Nutrients Summary</h4>
+              <div className="grid grid-cols-5 gap-2 text-center">
+                <div className="bg-slate-50/50 p-1.5 rounded-xl border border-slate-100/60">
+                  <span className="text-[8px] font-bold text-slate-400 block uppercase">Calories</span>
+                  <span className="text-xs font-bold text-slate-700 block mt-0.5">{totalCalories}</span>
+                </div>
+                <div className="bg-slate-50/50 p-1.5 rounded-xl border border-slate-100/60">
+                  <span className="text-[8px] font-bold text-slate-400 block uppercase">Carbs</span>
+                  <span className="text-xs font-bold text-slate-700 block mt-0.5">{totalCarbs}g</span>
+                </div>
+                <div className="bg-slate-50/50 p-1.5 rounded-xl border border-slate-100/60">
+                  <span className="text-[8px] font-bold text-slate-400 block uppercase">Protein</span>
+                  <span className="text-xs font-bold text-slate-700 block mt-0.5">{totalProtein}g</span>
+                </div>
+                <div className="bg-slate-50/50 p-1.5 rounded-xl border border-slate-100/60">
+                  <span className="text-[8px] font-bold text-slate-400 block uppercase">Fat</span>
+                  <span className="text-xs font-bold text-slate-700 block mt-0.5">{totalFat}g</span>
+                </div>
+                <div className="bg-slate-50/50 p-1.5 rounded-xl border border-slate-100/60">
+                  <span className="text-[8px] font-bold text-slate-400 block uppercase">Fiber</span>
+                  <span className="text-xs font-bold text-slate-700 block mt-0.5">{totalFiber}g</span>
                 </div>
               </div>
+            </div>
+          )}
 
-              {/* Submit Buttons */}
-              <div className="flex space-x-3 pt-2">
+          <div className="space-y-3.5">
+            {logs.length === 0 ? (
+              <div className="text-center p-8 bg-white border border-slate-100 rounded-3xl text-xs font-semibold text-slate-400 shadow-[0_12px_24px_rgba(0,0,0,0.02)]">
+                No foods logged for {new Date(selectedViewDate + 'T12:00:00').toLocaleDateString([], { dateStyle: 'medium' })}.
+              </div>
+            ) : (
+              logs.map((log) => (
+                <div 
+                  key={log._id} 
+                  className="bg-white p-4 rounded-3xl border border-slate-100 shadow-[0_12px_24px_rgba(0,0,0,0.02)] flex items-center justify-between transition-all hover:shadow-md"
+                >
+                  <div className="flex items-center space-x-3.5 max-w-[82%]">
+                    <div className={`p-3 border rounded-2xl shrink-0 ${getCategoryIconContainerClass(log.category)}`}>
+                      {getCategoryIcon(log.category)}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="text-sm font-bold text-slate-800 tracking-tight leading-tight">{log.name}</h4>
+                        <span className="text-[9px] text-slate-400 font-extrabold bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
+                          {new Date(log.loggedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mt-0.5">
+                        {log.mealType} • {log.quantity} {log.unit}
+                      </span>
+                      <div className="flex items-center space-x-2 mt-2 flex-wrap gap-y-1">
+                        <span className="inline-flex items-center text-[10px] text-orange-600 font-bold bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-full">
+                          <Flame className="h-2.5 w-2.5 mr-0.5 fill-orange-100" />
+                          {Math.round(log.calories * log.quantity)} kcal
+                        </span>
+                        <span className="inline-flex items-center text-[10px] text-blue-600 font-bold bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-full">
+                          <Scale className="h-2.5 w-2.5 mr-0.5" />
+                          {Math.round(log.carbs * log.quantity)}g carbs
+                        </span>
+                        <span className="inline-flex items-center text-[10px] text-indigo-600 font-bold bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-full">
+                          <ShoppingBag className="h-2.5 w-2.5 mr-0.5" />
+                          {Math.round(log.protein * log.quantity)}g pro
+                        </span>
+                        {log.fiber > 0 && (
+                          <span className="inline-flex items-center text-[10px] text-emerald-600 font-bold bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-full">
+                            <Wheat className="h-2.5 w-2.5 mr-0.5" />
+                            {Math.round(log.fiber * log.quantity)}g fib
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Spike Correlation Quick Indicator */}
+                      {log.glucoseAnalysis && (
+                        <span className={`inline-flex items-center text-[9px] font-bold px-2.5 py-0.5 rounded-full mt-2 border ${
+                          log.glucoseAnalysis.status === 'Safe' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                          log.glucoseAnalysis.status === 'Moderate' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                          'bg-rose-50 text-rose-600 border-rose-100'
+                        }`}>
+                          <Activity className="h-2.5 w-2.5 mr-1" />
+                          {log.glucoseAnalysis.status.toUpperCase()} SPIKE ({log.glucoseAnalysis.peakGlucose} mg/dL)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-1 shrink-0">
+                    <button
+                      onClick={() => handleOpenEditModal(log)}
+                      className="p-2 hover:bg-slate-50 text-slate-400 hover:text-primary rounded-xl transition-all"
+                      title="Edit Log"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteLog(log._id)}
+                      className="p-2 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-xl transition-all"
+                      title="Delete Log"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Edit Food Log Modal */}
+        {isEditModalOpen && editingLog && (
+          <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl border border-slate-100 overflow-hidden transform transition-all animate-in zoom-in-95 duration-200">
+              {/* Modal Header */}
+              <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800">Edit Food Log</h3>
+                  <p className="text-xs text-slate-450 font-medium mt-0.5">Modify meal entry details</p>
+                </div>
                 <button
                   type="button"
                   onClick={() => { setIsEditModalOpen(false); setEditingLog(null); }}
-                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-extrabold py-2.5 px-4 rounded-xl text-sm transition-all"
+                  className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-all"
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 bg-primary hover:bg-primary-dark text-white font-extrabold py-2.5 px-4 rounded-xl text-sm shadow-soft transition-all"
-                >
-                  Save Changes
+                  <X className="h-5 w-5" />
                 </button>
               </div>
-            </form>
+
+              {/* Modal Body / Form */}
+              <form onSubmit={handleEditSubmit} className="p-6 space-y-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Meal Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-semibold text-slate-700 bg-white"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Date of Meal</label>
+                    <input
+                      type="date"
+                      required
+                      value={editDate}
+                      onChange={(e) => setEditDate(e.target.value)}
+                      className="w-full px-3.5 py-2 rounded-2xl border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-xs font-semibold text-slate-600 bg-white cursor-pointer"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Time of Meal</label>
+                    <input
+                      type="time"
+                      required
+                      value={editTime}
+                      onChange={(e) => setEditTime(e.target.value)}
+                      className="w-full px-3.5 py-2 rounded-2xl border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-xs font-semibold text-slate-600 bg-white cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Meal Period</label>
+                    <select
+                      value={editMealType}
+                      onChange={(e: any) => setEditMealType(e.target.value)}
+                      className="w-full px-3.5 py-2 rounded-2xl border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-xs font-semibold text-slate-600 bg-white cursor-pointer"
+                    >
+                      <option value="Breakfast">Breakfast</option>
+                      <option value="Lunch">Lunch</option>
+                      <option value="Dinner">Dinner</option>
+                      <option value="Snack">Snack</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Food Category</label>
+                    <select
+                      value={editCategory}
+                      onChange={(e) => setEditCategory(e.target.value)}
+                      className="w-full px-3.5 py-2 rounded-2xl border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-xs font-semibold text-slate-600 bg-white cursor-pointer"
+                    >
+                      <option value="South Indian">South Indian</option>
+                      <option value="North Indian">North Indian</option>
+                      <option value="Snacks">Snacks</option>
+                      <option value="Fruits">Fruits</option>
+                      <option value="Vegetables">Vegetables</option>
+                      <option value="Beverages">Beverages</option>
+                      <option value="Dairy">Dairy</option>
+                      <option value="Non-Veg">Non-Veg</option>
+                      <option value="Sweets">Sweets</option>
+                      <option value="Custom">Custom Entry</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Quantity / Unit */}
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Serving Qty</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0.1"
+                      required
+                      value={editQuantity}
+                      onChange={(e) => handleEditQuantityChange(parseFloat(e.target.value) || 1)}
+                      className="w-full px-3.5 py-2 rounded-2xl border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-bold text-slate-700 bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Unit</label>
+                    <input
+                      type="text"
+                      required
+                      value={editUnit}
+                      onChange={(e) => setEditUnit(e.target.value)}
+                      className="w-full px-3.5 py-2 rounded-2xl border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-semibold text-slate-600 bg-white"
+                    />
+                  </div>
+                </div>
+
+                {/* Macros inputs */}
+                <div className="pt-3 border-t border-slate-200/60">
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Nutritional Values (Total)</span>
+                  <div className="grid grid-cols-5 gap-1.5">
+                    <div className="p-2 rounded-xl text-center border bg-slate-50 border-slate-100 focus-within:border-primary/40 transition-all">
+                      <span className="text-[8px] font-bold text-slate-450 block uppercase">Calories</span>
+                      <input
+                        type="number"
+                        value={editCalories}
+                        onChange={(e) => handleEditCaloriesChange(parseFloat(e.target.value) || 0)}
+                        className="w-full text-center font-bold text-slate-700 text-xs mt-0.5 bg-transparent focus:outline-none"
+                      />
+                    </div>
+                    <div className="p-2 rounded-xl text-center border bg-slate-50 border-slate-100 focus-within:border-primary/40 transition-all">
+                      <span className="text-[8px] font-bold text-slate-450 block uppercase">Carbs</span>
+                      <input
+                        type="number"
+                        value={editCarbs}
+                        onChange={(e) => handleEditCarbsChange(parseFloat(e.target.value) || 0)}
+                        className="w-full text-center font-bold text-slate-700 text-xs mt-0.5 bg-transparent focus:outline-none"
+                      />
+                    </div>
+                    <div className="p-2 rounded-xl text-center border bg-slate-50 border-slate-100 focus-within:border-primary/40 transition-all">
+                      <span className="text-[8px] font-bold text-slate-450 block uppercase">Protein</span>
+                      <input
+                        type="number"
+                        value={editProtein}
+                        onChange={(e) => handleEditProteinChange(parseFloat(e.target.value) || 0)}
+                        className="w-full text-center font-bold text-slate-700 text-xs mt-0.5 bg-transparent focus:outline-none"
+                      />
+                    </div>
+                    <div className="p-2 rounded-xl text-center border bg-slate-50 border-slate-100 focus-within:border-primary/40 transition-all">
+                      <span className="text-[8px] font-bold text-slate-450 block uppercase">Fat</span>
+                      <input
+                        type="number"
+                        value={editFat}
+                        onChange={(e) => handleEditFatChange(parseFloat(e.target.value) || 0)}
+                        className="w-full text-center font-bold text-slate-700 text-xs mt-0.5 bg-transparent focus:outline-none"
+                      />
+                    </div>
+                    <div className="p-2 rounded-xl text-center border bg-slate-50 border-slate-100 focus-within:border-primary/40 transition-all">
+                      <span className="text-[8px] font-bold text-slate-450 block uppercase">Fiber</span>
+                      <input
+                        type="number"
+                        value={editFiber}
+                        onChange={(e) => handleEditFiberChange(parseFloat(e.target.value) || 0)}
+                        className="w-full text-center font-bold text-slate-700 text-xs mt-0.5 bg-transparent focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Submit Buttons */}
+                <div className="flex space-x-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => { setIsEditModalOpen(false); setEditingLog(null); }}
+                    className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-extrabold py-2.5 px-4 rounded-xl text-sm transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 bg-primary hover:bg-primary-dark text-white font-extrabold py-2.5 px-4 rounded-xl text-sm shadow-soft transition-all"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
-  );
+        )}
+      </div>
+    );
 };

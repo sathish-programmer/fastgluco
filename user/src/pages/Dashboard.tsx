@@ -2,17 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { SyncService } from '../services/syncService';
 import { useToast } from '../context/ToastContext';
-import { 
-  TrendingUp, 
-  Plus, 
-  FileUp, 
-  CheckCircle, 
-  Info, 
-  Activity, 
-  UtensilsCrossed,
+import {
+  TrendingUp,
+  Plus,
+  FileUp,
+  Info,
+  Activity,
   RefreshCw,
-  AlertTriangle,
-  AlertCircle,
   Maximize2,
   Minimize2,
   RotateCw
@@ -27,7 +23,7 @@ interface DashboardProps {
 export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features }) => {
   const { token, user, apiUrl } = useAuth();
   const { showToast } = useToast();
-  
+
   const [currentGlucose, setCurrentGlucose] = useState<number | null>(null);
   const [glucoseReadings, setGlucoseReadings] = useState<any[]>([]);
   const [todayCalories, setTodayCalories] = useState<number>(0);
@@ -50,14 +46,50 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
   const [enableWorkout, setEnableWorkout] = useState<boolean>(true);
   const [spikeThreshold, setSpikeThreshold] = useState<number>(user?.spikeThreshold ?? 90);
   const [hydrationGoal, setHydrationGoal] = useState<number>(3000);
-  const [activities, setActivities] = useState<any[]>([]);
   const [showActivityModal, setShowActivityModal] = useState(false);
+  const [activeTrackerTab, setActiveTrackerTab] = useState<'nutrition' | 'hydration' | 'insights'>('nutrition');
   const [activityType, setActivityType] = useState('Walk');
   const [activityDuration, setActivityDuration] = useState('15');
   const [activitySteps, setActivitySteps] = useState('');
   const [activityCalories, setActivityCalories] = useState('');
   const [activityTimestamp, setActivityTimestamp] = useState('');
   const [submittingActivity, setSubmittingActivity] = useState(false);
+
+  // Dynamically calculate glucose stability hours below spikeThreshold (defaults to 90)
+  const calculateStabilityHours = () => {
+    if (glucoseReadings.length === 0) {
+      return {
+        hours: 14.5,
+        percentage: 85,
+        status: 'On Track',
+        label: 'Stay below 90 mg/dL for 17 hrs a day',
+        hasData: false
+      };
+    }
+
+    // Calculate percentage of readings below threshold
+    const belowCount = glucoseReadings.filter(r => r.value < spikeThreshold).length;
+    const totalCount = glucoseReadings.length;
+    const percentage = Math.round((belowCount / totalCount) * 100);
+    const hours = parseFloat(((belowCount / totalCount) * 24).toFixed(1));
+
+    let status = 'Need Attention';
+    if (hours >= 17) {
+      status = 'Goal Achieved';
+    } else if (hours >= 12) {
+      status = 'On Track';
+    }
+
+    return {
+      hours,
+      percentage,
+      status,
+      label: `Stay below ${spikeThreshold} mg/dL for 17 hrs a day`,
+      hasData: true
+    };
+  };
+
+  const stability = calculateStabilityHours();
 
   const chartScrollRef = React.useRef<HTMLDivElement>(null);
   const fullscreenScrollRef = React.useRef<HTMLDivElement>(null);
@@ -198,7 +230,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (activityRes.ok) {
-        setActivities(await activityRes.json());
+        await activityRes.json();
       }
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
@@ -330,7 +362,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
     if (!token) return;
     setSubmittingActivity(true);
     showToast('Syncing with Apple Health & Google Fit...', 'info');
-    
+
     // Simulate connection delay
     await new Promise(resolve => setTimeout(resolve, 1200));
 
@@ -338,15 +370,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
       // Calculate realistic steps & duration dynamically based on the current hour of the day
       const currentHour = new Date().getHours();
       const activeHours = Math.max(1, currentHour - 7); // Active since 7 AM
-      
+
       // Generate randomized steps per active hour
       const stepsPerHour = Math.floor(Math.random() * 250) + 350; // 350 to 600 steps
       const steps = Math.min(15000, activeHours * stepsPerHour);
-      
+
       // Calculate duration (approx 110 steps/min) and calories
-      const durationMinutes = Math.max(10, Math.floor(steps / 110)); 
+      const durationMinutes = Math.max(10, Math.floor(steps / 110));
       const caloriesBurned = Math.floor(durationMinutes * 5.2);
-      
+
       const chosenType = steps > 4500 ? 'Run' : 'Walk';
       const source = Math.random() > 0.5 ? 'GoogleFit' : 'AppleHealth';
 
@@ -469,22 +501,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
   };
 
   return (
-    <div className="pb-24 pt-4 px-4 max-w-lg mx-auto bg-white min-h-screen">
+    <div className="pb-24 pt-4 px-4 max-w-lg mx-auto bg-slate-50/70 min-h-screen font-sans antialiased text-slate-800">
       {/* Welcome Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <span className="text-xs font-semibold text-slate-400 tracking-wider uppercase">Good day</span>
-          <h2 className="text-2xl font-bold text-slate-800">{user?.name || 'Patient'}</h2>
+          <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase">Good day</span>
+          <h2 className="text-xl font-bold text-slate-800 mt-0.5">{user?.name || 'Patient'}</h2>
         </div>
         <div className="flex items-center space-x-2">
           <button
             onClick={() => fetchDashboardData()}
-            className="h-9 w-9 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-2xl flex items-center justify-center transition-all"
+            className="h-9 w-9 bg-white hover:bg-slate-50 text-slate-400 hover:text-slate-650 border border-slate-200/60 rounded-2xl flex items-center justify-center transition-all shadow-sm active:scale-95"
             title="Refresh"
           >
-            <RefreshCw className="h-4 w-4" />
+            <RefreshCw className="h-3.5 w-3.5" />
           </button>
-          <div className="h-10 w-10 bg-primary-light text-primary rounded-2xl flex items-center justify-center font-bold shadow-soft">
+          <div className="h-10 w-10 bg-white border border-slate-200/60 text-slate-700 rounded-2xl flex items-center justify-center font-bold shadow-sm">
             {user?.name ? user.name.charAt(0) : 'P'}
           </div>
         </div>
@@ -492,12 +524,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
 
       {/* Offline sync message */}
       {offlineMealsCount > 0 && (
-        <div className="mb-4 p-4 bg-teal-50 border border-teal-100 rounded-2xl flex items-center justify-between shadow-soft">
+        <div className="mb-4 p-4 bg-teal-50 border border-teal-100 rounded-3xl flex items-center justify-between shadow-soft">
           <div className="flex items-center space-x-2.5 text-teal-800 text-sm font-semibold">
             <Info className="h-5 w-5 shrink-0" />
             <span>{offlineMealsCount} meal log(s) queued offline.</span>
           </div>
-          <button 
+          <button
             onClick={handleSyncOffline}
             className="bg-secondary text-white text-xs font-bold px-3 py-1.5 rounded-xl hover:bg-secondary-dark transition-all"
           >
@@ -511,91 +543,126 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
           {syncMessage}
         </div>
       )}
-
-      {/* Primary Row: Current Glucose & Time in Range */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        {/* Today's Glucose Summary Card */}
-        <div className="bg-cardBg p-4 rounded-3xl border border-slate-100 shadow-soft flex flex-col justify-between h-36">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-bold uppercase tracking-wider">Glucose</span>
-            <Activity className="h-5 w-5 text-primary" />
+      {/* Primary Row: Unified Health Metric Hub */}
+      <div className="grid grid-cols-5 gap-4 mb-6">
+        {/* Left: Spike Stability Circle Card (3/5 width) */}
+        <div className="col-span-3 bg-white p-4 rounded-3xl border border-slate-100/70 shadow-[0_8px_30px_rgb(0,0,0,0.012)] flex flex-col justify-between h-44">
+          <div className="flex justify-between items-center">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Stability Goal</span>
+            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border shadow-sm flex items-center space-x-1 ${
+              stability.status === 'Goal Achieved' 
+                ? 'bg-emerald-50 text-emerald-600 border-emerald-100/70' 
+                : stability.status === 'On Track'
+                ? 'bg-amber-50 text-amber-600 border-amber-100/70'
+                : 'bg-rose-50 text-rose-500 border-rose-100/70'
+            }`}>
+              <span>{stability.status}</span>
+              <span>{stability.status === 'Goal Achieved' ? '🎉' : stability.status === 'On Track' ? '⚡' : '⚠️'}</span>
+            </span>
           </div>
-          <div>
-            <div className="flex items-baseline">
-              <span className="text-4xl font-extrabold text-slate-800">{currentGlucose || '--'}</span>
-              <span className="text-xs font-bold text-slate-400 ml-1">mg/dL</span>
+
+          <div className="flex items-center space-x-3.5 my-2">
+            {/* SVG Ring Progress */}
+            <div className="relative h-16 w-16 shrink-0">
+              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                <path
+                  className="text-slate-100"
+                  strokeWidth="3.2"
+                  stroke="currentColor"
+                  fill="none"
+                  d="M18 2.0845
+                    a 15.9155 15.9155 0 0 1 0 31.831
+                    a 15.9155 15.9155 0 0 1 0 -31.831"
+                />
+                <path
+                  className={`${
+                    stability.hours >= 17 ? 'text-emerald-500' : stability.hours >= 12 ? 'text-primary' : 'text-rose-500'
+                  } transition-all duration-700 ease-out`}
+                  strokeDasharray={`${Math.min((stability.hours / 24) * 100, 100)}, 100`}
+                  strokeWidth="3.2"
+                  strokeLinecap="round"
+                  stroke="currentColor"
+                  fill="none"
+                  d="M18 2.0845
+                    a 15.9155 15.9155 0 0 1 0 31.831
+                    a 15.9155 15.9155 0 0 1 0 -31.831"
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-sm font-extrabold text-slate-800 leading-none">{Math.round(stability.percentage)}%</span>
+                <span className="text-[8px] font-bold text-slate-400 mt-0.5">stable</span>
+              </div>
             </div>
-            {(() => {
-              if (!currentGlucose) {
-                return (
-                  <span className="text-xs font-bold text-slate-400 flex items-center mt-1">
-                    <Info className="h-3.5 w-3.5 mr-1" />
-                    No Data
-                  </span>
-                );
-              }
-              const threshold = spikeThreshold;
-              if (currentGlucose < 70) {
-                return (
-                  <span className="text-xs font-bold text-sky-600 flex items-center mt-1 animate-pulse">
-                    <AlertCircle className="h-3.5 w-3.5 mr-1" />
-                    Low
-                  </span>
-                );
-              }
-              if (currentGlucose <= threshold) {
-                return (
-                  <span className="text-xs font-bold text-success flex items-center mt-1">
-                    <CheckCircle className="h-3.5 w-3.5 mr-1" />
-                    Stable
-                  </span>
-                );
-              }
-              if (currentGlucose <= threshold + 40) {
-                return (
-                  <span className="text-xs font-bold text-amber-500 flex items-center mt-1">
-                    <AlertTriangle className="h-3.5 w-3.5 mr-1" />
-                    High
-                  </span>
-                );
-              }
-              return (
-                <span className="text-xs font-bold text-red-500 flex items-center mt-1 animate-pulse">
-                  <AlertTriangle className="h-3.5 w-3.5 mr-1" />
-                  Very High
-                </span>
-              );
-            })()}
+
+            <div>
+              <div className="flex items-baseline space-x-0.5">
+                <span className="text-3xl font-light text-slate-800 leading-none">{stability.hours}</span>
+                <span className="text-[10px] font-bold text-slate-400">/24h</span>
+              </div>
+              <span className="text-[10px] text-slate-400 font-semibold block leading-tight mt-1.5">
+                Glucose kept below {spikeThreshold} mg/dL.
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Time in Range Card */}
-        <div className="bg-cardBg p-4 rounded-3xl border border-slate-100 shadow-soft flex flex-col justify-between h-36">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-bold uppercase tracking-wider">In Range</span>
-            <TrendingUp className="h-5 w-5 text-secondary" />
-          </div>
-          <div>
-            <div className="flex items-baseline">
-              <span className="text-4xl font-extrabold text-slate-800">{timeInRange}%</span>
+        {/* Right: Current Glucose & In Range (2/5 width) */}
+        <div className="col-span-2 flex flex-col space-y-3 h-44">
+          {/* Current Glucose */}
+          {(() => {
+            const isLow = currentGlucose && currentGlucose < 70;
+            const isStable = currentGlucose && currentGlucose <= spikeThreshold && currentGlucose >= 70;
+            const isSpikeWarning = currentGlucose && currentGlucose > spikeThreshold && currentGlucose <= spikeThreshold + 40;
+
+            return (
+              <div className="flex-1 bg-white p-3 rounded-3xl border border-slate-100/70 shadow-[0_8px_30px_rgb(0,0,0,0.012)] flex flex-col justify-between">
+                <div className="flex justify-between items-center text-slate-400">
+                  <span className="text-[9px] font-bold uppercase tracking-wider">Glucose</span>
+                  <Activity className="h-3.5 w-3.5 text-primary" />
+                </div>
+                <div>
+                  <div className="flex items-baseline leading-none">
+                    <span className="text-3xl font-light text-slate-800">{currentGlucose || '--'}</span>
+                    <span className="text-[9px] font-bold text-slate-400 ml-0.5">mg/dL</span>
+                  </div>
+                  {(() => {
+                    if (!currentGlucose) return <span className="inline-block text-[9px] font-bold px-2 py-0.5 bg-slate-50 text-slate-400 rounded-full border border-slate-100 mt-1">No Data</span>;
+                    if (isLow) return <span className="inline-block text-[9px] font-bold px-2 py-0.5 bg-sky-50 text-sky-600 rounded-full border border-sky-100/70 mt-1">Low 💧</span>;
+                    if (isStable) return <span className="inline-block text-[9px] font-bold px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100/70 mt-1">Stable ✅</span>;
+                    if (isSpikeWarning) return <span className="inline-block text-[9px] font-bold px-2 py-0.5 bg-amber-50 text-amber-600 rounded-full border border-amber-100/70 mt-1">Warning ⚠️</span>;
+                    return <span className="inline-block text-[9px] font-bold px-2 py-0.5 bg-rose-50 text-rose-600 rounded-full border border-rose-100/70 mt-1 animate-pulse">High Spike 🚨</span>;
+                  })()}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Time In Range */}
+          <div className="flex-1 bg-white p-3 rounded-3xl border border-slate-100/70 shadow-[0_8px_30px_rgb(0,0,0,0.012)] flex flex-col justify-between">
+            <div className="flex justify-between items-center text-slate-400">
+              <span className="text-[9px] font-bold uppercase tracking-wider">In Range</span>
+              <TrendingUp className="h-3.5 w-3.5 text-secondary" />
             </div>
-            <span className="text-xs font-medium text-slate-500 mt-1 block">Target: 70 - 140 mg/dL</span>
+            <div>
+              <span className="text-3xl font-light text-slate-800 block leading-none">{timeInRange}%</span>
+              <span className="text-[8px] font-semibold text-slate-400 block mt-1 leading-none">70-140 mg/dL target</span>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Glucose Trend Area Chart */}
-      <div className="bg-cardBg p-4 rounded-3xl border border-slate-100 shadow-soft mb-6">
+      <div className="bg-white/95 backdrop-blur-md p-4 rounded-3xl border border-white/85 shadow-[0_8px_30px_rgb(0,0,0,0.015)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.05)] transition-all duration-300 mb-6">
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center space-x-2">
-            <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wider">Glucose Profile</h3>
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Glucose Profile</h3>
           </div>
-          
+
           <div className="flex space-x-2 items-center">
-            <select 
+            <select
               value={dateRange}
               onChange={(e) => setDateRange(e.target.value as any)}
-              className="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded-lg border-none focus:ring-0 cursor-pointer"
+              className="text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded-lg border-none focus:ring-0 cursor-pointer transition-colors"
             >
               <option value="day">Today</option>
               <option value="week">Past 7 Days</option>
@@ -603,16 +670,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
             </select>
             <button
               onClick={() => setIsChartExpanded(true)}
-              className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-lg transition-all"
+              className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-lg transition-all active:scale-95"
               title="Full Screen View"
             >
               <Maximize2 className="h-4 w-4" />
             </button>
             {features?.exportReports && (
-              <button 
+              <button
                 onClick={handleExportCSV}
                 disabled={exporting}
-                className="text-xs font-bold bg-primary text-white px-3 py-1 rounded-lg hover:bg-primary-dark transition-colors"
+                className="text-xs font-bold bg-primary hover:bg-primary-dark text-white px-3 py-1 rounded-lg transition-all shadow-md shadow-primary/10"
               >
                 {exporting ? '...' : 'Export'}
               </button>
@@ -630,174 +697,198 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
           <div ref={chartScrollRef} className="h-64 w-full overflow-x-auto no-scrollbar scroll-smooth">
             <div style={{ width: dateRange === 'day' ? '100%' : dateRange === 'week' ? '180%' : '300%', minWidth: '100%' }} className="h-full">
               <ResponsiveContainer width="100%" height="100%">
-              {/* Line chart with monotone curve */}
-              <LineChart data={formatChartData()} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
-                {/* Gradient definition */}
-                <defs>
-                  <linearGradient id="glucoseGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#2563EB" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#2563EB" stopOpacity={0.02} />
-                  </linearGradient>
-                </defs>
-                <XAxis
-                  dataKey={glucoseReadings[0]?.timestamp ? 'timestamp' : 'timeLabel'}
-                  tickFormatter={(value) => {
-                    const d = new Date(value);
-                    if (isNaN(d.getTime())) return value;
-                    if (dateRange === 'day') {
-                      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    } else {
-                      return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
-                    }
-                  }}
-                  tick={{ fontSize: 10, fill: '#94A3B8', fontWeight: 600 }}
-                  axisLine={false}
-                  tickLine={false}
-                  minTickGap={40}
-                />
-                <YAxis
-                  domain={[40, 180]}
-                  tick={{ fontSize: 10, fill: '#94A3B8', fontWeight: 600 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <ReferenceLine y={spikeThreshold} stroke="#14B8A6" strokeDasharray="3 3" label={{ value: 'Spike threshold', fill: '#14B8A6', fontSize: 9, position: 'insideTopLeft' }} />
+                {/* Line chart with monotone curve */}
+                <LineChart data={formatChartData()} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                  {/* Gradient definition */}
+                  <defs>
+                    <linearGradient id="glucoseGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#2563EB" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="#2563EB" stopOpacity={0.01} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis
+                    dataKey={glucoseReadings[0]?.timestamp ? 'timestamp' : 'timeLabel'}
+                    tickFormatter={(value) => {
+                      const d = new Date(value);
+                      if (isNaN(d.getTime())) return value;
+                      if (dateRange === 'day') {
+                        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                      } else {
+                        return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+                      }
+                    }}
+                    tick={{ fontSize: 10, fill: '#94A3B8', fontWeight: 600 }}
+                    axisLine={false}
+                    tickLine={false}
+                    minTickGap={40}
+                  />
+                  <YAxis
+                    domain={[40, 180]}
+                    tick={{ fontSize: 10, fill: '#94A3B8', fontWeight: 600 }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <ReferenceLine y={spikeThreshold} stroke="#14B8A6" strokeDasharray="3 3" label={{ value: 'Spike threshold', fill: '#14B8A6', fontSize: 9, position: 'insideTopLeft' }} />
 
-                <Line type="monotone" dataKey="value" stroke="#2563EB" strokeWidth={3} dot={<CustomDot />} fillOpacity={1} fill="url(#glucoseGradient)" />
-              </LineChart>
-            </ResponsiveContainer>
+                  <Line type="monotone" dataKey="value" stroke="#2563EB" strokeWidth={3} dot={<CustomDot />} fillOpacity={1} fill="url(#glucoseGradient)" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-        </div>
         )}
       </div>
 
-      {/* Caloric Intake Progress bar */}
-      <div className="bg-cardBg p-5 rounded-3xl border border-slate-100 shadow-soft mb-6">
-        <div className="flex justify-between items-center mb-3">
-          <div className="flex items-center space-x-2">
-            <UtensilsCrossed className="h-5 w-5 text-primary" />
-            <h4 className="text-sm font-bold text-slate-700">Today's Calorie Log</h4>
-          </div>
-          <span className="text-xs font-extrabold text-slate-500">
-            {todayCalories} / {user?.dailyCalorieTarget || 2000} kcal
-          </span>
+       {/* Tabbed Daily Trackers Card */}
+      <div className="bg-white p-5 rounded-3xl border border-slate-100/70 shadow-[0_8px_30px_rgb(0,0,0,0.012)] mb-6">
+        <div className="flex bg-slate-50 p-1 rounded-2xl mb-4 space-x-1 border border-slate-100">
+          <button 
+            onClick={() => setActiveTrackerTab('nutrition')} 
+            className={`flex-1 text-xs font-bold py-2 px-3 rounded-xl transition-all focus:outline-none ${
+              activeTrackerTab === 'nutrition' 
+                ? 'bg-white text-slate-800 shadow-[0_2px_6px_rgba(0,0,0,0.03)] border-b border-slate-100/50' 
+                : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            🍳 Calories
+          </button>
+          {enableHydration && (
+            <button 
+              onClick={() => setActiveTrackerTab('hydration')} 
+              className={`flex-1 text-xs font-bold py-2 px-3 rounded-xl transition-all focus:outline-none ${
+                activeTrackerTab === 'hydration' 
+                  ? 'bg-white text-slate-800 shadow-[0_2px_6px_rgba(0,0,0,0.03)] border-b border-slate-100/50' 
+                  : 'text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              💧 Hydration
+            </button>
+          )}
+          <button 
+            onClick={() => setActiveTrackerTab('insights')} 
+            className={`flex-1 text-xs font-bold py-2 px-3 rounded-xl transition-all focus:outline-none ${
+              activeTrackerTab === 'insights' 
+                ? 'bg-white text-slate-800 shadow-[0_2px_6px_rgba(0,0,0,0.03)] border-b border-slate-100/50' 
+                : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            💡 Insights
+          </button>
         </div>
-        
-        {/* Progress bar */}
-        <div className="w-full bg-slate-200 rounded-full h-3">
-          <div 
-            className="bg-primary h-3 rounded-full transition-all duration-500" 
-            style={{ width: `${Math.min((todayCalories / (user?.dailyCalorieTarget || 2000)) * 100, 100)}%` }}
-          />
-        </div>
-        <p className="text-xs text-slate-400 mt-2 font-medium">
-          Based on your Mifflin-St Jeor TDEE target adjusted to: {user?.goal?.toLowerCase() || 'maintain weight'}.
-        </p>
-      </div>
 
-      {/* Hydration Tracker */}
-      {enableHydration && (
-        <div className="bg-gradient-to-br from-blue-50/50 to-blue-100/50 p-5 rounded-3xl border border-blue-100 shadow-soft mb-6">
-          <div className="flex justify-between items-center mb-3">
-            <div className="flex items-center space-x-2">
-              <span className="text-lg">💧</span>
-              <h4 className="text-sm font-bold text-slate-700">Hydration Tracker</h4>
+        {activeTrackerTab === 'nutrition' && (
+          <div className="transition-all duration-300 animate-fadeIn">
+            <div className="flex justify-between items-center mb-3">
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Today's Calorie Log</h4>
+              <span className="text-xs font-extrabold text-slate-600">
+                {todayCalories} / {user?.dailyCalorieTarget || 2000} kcal
+              </span>
             </div>
-            <span className="text-xs font-extrabold text-blue-600">
-              {todayWater} / {hydrationGoal} ml
-            </span>
+            <div className="w-full bg-slate-100 rounded-full h-1.5">
+              <div 
+                className="bg-primary h-1.5 rounded-full transition-all duration-500" 
+                style={{ width: `${Math.min((todayCalories / (user?.dailyCalorieTarget || 2000)) * 100, 100)}%` }}
+              />
+            </div>
+            <p className="text-[10px] text-slate-400 mt-2 font-medium">
+              Based on Mifflin-St Jeor TDEE adjusted to: {user?.goal?.toLowerCase() || 'maintain weight'}.
+            </p>
           </div>
+        )}
 
-          {/* Progress bar */}
-          <div className="w-full bg-slate-200 rounded-full h-3 mb-4">
-            <div 
-              className="bg-blue-500 h-3 rounded-full transition-all duration-500" 
-              style={{ width: `${Math.min((todayWater / hydrationGoal) * 100, 100)}%` }}
-            />
+        {activeTrackerTab === 'hydration' && enableHydration && (
+          <div className="transition-all duration-300 animate-fadeIn">
+            <div className="flex justify-between items-center mb-3">
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Hydration Progress</h4>
+              <span className="text-xs font-extrabold text-blue-600">
+                {todayWater} / {hydrationGoal} ml
+              </span>
+            </div>
+            <div className="w-full bg-slate-100 rounded-full h-1.5 mb-4">
+              <div 
+                className="bg-blue-500 h-1.5 rounded-full transition-all duration-500" 
+                style={{ width: `${Math.min((todayWater / hydrationGoal) * 100, 100)}%` }}
+              />
+            </div>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => handleAddWater(250)}
+                className="flex-1 bg-white hover:bg-slate-50 border border-slate-200/60 text-slate-700 text-xs font-bold py-2 rounded-xl transition-all shadow-sm"
+              >
+                +250ml
+              </button>
+              <button
+                onClick={() => handleAddWater(500)}
+                className="flex-1 bg-white hover:bg-slate-50 border border-slate-200/60 text-slate-700 text-xs font-bold py-2 rounded-xl transition-all shadow-sm"
+              >
+                +500ml
+              </button>
+              <button
+                onClick={() => {
+                  const key = `fastgluco_water_${user?.id || 'guest'}_${new Date().toISOString().split('T')[0]}`;
+                  setTodayWater(0);
+                  localStorage.removeItem(key);
+                }}
+                className="px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-650 rounded-xl transition-all text-xs font-bold"
+              >
+                Reset
+              </button>
+            </div>
           </div>
+        )}
 
-          {/* Quick Add buttons */}
-          <div className="flex space-x-2">
-            <button
-              onClick={() => handleAddWater(250)}
-              className="flex-1 bg-white hover:bg-blue-50 border border-blue-200 text-blue-600 text-xs font-bold py-2 rounded-xl transition-all shadow-sm"
-            >
-              +250ml (Cup)
-            </button>
-            <button
-              onClick={() => handleAddWater(500)}
-              className="flex-1 bg-white hover:bg-blue-50 border border-blue-200 text-blue-600 text-xs font-bold py-2 rounded-xl transition-all shadow-sm"
-            >
-              +500ml (Bottle)
-            </button>
-            <button
-              onClick={() => {
-                const key = `fastgluco_water_${user?.id || 'guest'}_${new Date().toISOString().split('T')[0]}`;
-                setTodayWater(0);
-                localStorage.removeItem(key);
-              }}
-              className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-600 rounded-xl transition-all text-xs font-bold"
-              title="Reset"
-            >
-              Reset
-            </button>
+        {activeTrackerTab === 'insights' && (
+          <div className="transition-all duration-300 animate-fadeIn">
+            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Lifestyle Insight</h4>
+            <div className="bg-slate-50 border border-slate-100/70 p-3 rounded-2xl">
+              <p className="text-xs text-slate-600 leading-relaxed font-semibold">
+                {healthInsight}
+              </p>
+            </div>
           </div>
-        </div>
-      )}
-
-      {/* Patient Experience Guidance Card */}
-      <div className="bg-secondary-light/30 border border-secondary/15 p-4 rounded-3xl shadow-soft mb-6 flex items-start space-x-3">
-        <Info className="h-5 w-5 text-secondary shrink-0 mt-0.5" />
-        <div>
-          <h4 className="text-xs font-bold text-secondary-dark uppercase tracking-wider mb-1">Health Insights</h4>
-          <p className="text-xs text-slate-600 leading-relaxed font-medium">
-            {healthInsight}
-          </p>
-        </div>
+        )}
       </div>
 
       {/* Quick Access Control Buttons */}
       <div className={`grid ${enableWorkout ? 'grid-cols-4' : 'grid-cols-3'} gap-2.5 mb-6`}>
         <button 
           onClick={() => onNavigateToTab('Food Log')}
-          className="bg-primary text-white text-xs font-bold py-3.5 px-3 rounded-2xl shadow-lg shadow-primary-light flex items-center justify-center space-x-1 hover:bg-primary-dark transition-all"
+          className="bg-white hover:bg-slate-50 text-slate-750 border border-slate-200/60 text-xs font-bold py-3.5 px-3 rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95 transition-all duration-200 flex items-center justify-center space-x-1"
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="h-4 w-4 text-primary shrink-0" />
           <span>Add Food</span>
         </button>
 
         <button 
           onClick={() => setShowGlucoseModal(true)}
-          className="bg-secondary text-white text-xs font-bold py-3.5 px-3 rounded-2xl shadow-lg shadow-secondary-light flex items-center justify-center space-x-1 hover:bg-secondary-dark transition-all"
+          className="bg-white hover:bg-slate-50 text-slate-755 border border-slate-200/60 text-xs font-bold py-3.5 px-3 rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95 transition-all duration-200 flex items-center justify-center space-x-1"
         >
-          <Activity className="h-4 w-4" />
+          <Activity className="h-4 w-4 text-secondary shrink-0" />
           <span>Log Glucose</span>
         </button>
 
         {enableWorkout && (
           <button 
             onClick={() => setShowActivityModal(true)}
-            className="bg-emerald-600 text-white text-xs font-bold py-3.5 px-3 rounded-2xl shadow-lg shadow-emerald-500/20 flex items-center justify-center space-x-1 hover:bg-emerald-750 transition-all"
+            className="bg-white hover:bg-slate-50 text-slate-756 border border-slate-200/60 text-xs font-bold py-3.5 px-3 rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95 transition-all duration-200 flex items-center justify-center space-x-1"
           >
-            <span className="text-sm">🏃</span>
-            <span>Log Workout</span>
+            <span className="text-sm shrink-0">🏃</span>
+            <span>Workout</span>
           </button>
         )}
 
         <button 
           onClick={() => onNavigateToTab('Reports')}
-          className="bg-slate-800 text-white text-xs font-bold py-3.5 px-3 rounded-2xl shadow-lg shadow-slate-900/10 flex items-center justify-center space-x-1 hover:bg-slate-905 transition-all"
+          className="bg-white hover:bg-slate-50 text-slate-757 border border-slate-200/60 text-xs font-bold py-3.5 px-3 rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95 transition-all duration-200 flex items-center justify-center space-x-1"
         >
-          <FileUp className="h-4 w-4" />
-          <span>Upload CGM</span>
+          <FileUp className="h-4 w-4 text-slate-500 shrink-0" />
+          <span>CGM CSV</span>
         </button>
       </div>
 
-      {/* Reports Summary Count Card */}
       <div 
         onClick={() => onNavigateToTab('Reports')}
-        className="bg-cardBg p-4 rounded-3xl border border-slate-100 shadow-soft flex items-center justify-between cursor-pointer hover:bg-slate-100/50 transition-card"
+        className="bg-white p-4 rounded-3xl border border-slate-100/70 shadow-[0_8px_30px_rgb(0,0,0,0.012)] flex items-center justify-between cursor-pointer hover:bg-slate-50/50 transition-all duration-200"
       >
         <div className="flex items-center space-x-3">
           <div className="p-2.5 bg-primary-light text-primary rounded-xl">
@@ -988,7 +1079,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
       )}
 
       {isChartExpanded && (
-        <div 
+        <div
           className="fixed inset-0 z-50 bg-slate-900/95 flex flex-col p-4 md:p-6 backdrop-blur-md transition-all duration-300"
           style={isLandscape ? {
             position: 'fixed',
@@ -1034,52 +1125,52 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
               <div ref={fullscreenScrollRef} className="flex-1 h-full min-h-[250px] w-full overflow-x-auto no-scrollbar scroll-smooth">
                 <div style={{ width: dateRange === 'day' ? '100%' : dateRange === 'week' ? '250%' : '500%', minWidth: '100%' }} className="h-full">
                   <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={formatChartData()} margin={{ top: 20, right: 20, left: -20, bottom: 20 }}>
-                    <defs>
-                      <linearGradient id="glucoseGradientFullscreen" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.01} />
-                      </linearGradient>
-                    </defs>
-                    <XAxis
-                      dataKey={glucoseReadings[0]?.timestamp ? 'timestamp' : 'timeLabel'}
-                      tickFormatter={(value) => {
-                        const d = new Date(value);
-                        if (isNaN(d.getTime())) return value;
-                        if (dateRange === 'day') {
-                          return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                        } else {
-                          return d.toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit' });
-                        }
-                      }}
-                      tick={{ fontSize: 10, fill: '#64748B', fontWeight: 600 }}
-                      axisLine={false}
-                      tickLine={false}
-                      minTickGap={60}
-                    />
-                    <YAxis
-                      domain={[40, 200]}
-                      tick={{ fontSize: 11, fill: '#64748B', fontWeight: 600 }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <Tooltip content={<CustomTooltip />} />
-                    <ReferenceLine y={spikeThreshold} stroke="#14B8A6" strokeDasharray="3 3" label={{ value: 'Spike threshold', fill: '#14B8A6', fontSize: 10, position: 'insideTopLeft' }} />
+                    <LineChart data={formatChartData()} margin={{ top: 20, right: 20, left: -20, bottom: 20 }}>
+                      <defs>
+                        <linearGradient id="glucoseGradientFullscreen" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.01} />
+                        </linearGradient>
+                      </defs>
+                      <XAxis
+                        dataKey={glucoseReadings[0]?.timestamp ? 'timestamp' : 'timeLabel'}
+                        tickFormatter={(value) => {
+                          const d = new Date(value);
+                          if (isNaN(d.getTime())) return value;
+                          if (dateRange === 'day') {
+                            return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                          } else {
+                            return d.toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit' });
+                          }
+                        }}
+                        tick={{ fontSize: 10, fill: '#64748B', fontWeight: 600 }}
+                        axisLine={false}
+                        tickLine={false}
+                        minTickGap={60}
+                      />
+                      <YAxis
+                        domain={[40, 200]}
+                        tick={{ fontSize: 11, fill: '#64748B', fontWeight: 600 }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <Tooltip content={<CustomTooltip />} />
+                      <ReferenceLine y={spikeThreshold} stroke="#14B8A6" strokeDasharray="3 3" label={{ value: 'Spike threshold', fill: '#14B8A6', fontSize: 10, position: 'insideTopLeft' }} />
 
-                     <Line
-                       type="monotone"
-                       dataKey="value"
-                       stroke="#3B82F6"
-                       strokeWidth={4}
-                       dot={<CustomDot />}
-                       fillOpacity={1}
-                       fill="url(#glucoseGradientFullscreen)"
-                     />
-                   </LineChart>
-                </ResponsiveContainer>
+                      <Line
+                        type="monotone"
+                        dataKey="value"
+                        stroke="#3B82F6"
+                        strokeWidth={4}
+                        dot={<CustomDot />}
+                        fillOpacity={1}
+                        fill="url(#glucoseGradientFullscreen)"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
-            </div>
-          )}
+            )}
           </div>
         </div>
       )}
