@@ -231,7 +231,8 @@ export class AuthController {
 
       // Generate reset token and link
       const resetToken = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '30m' });
-      const resetLink = `http://localhost:5173/?token=${resetToken}`;
+      const appBaseUrl = process.env.NODE_ENV === 'production' ? 'https://app.mitoreboot.in' : 'http://localhost:5173';
+      const resetLink = `${appBaseUrl}/?token=${resetToken}`;
 
       // Send actual email to user
       await EmailService.sendPasswordResetEmail(user.email, user.name || 'Mito_Reboot User', resetLink);

@@ -4,7 +4,10 @@ import dotenv from 'dotenv';
 import path from 'path';
 
 // Setup environment variables
-dotenv.config({ path: path.join(__dirname, '../.env') });
+const envPath = process.env.NODE_ENV === 'production' 
+  ? path.join(__dirname, '../.env.production') 
+  : path.join(__dirname, '../.env');
+dotenv.config({ path: envPath });
 
 import { AdminUser } from './models/AdminUser';
 import { FoodMaster } from './models/FoodMaster';
