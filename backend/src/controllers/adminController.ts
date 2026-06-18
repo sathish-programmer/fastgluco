@@ -102,7 +102,7 @@ export class AdminController {
       if (shouldSendEmail) {
         admin.lastLoginAlertSentAt = now;
         await admin.save();
-        EmailService.sendLoginNotificationEmail(admin.email, admin.name || 'Mito Reboot Admin', { time, location, device }).catch(console.error);
+        EmailService.sendLoginNotificationEmail(admin.email, admin.name || 'Mito_Reboot Admin', { time, location, device }).catch(console.error);
       }
 
       return res.status(200).json({

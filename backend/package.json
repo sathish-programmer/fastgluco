@@ -1,7 +1,7 @@
 {
   "name": "mitoreboot-backend",
   "version": "1.0.0",
-  "description": "Production-ready REST APIs for Circadian Fasting & Metabolic Health Platform (Mito Reboot)",
+  "description": "Production-ready REST APIs for Circadian Fasting & Metabolic Health Platform (Mito_Reboot)",
   "main": "dist/server.js",
   "scripts": {
     "build": "tsc",

@@ -119,7 +119,7 @@ export class GlucoseService {
         if (shouldSendAlert) {
           EmailService.sendHighSpikeAlert(
             user.email,
-            user.name || 'Mito Reboot User',
+            user.name || 'Mito_Reboot User',
             peakGlucose,
             user.spikeThreshold ?? 90,
             peakReading.timestamp.toISOString()

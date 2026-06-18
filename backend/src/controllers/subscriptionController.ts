@@ -530,7 +530,7 @@ export class SubscriptionController {
       // Send Cancellation Email
       const user = await mongoose.model('User').findById(userId);
       if (user && user.email) {
-        EmailService.sendCancellationEmail(user.email, user.name || 'Mito Reboot User', subscription.endDate.toISOString()).catch(console.error);
+        EmailService.sendCancellationEmail(user.email, user.name || 'Mito_Reboot User', subscription.endDate.toISOString()).catch(console.error);
       }
 
       return res.status(200).json({
@@ -591,7 +591,7 @@ export class SubscriptionController {
       // Send Plan Change Email asynchronously
       const user = await mongoose.model('User').findById(userId);
       if (user && user.email) {
-        EmailService.sendPlanChangeEmail(user.email, user.name || 'Mito Reboot User', plan.name).catch(console.error);
+        EmailService.sendPlanChangeEmail(user.email, user.name || 'Mito_Reboot User', plan.name).catch(console.error);
       }
     }
 
@@ -651,7 +651,7 @@ export class SubscriptionController {
       couponCode: transaction.couponCode,
       taxAmount: tax,
       totalAmount: total,
-      billingName: user?.name || 'Mito Reboot Patient',
+      billingName: user?.name || 'Mito_Reboot Patient',
       billingEmail: user?.email || 'patient@mitoreboot.com'
     });
 
@@ -664,7 +664,7 @@ export class SubscriptionController {
         .then(pdfBuffer => {
           return EmailService.sendSubscriptionInvoiceEmail(
             user.email,
-            user.name || 'Mito Reboot Patient',
+            user.name || 'Mito_Reboot Patient',
             planName,
             total,
             user.currency || 'INR',
@@ -717,7 +717,7 @@ export class SubscriptionController {
 
       // --- PDF DRAWING ---
       // Logo / Title Header
-      doc.fillColor('#0284C7').fontSize(24).font('Helvetica-Bold').text('Mito Reboot', 50, 50);
+      doc.fillColor('#0284C7').fontSize(24).font('Helvetica-Bold').text('Mito_Reboot', 50, 50);
       doc.fillColor('#64748B').fontSize(10).font('Helvetica-Bold').text('CIRCADIAN FASTING & METABOLIC HEALTH', 50, 78);
 
       doc.fillColor('#1E293B').fontSize(20).font('Helvetica-Bold').text('INVOICE', 400, 50, { align: 'right' });
@@ -734,7 +734,7 @@ export class SubscriptionController {
 
       // Issued By details
       doc.fillColor('#1E293B').fontSize(12).font('Helvetica-Bold').text('Issued By:', 300, 135);
-      doc.fillColor('#334155').fontSize(10).font('Helvetica').text('Mito Reboot Platform Inc.', 300, 155);
+      doc.fillColor('#334155').fontSize(10).font('Helvetica').text('Mito_Reboot Platform Inc.', 300, 155);
       doc.text('support@mitoreboot.com', 300, 170);
       doc.text('Bangalore, Karnataka, India', 300, 185);
 
@@ -746,7 +746,7 @@ export class SubscriptionController {
 
       // Table Row
       const rowTop = tableTop + 25;
-      doc.fillColor('#1E293B').fontSize(10).font('Helvetica').text(`Mito Reboot Premium Subscription - ${planName}`, 60, rowTop + 10);
+      doc.fillColor('#1E293B').fontSize(10).font('Helvetica').text(`Mito_Reboot Premium Subscription - ${planName}`, 60, rowTop + 10);
       doc.text(`Rs.${fmt(invoice.originalAmount, safeNum(invoice.totalAmount))}`, 450, rowTop + 10, { align: 'right' });
 
       // Table Row underline
@@ -783,7 +783,7 @@ export class SubscriptionController {
 
       // Footer notice
       doc.fillColor('#94A3B8').fontSize(9).font('Helvetica').text('This is a computer generated invoice and does not require a signature.', 50, 480, { align: 'center', width: 500 });
-      doc.text('Mito Reboot Platform - Circadian Fasting & Metabolic Monitoring', 50, 495, { align: 'center', width: 500 });
+      doc.text('Mito_Reboot Platform - Circadian Fasting & Metabolic Monitoring', 50, 495, { align: 'center', width: 500 });
 
       // End document
       doc.end();
@@ -812,7 +812,7 @@ export class SubscriptionController {
       const fmt = (val: any, fallback?: number): string => safeNum(val, fallback).toFixed(2);
 
       // Logo / Title Header
-      doc.fillColor('#0284C7').fontSize(24).font('Helvetica-Bold').text('Mito Reboot', 50, 50);
+      doc.fillColor('#0284C7').fontSize(24).font('Helvetica-Bold').text('Mito_Reboot', 50, 50);
       doc.fillColor('#64748B').fontSize(10).font('Helvetica-Bold').text('CIRCADIAN FASTING & METABOLIC HEALTH', 50, 78);
 
       doc.fillColor('#1E293B').fontSize(20).font('Helvetica-Bold').text('INVOICE', 400, 50, { align: 'right' });
@@ -829,7 +829,7 @@ export class SubscriptionController {
 
       // Issued By details
       doc.fillColor('#1E293B').fontSize(12).font('Helvetica-Bold').text('Issued By:', 300, 135);
-      doc.fillColor('#334155').fontSize(10).font('Helvetica').text('Mito Reboot Platform Inc.', 300, 155);
+      doc.fillColor('#334155').fontSize(10).font('Helvetica').text('Mito_Reboot Platform Inc.', 300, 155);
       doc.text('support@mitoreboot.com', 300, 170);
       doc.text('Bangalore, Karnataka, India', 300, 185);
 
@@ -841,7 +841,7 @@ export class SubscriptionController {
 
       // Table Row
       const rowTop = tableTop + 25;
-      doc.fillColor('#1E293B').fontSize(10).font('Helvetica').text(`Mito Reboot Premium Subscription - ${planName}`, 60, rowTop + 10);
+      doc.fillColor('#1E293B').fontSize(10).font('Helvetica').text(`Mito_Reboot Premium Subscription - ${planName}`, 60, rowTop + 10);
       doc.text(`Rs.${fmt(invoice.originalAmount, safeNum(invoice.totalAmount))}`, 450, rowTop + 10, { align: 'right' });
 
       // Table Row underline
@@ -878,7 +878,7 @@ export class SubscriptionController {
 
       // Footer notice
       doc.fillColor('#94A3B8').fontSize(9).font('Helvetica').text('This is a computer generated invoice and does not require a signature.', 50, 480, { align: 'center', width: 500 });
-      doc.text('Mito Reboot Platform - Circadian Fasting & Metabolic Monitoring', 50, 495, { align: 'center', width: 500 });
+      doc.text('Mito_Reboot Platform - Circadian Fasting & Metabolic Monitoring', 50, 495, { align: 'center', width: 500 });
 
       doc.end();
     });

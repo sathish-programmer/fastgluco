@@ -345,7 +345,7 @@ export class PaymentAdminController {
       // Send refund email confirmation
       const user = await User.findById(transaction.userId);
       if (user && user.email) {
-        EmailService.sendRefundEmail(user.email, user.name || 'Mito Reboot Patient', refundValue).catch(err => console.error('Error sending refund email:', err));
+        EmailService.sendRefundEmail(user.email, user.name || 'Mito_Reboot Patient', refundValue).catch(err => console.error('Error sending refund email:', err));
       }
 
       return res.status(200).json({ message: 'Refund processed successfully.', transaction });
@@ -390,9 +390,9 @@ export class PaymentAdminController {
       if (user && user.email) {
         EmailService.sendSubscriptionOverrideEmail(
           user.email,
-          user.name || 'Mito Reboot Patient',
+          user.name || 'Mito_Reboot Patient',
           'cancelled',
-          'Your active premium subscription plan has been cancelled by a Mito Reboot system administrator.'
+          'Your active premium subscription plan has been cancelled by a Mito_Reboot system administrator.'
         ).catch(err => console.error('Error sending cancellation override email:', err));
       }
 
@@ -444,7 +444,7 @@ export class PaymentAdminController {
       if (user && user.email) {
         EmailService.sendSubscriptionOverrideEmail(
           user.email,
-          user.name || 'Mito Reboot Patient',
+          user.name || 'Mito_Reboot Patient',
           'extended',
           `Your subscription validation period has been extended by ${days} days! Enjoy premium features!`
         ).catch(err => console.error('Error sending extension override email:', err));
@@ -512,7 +512,7 @@ export class PaymentAdminController {
       if (user && user.email) {
         EmailService.sendSubscriptionOverrideEmail(
           user.email,
-          user.name || 'Mito Reboot Patient',
+          user.name || 'Mito_Reboot Patient',
           'changed',
           `Your subscription plan tier has been adjusted to: ${plan.name} (${billingCycle} billing cycle).`
         ).catch(err => console.error('Error sending change override email:', err));

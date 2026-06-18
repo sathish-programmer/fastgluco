@@ -2,7 +2,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.fastgluco.app',
-  appName: 'Mito Reboot',
+  appName: 'Mito_Reboot',
   webDir: 'dist',
   server: {
     androidScheme: 'https'

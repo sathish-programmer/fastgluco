@@ -24,7 +24,7 @@ const SEED_GUIDES = [
     category: 'Diet',
     readTime: 4,
     content: `## Guidelines for Intermittent Fasting (14/10 Protocol)
-Intermittent fasting combined with glucose monitoring is a powerful technique for resetting metabolic sensitivity. Mito Reboot recommends a 14-hour fasting window (e.g. 7:00 PM to 9:00 AM) to allow baseline insulin clearing.`
+Intermittent fasting combined with glucose monitoring is a powerful technique for resetting metabolic sensitivity. Mito_Reboot recommends a 14-hour fasting window (e.g. 7:00 PM to 9:00 AM) to allow baseline insulin clearing.`
   },
   {
     title: 'Understanding Glycaemic Index (GI)',
@@ -70,8 +70,8 @@ const SEED_FAQS = [
     order: 2
   },
   {
-    question: 'What is Mito Reboot and how does it help?',
-    answer: 'Mito Reboot is an intelligent circadian fasting and metabolic health platform that combines real-time continuous glucose monitor (CGM) data with meal logging. It calculates your spike thresholds, scores foods, and uses AI coaching to help you discover which specific meals cause blood sugar spikes.',
+    question: 'What is Mito_Reboot and how does it help?',
+    answer: 'Mito_Reboot is an intelligent circadian fasting and metabolic health platform that combines real-time continuous glucose monitor (CGM) data with meal logging. It calculates your spike thresholds, scores foods, and uses AI coaching to help you discover which specific meals cause blood sugar spikes.',
     platform: 'Both',
     category: 'General',
     isActive: true,
@@ -122,7 +122,7 @@ const seed = async () => {
       const salt = await bcrypt.genSalt(10);
       const passwordHash = await bcrypt.hash('AdminPassword123!', salt);
       await AdminUser.create({
-        name: 'Mito Reboot SuperAdmin',
+        name: 'Mito_Reboot SuperAdmin',
         email: adminEmail,
         passwordHash,
         role: 'SuperAdmin'

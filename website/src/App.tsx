@@ -135,7 +135,7 @@ export default function App() {
               <span>Patient-Centric Health Tracking</span>
             </span>
             <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
-              Master Your Circadian Fasting with <span className="text-primary">Mito Reboot</span>
+              Master Your Circadian Fasting with <span className="text-primary">Mito_Reboot</span>
             </h1>
             <p className="text-sm md:text-base text-slate-500 font-medium leading-relaxed">
               Upload Abbott FreeStyle Libre reports, log common Indian foods, calculate daily calorie target, and identify items causing blood sugar spikes instantly to reset your metabolism.
@@ -163,50 +163,13 @@ export default function App() {
 
           {/* Visual Mobile CSS Mockup Card */}
           <div className="flex justify-center">
-            <div className="bg-slate-900 p-3.5 rounded-[40px] shadow-2xl border-4 border-slate-800 max-w-[280px] w-full aspect-[9/19] relative overflow-hidden flex flex-col justify-between">
-              {/* Internal Mock Screen */}
-              <div className="bg-white rounded-[32px] p-4 flex-1 flex flex-col justify-between overflow-hidden text-slate-800">
-                <div className="flex items-center space-x-1.5 border-b border-slate-100 pb-2">
-                  <Heart className="h-4 w-4 fill-primary text-primary" />
-                  <span className="text-xs font-extrabold">Mito Reboot</span>
-                </div>
-
-                <div className="space-y-3 mt-4">
-                  {/* Glucose Summary */}
-                  <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Glucose</span>
-                    <div className="flex items-baseline space-x-0.5">
-                      <span className="text-2xl font-extrabold text-slate-800">200</span>
-                      <span className="text-[10px] font-bold text-slate-400">mg/dL</span>
-                    </div>
-                    <span className="text-[8px] font-bold text-red-500 block mt-0.5">⚠️ Very High</span>
-                  </div>
-
-                  {/* Meal Spike */}
-                  <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <span className="text-[9px] font-bold text-slate-400 block uppercase line-clamp-1">Brownie Slice</span>
-                        <span className="text-[8px] text-slate-400 font-bold block">Breakfast</span>
-                      </div>
-                      <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-red-50 text-danger border border-red-100">Avoid</span>
-                    </div>
-                    <div className="flex justify-between items-center mt-2 text-[9px] font-bold text-slate-500">
-                      <span>Before: 95</span>
-                      <span>Peak: 200</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Simulated Bottom Navigation */}
-                <div className="border-t border-slate-100 pt-2 flex justify-around items-center mt-auto text-[8px] text-slate-400 font-bold">
-                  <span className="text-primary">Home</span>
-                  <span>Reports</span>
-                  <span>Food Log</span>
-                  <span>Analysis</span>
-                  <span>Profile</span>
-                </div>
-              </div>
+            <div className="bg-slate-900 p-3 rounded-[40px] shadow-2xl border-4 border-slate-800 max-w-[280px] w-full aspect-[9/19] relative overflow-hidden flex flex-col justify-between">
+              {/* Actual Dashboard Screen Screenshot */}
+              <img 
+                src="/screenshot_dashboard.png" 
+                alt="Mito_Reboot App Dashboard" 
+                className="w-full h-full object-cover rounded-[32px]" 
+              />
             </div>
           </div>
         </div>
@@ -262,67 +225,64 @@ export default function App() {
             <p className="text-sm text-slate-400 font-semibold mt-2">Beautiful, light medical layout optimized for accessibility.</p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
             {/* Screen 1 */}
             <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-soft">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">1. Dashboard</span>
-              <div className="aspect-[9/16] bg-slate-50 border border-slate-100 rounded-2xl p-3 flex flex-col justify-between text-slate-700 text-xs">
-                <div>
-                  <span className="text-[9px] font-bold text-slate-400 block uppercase">Latest Glucose</span>
-                  <span className="text-xl font-extrabold">200 mg/dL</span>
-                  <span className="text-[8px] font-bold text-red-500 block mt-1">⚠️ Very High</span>
-                </div>
-                <div className="p-2 bg-red-50 text-danger font-bold text-[9px] rounded-xl border border-red-100 text-center">
-                  Time in Range: 71%
-                </div>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">1. Secure Access</span>
+              <div className="aspect-[9/16] bg-slate-50 border border-slate-100 rounded-2xl overflow-hidden shadow-inner">
+                <img 
+                  src="/screenshot_login.png" 
+                  alt="Login Screen" 
+                  className="w-full h-full object-cover" 
+                />
               </div>
             </div>
 
             {/* Screen 2 */}
             <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-soft">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">2. CGM Upload</span>
-              <div className="aspect-[9/16] bg-slate-50 border border-slate-100 rounded-2xl p-3 flex flex-col justify-between text-slate-700 text-xs">
-                <div>
-                  <span className="text-[9px] font-bold text-slate-400 block uppercase">Report Import</span>
-                  <h4 className="font-bold text-[10px] mt-1">Abbott Libre CSV</h4>
-                  <span className="text-[8px] text-slate-400">Processed 466 records</span>
-                </div>
-                <div className="p-2 bg-blue-50 text-primary font-bold text-[9px] rounded-xl border border-blue-100 text-center">
-                  Analyze Spikes
-                </div>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">2. Dashboard</span>
+              <div className="aspect-[9/16] bg-slate-50 border border-slate-100 rounded-2xl overflow-hidden shadow-inner">
+                <img 
+                  src="/screenshot_dashboard.png" 
+                  alt="Dashboard Screen" 
+                  className="w-full h-full object-cover" 
+                />
               </div>
             </div>
 
             {/* Screen 3 */}
             <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-soft">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">3. Spike Match</span>
-              <div className="aspect-[9/16] bg-slate-50 border border-slate-100 rounded-2xl p-3 flex flex-col justify-between text-slate-700 text-xs">
-                <div>
-                  <span className="text-[9px] font-bold text-slate-400 block uppercase">Meal Analyzer</span>
-                  <h4 className="font-bold text-[10px] mt-1 line-clamp-1">Brownie Slice</h4>
-                  <span className="text-[8px] text-slate-400 block mt-0.5">Baseline: 95 mg/dL</span>
-                  <span className="text-[8px] text-slate-400 block">Peak Post: 200 mg/dL</span>
-                </div>
-                <div className="p-2 bg-red-50 text-danger font-bold text-[9px] rounded-xl border border-red-100 text-center">
-                  Level: Avoid
-                </div>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">3. CGM Reports</span>
+              <div className="aspect-[9/16] bg-slate-50 border border-slate-100 rounded-2xl overflow-hidden shadow-inner">
+                <img 
+                  src="/screenshot_reports.png" 
+                  alt="CGM Reports Screen" 
+                  className="w-full h-full object-cover" 
+                />
               </div>
             </div>
 
             {/* Screen 4 */}
             <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-soft">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">4. Top Foods</span>
-              <div className="aspect-[9/16] bg-slate-50 border border-slate-100 rounded-2xl p-3 flex flex-col justify-between text-slate-700 text-xs">
-                <div className="space-y-2">
-                  <span className="text-[9px] font-bold text-slate-400 block uppercase">Safest Portion Diets</span>
-                  <div className="space-y-1 text-[8px] font-bold">
-                    <div className="flex justify-between text-green-700"><span>Boiled Egg</span><span>70 mg/dL</span></div>
-                    <div className="flex justify-between text-green-700"><span>Whole Wheat Roti</span><span>85 mg/dL</span></div>
-                  </div>
-                </div>
-                <div className="p-2 bg-teal-50 text-secondary font-bold text-[9px] rounded-xl border border-teal-100 text-center">
-                  Analytics & Trends
-                </div>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">4. Food & Diet Log</span>
+              <div className="aspect-[9/16] bg-slate-50 border border-slate-100 rounded-2xl overflow-hidden shadow-inner">
+                <img 
+                  src="/screenshot_foodlog.png" 
+                  alt="Food Log Screen" 
+                  className="w-full h-full object-cover" 
+                />
+              </div>
+            </div>
+
+            {/* Screen 5 */}
+            <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-soft">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">5. Glucose Analysis</span>
+              <div className="aspect-[9/16] bg-slate-50 border border-slate-100 rounded-2xl overflow-hidden shadow-inner">
+                <img 
+                  src="/screenshot_analysis.png" 
+                  alt="Analysis Screen" 
+                  className="w-full h-full object-cover" 
+                />
               </div>
             </div>
           </div>
@@ -360,7 +320,7 @@ export default function App() {
         <section id="faqs" className="bg-white py-20 px-6 max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-slate-900">Frequently Asked Questions</h2>
-            <p className="text-sm text-slate-400 font-semibold mt-2">Answers to common questions about Mito Reboot.</p>
+            <p className="text-sm text-slate-400 font-semibold mt-2">Answers to common questions about Mito_Reboot.</p>
           </div>
           <div className="space-y-4">
             {faqsData.map((faq, idx) => {
@@ -394,7 +354,7 @@ export default function App() {
         <div className="max-w-xl mx-auto bg-white p-8 rounded-3xl border border-slate-200 shadow-soft">
           <div className="text-center mb-6">
             <h2 className="text-2xl font-bold text-slate-800">Get in Touch</h2>
-            <p className="text-xs text-slate-400 font-semibold mt-1">Have inquiries about Mito Reboot? Complete the contact form below.</p>
+            <p className="text-xs text-slate-400 font-semibold mt-1">Have inquiries about Mito_Reboot? Complete the contact form below.</p>
           </div>
 
           {formSuccess && (
@@ -493,7 +453,7 @@ const Header: React.FC<{ activeTab: string; onTabChange: (tab: any) => void }> =
           className="flex items-center space-x-1.5 cursor-pointer"
         >
           <Heart className="h-5 w-5 fill-primary text-primary" />
-          <span className="text-base font-extrabold text-slate-800 tracking-tight">Mito Reboot</span>
+          <span className="text-base font-extrabold text-slate-800 tracking-tight">Mito_Reboot</span>
         </div>
         
         <nav className="hidden md:flex space-x-6 text-xs font-bold text-slate-500">
@@ -533,8 +493,8 @@ const Footer: React.FC<{ onTabChange: (tab: any) => void }> = ({ onTabChange }) 
     <footer className="bg-slate-900 text-slate-400 py-10 px-6 text-xs border-t border-slate-800">
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
         <div>
-          <span className="text-white font-bold block mb-1">Mito Reboot Central</span>
-          <span>© 2026 Mito Reboot. All rights reserved.</span>
+          <span className="text-white font-bold block mb-1">Mito_Reboot Central</span>
+          <span>© 2026 Mito_Reboot. All rights reserved.</span>
         </div>
         <div className="flex space-x-4 font-semibold">
           <button onClick={() => onTabChange('privacy')} className="hover:text-white transition-all">Privacy Policy</button>

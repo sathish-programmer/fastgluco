@@ -305,7 +305,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Mito-Reboot-Report-${new Date().toISOString().split('T')[0]}.csv`;
+      a.download = `Mito_Reboot_Report-${new Date().toISOString().split('T')[0]}.csv`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
