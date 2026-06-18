@@ -40,7 +40,7 @@ const runValidation = async () => {
     console.log('Database connected.');
 
     // 1. Clear database elements
-    await User.deleteMany({ email: 'test_patient@fastgluco.com' });
+    await User.deleteMany({ email: 'test_patient@mitoreboot.com' });
     await CGMReport.deleteMany({});
     
     // 2. Create Patient
@@ -49,7 +49,7 @@ const runValidation = async () => {
     const passwordHash = await bcrypt.hash('PatientPassword123!', salt);
     const user = await User.create({
       name: 'Test Patient',
-      email: 'test_patient@fastgluco.com',
+      email: 'test_patient@mitoreboot.com',
       passwordHash,
       gender: 'Male',
       age: 35,

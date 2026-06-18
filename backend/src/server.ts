@@ -20,7 +20,7 @@ const bootstrap = async () => {
 
     app.listen(PORT, () => {
       console.log(`===================================================`);
-      console.log(` FastGluco Backend Service is running locally `);
+      console.log(` Mito Reboot Backend Service is running locally `);
       console.log(` Port: ${PORT} `);
       console.log(` Healthcheck: http://localhost:${PORT}/health `);
       console.log(`===================================================`);

@@ -1176,7 +1176,7 @@ const AdminPanelContent: React.FC = () => {
                     required
                     value={regEmail}
                     onChange={(e) => setRegEmail(e.target.value)}
-                    placeholder="admin@fastgluco.com"
+                    placeholder="admin@mitoreboot.com"
                     className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-medium"
                   />
                 </div>
@@ -1244,7 +1244,7 @@ const AdminPanelContent: React.FC = () => {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@fastgluco.com"
+                    placeholder="admin@mitoreboot.com"
                     className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-medium"
                   />
                 </div>
@@ -1317,7 +1317,7 @@ const AdminPanelContent: React.FC = () => {
         <div>
           <div className="p-5 border-b border-slate-800 flex items-center space-x-2">
             <Activity className="h-6 w-6 text-primary" />
-            <h1 className="text-lg font-bold text-white tracking-tight">FastGluco Admin</h1>
+            <h1 className="text-lg font-bold text-white tracking-tight">Mito Reboot Admin</h1>
           </div>
 
           <nav className="p-4 space-y-1">
@@ -3193,7 +3193,7 @@ const AdminPanelContent: React.FC = () => {
                         transactions.map((tx) => (
                           <tr key={tx._id} className="hover:bg-slate-50/50">
                             <td className="px-6 py-4">
-                              <span className="text-slate-800 font-bold block">{tx.userId?.name || 'FastGluco Patient'}</span>
+                              <span className="text-slate-800 font-bold block">{tx.userId?.name || 'Mito Reboot Patient'}</span>
                               <span className="text-[10px] text-slate-400 block">{tx.userId?.email || '--'}</span>
                             </td>
                             <td className="px-6 py-4">
@@ -3562,7 +3562,7 @@ const AdminPanelContent: React.FC = () => {
                 </div>
                 <div className="flex justify-between">
                   <span>Billing Name:</span>
-                  <span className="text-slate-800 font-bold">{selectedTx.userId?.name || 'FastGluco User'}</span>
+                  <span className="text-slate-800 font-bold">{selectedTx.userId?.name || 'Mito Reboot User'}</span>
                 </div>
               </div>
 

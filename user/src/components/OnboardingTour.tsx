@@ -18,8 +18,8 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ onComplete }) =>
 
   const slides: Slide[] = [
     {
-      title: 'Welcome to FastGluco!',
-      description: 'Your premium diabetes companion. We help you monitor glucose spikes, log meals, and get intelligent clinical recommendations to optimize your metabolic health.',
+      title: 'Welcome to Mito Reboot!',
+      description: 'Your premium circadian fasting companion. We help you monitor glucose spikes, log meals, and get intelligent clinical recommendations to optimize your metabolic health.',
       icon: <Heart className="h-16 w-16 text-rose-500 fill-rose-500 animate-pulse" />,
       bgGradient: 'from-rose-500/10 to-orange-500/10',
       accentColor: 'bg-rose-500'

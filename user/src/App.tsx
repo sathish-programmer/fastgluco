@@ -108,7 +108,7 @@ const MainAppContent: React.FC = () => {
       <div className="min-h-screen flex items-center justify-center bg-white text-primary">
         <div className="flex flex-col items-center space-y-3">
           <Heart className="h-10 w-10 fill-primary animate-pulse" />
-          <span className="font-bold text-slate-700 text-sm animate-pulse">FastGluco Loading...</span>
+          <span className="font-bold text-slate-700 text-sm animate-pulse">Mito Reboot Loading...</span>
         </div>
       </div>
     );
@@ -151,7 +151,7 @@ const MainAppContent: React.FC = () => {
       <header className="sticky top-0 bg-white/95 backdrop-blur-md border-b border-slate-100 z-10 px-4 pt-[calc(env(safe-area-inset-top)+12px)] pb-3 max-w-lg w-full mx-auto flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Heart className="h-5 w-5 fill-primary text-primary" />
-          <h1 className="text-lg font-extrabold text-slate-800 tracking-tight">FastGluco</h1>
+          <h1 className="text-lg font-extrabold text-slate-800 tracking-tight">Mito Reboot</h1>
           <span className="text-[9px] font-bold bg-primary-light text-primary px-2 py-0.5 rounded-full">
             {basicPlan}
           </span>

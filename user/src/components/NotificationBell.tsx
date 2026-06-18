@@ -290,7 +290,7 @@ export const NotificationBell: React.FC = () => {
                       )}
                       <button
                         onClick={(e) => handleDelete(n._id, e)}
-                        className="p-1 hover:bg-rose-100 rounded-full text-slate-400 hover:text-rose-600 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
+                        className="p-1 hover:bg-rose-100 rounded-full text-slate-400 hover:text-rose-600 transition-all"
                         title="Delete notification"
                       >
                         <Trash2 className="h-3.5 w-3.5" />

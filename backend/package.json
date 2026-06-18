@@ -1,7 +1,7 @@
 {
-  "name": "fastgluco-backend",
+  "name": "mitoreboot-backend",
   "version": "1.0.0",
-  "description": "Production-ready REST APIs for Diabetes & Glucose Tracking Platform (FastGluco)",
+  "description": "Production-ready REST APIs for Circadian Fasting & Metabolic Health Platform (Mito Reboot)",
   "main": "dist/server.js",
   "scripts": {
     "build": "tsc",

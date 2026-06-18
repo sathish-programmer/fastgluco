@@ -342,13 +342,13 @@ export class ReportController {
 
       // Set headers for download
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="FastGluco-User-Report-${new Date().toISOString().split('T')[0]}.pdf"`);
+      res.setHeader('Content-Disposition', `attachment; filename="Mito-Reboot-User-Report-${new Date().toISOString().split('T')[0]}.pdf"`);
       doc.pipe(res);
 
       // --- PAGE 1: TITLE & USER METRICS ---
       // Logo Header
-      doc.fillColor('#0284C7').fontSize(24).font('Helvetica-Bold').text('FastGluco', 40, 40);
-      doc.fillColor('#64748B').fontSize(9).font('Helvetica-Bold').text('METABOLIC HEALTH & NUTRITION PLATFORM', 40, 68);
+      doc.fillColor('#0284C7').fontSize(24).font('Helvetica-Bold').text('Mito Reboot', 40, 40);
+      doc.fillColor('#64748B').fontSize(9).font('Helvetica-Bold').text('CIRCADIAN FASTING & METABOLIC HEALTH', 40, 68);
 
       doc.fillColor('#0F172A').fontSize(16).font('Helvetica-Bold').text('Personal Health & Metabolic Report', 200, 40, { align: 'right' });
       doc.fillColor('#64748B').fontSize(10).font('Helvetica').text(`Generated: ${new Date().toLocaleDateString()}`, 200, 60, { align: 'right' });
@@ -427,7 +427,7 @@ export class ReportController {
       doc.fillColor('#64748B').fontSize(8).font('Helvetica').text('Spike Peak > 110 mg/dL', 400, 452);
 
       // Footer
-      doc.fillColor('#94A3B8').fontSize(8).font('Helvetica').text('FastGluco Platform - Patient Metabolic Insights & Trends', 40, 520, { align: 'center', width: 515 });
+      doc.fillColor('#94A3B8').fontSize(8).font('Helvetica').text('Mito Reboot Platform - Patient Metabolic Insights & Trends', 40, 520, { align: 'center', width: 515 });
 
       // Page break for details
       doc.addPage();

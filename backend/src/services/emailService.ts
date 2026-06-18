@@ -22,15 +22,15 @@ const generateEmailTemplate = (title: string, contentHTML: string) => {
   <div style="padding: 20px;">
     <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
       <div style="background-color: #2563eb; padding: 30px; text-align: center;">
-        <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.5px;">&hearts; FastGluco</h1>
+        <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.5px;">&hearts; Mito Reboot</h1>
       </div>
       <div style="padding: 40px 30px; color: #334155; line-height: 1.6; font-size: 16px;">
         <h2 style="color: #0f172a; font-size: 22px; font-weight: 700; margin-top: 0; margin-bottom: 20px;">${title}</h2>
         ${contentHTML}
       </div>
       <div style="background-color: #f8fafc; padding: 24px 30px; text-align: center; color: #64748b; font-size: 13px; border-top: 1px solid #e2e8f0;">
-        <p style="margin: 0;">&copy; ${new Date().getFullYear()} FastGluco. All rights reserved.</p>
-        <p style="margin: 8px 0 0 0;">You are receiving this email because you are a registered user of FastGluco.</p>
+        <p style="margin: 0;">&copy; ${new Date().getFullYear()} Mito Reboot. All rights reserved.</p>
+        <p style="margin: 8px 0 0 0;">You are receiving this email because you are a registered user of Mito Reboot.</p>
       </div>
     </div>
   </div>
@@ -44,9 +44,9 @@ export class EmailService {
    * Send Welcome Email
    */
   public static async sendWelcomeEmail(email: string, name: string) {
-    const html = generateEmailTemplate('Welcome to FastGluco!', `
+    const html = generateEmailTemplate('Welcome to Mito Reboot!', `
       <p>Hi ${name},</p>
-      <p>We are thrilled to have you on board! FastGluco is designed to give you unparalleled insights into your glucose levels and dietary habits.</p>
+      <p>We are thrilled to have you on board! Mito Reboot is designed to give you unparalleled insights into your circadian fasting cycles and metabolic health.</p>
       <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #22c55e; padding: 16px; border-radius: 8px; margin: 20px 0;">
         <p style="margin: 0; color: #166534; font-weight: 600;">Getting Started:</p>
         <ul style="margin-top: 8px; margin-bottom: 0; color: #15803d; padding-left: 20px;">
@@ -57,7 +57,7 @@ export class EmailService {
       </div>
       <p>If you have any questions, feel free to contact our support team.</p>
     `);
-    try { await transporter.sendMail({ from: '"FastGluco" <hello@fastgluco.com>', to: email, subject: 'Welcome to FastGluco!', html }); } catch (err) { console.error(err); }
+    try { await transporter.sendMail({ from: '"Mito Reboot" <hello@mitoreboot.com>', to: email, subject: 'Welcome to Mito Reboot!', html }); } catch (err) { console.error(err); }
   }
 
   /**
@@ -73,14 +73,14 @@ export class EmailService {
         <p style="margin: 4px 0 0 0; color: #1d4ed8;">Amount Processed: ${symbol}${amount.toFixed(2)}</p>
       </div>
       <p>We have attached your invoice PDF to this email.</p>
-      <p>You can also view your full invoice details and manage your subscription in your FastGluco Profile under "Billing".</p>
+      <p>You can also view your full invoice details and manage your subscription in your Mito Reboot Profile under "Billing".</p>
       <p>Enjoy your premium features!</p>
     `);
 
     const mailOptions: any = {
-      from: '"FastGluco Billing" <billing@fastgluco.com>',
+      from: '"Mito Reboot Billing" <billing@mitoreboot.com>',
       to: email,
-      subject: 'Your FastGluco Subscription Confirmed',
+      subject: 'Your Mito Reboot Subscription Confirmed',
       html
     };
 
@@ -106,7 +106,7 @@ export class EmailService {
       <p>Your subscription has been successfully updated to the <strong>${newPlanName}</strong> plan.</p>
       <p>Your new features are available immediately! You can manage your billing cycle and view upcoming charges in your Profile.</p>
     `);
-    try { await transporter.sendMail({ from: '"FastGluco Billing" <billing@fastgluco.com>', to: email, subject: 'Your FastGluco Subscription has been Updated', html }); } catch (err) { console.error(err); }
+    try { await transporter.sendMail({ from: '"Mito Reboot Billing" <billing@mitoreboot.com>', to: email, subject: 'Your Mito Reboot Subscription has been Updated', html }); } catch (err) { console.error(err); }
   }
 
   /**
@@ -115,13 +115,13 @@ export class EmailService {
   public static async sendCancellationEmail(email: string, name: string, endDate: string) {
     const html = generateEmailTemplate('Subscription Cancelled', `
       <p>Hi ${name},</p>
-      <p>We've received your request to cancel your FastGluco subscription. We're sorry to see you go!</p>
+      <p>We've received your request to cancel your Mito Reboot subscription. We're sorry to see you go!</p>
       <div style="background-color: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid #f59e0b; padding: 16px; border-radius: 8px; margin: 20px 0;">
         <p style="margin: 0; color: #92400e;">Your account will retain premium access until the end of your current billing cycle on <strong>${new Date(endDate).toLocaleDateString()}</strong>.</p>
       </div>
       <p>If you change your mind, you can always reactivate your subscription from your Profile.</p>
     `);
-    try { await transporter.sendMail({ from: '"FastGluco Billing" <billing@fastgluco.com>', to: email, subject: 'FastGluco Subscription Cancellation', html }); } catch (err) { console.error(err); }
+    try { await transporter.sendMail({ from: '"Mito Reboot Billing" <billing@mitoreboot.com>', to: email, subject: 'Mito Reboot Subscription Cancellation', html }); } catch (err) { console.error(err); }
   }
 
   /**
@@ -141,7 +141,7 @@ export class EmailService {
       </div>
       <p>Please log into the app to view your analysis and review your recent meals.</p>
     `);
-    try { await transporter.sendMail({ from: '"FastGluco Alerts" <alerts@fastgluco.com>', to: email, subject: 'Urgent: High Glucose Spike Detected', html }); } catch (err) { console.error(err); }
+    try { await transporter.sendMail({ from: '"Mito Reboot Alerts" <alerts@mitoreboot.com>', to: email, subject: 'Urgent: High Glucose Spike Detected', html }); } catch (err) { console.error(err); }
   }
 
   /**
@@ -150,14 +150,14 @@ export class EmailService {
   public static async sendBlockNotificationEmail(email: string, name: string, reason: string) {
     const html = generateEmailTemplate('Account Suspended', `
       <p>Hi ${name},</p>
-      <p>We are writing to inform you that your FastGluco account has been suspended.</p>
+      <p>We are writing to inform you that your Mito Reboot account has been suspended.</p>
       <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-left: 4px solid #ef4444; padding: 16px; border-radius: 8px; margin: 20px 0;">
         <p style="margin: 0; color: #991b1b; font-weight: 600;">Reason for Suspension:</p>
         <p style="margin: 8px 0 0 0; color: #b91c1c;">${reason}</p>
       </div>
       <p>If you believe this is a mistake or have questions, please contact our support team.</p>
     `);
-    try { await transporter.sendMail({ from: '"FastGluco Security" <security@fastgluco.com>', to: email, subject: 'FastGluco Account Suspended', html }); } catch (err) { console.error(err); }
+    try { await transporter.sendMail({ from: '"Mito Reboot Security" <security@mitoreboot.com>', to: email, subject: 'Mito Reboot Account Suspended', html }); } catch (err) { console.error(err); }
   }
 
   /**
@@ -166,13 +166,13 @@ export class EmailService {
   public static async sendPasswordResetEmail(email: string, name: string, resetLink: string) {
     const html = generateEmailTemplate('Password Reset Request', `
       <p>Hi ${name},</p>
-      <p>We received a request to reset your password for your FastGluco account. You can reset your password by clicking the link below:</p>
+      <p>We received a request to reset your password for your Mito Reboot account. You can reset your password by clicking the link below:</p>
       <div style="text-align: center; margin: 30px 0;">
         <a href="${resetLink}" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">Reset Password</a>
       </div>
       <p>This reset link will expire in 30 minutes. If you did not make this request, you can safely ignore this email.</p>
     `);
-    try { await transporter.sendMail({ from: '"FastGluco Security" <security@fastgluco.com>', to: email, subject: 'FastGluco Password Reset Link', html }); } catch (err) { console.error(err); }
+    try { await transporter.sendMail({ from: '"Mito Reboot Security" <security@mitoreboot.com>', to: email, subject: 'Mito Reboot Password Reset Link', html }); } catch (err) { console.error(err); }
   }
 
   /**
@@ -181,7 +181,7 @@ export class EmailService {
   public static async sendSupportAnswerEmail(email: string, name: string, question: string, answer: string) {
     const html = generateEmailTemplate('Re: Your Support Question', `
       <p>Hi ${name},</p>
-      <p>Thank you for reaching out to FastGluco Support.</p>
+      <p>Thank you for reaching out to Mito Reboot Support.</p>
       <div style="background-color: #f8fafc; padding: 16px; border-radius: 8px; margin: 20px 0;">
         <p style="margin: 0 0 8px 0; color: #64748b; font-size: 13px; text-transform: uppercase; font-weight: bold;">Your Question:</p>
         <p style="margin: 0; font-style: italic;">"${question}"</p>
@@ -189,7 +189,7 @@ export class EmailService {
       <p style="font-weight: 600;">Our Answer:</p>
       <p>${answer}</p>
     `);
-    try { await transporter.sendMail({ from: '"FastGluco Support" <support@fastgluco.com>', to: email, subject: 'Re: Your FastGluco Support Question', html }); } catch (err) { console.error(err); }
+    try { await transporter.sendMail({ from: '"Mito Reboot Support" <support@mitoreboot.com>', to: email, subject: 'Re: Your Mito Reboot Support Question', html }); } catch (err) { console.error(err); }
   }
 
   /**
@@ -198,10 +198,10 @@ export class EmailService {
   public static async sendExpiryWarningEmail(email: string, name: string, daysLeft: number) {
     const html = generateEmailTemplate('Action Required: Subscription Expiring', `
       <p>Hi ${name},</p>
-      <p>Your FastGluco subscription is expiring in <strong>${daysLeft} days</strong>.</p>
+      <p>Your Mito Reboot subscription is expiring in <strong>${daysLeft} days</strong>.</p>
       <p>Please ensure your payment method is up to date, or renew your subscription to avoid losing access to your premium features.</p>
     `);
-    try { await transporter.sendMail({ from: '"FastGluco Billing" <billing@fastgluco.com>', to: email, subject: 'Action Required: Your FastGluco Subscription is Expiring Soon', html }); } catch (err) { console.error(err); }
+    try { await transporter.sendMail({ from: '"Mito Reboot Billing" <billing@mitoreboot.com>', to: email, subject: 'Action Required: Your Mito Reboot Subscription is Expiring Soon', html }); } catch (err) { console.error(err); }
   }
 
   /**
@@ -211,7 +211,7 @@ export class EmailService {
     const html = generateEmailTemplate(title, `
       <p>${body.replace(/\n/g, '<br/>')}</p>
     `);
-    try { await transporter.sendMail({ from: '"FastGluco Admin" <admin@fastgluco.com>', to: email, subject: title, html }); } catch (err) { console.error(err); }
+    try { await transporter.sendMail({ from: '"Mito Reboot Admin" <admin@mitoreboot.com>', to: email, subject: title, html }); } catch (err) { console.error(err); }
   }
 
   /**
@@ -228,7 +228,7 @@ export class EmailService {
       <p>The refunded amount will reflect in your original payment source within 5-7 business days.</p>
       <p>If you have any questions, please contact our support team.</p>
     `);
-    try { await transporter.sendMail({ from: '"FastGluco Billing" <billing@fastgluco.com>', to: email, subject: 'FastGluco Refund Processed', html }); } catch (err) { console.error(err); }
+    try { await transporter.sendMail({ from: '"Mito Reboot Billing" <billing@mitoreboot.com>', to: email, subject: 'Mito Reboot Refund Processed', html }); } catch (err) { console.error(err); }
   }
 
   /**
@@ -238,14 +238,14 @@ export class EmailService {
     const title = actionName === 'cancelled' ? 'Subscription Cancelled' : actionName === 'extended' ? 'Subscription Extended' : 'Subscription Tier Adjusted';
     const html = generateEmailTemplate(title, `
       <p>Hi ${name},</p>
-      <p>An administrator has manually updated your FastGluco subscription status.</p>
+      <p>An administrator has manually updated your Mito Reboot subscription status.</p>
       <div style="background-color: #f1f5f9; padding: 20px; border-radius: 12px; margin: 24px 0;">
         <p style="margin: 0; font-size: 14px; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;">Override Details</p>
         <p style="margin: 4px 0 0 0; color: #1e293b;">${details}</p>
       </div>
       <p>You can check your current subscription validity anytime under "Profile" > "Billing" in the app.</p>
     `);
-    try { await transporter.sendMail({ from: '"FastGluco Billing" <billing@fastgluco.com>', to: email, subject: `FastGluco Alert: ${title}`, html }); } catch (err) { console.error(err); }
+    try { await transporter.sendMail({ from: '"Mito Reboot Billing" <billing@mitoreboot.com>', to: email, subject: `Mito Reboot Alert: ${title}`, html }); } catch (err) { console.error(err); }
   }
 
   /**
@@ -255,7 +255,7 @@ export class EmailService {
     console.log(`[EmailService] Attempting to send login notification email to: ${email}`);
     const html = generateEmailTemplate('New Login Detected', `
       <p>Hi ${name},</p>
-      <p>We detected a new login to your FastGluco account.</p>
+      <p>We detected a new login to your Mito Reboot account.</p>
       <div style="background-color: #f1f5f9; padding: 20px; border-radius: 12px; margin: 24px 0; font-size: 14px;">
         <p style="margin: 0; color: #475569; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">Login Details</p>
         <table style="width: 100%; border-collapse: collapse;">
@@ -277,9 +277,9 @@ export class EmailService {
     `);
     try {
       await transporter.sendMail({
-        from: '"FastGluco Security" <security@fastgluco.com>',
+        from: '"Mito Reboot Security" <security@mitoreboot.com>',
         to: email,
-        subject: 'Security Alert: New Login to FastGluco',
+        subject: 'Security Alert: New Login to Mito Reboot',
         html
       });
       console.log(`[EmailService] Login notification email sent successfully to: ${email}`);

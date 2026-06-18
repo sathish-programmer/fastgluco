@@ -204,7 +204,7 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `FastGluco-Health-Report-${exportRange}-${new Date().toISOString().split('T')[0]}.pdf`;
+        a.download = `Mito-Reboot-Health-Report-${exportRange}-${new Date().toISOString().split('T')[0]}.pdf`;
         document.body.appendChild(a);
         a.click();
         a.remove();

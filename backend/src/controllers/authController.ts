@@ -164,7 +164,7 @@ export class AuthController {
       if (shouldSendEmail) {
         user.lastLoginAlertSentAt = now;
         await user.save();
-        EmailService.sendLoginNotificationEmail(user.email, user.name || 'FastGluco User', { time, location, device }).catch(console.error);
+        EmailService.sendLoginNotificationEmail(user.email, user.name || 'Mito Reboot User', { time, location, device }).catch(console.error);
       }
 
       return res.status(200).json({
@@ -234,7 +234,7 @@ export class AuthController {
       const resetLink = `http://localhost:5173/?token=${resetToken}`;
 
       // Send actual email to user
-      await EmailService.sendPasswordResetEmail(user.email, user.name || 'FastGluco User', resetLink);
+      await EmailService.sendPasswordResetEmail(user.email, user.name || 'Mito Reboot User', resetLink);
 
       return res.status(200).json({ message: 'If the email exists, a password reset link has been dispatched.' });
     } catch (error: any) {

@@ -801,7 +801,7 @@ export const FoodLog: React.FC = () => {
                       </div>
 
                       {/* Spike Correlation Quick Indicator */}
-                      {log.glucoseAnalysis && (
+                      {log.glucoseAnalysis && log.glucoseAnalysis.status && (
                         <span className={`inline-flex items-center text-[9px] font-bold px-2.5 py-0.5 rounded-full mt-2 border ${
                           log.glucoseAnalysis.status === 'Safe' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
                           log.glucoseAnalysis.status === 'Moderate' ? 'bg-amber-50 text-amber-600 border-amber-100' :

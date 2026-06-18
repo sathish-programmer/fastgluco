@@ -186,7 +186,7 @@ export class GlucoseController {
       });
 
       res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', `attachment; filename="FastGluco-Report-${now.toISOString().split('T')[0]}.csv"`);
+      res.setHeader('Content-Disposition', `attachment; filename="Mito-Reboot-Report-${now.toISOString().split('T')[0]}.csv"`);
       return res.status(200).send(csv);
 
     } catch (error: any) {

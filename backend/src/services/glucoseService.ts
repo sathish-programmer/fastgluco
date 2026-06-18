@@ -72,11 +72,13 @@ export class GlucoseService {
     }
     // If netRise <= 0: glucose dropped or stayed same → status stays 'Safe'
 
+    const walkReminderSent = foodLog.glucoseAnalysis?.walkReminderSent || false;
     const analysis = {
       beforeGlucose,
       peakGlucose,
       difference,
-      status
+      status,
+      walkReminderSent
     };
 
     // Store in food log
@@ -84,16 +86,23 @@ export class GlucoseService {
     await foodLog.save();
 
     if (status === 'Avoid') {
-      try {
-        await Notification.create({
-          userId,
-          title: 'Walk Reminder 🚶',
-          body: `Your glucose is rising after ${foodLog.name || 'your meal'}. A quick 10-minute walk right now can help drop it back into your safe zone!`,
-          type: 'General',
-          isSent: true
-        });
-      } catch (notiErr) {
-        console.error('Failed to create walk reminder notification:', notiErr);
+      const isRecent = (Date.now() - foodLog.loggedAt.getTime()) < 3 * 60 * 60 * 1000;
+      if (isRecent && !analysis.walkReminderSent) {
+        try {
+          await Notification.create({
+            userId,
+            title: 'Walk Reminder 🚶',
+            body: `Your glucose is rising after ${foodLog.name || 'your meal'}. A quick 10-minute walk right now can help drop it back into your safe zone!`,
+            type: 'General',
+            isSent: true
+          });
+          
+          analysis.walkReminderSent = true;
+          foodLog.glucoseAnalysis = analysis;
+          await foodLog.save();
+        } catch (notiErr) {
+          console.error('Failed to create walk reminder notification:', notiErr);
+        }
       }
 
       if (user && user.email) {
@@ -110,7 +119,7 @@ export class GlucoseService {
         if (shouldSendAlert) {
           EmailService.sendHighSpikeAlert(
             user.email,
-            user.name || 'FastGluco User',
+            user.name || 'Mito Reboot User',
             peakGlucose,
             user.spikeThreshold ?? 90,
             peakReading.timestamp.toISOString()

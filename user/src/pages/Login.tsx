@@ -102,8 +102,8 @@ export const Login: React.FC<LoginProps> = ({ onNavigateToRegister, resetToken, 
           <div className="inline-flex items-center justify-center p-3 bg-primary-light text-primary rounded-2xl mb-3 shadow-soft">
             <Heart className="h-8 w-8 fill-primary" />
           </div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">FastGluco</h1>
-          <p className="text-slate-500 mt-2 font-medium">Diabetes & Glucose Tracking Platform</p>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Mito Reboot</h1>
+          <p className="text-slate-500 mt-2 font-medium">The circadian fasting app</p>
         </div>
 
         {/* Auth Error Display */}

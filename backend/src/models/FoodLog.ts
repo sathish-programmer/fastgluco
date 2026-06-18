@@ -23,6 +23,7 @@ export interface IFoodLog extends Document {
     peakGlucose: number;
     difference: number;
     status: 'Safe' | 'Moderate' | 'Avoid';
+    walkReminderSent?: boolean;
   };
   isDeleted: boolean;
   createdAt: Date;
@@ -60,7 +61,8 @@ const foodLogSchema = new Schema<IFoodLog>(
       beforeGlucose: { type: Number },
       peakGlucose: { type: Number },
       difference: { type: Number },
-      status: { type: String, enum: ['Safe', 'Moderate', 'Avoid'] }
+      status: { type: String, enum: ['Safe', 'Moderate', 'Avoid'] },
+      walkReminderSent: { type: Boolean, default: false }
     },
     isDeleted: { type: Boolean, default: false }
   },
