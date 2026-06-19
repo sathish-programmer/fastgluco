@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Heart, 
-  Smartphone, 
-  ShieldCheck, 
-  Activity, 
-  Sparkles, 
-  FileText, 
+import {
+  Heart,
+  Smartphone,
+  ShieldCheck,
+  Activity,
+  Sparkles,
+  FileText,
   Play,
   Mail,
   User,
@@ -25,7 +25,7 @@ const getEmbedUrl = (url: string) => {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'home' | 'privacy' | 'terms'>('home');
-  
+
   // Dynamic Data States
   const [privacyData, setPrivacyData] = useState<string>('Loading privacy policy...');
   const [termsData, setTermsData] = useState<string>('Loading terms of service...');
@@ -36,7 +36,7 @@ export default function App() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+        const baseUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5001/api' : 'https://api.mitoreboot.in/api');
         const [priv, terms, fq, vid] = await Promise.all([
           fetch(`${baseUrl}/legal/PrivacyPolicy`).then(r => r.json()).catch(() => ({ content: '' })),
           fetch(`${baseUrl}/legal/TermsOfService`).then(r => r.json()).catch(() => ({ content: '' })),
@@ -68,7 +68,7 @@ export default function App() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+      const baseUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5001/api' : 'https://api.mitoreboot.in/api');
       const res = await fetch(`${baseUrl}/support`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -95,7 +95,7 @@ export default function App() {
         <Header activeTab={activeTab} onTabChange={setActiveTab} />
         <main className="flex-grow max-w-3xl mx-auto w-full px-6 py-12 bg-white rounded-3xl border border-slate-200 shadow-soft mt-6 mb-12">
           <h2 className="text-2xl font-bold text-slate-800 mb-4">Privacy Policy</h2>
-          <div 
+          <div
             className="text-xs text-slate-600 leading-relaxed font-medium space-y-4"
             dangerouslySetInnerHTML={{ __html: privacyData }}
           />
@@ -111,7 +111,7 @@ export default function App() {
         <Header activeTab={activeTab} onTabChange={setActiveTab} />
         <main className="flex-grow max-w-3xl mx-auto w-full px-6 py-12 bg-white rounded-3xl border border-slate-200 shadow-soft mt-6 mb-12">
           <h2 className="text-2xl font-bold text-slate-800 mb-4">Terms and Conditions</h2>
-          <div 
+          <div
             className="text-xs text-slate-600 leading-relaxed font-medium space-y-4"
             dangerouslySetInnerHTML={{ __html: termsData }}
           />
@@ -140,7 +140,7 @@ export default function App() {
             <p className="text-sm md:text-base text-slate-500 font-medium leading-relaxed">
               Upload Abbott FreeStyle Libre reports, log common Indian foods, calculate daily calorie target, and identify items causing blood sugar spikes instantly to reset your metabolism.
             </p>
-            
+
             {/* Download Buttons */}
             <div className="flex flex-wrap gap-4 pt-2">
               <button className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-3 rounded-2xl flex items-center space-x-3 transition-all shadow-lg shadow-slate-900/10">
@@ -165,10 +165,10 @@ export default function App() {
           <div className="flex justify-center">
             <div className="bg-slate-900 p-3 rounded-[40px] shadow-2xl border-4 border-slate-800 max-w-[280px] w-full aspect-[9/19] relative overflow-hidden flex flex-col justify-between">
               {/* Actual Dashboard Screen Screenshot */}
-              <img 
-                src="/screenshot_dashboard.png" 
-                alt="Mito_Reboot App Dashboard" 
-                className="w-full h-full object-cover rounded-[32px]" 
+              <img
+                src="/screenshot_dashboard.png"
+                alt="Mito_Reboot App Dashboard"
+                className="w-full h-full object-cover rounded-[32px]"
               />
             </div>
           </div>
@@ -230,10 +230,10 @@ export default function App() {
             <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-soft">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">1. Secure Access</span>
               <div className="aspect-[9/16] bg-slate-50 border border-slate-100 rounded-2xl overflow-hidden shadow-inner">
-                <img 
-                  src="/screenshot_login.png" 
-                  alt="Login Screen" 
-                  className="w-full h-full object-cover" 
+                <img
+                  src="/screenshot_login.png"
+                  alt="Login Screen"
+                  className="w-full h-full object-cover"
                 />
               </div>
             </div>
@@ -242,10 +242,10 @@ export default function App() {
             <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-soft">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">2. Dashboard</span>
               <div className="aspect-[9/16] bg-slate-50 border border-slate-100 rounded-2xl overflow-hidden shadow-inner">
-                <img 
-                  src="/screenshot_dashboard.png" 
-                  alt="Dashboard Screen" 
-                  className="w-full h-full object-cover" 
+                <img
+                  src="/screenshot_dashboard.png"
+                  alt="Dashboard Screen"
+                  className="w-full h-full object-cover"
                 />
               </div>
             </div>
@@ -254,10 +254,10 @@ export default function App() {
             <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-soft">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">3. CGM Reports</span>
               <div className="aspect-[9/16] bg-slate-50 border border-slate-100 rounded-2xl overflow-hidden shadow-inner">
-                <img 
-                  src="/screenshot_reports.png" 
-                  alt="CGM Reports Screen" 
-                  className="w-full h-full object-cover" 
+                <img
+                  src="/screenshot_reports.png"
+                  alt="CGM Reports Screen"
+                  className="w-full h-full object-cover"
                 />
               </div>
             </div>
@@ -266,10 +266,10 @@ export default function App() {
             <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-soft">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">4. Food & Diet Log</span>
               <div className="aspect-[9/16] bg-slate-50 border border-slate-100 rounded-2xl overflow-hidden shadow-inner">
-                <img 
-                  src="/screenshot_foodlog.png" 
-                  alt="Food Log Screen" 
-                  className="w-full h-full object-cover" 
+                <img
+                  src="/screenshot_foodlog.png"
+                  alt="Food Log Screen"
+                  className="w-full h-full object-cover"
                 />
               </div>
             </div>
@@ -278,10 +278,10 @@ export default function App() {
             <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-soft">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">5. Glucose Analysis</span>
               <div className="aspect-[9/16] bg-slate-50 border border-slate-100 rounded-2xl overflow-hidden shadow-inner">
-                <img 
-                  src="/screenshot_analysis.png" 
-                  alt="Analysis Screen" 
-                  className="w-full h-full object-cover" 
+                <img
+                  src="/screenshot_analysis.png"
+                  alt="Analysis Screen"
+                  className="w-full h-full object-cover"
                 />
               </div>
             </div>
@@ -337,7 +337,7 @@ export default function App() {
                     </span>
                   </button>
                   {isOpen && (
-                    <div 
+                    <div
                       className="px-6 pb-6 pt-3 text-sm text-slate-600 border-t border-slate-200/50 leading-relaxed whitespace-pre-line"
                       dangerouslySetInnerHTML={{ __html: faq.answer }}
                     />
@@ -448,14 +448,14 @@ const Header: React.FC<{ activeTab: string; onTabChange: (tab: any) => void }> =
   return (
     <header className="bg-white border-b border-slate-100 py-4 px-6 sticky top-0 z-20">
       <div className="max-w-6xl mx-auto flex justify-between items-center">
-        <div 
+        <div
           onClick={() => onTabChange('home')}
           className="flex items-center space-x-1.5 cursor-pointer"
         >
           <Heart className="h-5 w-5 fill-primary text-primary" />
           <span className="text-base font-extrabold text-slate-800 tracking-tight">Mito_Reboot</span>
         </div>
-        
+
         <nav className="hidden md:flex space-x-6 text-xs font-bold text-slate-500">
           <a href="#features" onClick={() => onTabChange('home')} className="hover:text-primary transition-all">Features</a>
           <a href="#screenshots" onClick={() => onTabChange('home')} className="hover:text-primary transition-all">Screenshots</a>
@@ -472,9 +472,9 @@ const Header: React.FC<{ activeTab: string; onTabChange: (tab: any) => void }> =
               Home
             </button>
           )}
-          <a 
-            href={`${import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : 'http://localhost:5001'}/health`} 
-            target="_blank" 
+          <a
+            href={`${import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : (import.meta.env.DEV ? 'http://localhost:5001' : 'https://api.mitoreboot.in')}/health`}
+            target="_blank"
             rel="noopener noreferrer"
             className="bg-primary hover:bg-primary-dark text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center space-x-1 transition-all"
           >

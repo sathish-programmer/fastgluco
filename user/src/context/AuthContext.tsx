@@ -43,7 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+  const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5001/api' : 'https://api.mitoreboot.in/api');
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -73,7 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               localStorage.setItem('fastgluco_token', data.accessToken);
               currentToken = data.accessToken;
               setToken(currentToken);
-              
+
               // Retry with new token
               response = await fetch(`${apiUrl}/users/profile`, {
                 headers: {
