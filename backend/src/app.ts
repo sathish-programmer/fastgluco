@@ -23,11 +23,14 @@ app.use(cors({
 
 // 3. Rate Limiter Middleware to avoid DDoS and brute force
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'development' ? 10000 : 500, // limit each real IP to 500 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 5000,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { message: 'Too many requests from this client. Please try again after 15 minutes.' }
+  keyGenerator: (req) => req.ip || req.socket.remoteAddress || 'unknown',
+  message: {
+    message: 'Too many requests. Try again later.'
+  }
 });
 app.use('/api', limiter);
 
@@ -49,7 +52,7 @@ app.get('/health', (req: Request, res: Response) => {
 // 8. Global Error Handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error('Unhandled Server Error:', err);
-  
+
   const status = err.status || 500;
   const message = err.message || 'An unexpected server error occurred.';
 
