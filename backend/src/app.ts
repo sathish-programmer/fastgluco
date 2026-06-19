@@ -8,6 +8,8 @@ import apiRouter from './routes/api';
 const app = express();
 
 // 1. Helmet Security Middleware
+app.set('trust proxy', 1); // Trust first proxy (e.g. Nginx, CloudFront) to get real client IPs for rate-limiting
+
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' }
 }));
@@ -22,7 +24,7 @@ app.use(cors({
 // 3. Rate Limiter Middleware to avoid DDoS and brute force
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'development' ? 10000 : 100, // limit each IP to 100 requests per windowMs
+  max: process.env.NODE_ENV === 'development' ? 10000 : 500, // limit each real IP to 500 requests per windowMs
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: 'Too many requests from this client. Please try again after 15 minutes.' }
