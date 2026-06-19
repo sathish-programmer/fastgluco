@@ -25,7 +25,7 @@ import { NotificationBell } from './components/NotificationBell';
 import { OnboardingTour } from './components/OnboardingTour';
 
 const MainAppContent: React.FC = () => {
-  const { isAuthenticated, isLoading, token, apiUrl, logout } = useAuth();
+  const { isAuthenticated, isLoading, token, apiUrl, logout, branding } = useAuth();
 
   // Navigation tabs: 'Home' | 'Reports' | 'Food Log' | 'Analysis' | 'Profile'
   const [activeTab, setActiveTab] = useState<string>('Home');
@@ -108,7 +108,7 @@ const MainAppContent: React.FC = () => {
       <div className="min-h-screen flex items-center justify-center bg-white text-primary">
         <div className="flex flex-col items-center space-y-3">
           <Heart className="h-10 w-10 fill-primary animate-pulse" />
-          <span className="font-bold text-slate-700 text-sm animate-pulse">Mito_Reboot Loading...</span>
+          <span className="font-bold text-slate-700 text-sm animate-pulse">{branding.appName} Loading...</span>
         </div>
       </div>
     );
@@ -150,9 +150,18 @@ const MainAppContent: React.FC = () => {
       {/* Dynamic Header with safe area padding for mobile notches */}
       <header className="sticky top-0 bg-white/95 backdrop-blur-md border-b border-slate-100 z-10 px-4 pt-[calc(env(safe-area-inset-top)+12px)] pb-3 max-w-lg w-full mx-auto flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <Heart className="h-5 w-5 fill-primary text-primary" />
-          <h1 className="text-lg font-extrabold text-slate-800 tracking-tight">Mito_Reboot</h1>
-          <span className="text-[9px] font-bold bg-primary-light text-primary px-2 py-0.5 rounded-full">
+          {branding.appLogoUrl ? (
+            <img src={branding.appLogoUrl} alt={branding.appName} className="h-6 w-auto object-contain max-w-[40px]" />
+          ) : (
+            <Heart className="h-5 w-5 fill-primary text-primary" />
+          )}
+          <div className="flex flex-col">
+            <h1 className="text-sm font-extrabold text-slate-800 tracking-tight leading-tight">{branding.appName}</h1>
+            {branding.appTagline && (
+              <span className="text-[9px] text-slate-500 leading-none">{branding.appTagline}</span>
+            )}
+          </div>
+          <span className="text-[9px] font-bold bg-primary-light text-primary px-2 py-0.5 rounded-full ml-1">
             {basicPlan}
           </span>
         </div>

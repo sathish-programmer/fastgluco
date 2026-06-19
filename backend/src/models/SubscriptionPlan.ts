@@ -44,6 +44,7 @@ const subscriptionPlanSchema = new Schema<ISubscriptionPlan>(
     features: {
       unlimitedReports: { type: Boolean, default: false },
       advancedAnalysis: { type: Boolean, default: false },
+      premiumVideos: { type: Boolean, default: false },
       foodInsights: { type: Boolean, default: false },
       exportReports: { type: Boolean, default: false },
       notifications: { type: Boolean, default: false },

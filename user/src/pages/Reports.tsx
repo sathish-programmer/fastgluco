@@ -21,7 +21,7 @@ interface ReportsProps {
 }
 
 export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) => {
-  const { token, apiUrl } = useAuth();
+  const { token, apiUrl, branding } = useAuth();
   const { showToast } = useToast();
   
   const [file, setFile] = useState<File | null>(null);
@@ -204,7 +204,8 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `Mito_Reboot_Health_Report-${exportRange}-${new Date().toISOString().split('T')[0]}.pdf`;
+        const safeAppName = branding.appName.replace(/[^a-z0-9]/gi, '_');
+        a.download = `${safeAppName}_Health_Report-${exportRange}-${new Date().toISOString().split('T')[0]}.pdf`;
         document.body.appendChild(a);
         a.click();
         a.remove();

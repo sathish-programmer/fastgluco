@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Heart, Sparkles, FileUp, Utensils, ChevronRight, ChevronLeft, X } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 interface OnboardingTourProps {
   onComplete: () => void;
@@ -14,13 +15,18 @@ interface Slide {
 }
 
 export const OnboardingTour: React.FC<OnboardingTourProps> = ({ onComplete }) => {
+  const { branding } = useAuth();
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const slides: Slide[] = [
     {
-      title: 'Welcome to Mito_Reboot!',
+      title: `Welcome to ${branding.appName}!`,
       description: 'Your premium circadian fasting companion. We help you monitor glucose spikes, log meals, and get intelligent clinical recommendations to optimize your metabolic health.',
-      icon: <Heart className="h-16 w-16 text-rose-500 fill-rose-500 animate-pulse" />,
+      icon: branding.appLogoUrl ? (
+        <img src={branding.appLogoUrl} alt={branding.appName} className="h-16 w-auto object-contain max-w-[100px]" />
+      ) : (
+        <Heart className="h-16 w-16 text-rose-500 fill-rose-500 animate-pulse" />
+      ),
       bgGradient: 'from-rose-500/10 to-orange-500/10',
       accentColor: 'bg-rose-500'
     },

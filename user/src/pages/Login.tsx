@@ -10,7 +10,7 @@ interface LoginProps {
 }
 
 export const Login: React.FC<LoginProps> = ({ onNavigateToRegister, resetToken, onClearResetToken }) => {
-  const { login, error, clearError, isLoading, apiUrl } = useAuth();
+  const { login, error, clearError, isLoading, apiUrl, branding } = useAuth();
   const { showToast } = useToast();
   
   const [email, setEmail] = useState('');
@@ -100,10 +100,14 @@ export const Login: React.FC<LoginProps> = ({ onNavigateToRegister, resetToken, 
         {/* Brand Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center p-3 bg-primary-light text-primary rounded-2xl mb-3 shadow-soft">
-            <Heart className="h-8 w-8 fill-primary" />
+            {branding.appLogoUrl ? (
+              <img src={branding.appLogoUrl} alt="Logo" className="h-8 w-auto object-contain rounded-md" />
+            ) : (
+              <Heart className="h-8 w-8 fill-primary" />
+            )}
           </div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Mito_Reboot</h1>
-          <p className="text-slate-500 mt-2 font-medium">The circadian fasting app</p>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">{branding.appName}</h1>
+          <p className="text-slate-500 mt-2 font-medium">{branding.appTagline}</p>
         </div>
 
         {/* Auth Error Display */}

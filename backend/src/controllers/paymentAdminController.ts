@@ -55,7 +55,10 @@ export class PaymentAdminController {
         glucoseAlertMinIntervalHours,
         enableHydrationTracker,
         hydrationDailyLimitMl,
-        enableWorkoutTracker
+        enableWorkoutTracker,
+        appName,
+        appTagline,
+        appLogoUrl
       } = req.body;
 
       let config = await PaymentGatewayConfig.findOne();
@@ -78,6 +81,9 @@ export class PaymentAdminController {
       if (enableHydrationTracker !== undefined) config.enableHydrationTracker = enableHydrationTracker;
       if (hydrationDailyLimitMl !== undefined) config.hydrationDailyLimitMl = hydrationDailyLimitMl;
       if (enableWorkoutTracker !== undefined) config.enableWorkoutTracker = enableWorkoutTracker;
+      if (appName !== undefined) config.appName = appName;
+      if (appTagline !== undefined) config.appTagline = appTagline;
+      if (appLogoUrl !== undefined) config.appLogoUrl = appLogoUrl;
       config.updatedBy = req.user?.id as any;
 
       await config.save();

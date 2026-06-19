@@ -16,6 +16,9 @@ export interface IPaymentGatewayConfig extends Document {
   enableHydrationTracker: boolean; // Hydration Tracker ON/OFF
   hydrationDailyLimitMl: number; // Daily hydration goal limit in ml
   enableWorkoutTracker: boolean; // Workout Tracker ON/OFF
+  appName?: string;
+  appTagline?: string;
+  appLogoUrl?: string;
   updatedBy?: Schema.Types.ObjectId; // ref: AdminUser
   createdAt: Date;
   updatedAt: Date;
@@ -35,6 +38,9 @@ const paymentGatewayConfigSchema = new Schema<IPaymentGatewayConfig>(
     enableHydrationTracker: { type: Boolean, default: true, required: true },
     hydrationDailyLimitMl: { type: Number, default: 3000, required: true },
     enableWorkoutTracker: { type: Boolean, default: true, required: true },
+    appName: { type: String, default: 'Mito_Reboot' },
+    appTagline: { type: String, default: 'The circadian fasting app' },
+    appLogoUrl: { type: String, default: '' },
     aiQuestions: { 
       type: [String], 
       default: ["You recently logged a food that spiked your glucose. Why did you consume this when it's advised to avoid it?", "Did you take a walk afterwards?"] 

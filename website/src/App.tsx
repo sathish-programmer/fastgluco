@@ -32,16 +32,23 @@ export default function App() {
   const [faqsData, setFaqsData] = useState<any[]>([]);
   const [videosData, setVideosData] = useState<any[]>([]);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+  
+  const [branding, setBranding] = useState({
+    appName: 'Mito_Reboot',
+    appTagline: 'The circadian fasting app',
+    appLogoUrl: ''
+  });
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const baseUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5001/api' : 'https://api.mitoreboot.in/api');
-        const [priv, terms, fq, vid] = await Promise.all([
+        const [priv, terms, fq, vid, config] = await Promise.all([
           fetch(`${baseUrl}/legal/PrivacyPolicy`).then(r => r.json()).catch(() => ({ content: '' })),
           fetch(`${baseUrl}/legal/TermsOfService`).then(r => r.json()).catch(() => ({ content: '' })),
           fetch(`${baseUrl}/faqs?platform=Website`).then(r => r.json()).catch(() => []),
-          fetch(`${baseUrl}/videos`).then(r => r.json()).catch(() => [])
+          fetch(`${baseUrl}/videos`).then(r => r.json()).catch(() => []),
+          fetch(`${baseUrl}/config/public`).then(r => r.json()).catch(() => ({}))
         ]);
         if (priv.content) setPrivacyData(priv.content);
         if (terms.content) setTermsData(terms.content);
@@ -49,6 +56,14 @@ export default function App() {
         // Filter videos for Website or Both
         const webVideos = vid.filter((v: any) => v.targetPlatform === 'Website' || v.targetPlatform === 'Both');
         setVideosData(webVideos.length > 0 ? webVideos : vid);
+        if (config.appName) {
+          setBranding({
+            appName: config.appName,
+            appTagline: config.appTagline,
+            appLogoUrl: config.appLogoUrl || ''
+          });
+          document.title = `${config.appName} - ${config.appTagline}`;
+        }
       } catch (err) {
         console.error('Failed to load dynamic content', err);
       }
@@ -92,7 +107,7 @@ export default function App() {
   if (activeTab === 'privacy') {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col justify-between">
-        <Header activeTab={activeTab} onTabChange={setActiveTab} />
+        <Header activeTab={activeTab} onTabChange={setActiveTab} branding={branding} />
         <main className="flex-grow max-w-3xl mx-auto w-full px-6 py-12 bg-white rounded-3xl border border-slate-200 shadow-soft mt-6 mb-12">
           <h2 className="text-2xl font-bold text-slate-800 mb-4">Privacy Policy</h2>
           <div
@@ -100,7 +115,7 @@ export default function App() {
             dangerouslySetInnerHTML={{ __html: privacyData }}
           />
         </main>
-        <Footer onTabChange={setActiveTab} />
+        <Footer onTabChange={setActiveTab} branding={branding} />
       </div>
     );
   }
@@ -108,7 +123,7 @@ export default function App() {
   if (activeTab === 'terms') {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col justify-between">
-        <Header activeTab={activeTab} onTabChange={setActiveTab} />
+        <Header activeTab={activeTab} onTabChange={setActiveTab} branding={branding} />
         <main className="flex-grow max-w-3xl mx-auto w-full px-6 py-12 bg-white rounded-3xl border border-slate-200 shadow-soft mt-6 mb-12">
           <h2 className="text-2xl font-bold text-slate-800 mb-4">Terms and Conditions</h2>
           <div
@@ -116,7 +131,7 @@ export default function App() {
             dangerouslySetInnerHTML={{ __html: termsData }}
           />
         </main>
-        <Footer onTabChange={setActiveTab} />
+        <Footer onTabChange={setActiveTab} branding={branding} />
       </div>
     );
   }
@@ -124,7 +139,7 @@ export default function App() {
   return (
     <div className="bg-white min-h-screen flex flex-col justify-between">
       {/* Header Navigation */}
-      <Header activeTab={activeTab} onTabChange={setActiveTab} />
+      <Header activeTab={activeTab} onTabChange={setActiveTab} branding={branding} />
 
       {/* Hero Section */}
       <section className="bg-gradient-to-b from-blue-50/50 to-white py-16 px-6 md:py-24">
@@ -135,7 +150,7 @@ export default function App() {
               <span>Patient-Centric Health Tracking</span>
             </span>
             <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
-              Master Your Circadian Fasting with <span className="text-primary">Mito_Reboot</span>
+              Master Your Circadian Fasting with <span className="text-primary">{branding.appName}</span>
             </h1>
             <p className="text-sm md:text-base text-slate-500 font-medium leading-relaxed">
               Upload Abbott FreeStyle Libre reports, log common Indian foods, calculate daily calorie target, and identify items causing blood sugar spikes instantly to reset your metabolism.
@@ -438,13 +453,19 @@ export default function App() {
       </section>
 
       {/* Footer legal */}
-      <Footer onTabChange={setActiveTab} />
+      <Footer onTabChange={setActiveTab} branding={branding} />
     </div>
   );
 }
 
+interface BrandingProp {
+  appName: string;
+  appTagline: string;
+  appLogoUrl: string;
+}
+
 // HEADER COMPONENT
-const Header: React.FC<{ activeTab: string; onTabChange: (tab: any) => void }> = ({ activeTab, onTabChange }) => {
+const Header: React.FC<{ activeTab: string; onTabChange: (tab: any) => void; branding: BrandingProp }> = ({ activeTab, onTabChange, branding }) => {
   return (
     <header className="bg-white border-b border-slate-100 py-4 px-6 sticky top-0 z-20">
       <div className="max-w-6xl mx-auto flex justify-between items-center">
@@ -452,8 +473,12 @@ const Header: React.FC<{ activeTab: string; onTabChange: (tab: any) => void }> =
           onClick={() => onTabChange('home')}
           className="flex items-center space-x-1.5 cursor-pointer"
         >
-          <Heart className="h-5 w-5 fill-primary text-primary" />
-          <span className="text-base font-extrabold text-slate-800 tracking-tight">Mito_Reboot</span>
+          {branding.appLogoUrl ? (
+            <img src={branding.appLogoUrl} alt="Logo" className="h-5 w-auto object-contain rounded-md" />
+          ) : (
+            <Heart className="h-5 w-5 fill-primary text-primary" />
+          )}
+          <span className="text-base font-extrabold text-slate-800 tracking-tight">{branding.appName}</span>
         </div>
 
         <nav className="hidden md:flex space-x-6 text-xs font-bold text-slate-500">
@@ -488,13 +513,13 @@ const Header: React.FC<{ activeTab: string; onTabChange: (tab: any) => void }> =
 };
 
 // FOOTER COMPONENT
-const Footer: React.FC<{ onTabChange: (tab: any) => void }> = ({ onTabChange }) => {
+const Footer: React.FC<{ onTabChange: (tab: any) => void; branding: BrandingProp }> = ({ onTabChange, branding }) => {
   return (
     <footer className="bg-slate-900 text-slate-400 py-10 px-6 text-xs border-t border-slate-800">
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
         <div>
-          <span className="text-white font-bold block mb-1">Mito_Reboot Central</span>
-          <span>© 2026 Mito_Reboot. All rights reserved.</span>
+          <span className="text-white font-bold block mb-1">{branding.appName} Central</span>
+          <span>© 2026 {branding.appName}. All rights reserved.</span>
         </div>
         <div className="flex space-x-4 font-semibold">
           <button onClick={() => onTabChange('privacy')} className="hover:text-white transition-all">Privacy Policy</button>

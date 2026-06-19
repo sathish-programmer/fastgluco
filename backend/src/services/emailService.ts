@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { PaymentGatewayConfig } from '../models/PaymentGatewayConfig';
 
 // Configure transport (Using Ethereal for testing or real SMTP if provided in ENV)
 const transporter = nodemailer.createTransport({
@@ -10,7 +11,7 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-const generateEmailTemplate = (title: string, contentHTML: string) => {
+const generateEmailTemplate = (title: string, contentHTML: string, appName: string = 'Mito_Reboot') => {
   return `
 <!DOCTYPE html>
 <html>
@@ -22,15 +23,15 @@ const generateEmailTemplate = (title: string, contentHTML: string) => {
   <div style="padding: 20px;">
     <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
       <div style="background-color: #2563eb; padding: 30px; text-align: center;">
-        <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.5px;">&hearts; Mito_Reboot</h1>
+        <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.5px;">&hearts; ${appName}</h1>
       </div>
       <div style="padding: 40px 30px; color: #334155; line-height: 1.6; font-size: 16px;">
         <h2 style="color: #0f172a; font-size: 22px; font-weight: 700; margin-top: 0; margin-bottom: 20px;">${title}</h2>
         ${contentHTML}
       </div>
       <div style="background-color: #f8fafc; padding: 24px 30px; text-align: center; color: #64748b; font-size: 13px; border-top: 1px solid #e2e8f0;">
-        <p style="margin: 0;">&copy; ${new Date().getFullYear()} Mito_Reboot. All rights reserved.</p>
-        <p style="margin: 8px 0 0 0;">You are receiving this email because you are a registered user of Mito_Reboot.</p>
+        <p style="margin: 0;">&copy; ${new Date().getFullYear()} ${appName}. All rights reserved.</p>
+        <p style="margin: 8px 0 0 0;">You are receiving this email because you are a registered user of ${appName}.</p>
       </div>
     </div>
   </div>
@@ -40,13 +41,23 @@ const generateEmailTemplate = (title: string, contentHTML: string) => {
 };
 
 export class EmailService {
+  private static async getBranding() {
+    const config = await PaymentGatewayConfig.findOne();
+    return {
+      appName: config?.appName || 'Mito_Reboot',
+      appTagline: config?.appTagline || 'The circadian fasting app'
+    };
+  }
+
   /**
    * Send Welcome Email
    */
   public static async sendWelcomeEmail(email: string, name: string) {
-    const html = generateEmailTemplate('Welcome to Mito_Reboot!', `
+    const { appName } = await EmailService.getBranding();
+    
+    const html = generateEmailTemplate(`Welcome to ${appName}!`, `
       <p>Hi ${name},</p>
-      <p>We are thrilled to have you on board! Mito_Reboot is designed to give you unparalleled insights into your circadian fasting cycles and metabolic health.</p>
+      <p>We are thrilled to have you on board! ${appName} is designed to give you unparalleled insights into your circadian fasting cycles and metabolic health.</p>
       <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #22c55e; padding: 16px; border-radius: 8px; margin: 20px 0;">
         <p style="margin: 0; color: #166534; font-weight: 600;">Getting Started:</p>
         <ul style="margin-top: 8px; margin-bottom: 0; color: #15803d; padding-left: 20px;">
@@ -56,14 +67,15 @@ export class EmailService {
         </ul>
       </div>
       <p>If you have any questions, feel free to contact our support team.</p>
-    `);
-    try { await transporter.sendMail({ from: '"Mito_Reboot" <hello@mitoreboot.com>', to: email, subject: 'Welcome to Mito_Reboot!', html }); } catch (err) { console.error(err); }
+    `, appName);
+    try { await transporter.sendMail({ from: `"${appName}" <hello@mitoreboot.com>`, to: email, subject: `Welcome to ${appName}!`, html }); } catch (err) { console.error(err); }
   }
 
   /**
    * Send Subscription Invoice and Details
    */
   public static async sendSubscriptionInvoiceEmail(email: string, name: string, planName: string, amount: number, currency: 'INR' | 'USD' = 'INR', pdfBuffer?: Buffer, invoiceNumber?: string) {
+    const { appName } = await EmailService.getBranding();
     const symbol = currency === 'USD' ? '$' : '₹';
     const html = generateEmailTemplate('Payment Confirmation', `
       <p>Hi ${name},</p>
@@ -73,14 +85,14 @@ export class EmailService {
         <p style="margin: 4px 0 0 0; color: #1d4ed8;">Amount Processed: ${symbol}${amount.toFixed(2)}</p>
       </div>
       <p>We have attached your invoice PDF to this email.</p>
-      <p>You can also view your full invoice details and manage your subscription in your Mito_Reboot Profile under "Billing".</p>
+      <p>You can also view your full invoice details and manage your subscription in your ${appName} Profile under "Billing".</p>
       <p>Enjoy your premium features!</p>
-    `);
+    `, appName);
 
     const mailOptions: any = {
-      from: '"Mito_Reboot Billing" <billing@mitoreboot.com>',
+      from: `"${appName} Billing" <billing@mitoreboot.com>`,
       to: email,
-      subject: 'Your Mito_Reboot Subscription Confirmed',
+      subject: `Your ${appName} Subscription Confirmed`,
       html
     };
 
@@ -101,33 +113,36 @@ export class EmailService {
    * Send Plan Change Email
    */
   public static async sendPlanChangeEmail(email: string, name: string, newPlanName: string) {
+    const { appName } = await EmailService.getBranding();
     const html = generateEmailTemplate('Subscription Updated', `
       <p>Hi ${name},</p>
       <p>Your subscription has been successfully updated to the <strong>${newPlanName}</strong> plan.</p>
       <p>Your new features are available immediately! You can manage your billing cycle and view upcoming charges in your Profile.</p>
-    `);
-    try { await transporter.sendMail({ from: '"Mito_Reboot Billing" <billing@mitoreboot.com>', to: email, subject: 'Your Mito_Reboot Subscription has been Updated', html }); } catch (err) { console.error(err); }
+    `, appName);
+    try { await transporter.sendMail({ from: `"${appName} Billing" <billing@mitoreboot.com>`, to: email, subject: `Your ${appName} Subscription has been Updated`, html }); } catch (err) { console.error(err); }
   }
 
   /**
    * Send Subscription Cancellation Email
    */
   public static async sendCancellationEmail(email: string, name: string, endDate: string) {
+    const { appName } = await EmailService.getBranding();
     const html = generateEmailTemplate('Subscription Cancelled', `
       <p>Hi ${name},</p>
-      <p>We've received your request to cancel your Mito_Reboot subscription. We're sorry to see you go!</p>
+      <p>We've received your request to cancel your ${appName} subscription. We're sorry to see you go!</p>
       <div style="background-color: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid #f59e0b; padding: 16px; border-radius: 8px; margin: 20px 0;">
         <p style="margin: 0; color: #92400e;">Your account will retain premium access until the end of your current billing cycle on <strong>${new Date(endDate).toLocaleDateString()}</strong>.</p>
       </div>
       <p>If you change your mind, you can always reactivate your subscription from your Profile.</p>
-    `);
-    try { await transporter.sendMail({ from: '"Mito_Reboot Billing" <billing@mitoreboot.com>', to: email, subject: 'Mito_Reboot Subscription Cancellation', html }); } catch (err) { console.error(err); }
+    `, appName);
+    try { await transporter.sendMail({ from: `"${appName} Billing" <billing@mitoreboot.com>`, to: email, subject: `${appName} Subscription Cancellation`, html }); } catch (err) { console.error(err); }
   }
 
   /**
    * Send High Glucose Spike Alert
    */
   public static async sendHighSpikeAlert(email: string, name: string, reading: number, threshold: number, time: string) {
+    const { appName } = await EmailService.getBranding();
     const html = generateEmailTemplate('⚠️ High Glucose Alert', `
       <p>Hi ${name},</p>
       <p>We detected a significant glucose spike in your recent data.</p>
@@ -140,84 +155,90 @@ export class EmailService {
         </ul>
       </div>
       <p>Please log into the app to view your analysis and review your recent meals.</p>
-    `);
-    try { await transporter.sendMail({ from: '"Mito_Reboot Alerts" <alerts@mitoreboot.com>', to: email, subject: 'Urgent: High Glucose Spike Detected', html }); } catch (err) { console.error(err); }
+    `, appName);
+    try { await transporter.sendMail({ from: `"${appName} Alerts" <alerts@mitoreboot.com>`, to: email, subject: `Urgent: High Glucose Spike Detected (${appName})`, html }); } catch (err) { console.error(err); }
   }
 
   /**
    * Send Account Blocked Notification Email
    */
   public static async sendBlockNotificationEmail(email: string, name: string, reason: string) {
+    const { appName } = await EmailService.getBranding();
     const html = generateEmailTemplate('Account Suspended', `
       <p>Hi ${name},</p>
-      <p>We are writing to inform you that your Mito_Reboot account has been suspended.</p>
+      <p>We are writing to inform you that your ${appName} account has been suspended.</p>
       <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-left: 4px solid #ef4444; padding: 16px; border-radius: 8px; margin: 20px 0;">
         <p style="margin: 0; color: #991b1b; font-weight: 600;">Reason for Suspension:</p>
         <p style="margin: 8px 0 0 0; color: #b91c1c;">${reason}</p>
       </div>
       <p>If you believe this is a mistake or have questions, please contact our support team.</p>
-    `);
-    try { await transporter.sendMail({ from: '"Mito_Reboot Security" <security@mitoreboot.com>', to: email, subject: 'Mito_Reboot Account Suspended', html }); } catch (err) { console.error(err); }
+    `, appName);
+    try { await transporter.sendMail({ from: `"${appName} Security" <security@mitoreboot.com>`, to: email, subject: `${appName} Account Suspended`, html }); } catch (err) { console.error(err); }
   }
 
   /**
    * Send Password Reset Link Email
    */
   public static async sendPasswordResetEmail(email: string, name: string, resetLink: string) {
+    const { appName } = await EmailService.getBranding();
     const html = generateEmailTemplate('Password Reset Request', `
       <p>Hi ${name},</p>
-      <p>We received a request to reset your password for your Mito_Reboot account. You can reset your password by clicking the link below:</p>
+      <p>We received a request to reset your password for your ${appName} account. You can reset your password by clicking the link below:</p>
       <div style="text-align: center; margin: 30px 0;">
         <a href="${resetLink}" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">Reset Password</a>
       </div>
       <p>This reset link will expire in 30 minutes. If you did not make this request, you can safely ignore this email.</p>
-    `);
-    try { await transporter.sendMail({ from: '"Mito_Reboot Security" <security@mitoreboot.com>', to: email, subject: 'Mito_Reboot Password Reset Link', html }); } catch (err) { console.error(err); }
+    `, appName);
+    try { await transporter.sendMail({ from: `"${appName} Security" <security@mitoreboot.com>`, to: email, subject: `${appName} Password Reset Link`, html }); } catch (err) { console.error(err); }
   }
 
   /**
    * Send an answer to a support ticket
    */
   public static async sendSupportAnswerEmail(email: string, name: string, question: string, answer: string) {
+    const { appName } = await EmailService.getBranding();
     const html = generateEmailTemplate('Re: Your Support Question', `
       <p>Hi ${name},</p>
-      <p>Thank you for reaching out to Mito_Reboot Support.</p>
+      <p>Thank you for reaching out to ${appName} Support.</p>
       <div style="background-color: #f8fafc; padding: 16px; border-radius: 8px; margin: 20px 0;">
         <p style="margin: 0 0 8px 0; color: #64748b; font-size: 13px; text-transform: uppercase; font-weight: bold;">Your Question:</p>
         <p style="margin: 0; font-style: italic;">"${question}"</p>
       </div>
       <p style="font-weight: 600;">Our Answer:</p>
       <p>${answer}</p>
-    `);
-    try { await transporter.sendMail({ from: '"Mito_Reboot Support" <support@mitoreboot.com>', to: email, subject: 'Re: Your Mito_Reboot Support Question', html }); } catch (err) { console.error(err); }
+    `, appName);
+    try { await transporter.sendMail({ from: `"${appName} Support" <support@mitoreboot.com>`, to: email, subject: `Re: Your ${appName} Support Question`, html }); } catch (err) { console.error(err); }
   }
 
   /**
    * Send Expiry Warning Email
    */
   public static async sendExpiryWarningEmail(email: string, name: string, daysLeft: number) {
+    const { appName } = await EmailService.getBranding();
     const html = generateEmailTemplate('Action Required: Subscription Expiring', `
       <p>Hi ${name},</p>
-      <p>Your Mito_Reboot subscription is expiring in <strong>${daysLeft} days</strong>.</p>
+      <p>Your ${appName} subscription is expiring in <strong>${daysLeft} days</strong>.</p>
       <p>Please ensure your payment method is up to date, or renew your subscription to avoid losing access to your premium features.</p>
-    `);
-    try { await transporter.sendMail({ from: '"Mito_Reboot Billing" <billing@mitoreboot.com>', to: email, subject: 'Action Required: Your Mito_Reboot Subscription is Expiring Soon', html }); } catch (err) { console.error(err); }
+    `, appName);
+    try { await transporter.sendMail({ from: `"${appName} Billing" <billing@mitoreboot.com>`, to: email, subject: `Action Required: Your ${appName} Subscription is Expiring Soon`, html }); } catch (err) { console.error(err); }
   }
 
   /**
    * Send Manual Admin Email to User
    */
   public static async sendManualAdminEmail(email: string, title: string, body: string) {
+    const { appName } = await EmailService.getBranding();
     const html = generateEmailTemplate(title, `
       <p>${body.replace(/\n/g, '<br/>')}</p>
-    `);
-    try { await transporter.sendMail({ from: '"Mito_Reboot Admin" <admin@mitoreboot.com>', to: email, subject: title, html }); } catch (err) { console.error(err); }
+    `, appName);
+    try { await transporter.sendMail({ from: `"${appName} Admin" <admin@mitoreboot.com>`, to: email, subject: title, html }); } catch (err) { console.error(err); }
   }
 
   /**
    * Send Refund Processed Email
    */
   public static async sendRefundEmail(email: string, name: string, refundAmount: number) {
+    const { appName } = await EmailService.getBranding();
     const html = generateEmailTemplate('Refund Processed Successfully', `
       <p>Hi ${name},</p>
       <p>We are writing to inform you that a refund has been processed for your subscription transaction.</p>
@@ -227,25 +248,26 @@ export class EmailService {
       </div>
       <p>The refunded amount will reflect in your original payment source within 5-7 business days.</p>
       <p>If you have any questions, please contact our support team.</p>
-    `);
-    try { await transporter.sendMail({ from: '"Mito_Reboot Billing" <billing@mitoreboot.com>', to: email, subject: 'Mito_Reboot Refund Processed', html }); } catch (err) { console.error(err); }
+    `, appName);
+    try { await transporter.sendMail({ from: `"${appName} Billing" <billing@mitoreboot.com>`, to: email, subject: `${appName} Refund Processed`, html }); } catch (err) { console.error(err); }
   }
 
   /**
    * Send Subscription Override Alert Email
    */
   public static async sendSubscriptionOverrideEmail(email: string, name: string, actionName: 'cancelled' | 'extended' | 'changed', details: string) {
+    const { appName } = await EmailService.getBranding();
     const title = actionName === 'cancelled' ? 'Subscription Cancelled' : actionName === 'extended' ? 'Subscription Extended' : 'Subscription Tier Adjusted';
     const html = generateEmailTemplate(title, `
       <p>Hi ${name},</p>
-      <p>An administrator has manually updated your Mito_Reboot subscription status.</p>
+      <p>An administrator has manually updated your ${appName} subscription status.</p>
       <div style="background-color: #f1f5f9; padding: 20px; border-radius: 12px; margin: 24px 0;">
         <p style="margin: 0; font-size: 14px; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;">Override Details</p>
         <p style="margin: 4px 0 0 0; color: #1e293b;">${details}</p>
       </div>
       <p>You can check your current subscription validity anytime under "Profile" > "Billing" in the app.</p>
-    `);
-    try { await transporter.sendMail({ from: '"Mito_Reboot Billing" <billing@mitoreboot.com>', to: email, subject: `Mito_Reboot Alert: ${title}`, html }); } catch (err) { console.error(err); }
+    `, appName);
+    try { await transporter.sendMail({ from: `"${appName} Billing" <billing@mitoreboot.com>`, to: email, subject: `${appName} Alert: ${title}`, html }); } catch (err) { console.error(err); }
   }
 
   /**
@@ -253,9 +275,10 @@ export class EmailService {
    */
   public static async sendLoginNotificationEmail(email: string, name: string, details: { time: string; location: string; device: string }) {
     console.log(`[EmailService] Attempting to send login notification email to: ${email}`);
+    const { appName } = await EmailService.getBranding();
     const html = generateEmailTemplate('New Login Detected', `
       <p>Hi ${name},</p>
-      <p>We detected a new login to your Mito_Reboot account.</p>
+      <p>We detected a new login to your ${appName} account.</p>
       <div style="background-color: #f1f5f9; padding: 20px; border-radius: 12px; margin: 24px 0; font-size: 14px;">
         <p style="margin: 0; color: #475569; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">Login Details</p>
         <table style="width: 100%; border-collapse: collapse;">
@@ -274,12 +297,12 @@ export class EmailService {
         </table>
       </div>
       <p style="color: #64748b; font-size: 13px;">If this was you, you can safely ignore this email. If you do not recognize this activity, please reset your password immediately or contact support.</p>
-    `);
+    `, appName);
     try {
       await transporter.sendMail({
-        from: '"Mito_Reboot Security" <security@mitoreboot.com>',
+        from: `"${appName} Security" <security@mitoreboot.com>`,
         to: email,
-        subject: 'Security Alert: New Login to Mito_Reboot',
+        subject: `Security Alert: New Login to ${appName}`,
         html
       });
       console.log(`[EmailService] Login notification email sent successfully to: ${email}`);
@@ -288,4 +311,3 @@ export class EmailService {
     }
   }
 }
-

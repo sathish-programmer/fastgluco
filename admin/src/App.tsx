@@ -264,7 +264,8 @@ const AdminPanelContent: React.FC = () => {
     planId: '',
     billingCycle: 'monthly' as 'monthly' | 'yearly'
   });
-  const [paymentTab, setPaymentTab] = useState<'billing' | 'common' | 'transactions'>('billing');
+  const [paymentTab, setPaymentTab] = useState<'billing' | 'common' | 'transactions' | 'branding'>('billing');
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   // Fetch data depending on active view
   useEffect(() => {
@@ -291,6 +292,12 @@ const AdminPanelContent: React.FC = () => {
       }
     }
   }, [isAuthenticated, activeView, searchQuery]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchPaymentConfig();
+    }
+  }, [isAuthenticated]);
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1057,6 +1064,34 @@ const AdminPanelContent: React.FC = () => {
     }
   };
 
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    const formData = new FormData();
+    formData.append('logo', file);
+
+    setUploadingLogo(true);
+    try {
+      const response = await fetch(`${apiUrl}/admin/branding/upload-logo`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setPaymentConfig({ ...paymentConfig, appLogoUrl: data.logoUrl });
+        alert('Logo uploaded successfully! Click Save Settings to apply changes.');
+      } else {
+        alert(data.message || 'Logo upload failed.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error uploading logo.');
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
   const handleRefundSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTx) return;
@@ -1316,8 +1351,14 @@ const AdminPanelContent: React.FC = () => {
       <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col justify-between shrink-0">
         <div>
           <div className="p-5 border-b border-slate-800 flex items-center space-x-2">
-            <Activity className="h-6 w-6 text-primary" />
-            <h1 className="text-lg font-bold text-white tracking-tight">Mito_Reboot Admin</h1>
+            {paymentConfig?.appLogoUrl ? (
+              <img src={paymentConfig.appLogoUrl} alt="Logo" className="h-6 w-6 object-contain rounded-md" />
+            ) : (
+              <Activity className="h-6 w-6 text-primary" />
+            )}
+            <h1 className="text-lg font-bold text-white tracking-tight">
+              {paymentConfig?.appName || 'Mito_Reboot'} Admin
+            </h1>
           </div>
 
           <nav className="p-4 space-y-1">
@@ -1426,7 +1467,7 @@ const AdminPanelContent: React.FC = () => {
                 }`}
             >
               <DollarSign className="h-5 w-5" />
-              <span>Payments & Billing</span>
+              <span>Branding & Payments</span>
             </button>
 
             <button
@@ -2846,7 +2887,7 @@ const AdminPanelContent: React.FC = () => {
         {activeView === 'payments' && (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-slate-800">Billing & Subscriptions Control</h2>
+              <h2 className="text-xl font-bold text-slate-800">Branding & Payments Control</h2>
               {/* Sub-tab navigation */}
               <div className="flex bg-slate-100 p-1.5 rounded-xl border border-slate-200">
                 <button
@@ -2878,6 +2919,16 @@ const AdminPanelContent: React.FC = () => {
                   }`}
                 >
                   Transactions & Manual Control
+                </button>
+                <button
+                  onClick={() => setPaymentTab('branding')}
+                  className={`py-1.5 px-4 font-bold text-xs rounded-lg uppercase tracking-wider transition-all ${
+                    paymentTab === 'branding'
+                      ? 'bg-white text-primary shadow-sm'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  App Branding
                 </button>
               </div>
             </div>
@@ -3137,6 +3188,98 @@ const AdminPanelContent: React.FC = () => {
                     </div>
 
                     <div className="flex justify-end">
+                      <button
+                        type="submit"
+                        disabled={savingPaymentConfig}
+                        className="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-5 rounded-xl text-xs shadow-soft transition-all"
+                      >
+                        {savingPaymentConfig ? 'Saving Settings...' : 'Save Settings'}
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <p className="text-xs font-bold text-slate-400">Loading configurations...</p>
+                )}
+              </div>
+            )}
+
+            {/* TAB: APP BRANDING CONFIG */}
+            {paymentTab === 'branding' && (
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft animate-fadeIn">
+                <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wider mb-4 flex items-center space-x-1.5">
+                  <Award className="h-4 w-4 text-primary" />
+                  <span>App Branding Settings</span>
+                </h3>
+                {paymentConfig ? (
+                  <form onSubmit={handleConfigSubmit} className="space-y-6">
+                    <div className="grid grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Application Name</label>
+                        <input
+                          type="text"
+                          required
+                          value={paymentConfig.appName !== undefined ? paymentConfig.appName : 'Mito_Reboot'}
+                          onChange={(e) => setPaymentConfig({ ...paymentConfig, appName: e.target.value })}
+                          placeholder="Mito_Reboot"
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
+                        />
+                        <p className="text-[10px] text-slate-400 font-semibold mt-1">Displayed in headers, sidebars, emails, and notifications. Fallback is Mito_Reboot.</p>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Application Tagline</label>
+                        <input
+                          type="text"
+                          required
+                          value={paymentConfig.appTagline !== undefined ? paymentConfig.appTagline : 'The circadian fasting app'}
+                          onChange={(e) => setPaymentConfig({ ...paymentConfig, appTagline: e.target.value })}
+                          placeholder="The circadian fasting app"
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
+                        />
+                        <p className="text-[10px] text-slate-400 font-semibold mt-1">Displayed in user app, website pages, and footer areas.</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-6 pt-4 border-t border-slate-100">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">App Logo URL</label>
+                        <div className="flex space-x-3">
+                          <input
+                            type="text"
+                            value={paymentConfig.appLogoUrl || ''}
+                            onChange={(e) => setPaymentConfig({ ...paymentConfig, appLogoUrl: e.target.value })}
+                            placeholder="https://example.com/logo.png"
+                            className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
+                          />
+                          <div className="relative">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              id="logo-upload-input"
+                              onChange={handleLogoUpload}
+                              className="hidden"
+                            />
+                            <label
+                              htmlFor="logo-upload-input"
+                              className="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 px-4 rounded-xl text-xs border border-slate-200 shadow-soft transition-all inline-block"
+                            >
+                              {uploadingLogo ? 'Uploading...' : 'Upload Image'}
+                            </label>
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-slate-400 font-semibold mt-1">Enter a direct image link or upload a logo file. Leave blank to default to the red heart icon.</p>
+                      </div>
+                    </div>
+
+                    {paymentConfig.appLogoUrl && (
+                      <div className="pt-2">
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Logo Preview</label>
+                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 inline-block">
+                          <img src={paymentConfig.appLogoUrl} alt="App Logo Preview" className="h-12 w-auto object-contain rounded-md" />
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex justify-end pt-4 border-t border-slate-100">
                       <button
                         type="submit"
                         disabled={savingPaymentConfig}

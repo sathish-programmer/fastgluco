@@ -7,7 +7,7 @@ interface RegisterProps {
 }
 
 export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
-  const { register, error, isLoading } = useAuth();
+  const { register, error, isLoading, branding } = useAuth();
   
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
@@ -51,10 +51,14 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
         {/* Brand Header */}
         <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center p-3 bg-primary-light text-primary rounded-2xl mb-3 shadow-soft">
-            <Heart className="h-6 w-6 fill-primary" />
+            {branding.appLogoUrl ? (
+              <img src={branding.appLogoUrl} alt="Logo" className="h-6 w-6 object-contain rounded-md" />
+            ) : (
+              <Heart className="h-6 w-6 fill-primary" />
+            )}
           </div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Create Account</h1>
-          <p className="text-slate-500 mt-1 text-sm">Join Mito_Reboot & track your metrics</p>
+          <p className="text-slate-500 mt-1 text-sm">{branding.appTagline}</p>
         </div>
 
         {error && (

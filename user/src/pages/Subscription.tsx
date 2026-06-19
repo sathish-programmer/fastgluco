@@ -66,7 +66,7 @@ interface SubscriptionPageProps {
 }
 
 export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSuccess, isBlocking = false }) => {
-  const { user, token, apiUrl } = useAuth();
+  const { user, token, apiUrl, branding } = useAuth();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [activeSub, setActiveSub] = useState<SubscriptionDetails | null>(null);
   const [activePlanDetails, setActivePlanDetails] = useState<Plan | null>(null);
@@ -302,7 +302,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
           key: orderData.keyId,
           amount: orderData.amount,
           currency: orderData.currency,
-          name: 'Mito_Reboot',
+          name: branding.appName,
           description: `Subscription to ${orderData.planName}`,
           order_id: orderData.orderId,
           handler: async (response: any) => {
@@ -515,7 +515,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
       ) : (
         <div className="bg-primary/5 border border-primary/10 rounded-3xl p-5 mb-6 text-center">
           <Sparkles className="h-8 w-8 text-primary mx-auto mb-2 animate-bounce" />
-          <h3 className="text-sm font-extrabold text-slate-800">Unlock Full Mito_Reboot Access</h3>
+          <h3 className="text-sm font-extrabold text-slate-800">Unlock Full {branding.appName} Access</h3>
           <p className="text-xs text-slate-500 font-medium mt-1">
             Choose a premium tier to upload CGM reports, calculate insights, and receive spike alerts.
           </p>
@@ -801,7 +801,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
 
             <div className="bg-blue-50 border border-blue-100 p-3 rounded-2xl flex items-center space-x-2 text-[10px] font-bold text-blue-800">
               <Award className="h-4.5 w-4.5 text-blue-600 shrink-0" />
-              <span>Thank you for choosing Mito_Reboot. Keep tracking to live anti-gravity health!</span>
+              <span>Thank you for choosing {branding.appName}. Keep tracking to live anti-gravity health!</span>
             </div>
           </div>
         </div>

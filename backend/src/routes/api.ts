@@ -83,7 +83,10 @@ router.get('/config/public', async (req, res) => {
       enableWorkoutTracker: config.enableWorkoutTracker ?? true,
       aiSpikeThreshold: config.aiSpikeThreshold ?? 110,
       enableSubscriptions: config.enableSubscriptions,
-      enablePayments: config.enablePayments
+      enablePayments: config.enablePayments,
+      appName: config.appName || 'Mito_Reboot',
+      appTagline: config.appTagline || 'The circadian fasting app',
+      appLogoUrl: config.appLogoUrl || ''
     });
   } catch (error: any) {
     return res.status(500).json({ message: error.message || 'Error fetching system configurations.' });
@@ -194,6 +197,18 @@ router.delete('/admin/payments/plans/:id', PlanAdminController.deletePlan);
 // Payment Configurations (Admin)
 router.get('/admin/payments/config', PaymentAdminController.getConfig);
 router.put('/admin/payments/config', PaymentAdminController.updateConfig);
+router.post('/admin/branding/upload-logo', upload.single('logo'), async (req: any, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded.' });
+    }
+    // Return relative or absolute URL (absolute URL based on protocol/host is easiest)
+    const logoUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+    return res.status(200).json({ logoUrl });
+  } catch (error: any) {
+    return res.status(500).json({ message: error.message || 'Error uploading logo.' });
+  }
+});
 
 // Payment Analytics Dashboard (Admin)
 router.get('/admin/payments/dashboard', PaymentAdminController.getDashboardStats);

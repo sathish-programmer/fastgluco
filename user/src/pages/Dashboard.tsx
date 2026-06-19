@@ -28,7 +28,7 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features }) => {
-  const { token, user, apiUrl } = useAuth();
+  const { token, user, apiUrl, branding } = useAuth();
   const { showToast } = useToast();
 
   const [currentGlucose, setCurrentGlucose] = useState<number | null>(null);
@@ -305,7 +305,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Mito_Reboot_Report-${new Date().toISOString().split('T')[0]}.csv`;
+      const safeAppName = branding.appName.replace(/[^a-z0-9]/gi, '_');
+      a.download = `${safeAppName}_Report-${new Date().toISOString().split('T')[0]}.csv`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);

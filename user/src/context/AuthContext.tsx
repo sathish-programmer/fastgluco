@@ -21,6 +21,12 @@ export interface UserProfile {
   libreLastSyncAt?: string;
 }
 
+export interface AppBranding {
+  appName: string;
+  appTagline: string;
+  appLogoUrl: string;
+}
+
 interface AuthContextType {
   user: UserProfile | null;
   token: string | null;
@@ -33,6 +39,7 @@ interface AuthContextType {
   updateProfile: (profileUpdates: Partial<UserProfile>) => Promise<boolean>;
   clearError: () => void;
   apiUrl: string;
+  branding: AppBranding;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -42,8 +49,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [token, setToken] = useState<string | null>(localStorage.getItem('fastgluco_token'));
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [branding, setBranding] = useState<AppBranding>({
+    appName: 'Mito_Reboot',
+    appTagline: 'The circadian fasting app',
+    appLogoUrl: ''
+  });
 
   const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5001/api' : 'https://api.mitoreboot.in/api');
+
+  useEffect(() => {
+    const fetchBranding = async () => {
+      try {
+        const res = await fetch(`${apiUrl}/config/public`);
+        if (res.ok) {
+          const config = await res.json();
+          if (config.appName) {
+            setBranding({
+              appName: config.appName,
+              appTagline: config.appTagline,
+              appLogoUrl: config.appLogoUrl || ''
+            });
+            document.title = `${config.appName} - ${config.appTagline}`;
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load branding:', err);
+      }
+    };
+    fetchBranding();
+  }, [apiUrl]);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -208,7 +242,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logout,
         updateProfile,
         clearError,
-        apiUrl
+        apiUrl,
+        branding
       }}
     >
       {children}
