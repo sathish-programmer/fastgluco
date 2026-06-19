@@ -97,6 +97,16 @@ const MainAppContent: React.FC = () => {
             setIsSubscribed(!!hasActive);
           } else {
             setIsSubscribed(true);
+            setPlanFeatures({
+              unlimitedReports: true,
+              advancedAnalysis: true,
+              premiumVideos: true,
+              foodInsights: true,
+              exportReports: true,
+              notifications: true,
+              aiCoaching: true,
+              foodScanner: true
+            });
           }
         } else {
           // Fallback to checking if they require sub
@@ -185,7 +195,7 @@ const MainAppContent: React.FC = () => {
       <main className="flex-1 w-full max-w-lg mx-auto overflow-y-auto no-scrollbar pb-[calc(env(safe-area-inset-bottom)+70px)]">
         {activeTab === 'Home' && <Dashboard onNavigateToTab={(tab) => setActiveTab(tab)} features={planFeatures} />}
         {activeTab === 'Reports' && <Reports onNavigateToTab={(tab) => setActiveTab(tab)} features={planFeatures} />}
-        {activeTab === 'Food Log' && <FoodLog />}
+        {activeTab === 'Food Log' && <FoodLog features={planFeatures} onNavigateToTab={(tab) => setActiveTab(tab)} />}
         {activeTab === 'Analysis' && <Analysis onNavigateToTab={(tab) => setActiveTab(tab)} />}
         {activeTab === 'Coaching' && <Coaching onNavigateToTab={(tab) => setActiveTab(tab)} />}
         {activeTab === 'Educational' && <Educational />}

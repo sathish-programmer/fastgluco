@@ -45,7 +45,8 @@ export class PlanAdminController {
           foodInsights: !!features?.foodInsights,
           exportReports: !!features?.exportReports,
           notifications: !!features?.notifications,
-          aiCoaching: !!features?.aiCoaching
+          aiCoaching: !!features?.aiCoaching,
+          foodScanner: !!features?.foodScanner
         }
       });
 
@@ -98,7 +99,8 @@ export class PlanAdminController {
           foodInsights: features.foodInsights !== undefined ? !!features.foodInsights : plan.features.foodInsights,
           exportReports: features.exportReports !== undefined ? !!features.exportReports : plan.features.exportReports,
           notifications: features.notifications !== undefined ? !!features.notifications : plan.features.notifications,
-          aiCoaching: features.aiCoaching !== undefined ? !!features.aiCoaching : (plan.features as any).aiCoaching
+          aiCoaching: features.aiCoaching !== undefined ? !!features.aiCoaching : (plan.features as any).aiCoaching,
+          foodScanner: features.foodScanner !== undefined ? !!features.foodScanner : (plan.features as any).foodScanner
         };
       }
 

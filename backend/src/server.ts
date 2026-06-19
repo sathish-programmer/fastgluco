@@ -9,6 +9,7 @@ import { connectDB } from './config/db';
 import cron from 'node-cron';
 import { SubscriptionCron } from './cron/subscriptionCron';
 import { LibreSyncService } from './services/libreSyncService';
+import { FoodSyncService } from './services/foodSyncService';
 
 const PORT = process.env.PORT || 5001;
 
@@ -29,6 +30,16 @@ const bootstrap = async () => {
       cron.schedule('0 0 * * *', () => {
         console.log('Running daily cron jobs...');
         SubscriptionCron.checkExpiringSubscriptions();
+      });
+
+      // Weekly food database sync from source URLs at 2:00 AM every Sunday
+      cron.schedule('0 2 * * 0', async () => {
+        console.log('Running weekly food database sync...');
+        try {
+          await FoodSyncService.syncAllDatasets();
+        } catch (err) {
+          console.error('Weekly food database sync failed:', err);
+        }
       });
 
       // LLU auto-sync cron job every 10 minutes

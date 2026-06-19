@@ -3,7 +3,10 @@ import { AuthRequest } from '../middlewares/authMiddleware';
 import { FoodLog } from '../models/FoodLog';
 import { FoodMaster } from '../models/FoodMaster';
 import { GlucoseService } from '../services/glucoseService';
-
+import * as FatSecretService from '../services/fatSecretService';
+import fs from 'fs';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { determinePortionType } from '../utils/foodUtils';
 export class FoodController {
   /**
    * Search Pre-seeded Food Library
@@ -20,10 +23,29 @@ export class FoodController {
         filter.category = category as string;
       }
 
-      const foods = await FoodMaster.find(filter).limit(50);
+      const foods = await FoodMaster.find(filter).sort({ verified: -1 }).limit(50);
       return res.status(200).json(foods);
     } catch (error: any) {
       return res.status(500).json({ message: error.message || 'Error searching food library.' });
+    }
+  }
+
+  /**
+   * Search External Food via FatSecret (fallback when FoodMaster has no results)
+   * GET /food-library/external?q=query
+   */
+  public static async searchFoodExternal(req: AuthRequest, res: Response) {
+    try {
+      const { q } = req.query;
+      if (!q || !(q as string).trim()) {
+        return res.status(400).json({ message: 'Search query is required.' });
+      }
+
+      const results = await FatSecretService.searchFood((q as string).trim());
+      return res.status(200).json({ source: 'FatSecret', results });
+    } catch (error: any) {
+      console.error('FatSecret search error:', error.message);
+      return res.status(500).json({ message: error.message || 'Error searching FatSecret.' });
     }
   }
 
@@ -35,8 +57,7 @@ export class FoodController {
       const userId = req.user?.id;
       const { startDate, endDate, mealType } = req.query;
 
-      const query: any = { userId };
-
+      const query: any = { userId, isDeleted: false };
       // Optional date range filtering
       if (startDate || endDate) {
         query.loggedAt = {};
@@ -61,14 +82,64 @@ export class FoodController {
 
   /**
    * Create new Food Log
+   * If userConfirmed=true and isExternal=true, saves to FoodMaster as verified FatSecret entry.
    */
   public static async createLog(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
-      const { name, category, mealType, calories, carbs, protein, fat, fiber, quantity, unit, loggedAt } = req.body;
+      const {
+        name,
+        category,
+        mealType,
+        calories,
+        carbs,
+        protein,
+        fat,
+        fiber,
+        quantity,
+        unit,
+        loggedAt,
+        isExternal,
+        userConfirmed,
+        baseCalories,
+        baseCarbs,
+        baseProtein,
+        baseFat,
+        baseFiber,
+        baseServingSize,
+        baseServingUnit
+      } = req.body;
 
       if (!name || !category || !mealType || calories === undefined || carbs === undefined || protein === undefined || fat === undefined || !quantity || !unit) {
         return res.status(400).json({ message: 'Missing required fields for meal logging.' });
+      }
+
+      // Save FatSecret result to FoodMaster only after explicit user confirmation
+      if (isExternal && userConfirmed === true && baseCalories !== undefined) {
+        try {
+          const existing = await FoodMaster.findOne({ name: { $regex: new RegExp(`^${FoodController.escapeRegExp(name)}$`, 'i') } });
+          if (!existing) {
+            await FoodMaster.create({
+              name,
+              category: category && category !== 'Custom' ? category : 'Non-Veg',
+              calories: baseCalories,
+              carbs: baseCarbs || 0,
+              protein: baseProtein || 0,
+              fat: baseFat || 0,
+              fiber: baseFiber || 0,
+              servingSize: baseServingSize || 100,
+              servingUnit: baseServingUnit || 'g',
+              aliases: [name.toLowerCase()],
+              verified: true,
+              source: 'FatSecret',
+              countries: ['Global'],
+              portionType: determinePortionType(name)
+            });
+            console.log(`Saved FatSecret food "${name}" to FoodMaster library (user confirmed).`);
+          }
+        } catch (dbErr) {
+          console.error('Error saving FatSecret food to FoodMaster library:', dbErr);
+        }
       }
 
       const logTime = loggedAt ? new Date(loggedAt) : new Date();
@@ -91,7 +162,6 @@ export class FoodController {
       await log.save();
 
       // Trigger asynchronous analysis to check if glucose readings overlap
-      // We run this immediately in the background so the user gets real-time spikes if readings are already uploaded.
       try {
         await GlucoseService.analyzeFoodLog(log.id);
       } catch (err) {
@@ -217,4 +287,242 @@ export class FoodController {
       return res.status(500).json({ message: error.message || 'Error deleting log.' });
     }
   }
+
+  // ─── Private Helpers ────────────────────────────────────────────────────────
+
+  private static escapeRegExp(string: string): string {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  /**
+   * Search FoodMaster DB with exact → alias → fuzzy → word-split fallback.
+   */
+  private static async findFoodInLocalLibrary(detectedName: string) {
+    const normalized = detectedName.toLowerCase().trim();
+
+    // 1. Exact match
+    let matched = await FoodMaster.findOne({
+      name: { $regex: new RegExp(`^${FoodController.escapeRegExp(normalized)}$`, 'i') }
+    }).sort({ verified: -1 });
+    if (matched) return matched;
+
+    // 2. Alias match
+    matched = await FoodMaster.findOne({
+      aliases: { $in: [normalized] }
+    }).sort({ verified: -1 });
+    if (matched) return matched;
+
+    // 3. Fuzzy match: contains search or alias regex
+    matched = await FoodMaster.findOne({
+      $or: [
+        { name: { $regex: new RegExp(FoodController.escapeRegExp(normalized), 'i') } },
+        { aliases: { $elemMatch: { $regex: new RegExp(FoodController.escapeRegExp(normalized), 'i') } } }
+      ]
+    }).sort({ verified: -1 });
+    if (matched) return matched;
+
+    // 4. Word-split fallback
+    const words = normalized.split(/\s+/).filter(w => w.length >= 3);
+    for (const word of words) {
+      matched = await FoodMaster.findOne({
+        $or: [
+          { name: { $regex: new RegExp(FoodController.escapeRegExp(word), 'i') } },
+          { aliases: { $elemMatch: { $regex: new RegExp(FoodController.escapeRegExp(word), 'i') } } }
+        ]
+      }).sort({ verified: -1 });
+      if (matched) return matched;
+    }
+
+    return null;
+  }
+
+  /**
+   * Look up a food name: FoodMaster first, then FatSecret.
+   * Returns a normalized result item or null.
+   */
+  private static async resolveFoodItem(detectedName: string, confidence: number) {
+    const isLowConfidence = confidence < 0.75;
+
+    // 1. Try FoodMaster (local, fast)
+    const localFood = await FoodController.findFoodInLocalLibrary(detectedName);
+    if (localFood) {
+      return {
+        foodName: localFood.name,
+        confidence,
+        calories: localFood.calories,
+        carbs: localFood.carbs,
+        protein: localFood.protein,
+        fat: localFood.fat,
+        fiber: localFood.fiber || 0,
+        servingSize: localFood.servingSize,
+        servingUnit: localFood.servingUnit,
+        category: localFood.category,
+        isExternal: false,
+        isLowConfidence,
+        portionType: localFood.portionType,
+        source: 'FoodMaster' as const
+      };
+    }
+
+    // 2. Fallback to FatSecret
+    try {
+      const fatSecretResults = await FatSecretService.searchFood(detectedName);
+      if (fatSecretResults.length > 0) {
+        const best = fatSecretResults[0];
+        return {
+          foodName: best.name,
+          confidence,
+          calories: best.calories,
+          carbs: best.carbs,
+          protein: best.protein,
+          fat: best.fat,
+          fiber: best.fiber,
+          servingSize: best.servingSize,
+          servingUnit: best.servingUnit,
+          category: best.category,
+          isExternal: true,
+          isLowConfidence,
+          portionType: best.portionType,
+          source: 'FatSecret' as const,
+          fatSecretId: best.fatSecretId,
+          // Multiple variants available — frontend will show picker
+          fatSecretVariants: fatSecretResults.length > 1 ? fatSecretResults : undefined
+        };
+      }
+    } catch (fsErr: any) {
+      console.error(`FatSecret lookup failed for "${detectedName}":`, fsErr.message);
+    }
+
+    // 3. No result found anywhere
+    return {
+      foodName: detectedName,
+      confidence,
+      calories: null,
+      carbs: null,
+      protein: null,
+      fat: null,
+      fiber: null,
+      servingSize: null,
+      servingUnit: null,
+      category: 'Snacks' as const,
+      isExternal: true,
+      isLowConfidence: true,
+      requiresManualEntry: true,
+      portionType: determinePortionType(detectedName),
+      source: 'Unknown' as const
+    };
+  }
+
+  /**
+   * Scan Food Image — Gemini Vision detects food names only.
+   * Nutrition comes from FoodMaster → FatSecret (never AI-generated).
+   */
+  public static async scanFoodImage(req: AuthRequest, res: Response) {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'No food image file uploaded.' });
+      }
+
+      const apiKey = process.env.GEMINI_API_KEY;
+      let detectedNames: Array<{ name: string; confidence: number }> = [];
+      if (!apiKey) {
+        return res.status(500).json({
+          message: 'Image recognition service unavailable.'
+        });
+      }
+      else {
+        // Gemini Vision — food name detection ONLY, no nutrition generation
+        // Wrapped in try/catch: any Gemini error (429 quota, 503 overload, invalid key)
+        // falls back to manual entry response
+        try {
+          const genAI = new GoogleGenerativeAI(apiKey);
+          const model = genAI.getGenerativeModel({
+            model: 'gemini-2.0-flash',
+            generationConfig: { responseMimeType: 'application/json' }
+          });
+
+          const imageBuffer = fs.readFileSync(req.file.path);
+          const imagePart = {
+            inlineData: {
+              data: imageBuffer.toString('base64'),
+              mimeType: req.file.mimetype
+            }
+          };
+
+          const visionPrompt = `Analyze this food image. Identify each visible food item separately.
+
+Rules:
+1. Detect each visible food item separately (e.g. dosa, sambar, chutney are separate items).
+2. Use simple, common food names only.
+3. Never guess or infer hidden ingredients.
+4. Never combine multiple foods into one dish name.
+5. Prefer Indian food names where applicable.
+6. Return JSON only — no markdown, no explanation.
+
+Schema:
+{
+  "items": [
+    { "name": "food name", "confidence": 90 }
+  ]
+}`;
+
+          const result = await model.generateContent([visionPrompt, imagePart]);
+          const responseText = result.response.text().trim();
+
+          let cleanText = responseText;
+          if (cleanText.startsWith('```')) {
+            cleanText = cleanText.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/, '').trim();
+          }
+
+          const visionResult = JSON.parse(cleanText);
+          detectedNames = (visionResult.items || visionResult.foods || []).map((i: any) => ({
+            name: i.name,
+            confidence: Math.min(Math.max(i.confidence || 90, 0), 100)
+          }));
+        } catch (geminiErr: any) {
+          // Gemini failed (quota depleted, rate limited, unavailable, etc.)
+          // Log the reason and fall through to filename/size heuristic below.
+          console.warn(`Gemini Vision unavailable (${geminiErr.message?.substring(0, 80)}). Manual food entry required.`);
+          detectedNames = []; // ensures heuristic block runs
+        }
+      }
+
+      // If Gemini produced no results (failed, quota depleted, or returned nothing),
+      // apply filename/size heuristic so the scanner always responds usefully.
+      if (detectedNames.length === 0) {
+        return res.status(200).json({
+          success: false,
+          requiresManualEntry: true,
+          message: 'Unable to identify food from image. Please search manually.'
+        });
+      }
+
+      // Resolve each detected name → FoodMaster first, then FatSecret
+      const resultItems = await Promise.all(
+        detectedNames
+          .filter(d => d.name && d.name.toLowerCase() !== 'unknown')
+          .map(d => FoodController.resolveFoodItem(d.name, d.confidence / 100))
+      );
+
+      if (resultItems.length === 0) {
+        return res.status(200).json({
+          success: false,
+          requiresManualEntry: true,
+          message: 'Unable to identify food from image. Please search manually.'
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        imageUrl: `/uploads/${req.file.filename}`,
+        items: resultItems
+      });
+
+    } catch (error: any) {
+      console.error('Food scan error:', error);
+      return res.status(500).json({ message: error.message || 'Error scanning food image.' });
+    }
+  }
+
+
 }

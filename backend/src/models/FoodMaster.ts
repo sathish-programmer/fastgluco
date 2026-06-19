@@ -2,6 +2,7 @@ import { Schema, model, Document } from 'mongoose';
 
 export interface IFoodMaster extends Document {
   name: string;
+  aliases: string[];
   category: 'South Indian' | 'North Indian' | 'Snacks' | 'Fruits' | 'Beverages' | 'Vegetables' | 'Dairy' | 'Non-Veg' | 'Sweets';
   calories: number; // kcal per serving
   carbs: number;    // g per serving
@@ -12,6 +13,10 @@ export interface IFoodMaster extends Document {
   servingUnit: string; // e.g. "g", "ml", "piece", "bowl"
   isActive: boolean;
   isDeleted: boolean;
+  verified: boolean;
+  source: string; // e.g. 'USDA', 'IFCT', 'OpenFoodFacts', 'LocalSeed', 'AI-Fallback'
+  countries: string[]; // e.g. ['India', 'USA', 'Global']
+  portionType: 'count' | 'weight' | 'volume';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -19,6 +24,7 @@ export interface IFoodMaster extends Document {
 const foodMasterSchema = new Schema<IFoodMaster>(
   {
     name: { type: String, required: true, trim: true, unique: true, index: true },
+    aliases: { type: [String], default: [], index: true },
     category: { 
       type: String, 
       enum: ['South Indian', 'North Indian', 'Snacks', 'Fruits', 'Vegetables', 'Beverages', 'Dairy', 'Non-Veg', 'Sweets'],
@@ -32,7 +38,11 @@ const foodMasterSchema = new Schema<IFoodMaster>(
     servingSize: { type: Number, required: true, default: 100 },
     servingUnit: { type: String, required: true, default: 'g' },
     isActive: { type: Boolean, default: true },
-    isDeleted: { type: Boolean, default: false }
+    isDeleted: { type: Boolean, default: false },
+    verified: { type: Boolean, default: false, index: true },
+    source: { type: String, default: 'LocalSeed', index: true },
+    countries: { type: [String], default: ['Global'], index: true },
+    portionType: { type: String, enum: ['count', 'weight', 'volume'], default: 'weight', index: true }
   },
   {
     timestamps: true

@@ -22,6 +22,7 @@ interface FeatureFlag {
   foodInsights: boolean;
   exportReports: boolean;
   notifications: boolean;
+  foodScanner: boolean;
 }
 
 interface Plan {
@@ -362,23 +363,40 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
       { key: 'foodInsights', label: 'Top Safe / Moderate / Avoid Food Insights' },
       { key: 'exportReports', label: 'Export Comprehensive PDF Reports' },
       { key: 'premiumVideos', label: 'Premium Educational Guides & Videos' },
-      { key: 'notifications', label: 'Custom Meal Reminders & Spikes Alerts' }
+      { key: 'notifications', label: 'Custom Meal Reminders & Spikes Alerts' },
+      { key: 'foodScanner', label: 'AI Photo Food Scanner & Macros Estimation', highlight: true }
     ];
 
     return (
       <ul className="space-y-2.5 my-4 text-xs font-semibold text-slate-600">
         {featureLabels.map((f) => {
           const hasFeature = !!(features as any)[f.key];
+          const isHighlighted = f.highlight;
           return (
             <li key={f.key} className="flex items-start space-x-2">
               {hasFeature ? (
-                <Check className="h-4.5 w-4.5 text-green-500 shrink-0" />
+                <Check className="h-4.5 w-4.5 text-green-500 shrink-0 mt-0.5" />
               ) : (
-                <X className="h-4.5 w-4.5 text-slate-300 shrink-0" />
+                <X className="h-4.5 w-4.5 text-slate-300 shrink-0 mt-0.5" />
               )}
-              <span className={hasFeature ? 'text-slate-700' : 'text-slate-400 line-through'}>
-                {f.label}
-              </span>
+              {isHighlighted ? (
+                <span className={`inline-flex items-center space-x-1.5 px-2 py-0.5 rounded text-[10px] font-bold ${
+                  hasFeature 
+                    ? 'text-indigo-700 bg-indigo-50 border border-indigo-100' 
+                    : 'text-slate-400 bg-slate-50 border border-slate-100 line-through'
+                }`}>
+                  <span>{f.label}</span>
+                  {hasFeature && (
+                    <span className="text-[7px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-full uppercase tracking-wider font-extrabold animate-pulse">
+                      New
+                    </span>
+                  )}
+                </span>
+              ) : (
+                <span className={hasFeature ? 'text-slate-700' : 'text-slate-400 line-through'}>
+                  {f.label}
+                </span>
+              )}
             </li>
           );
         })}

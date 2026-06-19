@@ -144,7 +144,23 @@ const seed = async () => {
       const lowerName = f.name.toLowerCase();
       if (!seenNames.has(lowerName)) {
         seenNames.add(lowerName);
-        uniqueFoods.push(f);
+
+        // Determine portionType
+        let portionType: 'count' | 'weight' | 'volume' = 'weight';
+        const unit = (f.servingUnit || 'g').toLowerCase();
+        if (unit.includes('piece') || unit.includes('egg') || unit.includes('roti') || unit.includes('slice') || unit.includes('burger') || unit.includes('pancake') || unit.includes('ball') || unit.includes('plate') || unit.includes('apple') || unit.includes('banana') || unit.includes('mango') || unit.includes('guava') || unit.includes('pieces') || unit.includes('pancakes')) {
+          portionType = 'count';
+        } else if (unit.includes('ml') || unit.includes('l')) {
+          portionType = 'volume';
+        }
+
+        uniqueFoods.push({
+          ...f,
+          verified: true,
+          source: 'LocalSeed',
+          countries: ['India'],
+          portionType
+        });
       }
     }
 
@@ -193,7 +209,8 @@ const seed = async () => {
           foodInsights: true,
           exportReports: false,
           notifications: true,
-          aiCoaching: false
+          aiCoaching: false,
+          foodScanner: false
         }
       },
       {
@@ -215,7 +232,8 @@ const seed = async () => {
           foodInsights: true,
           exportReports: true,
           notifications: true,
-          aiCoaching: true
+          aiCoaching: true,
+          foodScanner: true
         }
       }
     ]);

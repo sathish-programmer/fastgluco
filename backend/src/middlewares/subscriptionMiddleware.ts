@@ -8,7 +8,7 @@ import { PaymentGatewayConfig } from '../models/PaymentGatewayConfig';
  * Access Control middleware to verify if a user holds an active subscription
  * containing access rights to a specific plan feature key.
  */
-export const requireSubscriptionFeature = (featureKey: 'unlimitedReports' | 'advancedAnalysis' | 'premiumVideos' | 'foodInsights' | 'exportReports' | 'notifications') => {
+export const requireSubscriptionFeature = (featureKey: 'unlimitedReports' | 'advancedAnalysis' | 'premiumVideos' | 'foodInsights' | 'exportReports' | 'notifications' | 'foodScanner') => {
   return async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const userId = req.user?.id;

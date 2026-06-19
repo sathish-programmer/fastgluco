@@ -56,6 +56,22 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
 });
 
+const imageFileFilter = (req: any, file: any, cb: any) => {
+  const allowedExtensions = ['.png', '.jpg', '.jpeg', '.webp'];
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (allowedExtensions.includes(ext)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only image formats (.png, .jpg, .jpeg, .webp) are allowed.'));
+  }
+};
+
+const uploadImage = multer({ 
+  storage, 
+  fileFilter: imageFileFilter,
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+});
+
 // ==========================================
 // 1. PUBLIC AUTHENTICATION ENDPOINTS
 // ==========================================
@@ -123,10 +139,13 @@ router.post('/users/profile/sync-libre', ProfileController.triggerSync);
 
 router.use('/food-library', authenticateToken, requireRole(['User', 'SuperAdmin', 'Admin', 'Editor']));
 router.get('/food-library', FoodController.searchLibrary);
+// FatSecret external fallback — called when FoodMaster returns 0 results
+router.get('/food-library/external', FoodController.searchFoodExternal);
 
 router.use('/food-logs', authenticateToken, requireRole(['User']));
 router.get('/food-logs', FoodController.getLogs);
 router.post('/food-logs', FoodController.createLog);
+router.post('/food-logs/scan', uploadImage.single('image'), requireSubscriptionFeature('foodScanner'), FoodController.scanFoodImage);
 router.put('/food-logs/:id', FoodController.updateLog);
 router.post('/food-logs/:id/feedback', FoodController.recordFeedback);
 router.delete('/food-logs/:id', FoodController.deleteLog);
@@ -200,7 +219,7 @@ router.delete('/admin/payments/plans/:id', PlanAdminController.deletePlan);
 // Payment Configurations (Admin)
 router.get('/admin/payments/config', PaymentAdminController.getConfig);
 router.put('/admin/payments/config', PaymentAdminController.updateConfig);
-router.post('/admin/branding/upload-logo', upload.single('logo'), async (req: any, res) => {
+router.post('/admin/branding/upload-logo', uploadImage.single('logo'), async (req: any, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded.' });

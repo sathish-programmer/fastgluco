@@ -39,7 +39,7 @@ export const seedFoodLibrary = [
   { name: 'Chappati', category: 'North Indian', calories: 70, carbs: 15, protein: 2.5, fat: 0.4, fiber: 2, servingSize: 1, servingUnit: 'piece' },
   
   // Non-Veg
-  { name: 'Chicken Biryani', category: 'Non-Veg', calories: 350, carbs: 42, protein: 18, fat: 12, fiber: 2, servingSize: 200, servingUnit: 'g' },
+  { name: 'Chicken Biryani', category: 'Non-Veg', calories: 350, carbs: 42, protein: 18, fat: 12, fiber: 2, servingSize: 200, servingUnit: 'g', aliases: ['biryani', 'chicken biriyani'] },
   { name: 'Butter Chicken', category: 'Non-Veg', calories: 290, carbs: 8, protein: 16, fat: 22, fiber: 1, servingSize: 150, servingUnit: 'g' },
   { name: 'Tandoori Chicken', category: 'Non-Veg', calories: 220, carbs: 3, protein: 24, fat: 12, fiber: 0, servingSize: 150, servingUnit: 'g' },
   { name: 'Chicken Curry', category: 'Non-Veg', calories: 240, carbs: 6, protein: 20, fat: 14, fiber: 1, servingSize: 150, servingUnit: 'g' },
@@ -47,7 +47,7 @@ export const seedFoodLibrary = [
   { name: 'Fish Curry', category: 'Non-Veg', calories: 200, carbs: 4, protein: 18, fat: 12, fiber: 1, servingSize: 150, servingUnit: 'g' },
   { name: 'Boiled Egg', category: 'Non-Veg', calories: 70, carbs: 0.5, protein: 6, fat: 5, fiber: 0, servingSize: 1, servingUnit: 'egg' },
   { name: 'Egg Curry', category: 'Non-Veg', calories: 180, carbs: 8, protein: 8, fat: 12, fiber: 2, servingSize: 150, servingUnit: 'g' },
-  { name: 'Grilled Chicken Breast', category: 'Non-Veg', calories: 165, carbs: 0, protein: 31, fat: 3.6, fiber: 0, servingSize: 100, servingUnit: 'g' },
+  { name: 'Grilled Chicken Breast', category: 'Non-Veg', calories: 165, carbs: 0, protein: 31, fat: 3.6, fiber: 0, servingSize: 100, servingUnit: 'g', aliases: ['grilled chicken breast', 'chicken breast', 'boiled chicken', 'roasted chicken', 'baked chicken breast', 'cooked chicken breast'] },
   { name: 'Salmon Fillet (Baked)', category: 'Non-Veg', calories: 200, carbs: 0, protein: 22, fat: 12, fiber: 0, servingSize: 100, servingUnit: 'g' },
   
   // Snacks / US Fast Food
@@ -111,47 +111,10 @@ export const seedFoodLibrary = [
   { name: 'Tender Coconut Water', category: 'Beverages', calories: 45, carbs: 10, protein: 0.7, fat: 0.1, fiber: 0, servingSize: 250, servingUnit: 'ml' },
   { name: 'Filter Coffee (With Sugar)', category: 'Beverages', calories: 80, carbs: 14, protein: 2, fat: 2, fiber: 0, servingSize: 150, servingUnit: 'ml' },
   { name: 'Black Coffee', category: 'Beverages', calories: 5, carbs: 1, protein: 0, fat: 0, fiber: 0, servingSize: 150, servingUnit: 'ml' },
-  { name: 'Fresh Lime Soda (Sweet)', category: 'Beverages', calories: 120, carbs: 30, protein: 0, fat: 0, fiber: 0, servingSize: 250, servingUnit: 'ml' }
+  { name: 'Fresh Lime Soda (Sweet)', category: 'Beverages', calories: 120, carbs: 30, protein: 0, fat: 0, fiber: 0, servingSize: 250, servingUnit: 'ml' },
+  
+  // Extra Scan Fallbacks
+  { name: 'Coconut Chutney', category: 'South Indian', calories: 90, carbs: 4, protein: 1, fat: 8, fiber: 2, servingSize: 50, servingUnit: 'g', aliases: ['coconut chutney', 'white chutney'] },
+  { name: 'Tomato Chutney', category: 'South Indian', calories: 45, carbs: 5, protein: 1, fat: 2.5, fiber: 1.5, servingSize: 50, servingUnit: 'g', aliases: ['tomato chutney', 'red chutney'] },
+  { name: 'Tea/Coffee', category: 'Beverages', calories: 60, carbs: 9, protein: 1.5, fat: 2, fiber: 0, servingSize: 150, servingUnit: 'ml', aliases: ['tea', 'coffee', 'chai', 'tea/coffee'] }
 ];
-
-// Dynamically generate the remaining foods with realistic names and portions up to 500
-const categories = ['South Indian', 'North Indian', 'Snacks', 'Fruits', 'Vegetables', 'Beverages', 'Dairy', 'Non-Veg', 'Sweets'] as const;
-const adjectives = ['Classic', 'Fresh', 'Spicy', 'Healthy', 'Steamed', 'Grilled', 'Baked', 'Roasted', 'Crispy', 'Homemade', 'Special', 'Traditional', 'Organic', 'Low Fat'];
-const styles = ['Premium', 'Gourmet', 'Deluxe', 'Rustic', 'Artisanal', 'Local', 'Natural', 'Signature', 'House', 'Chef Special'];
-const portions = ['1 serving', '100g portion', 'standard cup', 'medium bowl', 'large portion', 'small serving', 'single piece', 'standard plate'];
-
-const baseNames: Record<string, string[]> = {
-  'South Indian': ['Idli', 'Dosa', 'Uttapam', 'Vada', 'Upma', 'Pongal', 'Lemon Rice', 'Curd Rice', 'Puttu', 'Appam', 'Sambar Rice', 'Rava Kesari', 'Ragi Mudde'],
-  'North Indian': ['Paneer Tikka', 'Aloo Gobi', 'Chana Masala', 'Rajma Chawal', 'Dal Tadka', 'Jeera Rice', 'Roti', 'Naan', 'Paratha', 'Palak Paneer', 'Malai Kofta', 'Bhindi Fry', 'Aloo Baingan'],
-  'Snacks': ['Samosa', 'Pakora', 'Dhokla', 'Aloo Tikki', 'Pani Puri', 'Bhel Puri', 'Pav Bhaji', 'French Fries', 'Cheeseburger', 'Pizza Slice', 'Potato Chips', 'Popcorn', 'Spring Roll'],
-  'Fruits': ['Apple', 'Banana', 'Mango', 'Papaya', 'Guava', 'Watermelon', 'Pineapple', 'Grapes', 'Pomegranate', 'Orange', 'Strawberry', 'Peach'],
-  'Vegetables': ['Mixed Veg Curry', 'Broccoli Florets', 'Sauteed Spinach', 'Roasted Cauliflower', 'Green Salad', 'Boiled Potato', 'Grilled Asparagus', 'Sauteed Mushrooms', 'Stir-fried Green Beans'],
-  'Beverages': ['Filter Coffee', 'Masala Chai', 'Green Tea', 'Buttermilk', 'Mango Lassi', 'Lemonade', 'Tender Coconut Water', 'Orange Juice', 'Apple Juice', 'Black Coffee'],
-  'Dairy': ['Greek Yogurt', 'Paneer', 'Cheese Slice', 'Cottage Cheese', 'Butter', 'Fresh Cream', 'Whipped Cream', 'Mozzarella Cheese'],
-  'Non-Veg': ['Chicken Tikka', 'Tandoori Chicken', 'Chicken Curry', 'Fish Fry', 'Mutton Curry', 'Egg Bhurji', 'Scrambled Eggs', 'Boiled Egg', 'Grilled Chicken Salad', 'Chicken Biryani', 'Butter Chicken'],
-  'Sweets': ['Gulab Jamun', 'Rasgulla', 'Kaju Katli', 'Jalebi', 'Besan Ladoo', 'Mysore Pak', 'Gajar Halwa', 'Chocolate Chip Cookie', 'Apple Pie', 'Vanilla Ice Cream', 'Brownie Slice']
-};
-
-for (let i = seedFoodLibrary.length; i < 500; i++) {
-  const cat = categories[i % categories.length];
-  const adj = adjectives[Math.floor((i * 7) % adjectives.length)];
-  const style = styles[Math.floor((i * 11) % styles.length)];
-  const bases = baseNames[cat];
-  const base = bases[Math.floor((i * 13) % bases.length)];
-  const portion = portions[Math.floor((i * 17) % portions.length)];
-  
-  // Build a highly realistic and unique name, e.g. "Gourmet Fresh Brownie Slice (1 serving)"
-  const name = `${style} ${adj} ${base} (${portion})`;
-  
-  seedFoodLibrary.push({
-    name,
-    category: cat,
-    calories: Math.floor(Math.random() * 300) + 50,
-    carbs: Math.floor(Math.random() * 50) + 5,
-    protein: Math.floor(Math.random() * 20) + 1,
-    fat: Math.floor(Math.random() * 20) + 1,
-    fiber: Math.floor(Math.random() * 10),
-    servingSize: 100,
-    servingUnit: 'g'
-  });
-}

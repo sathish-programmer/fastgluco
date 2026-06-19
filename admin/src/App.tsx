@@ -1846,7 +1846,7 @@ const AdminPanelContent: React.FC = () => {
             {foodPagination.pages > 1 && (
               <div className="flex justify-between items-center py-4 bg-slate-50 px-6 border border-slate-200 rounded-2xl">
                 <span className="text-xs font-bold text-slate-500">
-                  Showing {(foodPagination.page - 1) * foodPagination.limit + 1} to Math.min(foodPagination.page * foodPagination.limit, foodPagination.total) of {foodPagination.total} foods
+                  Showing {(foodPagination.page - 1) * foodPagination.limit + 1} to {Math.min(foodPagination.page * foodPagination.limit, foodPagination.total)} of {foodPagination.total} foods
                 </span>
                 <div className="flex space-x-2">
                   <button
