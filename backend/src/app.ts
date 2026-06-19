@@ -49,6 +49,13 @@ app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({ status: 'ok', timestamp: new Date() });
 });
 
+app.get('/ip', (req, res) => {
+  res.json({
+    ip: req.ip,
+    forwarded: req.headers['x-forwarded-for']
+  });
+});
+
 // 8. Global Error Handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error('Unhandled Server Error:', err);
