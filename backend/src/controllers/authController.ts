@@ -13,10 +13,14 @@ export class AuthController {
    */
   public static async register(req: Request, res: Response) {
     try {
-      const { name, email, mobile, password, gender, age, height, weight, activityLevel, goal } = req.body;
+      const { name, email, mobile, password, gender, age, height, weight, activityLevel, goal, cancerJourney, cancerDisclaimerAccepted, cancerDisclaimerAcceptedAt } = req.body;
 
       if (!name || !email || !mobile || !password) {
         return res.status(400).json({ message: 'Name, email, mobile, and password are required.' });
+      }
+
+      if ((cancerJourney === 'TREATMENT' || cancerJourney === 'SECONDARY_PREVENTION') && !cancerDisclaimerAccepted) {
+        return res.status(400).json({ message: 'You must accept the medical disclaimer to register for cancer treatment or secondary prevention journeys.' });
       }
 
       // Check if user already exists by email or mobile
@@ -49,7 +53,10 @@ export class AuthController {
         weight,
         activityLevel,
         goal,
-        spikeThreshold: 90
+        spikeThreshold: 90,
+        cancerJourney: cancerJourney || 'PREVENTION',
+        cancerDisclaimerAccepted: !!cancerDisclaimerAccepted,
+        cancerDisclaimerAcceptedAt: cancerDisclaimerAcceptedAt ? new Date(cancerDisclaimerAcceptedAt) : undefined
       });
 
       // Calculate calorie targets if physical attributes are provided
@@ -80,6 +87,36 @@ export class AuthController {
       });
     } catch (error: any) {
       return res.status(500).json({ message: error.message || 'An error occurred during registration.' });
+    }
+  }
+
+  /**
+   * Check Email and Mobile Availability
+   */
+  public static async checkAvailability(req: Request, res: Response) {
+    try {
+      const { email, mobile } = req.body;
+      if (!email && !mobile) {
+        return res.status(400).json({ message: 'Email or Mobile is required.' });
+      }
+
+      if (email) {
+        const existingEmail = await User.findOne({ email: email.toLowerCase() });
+        if (existingEmail) {
+          return res.status(409).json({ available: false, field: 'email', message: 'Email is already registered.' });
+        }
+      }
+
+      if (mobile) {
+        const existingMobile = await User.findOne({ mobile: mobile.trim() });
+        if (existingMobile) {
+          return res.status(409).json({ available: false, field: 'mobile', message: 'Mobile number is already registered.' });
+        }
+      }
+
+      return res.status(200).json({ available: true, message: 'Available.' });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message || 'An error occurred checking availability.' });
     }
   }
 

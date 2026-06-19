@@ -24,6 +24,9 @@ export interface IUser extends Document {
   libreLastSyncAt?: Date;
   isBlocked: boolean;
   isDeleted: boolean;
+  cancerJourney?: 'PREVENTION' | 'TREATMENT' | 'SECONDARY_PREVENTION';
+  cancerDisclaimerAccepted?: boolean;
+  cancerDisclaimerAcceptedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -58,7 +61,10 @@ const userSchema = new Schema<IUser>(
     libreActive: { type: Boolean, default: false },
     libreLastSyncAt: { type: Date },
     isBlocked: { type: Boolean, default: false },
-    isDeleted: { type: Boolean, default: false }
+    isDeleted: { type: Boolean, default: false },
+    cancerJourney: { type: String, enum: ['PREVENTION', 'TREATMENT', 'SECONDARY_PREVENTION'], default: 'PREVENTION' },
+    cancerDisclaimerAccepted: { type: Boolean, default: false },
+    cancerDisclaimerAcceptedAt: { type: Date }
   },
   {
     timestamps: true

@@ -19,6 +19,8 @@ export interface IPaymentGatewayConfig extends Document {
   appName?: string;
   appTagline?: string;
   appLogoUrl?: string;
+  cancerTreatmentDisclaimer?: string;
+  cancerSecondaryDisclaimer?: string;
   updatedBy?: Schema.Types.ObjectId; // ref: AdminUser
   createdAt: Date;
   updatedAt: Date;
@@ -41,6 +43,8 @@ const paymentGatewayConfigSchema = new Schema<IPaymentGatewayConfig>(
     appName: { type: String, default: 'Mito_Reboot' },
     appTagline: { type: String, default: 'The circadian fasting app' },
     appLogoUrl: { type: String, default: '' },
+    cancerTreatmentDisclaimer: { type: String, default: 'Disclaimer: This app is for informational purposes only. If you are undergoing active cancer treatment, please consult with your oncologist before starting any circadian fasting protocols.' },
+    cancerSecondaryDisclaimer: { type: String, default: 'Disclaimer: This app is for informational purposes only. If you have a previous history of cancer (secondary prevention), please consult with your medical team before starting any circadian fasting protocols.' },
     aiQuestions: { 
       type: [String], 
       default: ["You recently logged a food that spiked your glucose. Why did you consume this when it's advised to avoid it?", "Did you take a walk afterwards?"] 

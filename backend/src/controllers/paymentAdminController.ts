@@ -58,7 +58,9 @@ export class PaymentAdminController {
         enableWorkoutTracker,
         appName,
         appTagline,
-        appLogoUrl
+        appLogoUrl,
+        cancerTreatmentDisclaimer,
+        cancerSecondaryDisclaimer
       } = req.body;
 
       let config = await PaymentGatewayConfig.findOne();
@@ -84,6 +86,8 @@ export class PaymentAdminController {
       if (appName !== undefined) config.appName = appName;
       if (appTagline !== undefined) config.appTagline = appTagline;
       if (appLogoUrl !== undefined) config.appLogoUrl = appLogoUrl;
+      if (cancerTreatmentDisclaimer !== undefined) config.cancerTreatmentDisclaimer = cancerTreatmentDisclaimer;
+      if (cancerSecondaryDisclaimer !== undefined) config.cancerSecondaryDisclaimer = cancerSecondaryDisclaimer;
       config.updatedBy = req.user?.id as any;
 
       await config.save();

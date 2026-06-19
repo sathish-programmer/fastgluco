@@ -23,9 +23,37 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
   const [weight, setWeight] = useState<number>(70);
   const [activityLevel, setActivityLevel] = useState<'Sedentary' | 'Lightly active' | 'Moderately active' | 'Very active'>('Moderately active');
   const [goal, setGoal] = useState<'Lose weight' | 'Maintain weight' | 'Gain weight'>('Maintain weight');
+  const [cancerJourney, setCancerJourney] = useState<'PREVENTION' | 'TREATMENT' | 'SECONDARY_PREVENTION'>('PREVENTION');
+  const [showDisclaimer, setShowDisclaimer] = useState(false);
+  const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
+  const [step1Error, setStep1Error] = useState<string | null>(null);
 
-  const handleNext = () => {
-    if (step === 1 && (!name || !email || !mobile || !password)) return;
+  const handleNext = async () => {
+    if (step === 1) {
+      if (!name || !email || !mobile || !password) return;
+      setCheckingAvailability(true);
+      setStep1Error(null);
+      try {
+        const baseUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5001/api' : 'https://api.mitoreboot.in/api');
+        const res = await fetch(`${baseUrl}/auth/check-availability`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, mobile })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setStep1Error(data.message || 'Validation failed. Please try again.');
+          setCheckingAvailability(false);
+          return;
+        }
+      } catch (err: any) {
+        setStep1Error('Network error. Failed to validate credentials.');
+        setCheckingAvailability(false);
+        return;
+      }
+      setCheckingAvailability(false);
+    }
     setStep(prev => prev + 1);
   };
 
@@ -35,13 +63,19 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if ((cancerJourney === 'TREATMENT' || cancerJourney === 'SECONDARY_PREVENTION') && !disclaimerAccepted) {
+      return; // UI restricts submission anyway, but safety check
+    }
     await register(name, email, mobile, password, {
       gender,
       age,
       height,
       weight,
       activityLevel,
-      goal
+      goal,
+      cancerJourney,
+      cancerDisclaimerAccepted: cancerJourney === 'PREVENTION' ? true : disclaimerAccepted,
+      cancerDisclaimerAcceptedAt: cancerJourney === 'PREVENTION' ? undefined : (disclaimerAccepted ? new Date().toISOString() : undefined)
     });
   };
 
@@ -146,13 +180,20 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
                 </div>
               </div>
 
+              {step1Error && (
+                <div className="mt-4 p-3 bg-red-50 text-danger rounded-2xl text-xs font-semibold border border-red-100 animate-fadeIn">
+                  {step1Error}
+                </div>
+              )}
+
               <button
                 type="button"
                 onClick={handleNext}
-                className="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-3 px-4 rounded-2xl shadow-soft flex items-center justify-center space-x-2 mt-6"
+                disabled={checkingAvailability}
+                className="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-3 px-4 rounded-2xl shadow-soft flex items-center justify-center space-x-2 mt-6 disabled:opacity-50"
               >
-                <span>Continue</span>
-                <ChevronRight className="h-5 w-5" />
+                <span>{checkingAvailability ? 'Validating...' : 'Continue'}</span>
+                {!checkingAvailability && <ChevronRight className="h-5 w-5" />}
               </button>
             </div>
           ) : (
@@ -245,6 +286,45 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
                 </select>
               </div>
 
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-1.5 flex items-center space-x-1">
+                  <Activity className="h-4 w-4 text-slate-400" />
+                  <span>Cancer Care Journey</span>
+                </label>
+                <select
+                  value={cancerJourney}
+                  onChange={(e: any) => {
+                    const val = e.target.value;
+                    setCancerJourney(val);
+                    setDisclaimerAccepted(false);
+                    if (val === 'TREATMENT' || val === 'SECONDARY_PREVENTION') {
+                      setShowDisclaimer(true);
+                    }
+                  }}
+                  className="w-full px-3 py-2.5 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-slate-700 text-sm font-medium"
+                >
+                  <option value="PREVENTION">CANCER PREVENTION [NO HISTORY OF CANCER]</option>
+                  <option value="TREATMENT">CANCER TREATMENT</option>
+                  <option value="SECONDARY_PREVENTION">CANCER SECONDARY PREVENTION [PREVIOUS HISTORY OF CANCER]</option>
+                </select>
+                {(cancerJourney === 'TREATMENT' || cancerJourney === 'SECONDARY_PREVENTION') && (
+                  <div className="mt-1.5 flex items-center justify-between text-[10px] font-bold">
+                    <span className={disclaimerAccepted ? 'text-emerald-600' : 'text-rose-500'}>
+                      {disclaimerAccepted ? '✓ Disclaimer Accepted' : '✗ Disclaimer Declined / Not Accepted'}
+                    </span>
+                    {!disclaimerAccepted && (
+                      <button
+                        type="button"
+                        onClick={() => setShowDisclaimer(true)}
+                        className="text-primary hover:underline"
+                      >
+                        Read Disclaimer
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <div className="flex space-x-3 mt-6">
                 <button
                   type="button"
@@ -256,7 +336,7 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
                 </button>
                 <button
                   type="submit"
-                  disabled={isLoading}
+                  disabled={isLoading || ((cancerJourney === 'TREATMENT' || cancerJourney === 'SECONDARY_PREVENTION') && !disclaimerAccepted)}
                   className="flex-1 bg-primary hover:bg-primary-dark text-white font-semibold py-3 rounded-2xl shadow-soft disabled:opacity-50"
                 >
                   {isLoading ? 'Creating...' : 'Register'}
@@ -277,6 +357,46 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
           </p>
         </form>
       </div>
+
+      {/* Disclaimer Modal Overlay */}
+      {showDisclaimer && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full border border-slate-100 shadow-xl animate-scaleIn">
+            <h3 className="text-base font-bold text-slate-900 mb-3 flex items-center space-x-2">
+              <Heart className="h-5 w-5 text-rose-500 fill-rose-500" />
+              <span>Medical Disclaimer</span>
+            </h3>
+            <p className="text-xs text-slate-600 font-medium leading-relaxed mb-6">
+              {cancerJourney === 'TREATMENT' 
+                ? (branding.cancerTreatmentDisclaimer || 'Disclaimer: This app is for informational purposes only. If you are undergoing active cancer treatment, please consult with your oncologist before starting any circadian fasting protocols.')
+                : (branding.cancerSecondaryDisclaimer || 'Disclaimer: This app is for informational purposes only. If you have a previous history of cancer (secondary prevention), please consult with your medical team before starting any circadian fasting protocols.')
+              }
+            </p>
+            <div className="flex space-x-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setDisclaimerAccepted(false);
+                  setShowDisclaimer(false);
+                }}
+                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold"
+              >
+                Decline
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDisclaimerAccepted(true);
+                  setShowDisclaimer(false);
+                }}
+                className="flex-1 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl text-xs font-semibold shadow-soft"
+              >
+                I Understand & Accept
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

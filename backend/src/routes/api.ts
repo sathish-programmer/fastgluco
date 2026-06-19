@@ -63,6 +63,7 @@ router.post('/auth/register', AuthController.register);
 router.post('/auth/login', AuthController.login);
 router.post('/auth/refresh', AuthController.refresh);
 router.post('/auth/forgot-password', AuthController.forgotPassword);
+router.post('/auth/check-availability', AuthController.checkAvailability);
 router.post('/auth/reset-password', AuthController.resetPassword);
 
 // Public System Configuration Endpoint
@@ -86,7 +87,9 @@ router.get('/config/public', async (req, res) => {
       enablePayments: config.enablePayments,
       appName: config.appName || 'Mito_Reboot',
       appTagline: config.appTagline || 'The circadian fasting app',
-      appLogoUrl: config.appLogoUrl || ''
+      appLogoUrl: config.appLogoUrl || '',
+      cancerTreatmentDisclaimer: config.cancerTreatmentDisclaimer || 'Disclaimer: This app is for informational purposes only. If you are undergoing active cancer treatment, please consult with your oncologist before starting any circadian fasting protocols.',
+      cancerSecondaryDisclaimer: config.cancerSecondaryDisclaimer || 'Disclaimer: This app is for informational purposes only. If you have a previous history of cancer (secondary prevention), please consult with your medical team before starting any circadian fasting protocols.'
     });
   } catch (error: any) {
     return res.status(500).json({ message: error.message || 'Error fetching system configurations.' });

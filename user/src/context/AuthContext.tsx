@@ -19,12 +19,17 @@ export interface UserProfile {
   libreRegion?: string;
   libreActive?: boolean;
   libreLastSyncAt?: string;
+  cancerJourney?: 'PREVENTION' | 'TREATMENT' | 'SECONDARY_PREVENTION';
+  cancerDisclaimerAccepted?: boolean;
+  cancerDisclaimerAcceptedAt?: string;
 }
 
 export interface AppBranding {
   appName: string;
   appTagline: string;
   appLogoUrl: string;
+  cancerTreatmentDisclaimer: string;
+  cancerSecondaryDisclaimer: string;
 }
 
 interface AuthContextType {
@@ -52,7 +57,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [branding, setBranding] = useState<AppBranding>({
     appName: 'Mito_Reboot',
     appTagline: 'The circadian fasting app',
-    appLogoUrl: ''
+    appLogoUrl: '',
+    cancerTreatmentDisclaimer: 'Disclaimer: This app is for informational purposes only. If you are undergoing active cancer treatment, please consult with your oncologist before starting any circadian fasting protocols.',
+    cancerSecondaryDisclaimer: 'Disclaimer: This app is for informational purposes only. If you have a previous history of cancer (secondary prevention), please consult with your medical team before starting any circadian fasting protocols.'
   });
 
   const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5001/api' : 'https://api.mitoreboot.in/api');
@@ -67,7 +74,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setBranding({
               appName: config.appName,
               appTagline: config.appTagline,
-              appLogoUrl: config.appLogoUrl || ''
+              appLogoUrl: config.appLogoUrl || '',
+              cancerTreatmentDisclaimer: config.cancerTreatmentDisclaimer || '',
+              cancerSecondaryDisclaimer: config.cancerSecondaryDisclaimer || ''
             });
             document.title = `${config.appName} - ${config.appTagline}`;
           }

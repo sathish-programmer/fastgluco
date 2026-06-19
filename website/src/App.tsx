@@ -478,7 +478,12 @@ const Header: React.FC<{ activeTab: string; onTabChange: (tab: any) => void; bra
           ) : (
             <Heart className="h-5 w-5 fill-primary text-primary" />
           )}
-          <span className="text-base font-extrabold text-slate-800 tracking-tight">{branding.appName}</span>
+          <div className="flex flex-col">
+            <span className="text-base font-extrabold text-slate-800 tracking-tight leading-none">{branding.appName}</span>
+            {branding.appTagline && (
+              <span className="text-[9px] text-slate-500 font-semibold leading-none mt-0.5">{branding.appTagline}</span>
+            )}
+          </div>
         </div>
 
         <nav className="hidden md:flex space-x-6 text-xs font-bold text-slate-500">
@@ -518,7 +523,10 @@ const Footer: React.FC<{ onTabChange: (tab: any) => void; branding: BrandingProp
     <footer className="bg-slate-900 text-slate-400 py-10 px-6 text-xs border-t border-slate-800">
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
         <div>
-          <span className="text-white font-bold block mb-1">{branding.appName} Central</span>
+          <span className="text-white font-bold block mb-0.5">{branding.appName}</span>
+          {branding.appTagline && (
+            <span className="text-slate-500 block mb-2">{branding.appTagline}</span>
+          )}
           <span>© 2026 {branding.appName}. All rights reserved.</span>
         </div>
         <div className="flex space-x-4 font-semibold">
