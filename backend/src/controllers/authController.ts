@@ -158,7 +158,17 @@ export class AuthController {
       // Determine platform context (location/device/time)
       const ip = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '').split(',')[0].trim();
       let location = 'Unknown Location';
-      if (ip === '::1' || ip === '127.0.0.1' || ip.startsWith('127.') || ip.startsWith('192.168.') || ip.startsWith('10.')) {
+      if (
+        ip === '::1' || 
+        ip === '127.0.0.1' || 
+        ip.includes('127.0.0.1') || 
+        ip.startsWith('127.') || 
+        ip.startsWith('192.168.') || 
+        ip.startsWith('10.') || 
+        ip.startsWith('::ffff:127.') || 
+        ip.startsWith('::ffff:192.168.') || 
+        ip.startsWith('::ffff:10.')
+      ) {
         location = `Localhost/Local Network (${ip})`;
       } else {
         location = `${ip} (Estimated Location)`;

@@ -12,13 +12,14 @@ import {
   CreditCard,
   RefreshCw,
   Globe,
-  Activity
+  Activity,
+  Heart
 } from 'lucide-react';
 import { Educational } from './Educational'; // import the sub-view
 import { Subscription } from './Subscription';
 
 export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = () => {
-  const { user, token, apiUrl, logout, updateProfile, isLoading, error } = useAuth();
+  const { user, token, apiUrl, logout, updateProfile, isLoading, error, branding } = useAuth();
   const { showToast } = useToast();
   
   // Tabs for profile section: 'settings' or 'education' or 'subscription'
@@ -37,6 +38,11 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
   const [spikeThreshold, setSpikeThreshold] = useState(user?.spikeThreshold || 90);
   const [currency, setCurrency] = useState<'INR' | 'USD'>((user?.currency as 'INR' | 'USD') || 'INR');
   
+  // Cancer Care Journey states
+  const [cancerJourney, setCancerJourney] = useState<'PREVENTION' | 'TREATMENT' | 'SECONDARY_PREVENTION'>(user?.cancerJourney || 'PREVENTION');
+  const [showDisclaimer, setShowDisclaimer] = useState(false);
+  const [disclaimerAccepted, setDisclaimerAccepted] = useState(user?.cancerDisclaimerAccepted || false);
+
   // LibreLinkUp states
   const [libreEmail, setLibreEmail] = useState(user?.libreEmail || '');
   const [librePassword, setLibrePassword] = useState(user?.librePassword || '');
@@ -49,6 +55,10 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if ((cancerJourney === 'TREATMENT' || cancerJourney === 'SECONDARY_PREVENTION') && !disclaimerAccepted) {
+      showToast('You must accept the medical disclaimer to select this cancer care journey.', 'error');
+      return;
+    }
     setSaveSuccess(false);
     const success = await updateProfile({
       name,
@@ -65,7 +75,10 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
       libreEmail,
       librePassword,
       libreRegion,
-      libreActive
+      libreActive,
+      cancerJourney,
+      cancerDisclaimerAccepted: cancerJourney === 'PREVENTION' ? true : disclaimerAccepted,
+      cancerDisclaimerAcceptedAt: cancerJourney === 'PREVENTION' ? undefined : (disclaimerAccepted ? new Date().toISOString() : undefined)
     });
     if (success) {
       showToast('Profile updated successfully!', 'success');
@@ -133,6 +146,15 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
         </div>
         <h2 className="text-lg font-bold text-slate-850">{user?.name || 'Patient'}</h2>
         <p className="text-xs text-slate-400 font-semibold mt-1">{user?.email} {user?.mobile && `• ${user.mobile}`}</p>
+        {user?.cancerJourney && (
+          <div className="mt-2">
+            <span className="inline-block px-3 py-0.5 bg-rose-50 text-rose-600 border border-rose-100 rounded-full text-[9px] font-extrabold uppercase tracking-wider">
+              {user.cancerJourney === 'PREVENTION' && 'Cancer Prevention'}
+              {user.cancerJourney === 'TREATMENT' && 'Active Cancer Treatment'}
+              {user.cancerJourney === 'SECONDARY_PREVENTION' && 'Cancer Secondary Prevention'}
+            </span>
+          </div>
+        )}
       </div>
 
       {saveSuccess && (
@@ -222,7 +244,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
               type="tel"
               required
               value={mobile}
-              onChange={(e) => setMobile(e.target.value)}
+              onChange={(e) => setMobile(e.target.value.replace(/\D/g, ''))}
               className="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-semibold text-slate-700 bg-white transition-all"
             />
           </div>
@@ -300,6 +322,49 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
               <option value="Maintain weight">Maintain weight</option>
               <option value="Gain weight">Gain weight</option>
             </select>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center space-x-1">
+              <Activity className="h-3.5 w-3.5 text-primary" />
+              <span>Cancer Care Journey</span>
+            </label>
+            <select
+              value={cancerJourney}
+              onChange={(e: any) => {
+                const val = e.target.value;
+                setCancerJourney(val);
+                if (val === user?.cancerJourney && user?.cancerDisclaimerAccepted) {
+                  setDisclaimerAccepted(true);
+                } else {
+                  setDisclaimerAccepted(false);
+                  if (val === 'TREATMENT' || val === 'SECONDARY_PREVENTION') {
+                    setShowDisclaimer(true);
+                  }
+                }
+              }}
+              className="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-xs font-semibold text-slate-700 bg-white cursor-pointer transition-all"
+            >
+              <option value="PREVENTION">CANCER PREVENTION [NO HISTORY OF CANCER]</option>
+              <option value="TREATMENT">CANCER TREATMENT</option>
+              <option value="SECONDARY_PREVENTION">CANCER SECONDARY PREVENTION [PREVIOUS HISTORY OF CANCER]</option>
+            </select>
+            {(cancerJourney === 'TREATMENT' || cancerJourney === 'SECONDARY_PREVENTION') && (
+              <div className="mt-1.5 flex items-center justify-between text-[10px] font-bold">
+                <span className={disclaimerAccepted ? 'text-emerald-600' : 'text-rose-500'}>
+                  {disclaimerAccepted ? '✓ Disclaimer Accepted' : '✗ Disclaimer Declined / Not Accepted'}
+                </span>
+                {!disclaimerAccepted && (
+                  <button
+                    type="button"
+                    onClick={() => setShowDisclaimer(true)}
+                    className="text-primary hover:underline"
+                  >
+                    Read Disclaimer
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="pt-3 border-t border-slate-100">
@@ -444,7 +509,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
 
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || ((cancerJourney === 'TREATMENT' || cancerJourney === 'SECONDARY_PREVENTION') && !disclaimerAccepted)}
             className="w-full bg-primary hover:bg-primary/95 text-white font-bold py-3 rounded-2xl shadow-soft flex items-center justify-center space-x-2 transition-all hover:shadow-md disabled:opacity-50"
           >
             <Save className="h-4 w-4" />
@@ -456,11 +521,52 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
       {/* Logout button */}
       <button
         onClick={logout}
-        className="w-full border border-rose-250 hover:bg-rose-50/50 text-rose-600 font-bold py-3 px-4 rounded-3xl flex items-center justify-center space-x-2 transition-all"
+        className="w-full border border-rose-250 hover:bg-rose-50/50 text-rose-600 font-bold py-3 px-4 rounded-3xl flex items-center justify-center space-x-2 transition-all mb-6"
       >
         <LogOut className="h-4 w-4" />
         <span>Sign Out Account</span>
       </button>
+
+      {/* Disclaimer Modal Overlay */}
+      {showDisclaimer && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full border border-slate-100 shadow-xl animate-scaleIn">
+            <h3 className="text-base font-bold text-slate-900 mb-3 flex items-center space-x-2">
+              <Heart className="h-5 w-5 text-rose-500 fill-rose-500" />
+              <span>Medical Disclaimer</span>
+            </h3>
+            <p className="text-xs text-slate-600 font-medium leading-relaxed mb-6">
+              {cancerJourney === 'TREATMENT' 
+                ? (branding.cancerTreatmentDisclaimer || 'Disclaimer: This app is for informational purposes only. If you are undergoing active cancer treatment, please consult with your oncologist before starting any circadian fasting protocols.')
+                : (branding.cancerSecondaryDisclaimer || 'Disclaimer: This app is for informational purposes only. If you have a previous history of cancer (secondary prevention), please consult with your medical team before starting any circadian fasting protocols.')
+              }
+            </p>
+            <div className="flex space-x-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setDisclaimerAccepted(false);
+                  setShowDisclaimer(false);
+                  setCancerJourney(user?.cancerJourney || 'PREVENTION');
+                }}
+                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold"
+              >
+                Decline
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDisclaimerAccepted(true);
+                  setShowDisclaimer(false);
+                }}
+                className="flex-1 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl text-xs font-semibold shadow-soft"
+              >
+                I Understand & Accept
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

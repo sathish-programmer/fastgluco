@@ -149,7 +149,7 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
                     type="tel"
                     required
                     value={mobile}
-                    onChange={(e) => setMobile(e.target.value)}
+                    onChange={(e) => setMobile(e.target.value.replace(/\D/g, ''))}
                     placeholder="+91 98765 43210"
                     className="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-slate-800 font-medium"
                   />

@@ -31,7 +31,8 @@ export class ProfileController {
       const userId = req.user?.id;
       const { 
         name, email, mobile, gender, age, height, weight, activityLevel, goal, fcmToken, spikeThreshold, currency,
-        libreEmail, librePassword, libreRegion, libreActive
+        libreEmail, librePassword, libreRegion, libreActive,
+        cancerJourney, cancerDisclaimerAccepted, cancerDisclaimerAcceptedAt
       } = req.body;
 
       const user = await User.findById(userId);
@@ -52,6 +53,15 @@ export class ProfileController {
       if (fcmToken !== undefined) user.fcmToken = fcmToken;
       if (spikeThreshold !== undefined) user.spikeThreshold = spikeThreshold;
       if (currency !== undefined) user.currency = currency;
+
+      if (cancerJourney !== undefined) {
+        if ((cancerJourney === 'TREATMENT' || cancerJourney === 'SECONDARY_PREVENTION') && !cancerDisclaimerAccepted && !user.cancerDisclaimerAccepted) {
+          return res.status(400).json({ message: 'You must accept the medical disclaimer to select this cancer care journey.' });
+        }
+        user.cancerJourney = cancerJourney;
+      }
+      if (cancerDisclaimerAccepted !== undefined) user.cancerDisclaimerAccepted = cancerDisclaimerAccepted;
+      if (cancerDisclaimerAcceptedAt !== undefined) user.cancerDisclaimerAcceptedAt = cancerDisclaimerAcceptedAt ? new Date(cancerDisclaimerAcceptedAt) : undefined;
 
       if (libreEmail !== undefined) user.libreEmail = libreEmail;
       if (librePassword !== undefined) user.librePassword = librePassword;

@@ -178,12 +178,12 @@ export default function App() {
 
           {/* Visual Mobile CSS Mockup Card */}
           <div className="flex justify-center">
-            <div className="bg-slate-900 p-3 rounded-[40px] shadow-2xl border-4 border-slate-800 max-w-[280px] w-full aspect-[9/19] relative overflow-hidden flex flex-col justify-between">
+            <div className="bg-slate-900 p-3 rounded-[40px] shadow-2xl border-4 border-slate-800 max-w-[340px] w-full relative overflow-hidden">
               {/* Actual Dashboard Screen Screenshot */}
               <img
                 src="/screenshot_dashboard.png"
                 alt="Mito_Reboot App Dashboard"
-                className="w-full h-full object-cover rounded-[32px]"
+                className="w-full h-auto rounded-[32px] block"
               />
             </div>
           </div>

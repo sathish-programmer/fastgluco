@@ -54,6 +54,15 @@ const MainAppContent: React.FC = () => {
     }
   }, [isAuthenticated]);
 
+  // Scroll to top when active tab changes
+  useEffect(() => {
+    const mainEl = document.querySelector('main');
+    if (mainEl) {
+      mainEl.scrollTop = 0;
+    }
+    window.scrollTo(0, 0);
+  }, [activeTab]);
+
 
   const [isSubscribed, setIsSubscribed] = useState<boolean | null>(null);
   const [checkingSub, setCheckingSub] = useState<boolean>(false);
@@ -156,14 +165,16 @@ const MainAppContent: React.FC = () => {
             <Heart className="h-5 w-5 fill-primary text-primary" />
           )}
           <div className="flex flex-col">
-            <h1 className="text-sm font-extrabold text-slate-800 tracking-tight leading-tight">{branding.appName}</h1>
+            <div className="flex items-center space-x-1.5">
+              <h1 className="text-sm font-extrabold text-slate-800 tracking-tight leading-tight">{branding.appName}</h1>
+              <span className="text-[8px] font-bold bg-primary-light text-primary px-1.5 py-0.5 rounded-full">
+                {basicPlan}
+              </span>
+            </div>
             {branding.appTagline && (
-              <span className="text-[9px] text-slate-500 leading-none">{branding.appTagline}</span>
+              <span className="text-[9px] text-slate-500 leading-none mt-0.5">{branding.appTagline}</span>
             )}
           </div>
-          <span className="text-[9px] font-bold bg-primary-light text-primary px-2 py-0.5 rounded-full ml-1">
-            {basicPlan}
-          </span>
         </div>
         <div className="flex items-center space-x-2">
           <NotificationBell />

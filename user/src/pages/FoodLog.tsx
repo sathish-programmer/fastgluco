@@ -244,7 +244,7 @@ export const FoodLog: React.FC = () => {
       protein: finalProtein,
       fat: finalFat,
       fiber: finalFiber,
-      quantity,
+      quantity: parseFloat(quantity as any) || 1,
       unit,
       loggedAt: loggedAtStr
     };
@@ -309,13 +309,14 @@ export const FoodLog: React.FC = () => {
     setIsEditModalOpen(true);
   };
 
-  const handleEditQuantityChange = (newQty: number) => {
+  const handleEditQuantityChange = (newQty: any) => {
     setEditQuantity(newQty);
-    setEditCalories(Math.round(editBaseCalories * newQty));
-    setEditCarbs(Math.round(editBaseCarbs * newQty));
-    setEditProtein(Math.round(editBaseProtein * newQty));
-    setEditFat(Math.round(editBaseFat * newQty));
-    setEditFiber(Math.round(editBaseFiber * newQty));
+    const qtyNum = parseFloat(newQty) || 0;
+    setEditCalories(Math.round(editBaseCalories * qtyNum));
+    setEditCarbs(Math.round(editBaseCarbs * qtyNum));
+    setEditProtein(Math.round(editBaseProtein * qtyNum));
+    setEditFat(Math.round(editBaseFat * qtyNum));
+    setEditFiber(Math.round(editBaseFiber * qtyNum));
   };
 
   const handleEditCaloriesChange = (val: number) => {
@@ -368,7 +369,7 @@ export const FoodLog: React.FC = () => {
       protein: editBaseProtein,
       fat: editBaseFat,
       fiber: editBaseFiber,
-      quantity: editQuantity,
+      quantity: parseFloat(editQuantity as any) || 1,
       unit: editUnit,
       loggedAt: loggedAtStr
     };
@@ -678,7 +679,10 @@ export const FoodLog: React.FC = () => {
                     min="0.1"
                     required
                     value={quantity}
-                    onChange={(e) => setQuantity(parseFloat(e.target.value) || 1)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setQuantity(val === '' ? '' as any : parseFloat(val));
+                    }}
                     className="w-full px-3 py-2 rounded-2xl border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-bold text-slate-700 bg-white"
                   />
                 </div>
@@ -936,7 +940,10 @@ export const FoodLog: React.FC = () => {
                       min="0.1"
                       required
                       value={editQuantity}
-                      onChange={(e) => handleEditQuantityChange(parseFloat(e.target.value) || 1)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        handleEditQuantityChange(val === '' ? '' as any : parseFloat(val));
+                      }}
                       className="w-full px-3.5 py-2 rounded-2xl border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-bold text-slate-700 bg-white"
                     />
                   </div>
