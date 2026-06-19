@@ -423,7 +423,7 @@ export class SubscriptionController {
       await FCMService.sendPushNotification(
         userId!,
         'Subscription Activated!',
-        `Your ${plan.name} plan is now active. Enjoy premium features!`,
+        `Your subscription to ${plan.name} is now active. Enjoy premium features!`,
         'SubscriptionActivated' as any
       );
 
