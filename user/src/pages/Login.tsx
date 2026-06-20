@@ -92,6 +92,10 @@ function detectCountryFromTimezone(): Country {
  * "reCAPTCHA has already been rendered in this element" error.
  */
 function getRecaptchaVerifier(): RecaptchaVerifier {
+  if (window.recaptchaVerifier) {
+    window.recaptchaVerifier.clear();
+  }
+
   if (!window.recaptchaVerifier) {
     window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
       size: 'invisible',
