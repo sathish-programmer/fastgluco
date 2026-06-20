@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "682168952849",
-    "project_id": "miti-reboot",
-    "storage_bucket": "miti-reboot.firebasestorage.app"
+    "project_number": "1063510630357",
+    "project_id": "mito-reboot-e9465",
+    "storage_bucket": "mito-reboot-e9465.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:682168952849:android:9953c0c687571d51b6a9b0",
+        "mobilesdk_app_id": "1:1063510630357:android:3efb0090e45b3c5661675c",
         "android_client_info": {
           "package_name": "com.mitoreboot.app"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyA8B3WVDKc_J8O-5dY5SeKIHZwEQfFihpQ"
+          "current_key": "AIzaSyDT2oDnXrC5G2XOWb9bRCrNkn3au138KLo"
         }
       ],
       "services": {
