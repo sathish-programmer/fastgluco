@@ -55,7 +55,7 @@ export class EmailService {
    */
   public static async sendWelcomeEmail(email: string, name: string) {
     const { appName, appTagline } = await EmailService.getBranding();
-    
+
     const html = generateEmailTemplate(`Welcome to ${appName}!`, `
       <p>Hi ${name},</p>
       <p>We are thrilled to have you on board! ${appName} is designed to give you unparalleled insights into your circadian fasting cycles and metabolic health.</p>
@@ -216,15 +216,15 @@ export class EmailService {
    */
   public static async sendExpiryWarningEmail(email: string, name: string, daysLeft: number) {
     const { appName, appTagline } = await EmailService.getBranding();
-    
-    const subject = daysLeft === 1 
+
+    const subject = daysLeft === 1
       ? `Urgent Action Required: Your ${appName} Subscription Expires Tomorrow!`
       : `Action Required: Your ${appName} Subscription is Expiring in ${daysLeft} Days`;
 
     const html = generateEmailTemplate('Action Required: Subscription Expiring', `
       <p>Hi ${name},</p>
       <p>Your ${appName} subscription is expiring in <strong>${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}</strong>.</p>
-      <p>Please ensure your payment method is up to date, or renew your subscription to avoid losing access to your premium features (like your AI Photo Food Scanner, glucose spiking charts, and PDF reports).</p>
+      <p>Please ensure your payment method is up to date, or renew your subscription to avoid losing access to your premium features (like your Food Scanner, glucose spiking charts, and PDF reports).</p>
       <p>To renew your plan, please log into the app and update your subscription details in your Profile.</p>
     `, appName, appTagline);
     try { await transporter.sendMail({ from: `"${appName} Billing" <billing@mitoreboot.com>`, to: email, subject, html }); } catch (err) { console.error(err); }

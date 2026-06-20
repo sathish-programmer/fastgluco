@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { Login } from './pages/Login';
+import { RecommendedFoodsScreen } from './screens/RecommendedFoodsScreen';
 import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
 import { Reports } from './pages/Reports';
@@ -191,16 +192,19 @@ const MainAppContent: React.FC = () => {
       </header>
 
       {/* Main Tab Screen Content Area */}
-      <main className="flex-1 w-full max-w-lg mx-auto overflow-y-auto no-scrollbar pb-[calc(env(safe-area-inset-bottom)+70px)]">
-        {activeTab === 'Home' && <Dashboard onNavigateToTab={(tab) => setActiveTab(tab)} features={planFeatures} />}
-        {activeTab === 'Reports' && <Reports onNavigateToTab={(tab) => setActiveTab(tab)} features={planFeatures} />}
-        {activeTab === 'Food Log' && <FoodLog features={planFeatures} onNavigateToTab={(tab) => setActiveTab(tab)} />}
-        {activeTab === 'Analysis' && <Analysis onNavigateToTab={(tab) => setActiveTab(tab)} />}
-        {activeTab === 'Coaching' && <Coaching onNavigateToTab={(tab) => setActiveTab(tab)} />}
+      <main className="flex-1 overflow-y-auto w-full">
+        {activeTab === 'Home' && <Dashboard onNavigateToTab={setActiveTab} />}
+        {activeTab === 'Reports' && <Reports features={planFeatures} />}
+        {activeTab === 'Food Log' && <FoodLog features={planFeatures} onNavigateToTab={setActiveTab} />}
+        {activeTab === 'Recommended Foods' && <RecommendedFoodsScreen onBack={() => setActiveTab('Food Log')} />}
+        {activeTab === 'Analysis' && <Analysis features={planFeatures} />}
+        {activeTab === 'Profile' && <Profile />}
+        {activeTab === 'Subscription' && <Subscription onBack={() => setActiveTab('Dashboard')} />}
         {activeTab === 'Educational' && <Educational />}
-        {activeTab === 'Profile' && <Profile onNavigateToTab={(tab) => setActiveTab(tab)} />}
-        {activeTab === 'PrivacyPolicy' && <Legal type="PrivacyPolicy" />}
-        {activeTab === 'TermsOfService' && <Legal type="TermsOfService" />}
+        {activeTab === 'Coaching' && <Coaching features={planFeatures} />}
+        {['Terms of Service', 'Privacy Policy', 'Data Deletion', 'Disclaimer', 'Refund Policy', 'Contact Us'].includes(activeTab) && (
+          <Legal type={activeTab as any} onBack={() => setActiveTab('Profile')} />
+        )}
       </main>
 
       <GlobalAICoachPopup />
@@ -226,6 +230,7 @@ const MainAppContent: React.FC = () => {
             <FileText className="h-5.5 w-5.5" />
             <span className="text-[9px] font-extrabold uppercase tracking-wide">Reports</span>
           </button>
+
 
           {/* Food Log Tab */}
           <button
@@ -253,7 +258,6 @@ const MainAppContent: React.FC = () => {
             <UserCircle2 className="h-5.5 w-5.5" />
             <span className="text-[9px] font-extrabold uppercase tracking-wide">Profile</span>
           </button>
-
         </div>
       </nav>
     </div>

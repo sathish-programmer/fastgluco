@@ -19,6 +19,7 @@ import { HealthInsightController } from '../controllers/healthInsightController'
 import { NotificationController } from '../controllers/notificationController';
 import { ActivityController } from '../controllers/activityController';
 import { FounderController } from '../controllers/founderController';
+import * as RecommendedFoodController from '../controllers/recommendedFoodController';
 import { authenticateToken, requireRole } from '../middlewares/authMiddleware';
 import { requireSubscriptionFeature } from '../middlewares/subscriptionMiddleware';
 import { PaymentGatewayConfig } from '../models/PaymentGatewayConfig';
@@ -147,6 +148,9 @@ router.put('/food-logs/:id', FoodController.updateLog);
 router.post('/food-logs/:id/feedback', FoodController.recordFeedback);
 router.delete('/food-logs/:id', FoodController.deleteLog);
 
+router.use('/recommended-foods', authenticateToken, requireRole(['User']));
+router.get('/recommended-foods', RecommendedFoodController.getRecommendedFoods);
+
 router.use('/reports', authenticateToken, requireRole(['User']));
 router.post('/reports/upload', upload.single('report'), requireSubscriptionFeature('unlimitedReports'), ReportController.uploadReport);
 router.get('/reports/user-pdf', ReportController.downloadUserPDFReport);
@@ -207,6 +211,13 @@ router.get('/admin/users/:userId/coaching', CoachingController.getSessionsForUse
 router.put('/admin/users/:id/block', AdminController.toggleUserBlock);
 router.delete('/admin/users/:id', AdminController.deleteUser);
 router.delete('/admin/reports/:id', ReportController.deleteReportAsAdmin);
+
+// Recommended Foods Management (Admin)
+router.get('/admin/recommended-foods', RecommendedFoodController.getRecommendedFoods);
+router.post('/admin/recommended-foods', RecommendedFoodController.addRecommendedFood);
+router.put('/admin/recommended-foods/:id', RecommendedFoodController.updateRecommendedFood);
+router.delete('/admin/recommended-foods/:id', RecommendedFoodController.deleteRecommendedFood);
+
 
 // Subscription Plans Management (Admin)
 router.get('/admin/payments/plans', PlanAdminController.listPlans);

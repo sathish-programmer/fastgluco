@@ -2,15 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { SyncService } from '../services/syncService';
 import { useToast } from '../context/ToastContext';
-import { 
-  Search, 
-  Plus, 
-  Trash2, 
-  Scale, 
-  Flame, 
-  ShoppingBag, 
-  Activity, 
-  Wheat, 
+import {
+  Search,
+  Plus,
+  Trash2,
+  Scale,
+  Flame,
+  ShoppingBag,
+  Activity,
+  Wheat,
   Smile,
   Calendar,
   Pencil,
@@ -24,7 +24,8 @@ import {
   Camera,
   Lock,
   AlertCircle,
-  Loader2
+  Loader2,
+  ShieldCheck
 } from 'lucide-react';
 
 interface FoodLogProps {
@@ -89,7 +90,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
   const [isScanning, setIsScanning] = useState(false);
   const [scanningProgress, setScanningProgress] = useState('Initializing Scanner...');
   const [scanResult, setScanResult] = useState<any | null>(null);
-  
+
   interface ScannedItemState {
     enabled: boolean;
     portionType: string;
@@ -330,20 +331,20 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
       console.error('Error parsing loggedAt date:', err);
     }
 
-    const finalCalories = selectedLibraryFood 
-      ? (selectedLibraryFood.calories / selectedLibraryFood.servingSize) 
+    const finalCalories = selectedLibraryFood
+      ? (selectedLibraryFood.calories / selectedLibraryFood.servingSize)
       : calories;
-    const finalCarbs = selectedLibraryFood 
-      ? (selectedLibraryFood.carbs / selectedLibraryFood.servingSize) 
+    const finalCarbs = selectedLibraryFood
+      ? (selectedLibraryFood.carbs / selectedLibraryFood.servingSize)
       : carbs;
-    const finalProtein = selectedLibraryFood 
-      ? (selectedLibraryFood.protein / selectedLibraryFood.servingSize) 
+    const finalProtein = selectedLibraryFood
+      ? (selectedLibraryFood.protein / selectedLibraryFood.servingSize)
       : protein;
-    const finalFat = selectedLibraryFood 
-      ? (selectedLibraryFood.fat / selectedLibraryFood.servingSize) 
+    const finalFat = selectedLibraryFood
+      ? (selectedLibraryFood.fat / selectedLibraryFood.servingSize)
       : fat;
-    const finalFiber = selectedLibraryFood 
-      ? ((selectedLibraryFood.fiber || 0) / selectedLibraryFood.servingSize) 
+    const finalFiber = selectedLibraryFood
+      ? ((selectedLibraryFood.fiber || 0) / selectedLibraryFood.servingSize)
       : fiber;
 
     const qty = parseFloat(quantity as any) || 1;
@@ -393,18 +394,18 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
         showToast('Meal logged successfully!', 'success');
         setMessage('Meal logged successfully.');
       }
-      
+
       // Reset form
       handleClearSelected();
       setQuantity(1);
-      
+
       // If user logged meal on a different date, switch view date to match
       if (logDate !== selectedViewDate) {
         setSelectedViewDate(logDate);
       } else {
         fetchLogs();
       }
-      
+
       setTimeout(() => setMessage(null), 4000);
     } else {
       showToast('Error occurred while logging meal.', 'error');
@@ -418,7 +419,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
     setEditCategory(log.category);
     setEditQuantity(log.quantity);
     setEditUnit(log.unit);
-    
+
     setEditBaseCalories(log.calories);
     setEditBaseCarbs(log.carbs);
     setEditBaseProtein(log.protein);
@@ -436,7 +437,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     setEditDate(`${year}-${month}-${day}`);
-    
+
     const hours = String(d.getHours()).padStart(2, '0');
     const minutes = String(d.getMinutes()).padStart(2, '0');
     setEditTime(`${hours}:${minutes}`);
@@ -559,7 +560,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
     if (!scanFile || !token) return;
     setIsScanning(true);
     setScanError(null);
-    
+
     const steps = [
       'Scanning photo dimensions...',
       'Running visual object detection...',
@@ -743,14 +744,14 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
     }
   };
 
-    const totalCalories = logs.reduce((acc, log) => acc + Math.round(log.calories * log.quantity), 0);
-    const totalCarbs = logs.reduce((acc, log) => acc + Math.round(log.carbs * log.quantity), 0);
-    const totalProtein = logs.reduce((acc, log) => acc + Math.round(log.protein * log.quantity), 0);
-    const totalFat = logs.reduce((acc, log) => acc + Math.round(log.fat * log.quantity), 0);
-    const totalFiber = logs.reduce((acc, log) => acc + Math.round((log.fiber || 0) * log.quantity), 0);
+  const totalCalories = logs.reduce((acc, log) => acc + Math.round(log.calories * log.quantity), 0);
+  const totalCarbs = logs.reduce((acc, log) => acc + Math.round(log.carbs * log.quantity), 0);
+  const totalProtein = logs.reduce((acc, log) => acc + Math.round(log.protein * log.quantity), 0);
+  const totalFat = logs.reduce((acc, log) => acc + Math.round(log.fat * log.quantity), 0);
+  const totalFiber = logs.reduce((acc, log) => acc + Math.round((log.fiber || 0) * log.quantity), 0);
 
-    return (
-      <>
+  return (
+    <>
       <div className="pb-24 pt-4 px-4 max-w-lg mx-auto bg-slate-50/70 min-h-screen font-sans antialiased text-slate-800">
         {/* Title */}
         <div className="mb-6 flex items-center justify-between">
@@ -771,17 +772,38 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
           </div>
         )}
 
+        {/* Doctor Recommended Foods Banner */}
+        <button
+          type="button"
+          onClick={() => onNavigateToTab?.('Recommended Foods')}
+          className="w-full bg-emerald-50 border border-emerald-100 p-4 rounded-3xl mb-6 flex items-center justify-between text-left transition-colors hover:bg-emerald-100/50"
+        >
+          <div>
+            <div className="inline-flex items-center space-x-1 px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-[10px] uppercase tracking-wider font-extrabold mb-1">
+              <ShieldCheck className="h-3 w-3" />
+              <span>Doctor Recommended</span>
+            </div>
+            <h4 className="text-sm font-extrabold text-emerald-900">Recommended Foods</h4>
+            <p className="text-[10px] text-emerald-700 font-medium mt-0.5 leading-tight pr-4">
+              View genuine food products recommended by doctors for better glucose management.
+            </p>
+          </div>
+          <div className="bg-white p-2 rounded-2xl shadow-sm text-emerald-600 shrink-0">
+            <Utensils className="h-5 w-5" />
+          </div>
+        </button>
+
         {/* AI Photo Food Scanner Banner */}
         <div className="bg-gradient-to-r from-indigo-600 via-indigo-500 to-primary p-4 rounded-3xl text-white shadow-soft mb-6 relative overflow-hidden flex items-center justify-between">
           <div className="absolute -right-4 -bottom-4 opacity-10 pointer-events-none">
             <Sparkles className="h-24 w-24" />
           </div>
           <div className="max-w-[70%]">
-            <div className="inline-flex items-center space-x-1.5 px-2 py-0.5 bg-white/20 rounded-full text-[8px] uppercase tracking-wider font-extrabold mb-1.5">
+            {/* <div className="inline-flex items-center space-x-1.5 px-2 py-0.5 bg-white/20 rounded-full text-[8px] uppercase tracking-wider font-extrabold mb-1.5">
               <Sparkles className="h-3 w-3 fill-white" />
               <span>Premium Feature</span>
-            </div>
-            <h4 className="text-sm font-extrabold tracking-tight">AI Photo Food Scanner</h4>
+            </div> */}
+            <h4 className="text-sm font-extrabold tracking-tight">Food Scanner</h4>
             <p className="text-[10px] text-indigo-100 font-semibold mt-0.5 leading-tight">
               Snap a picture of your food to auto-estimate calories & macros instantly!
             </p>
@@ -812,11 +834,10 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                   setUnit('g');
                   setCustomName('');
                 }}
-                className={`flex-1 py-2 text-center text-xs font-bold rounded-xl transition-all ${
-                  activeTab === 'search'
-                    ? 'bg-white text-slate-800 shadow-soft'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
+                className={`flex-1 py-2 text-center text-xs font-bold rounded-xl transition-all ${activeTab === 'search'
+                  ? 'bg-white text-slate-800 shadow-soft'
+                  : 'text-slate-500 hover:text-slate-700'
+                  }`}
               >
                 🔍 Search Food
               </button>
@@ -835,11 +856,10 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                   setFat(0);
                   setFiber(0);
                 }}
-                className={`flex-1 py-2 text-center text-xs font-bold rounded-xl transition-all ${
-                  activeTab === 'manual'
-                    ? 'bg-white text-slate-800 shadow-soft'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
+                className={`flex-1 py-2 text-center text-xs font-bold rounded-xl transition-all ${activeTab === 'manual'
+                  ? 'bg-white text-slate-800 shadow-soft'
+                  : 'text-slate-500 hover:text-slate-700'
+                  }`}
               >
                 ✍️ Add Manually
               </button>
@@ -850,11 +870,10 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                   setActiveTab('scan');
                   handleOpenScanner();
                 }}
-                className={`flex-1 py-2 text-center text-xs font-bold rounded-xl transition-all ${
-                  activeTab === 'scan'
-                    ? 'bg-white text-slate-800 shadow-soft'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
+                className={`flex-1 py-2 text-center text-xs font-bold rounded-xl transition-all ${activeTab === 'scan'
+                  ? 'bg-white text-slate-800 shadow-soft'
+                  : 'text-slate-500 hover:text-slate-700'
+                  }`}
               >
                 📷 Scan Food
               </button>
@@ -1027,11 +1046,10 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                                 key={type}
                                 type="button"
                                 onClick={() => handlePortionChange(type)}
-                                className={`py-2 text-xs font-bold rounded-xl border transition-all ${
-                                  portionType === type
-                                    ? 'bg-primary/10 border-primary text-primary'
-                                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                                }`}
+                                className={`py-2 text-xs font-bold rounded-xl border transition-all ${portionType === type
+                                  ? 'bg-primary/10 border-primary text-primary'
+                                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                  }`}
                               >
                                 {type === 'custom' ? 'Custom' : `${type}${suffix}`}
                               </button>
@@ -1305,12 +1323,13 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
 
         {/* Log History list */}
         <div>
-          <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <h3 className="text-sm font-bold text-slate-800 flex items-center space-x-2">
-              <Smile className="h-4 w-4 text-primary" />
-              <span>Meal Log History</span>
+          <div className="flex flex-row items-center justify-between gap-3 mb-5 border-t border-slate-200/60 pt-6">
+            <h3 className="text-sm font-extrabold text-slate-850 flex items-center space-x-1.5 shrink-0">
+              <Smile className="h-4.5 w-4.5 text-primary" />
+              <span className="hidden sm:inline">Meal Log History</span>
+              <span className="sm:hidden">History</span>
             </h3>
-            <div className="flex items-center space-x-2 bg-white border border-slate-100 rounded-2xl px-3 py-1.5 self-start sm:self-auto shadow-sm">
+            <div className="flex items-center space-x-2 bg-white border border-slate-100 rounded-2xl px-3 py-1.5 shrink-0 shadow-sm">
               <Calendar className="h-3.5 w-3.5 text-slate-400" />
               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">View Date:</span>
               <input
@@ -1358,8 +1377,8 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
               </div>
             ) : (
               logs.map((log) => (
-                <div 
-                  key={log._id} 
+                <div
+                  key={log._id}
                   className="bg-white p-4 rounded-3xl border border-slate-100 shadow-[0_12px_24px_rgba(0,0,0,0.02)] flex items-center justify-between transition-all hover:shadow-md"
                 >
                   <div className="flex items-center space-x-3.5 max-w-[82%]">
@@ -1399,11 +1418,10 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
 
                       {/* Spike Correlation Quick Indicator */}
                       {log.glucoseAnalysis && log.glucoseAnalysis.status && (
-                        <span className={`inline-flex items-center text-[9px] font-bold px-2.5 py-0.5 rounded-full mt-2 border ${
-                          log.glucoseAnalysis.status === 'Safe' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                        <span className={`inline-flex items-center text-[9px] font-bold px-2.5 py-0.5 rounded-full mt-2 border ${log.glucoseAnalysis.status === 'Safe' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
                           log.glucoseAnalysis.status === 'Moderate' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                          'bg-rose-50 text-rose-600 border-rose-100'
-                        }`}>
+                            'bg-rose-50 text-rose-600 border-rose-100'
+                          }`}>
                           <Activity className="h-2.5 w-2.5 mr-1" />
                           {log.glucoseAnalysis.status.toUpperCase()} SPIKE ({log.glucoseAnalysis.peakGlucose} mg/dL)
                         </span>
@@ -1633,7 +1651,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
               </div>
               <h3 className="text-base font-bold text-slate-900 mb-2">Premium Food Scanner Locked</h3>
               <p className="text-xs text-slate-500 font-medium leading-relaxed mb-6">
-                AI Photo Food Scanner is exclusive to our <strong>Premium Plan</strong> subscribers. Upgrade to get instant macro estimates and calorie counts from meal photos.
+                AFood Scanner is exclusive to our <strong>Premium Plan</strong> subscribers. Upgrade to get instant macro estimates and calorie counts from meal photos.
               </p>
               <div className="space-y-2">
                 <button
@@ -1663,11 +1681,11 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
 
         {/* SCANNER MODAL */}
         {isScannerOpen && (
-          <div 
+          <div
             onClick={() => setIsScannerOpen(false)}
             className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex justify-center items-start p-4 overflow-y-auto"
           >
-            <div 
+            <div
               onClick={(e) => e.stopPropagation()}
               className="bg-white rounded-3xl p-5 max-w-md w-full border border-slate-100 shadow-2xl relative my-8"
             >
@@ -1681,7 +1699,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
 
               <h3 className="text-sm font-extrabold text-slate-800 flex items-center space-x-1.5 mb-4 border-b border-slate-100 pb-3">
                 <Sparkles className="h-4 w-4 text-indigo-500 fill-indigo-500 animate-pulse" />
-                <span>AI Photo Food Scanner</span>
+                <span>Food Scanner</span>
               </h3>
 
               {!scanPreviewUrl ? (
@@ -1691,6 +1709,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                     type="file"
                     id="scanner-image-input"
                     accept="image/*"
+                    capture="environment"
                     onChange={handleScanFileChange}
                     className="hidden"
                   />
@@ -1749,7 +1768,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                     /* SCAN RESULTS CARD */
                     <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 space-y-4 animate-in slide-in-from-bottom duration-250">
                       <span className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-2">Detected Items in Plate</span>
-                      
+
                       <div className="space-y-4 max-h-[320px] overflow-y-auto pr-1">
                         {scanResult.items && scanResult.items.map((item: any, idx: number) => {
                           const itemState = scannedItemsState[idx] || { enabled: true, portionType: '100', customGrams: 100 };
@@ -1807,101 +1826,100 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                                       <span className="text-[10px] text-slate-400 font-semibold">Nutrition data not found. Search this food manually.</span>
                                     </div>
                                   ) : (
-                                  <>
-                                  {/* Nutrition values grid */}
-                                  <div className="grid grid-cols-4 gap-1.5">
-                                    <div className="bg-slate-50/50 p-1.5 rounded-xl text-center border border-slate-100">
-                                      <span className="text-[8px] text-slate-400 font-bold uppercase block">Carbs</span>
-                                      <span className="text-[10px] font-bold text-slate-700">{Math.round((item.carbs || 0) * factor)}g</span>
-                                    </div>
-                                    <div className="bg-slate-50/50 p-1.5 rounded-xl text-center border border-slate-100">
-                                      <span className="text-[8px] text-slate-400 font-bold uppercase block">Protein</span>
-                                      <span className="text-[10px] font-bold text-slate-700">{Math.round((item.protein || 0) * factor)}g</span>
-                                    </div>
-                                    <div className="bg-slate-50/50 p-1.5 rounded-xl text-center border border-slate-100">
-                                      <span className="text-[8px] text-slate-400 font-bold uppercase block">Fat</span>
-                                      <span className="text-[10px] font-bold text-slate-700">{Math.round((item.fat || 0) * factor)}g</span>
-                                    </div>
-                                    <div className="bg-slate-50/50 p-1.5 rounded-xl text-center border border-slate-100">
-                                      <span className="text-[8px] text-slate-400 font-bold uppercase block">Fiber</span>
-                                      <span className="text-[10px] font-bold text-slate-700">{Math.round((item.fiber || 0) * factor)}g</span>
-                                    </div>
-                                  </div>
-
-                                  {/* Portion Size Selection */}
-                                  {(() => {
-                                    const foodPortionType = item.portionType || 'weight';
-                                    let options: string[] = ['100', '200', '300', 'custom'];
-                                    let suffix = 'g';
-                                    let label = 'Enter Grams';
-                                    let suffixLabel = 'grams';
-
-                                    if (foodPortionType === 'count') {
-                                      options = ['1', '2', '3', 'custom'];
-                                      suffix = '';
-                                      label = 'Enter Quantity';
-                                      suffixLabel = item.servingUnit || 'pieces';
-                                    } else if (foodPortionType === 'volume') {
-                                      options = ['100', '200', '300', 'custom'];
-                                      suffix = 'ml';
-                                      label = 'Enter Volume';
-                                      suffixLabel = 'ml';
-                                    }
-
-                                    return (
-                                      <div className="space-y-1.5">
-                                        <span className="block text-[8px] font-bold text-slate-400 uppercase tracking-wider">Portion Size</span>
-                                        <div className="grid grid-cols-4 gap-1.5">
-                                          {options.map((type) => (
-                                            <button
-                                              key={type}
-                                              type="button"
-                                              onClick={() => {
-                                                setScannedItemsState(prev => ({
-                                                  ...prev,
-                                                  [idx]: {
-                                                    ...itemState,
-                                                    portionType: type,
-                                                    customGrams: type !== 'custom' ? parseInt(type) : itemState.customGrams
-                                                  }
-                                                }));
-                                              }}
-                                              className={`py-1 text-[9px] font-extrabold rounded-lg border transition-all ${
-                                                itemState.portionType === type
-                                                  ? 'bg-primary/10 border-primary text-primary'
-                                                  : 'bg-white border-slate-205 text-slate-600 hover:bg-slate-50'
-                                              }`}
-                                            >
-                                              {type === 'custom' ? 'Custom' : `${type}${suffix}`}
-                                            </button>
-                                          ))}
+                                    <>
+                                      {/* Nutrition values grid */}
+                                      <div className="grid grid-cols-4 gap-1.5">
+                                        <div className="bg-slate-50/50 p-1.5 rounded-xl text-center border border-slate-100">
+                                          <span className="text-[8px] text-slate-400 font-bold uppercase block">Carbs</span>
+                                          <span className="text-[10px] font-bold text-slate-700">{Math.round((item.carbs || 0) * factor)}g</span>
                                         </div>
-
-                                        {itemState.portionType === 'custom' && (
-                                          <div className="animate-in fade-in duration-200 mt-1">
-                                            <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">{label}</label>
-                                            <div className="relative">
-                                              <input
-                                                type="number"
-                                                min="1"
-                                                value={itemState.customGrams}
-                                                onChange={(e) => {
-                                                  const val = parseInt(e.target.value) || 1;
-                                                  setScannedItemsState(prev => ({
-                                                    ...prev,
-                                                    [idx]: { ...itemState, customGrams: val }
-                                                  }));
-                                                }}
-                                                className="w-full px-2.5 py-1 rounded-lg border border-slate-205 text-xs font-bold text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary/20"
-                                              />
-                                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-extrabold text-slate-400">{suffixLabel}</span>
-                                            </div>
-                                          </div>
-                                        )}
+                                        <div className="bg-slate-50/50 p-1.5 rounded-xl text-center border border-slate-100">
+                                          <span className="text-[8px] text-slate-400 font-bold uppercase block">Protein</span>
+                                          <span className="text-[10px] font-bold text-slate-700">{Math.round((item.protein || 0) * factor)}g</span>
+                                        </div>
+                                        <div className="bg-slate-50/50 p-1.5 rounded-xl text-center border border-slate-100">
+                                          <span className="text-[8px] text-slate-400 font-bold uppercase block">Fat</span>
+                                          <span className="text-[10px] font-bold text-slate-700">{Math.round((item.fat || 0) * factor)}g</span>
+                                        </div>
+                                        <div className="bg-slate-50/50 p-1.5 rounded-xl text-center border border-slate-100">
+                                          <span className="text-[8px] text-slate-400 font-bold uppercase block">Fiber</span>
+                                          <span className="text-[10px] font-bold text-slate-700">{Math.round((item.fiber || 0) * factor)}g</span>
+                                        </div>
                                       </div>
-                                    );
-                                  })()}
-                                  </>
+
+                                      {/* Portion Size Selection */}
+                                      {(() => {
+                                        const foodPortionType = item.portionType || 'weight';
+                                        let options: string[] = ['100', '200', '300', 'custom'];
+                                        let suffix = 'g';
+                                        let label = 'Enter Grams';
+                                        let suffixLabel = 'grams';
+
+                                        if (foodPortionType === 'count') {
+                                          options = ['1', '2', '3', 'custom'];
+                                          suffix = '';
+                                          label = 'Enter Quantity';
+                                          suffixLabel = item.servingUnit || 'pieces';
+                                        } else if (foodPortionType === 'volume') {
+                                          options = ['100', '200', '300', 'custom'];
+                                          suffix = 'ml';
+                                          label = 'Enter Volume';
+                                          suffixLabel = 'ml';
+                                        }
+
+                                        return (
+                                          <div className="space-y-1.5">
+                                            <span className="block text-[8px] font-bold text-slate-400 uppercase tracking-wider">Portion Size</span>
+                                            <div className="grid grid-cols-4 gap-1.5">
+                                              {options.map((type) => (
+                                                <button
+                                                  key={type}
+                                                  type="button"
+                                                  onClick={() => {
+                                                    setScannedItemsState(prev => ({
+                                                      ...prev,
+                                                      [idx]: {
+                                                        ...itemState,
+                                                        portionType: type,
+                                                        customGrams: type !== 'custom' ? parseInt(type) : itemState.customGrams
+                                                      }
+                                                    }));
+                                                  }}
+                                                  className={`py-1 text-[9px] font-extrabold rounded-lg border transition-all ${itemState.portionType === type
+                                                    ? 'bg-primary/10 border-primary text-primary'
+                                                    : 'bg-white border-slate-205 text-slate-600 hover:bg-slate-50'
+                                                    }`}
+                                                >
+                                                  {type === 'custom' ? 'Custom' : `${type}${suffix}`}
+                                                </button>
+                                              ))}
+                                            </div>
+
+                                            {itemState.portionType === 'custom' && (
+                                              <div className="animate-in fade-in duration-200 mt-1">
+                                                <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">{label}</label>
+                                                <div className="relative">
+                                                  <input
+                                                    type="number"
+                                                    min="1"
+                                                    value={itemState.customGrams}
+                                                    onChange={(e) => {
+                                                      const val = parseInt(e.target.value) || 1;
+                                                      setScannedItemsState(prev => ({
+                                                        ...prev,
+                                                        [idx]: { ...itemState, customGrams: val }
+                                                      }));
+                                                    }}
+                                                    className="w-full px-2.5 py-1 rounded-lg border border-slate-205 text-xs font-bold text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary/20"
+                                                  />
+                                                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-extrabold text-slate-400">{suffixLabel}</span>
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+                                        );
+                                      })()}
+                                    </>
                                   )}
                                 </>
                               )}

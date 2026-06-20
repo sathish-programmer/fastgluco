@@ -121,6 +121,22 @@ const AdminPanelContent: React.FC = () => {
     isActive: true
   });
 
+  const [recFoods, setRecFoods] = useState<any[]>([]);
+  const [recFoodPagination, setRecFoodPagination] = useState({ total: 0, page: 1, limit: 10, pages: 1 });
+  const [showRecFoodModal, setShowRecFoodModal] = useState(false);
+  const [editingRecFoodId, setEditingRecFoodId] = useState<string | null>(null);
+  const [recFoodForm, setRecFoodForm] = useState({
+    category: 'Millet/Grains',
+    productName: '',
+    image: '',
+    nutritionDetails: '',
+    ingredients: '',
+    pesticideInfo: '',
+    certifications: '',
+    doctorNotes: '',
+    status: 'active'
+  });
+
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [editingVideoId, setEditingVideoId] = useState<string | null>(null);
   const [videoForm, setVideoForm] = useState({
@@ -283,10 +299,11 @@ const AdminPanelContent: React.FC = () => {
   // Fetch data depending on active view
   useEffect(() => {
     if (isAuthenticated) {
-      if (activeView === 'dashboard') fetchStats();
+      if (activeView === 'dashboard') { fetchStats(); fetchPaymentStats(); }
       if (activeView === 'users') fetchUsers(1);
       if (activeView === 'foods') fetchFoods(1);
-      if (activeView === 'videos') fetchVideos();
+      if (activeView === 'recFoods') fetchRecFoods(1);
+      if (activeView === 'videos') fetchVideos(1);
       if (activeView === 'guides') fetchGuides();
       if (activeView === 'faqs') fetchFaqs();
       if (activeView === 'tickets') fetchTickets();
@@ -494,9 +511,23 @@ const AdminPanelContent: React.FC = () => {
     }
   };
 
-  const handleSearchFoods = () => {
-    fetchFoods(1);
+  const fetchRecFoods = async (page = 1) => {
+    try {
+      const res = await fetch(`${apiUrl}/admin/recommended-foods?page=${page}&limit=${recFoodPagination.limit}&search=${encodeURIComponent(searchQuery)}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setRecFoods(Array.isArray(data) ? data : []);
+        setRecFoodPagination({ total: data.length || 0, page: 1, pages: 1, limit: 100 });
+      }
+    } catch (e) {
+      console.error(e);
+    }
   };
+
+  const handleSearchFoods = () => { fetchFoods(1); };
+  const handleSearchRecFoods = () => { fetchRecFoods(1); };
 
   const handleFoodSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -566,7 +597,41 @@ const AdminPanelContent: React.FC = () => {
     }
   };
 
-  const fetchVideos = async () => {
+  const handleRecFoodSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const endpoint = editingRecFoodId ? `${apiUrl}/admin/recommended-foods/${editingRecFoodId}` : `${apiUrl}/admin/recommended-foods`;
+      const method = editingRecFoodId ? 'PUT' : 'POST';
+      const res = await fetch(endpoint, {
+        method,
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(recFoodForm)
+      });
+      if (res.ok) {
+        setShowRecFoodModal(false);
+        fetchRecFoods(recFoodPagination.page);
+      } else {
+        alert('Failed to save recommended food');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleDeleteRecFood = async (id: string) => {
+    if (!window.confirm('Delete recommended food?')) return;
+    try {
+      const res = await fetch(`${apiUrl}/admin/recommended-foods/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) fetchRecFoods(recFoodPagination.page);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fetchVideos = async (page = 1) => {
     try {
       const res = await fetch(`${apiUrl}/videos`);
       if (res.ok) setVideos(await res.json());
@@ -1262,8 +1327,8 @@ const AdminPanelContent: React.FC = () => {
           {displayedError && (
             <div className="mb-4 p-3 bg-red-50 text-danger text-xs font-semibold rounded-xl border border-red-100 flex justify-between items-center">
               <span>{displayedError}</span>
-              <button 
-                onClick={() => { setValidationError(null); clearError(); }} 
+              <button
+                onClick={() => { setValidationError(null); clearError(); }}
                 className="text-red-500 hover:text-red-700 font-bold ml-2"
               >
                 ✕
@@ -1469,6 +1534,15 @@ const AdminPanelContent: React.FC = () => {
             >
               <Utensils className="h-5 w-5" />
               <span>Food Master Library</span>
+            </button>
+
+            <button
+              onClick={() => { setActiveView('recFoods'); setSearchQuery(''); }}
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${activeView === 'recFoods' ? 'bg-primary text-white' : 'hover:bg-slate-800'
+                }`}
+            >
+              <Utensils className="h-5 w-5 text-emerald-400" />
+              <span>Recommended Foods</span>
             </button>
 
             <button
@@ -1831,6 +1905,224 @@ const AdminPanelContent: React.FC = () => {
                   >
                     Next
                   </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* VIEW: RECOMMENDED FOODS MANAGEMENT */}
+        {activeView === 'recFoods' && (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-bold text-slate-800">Doctor Recommended Foods</h2>
+                <p className="text-xs text-slate-400 font-semibold mt-0.5">Manage clean food recommendations for patients.</p>
+              </div>
+              <div className="flex space-x-3">
+                <div className="relative w-64">
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                    <Search className="h-4 w-4" />
+                  </span>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearchRecFoods()}
+                    placeholder="Search recommended foods..."
+                    className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:primary text-sm bg-white"
+                  />
+                </div>
+                <button
+                  onClick={() => {
+                    setEditingRecFoodId(null);
+                    setRecFoodForm({ category: 'Millet/Grains', productName: '', image: '', nutritionDetails: '', ingredients: '', pesticideInfo: '', certifications: '', doctorNotes: '', status: 'active' });
+                    setShowRecFoodModal(true);
+                  }}
+                  className="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-2 rounded-xl text-sm flex items-center space-x-1.5 shadow-soft"
+                >
+                  <Plus className="h-4.5 w-4.5" />
+                  <span>Add Product</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-soft overflow-x-auto">
+              <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-slate-50 text-slate-400 text-xs font-bold uppercase tracking-wider text-left">
+                  <tr>
+                    <th className="px-6 py-4">Image & Product</th>
+                    <th className="px-6 py-4">Category</th>
+                    <th className="px-6 py-4">Pesticide Info</th>
+                    <th className="px-6 py-4">Status</th>
+                    <th className="px-6 py-4 text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-sm font-semibold text-slate-700">
+                  {!recFoods || recFoods.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="text-center py-8 text-slate-400">No recommended foods added.</td>
+                    </tr>
+                  ) : (
+                    recFoods.map((f) => (
+                      <tr key={f._id} className="hover:bg-slate-50/50">
+                        <td className="px-6 py-4 font-bold text-slate-800 flex items-center space-x-3">
+                          <div className="relative w-10 h-10 shrink-0 rounded bg-slate-100 border border-slate-200">
+                            {f.image && (
+                              <img 
+                                src={f.image} 
+                                alt={f.productName} 
+                                className="absolute inset-0 w-full h-full object-cover rounded z-10" 
+                                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                              />
+                            )}
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <Utensils className="h-4 w-4 text-slate-300" />
+                            </div>
+                          </div>
+                          <span>{f.productName}</span>
+                        </td>
+                        <td className="px-6 py-4"><span className="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded text-xs font-bold border border-emerald-100">{f.category}</span></td>
+                        <td className="px-6 py-4 text-xs text-slate-500 max-w-[200px] truncate">{f.pesticideInfo || '--'}</td>
+                        <td className="px-6 py-4 text-slate-500">
+                          {f.status === 'active' ? <span className="bg-green-50 text-success px-2 py-0.5 rounded text-[10px] font-bold border border-green-100">Active</span> : <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded text-[10px] font-bold border border-slate-200">Inactive</span>}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex justify-center space-x-2">
+                            <button
+                              onClick={() => {
+                                setEditingRecFoodId(f._id);
+                                setRecFoodForm({
+                                  category: f.category, productName: f.productName, image: f.image, nutritionDetails: f.nutritionDetails, ingredients: f.ingredients, pesticideInfo: f.pesticideInfo, certifications: f.certifications, doctorNotes: f.doctorNotes, status: f.status
+                                });
+                                setShowRecFoodModal(true);
+                              }}
+                              className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-primary transition-all"
+                            >
+                              <Edit className="h-4.5 w-4.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteRecFood(f._id)}
+                              className="p-1.5 hover:bg-red-50 rounded-lg text-slate-400 hover:text-danger transition-all"
+                            >
+                              <Trash2 className="h-4.5 w-4.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+            
+            {recFoodPagination.pages > 1 && (
+              <div className="flex justify-between items-center py-4 bg-slate-50 px-6 border border-slate-200 rounded-2xl">
+                <span className="text-xs font-bold text-slate-500">
+                  Page {recFoodPagination.page} of {recFoodPagination.pages}
+                </span>
+                <div className="flex space-x-2">
+                  <button disabled={recFoodPagination.page === 1} onClick={() => fetchRecFoods(recFoodPagination.page - 1)} className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold disabled:opacity-50">Prev</button>
+                  <button disabled={recFoodPagination.page === recFoodPagination.pages} onClick={() => fetchRecFoods(recFoodPagination.page + 1)} className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold disabled:opacity-50">Next</button>
+                </div>
+              </div>
+            )}
+
+            {showRecFoodModal && (
+              <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                <div className="bg-white p-6 rounded-3xl border border-slate-200 max-w-2xl w-full shadow-lg max-h-[90vh] overflow-y-auto">
+                  <h3 className="text-base font-bold text-slate-800 mb-4">{editingRecFoodId ? 'Update Recommended Food' : 'Add Recommended Food'}</h3>
+                  <form onSubmit={handleRecFoodSubmit} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Category</label>
+                        <select
+                          required
+                          value={recFoodForm.category}
+                          onChange={(e) => setRecFoodForm({ ...recFoodForm, category: e.target.value })}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold bg-white"
+                        >
+                          <option value="Millet/Grains">Millet/Grains</option>
+                          <option value="Low-GI Foods">Low-GI Foods</option>
+                          <option value="Organic Products">Organic Products</option>
+                          <option value="Supplements">Supplements</option>
+                          <option value="Diabetic Snacks">Diabetic Snacks</option>
+                          <option value="Healthy Oils">Healthy Oils</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Product Name</label>
+                        <input
+                          type="text" required value={recFoodForm.productName}
+                          onChange={(e) => setRecFoodForm({ ...recFoodForm, productName: e.target.value })}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Image URL</label>
+                        <input
+                          type="url" value={recFoodForm.image} placeholder="https://..."
+                          onChange={(e) => setRecFoodForm({ ...recFoodForm, image: e.target.value })}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Nutrition Details</label>
+                        <input
+                          type="text" value={recFoodForm.nutritionDetails} placeholder="e.g. 100 kcal, 20g Carbs"
+                          onChange={(e) => setRecFoodForm({ ...recFoodForm, nutritionDetails: e.target.value })}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Ingredients</label>
+                        <input
+                          type="text" value={recFoodForm.ingredients}
+                          onChange={(e) => setRecFoodForm({ ...recFoodForm, ingredients: e.target.value })}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Pesticide Information</label>
+                        <textarea
+                          rows={2} value={recFoodForm.pesticideInfo}
+                          onChange={(e) => setRecFoodForm({ ...recFoodForm, pesticideInfo: e.target.value })}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Certifications</label>
+                        <input
+                          type="text" value={recFoodForm.certifications} placeholder="e.g. USDA Organic, Non-GMO"
+                          onChange={(e) => setRecFoodForm({ ...recFoodForm, certifications: e.target.value })}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Doctor Notes (Optional)</label>
+                        <textarea
+                          rows={2} value={recFoodForm.doctorNotes}
+                          onChange={(e) => setRecFoodForm({ ...recFoodForm, doctorNotes: e.target.value })}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Status</label>
+                        <select
+                          value={recFoodForm.status}
+                          onChange={(e: any) => setRecFoodForm({ ...recFoodForm, status: e.target.value })}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold bg-white"
+                        >
+                          <option value="active">Active</option>
+                          <option value="inactive">Inactive</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="flex space-x-3 pt-4 border-t border-slate-100">
+                      <button type="button" onClick={() => setShowRecFoodModal(false)} className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-bold transition-all">Cancel</button>
+                      <button type="submit" className="flex-1 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl text-sm font-bold shadow-soft transition-all">Save Recommended Food</button>
+                    </div>
+                  </form>
                 </div>
               </div>
             )}
@@ -2619,16 +2911,14 @@ const AdminPanelContent: React.FC = () => {
                     <div
                       key={insight._id}
                       onClick={() => setActiveInsightText(insight.content)}
-                      className={`p-3.5 rounded-2xl border text-xs font-semibold leading-relaxed transition-all cursor-pointer ${
-                        insight.isActive
+                      className={`p-3.5 rounded-2xl border text-xs font-semibold leading-relaxed transition-all cursor-pointer ${insight.isActive
                           ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
                           : 'bg-white border-slate-200 hover:border-slate-300 text-slate-600'
-                      }`}
+                        }`}
                     >
                       <div className="flex justify-between items-start mb-2">
-                        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${
-                          insight.isActive ? 'bg-emerald-200 text-emerald-900' : 'bg-slate-100 text-slate-500'
-                        }`}>
+                        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${insight.isActive ? 'bg-emerald-200 text-emerald-900' : 'bg-slate-100 text-slate-500'
+                          }`}>
                           {insight.isActive ? 'Active Now' : insight.isTemplate ? 'Template' : 'Custom'}
                         </span>
                         {!insight.isActive && (
@@ -2985,41 +3275,37 @@ const AdminPanelContent: React.FC = () => {
               <div className="flex bg-slate-100 p-1.5 rounded-xl border border-slate-200">
                 <button
                   onClick={() => setPaymentTab('billing')}
-                  className={`py-1.5 px-4 font-bold text-xs rounded-lg uppercase tracking-wider transition-all ${
-                    paymentTab === 'billing'
+                  className={`py-1.5 px-4 font-bold text-xs rounded-lg uppercase tracking-wider transition-all ${paymentTab === 'billing'
                       ? 'bg-white text-primary shadow-sm'
                       : 'text-slate-500 hover:text-slate-800'
-                  }`}
+                    }`}
                 >
                   Billing & Gateway
                 </button>
                 <button
                   onClick={() => setPaymentTab('common')}
-                  className={`py-1.5 px-4 font-bold text-xs rounded-lg uppercase tracking-wider transition-all ${
-                    paymentTab === 'common'
+                  className={`py-1.5 px-4 font-bold text-xs rounded-lg uppercase tracking-wider transition-all ${paymentTab === 'common'
                       ? 'bg-white text-primary shadow-sm'
                       : 'text-slate-500 hover:text-slate-800'
-                  }`}
+                    }`}
                 >
                   General App Config
                 </button>
                 <button
                   onClick={() => setPaymentTab('transactions')}
-                  className={`py-1.5 px-4 font-bold text-xs rounded-lg uppercase tracking-wider transition-all ${
-                    paymentTab === 'transactions'
+                  className={`py-1.5 px-4 font-bold text-xs rounded-lg uppercase tracking-wider transition-all ${paymentTab === 'transactions'
                       ? 'bg-white text-primary shadow-sm'
                       : 'text-slate-500 hover:text-slate-800'
-                  }`}
+                    }`}
                 >
                   Transactions & Manual Control
                 </button>
                 <button
                   onClick={() => setPaymentTab('branding')}
-                  className={`py-1.5 px-4 font-bold text-xs rounded-lg uppercase tracking-wider transition-all ${
-                    paymentTab === 'branding'
+                  className={`py-1.5 px-4 font-bold text-xs rounded-lg uppercase tracking-wider transition-all ${paymentTab === 'branding'
                       ? 'bg-white text-primary shadow-sm'
                       : 'text-slate-500 hover:text-slate-800'
-                  }`}
+                    }`}
                 >
                   App Branding
                 </button>
@@ -3780,7 +4066,7 @@ const AdminPanelContent: React.FC = () => {
                         onChange={(e) => setPlanForm({ ...planForm, features: { ...planForm.features, foodScanner: e.target.checked } })}
                         className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
                       />
-                      <span>AI Photo Food Scanner</span>
+                      <span>Food Scanner</span>
                     </label>
                   </div>
                 </div>
@@ -4738,7 +5024,7 @@ const AdminPanelContent: React.FC = () => {
                       <span>💧</span>
                       <span>Hydration Tracker Configuration</span>
                     </h3>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Enable Hydration Tracker</label>
@@ -4778,7 +5064,7 @@ const AdminPanelContent: React.FC = () => {
                       <span>🏃</span>
                       <span>Workout Tracker Configuration</span>
                     </h3>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Enable Workout Tracker</label>
@@ -4845,7 +5131,7 @@ const AdminPanelContent: React.FC = () => {
               <>
                 {/* HERO PATIENT CARD */}
                 <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-primary rounded-3xl p-6 shadow-2xl text-white">
-                  <div className="absolute inset-0 opacity-10" style={{backgroundImage: 'radial-gradient(circle at 80% 20%, white 0%, transparent 60%)'}} />
+                  <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 80% 20%, white 0%, transparent 60%)' }} />
                   <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div className="flex items-center space-x-4">
                       <div className="h-16 w-16 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center text-2xl font-black shadow-lg">
@@ -4915,11 +5201,10 @@ const AdminPanelContent: React.FC = () => {
                       <button
                         key={tab.key}
                         onClick={() => setUserModalTab(tab.key as any)}
-                        className={`px-5 py-3.5 text-[11px] font-bold whitespace-nowrap transition-all border-b-2 ${
-                          userModalTab === tab.key
+                        className={`px-5 py-3.5 text-[11px] font-bold whitespace-nowrap transition-all border-b-2 ${userModalTab === tab.key
                             ? 'border-primary text-primary bg-primary/5'
                             : 'border-transparent text-slate-400 hover:text-slate-700 hover:bg-slate-50'
-                        }`}
+                          }`}
                       >
                         {tab.label}
                       </button>
@@ -4966,7 +5251,7 @@ const AdminPanelContent: React.FC = () => {
                           </div>
                           <div className="bg-gradient-to-r from-slate-800 to-slate-700 rounded-2xl p-4 text-white">
                             <p className="text-[10px] font-bold uppercase text-white/50 mb-1">Member Since</p>
-                            <p className="text-sm font-black">{selectedUserActivity.user.createdAt ? new Date(selectedUserActivity.user.createdAt).toLocaleDateString('en-IN', { day:'2-digit', month:'long', year:'numeric' }) : '--'}</p>
+                            <p className="text-sm font-black">{selectedUserActivity.user.createdAt ? new Date(selectedUserActivity.user.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) : '--'}</p>
                           </div>
                         </div>
                       </div>
@@ -5012,7 +5297,7 @@ const AdminPanelContent: React.FC = () => {
                                         </span>
                                       ) : <span className="text-slate-300">—</span>}
                                     </td>
-                                    <td className="px-4 py-3 text-slate-400 font-medium whitespace-nowrap">{log.loggedAt ? new Date(log.loggedAt).toLocaleString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '--'}</td>
+                                    <td className="px-4 py-3 text-slate-400 font-medium whitespace-nowrap">{log.loggedAt ? new Date(log.loggedAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '--'}</td>
                                   </tr>
                                 ))}
                               </tbody>
@@ -5052,7 +5337,7 @@ const AdminPanelContent: React.FC = () => {
                                       </span>
                                     </td>
                                     <td className="px-4 py-3 text-slate-500 font-medium whitespace-nowrap">
-                                      {r.timestamp ? new Date(r.timestamp).toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '--'}
+                                      {r.timestamp ? new Date(r.timestamp).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '--'}
                                     </td>
                                     <td className="px-4 py-3">
                                       <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 capitalize">{r.source || 'cgm'}</span>
@@ -5087,7 +5372,7 @@ const AdminPanelContent: React.FC = () => {
                                     <span>{rep.fileName || 'CGM Report'}</span>
                                   </p>
                                   <p className="text-[10px] text-slate-400 font-semibold">
-                                    {rep.parsedReadingsCount ?? rep.readingsCount ?? '--'} readings · {rep.createdAt ? new Date(rep.createdAt).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }) : '--'}
+                                    {rep.parsedReadingsCount ?? rep.readingsCount ?? '--'} readings · {rep.createdAt ? new Date(rep.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '--'}
                                   </p>
                                   <span className={`mt-1.5 inline-block px-2 py-0.5 rounded-full text-[10px] font-black ${rep.status === 'Processed' ? 'bg-green-50 text-green-600' : rep.status === 'Processing' ? 'bg-amber-50 text-amber-600' : rep.status === 'Failed' ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-600'}`}>
                                     {rep.status || 'pending'}
@@ -5145,7 +5430,7 @@ const AdminPanelContent: React.FC = () => {
                                       Spike: {session.peakGlucose} mg/dL
                                     </span>
                                     <span className="text-[10px] text-slate-400 font-semibold">
-                                      {session.createdAt ? new Date(session.createdAt).toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : ''}
+                                      {session.createdAt ? new Date(session.createdAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
                                     </span>
                                   </div>
                                 </div>
@@ -5156,11 +5441,10 @@ const AdminPanelContent: React.FC = () => {
                               <div className="space-y-2.5">
                                 {session.messages.map((msg: any, i: number) => (
                                   <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                    <div className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-[11px] font-medium shadow-sm ${
-                                      msg.role === 'user'
+                                    <div className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-[11px] font-medium shadow-sm ${msg.role === 'user'
                                         ? 'bg-gradient-to-r from-primary to-indigo-600 text-white rounded-br-sm'
                                         : 'bg-white border border-slate-100 text-slate-700 rounded-bl-sm'
-                                    }`}>
+                                      }`}>
                                       <span className="block text-[8px] font-black uppercase mb-0.5 opacity-60">{msg.role === 'user' ? '👤 Patient' : '🤖 AI Assistant'}</span>
                                       {msg.content}
                                     </div>

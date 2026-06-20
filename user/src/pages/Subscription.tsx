@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { 
-  Check, 
-  X, 
-  CreditCard, 
-  Calendar, 
-  FileText, 
-  ArrowLeft, 
-  AlertTriangle, 
-  Award, 
-  Percent, 
+import {
+  Check,
+  X,
+  CreditCard,
+  Calendar,
+  FileText,
+  ArrowLeft,
+  AlertTriangle,
+  Award,
+  Percent,
   Sparkles,
   Download,
   ShieldCheck
@@ -74,7 +74,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [gstPercentage, setGstPercentage] = useState<number>(18);
-  
+
   const [loading, setLoading] = useState<boolean>(true);
   const [actionLoading, setActionLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -180,7 +180,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to cancel auto-renewal.');
-      
+
       setSuccessMsg('Auto-renewal turned off. Your subscription is active until ' + new Date(data.subscription.endDate).toLocaleDateString());
       await fetchData();
     } catch (err: any) {
@@ -205,7 +205,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to reactivate auto-renewal.');
-      
+
       setSuccessMsg('Auto-renewal enabled successfully.');
       await fetchData();
     } catch (err: any) {
@@ -222,11 +222,11 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
 
     try {
       const res = await fetch(`${apiUrl}/subscriptions/invoices/${invoiceId}/download`, {
-        headers: { 
-          'Authorization': `Bearer ${token}` 
+        headers: {
+          'Authorization': `Bearer ${token}`
         }
       });
-      
+
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.message || 'Failed to generate PDF invoice.');
@@ -264,8 +264,8 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ 
-          planId, 
+        body: JSON.stringify({
+          planId,
           billingCycle,
           couponCode: appliedCoupon ? appliedCoupon.code : undefined
         })
@@ -364,7 +364,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
       { key: 'exportReports', label: 'Export Comprehensive PDF Reports' },
       { key: 'premiumVideos', label: 'Premium Educational Guides & Videos' },
       { key: 'notifications', label: 'Custom Meal Reminders & Spikes Alerts' },
-      { key: 'foodScanner', label: 'AI Photo Food Scanner & Macros Estimation', highlight: true }
+      { key: 'foodScanner', label: 'Food Scanner & Macros Estimation', highlight: true }
     ];
 
     return (
@@ -380,11 +380,10 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                 <X className="h-4.5 w-4.5 text-slate-300 shrink-0 mt-0.5" />
               )}
               {isHighlighted ? (
-                <span className={`inline-flex items-center space-x-1.5 px-2 py-0.5 rounded text-[10px] font-bold ${
-                  hasFeature 
-                    ? 'text-indigo-700 bg-indigo-50 border border-indigo-100' 
+                <span className={`inline-flex items-center space-x-1.5 px-2 py-0.5 rounded text-[10px] font-bold ${hasFeature
+                    ? 'text-indigo-700 bg-indigo-50 border border-indigo-100'
                     : 'text-slate-400 bg-slate-50 border border-slate-100 line-through'
-                }`}>
+                  }`}>
                   <span>{f.label}</span>
                   {hasFeature && (
                     <span className="text-[7px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-full uppercase tracking-wider font-extrabold animate-pulse">
@@ -428,7 +427,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
           <span className="font-extrabold text-slate-800 text-sm">Subscription & Billing</span>
         </div>
         {isBlocking && (
-          <button 
+          <button
             onClick={onBack}
             className="text-xs font-bold text-red-500 hover:text-red-700 flex items-center space-x-1 px-3 py-1.5 bg-red-50 hover:bg-red-100 rounded-full transition-all"
           >
@@ -544,7 +543,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
       <div className="mb-8">
         <div className="flex justify-between items-center mb-4">
           <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Available Pricing Plans</h4>
-          
+
           {/* Toggle Cycle */}
           <div className="bg-slate-200 p-0.5 rounded-full inline-flex items-center text-[10px] font-bold">
             <button
@@ -633,15 +632,15 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
             const finalPrice = parseFloat((price - discount).toFixed(2));
 
             return (
-              <div 
+              <div
                 key={plan._id}
                 className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-soft transition-all hover:border-slate-300 relative"
               >
                 {/* Accent line */}
                 <div className="h-1.5 w-full" style={{ backgroundColor: color }}></div>
-                
+
                 {plan.badge && plan.badge !== 'None' && (
-                  <span 
+                  <span
                     className="absolute right-4 top-4 text-[9px] font-extrabold px-2 py-0.5 rounded-full text-white"
                     style={{ backgroundColor: color }}
                   >
@@ -728,7 +727,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
             <FileText className="h-4 w-4" />
             <span>Billing & Invoice History</span>
           </h4>
-          
+
           <div className="divide-y divide-slate-100 max-h-60 overflow-y-auto no-scrollbar">
             {invoices.map((inv) => (
               <div key={inv._id} className="py-3 flex justify-between items-center text-xs font-semibold">
@@ -740,7 +739,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                 </div>
                 <div className="flex items-center space-x-3">
                   <span className="text-slate-700 font-bold">₹{inv.totalAmount.toFixed(2)}</span>
-                  <button 
+                  <button
                     onClick={() => setSelectedInvoice(inv)}
                     className="p-1.5 bg-slate-50 hover:bg-slate-100 rounded-lg text-primary transition-all"
                   >
@@ -762,7 +761,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                 <FileText className="h-4 w-4 text-primary" />
                 <span>Invoice Details</span>
               </span>
-              <button 
+              <button
                 onClick={() => setSelectedInvoice(null)}
                 className="text-xs font-bold text-slate-400 hover:text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full"
               >

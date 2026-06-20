@@ -11,6 +11,7 @@ import {
 
 interface AnalysisProps {
   onNavigateToTab?: (tab: string) => void;
+  features?: any;
 }
 
 export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {

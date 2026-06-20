@@ -4,6 +4,7 @@ import { Bot, Send, User as UserIcon, Loader2 } from 'lucide-react';
 
 interface CoachingProps {
   onNavigateToTab?: (tab: string) => void;
+  features?: any;
 }
 
 const formatMessageContent = (content: string) => {
