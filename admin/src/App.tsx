@@ -303,7 +303,7 @@ const AdminPanelContent: React.FC = () => {
       if (activeView === 'users') fetchUsers(1);
       if (activeView === 'foods') fetchFoods(1);
       if (activeView === 'recFoods') fetchRecFoods(1);
-      if (activeView === 'videos') fetchVideos(1);
+      if (activeView === 'videos') fetchVideos();
       if (activeView === 'guides') fetchGuides();
       if (activeView === 'faqs') fetchFaqs();
       if (activeView === 'tickets') fetchTickets();
@@ -631,7 +631,7 @@ const AdminPanelContent: React.FC = () => {
     }
   };
 
-  const fetchVideos = async (page = 1) => {
+  const fetchVideos = async () => {
     try {
       const res = await fetch(`${apiUrl}/videos`);
       if (res.ok) setVideos(await res.json());

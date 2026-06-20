@@ -1,3 +1,4 @@
+require('dotenv').config();
 const mongoose = require('mongoose');
 
 const RecommendedFoodSchema = new mongoose.Schema({
@@ -16,7 +17,8 @@ const RecommendedFood = mongoose.models.RecommendedFood || mongoose.model('Recom
 
 async function seed() {
   try {
-    await mongoose.connect('mongodb://localhost:27017/fastgluco', {
+    const uri = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://localhost:27017/fastgluco';
+    await mongoose.connect(uri, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
