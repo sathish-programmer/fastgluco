@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { User } from '../models/User';
 import { EmailService } from '../services/emailService';
@@ -9,219 +8,85 @@ const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'fallback_refresh_s
 
 export class AuthController {
   /**
-   * User Registration
+   * Verify Firebase OTP ID Token
    */
-  public static async register(req: Request, res: Response) {
+  public static async verifyFirebaseToken(req: Request, res: Response) {
     try {
-      const { name, email, mobile, password, gender, age, height, weight, activityLevel, goal, cancerJourney, cancerDisclaimerAccepted, cancerDisclaimerAcceptedAt } = req.body;
-
-      if (!name || !email || !mobile || !password) {
-        return res.status(400).json({ message: 'Name, email, mobile, and password are required.' });
+      const { idToken } = req.body;
+      if (!idToken) {
+        return res.status(400).json({ message: 'Firebase ID token is required.' });
       }
 
-      if ((cancerJourney === 'TREATMENT' || cancerJourney === 'SECONDARY_PREVENTION') && !cancerDisclaimerAccepted) {
-        return res.status(400).json({ message: 'You must accept the medical disclaimer to register for cancer treatment or secondary prevention journeys.' });
-      }
+      let phone: string;
+      const isMock = process.env.FIREBASE_MOCK === 'true';
 
-      // Check if user already exists by email or mobile
-      const existingUser = await User.findOne({
-        $or: [
-          { email: email.toLowerCase() },
-          { mobile: mobile.trim() }
-        ]
-      });
-      if (existingUser) {
-        if (existingUser.email === email.toLowerCase()) {
-          return res.status(409).json({ message: 'Email is already registered.' });
+      if (isMock) {
+        if (!idToken.startsWith('mock-token-')) {
+          return res.status(400).json({ message: 'Invalid mock ID token.' });
         }
-        return res.status(409).json({ message: 'Mobile number is already registered.' });
-      }
-
-      // Hash password
-      const salt = await bcrypt.genSalt(10);
-      const passwordHash = await bcrypt.hash(password, salt);
-
-      // Create new user
-      const user = new User({
-        name,
-        email,
-        mobile: mobile.trim(),
-        passwordHash,
-        gender,
-        age,
-        height,
-        weight,
-        activityLevel,
-        goal,
-        spikeThreshold: 90,
-        cancerJourney: cancerJourney || 'PREVENTION',
-        cancerDisclaimerAccepted: !!cancerDisclaimerAccepted,
-        cancerDisclaimerAcceptedAt: cancerDisclaimerAcceptedAt ? new Date(cancerDisclaimerAcceptedAt) : undefined
-      });
-
-      // Calculate calorie targets if physical attributes are provided
-      if (age && height && weight && activityLevel && goal) {
-        user.dailyCalorieTarget = AuthController.calculateTDEE(gender || 'Male', age, height, weight, activityLevel, goal);
-      }
-
-      await user.save();
-
-      // Generate tokens (long-lived — user controls logout manually)
-      const accessToken = jwt.sign({ id: user._id, email: user.email, role: 'User' }, JWT_SECRET, { expiresIn: '365d' });
-      const refreshToken = jwt.sign({ id: user._id, email: user.email, role: 'User' }, JWT_REFRESH_SECRET, { expiresIn: '365d' });
-
-      // Send Welcome Email asynchronously
-      EmailService.sendWelcomeEmail(user.email, user.name).catch(console.error);
-
-      return res.status(201).json({
-        message: 'Registration successful.',
-        accessToken,
-        refreshToken,
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          mobile: user.mobile,
-          dailyCalorieTarget: user.dailyCalorieTarget
-        }
-      });
-    } catch (error: any) {
-      return res.status(500).json({ message: error.message || 'An error occurred during registration.' });
-    }
-  }
-
-  /**
-   * Check Email and Mobile Availability
-   */
-  public static async checkAvailability(req: Request, res: Response) {
-    try {
-      const { email, mobile } = req.body;
-      if (!email && !mobile) {
-        return res.status(400).json({ message: 'Email or Mobile is required.' });
-      }
-
-      if (email) {
-        const existingEmail = await User.findOne({ email: email.toLowerCase() });
-        if (existingEmail) {
-          return res.status(409).json({ available: false, field: 'email', message: 'Email is already registered.' });
+        phone = idToken.replace('mock-token-', '');
+      } else {
+        const adminModule = await import('../config/firebaseAdmin');
+        try {
+          const decodedToken = await adminModule.default.auth().verifyIdToken(idToken);
+          phone = decodedToken.phone_number || '';
+          if (!phone) {
+            return res.status(400).json({ message: 'Firebase token does not contain a verified phone number.' });
+          }
+        } catch (err: any) {
+          return res.status(401).json({ message: 'Firebase token verification failed.', error: err.message });
         }
       }
 
-      if (mobile) {
-        const existingMobile = await User.findOne({ mobile: mobile.trim() });
-        if (existingMobile) {
-          return res.status(409).json({ available: false, field: 'mobile', message: 'Mobile number is already registered.' });
-        }
+      // Normalize phone number to E.164
+      const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
+      if (!/^\+[1-9]\d{1,14}$/.test(cleanPhone)) {
+        return res.status(400).json({ message: 'Invalid phone number format. Must be E.164.' });
       }
 
-      return res.status(200).json({ available: true, message: 'Available.' });
-    } catch (error: any) {
-      return res.status(500).json({ message: error.message || 'An error occurred checking availability.' });
-    }
-  }
+      // Find user by mobileNumber
+      let user = await User.findOne({ mobileNumber: cleanPhone });
+      let isNewUser = false;
 
-  /**
-   * User Login
-   */
-  public static async login(req: Request, res: Response) {
-    try {
-      const { email, password } = req.body; // email field accepts either email or mobile
-
-      if (!email || !password) {
-        return res.status(400).json({ message: 'Email/Mobile and password are required.' });
-      }
-
-      const user = await User.findOne({
-        $or: [
-          { email: email.toLowerCase() },
-          { mobile: email.trim() }
-        ]
-      });
       if (!user) {
-        return res.status(401).json({ message: 'Invalid email, mobile number, or password.' });
+        // Create user with minimal fields
+        user = new User({
+          mobileNumber: cleanPhone,
+          isPhoneVerified: true,
+          spikeThreshold: 90,
+          currency: 'INR'
+        });
+        await user.save();
+        isNewUser = true;
+      } else {
+        // If user exists, check if name or other critical profile parameters are missing.
+        // If so, redirect back to onboarding.
+        if (!user.name) {
+          isNewUser = true;
+        }
       }
 
       if (user.isBlocked) {
         return res.status(403).json({ message: 'Your account has been suspended by an administrator.' });
       }
 
-      // Validate password
-      const isMatch = await bcrypt.compare(password, user.passwordHash);
-      if (!isMatch) {
-        return res.status(401).json({ message: 'Invalid email, mobile number, or password.' });
-      }
+      // Generate App JWT (valid for 365 days)
+      const accessToken = jwt.sign({ id: user._id, email: user.email || '', role: 'User' }, JWT_SECRET, { expiresIn: '365d' });
+      const refreshToken = jwt.sign({ id: user._id, email: user.email || '', role: 'User' }, JWT_REFRESH_SECRET, { expiresIn: '365d' });
 
-      // Generate tokens
-      const accessToken = jwt.sign({ id: user._id, email: user.email, role: 'User' }, JWT_SECRET, { expiresIn: '365d' });
-      const refreshToken = jwt.sign({ id: user._id, email: user.email, role: 'User' }, JWT_REFRESH_SECRET, { expiresIn: '365d' });
-
-      // Determine platform context (location/device/time)
-      const ip = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '').split(',')[0].trim();
-      let location = 'Unknown Location';
-      if (
-        ip === '::1' || 
-        ip === '127.0.0.1' || 
-        ip.includes('127.0.0.1') || 
-        ip.startsWith('127.') || 
-        ip.startsWith('192.168.') || 
-        ip.startsWith('10.') || 
-        ip.startsWith('::ffff:127.') || 
-        ip.startsWith('::ffff:192.168.') || 
-        ip.startsWith('::ffff:10.')
-      ) {
-        location = `Localhost/Local Network (${ip})`;
-      } else {
-        location = `${ip} (Estimated Location)`;
-      }
-
-      const userAgent = req.headers['user-agent'] || '';
-      let device = 'Browser / Web App';
-      if (/okhttp|retrofit|dart|flutter|react-native|expo|android|iphone|ipad/i.test(userAgent)) {
-        device = 'Mobile App';
-      }
-      if (userAgent) {
-        let browser = 'Unknown Browser';
-        if (userAgent.includes('Firefox')) {
-          browser = 'Firefox';
-        } else if (userAgent.includes('Chrome') && !userAgent.includes('Chromium')) {
-          browser = 'Chrome';
-        } else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) {
-          browser = 'Safari';
-        } else if (userAgent.includes('Edge')) {
-          browser = 'Edge';
-        } else if (userAgent.includes('Postman')) {
-          browser = 'Postman API Client';
-        }
-        device = `${device} (${browser})`;
-      }
-
-      const time = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'medium' }) + ' (IST)';
-
-      // Dispatch security notification email with 2-hour rate-limiting
-      const now = new Date();
-      const loginAlertIntervalMs = 2 * 60 * 60 * 1000; // 2 hours
-      let shouldSendEmail = true;
-      if (user.lastLoginAlertSentAt) {
-        const timeDiff = now.getTime() - new Date(user.lastLoginAlertSentAt).getTime();
-        if (timeDiff < loginAlertIntervalMs) {
-          shouldSendEmail = false;
-        }
-      }
-
-      if (shouldSendEmail) {
-        user.lastLoginAlertSentAt = now;
-        await user.save();
-        EmailService.sendLoginNotificationEmail(user.email, user.name || 'Mito_Reboot User', { time, location, device }).catch(console.error);
-      }
+      // Update status
+      user.isPhoneVerified = true;
+      await user.save();
 
       return res.status(200).json({
         accessToken,
         refreshToken,
+        isNewUser,
         user: {
           id: user._id,
           name: user.name,
           email: user.email,
-          mobile: user.mobile,
+          mobileNumber: user.mobileNumber,
           gender: user.gender,
           age: user.age,
           height: user.height,
@@ -229,95 +94,91 @@ export class AuthController {
           activityLevel: user.activityLevel,
           goal: user.goal,
           spikeThreshold: user.spikeThreshold,
-          dailyCalorieTarget: user.dailyCalorieTarget
+          dailyCalorieTarget: user.dailyCalorieTarget,
+          cancerJourney: user.cancerJourney,
+          cancerDisclaimerAccepted: user.cancerDisclaimerAccepted
         }
       });
     } catch (error: any) {
-      return res.status(500).json({ message: error.message || 'An error occurred during login.' });
+      return res.status(500).json({ message: error.message || 'An error occurred during verification.' });
     }
   }
 
   /**
-   * Refresh Token
+   * Onboard New User
    */
-  public static async refresh(req: Request, res: Response) {
+  public static async onboardNewUser(req: Request, res: Response) {
     try {
-      const { refreshToken } = req.body;
-      if (!refreshToken) {
-        return res.status(400).json({ message: 'Refresh token is required.' });
+      const authReq = req as any;
+      if (!authReq.user || !authReq.user.id) {
+        return res.status(401).json({ message: 'Unauthorized. User ID not found in token.' });
       }
 
-      jwt.verify(refreshToken, JWT_REFRESH_SECRET, (err: any, decoded: any) => {
-        if (err) {
-          return res.status(403).json({ message: 'Invalid or expired refresh token.' });
-        }
+      const { name, email, gender, age, height, weight, activityLevel, goal, cancerJourney, cancerDisclaimerAccepted, cancerDisclaimerAcceptedAt } = req.body;
 
-        const accessToken = jwt.sign({ id: decoded.id, email: decoded.email, role: decoded.role || 'User' }, JWT_SECRET, { expiresIn: '365d' });
-        return res.status(200).json({ accessToken });
-      });
-    } catch (error: any) {
-      return res.status(500).json({ message: error.message || 'An error occurred while refreshing token.' });
-    }
-  }
-
-  /**
-   * Forgot Password
-   */
-  public static async forgotPassword(req: Request, res: Response) {
-    try {
-      const { email } = req.body;
-      if (!email) {
-        return res.status(400).json({ message: 'Email address is required.' });
+      if (!name || !gender || !age || !height || !weight || !activityLevel || !goal) {
+        return res.status(400).json({ message: 'Name, gender, age, height, weight, activityLevel, and goal are required for onboarding.' });
       }
 
-      const user = await User.findOne({ email });
+      if ((cancerJourney === 'TREATMENT' || cancerJourney === 'SECONDARY_PREVENTION') && !cancerDisclaimerAccepted) {
+        return res.status(400).json({ message: 'You must accept the medical disclaimer to select active/secondary treatment journeys.' });
+      }
+
+      // Find user
+      const user = await User.findById(authReq.user.id);
       if (!user) {
-        // Return 200 for security reasons to hide email verification
-        return res.status(200).json({ message: 'If the email exists, a password reset link has been dispatched.' });
+        return res.status(404).json({ message: 'User not found.' });
       }
 
-      // Generate reset token and link
-      const resetToken = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '30m' });
-      const appBaseUrl = process.env.NODE_ENV === 'production' ? 'https://app.mitoreboot.in' : 'http://localhost:5173';
-      const resetLink = `${appBaseUrl}/?token=${resetToken}`;
+      // Update fields
+      user.name = name;
+      if (email) {
+        user.email = email.toLowerCase();
+      }
+      user.gender = gender;
+      user.age = age;
+      user.height = height;
+      user.weight = weight;
+      user.activityLevel = activityLevel;
+      user.goal = goal;
+      user.cancerJourney = cancerJourney || 'PREVENTION';
+      user.cancerDisclaimerAccepted = !!cancerDisclaimerAccepted;
+      user.cancerDisclaimerAcceptedAt = cancerDisclaimerAcceptedAt ? new Date(cancerDisclaimerAcceptedAt) : new Date();
 
-      // Send actual email to user
-      await EmailService.sendPasswordResetEmail(user.email, user.name || 'Mito_Reboot User', resetLink);
+      // Calculate calorie targets
+      user.dailyCalorieTarget = AuthController.calculateTDEE(gender, age, height, weight, activityLevel, goal);
 
-      return res.status(200).json({ message: 'If the email exists, a password reset link has been dispatched.' });
-    } catch (error: any) {
-      return res.status(500).json({ message: error.message || 'An error occurred.' });
-    }
-  }
+      await user.save();
 
-  /**
-   * Reset Password
-   */
-  public static async resetPassword(req: Request, res: Response) {
-    try {
-      const { token, newPassword } = req.body;
-      if (!token || !newPassword) {
-        return res.status(400).json({ message: 'Token and new password are required.' });
+      // Send Welcome Email asynchronously if email is provided
+      if (user.email) {
+        EmailService.sendWelcomeEmail(user.email, user.name || 'User').catch(console.error);
       }
 
-      jwt.verify(token, JWT_SECRET, async (err: any, decoded: any) => {
-        if (err) {
-          return res.status(400).json({ message: 'Invalid or expired recovery token.' });
+      return res.status(200).json({
+        message: 'Onboarding completed successfully.',
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          mobileNumber: user.mobileNumber,
+          gender: user.gender,
+          age: user.age,
+          height: user.height,
+          weight: user.weight,
+          activityLevel: user.activityLevel,
+          goal: user.goal,
+          spikeThreshold: user.spikeThreshold,
+          dailyCalorieTarget: user.dailyCalorieTarget,
+          cancerJourney: user.cancerJourney,
+          cancerDisclaimerAccepted: user.cancerDisclaimerAccepted
         }
-
-        const user = await User.findById(decoded.id);
-        if (!user) {
-          return res.status(404).json({ message: 'User not found.' });
-        }
-
-        const salt = await bcrypt.genSalt(10);
-        user.passwordHash = await bcrypt.hash(newPassword, salt);
-        await user.save();
-
-        return res.status(200).json({ message: 'Password reset successfully. Please log in.' });
       });
     } catch (error: any) {
-      return res.status(500).json({ message: error.message || 'An error occurred during password reset.' });
+      if (error.code === 11000 && error.keyPattern && error.keyPattern.email) {
+        return res.status(400).json({ message: 'This email address is already in use by another account.' });
+      }
+      return res.status(500).json({ message: error.message || 'An error occurred during onboarding.' });
     }
   }
 

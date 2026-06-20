@@ -253,7 +253,7 @@ export class AdminController {
 
       if (isBlocked && user.email) {
         const blockReason = reason || 'Account policy violation or administrative action.';
-        EmailService.sendBlockNotificationEmail(user.email, user.name, blockReason).catch(console.error);
+        EmailService.sendBlockNotificationEmail(user.email, user.name || 'User', blockReason).catch(console.error);
       }
 
       // Log the activity to administrative audit logs

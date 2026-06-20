@@ -28,7 +28,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
   // Input states
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
-  const [mobile, setMobile] = useState(user?.mobile || '');
+  const [mobile, setMobile] = useState(user?.mobileNumber || '');
   const [age, setAge] = useState(user?.age || 30);
   const [height, setHeight] = useState(user?.height || 170);
   const [weight, setWeight] = useState(user?.weight || 70);
@@ -63,7 +63,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
     const success = await updateProfile({
       name,
       email,
-      mobile,
+      mobileNumber: mobile,
       age,
       height,
       weight,
@@ -145,7 +145,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
           {user?.name ? user.name.charAt(0) : 'P'}
         </div>
         <h2 className="text-lg font-bold text-slate-850">{user?.name || 'Patient'}</h2>
-        <p className="text-xs text-slate-400 font-semibold mt-1">{user?.email} {user?.mobile && `• ${user.mobile}`}</p>
+        <p className="text-xs text-slate-400 font-semibold mt-1">{user?.email} {user?.mobileNumber && `• ${user.mobileNumber}`}</p>
         {user?.cancerJourney && (
           <div className="mt-2">
             <span className="inline-block px-3 py-0.5 bg-rose-50 text-rose-600 border border-rose-100 rounded-full text-[9px] font-extrabold uppercase tracking-wider">

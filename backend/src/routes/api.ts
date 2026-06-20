@@ -76,12 +76,8 @@ const uploadImage = multer({
 // ==========================================
 // 1. PUBLIC AUTHENTICATION ENDPOINTS
 // ==========================================
-router.post('/auth/register', AuthController.register);
-router.post('/auth/login', AuthController.login);
-router.post('/auth/refresh', AuthController.refresh);
-router.post('/auth/forgot-password', AuthController.forgotPassword);
-router.post('/auth/check-availability', AuthController.checkAvailability);
-router.post('/auth/reset-password', AuthController.resetPassword);
+router.post('/auth/verify-otp', AuthController.verifyFirebaseToken);
+router.post('/auth/onboard', authenticateToken, AuthController.onboardNewUser);
 
 // Public System Configuration Endpoint
 router.get('/config/public', async (req, res) => {

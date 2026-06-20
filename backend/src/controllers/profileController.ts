@@ -30,7 +30,7 @@ export class ProfileController {
     try {
       const userId = req.user?.id;
       const { 
-        name, email, mobile, gender, age, height, weight, activityLevel, goal, fcmToken, spikeThreshold, currency,
+        name, email, mobile, mobileNumber, gender, age, height, weight, activityLevel, goal, fcmToken, spikeThreshold, currency,
         libreEmail, librePassword, libreRegion, libreActive,
         cancerJourney, cancerDisclaimerAccepted, cancerDisclaimerAcceptedAt
       } = req.body;
@@ -44,6 +44,18 @@ export class ProfileController {
       if (name !== undefined) user.name = name;
       if (email !== undefined) user.email = email;
       if (mobile !== undefined) user.mobile = mobile;
+      if (mobileNumber !== undefined) {
+        const cleanPhone = mobileNumber.replace(/[\s\-\(\)]/g, '');
+        if (!/^\+[1-9]\d{1,14}$/.test(cleanPhone)) {
+          return res.status(400).json({ message: 'Invalid mobile number format. Must be E.164 (e.g., +919876543210).' });
+        }
+        
+        const existing = await User.findOne({ mobileNumber: cleanPhone, _id: { $ne: userId } });
+        if (existing) {
+          return res.status(409).json({ message: 'This mobile number is already registered to another account.' });
+        }
+        user.mobileNumber = cleanPhone;
+      }
       if (gender !== undefined) user.gender = gender;
       if (age !== undefined) user.age = age;
       if (height !== undefined) user.height = height;
@@ -108,6 +120,9 @@ export class ProfileController {
         user: updatedUser
       });
     } catch (error: any) {
+      if (error.code === 11000 && error.keyPattern && error.keyPattern.email) {
+        return res.status(400).json({ message: 'This email address is already in use by another account.' });
+      }
       return res.status(500).json({ message: error.message || 'Error updating profile.' });
     }
   }

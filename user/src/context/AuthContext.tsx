@@ -2,9 +2,9 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 export interface UserProfile {
   id: string;
-  name: string;
-  email: string;
-  mobile?: string;
+  name?: string;
+  email?: string;
+  mobileNumber: string;
   gender?: 'Male' | 'Female' | 'Other';
   age?: number;
   height?: number;
@@ -38,8 +38,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  login: (email: string, password: string) => Promise<boolean>;
-  register: (name: string, email: string, mobile: string, password: string, additional?: Partial<UserProfile>) => Promise<boolean>;
+  verifyOtpToken: (idToken: string) => Promise<{ isNewUser: boolean } | null>;
+  completeOnboarding: (profileData: Partial<UserProfile>) => Promise<boolean>;
   logout: () => void;
   updateProfile: (profileUpdates: Partial<UserProfile>) => Promise<boolean>;
   clearError: () => void;
@@ -131,7 +131,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const profile = await response.json();
           setUser(profile);
         }
-        // No auto-logout — user must manually log out
       } catch (err) {
         console.error('Failed to load profile:', err);
       } finally {
@@ -142,58 +141,62 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loadProfile();
   }, [token]);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const verifyOtpToken = async (idToken: string): Promise<{ isNewUser: boolean } | null> => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${apiUrl}/auth/login`, {
+      const response = await fetch(`${apiUrl}/auth/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ idToken })
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Login failed.');
+        throw new Error(data.message || 'OTP verification failed.');
       }
 
       localStorage.setItem('fastgluco_token', data.accessToken);
       localStorage.setItem('fastgluco_refresh_token', data.refreshToken);
       setToken(data.accessToken);
       setUser(data.user);
-      return true;
+      return { isNewUser: data.isNewUser };
     } catch (err: any) {
-      setError(err.message || 'An error occurred during login.');
-      return false;
+      setError(err.message || 'An error occurred during OTP verification.');
+      return null;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const register = async (name: string, email: string, mobile: string, password: string, additional?: Partial<UserProfile>): Promise<boolean> => {
+  const completeOnboarding = async (profileData: Partial<UserProfile>): Promise<boolean> => {
+    if (!token) {
+      setError('No active authentication token found.');
+      return false;
+    }
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${apiUrl}/auth/register`, {
+      const response = await fetch(`${apiUrl}/auth/onboard`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, mobile, password, ...additional })
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(profileData)
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Registration failed.');
+        throw new Error(data.message || 'Onboarding failed.');
       }
 
-      localStorage.setItem('fastgluco_token', data.accessToken);
-      localStorage.setItem('fastgluco_refresh_token', data.refreshToken);
-      setToken(data.accessToken);
       setUser(data.user);
       return true;
     } catch (err: any) {
-      setError(err.message || 'An error occurred during registration.');
+      setError(err.message || 'An error occurred during onboarding.');
       return false;
     } finally {
       setIsLoading(false);
@@ -246,8 +249,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated,
         isLoading,
         error,
-        login,
-        register,
+        verifyOtpToken,
+        completeOnboarding,
         logout,
         updateProfile,
         clearError,

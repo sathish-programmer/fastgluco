@@ -1,20 +1,19 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { KeyRound, Mail, Phone, User, Activity, Goal, ChevronRight, ChevronLeft, Heart, Eye, EyeOff } from 'lucide-react';
+import { User, Activity, Goal, ChevronRight, ChevronLeft, Heart, Mail } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
 
 interface RegisterProps {
-  onNavigateToLogin: () => void;
+  onNavigateToLogin: () => void; // Used as fallback/logout in onboarding
 }
 
 export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
-  const { register, error, isLoading, branding } = useAuth();
+  const { completeOnboarding, error, isLoading, branding, user } = useAuth();
+  const { showToast } = useToast();
   
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [mobile, setMobile] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
 
   // Demographics state
   const [gender, setGender] = useState<'Male' | 'Female' | 'Other'>('Male');
@@ -26,35 +25,15 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
   const [cancerJourney, setCancerJourney] = useState<'PREVENTION' | 'TREATMENT' | 'SECONDARY_PREVENTION'>('PREVENTION');
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
-  const [checkingAvailability, setCheckingAvailability] = useState(false);
-  const [step1Error, setStep1Error] = useState<string | null>(null);
 
-  const handleNext = async () => {
+  const handleNext = () => {
     if (step === 1) {
-      if (!name || !email || !mobile || !password) return;
-      setCheckingAvailability(true);
-      setStep1Error(null);
-      try {
-        const baseUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5001/api' : 'https://api.mitoreboot.in/api');
-        const res = await fetch(`${baseUrl}/auth/check-availability`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, mobile })
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          setStep1Error(data.message || 'Validation failed. Please try again.');
-          setCheckingAvailability(false);
-          return;
-        }
-      } catch (err: any) {
-        setStep1Error('Network error. Failed to validate credentials.');
-        setCheckingAvailability(false);
+      if (!name) {
+        showToast('Please enter your full name.', 'error');
         return;
       }
-      setCheckingAvailability(false);
+      setStep(2);
     }
-    setStep(prev => prev + 1);
   };
 
   const handleBack = () => {
@@ -64,9 +43,13 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if ((cancerJourney === 'TREATMENT' || cancerJourney === 'SECONDARY_PREVENTION') && !disclaimerAccepted) {
-      return; // UI restricts submission anyway, but safety check
+      showToast('You must accept the medical disclaimer to select this journey.', 'error');
+      return;
     }
-    await register(name, email, mobile, password, {
+    
+    const success = await completeOnboarding({
+      name,
+      email: email.trim() || undefined,
       gender,
       age,
       height,
@@ -77,6 +60,10 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
       cancerDisclaimerAccepted: cancerJourney === 'PREVENTION' ? true : disclaimerAccepted,
       cancerDisclaimerAcceptedAt: cancerJourney === 'PREVENTION' ? undefined : (disclaimerAccepted ? new Date().toISOString() : undefined)
     });
+
+    if (success) {
+      showToast('Onboarding profile completed successfully!', 'success');
+    }
   };
 
   return (
@@ -91,8 +78,11 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
               <Heart className="h-6 w-6 fill-primary" />
             )}
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Create Account</h1>
-          <p className="text-slate-500 mt-1 text-sm">{branding.appTagline}</p>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Complete Profile</h1>
+          <p className="text-slate-500 mt-1 text-sm">Please tell us a bit about yourself to customize your circadian fasting journey.</p>
+          <div className="mt-2 text-xs font-semibold text-slate-400">
+            Phone Verified: {user?.mobileNumber}
+          </div>
         </div>
 
         {error && (
@@ -101,9 +91,17 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
           </div>
         )}
 
+        {/* Step Indicator Progress Bar */}
+        <div className="w-full bg-slate-100 h-1.5 rounded-full mb-6 overflow-hidden">
+          <div 
+            className="bg-primary h-full transition-all duration-300"
+            style={{ width: `${(step / 2) * 100}%` }}
+          />
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-5">
           {step === 1 ? (
-            /* STEP 1: Basic credentials */
+            /* STEP 1: Basic details */
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Full Name</label>
@@ -123,78 +121,39 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Email address</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Email address (Optional)</label>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
                     <Mail className="h-5 w-5" />
                   </span>
                   <input
                     type="email"
-                    required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@example.com"
                     className="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-slate-800 font-medium"
                   />
                 </div>
+                <p className="text-[10px] text-slate-400 mt-1 font-medium">Used for security alerts and generating weekly reports.</p>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Mobile Number</label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
-                    <Phone className="h-5 w-5" />
-                  </span>
-                  <input
-                    type="tel"
-                    required
-                    value={mobile}
-                    onChange={(e) => setMobile(e.target.value.replace(/\D/g, ''))}
-                    placeholder="+91 98765 43210"
-                    className="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-slate-800 font-medium"
-                  />
-                </div>
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={onNavigateToLogin}
+                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 rounded-2xl text-center text-sm"
+                >
+                  Log Out
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNext}
+                  className="flex-1 bg-primary hover:bg-primary-dark text-white font-semibold py-3 px-4 rounded-2xl shadow-soft flex items-center justify-center space-x-2"
+                >
+                  <span>Continue</span>
+                  <ChevronRight className="h-5 w-5" />
+                </button>
               </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Password</label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
-                    <KeyRound className="h-5 w-5" />
-                  </span>
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full pl-11 pr-10 py-3 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-slate-800 font-medium"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600"
-                  >
-                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                  </button>
-                </div>
-              </div>
-
-              {step1Error && (
-                <div className="mt-4 p-3 bg-red-50 text-danger rounded-2xl text-xs font-semibold border border-red-100 animate-fadeIn">
-                  {step1Error}
-                </div>
-              )}
-
-              <button
-                type="button"
-                onClick={handleNext}
-                disabled={checkingAvailability}
-                className="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-3 px-4 rounded-2xl shadow-soft flex items-center justify-center space-x-2 mt-6 disabled:opacity-50"
-              >
-                <span>{checkingAvailability ? 'Validating...' : 'Continue'}</span>
-                {!checkingAvailability && <ChevronRight className="h-5 w-5" />}
-              </button>
             </div>
           ) : (
             /* STEP 2: Clinical demographics */
@@ -220,7 +179,7 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
                     min="10"
                     max="100"
                     value={age}
-                    onChange={(e) => setAge(parseInt(e.target.value, 10))}
+                    onChange={(e) => setAge(parseInt(e.target.value, 10) || 30)}
                     className="w-full px-3 py-2.5 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-slate-700 text-sm font-medium"
                   />
                 </div>
@@ -235,7 +194,7 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
                     min="100"
                     max="250"
                     value={height}
-                    onChange={(e) => setHeight(parseInt(e.target.value, 10))}
+                    onChange={(e) => setHeight(parseInt(e.target.value, 10) || 170)}
                     className="w-full px-3 py-2.5 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-slate-700 text-sm font-medium"
                   />
                 </div>
@@ -247,7 +206,7 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
                     min="30"
                     max="200"
                     value={weight}
-                    onChange={(e) => setWeight(parseInt(e.target.value, 10))}
+                    onChange={(e) => setWeight(parseInt(e.target.value, 10) || 70)}
                     className="w-full px-3 py-2.5 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-slate-700 text-sm font-medium"
                   />
                 </div>
@@ -339,22 +298,11 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
                   disabled={isLoading || ((cancerJourney === 'TREATMENT' || cancerJourney === 'SECONDARY_PREVENTION') && !disclaimerAccepted)}
                   className="flex-1 bg-primary hover:bg-primary-dark text-white font-semibold py-3 rounded-2xl shadow-soft disabled:opacity-50"
                 >
-                  {isLoading ? 'Creating...' : 'Register'}
+                  {isLoading ? 'Completing...' : 'Finish Setup'}
                 </button>
               </div>
             </div>
           )}
-
-          <p className="text-center text-sm text-slate-500 font-medium mt-4">
-            Already have an account?{' '}
-            <button
-              type="button"
-              onClick={onNavigateToLogin}
-              className="text-primary font-semibold hover:underline"
-            >
-              Sign in
-            </button>
-          </p>
         </form>
       </div>
 

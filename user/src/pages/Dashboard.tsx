@@ -788,7 +788,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Glucose Profile</h3>
           </div>
 
-          <div className="flex flex-wrap space-x-2 items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
             {dateRange === 'day' && (
               <div className="flex items-center space-x-2 bg-slate-100/80 hover:bg-slate-200/80 rounded-xl px-2.5 py-1.5 shadow-sm transition-colors border border-slate-200/40">
                 <Calendar className="h-3.5 w-3.5 text-slate-500" />
@@ -800,15 +800,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
                 />
               </div>
             )}
-            <select
-              value={dateRange}
-              onChange={(e) => setDateRange(e.target.value as any)}
-              className="text-xs font-bold text-slate-600 bg-slate-100/80 hover:bg-slate-200/80 px-3 py-1.5 rounded-xl border-none focus:ring-0 cursor-pointer transition-colors"
-            >
-              <option value="day">Single Day</option>
-              <option value="week">Past 7 Days</option>
-              <option value="month">Past 30 Days</option>
-            </select>
+            {/* Clean Segmented Control for Date Range */}
+            <div className="flex bg-slate-100/80 rounded-xl p-0.5 shadow-sm border border-slate-200/40">
+              <button
+                onClick={() => setDateRange('day')}
+                className={`px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider rounded-lg transition-colors ${dateRange === 'day' ? 'bg-white shadow text-primary' : 'text-slate-400 hover:text-slate-600'}`}
+              >
+                Day
+              </button>
+              <button
+                onClick={() => setDateRange('week')}
+                className={`px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider rounded-lg transition-colors ${dateRange === 'week' ? 'bg-white shadow text-primary' : 'text-slate-400 hover:text-slate-600'}`}
+              >
+                Week
+              </button>
+              <button
+                onClick={() => setDateRange('month')}
+                className={`px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider rounded-lg transition-colors ${dateRange === 'month' ? 'bg-white shadow text-primary' : 'text-slate-400 hover:text-slate-600'}`}
+              >
+                Month
+              </button>
+            </div>
             <button
               onClick={() => setIsChartExpanded(true)}
               className="p-2 bg-slate-100/80 hover:bg-slate-200/80 text-slate-500 rounded-xl transition-all active:scale-90"

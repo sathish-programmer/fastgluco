@@ -364,9 +364,9 @@ export class ReportController {
 
       // Col 1 User Info
       doc.fillColor('#64748B').fontSize(9).font('Helvetica').text('Name:', 55, 145);
-      doc.fillColor('#1E293B').font('Helvetica-Bold').text(user.name, 120, 145);
+      doc.fillColor('#1E293B').font('Helvetica-Bold').text(user.name || 'N/A', 120, 145);
       doc.fillColor('#64748B').font('Helvetica').text('Email:', 55, 165);
-      doc.fillColor('#1E293B').font('Helvetica-Bold').text(user.email, 120, 165);
+      doc.fillColor('#1E293B').font('Helvetica-Bold').text(user.email || 'N/A', 120, 165);
       doc.fillColor('#64748B').font('Helvetica').text('Gender/Age:', 55, 185);
       doc.fillColor('#1E293B').font('Helvetica-Bold').text(`${user.gender || 'N/A'}, ${user.age || 'N/A'} yrs`, 120, 185);
 

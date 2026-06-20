@@ -25,11 +25,10 @@ import { NotificationBell } from './components/NotificationBell';
 import { OnboardingTour } from './components/OnboardingTour';
 
 const MainAppContent: React.FC = () => {
-  const { isAuthenticated, isLoading, token, apiUrl, logout, branding } = useAuth();
+  const { isAuthenticated, isLoading, token, apiUrl, logout, branding, user } = useAuth();
 
   // Navigation tabs: 'Home' | 'Reports' | 'Food Log' | 'Analysis' | 'Profile'
   const [activeTab, setActiveTab] = useState<string>('Home');
-  const [authView, setAuthView] = useState<'login' | 'register'>('login');
   const [resetToken, setResetToken] = useState<string | null>(null);
   const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
 
@@ -134,16 +133,16 @@ const MainAppContent: React.FC = () => {
   }
 
   if (!isAuthenticated) {
-    if (authView === 'register') {
-      return <Register onNavigateToLogin={() => setAuthView('login')} />;
-    }
     return (
       <Login 
-        onNavigateToRegister={() => setAuthView('register')} 
         resetToken={resetToken}
         onClearResetToken={() => setResetToken(null)}
       />
     );
+  }
+
+  if (isAuthenticated && !user?.name) {
+    return <Register onNavigateToLogin={logout} />;
   }
 
   if (isSubscribed === false) {
