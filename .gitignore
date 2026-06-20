@@ -17,3 +17,7 @@ admin/dist
 backend/dist
 user/dist
 website/dist
+# Firebase Service Account Keys — NEVER commit these
+*firebase-adminsdk*.json
+backend/config/firebase-service-account.json
+user/miti-reboot-firebase-adminsdk-fbsvc-84ac44eeb3.json
