@@ -880,7 +880,16 @@ export class AdminController {
       if (!title || !body) return res.status(400).json({ message: 'Title and body are required.' });
 
       if (userId) {
-        const user = await User.findById(userId);
+        // Determine if userId looks like an email address
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        let user = null;
+        if (emailRegex.test(userId)) {
+          // Find by email when an email string is provided
+          user = await User.findOne({ email: userId });
+        } else {
+          // Assume ObjectId otherwise
+          user = await User.findById(userId);
+        }
         if (user && user.email) {
           await EmailService.sendManualAdminEmail(user.email, title, body);
         }
