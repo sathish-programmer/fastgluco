@@ -2,13 +2,14 @@ import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../models/User';
 import { EmailService } from '../services/emailService';
+import admin from '../config/firebaseAdmin';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_12345!';
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'fallback_refresh_secret_key_67890!';
 
 export class AuthController {
   /**
-   * Verify Firebase OTP ID Token
+   * Verify Firebase Phone Auth ID Token (Production — no mock)
    */
   public static async verifyFirebaseToken(req: Request, res: Response) {
     try {
@@ -18,30 +19,24 @@ export class AuthController {
       }
 
       let phone: string;
-      const isMock = process.env.FIREBASE_MOCK === 'true';
 
-      if (isMock) {
-        if (!idToken.startsWith('mock-token-')) {
-          return res.status(400).json({ message: 'Invalid mock ID token.' });
-        }
-        phone = idToken.replace('mock-token-', '');
-      } else {
-        const adminModule = await import('../config/firebaseAdmin');
-        try {
-          const decodedToken = await adminModule.default.auth().verifyIdToken(idToken);
-          phone = decodedToken.phone_number || '';
-          if (!phone) {
-            return res.status(400).json({ message: 'Firebase token does not contain a verified phone number.' });
-          }
-        } catch (err: any) {
-          return res.status(401).json({ message: 'Firebase token verification failed.', error: err.message });
-        }
+      // Verify ID token using Firebase Admin SDK
+      let decodedToken;
+      try {
+        decodedToken = await admin.auth().verifyIdToken(idToken);
+      } catch (err: any) {
+        return res.status(401).json({ message: 'Firebase token verification failed. Please try again.', error: err.message });
       }
 
-      // Normalize phone number to E.164
+      phone = decodedToken.phone_number || '';
+      if (!phone) {
+        return res.status(400).json({ message: 'Token does not contain a verified phone number.' });
+      }
+
+      // Normalize phone number to E.164 (strip whitespace/dashes just in case)
       const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
       if (!/^\+[1-9]\d{1,14}$/.test(cleanPhone)) {
-        return res.status(400).json({ message: 'Invalid phone number format. Must be E.164.' });
+        return res.status(400).json({ message: 'Invalid phone number format (must be E.164).' });
       }
 
       // Find user by mobileNumber
@@ -49,7 +44,7 @@ export class AuthController {
       let isNewUser = false;
 
       if (!user) {
-        // Create user with minimal fields
+        // Brand new user — create minimal record
         user = new User({
           mobileNumber: cleanPhone,
           isPhoneVerified: true,
@@ -59,11 +54,13 @@ export class AuthController {
         await user.save();
         isNewUser = true;
       } else {
-        // If user exists, check if name or other critical profile parameters are missing.
-        // If so, redirect back to onboarding.
+        // Existing user — if profile is incomplete send back to onboarding
         if (!user.name) {
           isNewUser = true;
         }
+        // Always mark phone as verified on login
+        user.isPhoneVerified = true;
+        await user.save();
       }
 
       if (user.isBlocked) {
@@ -73,10 +70,6 @@ export class AuthController {
       // Generate App JWT (valid for 365 days)
       const accessToken = jwt.sign({ id: user._id, email: user.email || '', role: 'User' }, JWT_SECRET, { expiresIn: '365d' });
       const refreshToken = jwt.sign({ id: user._id, email: user.email || '', role: 'User' }, JWT_REFRESH_SECRET, { expiresIn: '365d' });
-
-      // Update status
-      user.isPhoneVerified = true;
-      await user.save();
 
       return res.status(200).json({
         accessToken,

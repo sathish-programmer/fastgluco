@@ -143,13 +143,17 @@ export class GlucoseController {
   public static async exportAbbottFormatCSV(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
-      const { range } = req.query; // 'day' | 'week' | 'month' | 'all'
+      const { range, startDate, endDate } = req.query; // 'day' | 'week' | 'month' | 'all'
       
       const filter: any = { userId };
       const now = new Date();
       let limitDate = new Date();
 
-      if (range === 'day') {
+      if (startDate || endDate) {
+        filter.timestamp = {};
+        if (startDate) filter.timestamp.$gte = new Date(startDate as string);
+        if (endDate) filter.timestamp.$lte = new Date(endDate as string);
+      } else if (range === 'day') {
         limitDate.setHours(0, 0, 0, 0);
         filter.timestamp = { $gte: limitDate };
       } else if (range === 'week') {

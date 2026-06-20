@@ -1,26 +1,35 @@
 import * as admin from 'firebase-admin';
-import fs from 'fs';
+import * as path from 'path';
+import * as fs from 'fs';
 
-const isMock = process.env.FIREBASE_MOCK === 'true';
+if (!admin.apps.length) {
+  // Primary: Use local service account JSON
+  const localServiceAccountPath = path.resolve(__dirname, '../../config/firebase-service-account.json');
+  // Fallback: Use path from environment variable (for production deployments)
+  const envServiceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
 
-if (!isMock) {
-  const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
-  if (serviceAccountPath && fs.existsSync(serviceAccountPath)) {
+  const serviceAccountPath = fs.existsSync(localServiceAccountPath)
+    ? localServiceAccountPath
+    : envServiceAccountPath && fs.existsSync(envServiceAccountPath)
+    ? envServiceAccountPath
+    : null;
+
+  if (serviceAccountPath) {
     try {
       const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
       admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount)
+        credential: admin.credential.cert(serviceAccount),
       });
-      console.log('Firebase Admin SDK initialized successfully.');
+      console.log('✅ Firebase Admin SDK initialized with service account.');
     } catch (error) {
-      console.error('Failed to initialize Firebase Admin SDK:', error);
+      console.error('❌ Failed to initialize Firebase Admin SDK:', error);
+      throw error;
     }
   } else {
-    console.warn('Firebase Admin Service Account file not found or not specified in env. Verification will fail unless running in mock mode.');
+    // Last resort: Application Default Credentials (Cloud Run, GCP etc.)
+    admin.initializeApp();
+    console.log('✅ Firebase Admin SDK initialized with application default credentials.');
   }
-} else {
-  console.log('Firebase Admin SDK initialized in DEV MOCK mode.');
 }
 
 export default admin;
-export { isMock };

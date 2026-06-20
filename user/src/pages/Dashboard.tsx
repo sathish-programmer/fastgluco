@@ -174,13 +174,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
     try {
       // 1. Fetch Glucose Readings (range = day|week|month)
       let glucoseUrl = `${apiUrl}/glucose?range=${dateRange}`;
-      if (dateRange === 'day') {
-        const start = new Date(selectedDate);
-        start.setHours(0, 0, 0, 0);
-        const end = new Date(selectedDate);
-        end.setHours(23, 59, 59, 999);
-        glucoseUrl = `${apiUrl}/glucose?startDate=${start.toISOString()}&endDate=${end.toISOString()}`;
+      const start = new Date(selectedDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(selectedDate);
+      end.setHours(23, 59, 59, 999);
+      
+      if (dateRange === 'week') {
+        start.setDate(start.getDate() - 7);
+      } else if (dateRange === 'month') {
+        start.setMonth(start.getMonth() - 1);
       }
+      glucoseUrl = `${apiUrl}/glucose?startDate=${start.toISOString()}&endDate=${end.toISOString()}`;
       const glucoseRes = await fetch(glucoseUrl, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -225,22 +229,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
       }
 
       // Fetch food logs for the selected date range for chart overlays
-      let foodRangeStart = new Date();
-      let foodRangeEnd = new Date();
-      if (dateRange === 'day') {
-        foodRangeStart = new Date(selectedDate);
-        foodRangeStart.setHours(0, 0, 0, 0);
-        foodRangeEnd = new Date(selectedDate);
-        foodRangeEnd.setHours(23, 59, 59, 999);
-      } else if (dateRange === 'week') {
+      let foodRangeStart = new Date(selectedDate);
+      foodRangeStart.setHours(0, 0, 0, 0);
+      let foodRangeEnd = new Date(selectedDate);
+      foodRangeEnd.setHours(23, 59, 59, 999);
+      
+      if (dateRange === 'week') {
         foodRangeStart.setDate(foodRangeStart.getDate() - 7);
       } else if (dateRange === 'month') {
         foodRangeStart.setMonth(foodRangeStart.getMonth() - 1);
       }
-      let foodRangeUrl = `${apiUrl}/food-logs?startDate=${foodRangeStart.toISOString()}`;
-      if (dateRange === 'day') {
-        foodRangeUrl += `&endDate=${foodRangeEnd.toISOString()}`;
-      }
+      
+      let foodRangeUrl = `${apiUrl}/food-logs?startDate=${foodRangeStart.toISOString()}&endDate=${foodRangeEnd.toISOString()}`;
       const rangeFoodRes = await fetch(foodRangeUrl, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -284,22 +284,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
       setTodayWater(savedWater ? parseInt(savedWater) : 0);
 
       // 6. Fetch activity logs
-      let activityRangeStart = new Date();
-      let activityRangeEnd = new Date();
-      if (dateRange === 'day') {
-        activityRangeStart = new Date(selectedDate);
-        activityRangeStart.setHours(0, 0, 0, 0);
-        activityRangeEnd = new Date(selectedDate);
-        activityRangeEnd.setHours(23, 59, 59, 999);
-      } else if (dateRange === 'week') {
+      let activityRangeStart = new Date(selectedDate);
+      activityRangeStart.setHours(0, 0, 0, 0);
+      let activityRangeEnd = new Date(selectedDate);
+      activityRangeEnd.setHours(23, 59, 59, 999);
+      
+      if (dateRange === 'week') {
         activityRangeStart.setDate(activityRangeStart.getDate() - 7);
       } else if (dateRange === 'month') {
         activityRangeStart.setMonth(activityRangeStart.getMonth() - 1);
       }
-      let activityUrl = `${apiUrl}/activity-logs?startDate=${activityRangeStart.toISOString()}`;
-      if (dateRange === 'day') {
-        activityUrl += `&endDate=${activityRangeEnd.toISOString()}`;
-      }
+      let activityUrl = `${apiUrl}/activity-logs?startDate=${activityRangeStart.toISOString()}&endDate=${activityRangeEnd.toISOString()}`;
       const activityRes = await fetch(activityUrl, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -326,7 +321,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
     if (!token) return;
     setExporting(true);
     try {
-      const response = await fetch(`${apiUrl}/glucose/export?range=${dateRange}`, {
+      const start = new Date(selectedDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(selectedDate);
+      end.setHours(23, 59, 59, 999);
+      
+      if (dateRange === 'week') {
+        start.setDate(start.getDate() - 7);
+      } else if (dateRange === 'month') {
+        start.setMonth(start.getMonth() - 1);
+      }
+
+      const response = await fetch(`${apiUrl}/glucose/export?startDate=${start.toISOString()}&endDate=${end.toISOString()}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!response.ok) throw new Error('Export failed');
@@ -783,60 +789,63 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
 
       {/* Glucose Trend Area Chart */}
       <div className="bg-white/90 backdrop-blur-xl p-5 rounded-3xl border border-white/80 shadow-[0_8px_30px_rgba(0,0,0,0.015)] hover:shadow-[0_12px_35px_rgba(0,0,0,0.03)] transition-all duration-300 mb-6">
-        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-5">
-          <div>
+        <div className="mb-5 flex flex-col gap-3">
+          {/* Header Row: Title & Action Buttons */}
+          <div className="flex justify-between items-center">
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Glucose Profile</h3>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsChartExpanded(true)}
+                className="p-1.5 bg-slate-100/80 hover:bg-slate-200/80 text-slate-500 rounded-xl transition-all active:scale-90"
+                title="Full Screen View"
+              >
+                <Maximize2 className="h-4 w-4" />
+              </button>
+              {features?.exportReports && (
+                <button
+                  onClick={handleExportCSV}
+                  disabled={exporting}
+                  className="text-xs font-bold bg-primary hover:bg-primary-dark text-white px-3 py-1.5 rounded-xl transition-all shadow-md shadow-primary/10"
+                >
+                  {exporting ? '...' : 'Export'}
+                </button>
+              )}
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            {dateRange === 'day' && (
-              <div className="flex items-center space-x-2 bg-slate-100/80 hover:bg-slate-200/80 rounded-xl px-2.5 py-1.5 shadow-sm transition-colors border border-slate-200/40">
-                <Calendar className="h-3.5 w-3.5 text-slate-500" />
-                <input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="text-xs font-bold text-slate-600 bg-transparent focus:outline-none border-none cursor-pointer p-0 w-24"
-                />
-              </div>
-            )}
-            {/* Clean Segmented Control for Date Range */}
-            <div className="flex bg-slate-100/80 rounded-xl p-0.5 shadow-sm border border-slate-200/40">
+          {/* Controls Row: Date Picker & Range Segmented Control */}
+          <div className="flex items-center justify-between bg-slate-50/80 p-1.5 rounded-2xl border border-slate-100/50">
+            <div className="flex bg-slate-200/50 rounded-xl p-1 w-full sm:w-auto">
               <button
                 onClick={() => setDateRange('day')}
-                className={`px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider rounded-lg transition-colors ${dateRange === 'day' ? 'bg-white shadow text-primary' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`flex-1 sm:flex-none px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest rounded-lg transition-all ${dateRange === 'day' ? 'bg-white shadow-sm text-primary scale-[1.02]' : 'text-slate-400 hover:text-slate-600'}`}
               >
                 Day
               </button>
               <button
                 onClick={() => setDateRange('week')}
-                className={`px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider rounded-lg transition-colors ${dateRange === 'week' ? 'bg-white shadow text-primary' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`flex-1 sm:flex-none px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest rounded-lg transition-all ${dateRange === 'week' ? 'bg-white shadow-sm text-primary scale-[1.02]' : 'text-slate-400 hover:text-slate-600'}`}
               >
                 Week
               </button>
               <button
                 onClick={() => setDateRange('month')}
-                className={`px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider rounded-lg transition-colors ${dateRange === 'month' ? 'bg-white shadow text-primary' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`flex-1 sm:flex-none px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest rounded-lg transition-all ${dateRange === 'month' ? 'bg-white shadow-sm text-primary scale-[1.02]' : 'text-slate-400 hover:text-slate-600'}`}
               >
                 Month
               </button>
             </div>
-            <button
-              onClick={() => setIsChartExpanded(true)}
-              className="p-2 bg-slate-100/80 hover:bg-slate-200/80 text-slate-500 rounded-xl transition-all active:scale-90"
-              title="Full Screen View"
-            >
-              <Maximize2 className="h-3.5 w-3.5" />
-            </button>
-            {features?.exportReports && (
-              <button
-                onClick={handleExportCSV}
-                disabled={exporting}
-                className="text-xs font-bold bg-primary hover:bg-primary-dark text-white px-3.5 py-1.5 rounded-xl transition-all shadow-md shadow-primary/10"
-              >
-                {exporting ? '...' : 'Export'}
-              </button>
-            )}
+
+            <div className="flex items-center space-x-2 bg-white rounded-xl px-2.5 py-1.5 shadow-sm border border-slate-100/50 ml-2 shrink-0">
+              <Calendar className="h-3.5 w-3.5 text-slate-400" />
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                max={new Date().toISOString().split('T')[0]}
+                className="text-xs font-bold text-slate-600 bg-transparent focus:outline-none border-none cursor-pointer p-0 w-[85px]"
+              />
+            </div>
           </div>
         </div>
 
