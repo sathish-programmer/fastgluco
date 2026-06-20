@@ -18,6 +18,7 @@ import { SupportController } from '../controllers/supportController';
 import { HealthInsightController } from '../controllers/healthInsightController';
 import { NotificationController } from '../controllers/notificationController';
 import { ActivityController } from '../controllers/activityController';
+import { FounderController } from '../controllers/founderController';
 import { authenticateToken, requireRole } from '../middlewares/authMiddleware';
 import { requireSubscriptionFeature } from '../middlewares/subscriptionMiddleware';
 import { PaymentGatewayConfig } from '../models/PaymentGatewayConfig';
@@ -192,6 +193,7 @@ router.get('/faqs', SupportController.getPublicFAQs);
 router.post('/support', SupportController.submitTicket);
 router.get('/legal/:type', AdminController.getLegalDocument);
 router.get('/health-insights/current', authenticateToken, requireRole(['User', 'SuperAdmin', 'Admin', 'Editor']), HealthInsightController.getCurrentInsight);
+router.get('/founders', FounderController.getAll);
 
 // ==========================================
 // 3. ADMIN PORTAL ENDPOINTS
@@ -290,5 +292,10 @@ router.put('/admin/legal/:type', AdminController.updateLegalDocument);
 // Health Insights Management (Admin)
 router.get('/admin/health-insights', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), HealthInsightController.listInsights);
 router.post('/admin/health-insights/set-active', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), HealthInsightController.updateActiveInsight);
+
+// Founder Section Management (Admin)
+router.post('/admin/founders', FounderController.create);
+router.put('/admin/founders/:id', FounderController.update);
+router.delete('/admin/founders/:id', FounderController.delete);
 
 export default router;

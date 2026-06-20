@@ -216,12 +216,32 @@ export class EmailService {
    */
   public static async sendExpiryWarningEmail(email: string, name: string, daysLeft: number) {
     const { appName, appTagline } = await EmailService.getBranding();
+    
+    const subject = daysLeft === 1 
+      ? `Urgent Action Required: Your ${appName} Subscription Expires Tomorrow!`
+      : `Action Required: Your ${appName} Subscription is Expiring in ${daysLeft} Days`;
+
     const html = generateEmailTemplate('Action Required: Subscription Expiring', `
       <p>Hi ${name},</p>
-      <p>Your ${appName} subscription is expiring in <strong>${daysLeft} days</strong>.</p>
-      <p>Please ensure your payment method is up to date, or renew your subscription to avoid losing access to your premium features.</p>
+      <p>Your ${appName} subscription is expiring in <strong>${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}</strong>.</p>
+      <p>Please ensure your payment method is up to date, or renew your subscription to avoid losing access to your premium features (like your AI Photo Food Scanner, glucose spiking charts, and PDF reports).</p>
+      <p>To renew your plan, please log into the app and update your subscription details in your Profile.</p>
     `, appName, appTagline);
-    try { await transporter.sendMail({ from: `"${appName} Billing" <billing@mitoreboot.com>`, to: email, subject: `Action Required: Your ${appName} Subscription is Expiring Soon`, html }); } catch (err) { console.error(err); }
+    try { await transporter.sendMail({ from: `"${appName} Billing" <billing@mitoreboot.com>`, to: email, subject, html }); } catch (err) { console.error(err); }
+  }
+
+  /**
+   * Send Subscription Expired Email
+   */
+  public static async sendSubscriptionExpiredEmail(email: string, name: string) {
+    const { appName, appTagline } = await EmailService.getBranding();
+    const html = generateEmailTemplate('Your Subscription Has Expired', `
+      <p>Hi ${name},</p>
+      <p>Your ${appName} subscription has officially expired and premium features have been deactivated.</p>
+      <p>Your logged meals and glucose logs remain saved. However, to re-enable continuous syncing, food scanning, and advanced analytics, you will need to choose a plan and reactivate your subscription.</p>
+      <p>You can update your billing status anytime by logging into the app and visiting your Profile configurations.</p>
+    `, appName, appTagline);
+    try { await transporter.sendMail({ from: `"${appName} Billing" <billing@mitoreboot.com>`, to: email, subject: `Your ${appName} Subscription Has Expired`, html }); } catch (err) { console.error(err); }
   }
 
   /**

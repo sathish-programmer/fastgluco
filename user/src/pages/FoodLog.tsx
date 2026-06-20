@@ -773,7 +773,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
 
         {/* AI Photo Food Scanner Banner */}
         <div className="bg-gradient-to-r from-indigo-600 via-indigo-500 to-primary p-4 rounded-3xl text-white shadow-soft mb-6 relative overflow-hidden flex items-center justify-between">
-          <div className="absolute -right-4 -bottom-4 opacity-10">
+          <div className="absolute -right-4 -bottom-4 opacity-10 pointer-events-none">
             <Sparkles className="h-24 w-24" />
           </div>
           <div className="max-w-[70%]">
@@ -1663,8 +1663,14 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
 
         {/* SCANNER MODAL */}
         {isScannerOpen && (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-            <div className="bg-white rounded-3xl p-5 max-w-md w-full border border-slate-100 shadow-2xl relative my-8">
+          <div 
+            onClick={() => setIsScannerOpen(false)}
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex justify-center items-start p-4 overflow-y-auto"
+          >
+            <div 
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-3xl p-5 max-w-md w-full border border-slate-100 shadow-2xl relative my-8"
+            >
               <button
                 type="button"
                 onClick={() => setIsScannerOpen(false)}

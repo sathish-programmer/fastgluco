@@ -4,8 +4,7 @@ import { FoodLog } from '../models/FoodLog';
 import { FoodMaster } from '../models/FoodMaster';
 import { GlucoseService } from '../services/glucoseService';
 import * as FatSecretService from '../services/fatSecretService';
-import fs from 'fs';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleVisionService } from '../services/googleVisionService';
 import { determinePortionType } from '../utils/foodUtils';
 export class FoodController {
   /**
@@ -414,7 +413,7 @@ export class FoodController {
   }
 
   /**
-   * Scan Food Image — Gemini Vision detects food names only.
+   * Scan Food Image — Google Cloud Vision detects food names only.
    * Nutrition comes from FoodMaster → FatSecret (never AI-generated).
    */
   public static async scanFoodImage(req: AuthRequest, res: Response) {
@@ -423,72 +422,8 @@ export class FoodController {
         return res.status(400).json({ message: 'No food image file uploaded.' });
       }
 
-      const apiKey = process.env.GEMINI_API_KEY;
-      let detectedNames: Array<{ name: string; confidence: number }> = [];
-      if (!apiKey) {
-        return res.status(500).json({
-          message: 'Image recognition service unavailable.'
-        });
-      }
-      else {
-        // Gemini Vision — food name detection ONLY, no nutrition generation
-        // Wrapped in try/catch: any Gemini error (429 quota, 503 overload, invalid key)
-        // falls back to manual entry response
-        try {
-          const genAI = new GoogleGenerativeAI(apiKey);
-          const model = genAI.getGenerativeModel({
-            model: 'gemini-2.0-flash',
-            generationConfig: { responseMimeType: 'application/json' }
-          });
+      const detectedNames = await GoogleVisionService.detectFoodLabels(req.file.path);
 
-          const imageBuffer = fs.readFileSync(req.file.path);
-          const imagePart = {
-            inlineData: {
-              data: imageBuffer.toString('base64'),
-              mimeType: req.file.mimetype
-            }
-          };
-
-          const visionPrompt = `Analyze this food image. Identify each visible food item separately.
-
-Rules:
-1. Detect each visible food item separately (e.g. dosa, sambar, chutney are separate items).
-2. Use simple, common food names only.
-3. Never guess or infer hidden ingredients.
-4. Never combine multiple foods into one dish name.
-5. Prefer Indian food names where applicable.
-6. Return JSON only — no markdown, no explanation.
-
-Schema:
-{
-  "items": [
-    { "name": "food name", "confidence": 90 }
-  ]
-}`;
-
-          const result = await model.generateContent([visionPrompt, imagePart]);
-          const responseText = result.response.text().trim();
-
-          let cleanText = responseText;
-          if (cleanText.startsWith('```')) {
-            cleanText = cleanText.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/, '').trim();
-          }
-
-          const visionResult = JSON.parse(cleanText);
-          detectedNames = (visionResult.items || visionResult.foods || []).map((i: any) => ({
-            name: i.name,
-            confidence: Math.min(Math.max(i.confidence || 90, 0), 100)
-          }));
-        } catch (geminiErr: any) {
-          // Gemini failed (quota depleted, rate limited, unavailable, etc.)
-          // Log the reason and fall through to filename/size heuristic below.
-          console.warn(`Gemini Vision unavailable (${geminiErr.message?.substring(0, 80)}). Manual food entry required.`);
-          detectedNames = []; // ensures heuristic block runs
-        }
-      }
-
-      // If Gemini produced no results (failed, quota depleted, or returned nothing),
-      // apply filename/size heuristic so the scanner always responds usefully.
       if (detectedNames.length === 0) {
         return res.status(200).json({
           success: false,

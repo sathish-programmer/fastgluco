@@ -18,7 +18,8 @@ import {
   AlertTriangle,
   Flame,
   Lightbulb,
-  Sparkles
+  Sparkles,
+  Calendar
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, CartesianGrid } from 'recharts';
 
@@ -39,6 +40,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
   const [timeInRange, setTimeInRange] = useState<number>(85);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<'day' | 'week' | 'month'>('day');
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [exporting, setExporting] = useState(false);
   const [healthInsight, setHealthInsight] = useState<string>('Walking for 10-15 minutes after major meals helps clear circulating glucose, reducing the severity of peak spikes. Try swapping white rice for millets.');
   const [rangeFoodLogs, setRangeFoodLogs] = useState<any[]>([]);
@@ -165,13 +167,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
     fetchDashboardData();
     // Count offline queued items
     setOfflineMealsCount(SyncService.getOfflineQueue().length);
-  }, [token, dateRange]);
+  }, [token, dateRange, selectedDate]);
 
   const fetchDashboardData = async () => {
     if (!token) return;
     try {
       // 1. Fetch Glucose Readings (range = day|week|month)
-      const glucoseRes = await fetch(`${apiUrl}/glucose?range=${dateRange}`, {
+      let glucoseUrl = `${apiUrl}/glucose?range=${dateRange}`;
+      if (dateRange === 'day') {
+        const start = new Date(selectedDate);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(selectedDate);
+        end.setHours(23, 59, 59, 999);
+        glucoseUrl = `${apiUrl}/glucose?startDate=${start.toISOString()}&endDate=${end.toISOString()}`;
+      }
+      const glucoseRes = await fetch(glucoseUrl, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (glucoseRes.ok) {
@@ -192,9 +202,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
       }
 
       // 2. Fetch today's food logs
-      const startOfDay = new Date();
+      const startOfDay = new Date(selectedDate);
       startOfDay.setHours(0, 0, 0, 0);
-      const foodRes = await fetch(`${apiUrl}/food-logs?startDate=${startOfDay.toISOString()}`, {
+      const endOfDay = new Date(selectedDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      const foodRes = await fetch(`${apiUrl}/food-logs?startDate=${startOfDay.toISOString()}&endDate=${endOfDay.toISOString()}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (foodRes.ok) {
@@ -214,14 +226,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
 
       // Fetch food logs for the selected date range for chart overlays
       let foodRangeStart = new Date();
+      let foodRangeEnd = new Date();
       if (dateRange === 'day') {
+        foodRangeStart = new Date(selectedDate);
         foodRangeStart.setHours(0, 0, 0, 0);
+        foodRangeEnd = new Date(selectedDate);
+        foodRangeEnd.setHours(23, 59, 59, 999);
       } else if (dateRange === 'week') {
         foodRangeStart.setDate(foodRangeStart.getDate() - 7);
       } else if (dateRange === 'month') {
         foodRangeStart.setMonth(foodRangeStart.getMonth() - 1);
       }
-      const rangeFoodRes = await fetch(`${apiUrl}/food-logs?startDate=${foodRangeStart.toISOString()}`, {
+      let foodRangeUrl = `${apiUrl}/food-logs?startDate=${foodRangeStart.toISOString()}`;
+      if (dateRange === 'day') {
+        foodRangeUrl += `&endDate=${foodRangeEnd.toISOString()}`;
+      }
+      const rangeFoodRes = await fetch(foodRangeUrl, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (rangeFoodRes.ok) {
@@ -258,20 +278,29 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
       }
 
       // 5. Fetch water logged today from localStorage
-      const storedWaterKey = `fastgluco_water_${user?.id || 'guest'}_${new Date().toISOString().split('T')[0]}`;
+      const dateString = dateRange === 'day' ? selectedDate : new Date().toISOString().split('T')[0];
+      const storedWaterKey = `fastgluco_water_${user?.id || 'guest'}_${dateString}`;
       const savedWater = localStorage.getItem(storedWaterKey);
       setTodayWater(savedWater ? parseInt(savedWater) : 0);
 
       // 6. Fetch activity logs
       let activityRangeStart = new Date();
+      let activityRangeEnd = new Date();
       if (dateRange === 'day') {
+        activityRangeStart = new Date(selectedDate);
         activityRangeStart.setHours(0, 0, 0, 0);
+        activityRangeEnd = new Date(selectedDate);
+        activityRangeEnd.setHours(23, 59, 59, 999);
       } else if (dateRange === 'week') {
         activityRangeStart.setDate(activityRangeStart.getDate() - 7);
       } else if (dateRange === 'month') {
         activityRangeStart.setMonth(activityRangeStart.getMonth() - 1);
       }
-      const activityRes = await fetch(`${apiUrl}/activity-logs?startDate=${activityRangeStart.toISOString()}`, {
+      let activityUrl = `${apiUrl}/activity-logs?startDate=${activityRangeStart.toISOString()}`;
+      if (dateRange === 'day') {
+        activityUrl += `&endDate=${activityRangeEnd.toISOString()}`;
+      }
+      const activityRes = await fetch(activityUrl, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (activityRes.ok) {
@@ -357,7 +386,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
   };
 
   const handleAddWater = (amount: number) => {
-    const key = `fastgluco_water_${user?.id || 'guest'}_${new Date().toISOString().split('T')[0]}`;
+    const dateString = dateRange === 'day' ? selectedDate : new Date().toISOString().split('T')[0];
+    const key = `fastgluco_water_${user?.id || 'guest'}_${dateString}`;
     const newAmount = todayWater + amount;
     setTodayWater(newAmount);
     localStorage.setItem(key, newAmount.toString());
@@ -753,18 +783,29 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
 
       {/* Glucose Trend Area Chart */}
       <div className="bg-white/90 backdrop-blur-xl p-5 rounded-3xl border border-white/80 shadow-[0_8px_30px_rgba(0,0,0,0.015)] hover:shadow-[0_12px_35px_rgba(0,0,0,0.03)] transition-all duration-300 mb-6">
-        <div className="flex justify-between items-center mb-5">
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-5">
           <div>
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Glucose Profile</h3>
           </div>
 
-          <div className="flex space-x-2 items-center">
+          <div className="flex flex-wrap space-x-2 items-center gap-2">
+            {dateRange === 'day' && (
+              <div className="flex items-center space-x-2 bg-slate-100/80 hover:bg-slate-200/80 rounded-xl px-2.5 py-1.5 shadow-sm transition-colors border border-slate-200/40">
+                <Calendar className="h-3.5 w-3.5 text-slate-500" />
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="text-xs font-bold text-slate-600 bg-transparent focus:outline-none border-none cursor-pointer p-0 w-24"
+                />
+              </div>
+            )}
             <select
               value={dateRange}
               onChange={(e) => setDateRange(e.target.value as any)}
               className="text-xs font-bold text-slate-600 bg-slate-100/80 hover:bg-slate-200/80 px-3 py-1.5 rounded-xl border-none focus:ring-0 cursor-pointer transition-colors"
             >
-              <option value="day">Today</option>
+              <option value="day">Single Day</option>
               <option value="week">Past 7 Days</option>
               <option value="month">Past 30 Days</option>
             </select>
@@ -909,7 +950,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
               </button>
               <button
                 onClick={() => {
-                  const key = `fastgluco_water_${user?.id || 'guest'}_${new Date().toISOString().split('T')[0]}`;
+                  const dateString = dateRange === 'day' ? selectedDate : new Date().toISOString().split('T')[0];
+                  const key = `fastgluco_water_${user?.id || 'guest'}_${dateString}`;
                   setTodayWater(0);
                   localStorage.removeItem(key);
                 }}

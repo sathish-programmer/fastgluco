@@ -185,6 +185,11 @@ export async function searchFood(query: string): Promise<FatSecretResult[]> {
     timeout: 10000
   });
 
+  if (response.data?.error) {
+    console.error('FatSecret API Error:', response.data.error.code, response.data.error.message);
+    throw new Error(`FatSecret API Error: ${response.data.error.message}`);
+  }
+
   const rawFoods: any[] = response.data?.foods?.food ?? [];
   if (rawFoods.length === 0) return [];
 
@@ -265,6 +270,11 @@ export async function getFoodById(foodId: string): Promise<FatSecretResult | nul
     headers: { 'Authorization': `Bearer ${token}` },
     timeout: 10000
   });
+
+  if (response.data?.error) {
+    console.error('FatSecret API Error in getFoodById:', response.data.error.code, response.data.error.message);
+    return null;
+  }
 
   const food: FatSecretFoodDetail = response.data?.food;
   if (!food) return null;

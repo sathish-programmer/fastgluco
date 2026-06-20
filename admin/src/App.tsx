@@ -92,6 +92,18 @@ const AdminPanelContent: React.FC = () => {
   const [foods, setFoods] = useState<any[]>([]);
   const [videos, setVideos] = useState<any[]>([]);
   const [guides, setGuides] = useState<any[]>([]);
+  const [founders, setFounders] = useState<any[]>([]);
+  const [showFounderModal, setShowFounderModal] = useState(false);
+  const [editingFounderId, setEditingFounderId] = useState<string | null>(null);
+  const [founderForm, setFounderForm] = useState({
+    name: '',
+    role: '',
+    background: '',
+    workDone: '',
+    achievements: '',
+    tryingToSolve: '',
+    videoUrl: ''
+  });
 
   // CRUD Form states
   const [showFoodModal, setShowFoodModal] = useState(false);
@@ -232,7 +244,8 @@ const AdminPanelContent: React.FC = () => {
       foodInsights: false,
       exportReports: false,
       notifications: false,
-      aiCoaching: false
+      aiCoaching: false,
+      foodScanner: false
     }
   });
 
@@ -281,6 +294,7 @@ const AdminPanelContent: React.FC = () => {
       if (activeView === 'coupons') fetchCoupons();
       if (activeView === 'legal') fetchLegalDocuments();
       if (activeView === 'healthInsights') fetchHealthInsights();
+      if (activeView === 'founders') fetchFounders();
       if (activeView === 'payments') {
         fetchPaymentConfig();
         fetchPaymentStats();
@@ -801,6 +815,73 @@ const AdminPanelContent: React.FC = () => {
     }
   };
 
+  // --- FOUNDERS API ---
+  const fetchFounders = async () => {
+    try {
+      const res = await fetch(`${apiUrl}/founders`);
+      if (res.ok) setFounders(await res.json());
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleFounderSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const method = editingFounderId ? 'PUT' : 'POST';
+      const endpoint = editingFounderId ? `${apiUrl}/admin/founders/${editingFounderId}` : `${apiUrl}/admin/founders`;
+
+      const response = await fetch(endpoint, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(founderForm)
+      });
+
+      if (response.ok) {
+        setShowFounderModal(false);
+        setEditingFounderId(null);
+        setFounderForm({
+          name: '',
+          role: '',
+          background: '',
+          workDone: '',
+          achievements: '',
+          tryingToSolve: '',
+          videoUrl: ''
+        });
+        fetchFounders();
+      } else {
+        const data = await response.json();
+        alert(data.message || 'Error saving founder.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error saving founder.');
+    }
+  };
+
+  const handleDeleteFounder = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this founder?')) return;
+    try {
+      const response = await fetch(`${apiUrl}/admin/founders/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        fetchFounders();
+      } else {
+        const data = await response.json();
+        alert(data.message || 'Error deleting founder.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error deleting founder.');
+    }
+  };
+
   // --- TICKETS API ---
   const fetchTickets = async () => {
     try {
@@ -917,7 +998,8 @@ const AdminPanelContent: React.FC = () => {
             foodInsights: false,
             exportReports: false,
             notifications: false,
-            aiCoaching: false
+            aiCoaching: false,
+            foodScanner: false
           }
         });
         fetchPlans();
@@ -1482,6 +1564,15 @@ const AdminPanelContent: React.FC = () => {
             <div className="pt-4 mt-4 border-t border-slate-700/50">
               <span className="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider">System Configuration</span>
             </div>
+
+            <button
+              onClick={() => { setActiveView('founders'); setSearchQuery(''); }}
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${activeView === 'founders' ? 'bg-primary text-white' : 'hover:bg-slate-800'
+                }`}
+            >
+              <Users className="h-5 w-5" />
+              <span>Founders Section</span>
+            </button>
 
             <button
               onClick={() => { setActiveView('legal'); setSearchQuery(''); }}
@@ -2644,7 +2735,8 @@ const AdminPanelContent: React.FC = () => {
                       foodInsights: false,
                       exportReports: false,
                       notifications: false,
-                      aiCoaching: false
+                      aiCoaching: false,
+                      foodScanner: false
                     }
                   });
                   setShowPlanModal(true);
@@ -2700,7 +2792,7 @@ const AdminPanelContent: React.FC = () => {
                           <td className="px-6 py-4 font-medium text-slate-500">{p.trialDays} days</td>
                           <td className="px-6 py-4">
                             <span className="text-xs text-primary font-bold bg-blue-50 px-2 py-1 rounded">
-                              {activeFeatures.length} / 7 features
+                              {activeFeatures.length} / 8 features
                             </span>
                           </td>
                           <td className="px-6 py-4 font-medium text-slate-500">{p.displayOrder}</td>
@@ -2738,7 +2830,8 @@ const AdminPanelContent: React.FC = () => {
                                       foodInsights: !!p.features?.foodInsights,
                                       exportReports: !!p.features?.exportReports,
                                       notifications: !!p.features?.notifications,
-                                      aiCoaching: !!p.features?.aiCoaching
+                                      aiCoaching: !!p.features?.aiCoaching,
+                                      foodScanner: !!p.features?.foodScanner
                                     }
                                   });
                                   setShowPlanModal(true);
@@ -3679,6 +3772,16 @@ const AdminPanelContent: React.FC = () => {
                       />
                       <span>AI Coaching Assistant</span>
                     </label>
+
+                    <label className="flex items-center space-x-2 text-xs font-bold text-slate-600 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={planForm.features.foodScanner}
+                        onChange={(e) => setPlanForm({ ...planForm, features: { ...planForm.features, foodScanner: e.target.checked } })}
+                        className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
+                      />
+                      <span>AI Photo Food Scanner</span>
+                    </label>
                   </div>
                 </div>
 
@@ -4334,6 +4437,204 @@ const AdminPanelContent: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* VIEW 9.5: FOUNDERS SECTION */}
+        {activeView === 'founders' && (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-bold text-slate-800">Founders Management</h2>
+                <p className="text-xs text-slate-400 font-semibold mt-0.5">Manage details and YouTube video links of your company's founders.</p>
+              </div>
+              <button
+                onClick={() => {
+                  setEditingFounderId(null);
+                  setFounderForm({
+                    name: '',
+                    role: '',
+                    background: '',
+                    workDone: '',
+                    achievements: '',
+                    tryingToSolve: '',
+                    videoUrl: ''
+                  });
+                  setShowFounderModal(true);
+                }}
+                className="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-2 rounded-xl text-sm flex items-center space-x-1.5 shadow-soft"
+              >
+                <Plus className="h-4.5 w-4.5" />
+                <span>Add Founder</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {founders.length === 0 ? (
+                <div className="col-span-full text-center py-12 text-slate-400 font-semibold text-xs border-2 border-dashed border-slate-100 rounded-2xl">
+                  No founders found. Click "Add Founder" to create one.
+                </div>
+              ) : (
+                founders.map(f => (
+                  <div key={f._id} className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm flex flex-col justify-between">
+                    <div>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="text-lg font-bold text-slate-800">{f.name}</h3>
+                          <p className="text-xs font-semibold text-primary">{f.role}</p>
+                        </div>
+                        <div className="flex space-x-1">
+                          <button
+                            onClick={() => {
+                              setEditingFounderId(f._id);
+                              setFounderForm({
+                                name: f.name,
+                                role: f.role,
+                                background: f.background,
+                                workDone: f.workDone,
+                                achievements: f.achievements,
+                                tryingToSolve: f.tryingToSolve,
+                                videoUrl: f.videoUrl || ''
+                              });
+                              setShowFounderModal(true);
+                            }}
+                            className="p-2 hover:bg-slate-100 rounded-xl text-slate-500 transition-colors"
+                          >
+                            <Edit className="h-4.5 w-4.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteFounder(f._id)}
+                            className="p-2 hover:bg-red-50 rounded-xl text-slate-400 hover:text-red-500 transition-colors"
+                          >
+                            <Trash2 className="h-4.5 w-4.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 space-y-2 text-xs text-slate-600">
+                        <p><strong>Background:</strong> {f.background?.length > 150 ? f.background.slice(0, 150) + '...' : f.background}</p>
+                        <p><strong>Work Done:</strong> {f.workDone?.length > 150 ? f.workDone.slice(0, 150) + '...' : f.workDone}</p>
+                        {f.videoUrl && (
+                          <div className="mt-3 p-2 bg-slate-50 rounded-xl border border-slate-100 flex items-center space-x-2 text-[11px] text-slate-500">
+                            <span className="text-red-500">🎥</span>
+                            <span className="truncate max-w-[280px] font-mono">{f.videoUrl}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {showFounderModal && (
+              <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
+                <div className="bg-white p-6 rounded-3xl border border-slate-200 max-w-2xl w-full shadow-lg my-8">
+                  <h3 className="text-base font-bold text-slate-800 mb-4">{editingFounderId ? 'Edit Founder' : 'Add Founder'}</h3>
+                  <form onSubmit={handleFounderSubmit} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Name</label>
+                        <input
+                          type="text"
+                          required
+                          value={founderForm.name}
+                          onChange={e => setFounderForm({ ...founderForm, name: e.target.value })}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Role / Designation</label>
+                        <input
+                          type="text"
+                          required
+                          value={founderForm.role}
+                          onChange={e => setFounderForm({ ...founderForm, role: e.target.value })}
+                          placeholder="e.g. Co-Founder & Chief Medical Officer"
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Background Bio</label>
+                      <textarea
+                        required
+                        rows={3}
+                        value={founderForm.background}
+                        onChange={e => setFounderForm({ ...founderForm, background: e.target.value })}
+                        placeholder="Explain the founder's background, education, and credentials..."
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm resize-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Work Done</label>
+                      <textarea
+                        required
+                        rows={3}
+                        value={founderForm.workDone}
+                        onChange={e => setFounderForm({ ...founderForm, workDone: e.target.value })}
+                        placeholder="Describe their past and current work, research, or clinical experience..."
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm resize-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Achievements</label>
+                      <textarea
+                        required
+                        rows={3}
+                        value={founderForm.achievements}
+                        onChange={e => setFounderForm({ ...founderForm, achievements: e.target.value })}
+                        placeholder="List their major milestones, awards, or recognized contributions..."
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm resize-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">What are we trying to solve?</label>
+                      <textarea
+                        required
+                        rows={3}
+                        value={founderForm.tryingToSolve}
+                        onChange={e => setFounderForm({ ...founderForm, tryingToSolve: e.target.value })}
+                        placeholder="Explain the vision/problems the founder is dedicated to solving with this platform..."
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm resize-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">YouTube / Video URL (Optional)</label>
+                      <input
+                        type="url"
+                        value={founderForm.videoUrl}
+                        onChange={e => setFounderForm({ ...founderForm, videoUrl: e.target.value })}
+                        placeholder="e.g. https://www.youtube.com/watch?v=..."
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm"
+                      />
+                    </div>
+
+                    <div className="flex space-x-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowFounderModal(false)}
+                        className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-xl font-semibold hover:bg-slate-200 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="flex-1 py-2.5 bg-primary text-white font-bold rounded-xl hover:bg-primary-dark transition-colors"
+                      >
+                        Save Founder
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* AI COACH SETTINGS TAB */}
         {activeView === 'aicoach' && (
           <div className="max-w-3xl">

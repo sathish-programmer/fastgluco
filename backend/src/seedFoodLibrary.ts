@@ -116,5 +116,13 @@ export const seedFoodLibrary = [
   // Extra Scan Fallbacks
   { name: 'Coconut Chutney', category: 'South Indian', calories: 90, carbs: 4, protein: 1, fat: 8, fiber: 2, servingSize: 50, servingUnit: 'g', aliases: ['coconut chutney', 'white chutney'] },
   { name: 'Tomato Chutney', category: 'South Indian', calories: 45, carbs: 5, protein: 1, fat: 2.5, fiber: 1.5, servingSize: 50, servingUnit: 'g', aliases: ['tomato chutney', 'red chutney'] },
-  { name: 'Tea/Coffee', category: 'Beverages', calories: 60, carbs: 9, protein: 1.5, fat: 2, fiber: 0, servingSize: 150, servingUnit: 'ml', aliases: ['tea', 'coffee', 'chai', 'tea/coffee'] }
+  { name: 'Tea/Coffee', category: 'Beverages', calories: 60, carbs: 9, protein: 1.5, fat: 2, fiber: 0, servingSize: 150, servingUnit: 'ml', aliases: ['tea', 'coffee', 'chai', 'tea/coffee'] },
+
+  // Custom Asian & Seeding Items
+  { name: 'Fried Noodles', category: 'Snacks', calories: 290, carbs: 38, protein: 7, fat: 12, fiber: 2, servingSize: 150, servingUnit: 'g', aliases: ['fried noodles', 'noodles', 'chow mein', 'lo mein'] },
+  { name: 'Chow Mein', category: 'Snacks', calories: 290, carbs: 38, protein: 7, fat: 12, fiber: 2, servingSize: 150, servingUnit: 'g', aliases: ['chow mein', 'fried noodles', 'noodles'] },
+  { name: 'Chicken Manchurian', category: 'Non-Veg', calories: 260, carbs: 14, protein: 18, fat: 15, fiber: 1.5, servingSize: 150, servingUnit: 'g', aliases: ['chicken manchurian', 'manchurian', 'chilli chicken', 'chili chicken'] },
+  { name: 'Veg Manchurian', category: 'Snacks', calories: 210, carbs: 18, protein: 4, fat: 13, fiber: 2.5, servingSize: 150, servingUnit: 'g', aliases: ['veg manchurian', 'vegetable manchurian', 'gobi manchurian'] },
+  { name: 'Fried Rice', category: 'Snacks', calories: 250, carbs: 45, protein: 5, fat: 6, fiber: 2, servingSize: 150, servingUnit: 'g', aliases: ['fried rice', 'veg fried rice'] },
+  { name: 'Sweet Corn (Boiled)', category: 'Fruits', calories: 96, carbs: 21, protein: 3.4, fat: 1.5, fiber: 2.4, servingSize: 100, servingUnit: 'g', aliases: ['corn', 'sweet corn', 'maize', 'boiled corn', 'sweetcorn', 'corn kernels', 'corn cob'] }
 ];

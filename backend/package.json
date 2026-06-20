@@ -8,10 +8,11 @@
     "start": "node dist/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "seed": "ts-node src/seed.ts",
+    "seed:founders": "ts-node src/seedFounders.ts",
+    "sync": "ts-node src/runSync.ts",
     "test": "jest --runInBand --detectOpenHandles"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "csv-parse": "^5.5.6",

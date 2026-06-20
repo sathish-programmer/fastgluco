@@ -31,6 +31,7 @@ export default function App() {
   const [termsData, setTermsData] = useState<string>('Loading terms of service...');
   const [faqsData, setFaqsData] = useState<any[]>([]);
   const [videosData, setVideosData] = useState<any[]>([]);
+  const [foundersData, setFoundersData] = useState<any[]>([]);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   
   const [branding, setBranding] = useState({
@@ -43,16 +44,18 @@ export default function App() {
     const fetchData = async () => {
       try {
         const baseUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5001/api' : 'https://api.mitoreboot.in/api');
-        const [priv, terms, fq, vid, config] = await Promise.all([
+        const [priv, terms, fq, vid, config, fnd] = await Promise.all([
           fetch(`${baseUrl}/legal/PrivacyPolicy`).then(r => r.json()).catch(() => ({ content: '' })),
           fetch(`${baseUrl}/legal/TermsOfService`).then(r => r.json()).catch(() => ({ content: '' })),
           fetch(`${baseUrl}/faqs?platform=Website`).then(r => r.json()).catch(() => []),
           fetch(`${baseUrl}/videos`).then(r => r.json()).catch(() => []),
-          fetch(`${baseUrl}/config/public`).then(r => r.json()).catch(() => ({}))
+          fetch(`${baseUrl}/config/public`).then(r => r.json()).catch(() => ({})),
+          fetch(`${baseUrl}/founders`).then(r => r.json()).catch(() => [])
         ]);
         if (priv.content) setPrivacyData(priv.content);
         if (terms.content) setTermsData(terms.content);
         setFaqsData(fq);
+        setFoundersData(fnd);
         // Filter videos for Website or Both
         const webVideos = vid.filter((v: any) => v.targetPlatform === 'Website' || v.targetPlatform === 'Both');
         setVideosData(webVideos.length > 0 ? webVideos : vid);
@@ -107,7 +110,7 @@ export default function App() {
   if (activeTab === 'privacy') {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col justify-between">
-        <Header activeTab={activeTab} onTabChange={setActiveTab} branding={branding} />
+        <Header activeTab={activeTab} onTabChange={setActiveTab} branding={branding} foundersCount={0} />
         <main className="flex-grow max-w-3xl mx-auto w-full px-6 py-12 bg-white rounded-3xl border border-slate-200 shadow-soft mt-6 mb-12">
           <h2 className="text-2xl font-bold text-slate-800 mb-4">Privacy Policy</h2>
           <div
@@ -115,7 +118,7 @@ export default function App() {
             dangerouslySetInnerHTML={{ __html: privacyData }}
           />
         </main>
-        <Footer onTabChange={setActiveTab} branding={branding} />
+        <Footer onTabChange={setActiveTab} branding={branding} hasFounders={false} />
       </div>
     );
   }
@@ -123,7 +126,7 @@ export default function App() {
   if (activeTab === 'terms') {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col justify-between">
-        <Header activeTab={activeTab} onTabChange={setActiveTab} branding={branding} />
+        <Header activeTab={activeTab} onTabChange={setActiveTab} branding={branding} foundersCount={0} />
         <main className="flex-grow max-w-3xl mx-auto w-full px-6 py-12 bg-white rounded-3xl border border-slate-200 shadow-soft mt-6 mb-12">
           <h2 className="text-2xl font-bold text-slate-800 mb-4">Terms and Conditions</h2>
           <div
@@ -131,7 +134,7 @@ export default function App() {
             dangerouslySetInnerHTML={{ __html: termsData }}
           />
         </main>
-        <Footer onTabChange={setActiveTab} branding={branding} />
+        <Footer onTabChange={setActiveTab} branding={branding} hasFounders={false} />
       </div>
     );
   }
@@ -139,7 +142,7 @@ export default function App() {
   return (
     <div className="bg-white min-h-screen flex flex-col justify-between">
       {/* Header Navigation */}
-      <Header activeTab={activeTab} onTabChange={setActiveTab} branding={branding} />
+      <Header activeTab={activeTab} onTabChange={setActiveTab} branding={branding} foundersCount={foundersData.length} />
 
       {/* Hero Section */}
       <section className="bg-gradient-to-b from-blue-50/50 to-white py-16 px-6 md:py-24">
@@ -330,6 +333,73 @@ export default function App() {
         </div>
       </section>
 
+      {/* Meet Our Founders Section */}
+      {foundersData.length > 0 && (
+        <section id="founders" className="bg-slate-50 py-20 px-6 border-t border-slate-100">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center max-w-2xl mx-auto mb-16">
+              <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">Meet Our Founders</h2>
+              <p className="text-sm text-slate-500 font-medium mt-2">
+                Discover the credentials, achievements, and driving vision of our founding team.
+              </p>
+            </div>
+
+            <div className="space-y-16">
+              {foundersData.map((founder, idx) => (
+                <div key={idx} className="bg-white rounded-3xl p-6 md:p-10 border border-slate-200 shadow-soft flex flex-col lg:flex-row gap-8 lg:gap-10 items-stretch">
+                  {/* Left Column: Video or Medical Placeholder */}
+                  <div className="w-full lg:w-5/12 flex items-center justify-center shrink-0">
+                    {founder.videoUrl ? (
+                      <div className="w-full aspect-video bg-slate-100 rounded-2xl overflow-hidden shadow-inner border border-slate-200 relative">
+                        <iframe
+                          src={getEmbedUrl(founder.videoUrl)}
+                          className="absolute inset-0 w-full h-full border-none"
+                          title={`Video of ${founder.name}`}
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-full aspect-video bg-gradient-to-br from-primary/5 to-indigo-50 rounded-2xl flex flex-col items-center justify-center border border-slate-200 p-6">
+                        <span className="text-5xl mb-2">🩺</span>
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{founder.role}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Right Column: Bio & Details Grid */}
+                  <div className="w-full lg:w-7/12 flex flex-col justify-between space-y-6">
+                    <div>
+                      <h3 className="text-2xl font-black text-slate-900 tracking-tight">{founder.name}</h3>
+                      <p className="text-sm font-bold text-primary tracking-wide uppercase mt-0.5">{founder.role}</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-semibold text-slate-600">
+                      <div className="bg-slate-50/50 hover:bg-slate-50 p-5 rounded-2xl border border-slate-100 transition-all duration-300">
+                        <span className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1.5">🎓 Background</span>
+                        <p className="leading-relaxed font-medium text-slate-500 whitespace-pre-line">{founder.background}</p>
+                      </div>
+                      <div className="bg-slate-50/50 hover:bg-slate-50 p-5 rounded-2xl border border-slate-100 transition-all duration-300">
+                        <span className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1.5">🔬 Work Done</span>
+                        <p className="leading-relaxed font-medium text-slate-500 whitespace-pre-line">{founder.workDone}</p>
+                      </div>
+                      <div className="bg-slate-50/50 hover:bg-slate-50 p-5 rounded-2xl border border-slate-100 transition-all duration-300">
+                        <span className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1.5">🏆 Achievements</span>
+                        <p className="leading-relaxed font-medium text-slate-500 whitespace-pre-line">{founder.achievements}</p>
+                      </div>
+                      <div className="bg-slate-50/50 hover:bg-slate-50 p-5 rounded-2xl border border-slate-100 transition-all duration-300">
+                        <span className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1.5">🎯 What we are solving</span>
+                        <p className="leading-relaxed font-medium text-slate-500 whitespace-pre-line">{founder.tryingToSolve}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* FAQs Section */}
       {faqsData.length > 0 && (
         <section id="faqs" className="bg-white py-20 px-6 max-w-4xl mx-auto">
@@ -453,7 +523,7 @@ export default function App() {
       </section>
 
       {/* Footer legal */}
-      <Footer onTabChange={setActiveTab} branding={branding} />
+      <Footer onTabChange={setActiveTab} branding={branding} hasFounders={foundersData.length > 0} />
     </div>
   );
 }
@@ -465,7 +535,7 @@ interface BrandingProp {
 }
 
 // HEADER COMPONENT
-const Header: React.FC<{ activeTab: string; onTabChange: (tab: any) => void; branding: BrandingProp }> = ({ activeTab, onTabChange, branding }) => {
+const Header: React.FC<{ activeTab: string; onTabChange: (tab: any) => void; branding: BrandingProp; foundersCount: number }> = ({ activeTab, onTabChange, branding, foundersCount }) => {
   return (
     <header className="bg-white border-b border-slate-100 py-4 px-6 sticky top-0 z-20">
       <div className="max-w-6xl mx-auto flex justify-between items-center">
@@ -490,6 +560,9 @@ const Header: React.FC<{ activeTab: string; onTabChange: (tab: any) => void; bra
           <a href="#features" onClick={() => onTabChange('home')} className="hover:text-primary transition-all">Features</a>
           <a href="#screenshots" onClick={() => onTabChange('home')} className="hover:text-primary transition-all">Screenshots</a>
           <a href="#tutorials" onClick={() => onTabChange('home')} className="hover:text-primary transition-all">Tutorials</a>
+          {foundersCount > 0 && (
+            <a href="#founders" onClick={() => onTabChange('home')} className="hover:text-primary transition-all">Our Founders</a>
+          )}
           <a href="#contact" onClick={() => onTabChange('home')} className="hover:text-primary transition-all">Contact Us</a>
         </nav>
 
@@ -518,7 +591,7 @@ const Header: React.FC<{ activeTab: string; onTabChange: (tab: any) => void; bra
 };
 
 // FOOTER COMPONENT
-const Footer: React.FC<{ onTabChange: (tab: any) => void; branding: BrandingProp }> = ({ onTabChange, branding }) => {
+const Footer: React.FC<{ onTabChange: (tab: any) => void; branding: BrandingProp; hasFounders: boolean }> = ({ onTabChange, branding, hasFounders }) => {
   return (
     <footer className="bg-slate-900 text-slate-400 py-10 px-6 text-xs border-t border-slate-800">
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
@@ -530,6 +603,9 @@ const Footer: React.FC<{ onTabChange: (tab: any) => void; branding: BrandingProp
           <span>© 2026 {branding.appName}. All rights reserved.</span>
         </div>
         <div className="flex space-x-4 font-semibold">
+          {hasFounders && (
+            <a href="#founders" onClick={() => onTabChange('home')} className="hover:text-white transition-all">Our Founders</a>
+          )}
           <button onClick={() => onTabChange('privacy')} className="hover:text-white transition-all">Privacy Policy</button>
           <button onClick={() => onTabChange('terms')} className="hover:text-white transition-all">Terms of Service</button>
           <a href="#contact" onClick={() => onTabChange('home')} className="hover:text-white transition-all">Help & Support</a>
