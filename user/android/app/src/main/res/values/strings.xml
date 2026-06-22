@@ -2,6 +2,6 @@
 <resources>
     <string name="app_name">Mito_Reboot</string>
     <string name="title_activity_main">Mito_Reboot</string>
-    <string name="package_name">com.fastgluco.app</string>
-    <string name="custom_url_scheme">com.fastgluco.app</string>
+    <string name="package_name">com.mitoreboot.app</string>
+    <string name="custom_url_scheme">com.mitoreboot.app</string>
 </resources>

@@ -1,7 +1,7 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.fastgluco.app',
+  appId: 'com.mitoreboot.app',
   appName: 'Mito_Reboot',
   webDir: 'dist',
   server: {

@@ -1,5 +1,6 @@
-package com.fastgluco.app;
+package com.mitoreboot.app;
 
 import com.getcapacitor.BridgeActivity;
 
-public class MainActivity extends BridgeActivity {}
+public class MainActivity extends BridgeActivity {
+}
