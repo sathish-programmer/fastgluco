@@ -5,11 +5,13 @@ import { useToast } from '../context/ToastContext';
 import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import type { ConfirmationResult, ApplicationVerifier } from 'firebase/auth';
 import { auth, isNativePlatform } from '../config/firebase';
+import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 
 declare global {
   interface Window {
     recaptchaVerifier: RecaptchaVerifier | null;
     confirmationResult: ConfirmationResult | null;
+    verificationId: string | null;
   }
 }
 
@@ -99,6 +101,8 @@ function getRecaptchaVerifier(): ApplicationVerifier {
     } as unknown as ApplicationVerifier;
   }
 
+
+
   if (!window.recaptchaVerifier) {
     window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
       size: 'invisible',
@@ -140,6 +144,48 @@ export const Login: React.FC<LoginProps> = () => {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  // Set up Native Phone Auth Listeners
+  useEffect(() => {
+    if (!isNativePlatform || auth.settings.appVerificationDisabledForTesting) return;
+    let codeSentListener: any;
+    let verificationCompletedListener: any;
+    let verificationFailedListener: any;
+
+    const setupListeners = async () => {
+      codeSentListener = await FirebaseAuthentication.addListener('phoneCodeSent', (event) => {
+        window.verificationId = event.verificationId;
+        setScreen('otp');
+        setTimer(60);
+        showToast('Verification code sent natively', 'success');
+        setLoading(false);
+      });
+
+      verificationCompletedListener = await FirebaseAuthentication.addListener('phoneVerificationCompleted', async () => {
+        // Auto retrieved on Android
+        try {
+          const idTokenResult = await FirebaseAuthentication.getIdToken();
+          const ok = await verifyOtpToken(idTokenResult.token);
+          if (ok) showToast('Authenticated successfully! Welcome.', 'success');
+        } catch (e) {
+          console.error(e);
+        }
+      });
+
+      verificationFailedListener = await FirebaseAuthentication.addListener('phoneVerificationFailed', (event) => {
+        setPhoneError(event.message || 'Verification failed natively');
+        setLoading(false);
+      });
+    };
+
+    setupListeners();
+
+    return () => {
+      if (codeSentListener) codeSentListener.remove();
+      if (verificationCompletedListener) verificationCompletedListener.remove();
+      if (verificationFailedListener) verificationFailedListener.remove();
+    };
+  }, [verifyOtpToken, showToast]);
 
   // Countdown timer for resend
   useEffect(() => {
@@ -190,15 +236,20 @@ export const Login: React.FC<LoginProps> = () => {
 
     setLoading(true);
     try {
-      const verifier = getRecaptchaVerifier();
-      const confirmation = await signInWithPhoneNumber(auth, e164, verifier);
-      setConfirmationResult(confirmation);
-      window.confirmationResult = confirmation;
+      if (isNativePlatform && !auth.settings.appVerificationDisabledForTesting) {
+        await FirebaseAuthentication.signInWithPhoneNumber({ phoneNumber: e164 });
+        // State updates are handled by the 'phoneCodeSent' listener
+      } else {
+        const verifier = getRecaptchaVerifier();
+        const confirmation = await signInWithPhoneNumber(auth, e164, verifier);
+        setConfirmationResult(confirmation);
+        window.confirmationResult = confirmation;
 
-      setScreen('otp');
-      setTimer(60);
-      showToast(`Verification code sent to ${e164}`, 'success');
-      setTimeout(() => otpInputRef.current?.focus(), 100);
+        setScreen('otp');
+        setTimer(60);
+        showToast(`Verification code sent to ${e164}`, 'success');
+        setTimeout(() => otpInputRef.current?.focus(), 100);
+      }
     } catch (err: any) {
       console.error('sendOtp error:', err);
       // Provide friendly error messages
@@ -232,12 +283,28 @@ export const Login: React.FC<LoginProps> = () => {
     clearError();
 
     try {
-      const result = await confirmationResult.confirm(code);
-      const idToken = await result.user.getIdToken();
+      if (isNativePlatform && !auth.settings.appVerificationDisabledForTesting) {
+        const verificationId = window.verificationId;
+        if (!verificationId) throw new Error('Verification ID missing. Please request a new code.');
 
-      const ok = await verifyOtpToken(idToken);
-      if (ok) {
-        showToast('Authenticated successfully! Welcome.', 'success');
+        await FirebaseAuthentication.confirmVerificationCode({
+          verificationId,
+          verificationCode: code
+        });
+
+        const idTokenResult = await FirebaseAuthentication.getIdToken();
+        const ok = await verifyOtpToken(idTokenResult.token);
+        if (ok) {
+          showToast('Authenticated successfully! Welcome.', 'success');
+        }
+      } else {
+        const result = await confirmationResult.confirm(code);
+        const idToken = await result.user.getIdToken();
+
+        const ok = await verifyOtpToken(idToken);
+        if (ok) {
+          showToast('Authenticated successfully! Welcome.', 'success');
+        }
       }
     } catch (err: any) {
       console.error('verifyOtp error:', err);

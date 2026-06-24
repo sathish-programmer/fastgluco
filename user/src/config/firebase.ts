@@ -23,9 +23,7 @@ const auth = isFirstInit
     })
   : getAuth(app);
 
-// On native iOS/Android with test phone numbers, disable reCAPTCHA verification.
-// Remove this line before going to production with real phone numbers.
-if (isNativePlatform) {
+if (import.meta.env.VITE_USE_TEST_AUTH === 'true') {
   auth.settings.appVerificationDisabledForTesting = true;
 }
 
