@@ -521,10 +521,18 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
       {/* Logout button */}
       <button
         onClick={logout}
-        className="w-full border border-rose-250 hover:bg-rose-50/50 text-rose-600 font-bold py-3 px-4 rounded-3xl flex items-center justify-center space-x-2 transition-all mb-6"
+        className="w-full border border-rose-250 hover:bg-rose-50/50 text-rose-600 font-bold py-3 px-4 rounded-3xl flex items-center justify-center space-x-2 transition-all mb-4"
       >
         <LogOut className="h-4 w-4" />
         <span>Sign Out Account</span>
+      </button>
+
+      {/* Delete Account button */}
+      <button
+        onClick={() => window.location.href = '/delete-account'}
+        className="w-full text-slate-400 hover:text-rose-500 font-bold py-3 px-4 rounded-3xl flex items-center justify-center space-x-2 transition-all mb-6 text-xs hover:bg-slate-50"
+      >
+        <span>Request Account Deletion</span>
       </button>
 
       {/* Disclaimer Modal Overlay */}

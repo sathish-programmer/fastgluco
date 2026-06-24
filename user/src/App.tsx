@@ -25,6 +25,8 @@ import { GlobalAICoachPopup } from './components/GlobalAICoachPopup';
 import { NotificationBell } from './components/NotificationBell';
 import { OnboardingTour } from './components/OnboardingTour';
 
+import { DeleteAccount } from './pages/DeleteAccount';
+
 const MainAppContent: React.FC = () => {
   const { isAuthenticated, isLoading, token, apiUrl, logout, branding, user } = useAuth();
 
@@ -265,6 +267,13 @@ const MainAppContent: React.FC = () => {
 };
 
 export default function App() {
+  const path = window.location.pathname.toLowerCase();
+  
+  // Public static routes that bypass authentication completely
+  if (path === '/delete-account') {
+    return <DeleteAccount />;
+  }
+
   return (
     <AuthProvider>
       <ToastProvider>

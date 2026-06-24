@@ -5,7 +5,8 @@ const config: CapacitorConfig = {
   appName: 'Mito_Reboot',
   webDir: 'dist',
   server: {
-    androidScheme: 'https'
+    androidScheme: 'https',
+    iosScheme: 'https'
   }
 };
 

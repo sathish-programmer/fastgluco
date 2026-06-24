@@ -24,7 +24,22 @@ const getEmbedUrl = (url: string) => {
 };
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'home' | 'privacy' | 'terms'>('home');
+  const getInitialTab = (): 'home' | 'privacy-policy' | 'terms-and-conditions' => {
+    const path = window.location.pathname.toLowerCase();
+    if (path.includes('privacy')) return 'privacy-policy';
+    if (path.includes('terms')) return 'terms-and-conditions';
+    return 'home';
+  };
+
+  const [activeTab, setActiveTab] = useState<'home' | 'privacy-policy' | 'terms-and-conditions'>(getInitialTab());
+
+  // Sync URL with tab state so the links are shareable
+  useEffect(() => {
+    const path = activeTab === 'home' ? '/' : `/${activeTab}`;
+    if (window.location.pathname !== path) {
+      window.history.pushState({}, '', path);
+    }
+  }, [activeTab]);
 
   // Dynamic Data States
   const [privacyData, setPrivacyData] = useState<string>('Loading privacy policy...');
@@ -107,7 +122,7 @@ export default function App() {
     }
   };
 
-  if (activeTab === 'privacy') {
+  if (activeTab === 'privacy-policy') {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col justify-between">
         <Header activeTab={activeTab} onTabChange={setActiveTab} branding={branding} foundersCount={0} />
@@ -123,7 +138,7 @@ export default function App() {
     );
   }
 
-  if (activeTab === 'terms') {
+  if (activeTab === 'terms-and-conditions') {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col justify-between">
         <Header activeTab={activeTab} onTabChange={setActiveTab} branding={branding} foundersCount={0} />
@@ -606,8 +621,8 @@ const Footer: React.FC<{ onTabChange: (tab: any) => void; branding: BrandingProp
           {hasFounders && (
             <a href="#founders" onClick={() => onTabChange('home')} className="hover:text-white transition-all">Our Founders</a>
           )}
-          <button onClick={() => onTabChange('privacy')} className="hover:text-white transition-all">Privacy Policy</button>
-          <button onClick={() => onTabChange('terms')} className="hover:text-white transition-all">Terms of Service</button>
+          <button onClick={() => onTabChange('privacy-policy')} className="hover:text-white transition-all">Privacy Policy</button>
+          <button onClick={() => onTabChange('terms-and-conditions')} className="hover:text-white transition-all">Terms of Service</button>
           <a href="#contact" onClick={() => onTabChange('home')} className="hover:text-white transition-all">Help & Support</a>
         </div>
       </div>
