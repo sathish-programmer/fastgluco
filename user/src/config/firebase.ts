@@ -1,5 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { initializeAuth, getAuth, indexedDBLocalPersistence, browserLocalPersistence } from 'firebase/auth';
+import { Capacitor } from '@capacitor/core';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -11,10 +12,22 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
-// Initialize Firebase (guard against HMR double-initialization)
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-const auth = getAuth(app);
+export const isNativePlatform = Capacitor.isNativePlatform();
+const isFirstInit = getApps().length === 0;
 
-// isMock is always false — real Firebase Phone Auth is active
+const app = isFirstInit ? initializeApp(firebaseConfig) : getApp();
+
+const auth = isFirstInit
+  ? initializeAuth(app, {
+      persistence: isNativePlatform ? indexedDBLocalPersistence : browserLocalPersistence,
+    })
+  : getAuth(app);
+
+// On native iOS/Android with test phone numbers, disable reCAPTCHA verification.
+// Remove this line before going to production with real phone numbers.
+if (isNativePlatform) {
+  auth.settings.appVerificationDisabledForTesting = true;
+}
+
 export const isMock = false;
 export { app, auth };

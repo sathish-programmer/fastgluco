@@ -3,8 +3,8 @@ import { useAuth } from '../context/AuthContext';
 import { Heart, AlertCircle, Smartphone, ChevronDown, Search, ArrowLeft, RefreshCw } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
-import type { ConfirmationResult } from 'firebase/auth';
-import { auth } from '../config/firebase';
+import type { ConfirmationResult, ApplicationVerifier } from 'firebase/auth';
+import { auth, isNativePlatform } from '../config/firebase';
 
 declare global {
   interface Window {
@@ -86,14 +86,17 @@ function detectCountryFromTimezone(): Country {
   return COUNTRIES[0]; // Default to India
 }
 
-/**
- * Returns the RecaptchaVerifier singleton — creates once, reuses forever.
- * NEVER recreate it pointing at the same DOM element — that causes
- * "reCAPTCHA has already been rendered in this element" error.
- */
-function getRecaptchaVerifier(): RecaptchaVerifier {
-  if (window.recaptchaVerifier) {
-    window.recaptchaVerifier.clear();
+function getRecaptchaVerifier(): ApplicationVerifier {
+  // If we are on a native platform (iOS/Android) AND we have disabled verification for testing,
+  // we bypass the real RecaptchaVerifier completely. This prevents 'auth/internal-error' 
+  // caused by the Web SDK failing to initialize reCAPTCHA in capacitor://localhost.
+  if (isNativePlatform && auth.settings.appVerificationDisabledForTesting) {
+    return {
+      type: 'recaptcha',
+      verify: async () => 'mock-token',
+      clear: () => {},
+      _reset: () => {},
+    } as unknown as ApplicationVerifier;
   }
 
   if (!window.recaptchaVerifier) {
