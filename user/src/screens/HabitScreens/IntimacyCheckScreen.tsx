@@ -43,7 +43,6 @@ export const IntimacyCheckScreen: React.FC<IntimacyCheckScreenProps> = ({ onBack
 
   const fetchTodayLog = async () => {
     try {
-      setLoadingHistory(true);
       const logs = await HabitsService.getRecentHabits(apiUrl, token, 'Intimacy', 1);
       const todayStr = new Date().toDateString();
       const todayLog = logs.find(l => new Date(l.timestamp).toDateString() === todayStr);
@@ -53,7 +52,7 @@ export const IntimacyCheckScreen: React.FC<IntimacyCheckScreenProps> = ({ onBack
     } catch (err) {
       console.error(err);
     } finally {
-      setLoadingHistory(false);
+      // Done fetching
     }
   };
 

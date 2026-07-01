@@ -49,7 +49,6 @@ export const CancerScreeningScreen: React.FC<CancerScreeningScreenProps> = ({ on
     } catch (err) {
       console.error(err);
     } finally {
-      setLoadingHistory(false);
       setTestsLoading(false);
     }
   };
@@ -57,7 +56,6 @@ export const CancerScreeningScreen: React.FC<CancerScreeningScreenProps> = ({ on
   const loadHistory = async () => {
     if (!user?.id) return;
     try {
-      setLoadingHistory(true);
       const logs = await HabitsService.getRecentHabits(apiUrl, token, 'CancerScreening', 365);
       setHistory(logs);
     } catch (err) {

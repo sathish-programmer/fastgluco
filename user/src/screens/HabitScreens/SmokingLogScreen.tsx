@@ -21,13 +21,12 @@ export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack }) =>
   const loadHistory = async () => {
     if (!user?.id) return;
     try {
-      setLoadingHistory(true);
       const logs = await HabitsService.getRecentHabits(apiUrl, token, 'Smoking', 14);
       setHistory(logs.reverse()); // for chart
     } catch (err) {
       console.error(err);
     } finally {
-      setLoadingHistory(false);
+      // Done fetching
     }
   };
   const handleLog = async () => {
