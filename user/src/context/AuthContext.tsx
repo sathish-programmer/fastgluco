@@ -22,6 +22,7 @@ export interface UserProfile {
   cancerJourney?: 'PREVENTION' | 'TREATMENT' | 'SECONDARY_PREVENTION';
   cancerDisclaimerAccepted?: boolean;
   cancerDisclaimerAcceptedAt?: string;
+  pendingProfileEdits?: Partial<UserProfile>;
 }
 
 export interface AppBranding {
@@ -42,6 +43,7 @@ interface AuthContextType {
   completeOnboarding: (profileData: Partial<UserProfile>) => Promise<boolean>;
   logout: () => void;
   updateProfile: (profileUpdates: Partial<UserProfile>) => Promise<boolean>;
+  requestProfileUpdate: (profileUpdates: Partial<UserProfile>) => Promise<boolean>;
   clearError: () => void;
   apiUrl: string;
   branding: AppBranding;
@@ -129,7 +131,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (response.ok) {
           const profile = await response.json();
-          setUser(profile);
+          setUser({ ...profile, id: profile._id || profile.id });
         }
       } catch (err) {
         console.error('Failed to load profile:', err);
@@ -160,7 +162,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('fastgluco_token', data.accessToken);
       localStorage.setItem('fastgluco_refresh_token', data.refreshToken);
       setToken(data.accessToken);
-      setUser(data.user);
+      setUser({ ...data.user, id: data.user._id || data.user.id });
       return { isNewUser: data.isNewUser };
     } catch (err: any) {
       setError(err.message || 'An error occurred during OTP verification.');
@@ -193,7 +195,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error(data.message || 'Onboarding failed.');
       }
 
-      setUser(data.user);
+      setUser({ ...data.user, id: data.user._id || data.user.id });
       return true;
     } catch (err: any) {
       setError(err.message || 'An error occurred during onboarding.');
@@ -229,10 +231,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error(data.message || 'Failed to update profile.');
       }
 
-      setUser(data.user);
+      setUser({ ...data.user, id: data.user._id || data.user.id });
       return true;
     } catch (err: any) {
       setError(err.message || 'Failed to update profile.');
+      return false;
+    }
+  };
+
+  const requestProfileUpdate = async (profileUpdates: Partial<UserProfile>): Promise<boolean> => {
+    if (!token) return false;
+    setError(null);
+    try {
+      const response = await fetch(`${apiUrl}/users/profile/request-edit`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(profileUpdates)
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to request profile update.');
+      }
+
+      setUser({ ...data.user, id: data.user._id || data.user.id });
+      return true;
+    } catch (err: any) {
+      setError(err.message || 'Failed to request profile update.');
       return false;
     }
   };
@@ -253,6 +281,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         completeOnboarding,
         logout,
         updateProfile,
+        requestProfileUpdate,
         clearError,
         apiUrl,
         branding

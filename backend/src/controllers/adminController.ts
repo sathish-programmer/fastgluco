@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
+import { AuthController } from './authController';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import fs from 'fs';
@@ -195,8 +196,12 @@ export class AdminController {
    */
   public static async getUsers(req: AuthRequest, res: Response) {
     try {
-      const { q, page = '1', limit = '10' } = req.query;
+      const { q, page = '1', limit = '10', cancerJourney } = req.query;
       const filter: any = {};
+
+      if (cancerJourney) {
+        filter.cancerJourney = cancerJourney;
+      }
 
       if (q) {
         filter.$or = [
@@ -756,15 +761,87 @@ export class AdminController {
       const foodLogs = await FoodLog.find({ userId: id }).sort({ loggedAt: -1 }).limit(100);
       const glucoseReadings = await mongoose.model('GlucoseReading').find({ userId: id }).sort({ timestamp: -1 }).limit(100);
       const cgmReports = await mongoose.model('CGMReport').find({ userId: id }).sort({ createdAt: -1 }).limit(10);
+      const habitLogs = await mongoose.model('HabitLog').find({ userId: id }).sort({ timestamp: -1 }).limit(100);
 
       return res.status(200).json({
         user,
         foodLogs,
         glucoseReadings,
-        cgmReports
+        cgmReports,
+        habitLogs
       });
     } catch (error: any) {
       return res.status(500).json({ message: error.message || 'Error fetching user activity details.' });
+    }
+  }
+
+  // --- Profile Edits ---
+  public static async getPendingProfileEdits(req: AuthRequest, res: Response) {
+    try {
+      const users = await User.find({ pendingProfileEdits: { $ne: null } }).select('-passwordHash').sort({ updatedAt: -1 });
+      return res.status(200).json(users);
+    } catch (err: any) {
+      return res.status(500).json({ message: err.message || 'Error fetching pending profile edits' });
+    }
+  }
+
+  public static async approveProfileEdit(req: AuthRequest, res: Response) {
+    try {
+      const { id } = req.params;
+      const user = await User.findById(id);
+      if (!user || !user.pendingProfileEdits) {
+        return res.status(404).json({ message: 'User or pending edits not found' });
+      }
+
+      // Merge edits
+      const edits = user.pendingProfileEdits;
+      Object.assign(user, edits);
+
+      // Recalculate TDEE if demographics changed
+      if (user.age && user.height && user.weight && user.activityLevel && user.goal) {
+        user.dailyCalorieTarget = AuthController.calculateTDEE(
+          user.gender || 'Male',
+          user.age,
+          user.height,
+          user.weight,
+          user.activityLevel,
+          user.goal
+        );
+      }
+
+      // Clear pending edits
+      user.pendingProfileEdits = null;
+      await user.save();
+
+      if (user.email && user.name) {
+        EmailService.sendProfileEditApprovedEmail(user.email, user.name).catch(console.error);
+      }
+
+      return res.status(200).json({ message: 'Profile edits approved successfully.', user });
+    } catch (err: any) {
+      return res.status(500).json({ message: err.message || 'Error approving profile edit' });
+    }
+  }
+
+  public static async rejectProfileEdit(req: AuthRequest, res: Response) {
+    try {
+      const { id } = req.params;
+      const user = await User.findById(id);
+      if (!user || !user.pendingProfileEdits) {
+        return res.status(404).json({ message: 'User or pending edits not found' });
+      }
+
+      // Clear pending edits
+      user.pendingProfileEdits = null;
+      await user.save();
+
+      if (user.email && user.name) {
+        EmailService.sendProfileEditRejectedEmail(user.email, user.name).catch(console.error);
+      }
+
+      return res.status(200).json({ message: 'Profile edits rejected successfully.', user });
+    } catch (err: any) {
+      return res.status(500).json({ message: err.message || 'Error rejecting profile edit' });
     }
   }
 

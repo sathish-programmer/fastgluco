@@ -42,21 +42,19 @@ import {
   Save,
   MessageSquare,
   Crown,
-  Bot,
   Eye,
-  EyeOff
+  EyeOff,
+  Bot,
+  UserCircle2,
+  ShoppingCart
 } from 'lucide-react';
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell
+  BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, Tooltip, ResponsiveContainer
 } from 'recharts';
+import { AdminShopProducts } from './components/AdminShopProducts';
+import { AdminCancerTests } from './components/AdminCancerTests';
+import { AdminWorkflow } from './components/AdminWorkflow';
 
 const AdminPanelContent: React.FC = () => {
   const { admin, token, isAuthenticated, login, register, logout, error, clearError, apiUrl } = useAdminAuth();
@@ -82,12 +80,16 @@ const AdminPanelContent: React.FC = () => {
 
   // Active view: 'dashboard' | 'users' | 'foods' | 'videos' | 'guides' | 'notifications'
   const [activeView, setActiveView] = useState<string>('dashboard');
+  const [pendingEdits, setPendingEdits] = useState<any[]>([]);
+  const [nonCancerTab, setNonCancerTab] = useState<'overview' | 'shop' | 'screening' | 'ai'>('overview');
 
   // API Data states
   const [stats, setStats] = useState<any>(null);
   const [users, setUsers] = useState<any[]>([]);
+  const [nonCancerUsers, setNonCancerUsers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 10, pages: 1 });
+  const [nonCancerPagination, setNonCancerPagination] = useState({ total: 0, page: 1, limit: 10, pages: 1 });
   const [foodPagination, setFoodPagination] = useState({ total: 0, page: 1, limit: 10, pages: 1 });
   const [foods, setFoods] = useState<any[]>([]);
   const [videos, setVideos] = useState<any[]>([]);
@@ -234,7 +236,7 @@ const AdminPanelContent: React.FC = () => {
   // User activity modal states
   const [selectedUserActivity, setSelectedUserActivity] = useState<any>(null);
   const [showUserModal, setShowUserModal] = useState<boolean>(false);
-  const [userModalTab, setUserModalTab] = useState<'overview' | 'food' | 'glucose' | 'reports' | 'coaching' | 'notify'>('overview');
+  const [userModalTab, setUserModalTab] = useState<'overview' | 'food' | 'glucose' | 'reports' | 'coaching' | 'notify' | 'habits'>('overview');
   const [coachingSessions, setCoachingSessions] = useState<any[]>([]);
   const [userModalNotify, setUserModalNotify] = useState({ title: '', body: '' });
 
@@ -301,6 +303,8 @@ const AdminPanelContent: React.FC = () => {
     if (isAuthenticated) {
       if (activeView === 'dashboard') { fetchStats(); fetchPaymentStats(); }
       if (activeView === 'users') fetchUsers(1);
+      if (activeView === 'nonCancerSettings') fetchNonCancerUsers(1);
+      if (activeView === 'pendingEdits') fetchPendingEdits();
       if (activeView === 'foods') fetchFoods(1);
       if (activeView === 'recFoods') fetchRecFoods(1);
       if (activeView === 'videos') fetchVideos();
@@ -370,15 +374,30 @@ const AdminPanelContent: React.FC = () => {
     }
   };
 
-  const fetchUsers = async (pageNumber = 1) => {
+  const fetchUsers = async (page: number = 1) => {
     try {
-      const res = await fetch(`${apiUrl}/admin/users?q=${encodeURIComponent(searchQuery)}&page=${pageNumber}`, {
+      const res = await fetch(`${apiUrl}/admin/users?page=${page}&limit=10&q=${searchQuery}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
         const data = await res.json();
-        setUsers(data.users);
-        setPagination(data.pagination);
+        setUsers(data.users || []);
+        setPagination({ total: data.total, page: data.page, limit: data.limit, pages: data.pages });
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fetchNonCancerUsers = async (page: number = 1) => {
+    try {
+      const res = await fetch(`${apiUrl}/admin/users?page=${page}&limit=10&q=${searchQuery}&cancerJourney=PREVENTION`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setNonCancerUsers(data.users || []);
+        setNonCancerPagination({ total: data.total, page: data.page, limit: data.limit, pages: data.pages });
       }
     } catch (e) {
       console.error(e);
@@ -438,6 +457,58 @@ const AdminPanelContent: React.FC = () => {
 
   const handleSearchUsers = () => {
     fetchUsers(1);
+  };
+
+  const fetchPendingEdits = async () => {
+    try {
+      const res = await fetch(`${apiUrl}/admin/profile-edits`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPendingEdits(data);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleApproveEdit = async (userId: string) => {
+    if (!confirm('Are you sure you want to approve these changes? They will overwrite the user\'s current profile.')) return;
+    try {
+      const response = await fetch(`${apiUrl}/admin/profile-edits/${userId}/approve`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        alert('Edits approved successfully.');
+        fetchPendingEdits();
+      } else {
+        const err = await response.json();
+        alert(err.message || 'Error approving edits.');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleRejectEdit = async (userId: string) => {
+    if (!confirm('Are you sure you want to reject these changes? The user will be notified via email.')) return;
+    try {
+      const response = await fetch(`${apiUrl}/admin/profile-edits/${userId}/reject`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        alert('Edits rejected successfully.');
+        fetchPendingEdits();
+      } else {
+        const err = await response.json();
+        alert(err.message || 'Error rejecting edits.');
+      }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const fetchUserActivity = async (userId: string) => {
@@ -1528,6 +1599,15 @@ const AdminPanelContent: React.FC = () => {
             </button>
 
             <button
+              onClick={() => { setActiveView('pendingEdits'); setSearchQuery(''); }}
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${activeView === 'pendingEdits' ? 'bg-primary text-white' : 'hover:bg-slate-800'
+                }`}
+            >
+              <UserCircle2 className="h-5 w-5" />
+              <span>Profile Edits</span>
+            </button>
+
+            <button
               onClick={() => { setActiveView('foods'); setSearchQuery(''); }}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${activeView === 'foods' ? 'bg-primary text-white' : 'hover:bg-slate-800'
                 }`}
@@ -1633,6 +1713,19 @@ const AdminPanelContent: React.FC = () => {
             >
               <Percent className="h-5 w-5" />
               <span>Promo Coupons</span>
+            </button>
+
+            <div className="pt-4 mt-4 border-t border-slate-700/50">
+              <span className="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Non-Cancer Patient</span>
+            </div>
+
+            <button
+              onClick={() => { setActiveView('nonCancerSettings'); setSearchQuery(''); }}
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${activeView === 'nonCancerSettings' ? 'bg-primary text-white' : 'hover:bg-slate-800'
+                }`}
+            >
+              <ShoppingCart className="h-5 w-5" />
+              <span>Non-Cancer Settings</span>
             </button>
 
             <div className="pt-4 mt-4 border-t border-slate-700/50">
@@ -1908,6 +2001,207 @@ const AdminPanelContent: React.FC = () => {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* PENDING EDITS VIEW */}
+        {activeView === 'pendingEdits' && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-slate-800">Pending Profile Edits</h2>
+            {pendingEdits.length === 0 ? (
+              <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-500 font-semibold shadow-soft">
+                No pending profile edits to review.
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {pendingEdits.map((u) => (
+                  <div key={u._id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-bold text-lg text-slate-800">{u.name}</h3>
+                        <p className="text-sm text-slate-500 mb-4">{u.email}</p>
+                        
+                        <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                          <h4 className="text-xs font-bold uppercase text-slate-400 mb-2">Requested Changes:</h4>
+                          <pre className="text-xs text-slate-700 whitespace-pre-wrap font-mono">
+                            {JSON.stringify(u.pendingProfileEdits, null, 2)}
+                          </pre>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => handleApproveEdit(u._id)}
+                          className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg text-sm transition-colors"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => handleRejectEdit(u._id)}
+                          className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-bold rounded-lg text-sm transition-colors"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* NON-CANCER PATIENT SETTINGS VIEWS */}
+        {activeView === 'nonCancerSettings' && (
+          <div className="space-y-6">
+            <div className="flex items-center space-x-4">
+              <h2 className="text-xl font-extrabold text-slate-800">Non-Cancer Dashboard</h2>
+            </div>
+            
+            <div className="bg-white rounded-3xl border border-slate-100 shadow-soft overflow-hidden">
+              <div className="flex border-b border-slate-100 overflow-x-auto">
+                {[
+                  { key: 'overview', label: '📊 Overview & Users' },
+                  { key: 'shop', label: '🛒 Safer Products (Shop)' },
+                  { key: 'screening', label: '🩺 Cancer Screening' },
+                  { key: 'ai', label: '🤖 Intimacy AI Chat' }
+                ].map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setNonCancerTab(tab.key as any)}
+                    className={`px-6 py-4 text-sm font-bold whitespace-nowrap transition-all border-b-2 ${nonCancerTab === tab.key
+                        ? 'border-primary text-primary bg-primary/5'
+                        : 'border-transparent text-slate-400 hover:text-slate-700 hover:bg-slate-50'
+                      }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+              <div className="p-6 bg-slate-50/50">
+                {nonCancerTab === 'overview' && (
+                  <div className="space-y-6">
+                    {/* STATS */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-soft flex items-center space-x-4">
+                        <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600">
+                          <Users className="h-6 w-6" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-400 uppercase tracking-wider">Total Non-Cancer Users</p>
+                          <h3 className="text-3xl font-black text-slate-800">{nonCancerPagination.total}</h3>
+                        </div>
+                      </div>
+                      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-soft flex items-center space-x-4">
+                        <div className="h-12 w-12 rounded-xl bg-green-100 flex items-center justify-center text-green-600">
+                          <Activity className="h-6 w-6" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-400 uppercase tracking-wider">Active Programs</p>
+                          <h3 className="text-3xl font-black text-slate-800">Prevention</h3>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* TABLE */}
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-soft overflow-x-auto">
+                      <table className="min-w-full divide-y divide-slate-200">
+                        <thead className="bg-slate-50 text-slate-400 text-xs font-bold uppercase tracking-wider text-left">
+                          <tr>
+                            <th className="px-6 py-4">Name</th>
+                            <th className="px-6 py-4">Email</th>
+                            <th className="px-6 py-4">Status</th>
+                            <th className="px-6 py-4 text-center">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 text-sm font-semibold text-slate-700">
+                          {nonCancerUsers.length === 0 ? (
+                            <tr>
+                              <td colSpan={4} className="text-center py-8 text-slate-400">No users found.</td>
+                            </tr>
+                          ) : (
+                            nonCancerUsers.map((u) => (
+                              <tr key={u._id} className="hover:bg-slate-50/50">
+                                <td className="px-6 py-4 font-bold text-slate-800">
+                                  <button
+                                    onClick={() => fetchUserActivity(u._id)}
+                                    className="hover:underline hover:text-primary text-left font-bold text-slate-800 focus:outline-none"
+                                  >
+                                    {u.name}
+                                  </button>
+                                </td>
+                                <td className="px-6 py-4 text-slate-500 font-medium">{u.email}</td>
+                                <td className="px-6 py-4">
+                                  {u.isBlocked ? (
+                                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-50 text-danger border border-red-100">
+                                      Blocked
+                                    </span>
+                                  ) : (
+                                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-50 text-success border border-green-100">
+                                      Active
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="px-6 py-4 text-center">
+                                  <button
+                                    onClick={() => fetchUserActivity(u._id)}
+                                    className="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all flex items-center justify-center space-x-1 mx-auto"
+                                  >
+                                    <Activity className="h-3.5 w-3.5" />
+                                    <span>View Details</span>
+                                  </button>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+                {nonCancerTab === 'shop' && (
+                  <div className="space-y-6">
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                      <h3 className="text-lg font-bold text-slate-800 mb-4">Shop Configuration</h3>
+                      <div className="grid grid-cols-3 gap-6">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Shop GST (%)</label>
+                          <input
+                            type="number" min="0" max="100" required
+                            value={paymentConfig.shopGstPercentage !== undefined ? paymentConfig.shopGstPercentage : 18}
+                            onChange={(e) => setPaymentConfig({ ...paymentConfig, shopGstPercentage: parseInt(e.target.value) || 0 })}
+                            placeholder="18" className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Shop Global Discount (%)</label>
+                          <input
+                            type="number" min="0" max="100" required
+                            value={paymentConfig.shopDiscountPercentage !== undefined ? paymentConfig.shopDiscountPercentage : 0}
+                            onChange={(e) => setPaymentConfig({ ...paymentConfig, shopDiscountPercentage: parseInt(e.target.value) || 0 })}
+                            placeholder="0" className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Shipping Fee (Base)</label>
+                          <input
+                            type="number" min="0" step="0.01" required
+                            value={paymentConfig.shopShippingFee !== undefined ? paymentConfig.shopShippingFee : 0}
+                            onChange={(e) => setPaymentConfig({ ...paymentConfig, shopShippingFee: parseFloat(e.target.value) || 0 })}
+                            placeholder="0" className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
+                          />
+                        </div>
+                      </div>
+                      <div className="mt-4 flex justify-end">
+                        <button onClick={(e) => { e.preventDefault(); handleConfigSubmit(e); }} className="bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold shadow-soft hover:bg-primary-dark transition-all">Save Config</button>
+                      </div>
+                    </div>
+                    <AdminShopProducts apiUrl={apiUrl} token={token} />
+                  </div>
+                )}
+                {nonCancerTab === 'screening' && <AdminCancerTests apiUrl={apiUrl} token={token} />}
+                {nonCancerTab === 'ai' && <AdminWorkflow apiUrl={apiUrl} token={token} />}
+              </div>
+            </div>
           </div>
         )}
 
@@ -3366,7 +3660,7 @@ const AdminPanelContent: React.FC = () => {
 
                       <div className="grid grid-cols-4 gap-6 pt-3 border-t border-slate-100">
                         <div>
-                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">GST Tax Percentage (%)</label>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Subscription GST (%)</label>
                           <input
                             type="number"
                             min="0"
@@ -3377,7 +3671,7 @@ const AdminPanelContent: React.FC = () => {
                             placeholder="18"
                             className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
                           />
-                          <p className="text-[10px] text-slate-400 font-semibold mt-1">Calculated as exclusive tax on top of subscription prices.</p>
+                          <p className="text-[10px] text-slate-400 font-semibold mt-1">For Subscriptions.</p>
                         </div>
                       </div>
 
@@ -5192,6 +5486,7 @@ const AdminPanelContent: React.FC = () => {
                   <div className="flex border-b border-slate-100 overflow-x-auto">
                     {[
                       { key: 'overview', label: '📋 Overview' },
+                      { key: 'habits', label: '🌱 Habits' },
                       { key: 'food', label: '🍽 Food Logs' },
                       { key: 'glucose', label: '📈 Glucose' },
                       { key: 'reports', label: '📄 CGM Reports' },
@@ -5254,6 +5549,59 @@ const AdminPanelContent: React.FC = () => {
                             <p className="text-sm font-black">{selectedUserActivity.user.createdAt ? new Date(selectedUserActivity.user.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) : '--'}</p>
                           </div>
                         </div>
+                      </div>
+                    )}
+
+                    {/* HABITS TAB */}
+                    {userModalTab === 'habits' && (
+                      <div className="space-y-3">
+                        <h4 className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Habit Logs ({selectedUserActivity.habitLogs?.length ?? 0})</h4>
+                        {!selectedUserActivity.habitLogs || selectedUserActivity.habitLogs.length === 0 ? (
+                          <div className="text-center py-12 text-slate-400 font-semibold text-xs border-2 border-dashed border-slate-100 rounded-2xl">No habits logged yet.</div>
+                        ) : (
+                          <div className="overflow-x-auto rounded-2xl border border-slate-100">
+                            <table className="w-full text-xs">
+                              <thead className="bg-slate-50">
+                                <tr>
+                                  {['Habit', 'Value', 'Time'].map(h => (
+                                    <th key={h} className="px-4 py-3 text-left font-extrabold text-slate-500 uppercase text-[10px]">{h}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-50">
+                                {selectedUserActivity.habitLogs.slice(0, 100).map((log: any) => (
+                                  <tr key={log._id} className="hover:bg-slate-50/60 transition-colors">
+                                    <td className="px-4 py-3 font-bold text-slate-700 capitalize">{log.type}</td>
+                                    <td className="px-4 py-3 text-slate-600 font-medium">
+                                      {log.value ? (
+                                        typeof log.value === 'object' ? (
+                                          <div className="flex flex-col gap-0.5 text-[11px]">
+                                            {Object.entries(log.value).map(([k, v]) => {
+                                              if (k === 'happy') return <span key={k}><strong className="text-slate-400">Response:</strong> {v ? 'Yes / Good' : 'No'}</span>;
+                                              if (k === 'joyActivity') return <span key={k}><strong className="text-slate-400">Activity:</strong> {String(v)}</span>;
+                                              if (k === 'started' || k === 'ended') return <span key={k}><strong className="text-slate-400">{k === 'started' ? 'Start' : 'End'}:</strong> {new Date(String(v)).toLocaleString('en-IN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' })}</span>;
+                                              if (k === 'count') return <span key={k}><strong className="text-slate-400">Count/Amount:</strong> {String(v)}</span>;
+                                              if (k === 'hours') return <span key={k}><strong className="text-slate-400">Duration:</strong> {String(v)} hours</span>;
+                                              if (k === 'emoji') return null;
+                                              if (k === 'label') return <span key={k}><strong className="text-slate-400">Feeling:</strong> {log.value.emoji} {String(v)}</span>;
+                                              if (k === 'faceId' && !log.value.label) return <span key={k}><strong className="text-slate-400">Face:</strong> {String(v)}</span>;
+                                              if (k === 'faceId') return null;
+                                              if (k === 'done') return null;
+                                              return <span key={k}><strong className="text-slate-400 capitalize">{k}:</strong> {String(v)}</span>;
+                                            })}
+                                          </div>
+                                        ) : String(log.value)
+                                      ) : '--'}
+                                    </td>
+                                    <td className="px-4 py-3 text-slate-500 font-medium whitespace-nowrap">
+                                      {log.timestamp ? new Date(log.timestamp).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '--'}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
                       </div>
                     )}
 

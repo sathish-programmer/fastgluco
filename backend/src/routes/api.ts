@@ -20,9 +20,12 @@ import { NotificationController } from '../controllers/notificationController';
 import { ActivityController } from '../controllers/activityController';
 import { FounderController } from '../controllers/founderController';
 import * as RecommendedFoodController from '../controllers/recommendedFoodController';
+import * as HabitController from '../controllers/habitController';
 import { authenticateToken, requireRole } from '../middlewares/authMiddleware';
 import { requireSubscriptionFeature } from '../middlewares/subscriptionMiddleware';
 import { PaymentGatewayConfig } from '../models/PaymentGatewayConfig';
+import * as ShopController from '../controllers/shopController';
+import * as ScreeningController from '../controllers/screeningController';
 
 const router = Router();
 
@@ -133,6 +136,7 @@ router.get('/subscriptions/invoices/:id/download', SubscriptionController.downlo
 router.use('/users', authenticateToken, requireRole(['User']));
 router.get('/users/profile', ProfileController.getProfile);
 router.put('/users/profile', ProfileController.updateProfile);
+router.put('/users/profile/request-edit', ProfileController.requestProfileEdit);
 router.post('/users/profile/sync-libre', ProfileController.triggerSync);
 
 router.use('/food-library', authenticateToken, requireRole(['User', 'SuperAdmin', 'Admin', 'Editor']));
@@ -196,6 +200,22 @@ router.get('/health-insights/current', authenticateToken, requireRole(['User', '
 router.get('/founders', FounderController.getAll);
 
 // ==========================================
+// 2.5 NON-CANCER PATIENT WORKFLOW (USER)
+// ==========================================
+router.get('/shop/products', authenticateToken, requireRole(['User']), ShopController.getProducts);
+router.post('/shop/validate-coupon', authenticateToken, requireRole(['User']), ShopController.validateShopCoupon);
+router.get('/shop/coupons', authenticateToken, requireRole(['User']), ShopController.getAvailableCoupons);
+router.post('/shop/create-order', authenticateToken, requireRole(['User']), ShopController.createOrder);
+router.post('/shop/verify-payment', authenticateToken, requireRole(['User']), ShopController.verifyPayment);
+router.get('/screening/tests', authenticateToken, requireRole(['User']), ScreeningController.getScreeningTests);
+router.get('/workflow-config/:type', authenticateToken, requireRole(['User']), ScreeningController.getWorkflowConfig);
+
+router.use('/habits', authenticateToken, requireRole(['User']));
+router.post('/habits', HabitController.logHabit);
+router.get('/habits', HabitController.getRecentHabits);
+router.delete('/habits/:id', HabitController.deleteHabit);
+
+// ==========================================
 // 3. ADMIN PORTAL ENDPOINTS
 // ==========================================
 router.post('/admin/auth/login', AdminController.login);
@@ -207,6 +227,9 @@ router.use('/admin', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Edi
 router.get('/admin/stats', AdminController.getStats);
 router.get('/admin/users', AdminController.getUsers);
 router.get('/admin/users/:id/activity', AdminController.getUserActivity);
+router.get('/admin/profile-edits', AdminController.getPendingProfileEdits);
+router.post('/admin/profile-edits/:id/approve', AdminController.approveProfileEdit);
+router.post('/admin/profile-edits/:id/reject', AdminController.rejectProfileEdit);
 router.get('/admin/users/:userId/coaching', CoachingController.getSessionsForUser);
 router.put('/admin/users/:id/block', AdminController.toggleUserBlock);
 router.delete('/admin/users/:id', AdminController.deleteUser);
@@ -304,5 +327,19 @@ router.post('/admin/health-insights/set-active', authenticateToken, requireRole(
 router.post('/admin/founders', FounderController.create);
 router.put('/admin/founders/:id', FounderController.update);
 router.delete('/admin/founders/:id', FounderController.delete);
+
+// Non-Cancer Features Management (Admin)
+router.get('/admin/shop-products', ShopController.getAdminProducts);
+router.post('/admin/shop-products', ShopController.createAdminProduct);
+router.put('/admin/shop-products/:id', ShopController.updateAdminProduct);
+router.delete('/admin/shop-products/:id', ShopController.deleteAdminProduct);
+
+router.get('/admin/screening-tests', ScreeningController.getAdminScreeningTests);
+router.post('/admin/screening-tests', ScreeningController.createAdminScreeningTest);
+router.put('/admin/screening-tests/:id', ScreeningController.updateAdminScreeningTest);
+router.delete('/admin/screening-tests/:id', ScreeningController.deleteAdminScreeningTest);
+
+router.get('/admin/workflow-config/:type', ScreeningController.getAdminWorkflowConfig);
+router.put('/admin/workflow-config/:type', ScreeningController.updateAdminWorkflowConfig);
 
 export default router;

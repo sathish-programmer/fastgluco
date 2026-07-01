@@ -5,6 +5,7 @@ import { Login } from './pages/Login';
 import { RecommendedFoodsScreen } from './screens/RecommendedFoodsScreen';
 import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
+import { NonCancerDashboard } from './pages/NonCancerDashboard';
 import { Reports } from './pages/Reports';
 import { FoodLog } from './pages/FoodLog';
 import { Analysis } from './pages/Analysis';
@@ -19,7 +20,8 @@ import {
   Utensils,
   Activity,
   UserCircle2,
-  Heart
+  Heart,
+  BookOpen
 } from 'lucide-react';
 import { GlobalAICoachPopup } from './components/GlobalAICoachPopup';
 import { NotificationBell } from './components/NotificationBell';
@@ -195,7 +197,11 @@ const MainAppContent: React.FC = () => {
 
       {/* Main Tab Screen Content Area */}
       <main className="flex-1 overflow-y-auto w-full">
-        {activeTab === 'Home' && <Dashboard onNavigateToTab={setActiveTab} />}
+        {activeTab === 'Home' && (
+          (user?.cancerJourney as string) === 'TREATMENT' || (user?.cancerJourney as string) === 'SECONDARY_PREVENTION' || (user?.cancerJourney as string) === 'CANCER TREATMENT' || (user?.cancerJourney as string) === 'CANCER SECONDARY PREVENTION [PREVIOUS HISTORY OF CANCER]'
+            ? <Dashboard onNavigateToTab={setActiveTab} />
+            : <NonCancerDashboard onNavigateToTab={setActiveTab} />
+        )}
         {activeTab === 'Reports' && <Reports features={planFeatures} />}
         {activeTab === 'Food Log' && <FoodLog features={planFeatures} onNavigateToTab={setActiveTab} />}
         {activeTab === 'Recommended Foods' && <RecommendedFoodsScreen onBack={() => setActiveTab('Food Log')} />}
@@ -225,32 +231,48 @@ const MainAppContent: React.FC = () => {
           </button>
 
           {/* Reports Tab */}
-          <button
-            onClick={() => setActiveTab('Reports')}
-            className={`flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Reports' ? 'text-primary' : 'text-slate-400'}`}
-          >
-            <FileText className="h-5.5 w-5.5" />
-            <span className="text-[9px] font-extrabold uppercase tracking-wide">Reports</span>
-          </button>
-
+          {user?.cancerJourney !== 'PREVENTION' && (
+            <button
+              onClick={() => setActiveTab('Reports')}
+              className={`flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Reports' ? 'text-primary' : 'text-slate-400'}`}
+            >
+              <FileText className="h-5.5 w-5.5" />
+              <span className="text-[9px] font-extrabold uppercase tracking-wide">Reports</span>
+            </button>
+          )}
 
           {/* Food Log Tab */}
-          <button
-            onClick={() => setActiveTab('Food Log')}
-            className={`flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Food Log' ? 'text-primary' : 'text-slate-400'}`}
-          >
-            <Utensils className="h-5.5 w-5.5" />
-            <span className="text-[9px] font-extrabold uppercase tracking-wide">Food Log</span>
-          </button>
+          {user?.cancerJourney !== 'PREVENTION' && (
+            <button
+              onClick={() => setActiveTab('Food Log')}
+              className={`flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Food Log' ? 'text-primary' : 'text-slate-400'}`}
+            >
+              <Utensils className="h-5.5 w-5.5" />
+              <span className="text-[9px] font-extrabold uppercase tracking-wide">Food Log</span>
+            </button>
+          )}
 
           {/* Analysis Tab */}
-          <button
-            onClick={() => setActiveTab('Analysis')}
-            className={`flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Analysis' ? 'text-primary' : 'text-slate-400'}`}
-          >
-            <Activity className="h-5.5 w-5.5" />
-            <span className="text-[9px] font-extrabold uppercase tracking-wide">Analysis</span>
-          </button>
+          {user?.cancerJourney !== 'PREVENTION' && (
+            <button
+              onClick={() => setActiveTab('Analysis')}
+              className={`flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Analysis' ? 'text-primary' : 'text-slate-400'}`}
+            >
+              <Activity className="h-5.5 w-5.5" />
+              <span className="text-[9px] font-extrabold uppercase tracking-wide">Analysis</span>
+            </button>
+          )}
+
+          {/* Educational Tab for Prevention Users */}
+          {user?.cancerJourney === 'PREVENTION' && (
+            <button
+              onClick={() => setActiveTab('Educational')}
+              className={`flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Educational' ? 'text-primary' : 'text-slate-400'}`}
+            >
+              <BookOpen className="h-5.5 w-5.5" />
+              <span className="text-[9px] font-extrabold uppercase tracking-wide">Learn</span>
+            </button>
+          )}
 
           {/* Profile Tab */}
           <button

@@ -128,6 +128,50 @@ export class ProfileController {
   }
 
   /**
+   * Request Profile Edit (Admin Approval Workflow)
+   */
+  public static async requestProfileEdit(req: AuthRequest, res: Response) {
+    try {
+      const userId = req.user?.id;
+      const edits = req.body;
+
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User profile not found.' });
+      }
+
+      // Check for mobile uniqueness if mobile is changing
+      if (edits.mobileNumber !== undefined && edits.mobileNumber !== user.mobileNumber) {
+        const cleanPhone = edits.mobileNumber.replace(/[\s\-\(\)]/g, '');
+        if (!/^\+[1-9]\d{1,14}$/.test(cleanPhone)) {
+          return res.status(400).json({ message: 'Invalid mobile number format.' });
+        }
+        const existing = await User.findOne({ mobileNumber: cleanPhone, _id: { $ne: userId } });
+        if (existing) {
+          return res.status(409).json({ message: 'This mobile number is already registered to another account.' });
+        }
+        edits.mobileNumber = cleanPhone;
+      }
+
+      // Instead of applying directly, store them in pendingProfileEdits
+      user.pendingProfileEdits = edits;
+      await user.save();
+
+      const updatedUser = await User.findById(userId).select('-passwordHash');
+
+      return res.status(200).json({
+        message: 'Profile edits submitted for review.',
+        user: updatedUser
+      });
+    } catch (error: any) {
+      if (error.code === 11000 && error.keyPattern && error.keyPattern.email) {
+        return res.status(400).json({ message: 'This email address is already in use by another account.' });
+      }
+      return res.status(500).json({ message: error.message || 'Error submitting profile edit request.' });
+    }
+  }
+
+  /**
    * Manual trigger sync
    */
   public static async triggerSync(req: AuthRequest, res: Response) {

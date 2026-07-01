@@ -1,5 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { initializeAuth, getAuth, indexedDBLocalPersistence, browserLocalPersistence } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 import { Capacitor } from '@capacitor/core';
 
 const firebaseConfig = {
@@ -23,9 +24,11 @@ const auth = isFirstInit
     })
   : getAuth(app);
 
+const db = getFirestore(app);
+
 if (import.meta.env.VITE_USE_TEST_AUTH === 'true') {
   auth.settings.appVerificationDisabledForTesting = true;
 }
 
 export const isMock = false;
-export { app, auth };
+export { app, auth, db };

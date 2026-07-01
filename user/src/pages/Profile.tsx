@@ -19,7 +19,7 @@ import { Educational } from './Educational'; // import the sub-view
 import { Subscription } from './Subscription';
 
 export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = () => {
-  const { user, token, apiUrl, logout, updateProfile, isLoading, error, branding } = useAuth();
+  const { user, token, apiUrl, logout, requestProfileUpdate, isLoading, error, branding } = useAuth();
   const { showToast } = useToast();
   
   // Tabs for profile section: 'settings' or 'education' or 'subscription'
@@ -60,7 +60,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
       return;
     }
     setSaveSuccess(false);
-    const success = await updateProfile({
+    const success = await requestProfileUpdate({
       name,
       email,
       mobileNumber: mobile,
@@ -81,7 +81,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
       cancerDisclaimerAcceptedAt: cancerJourney === 'PREVENTION' ? undefined : (disclaimerAccepted ? new Date().toISOString() : undefined)
     });
     if (success) {
-      showToast('Profile updated successfully!', 'success');
+      showToast('Profile edits submitted for review!', 'success');
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } else {
@@ -157,9 +157,25 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
         )}
       </div>
 
+      {user?.pendingProfileEdits && (
+        <div className="mb-6 p-4 bg-amber-50 rounded-3xl border border-amber-200 shadow-sm flex items-start space-x-3">
+          <div className="mt-0.5">
+            <svg className="h-5 w-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <h4 className="text-xs font-bold text-amber-800">Pending Review</h4>
+            <p className="text-[10px] text-amber-700 font-semibold mt-0.5 leading-relaxed">
+              Your recent profile updates are under review by our team. They will be applied once approved.
+            </p>
+          </div>
+        </div>
+      )}
+
       {saveSuccess && (
         <div className="mb-4 p-3 bg-emerald-50 text-emerald-800 text-xs font-bold rounded-2xl border border-emerald-100 shadow-sm animate-in fade-in duration-200">
-          Profile updated & caloric targets recalculated successfully.
+          Profile changes submitted for admin review successfully.
         </div>
       )}
 
@@ -513,7 +529,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
             className="w-full bg-primary hover:bg-primary/95 text-white font-bold py-3 rounded-2xl shadow-soft flex items-center justify-center space-x-2 transition-all hover:shadow-md disabled:opacity-50"
           >
             <Save className="h-4 w-4" />
-            <span>Save Configuration</span>
+            <span>Submit for Review</span>
           </button>
         </form>
       </div>

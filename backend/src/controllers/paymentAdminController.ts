@@ -60,7 +60,10 @@ export class PaymentAdminController {
         appTagline,
         appLogoUrl,
         cancerTreatmentDisclaimer,
-        cancerSecondaryDisclaimer
+        cancerSecondaryDisclaimer,
+        shopGstPercentage,
+        shopDiscountPercentage,
+        shopShippingFee
       } = req.body;
 
       let config = await PaymentGatewayConfig.findOne();
@@ -88,6 +91,9 @@ export class PaymentAdminController {
       if (appLogoUrl !== undefined) config.appLogoUrl = appLogoUrl;
       if (cancerTreatmentDisclaimer !== undefined) config.cancerTreatmentDisclaimer = cancerTreatmentDisclaimer;
       if (cancerSecondaryDisclaimer !== undefined) config.cancerSecondaryDisclaimer = cancerSecondaryDisclaimer;
+      if (shopGstPercentage !== undefined) config.shopGstPercentage = shopGstPercentage;
+      if (shopDiscountPercentage !== undefined) config.shopDiscountPercentage = shopDiscountPercentage;
+      if (shopShippingFee !== undefined) config.shopShippingFee = shopShippingFee;
       config.updatedBy = req.user?.id as any;
 
       await config.save();

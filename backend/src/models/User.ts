@@ -29,6 +29,7 @@ export interface IUser extends Document {
   cancerJourney?: 'PREVENTION' | 'TREATMENT' | 'SECONDARY_PREVENTION';
   cancerDisclaimerAccepted?: boolean;
   cancerDisclaimerAcceptedAt?: Date;
+  pendingProfileEdits?: any;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -68,7 +69,8 @@ const userSchema = new Schema<IUser>(
     isDeleted: { type: Boolean, default: false },
     cancerJourney: { type: String, enum: ['PREVENTION', 'TREATMENT', 'SECONDARY_PREVENTION'], default: 'PREVENTION' },
     cancerDisclaimerAccepted: { type: Boolean, default: false },
-    cancerDisclaimerAcceptedAt: { type: Date }
+    cancerDisclaimerAcceptedAt: { type: Date },
+    pendingProfileEdits: { type: Schema.Types.Mixed, default: null }
   },
   {
     timestamps: true

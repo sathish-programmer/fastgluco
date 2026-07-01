@@ -331,4 +331,31 @@ export class EmailService {
       console.error('[EmailService] Failed to send login notification email:', err);
     }
   }
+
+  /**
+   * Send Profile Edit Approved Email
+   */
+  public static async sendProfileEditApprovedEmail(email: string, name: string) {
+    const { appName, appTagline } = await EmailService.getBranding();
+    const html = generateEmailTemplate('Profile Update Approved', `
+      <p>Hi ${name},</p>
+      <p>Great news! Your recent request to update your profile information has been reviewed and <strong>approved</strong> by our administrative team.</p>
+      <p>The changes have now been applied to your account. You can log into the app to see your updated profile.</p>
+    `, appName, appTagline);
+    try { await transporter.sendMail({ from: `"${appName} Support" <support@mitoreboot.com>`, to: email, subject: `${appName} Profile Update Approved`, html }); } catch (err) { console.error(err); }
+  }
+
+  /**
+   * Send Profile Edit Rejected Email
+   */
+  public static async sendProfileEditRejectedEmail(email: string, name: string) {
+    const { appName, appTagline } = await EmailService.getBranding();
+    const html = generateEmailTemplate('Profile Update Notice', `
+      <p>Hi ${name},</p>
+      <p>We are writing regarding your recent request to update your profile information on ${appName}.</p>
+      <p>After reviewing the requested changes, our administrative team was unable to approve them at this time. Your profile remains unchanged.</p>
+      <p>If you believe this was a mistake or have any questions, please contact our support team.</p>
+    `, appName, appTagline);
+    try { await transporter.sendMail({ from: `"${appName} Support" <support@mitoreboot.com>`, to: email, subject: `${appName} Profile Update Notice`, html }); } catch (err) { console.error(err); }
+  }
 }

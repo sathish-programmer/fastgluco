@@ -7,6 +7,9 @@ export interface IPaymentGatewayConfig extends Document {
   enablePayments: boolean;
   enableSubscriptions: boolean; // Subscription Required ON/OFF
   gstPercentage: number; // GST Percentage configured by admin (e.g. 18)
+  shopGstPercentage: number; // GST for Shop products
+  shopDiscountPercentage: number; // Global Discount for Shop products
+  shopShippingFee: number; // Shipping fee for shop orders
   safeGlucoseThreshold: number; // Safe limit (default 90)
   moderateGlucoseThreshold: number; // Moderate limit (default 110)
   aiSpikeThreshold: number; // AI triggers coaching above this
@@ -34,6 +37,9 @@ const paymentGatewayConfigSchema = new Schema<IPaymentGatewayConfig>(
     enablePayments: { type: Boolean, default: false, required: true },
     enableSubscriptions: { type: Boolean, default: false, required: true },
     gstPercentage: { type: Number, default: 18, min: 0, required: true },
+    shopGstPercentage: { type: Number, default: 0, min: 0 },
+    shopDiscountPercentage: { type: Number, default: 0, min: 0 },
+    shopShippingFee: { type: Number, default: 0, min: 0 },
     safeGlucoseThreshold: { type: Number, default: 90, required: true },
     moderateGlucoseThreshold: { type: Number, default: 110, required: true },
     aiSpikeThreshold: { type: Number, default: 110 },
