@@ -225,7 +225,7 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
 
   if (showUpgradePrompt) {
     return (
-      <div className="pb-24 pt-12 px-6 max-w-lg mx-auto bg-white min-h-[80vh] flex flex-col items-center justify-center text-center">
+      <div className="pb-24 pt-12 px-6 max-w-5xl mx-auto bg-white min-h-[80vh] flex flex-col items-center justify-center text-center">
         <div className="h-16 w-16 bg-blue-50 text-primary rounded-full flex items-center justify-center mb-4 shadow-soft">
           <CreditCard className="h-8 w-8" />
         </div>
@@ -248,7 +248,7 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
   }
 
   return (
-    <div className="pb-24 pt-4 px-4 max-w-lg mx-auto bg-slate-50/70 min-h-screen font-sans antialiased text-slate-800">
+    <div className="pb-24 pt-4 px-4 max-w-5xl mx-auto bg-slate-50/70 min-h-screen font-sans antialiased text-slate-800">
       {/* Title */}
       <div className="mb-6 flex justify-between items-center">
         <div>

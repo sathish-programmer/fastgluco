@@ -55,7 +55,7 @@ export const RecommendedFoodsScreen: React.FC<Props> = ({ onBack }) => {
   const categories = Array.from(new Set(foods.map(f => f.category)));
 
   return (
-    <div className="pb-24 pt-4 px-4 max-w-lg mx-auto bg-slate-50/70 min-h-screen font-sans antialiased text-slate-800">
+    <div className="pb-24 pt-4 px-4 max-w-5xl mx-auto bg-slate-50/70 min-h-screen font-sans antialiased text-slate-800">
       <div className="mb-6 flex items-center">
         <button 
           onClick={onBack}

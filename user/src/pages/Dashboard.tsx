@@ -583,7 +583,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
   };
 
   return (
-    <div className="pb-24 pt-6 px-4 max-w-lg mx-auto bg-gradient-to-b from-slate-50/90 to-slate-100/80 min-h-screen font-sans antialiased text-slate-800">
+    <div className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-gradient-to-b from-slate-50/90 to-slate-100/80 min-h-screen font-sans antialiased text-slate-800">
       {/* Welcome Header */}
       <div className="flex justify-between items-center mb-6">
         <div>

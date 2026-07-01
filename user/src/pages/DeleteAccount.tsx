@@ -4,7 +4,7 @@ import { Trash2, AlertTriangle, Mail, Smartphone, ArrowLeft } from 'lucide-react
 export const DeleteAccount: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="bg-white max-w-lg w-full rounded-3xl p-6 md:p-8 shadow-xl border border-slate-100">
+      <div className="bg-white max-w-5xl w-full rounded-3xl p-6 md:p-8 shadow-xl border border-slate-100">
         
         <div className="flex items-center space-x-3 mb-6 pb-6 border-b border-slate-100">
           <div className="p-3 bg-rose-50 text-rose-500 rounded-2xl">

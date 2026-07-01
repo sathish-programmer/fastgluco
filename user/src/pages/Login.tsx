@@ -96,8 +96,8 @@ function getRecaptchaVerifier(): ApplicationVerifier {
     return {
       type: 'recaptcha',
       verify: async () => 'mock-token',
-      clear: () => {},
-      _reset: () => {},
+      clear: () => { },
+      _reset: () => { },
     } as unknown as ApplicationVerifier;
   }
 
@@ -154,6 +154,9 @@ export const Login: React.FC<LoginProps> = () => {
 
     const setupListeners = async () => {
       codeSentListener = await FirebaseAuthentication.addListener('phoneCodeSent', (event) => {
+        if ((window as any).nativePhoneAuthTimeout) {
+          window.clearTimeout((window as any).nativePhoneAuthTimeout);
+        }
         window.verificationId = event.verificationId;
         setScreen('otp');
         setTimer(60);
@@ -162,6 +165,9 @@ export const Login: React.FC<LoginProps> = () => {
       });
 
       verificationCompletedListener = await FirebaseAuthentication.addListener('phoneVerificationCompleted', async () => {
+        if ((window as any).nativePhoneAuthTimeout) {
+          window.clearTimeout((window as any).nativePhoneAuthTimeout);
+        }
         // Auto retrieved on Android
         try {
           const idTokenResult = await FirebaseAuthentication.getIdToken();
@@ -173,6 +179,9 @@ export const Login: React.FC<LoginProps> = () => {
       });
 
       verificationFailedListener = await FirebaseAuthentication.addListener('phoneVerificationFailed', (event) => {
+        if ((window as any).nativePhoneAuthTimeout) {
+          window.clearTimeout((window as any).nativePhoneAuthTimeout);
+        }
         setPhoneError(event.message || 'Verification failed natively');
         setLoading(false);
       });
@@ -223,8 +232,8 @@ export const Login: React.FC<LoginProps> = () => {
   };
 
   // ─── SEND OTP ────────────────────────────────────────────────────────────────
-  const handleSendOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSendOtp = async (e?: any) => {
+    e?.preventDefault?.();
     setPhoneError('');
     clearError();
 
@@ -235,8 +244,26 @@ export const Login: React.FC<LoginProps> = () => {
     }
 
     setLoading(true);
+    let nativeFlowStarted = false;
+
     try {
+      console.log("isNativePlatform", isNativePlatform);
       if (isNativePlatform && !auth.settings.appVerificationDisabledForTesting) {
+        showToast('Sending verification...', 'success');
+        nativeFlowStarted = true;
+
+        // Add a timeout fallback in case listeners never fire
+        const timeoutId = window.setTimeout(() => {
+          setLoading((currentLoading) => {
+            if (currentLoading) {
+              setPhoneError('Verification request timed out. Please check your network and try again.');
+              return false; // clear loading state
+            }
+            return currentLoading;
+          });
+        }, 15000); // 15 seconds timeout
+        (window as any).nativePhoneAuthTimeout = timeoutId;
+
         await FirebaseAuthentication.signInWithPhoneNumber({ phoneNumber: e164 });
         // State updates are handled by the 'phoneCodeSent' listener
       } else {
@@ -262,8 +289,11 @@ export const Login: React.FC<LoginProps> = () => {
       } else {
         setPhoneError(err.message || 'Failed to send verification code. Please try again.');
       }
+      nativeFlowStarted = false; // ensure loading is cleared on error
     } finally {
-      setLoading(false);
+      if (!nativeFlowStarted) {
+        setLoading(false);
+      }
     }
   };
 
@@ -273,7 +303,7 @@ export const Login: React.FC<LoginProps> = () => {
       setOtpError('Enter the 6-digit code from your SMS.');
       return;
     }
-    if (!confirmationResult) {
+    if (!isNativePlatform && !confirmationResult) {
       setOtpError('Verification session expired. Please go back and request a new code.');
       return;
     }
@@ -320,8 +350,8 @@ export const Login: React.FC<LoginProps> = () => {
     }
   };
 
-  const handleVerifyOtp = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleVerifyOtp = (e?: any) => {
+    e?.preventDefault?.();
     submitOtp(otpCode);
   };
 
@@ -378,7 +408,7 @@ export const Login: React.FC<LoginProps> = () => {
 
         {screen === 'phone' ? (
           /* ── SCREEN 1: Phone Number ─────────────────────────────────────── */
-          <form onSubmit={handleSendOtp} className="space-y-6" noValidate>
+          <form className="space-y-6" noValidate>
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">Mobile Number</label>
 
@@ -462,7 +492,8 @@ export const Login: React.FC<LoginProps> = () => {
 
             <button
               id="send-otp-btn"
-              type="submit"
+              type="button"
+              onClick={handleSendOtp}
               disabled={loading || authLoading}
               className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 px-4 rounded-2xl shadow-lg shadow-primary-light transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
@@ -475,7 +506,7 @@ export const Login: React.FC<LoginProps> = () => {
           </form>
         ) : (
           /* ── SCREEN 2: OTP Verification ─────────────────────────────────── */
-          <form onSubmit={handleVerifyOtp} className="space-y-6 animate-fadeIn" noValidate>
+          <form className="space-y-6 animate-fadeIn" noValidate>
             <div>
               <div className="flex items-center justify-between mb-4">
                 <button
@@ -522,7 +553,8 @@ export const Login: React.FC<LoginProps> = () => {
 
             <button
               id="verify-otp-btn"
-              type="submit"
+              type="button"
+              onClick={handleVerifyOtp}
               disabled={loading || authLoading || otpCode.length < 6}
               className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 px-4 rounded-2xl shadow-lg shadow-primary-light transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
@@ -553,7 +585,7 @@ export const Login: React.FC<LoginProps> = () => {
       </div>
 
       {/* Hidden anchor required by Firebase invisible reCAPTCHA */}
-      <div id="recaptcha-container" />
+      <div id="recaptcha-container" style={{ display: 'none' }} />
     </div>
   );
 };

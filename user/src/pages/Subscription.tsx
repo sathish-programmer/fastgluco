@@ -415,7 +415,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
   }
 
   return (
-    <div className={`pb-24 ${isBlocking ? 'pt-0' : 'pt-2'} px-4 max-w-lg mx-auto bg-slate-50 min-h-screen`}>
+    <div className={`pb-24 ${isBlocking ? 'pt-0' : 'pt-2'} px-4 max-w-5xl mx-auto bg-slate-50 min-h-screen`}>
       {/* Header */}
       <div className={`flex items-center justify-between mb-6 bg-white -mx-4 px-4 py-3 border-b border-slate-100 sticky ${isBlocking ? 'top-0' : 'top-12'} z-10`}>
         <div className="flex items-center space-x-3">

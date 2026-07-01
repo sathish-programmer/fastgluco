@@ -95,7 +95,7 @@ export const Educational: React.FC = () => {
   };
 
   return (
-    <div className="pb-24 pt-4 px-4 max-w-lg mx-auto bg-white min-h-screen">
+    <div className="pb-24 pt-4 px-4 max-w-5xl mx-auto bg-white min-h-screen">
       {/* Category selector */}
       <div className="flex space-x-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
         <button

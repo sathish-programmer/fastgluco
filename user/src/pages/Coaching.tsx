@@ -83,7 +83,7 @@ export const Coaching: React.FC<CoachingProps> = () => {
   }
 
   return (
-    <div className="pb-24 pt-4 px-4 max-w-lg mx-auto bg-white min-h-screen">
+    <div className="pb-24 pt-4 px-4 max-w-5xl mx-auto bg-white min-h-screen">
       {/* Title */}
       <div className="mb-6 flex items-center space-x-3">
         <div className="bg-primary/10 p-2.5 rounded-2xl">

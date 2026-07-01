@@ -169,7 +169,7 @@ const MainAppContent: React.FC = () => {
         />
       )}
       {/* Dynamic Header with safe area padding for mobile notches */}
-      <header className="sticky top-0 bg-white/95 backdrop-blur-md border-b border-slate-100 z-10 px-4 pt-[calc(env(safe-area-inset-top)+12px)] pb-3 max-w-lg w-full mx-auto flex items-center justify-between">
+      <header className="sticky top-0 bg-white/95 backdrop-blur-md border-b border-slate-100 z-10 px-4 pt-[calc(env(safe-area-inset-top)+12px)] pb-3 max-w-5xl w-full mx-auto flex items-center justify-between">
         <div className="flex items-center space-x-2">
           {branding.appLogoUrl ? (
             <img src={branding.appLogoUrl} alt={branding.appName} className="h-6 w-auto object-contain max-w-[40px]" />
@@ -213,7 +213,7 @@ const MainAppContent: React.FC = () => {
 
       {/* Accessability-first Bottom Tab Navigation Menu with safe area padding */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-10 pt-2 pb-[calc(env(safe-area-inset-bottom)+8px)] shadow-lg">
-        <div className="max-w-lg mx-auto flex justify-around items-center">
+        <div className="max-w-5xl mx-auto flex justify-around items-center">
 
           {/* Home Tab */}
           <button

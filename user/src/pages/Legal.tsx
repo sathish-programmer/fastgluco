@@ -35,7 +35,7 @@ export const Legal: React.FC<LegalProps> = ({ type, onBack }) => {
   const title = type === 'PrivacyPolicy' ? 'Privacy Policy' : 'Terms of Service';
 
   return (
-    <div className="pb-24 pt-4 px-4 max-w-lg mx-auto bg-white min-h-screen">
+    <div className="pb-24 pt-4 px-4 max-w-5xl mx-auto bg-white min-h-screen">
       <div className="flex items-center space-x-2 mb-6 border-b border-slate-100 pb-4">
         {onBack && (
           <button onClick={onBack} className="mr-2 text-slate-400 hover:text-slate-600">

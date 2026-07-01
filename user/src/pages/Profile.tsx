@@ -138,7 +138,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
   }
 
   return (
-    <div className="pb-24 pt-4 px-4 max-w-lg mx-auto bg-slate-50/70 min-h-screen font-sans antialiased text-slate-800">
+    <div className="pb-24 pt-4 px-4 max-w-5xl mx-auto bg-slate-50/70 min-h-screen font-sans antialiased text-slate-800">
       {/* Profile Header */}
       <div className="mb-6 text-center">
         <div className="inline-flex h-16 w-16 bg-primary/10 text-primary rounded-full items-center justify-center text-2xl font-bold shadow-sm mb-3">
