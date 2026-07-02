@@ -43,6 +43,12 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
   }, [apiUrl, token]);
 
   useEffect(() => {
+    if (branding?.enableExternalPayments === false) {
+      onBack();
+    }
+  }, [branding?.enableExternalPayments, onBack]);
+
+  useEffect(() => {
     // Re-evaluate breakdown if basket changes
     if (basket.length > 0) {
       calculateBreakdown(appliedCoupon || '');
@@ -52,7 +58,7 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
       setShippingFee(0);
       setFinalTotal(0);
     }
-  }, [basket]);
+  }, [basket, appliedCoupon, curr]);
 
   const calculateBreakdown = async (code: string = '') => {
     try {
@@ -203,7 +209,7 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
 
   if (ordered) {
     return (
-      <div className="pb-24 pt-6 px-4 max-w-md mx-auto bg-slate-50 min-h-screen font-sans antialiased text-slate-800 flex flex-col items-center justify-center">
+      <div className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-slate-50 min-h-screen font-sans antialiased text-slate-800 flex flex-col items-center justify-center">
         <div className="w-16 h-16 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center mb-6">
           <ShieldCheck className="h-8 w-8 text-emerald-500" />
         </div>
@@ -222,7 +228,7 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
   }
 
   return (
-    <div className="pb-24 pt-6 px-4 max-w-md mx-auto bg-slate-50 min-h-screen font-sans antialiased text-slate-800">
+    <div className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-slate-50 min-h-screen font-sans antialiased text-slate-800">
       <div className="flex items-center gap-4 mb-8">
         <button 
           onClick={onBack}
@@ -272,63 +278,65 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
             ))}
           </div>
 
-          <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-5 mb-6">
-            <div className="flex gap-3">
-              <div className="relative flex-1">
-                <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Promo Code"
-                  value={couponCode}
-                  onChange={(e) => setCouponCode(e.target.value)}
-                  disabled={!!appliedCoupon}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-3 text-sm text-slate-800 font-bold focus:outline-none focus:border-indigo-400 uppercase disabled:opacity-50"
-                />
+          {branding?.enableSaferFoodCoupons !== false && (
+            <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-5 mb-6">
+              <div className="flex gap-3">
+                <div className="relative flex-1">
+                  <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Promo Code"
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value)}
+                    disabled={!!appliedCoupon}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-3 text-sm text-slate-800 font-bold focus:outline-none focus:border-indigo-400 uppercase disabled:opacity-50"
+                  />
+                </div>
+                {!appliedCoupon ? (
+                  <button
+                    onClick={handleApplyCoupon}
+                    disabled={validatingCoupon || !couponCode}
+                    className="px-5 rounded-xl font-bold text-white bg-slate-800 hover:bg-slate-900 transition-all shadow-sm disabled:opacity-50 text-sm"
+                  >
+                    Apply
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setCouponCode('');
+                      setAppliedCoupon(null);
+                      calculateBreakdown('');
+                    }}
+                    className="px-4 rounded-xl font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-all border border-red-100 text-sm"
+                  >
+                    Remove
+                  </button>
+                )}
               </div>
-              {!appliedCoupon ? (
-                <button
-                  onClick={handleApplyCoupon}
-                  disabled={validatingCoupon || !couponCode}
-                  className="px-5 rounded-xl font-bold text-white bg-slate-800 hover:bg-slate-900 transition-all shadow-sm disabled:opacity-50 text-sm"
-                >
-                  Apply
-                </button>
-              ) : (
-                <button
-                  onClick={() => {
-                    setCouponCode('');
-                    setAppliedCoupon(null);
-                    calculateBreakdown('');
-                  }}
-                  className="px-4 rounded-xl font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-all border border-red-100 text-sm"
-                >
-                  Remove
-                </button>
+              {appliedCoupon && (
+                <p className="text-[10px] text-emerald-600 font-bold mt-2 uppercase tracking-wide">
+                  ✓ Coupon applied successfully
+                </p>
+              )}
+              
+              {availableCoupons.length > 0 && !appliedCoupon && (
+                <div className="mt-4 pt-4 border-t border-slate-100">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Available Coupons</span>
+                  <div className="flex flex-wrap gap-2">
+                    {availableCoupons.map(c => (
+                      <button 
+                        key={c.code}
+                        onClick={() => setCouponCode(c.code)}
+                        className="text-xs px-2.5 py-1 border border-indigo-200 bg-indigo-50 text-indigo-700 rounded-lg font-bold hover:bg-indigo-100 transition-all"
+                      >
+                        {c.code} ({c.discountType === 'percentage' ? `${c.discountValue}% OFF` : `${curr}${c.discountValue} OFF`})
+                      </button>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
-            {appliedCoupon && (
-              <p className="text-[10px] text-emerald-600 font-bold mt-2 uppercase tracking-wide">
-                ✓ Coupon applied successfully
-              </p>
-            )}
-            
-            {availableCoupons.length > 0 && !appliedCoupon && (
-              <div className="mt-4 pt-4 border-t border-slate-100">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Available Coupons</span>
-                <div className="flex flex-wrap gap-2">
-                  {availableCoupons.map(c => (
-                    <button 
-                      key={c.code}
-                      onClick={() => setCouponCode(c.code)}
-                      className="text-xs px-2.5 py-1 border border-indigo-200 bg-indigo-50 text-indigo-700 rounded-lg font-bold hover:bg-indigo-100 transition-all"
-                    >
-                      {c.code} ({c.discountType === 'percentage' ? `${c.discountValue}% OFF` : `${curr}${c.discountValue} OFF`})
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          )}
 
           <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-5">
             <div className="flex justify-between items-center mb-2">

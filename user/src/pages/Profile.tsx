@@ -212,16 +212,18 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
           <ChevronRight className="h-4 w-4 text-slate-400" />
         </button>
 
-        <button
-          onClick={() => setSubView('subscription')}
-          className="w-full bg-white hover:bg-slate-50/50 p-4 rounded-3xl border border-slate-100 shadow-[0_12px_24px_rgba(0,0,0,0.02)] flex items-center justify-between transition-all"
-        >
-          <div className="flex items-center space-x-3">
-            <CreditCard className="h-4 w-4 text-primary" />
-            <span className="text-xs font-bold text-slate-700">My Subscription & Billing</span>
-          </div>
-          <ChevronRight className="h-4 w-4 text-slate-400" />
-        </button>
+        {branding.enableSubscriptions !== false && (
+          <button
+            onClick={() => setSubView('subscription')}
+            className="w-full bg-white hover:bg-slate-50/50 p-4 rounded-3xl border border-slate-100 shadow-[0_12px_24px_rgba(0,0,0,0.02)] flex items-center justify-between transition-all"
+          >
+            <div className="flex items-center space-x-3">
+              <CreditCard className="h-4 w-4 text-primary" />
+              <span className="text-xs font-bold text-slate-700">My Subscription & Billing</span>
+            </div>
+            <ChevronRight className="h-4 w-4 text-slate-400" />
+          </button>
+        )}
       </div>
 
       {/* Physical Profiling Update Form */}

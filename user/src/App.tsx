@@ -126,9 +126,21 @@ const MainAppContent: React.FC = () => {
     checkSubscription();
   }, [isAuthenticated, token, apiUrl]);
 
+  useEffect(() => {
+    if (branding.enableExternalPayments || branding.enableSubscriptions) {
+      if (!document.getElementById('razorpay-script')) {
+        const script = document.createElement('script');
+        script.id = 'razorpay-script';
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.async = true;
+        document.body.appendChild(script);
+      }
+    }
+  }, [branding.enableExternalPayments, branding.enableSubscriptions]);
+
   if (isLoading || checkingSub) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white text-primary">
+      <div className="h-full flex items-center justify-center bg-white text-primary">
         <div className="flex flex-col items-center space-y-3">
           <Heart className="h-10 w-10 fill-primary animate-pulse" />
           <span className="font-bold text-slate-700 text-sm animate-pulse">{branding.appName} Loading...</span>
@@ -150,7 +162,7 @@ const MainAppContent: React.FC = () => {
     return <Register onNavigateToLogin={logout} />;
   }
 
-  if (isSubscribed === false) {
+  if (isSubscribed === false && branding.enableSubscriptions !== false) {
     return (
       <Subscription
         onBack={logout}
@@ -161,7 +173,7 @@ const MainAppContent: React.FC = () => {
   }
 
   return (
-    <div className="bg-white min-h-screen flex flex-col justify-between">
+    <div className="bg-white h-full flex flex-col justify-between relative">
       {showOnboarding && (
         <OnboardingTour
           onComplete={() => {

@@ -3656,6 +3656,47 @@ const AdminPanelContent: React.FC = () => {
                           </label>
                           <p className="text-[10px] text-slate-400 font-semibold mt-1">Sandbox toggle for API client runs.</p>
                         </div>
+
+                        <div>
+                          <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-600 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={paymentConfig.enableExternalPayments ?? false}
+                              onChange={(e) => setPaymentConfig({ ...paymentConfig, enableExternalPayments: e.target.checked })}
+                              className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
+                            />
+                            <span>Enable External Payments (Shop)</span>
+                          </label>
+                          <p className="text-[10px] text-slate-400 font-semibold mt-1">Enable external payments and checkout flow.</p>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-6 pt-3 border-t border-slate-100 mt-4">
+                        <div>
+                          <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-600 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={paymentConfig.enableSubscriptionCoupons ?? true}
+                              onChange={(e) => setPaymentConfig({ ...paymentConfig, enableSubscriptionCoupons: e.target.checked })}
+                              className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
+                            />
+                            <span>Enable Subscription Coupon Code Section</span>
+                          </label>
+                          <p className="text-[10px] text-slate-400 font-semibold mt-1">If unchecked, the promo code section in subscriptions is hidden.</p>
+                        </div>
+
+                        <div>
+                          <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-600 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={paymentConfig.enableSaferFoodCoupons ?? true}
+                              onChange={(e) => setPaymentConfig({ ...paymentConfig, enableSaferFoodCoupons: e.target.checked })}
+                              className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
+                            />
+                            <span>Enable Safer Food (Non-Cancer) Coupon Section</span>
+                          </label>
+                          <p className="text-[10px] text-slate-400 font-semibold mt-1">If unchecked, the promo code section in shop basket is hidden.</p>
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-4 gap-6 pt-3 border-t border-slate-100">

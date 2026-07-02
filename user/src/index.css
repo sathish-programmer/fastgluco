@@ -3,6 +3,9 @@
 @tailwind utilities;
 
 @layer base {
+  html, body, #root {
+    @apply h-full w-full overflow-hidden;
+  }
   body {
     @apply bg-white text-slate-800 font-sans antialiased selection:bg-primary-light selection:text-primary-dark;
     -webkit-tap-highlight-color: transparent;

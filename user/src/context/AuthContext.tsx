@@ -31,6 +31,10 @@ export interface AppBranding {
   appLogoUrl: string;
   cancerTreatmentDisclaimer: string;
   cancerSecondaryDisclaimer: string;
+  enableSubscriptionCoupons: boolean;
+  enableSaferFoodCoupons: boolean;
+  enableSubscriptions?: boolean;
+  enableExternalPayments?: boolean;
 }
 
 interface AuthContextType {
@@ -61,7 +65,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     appTagline: 'The circadian fasting app',
     appLogoUrl: '',
     cancerTreatmentDisclaimer: 'Disclaimer: This app is for informational purposes only. If you are undergoing active cancer treatment, please consult with your oncologist before starting any circadian fasting protocols.',
-    cancerSecondaryDisclaimer: 'Disclaimer: This app is for informational purposes only. If you have a previous history of cancer (secondary prevention), please consult with your medical team before starting any circadian fasting protocols.'
+    cancerSecondaryDisclaimer: 'Disclaimer: This app is for informational purposes only. If you have a previous history of cancer (secondary prevention), please consult with your medical team before starting any circadian fasting protocols.',
+    enableSubscriptionCoupons: true,
+    enableSaferFoodCoupons: true,
+    enableSubscriptions: false,
+    enableExternalPayments: false
   });
 
   const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5001/api' : 'https://api.mitoreboot.in/api');
@@ -78,7 +86,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               appTagline: config.appTagline,
               appLogoUrl: config.appLogoUrl || '',
               cancerTreatmentDisclaimer: config.cancerTreatmentDisclaimer || '',
-              cancerSecondaryDisclaimer: config.cancerSecondaryDisclaimer || ''
+              cancerSecondaryDisclaimer: config.cancerSecondaryDisclaimer || '',
+              enableSubscriptionCoupons: config.enableSubscriptionCoupons ?? true,
+              enableSaferFoodCoupons: config.enableSaferFoodCoupons ?? true,
+              enableSubscriptions: config.enableSubscriptions,
+              enableExternalPayments: config.enableExternalPayments
             });
             document.title = `${config.appName} - ${config.appTagline}`;
           }

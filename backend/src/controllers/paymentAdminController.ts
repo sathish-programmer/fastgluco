@@ -23,6 +23,9 @@ export class PaymentAdminController {
           isSandbox: true,
           enablePayments: false,
           enableSubscriptions: false,
+          enableSubscriptionCoupons: true,
+          enableExternalPayments: false,
+          enableSaferFoodCoupons: true,
           enableHydrationTracker: true,
           hydrationDailyLimitMl: 3000,
           enableWorkoutTracker: true
@@ -46,6 +49,9 @@ export class PaymentAdminController {
         isSandbox, 
         enablePayments, 
         enableSubscriptions, 
+        enableSubscriptionCoupons,
+        enableExternalPayments,
+        enableSaferFoodCoupons,
         gstPercentage, 
         safeGlucoseThreshold, 
         moderateGlucoseThreshold, 
@@ -76,6 +82,9 @@ export class PaymentAdminController {
       if (isSandbox !== undefined) config.isSandbox = isSandbox;
       if (enablePayments !== undefined) config.enablePayments = enablePayments;
       if (enableSubscriptions !== undefined) config.enableSubscriptions = enableSubscriptions;
+      if (enableSubscriptionCoupons !== undefined) config.enableSubscriptionCoupons = enableSubscriptionCoupons;
+      if (enableExternalPayments !== undefined) config.enableExternalPayments = enableExternalPayments;
+      if (enableSaferFoodCoupons !== undefined) config.enableSaferFoodCoupons = enableSaferFoodCoupons;
       if (gstPercentage !== undefined) config.gstPercentage = gstPercentage;
       if (safeGlucoseThreshold !== undefined) config.safeGlucoseThreshold = safeGlucoseThreshold;
       if (moderateGlucoseThreshold !== undefined) config.moderateGlucoseThreshold = moderateGlucoseThreshold;

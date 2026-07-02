@@ -19,7 +19,7 @@ export interface ShopItem {
 }
 
 export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type }) => {
-  const { apiUrl, token, user } = useAuth();
+  const { apiUrl, token, user, branding } = useAuth();
   const { showToast } = useToast();
   const curr = user?.currency === 'INR' ? '₹' : '$';
   const [basket, setBasket] = useState<{item: ShopItem, qty: number}[]>([]);
@@ -78,7 +78,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type }) => {
   const filteredProducts = products.filter(p => p.category === type);
 
   return (
-    <div className="pb-24 pt-6 px-4 max-w-md mx-auto bg-slate-50 min-h-screen font-sans antialiased text-slate-800">
+    <div className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-slate-50 min-h-screen font-sans antialiased text-slate-800">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           <button 
@@ -96,17 +96,19 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type }) => {
             </h2>
           </div>
         </div>
-        <button 
-          onClick={() => setShowBasket(true)}
-          className="relative h-10 w-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-700 hover:bg-slate-50 shadow-sm transition-all"
-        >
-          <ShoppingCart className="h-5 w-5" />
-          {totalItems > 0 && (
-            <span className="absolute -top-1.5 -right-1.5 bg-indigo-500 text-white text-[9px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
-              {totalItems}
-            </span>
-          )}
-        </button>
+        {branding.enableExternalPayments !== false && (
+          <button 
+            onClick={() => setShowBasket(true)}
+            className="relative h-10 w-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-700 hover:bg-slate-50 shadow-sm transition-all"
+          >
+            <ShoppingCart className="h-5 w-5" />
+            {totalItems > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 bg-indigo-500 text-white text-[9px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
+                {totalItems}
+              </span>
+            )}
+          </button>
+        )}
       </div>
 
       <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-4 mb-8">
@@ -126,7 +128,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type }) => {
           <p className="text-xs text-slate-400 font-bold">Loading products...</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredProducts.map(item => (
             <div key={item.id} className="bg-white border border-slate-200 shadow-sm rounded-2xl p-3 flex flex-col justify-between hover:shadow-md transition-all">
               <div>
@@ -136,14 +138,16 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type }) => {
                 <h4 className="font-bold text-slate-800 text-sm mb-1 leading-tight">{item.name}</h4>
                 <p className="text-[10px] text-slate-400 mb-3 line-clamp-2 leading-relaxed">{item.desc}</p>
               </div>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mt-2">
                 <span className="font-bold text-slate-800">{curr}{item.price.toFixed(2)}</span>
-                <button 
-                  onClick={() => addToBasket(item)}
-                  className={`text-[10px] font-bold text-white ${colorBg} ${colorHover} px-3 py-1.5 rounded-lg shadow-sm transition-all active:scale-95`}
-                >
-                  Add
-                </button>
+                {branding.enableExternalPayments !== false && (
+                  <button 
+                    onClick={() => addToBasket(item)}
+                    className={`text-[10px] font-bold text-white ${colorBg} ${colorHover} px-3 py-1.5 rounded-lg shadow-sm transition-all active:scale-95`}
+                  >
+                    Add
+                  </button>
+                )}
               </div>
             </div>
           ))}

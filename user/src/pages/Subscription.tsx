@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+
 import { useAuth } from '../context/AuthContext';
 import {
   Check,
@@ -405,8 +406,8 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px] p-6">
-        <div className="flex flex-col items-center space-y-2">
+      <div className="min-h-full bg-slate-50 flex flex-col pt-12 pb-24 px-6 md:px-10 lg:px-16">
+        <div className="w-full max-w-3xl mx-auto flex-1 flex flex-col justify-center items-center space-y-2">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           <span className="text-xs text-slate-500 font-bold">Fetching plans and billing data...</span>
         </div>
@@ -415,7 +416,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
   }
 
   return (
-    <div className={`pb-24 ${isBlocking ? 'pt-0' : 'pt-2'} px-4 max-w-5xl mx-auto bg-slate-50 min-h-screen`}>
+    <div className={`pb-32 ${isBlocking ? 'pt-0' : 'pt-2'} px-6 md:px-10 lg:px-16 max-w-3xl mx-auto bg-slate-50 min-h-full`}>
       {/* Header */}
       <div className={`flex items-center justify-between mb-6 bg-white -mx-4 px-4 py-3 border-b border-slate-100 sticky ${isBlocking ? 'top-0' : 'top-12'} z-10`}>
         <div className="flex items-center space-x-3">
@@ -562,53 +563,55 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
         </div>
 
         {/* Coupon Input Area */}
-        <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-soft mb-4">
-          <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5">
-            Have a promo coupon code?
-          </label>
-          <div className="flex space-x-2">
-            <input
-              type="text"
-              placeholder="ENTER PROMO CODE (e.g. WELCOME50)"
-              value={couponCode}
-              onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-              disabled={couponLoading || !!appliedCoupon}
-              className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 bg-slate-50 uppercase focus:outline-none focus:ring-2 focus:ring-primary focus:bg-white disabled:opacity-70"
-            />
-            {appliedCoupon ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setAppliedCoupon(null);
-                  setCouponCode('');
-                  setCouponSuccess(null);
-                }}
-                className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-extrabold px-4 py-2 rounded-xl transition-all border border-slate-200"
-              >
-                Clear
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={handleApplyCoupon}
-                disabled={couponLoading || !couponCode.trim()}
-                className="bg-primary hover:bg-primary-dark text-white text-xs font-extrabold px-4 py-2 rounded-xl transition-all shadow-sm disabled:opacity-50"
-              >
-                {couponLoading ? 'Checking...' : 'Apply'}
-              </button>
+        {branding.enableSubscriptionCoupons && (
+          <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-soft mb-4">
+            <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5">
+              Have a promo coupon code?
+            </label>
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                placeholder="ENTER PROMO CODE (e.g. WELCOME50)"
+                value={couponCode}
+                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                disabled={couponLoading || !!appliedCoupon}
+                className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 bg-slate-50 uppercase focus:outline-none focus:ring-2 focus:ring-primary focus:bg-white disabled:opacity-70"
+              />
+              {appliedCoupon ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAppliedCoupon(null);
+                    setCouponCode('');
+                    setCouponSuccess(null);
+                  }}
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-extrabold px-4 py-2 rounded-xl transition-all border border-slate-200"
+                >
+                  Clear
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleApplyCoupon}
+                  disabled={couponLoading || !couponCode.trim()}
+                  className="bg-primary hover:bg-primary-dark text-white text-xs font-extrabold px-4 py-2 rounded-xl transition-all shadow-sm disabled:opacity-50"
+                >
+                  {couponLoading ? 'Checking...' : 'Apply'}
+                </button>
+              )}
+            </div>
+            {couponError && (
+              <p className="text-[10px] text-red-500 font-bold mt-1.5 flex items-center space-x-1">
+                <span>⚠️ {couponError}</span>
+              </p>
+            )}
+            {couponSuccess && (
+              <p className="text-[10px] text-green-600 font-extrabold mt-1.5 flex items-center space-x-1">
+                <span>✅ {couponSuccess}</span>
+              </p>
             )}
           </div>
-          {couponError && (
-            <p className="text-[10px] text-red-500 font-bold mt-1.5 flex items-center space-x-1">
-              <span>⚠️ {couponError}</span>
-            </p>
-          )}
-          {couponSuccess && (
-            <p className="text-[10px] text-green-600 font-extrabold mt-1.5 flex items-center space-x-1">
-              <span>✅ {couponSuccess}</span>
-            </p>
-          )}
-        </div>
+        )}
 
         <div className="space-y-4">
           {plans.map((plan) => {
