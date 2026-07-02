@@ -193,9 +193,11 @@ const MainAppContent: React.FC = () => {
           <div className="flex flex-col">
             <div className="flex items-center space-x-1.5">
               <h1 className="text-sm font-extrabold text-slate-800 tracking-tight leading-tight">{branding.appName}</h1>
-              <span className="text-[8px] font-bold bg-primary-light text-primary px-1.5 py-0.5 rounded-full">
-                {basicPlan}
-              </span>
+              {branding.enableSubscriptions !== false && (
+                <span className="text-[8px] font-bold bg-primary-light text-primary px-1.5 py-0.5 rounded-full">
+                  {basicPlan}
+                </span>
+              )}
             </div>
             {branding.appTagline && (
               <span className="text-[9px] text-slate-500 leading-none mt-0.5">{branding.appTagline}</span>
