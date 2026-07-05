@@ -35,6 +35,7 @@ export interface AppBranding {
   enableSaferFoodCoupons: boolean;
   enableSubscriptions?: boolean;
   enableExternalPayments?: boolean;
+  enableIOSExternalPayments?: boolean;
 }
 
 interface AuthContextType {
@@ -43,7 +44,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  verifyOtpToken: (idToken: string) => Promise<{ isNewUser: boolean } | null>;
+  verifyOtp: (mobileNumber: string, otp: string, email: string) => Promise<{ isNewUser: boolean } | null>;
   completeOnboarding: (profileData: Partial<UserProfile>) => Promise<boolean>;
   logout: () => void;
   updateProfile: (profileUpdates: Partial<UserProfile>) => Promise<boolean>;
@@ -90,7 +91,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               enableSubscriptionCoupons: config.enableSubscriptionCoupons ?? true,
               enableSaferFoodCoupons: config.enableSaferFoodCoupons ?? true,
               enableSubscriptions: config.enableSubscriptions,
-              enableExternalPayments: config.enableExternalPayments
+              enableExternalPayments: config.enableExternalPayments,
+              enableIOSExternalPayments: config.enableIOSExternalPayments
             });
             document.title = `${config.appName} - ${config.appTagline}`;
           }
@@ -155,14 +157,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loadProfile();
   }, [token]);
 
-  const verifyOtpToken = async (idToken: string): Promise<{ isNewUser: boolean } | null> => {
+  const verifyOtp = async (mobileNumber: string, otp: string, email: string): Promise<{ isNewUser: boolean } | null> => {
     setIsLoading(true);
     setError(null);
     try {
       const response = await fetch(`${apiUrl}/auth/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken })
+        body: JSON.stringify({ mobileNumber, otp, email }),
       });
 
       const data = await response.json();
@@ -289,7 +291,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated,
         isLoading,
         error,
-        verifyOtpToken,
+        verifyOtp,
         completeOnboarding,
         logout,
         updateProfile,

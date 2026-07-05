@@ -1,0 +1,12 @@
+Device,SerialNumber,Device Timestamp,Record Type,Historic Glucose mg/dL,Scan Glucose mg/dL,Non-numeric Rapid-Acting Insulin,Rapid-Acting Insulin (units),Non-numeric Food,Carbohydrates (grams),Carbohydrates (servings),Non-numeric Long-Acting Insulin,Long-Acting Insulin (units),Notes,Strip Glucose mg/dL,Ketone mmol/L,Meal Insulin (units),Correction Insulin (units),User Change Insulin (units)
+FreeStyle LibreLink,JB000000000,2026-07-02 08:00,0,95,,,,,,,,,,,,,,
+FreeStyle LibreLink,JB000000000,2026-07-02 08:15,0,102,,,,,,,,,,,,,,
+FreeStyle LibreLink,JB000000000,2026-07-02 08:30,0,115,,,,,,,,,,,,,,
+FreeStyle LibreLink,JB000000000,2026-07-02 08:45,0,120,,,,,,,,,,,,,,
+FreeStyle LibreLink,JB000000000,2026-07-02 09:00,0,110,,,,,,,,,,,,,,
+FreeStyle LibreLink,JB000000000,2026-07-02 09:15,0,98,,,,,,,,,,,,,,
+FreeStyle LibreLink,JB000000000,2026-07-02 09:30,0,92,,,,,,,,,,,,,,
+FreeStyle LibreLink,JB000000000,2026-07-02 09:45,0,90,,,,,,,,,,,,,,
+FreeStyle LibreLink,JB000000000,2026-07-02 10:00,0,88,,,,,,,,,,,,,,
+FreeStyle LibreLink,JB000000000,2026-07-02 10:15,0,89,,,,,,,,,,,,,,
+FreeStyle LibreLink,JB000000000,2026-07-02 10:30,0,91,,,,,,,,,,,,,,

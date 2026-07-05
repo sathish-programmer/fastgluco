@@ -55,6 +55,8 @@ export class EmailService {
    */
   public static async sendWelcomeEmail(email: string, name: string) {
     const { appName, appTagline } = await EmailService.getBranding();
+    const config = await PaymentGatewayConfig.findOne();
+    const enableSubscriptions = config ? config.enableSubscriptions !== false : true;
 
     const html = generateEmailTemplate(`Welcome to ${appName}!`, `
       <p>Hi ${name},</p>
@@ -63,13 +65,41 @@ export class EmailService {
         <p style="margin: 0; color: #166534; font-weight: 600;">Getting Started:</p>
         <ul style="margin-top: 8px; margin-bottom: 0; color: #15803d; padding-left: 20px;">
           <li>Log in to the app to set up your profile.</li>
-          <li>Choose a subscription plan to unlock full features.</li>
+          ${enableSubscriptions ? '<li>Choose a subscription plan to unlock full features.</li>' : ''}
           <li>Upload your Abbott CGM report to see your analysis!</li>
         </ul>
       </div>
       <p>If you have any questions, feel free to contact our support team.</p>
     `, appName, appTagline);
     try { await transporter.sendMail({ from: `"${appName}" <hello@mitoreboot.com>`, to: email, subject: `Welcome to ${appName}!`, html }); } catch (err) { console.error(err); }
+  }
+
+  /**
+   * Send OTP Verification Email
+   */
+  public static async sendOtpEmail(email: string, otpCode: string) {
+    const { appName, appTagline } = await EmailService.getBranding();
+    const html = generateEmailTemplate(`Your Verification Code`, `
+      <p>Hello,</p>
+      <p>Please use the following 6-digit verification code to sign in to your ${appName} account.</p>
+      <div style="background-color: #f1f5f9; padding: 24px; text-align: center; border-radius: 12px; margin: 30px 0; border: 2px dashed #cbd5e1;">
+        <span style="font-size: 32px; font-weight: 900; letter-spacing: 8px; color: #1e293b;">${otpCode}</span>
+      </div>
+      <p>This code is valid for 10 minutes. If you did not request this, please ignore this email.</p>
+    `, appName, appTagline);
+    
+    try { 
+      await transporter.sendMail({ 
+        from: `"${appName} Security" <security@mitoreboot.com>`, 
+        to: email, 
+        subject: `${otpCode} is your ${appName} verification code`, 
+        html 
+      }); 
+      console.log(`[EmailService] OTP email sent successfully to ${email}`);
+    } catch (err) { 
+      console.error('[EmailService] Failed to send OTP email:', err); 
+      throw err;
+    }
   }
 
   /**

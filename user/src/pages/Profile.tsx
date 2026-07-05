@@ -1,27 +1,30 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { 
-  ChevronRight, 
-  LogOut, 
-  Sliders, 
-  Calculator, 
-  BookOpen, 
-  Sparkles, 
+import {
+  ChevronRight,
+  LogOut,
+  Sliders,
+  Calculator,
+  BookOpen,
+  Sparkles,
   Save,
   CreditCard,
   RefreshCw,
   Globe,
   Activity,
-  Heart
+  Heart,
+  Trash2
 } from 'lucide-react';
 import { Educational } from './Educational'; // import the sub-view
 import { Subscription } from './Subscription';
+import { Capacitor } from '@capacitor/core';
 
 export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = () => {
-  const { user, token, apiUrl, logout, requestProfileUpdate, isLoading, error, branding } = useAuth();
+  const { user, token, apiUrl, logout, updateProfile, isLoading, error, branding } = useAuth();
   const { showToast } = useToast();
-  
+  const isIOSAppStoreBlocked = Capacitor.getPlatform() === 'ios';
+
   // Tabs for profile section: 'settings' or 'education' or 'subscription'
   const [subView, setSubView] = useState<'settings' | 'education' | 'subscription'>('settings');
 
@@ -37,11 +40,15 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
   const [goal, setGoal] = useState(user?.goal || 'Maintain weight');
   const [spikeThreshold, setSpikeThreshold] = useState(user?.spikeThreshold || 90);
   const [currency, setCurrency] = useState<'INR' | 'USD'>((user?.currency as 'INR' | 'USD') || 'INR');
-  
+
   // Cancer Care Journey states
   const [cancerJourney, setCancerJourney] = useState<'PREVENTION' | 'TREATMENT' | 'SECONDARY_PREVENTION'>(user?.cancerJourney || 'PREVENTION');
-  const [showDisclaimer, setShowDisclaimer] = useState(false);
+  const [showDisclaimer, setShowDisclaimer] = useState<boolean>(false);
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(user?.cancerDisclaimerAccepted || false);
+
+  // Account Deletion States
+  const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState<boolean>(false);
 
   // LibreLinkUp states
   const [libreEmail, setLibreEmail] = useState(user?.libreEmail || '');
@@ -50,7 +57,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
   const [libreActive, setLibreActive] = useState(user?.libreActive || false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
-  
+
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   const handleSave = async (e: React.FormEvent) => {
@@ -60,7 +67,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
       return;
     }
     setSaveSuccess(false);
-    const success = await requestProfileUpdate({
+    const success = await updateProfile({
       name,
       email,
       mobileNumber: mobile,
@@ -81,11 +88,34 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
       cancerDisclaimerAcceptedAt: cancerJourney === 'PREVENTION' ? undefined : (disclaimerAccepted ? new Date().toISOString() : undefined)
     });
     if (success) {
-      showToast('Profile edits submitted for review!', 'success');
+      showToast('Profile updated successfully!', 'success');
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
+      return true;
     } else {
       showToast('Failed to update profile.', 'error');
+      return false;
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!token) return;
+    setIsDeletingAccount(true);
+    try {
+      const response = await fetch(`${apiUrl}/users/profile`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete account');
+      }
+      showToast('Account successfully deleted.', 'success');
+      logout();
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to delete account. Please try again later or contact support.', 'error');
+      setIsDeletingAccount(false);
+      setShowDeleteModal(false);
     }
   };
 
@@ -117,7 +147,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
     return (
       <div>
         <div className="bg-white px-4 py-3 border-b border-slate-100 flex items-center justify-between">
-          <button 
+          <button
             onClick={() => setSubView('settings')}
             className="text-sm font-semibold text-primary"
           >
@@ -194,7 +224,8 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
             {user?.dailyCalorieTarget || 2000} kcal / day
           </span>
           <p className="text-[10px] text-slate-400 font-semibold mt-1 leading-relaxed">
-            Mifflin-St Jeor target calculated from your height, weight, activity, and {user?.goal?.toLowerCase()} goal.
+            Mifflin-St Jeor target calculated from your height, weight, activity, and {user?.goal?.toLowerCase()} goal.{' '}
+            <a href="https://pubmed.ncbi.nlm.nih.gov/15883556/" target="_blank" rel="noreferrer" className="text-primary hover:underline" onClick={(e) => e.stopPropagation()}>[Source]</a>
           </p>
         </div>
       </div>
@@ -212,7 +243,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
           <ChevronRight className="h-4 w-4 text-slate-400" />
         </button>
 
-        {branding.enableSubscriptions !== false && (
+        {branding.enableSubscriptions !== false && !isIOSAppStoreBlocked && (
           <button
             onClick={() => setSubView('subscription')}
             className="w-full bg-white hover:bg-slate-50/50 p-4 rounded-3xl border border-slate-100 shadow-[0_12px_24px_rgba(0,0,0,0.02)] flex items-center justify-between transition-all"
@@ -419,7 +450,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
               <Activity className="h-4 w-4 text-primary" />
               <span>Abbott LibreLinkUp Sync</span>
             </h4>
-            
+
             <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-655 cursor-pointer">
               <input
                 type="checkbox"
@@ -531,7 +562,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
             className="w-full bg-primary hover:bg-primary/95 text-white font-bold py-3 rounded-2xl shadow-soft flex items-center justify-center space-x-2 transition-all hover:shadow-md disabled:opacity-50"
           >
             <Save className="h-4 w-4" />
-            <span>Submit for Review</span>
+            <span>Update</span>
           </button>
         </form>
       </div>
@@ -547,7 +578,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
 
       {/* Delete Account button */}
       <button
-        onClick={() => window.location.href = '/delete-account'}
+        onClick={() => setShowDeleteModal(true)}
         className="w-full text-slate-400 hover:text-rose-500 font-bold py-3 px-4 rounded-3xl flex items-center justify-center space-x-2 transition-all mb-6 text-xs hover:bg-slate-50"
       >
         <span>Request Account Deletion</span>
@@ -562,7 +593,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
               <span>Medical Disclaimer</span>
             </h3>
             <p className="text-xs text-slate-600 font-medium leading-relaxed mb-6">
-              {cancerJourney === 'TREATMENT' 
+              {cancerJourney === 'TREATMENT'
                 ? (branding.cancerTreatmentDisclaimer || 'Disclaimer: This app is for informational purposes only. If you are undergoing active cancer treatment, please consult with your oncologist before starting any circadian fasting protocols.')
                 : (branding.cancerSecondaryDisclaimer || 'Disclaimer: This app is for informational purposes only. If you have a previous history of cancer (secondary prevention), please consult with your medical team before starting any circadian fasting protocols.')
               }
@@ -588,6 +619,39 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
                 className="flex-1 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl text-xs font-semibold shadow-soft"
               >
                 I Understand & Accept
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Account Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full border border-slate-100 shadow-xl animate-scaleIn">
+            <h3 className="text-base font-bold text-slate-900 mb-3 flex items-center space-x-2">
+              <Trash2 className="h-5 w-5 text-rose-500" />
+              <span>Delete Account</span>
+            </h3>
+            <p className="text-xs text-slate-600 font-medium leading-relaxed mb-6">
+              Are you sure you want to permanently delete your account? All your food logs, CGM reports, subscriptions, and health analysis data will be permanently erased. This action cannot be undone.
+            </p>
+            <div className="flex space-x-3">
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                disabled={isDeletingAccount}
+                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteAccount}
+                disabled={isDeletingAccount}
+                className="flex-1 py-2.5 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-xs font-semibold shadow-soft disabled:opacity-50"
+              >
+                {isDeletingAccount ? 'Deleting...' : 'Delete Account'}
               </button>
             </div>
           </div>

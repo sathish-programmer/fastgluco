@@ -1,19 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Heart, AlertCircle, Smartphone, ChevronDown, Search, ArrowLeft, RefreshCw } from 'lucide-react';
+import { Heart, AlertCircle, Smartphone, ChevronDown, Search, ArrowLeft, RefreshCw, Mail } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
-import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
-import type { ConfirmationResult, ApplicationVerifier } from 'firebase/auth';
-import { auth, isNativePlatform } from '../config/firebase';
-import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 
-declare global {
-  interface Window {
-    recaptchaVerifier: RecaptchaVerifier | null;
-    confirmationResult: ConfirmationResult | null;
-    verificationId: string | null;
-  }
-}
 
 interface LoginProps {
   resetToken?: string | null;
@@ -88,31 +77,9 @@ function detectCountryFromTimezone(): Country {
   return COUNTRIES[0]; // Default to India
 }
 
-function getRecaptchaVerifier(): ApplicationVerifier {
-  // If we are on a native platform (iOS/Android) AND we have disabled verification for testing,
-  // we bypass the real RecaptchaVerifier completely. This prevents 'auth/internal-error' 
-  // caused by the Web SDK failing to initialize reCAPTCHA in capacitor://localhost.
-  if (isNativePlatform && auth.settings.appVerificationDisabledForTesting) {
-    return {
-      type: 'recaptcha',
-      verify: async () => 'mock-token',
-      clear: () => { },
-      _reset: () => { },
-    } as unknown as ApplicationVerifier;
-  }
-
-
-
-  if (!window.recaptchaVerifier) {
-    window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-      size: 'invisible',
-    });
-  }
-  return window.recaptchaVerifier;
-}
 
 export const Login: React.FC<LoginProps> = () => {
-  const { verifyOtpToken, error, clearError, isLoading: authLoading, branding } = useAuth();
+  const { verifyOtp, error, clearError, isLoading: authLoading, branding, apiUrl } = useAuth();
   const { showToast } = useToast();
 
   const [screen, setScreen] = useState<'phone' | 'otp'>('phone');
@@ -124,12 +91,16 @@ export const Login: React.FC<LoginProps> = () => {
   const [showCountrySelector, setShowCountrySelector] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [phoneError, setPhoneError] = useState('');
+  
+  // Email input
+  const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState('');
 
   // OTP input
   const [otpCode, setOtpCode] = useState('');
   const [otpError, setOtpError] = useState('');
   const [timer, setTimer] = useState(0);
-  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+  const [deliveryMethod, setDeliveryMethod] = useState<'email' | 'sms' | 'mock'>('email');
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const otpInputRef = useRef<HTMLInputElement>(null);
@@ -145,56 +116,7 @@ export const Login: React.FC<LoginProps> = () => {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // Set up Native Phone Auth Listeners
-  useEffect(() => {
-    if (!isNativePlatform || auth.settings.appVerificationDisabledForTesting) return;
-    let codeSentListener: any;
-    let verificationCompletedListener: any;
-    let verificationFailedListener: any;
 
-    const setupListeners = async () => {
-      codeSentListener = await FirebaseAuthentication.addListener('phoneCodeSent', (event) => {
-        if ((window as any).nativePhoneAuthTimeout) {
-          window.clearTimeout((window as any).nativePhoneAuthTimeout);
-        }
-        window.verificationId = event.verificationId;
-        setScreen('otp');
-        setTimer(60);
-        showToast('Verification code sent natively', 'success');
-        setLoading(false);
-      });
-
-      verificationCompletedListener = await FirebaseAuthentication.addListener('phoneVerificationCompleted', async () => {
-        if ((window as any).nativePhoneAuthTimeout) {
-          window.clearTimeout((window as any).nativePhoneAuthTimeout);
-        }
-        // Auto retrieved on Android
-        try {
-          const idTokenResult = await FirebaseAuthentication.getIdToken();
-          const ok = await verifyOtpToken(idTokenResult.token);
-          if (ok) showToast('Authenticated successfully! Welcome.', 'success');
-        } catch (e) {
-          console.error(e);
-        }
-      });
-
-      verificationFailedListener = await FirebaseAuthentication.addListener('phoneVerificationFailed', (event) => {
-        if ((window as any).nativePhoneAuthTimeout) {
-          window.clearTimeout((window as any).nativePhoneAuthTimeout);
-        }
-        setPhoneError(event.message || 'Verification failed natively');
-        setLoading(false);
-      });
-    };
-
-    setupListeners();
-
-    return () => {
-      if (codeSentListener) codeSentListener.remove();
-      if (verificationCompletedListener) verificationCompletedListener.remove();
-      if (verificationFailedListener) verificationFailedListener.remove();
-    };
-  }, [verifyOtpToken, showToast]);
 
   // Countdown timer for resend
   useEffect(() => {
@@ -242,58 +164,44 @@ export const Login: React.FC<LoginProps> = () => {
       setPhoneError('Please enter a valid mobile number (digits only, no country code).');
       return;
     }
+    
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setEmailError('Please enter a valid email address.');
+      return;
+    }
 
     setLoading(true);
-    let nativeFlowStarted = false;
 
     try {
-      console.log("isNativePlatform", isNativePlatform);
-      if (isNativePlatform && !auth.settings.appVerificationDisabledForTesting) {
-        showToast('Sending verification...', 'success');
-        nativeFlowStarted = true;
+      const res = await fetch(`${apiUrl}/auth/send-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mobileNumber: e164, email })
+      });
 
-        // Add a timeout fallback in case listeners never fire
-        const timeoutId = window.setTimeout(() => {
-          setLoading((currentLoading) => {
-            if (currentLoading) {
-              setPhoneError('Verification request timed out. Please check your network and try again.');
-              return false; // clear loading state
-            }
-            return currentLoading;
-          });
-        }, 15000); // 15 seconds timeout
-        (window as any).nativePhoneAuthTimeout = timeoutId;
-
-        await FirebaseAuthentication.signInWithPhoneNumber({ phoneNumber: e164 });
-        // State updates are handled by the 'phoneCodeSent' listener
-      } else {
-        const verifier = getRecaptchaVerifier();
-        const confirmation = await signInWithPhoneNumber(auth, e164, verifier);
-        setConfirmationResult(confirmation);
-        window.confirmationResult = confirmation;
-
-        setScreen('otp');
-        setTimer(60);
-        showToast(`Verification code sent to ${e164}`, 'success');
-        setTimeout(() => otpInputRef.current?.focus(), 100);
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Server returned an unexpected response (not JSON). Please ensure the backend is running and updated.');
       }
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to send OTP.');
+      }
+
+      if (data.method) {
+        setDeliveryMethod(data.method);
+      }
+
+      setScreen('otp');
+      setTimer(30); // 30 second cooldown
+      showToast(`Verification code sent to ${email}`, 'success');
+      setTimeout(() => otpInputRef.current?.focus(), 100);
     } catch (err: any) {
       console.error('sendOtp error:', err);
-      // Provide friendly error messages
-      if (err.code === 'auth/invalid-phone-number') {
-        setPhoneError('Invalid phone number. Please double-check the number and country code.');
-      } else if (err.code === 'auth/too-many-requests') {
-        setPhoneError('Too many attempts. Please wait a few minutes before trying again.');
-      } else if (err.code === 'auth/quota-exceeded') {
-        setPhoneError('SMS quota exceeded. Please try again later.');
-      } else {
-        setPhoneError(err.message || 'Failed to send verification code. Please try again.');
-      }
-      nativeFlowStarted = false; // ensure loading is cleared on error
+      setPhoneError(err.message || 'Failed to send verification code. Please try again.');
     } finally {
-      if (!nativeFlowStarted) {
-        setLoading(false);
-      }
+      setLoading(false);
     }
   };
 
@@ -303,48 +211,24 @@ export const Login: React.FC<LoginProps> = () => {
       setOtpError('Enter the 6-digit code from your SMS.');
       return;
     }
-    if (!isNativePlatform && !confirmationResult) {
-      setOtpError('Verification session expired. Please go back and request a new code.');
-      return;
-    }
 
     setOtpError('');
     setLoading(true);
     clearError();
 
     try {
-      if (isNativePlatform && !auth.settings.appVerificationDisabledForTesting) {
-        const verificationId = window.verificationId;
-        if (!verificationId) throw new Error('Verification ID missing. Please request a new code.');
+      const e164 = buildE164(mobileNumber);
+      if (!e164) throw new Error("Invalid mobile number.");
 
-        await FirebaseAuthentication.confirmVerificationCode({
-          verificationId,
-          verificationCode: code
-        });
-
-        const idTokenResult = await FirebaseAuthentication.getIdToken();
-        const ok = await verifyOtpToken(idTokenResult.token);
-        if (ok) {
-          showToast('Authenticated successfully! Welcome.', 'success');
-        }
+      const ok = await verifyOtp(e164, code, email);
+      if (ok) {
+        showToast('Authenticated successfully! Welcome.', 'success');
       } else {
-        const result = await confirmationResult.confirm(code);
-        const idToken = await result.user.getIdToken();
-
-        const ok = await verifyOtpToken(idToken);
-        if (ok) {
-          showToast('Authenticated successfully! Welcome.', 'success');
-        }
+        // verifyOtp sets its own global error
       }
     } catch (err: any) {
       console.error('verifyOtp error:', err);
-      if (err.code === 'auth/invalid-verification-code') {
-        setOtpError('Incorrect code. Please check the SMS and try again.');
-      } else if (err.code === 'auth/code-expired') {
-        setOtpError('Code expired. Please go back and request a new code.');
-      } else {
-        setOtpError(err.message || 'Verification failed. Please try again.');
-      }
+      setOtpError(err.message || 'Verification failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -367,13 +251,7 @@ export const Login: React.FC<LoginProps> = () => {
     }, 100);
   };
 
-  const handleBackToPhone = () => {
-    setScreen('phone');
-    setOtpCode('');
-    setOtpError('');
-    setConfirmationResult(null);
-    window.confirmationResult = null;
-  };
+
 
   const filteredCountries = COUNTRIES.filter(c =>
     c.name.toLowerCase().includes(searchQuery.toLowerCase()) || c.code.includes(searchQuery)
@@ -408,7 +286,7 @@ export const Login: React.FC<LoginProps> = () => {
 
         {screen === 'phone' ? (
           /* ── SCREEN 1: Phone Number ─────────────────────────────────────── */
-          <form className="space-y-6" noValidate>
+          <form className="space-y-6" noValidate onSubmit={handleSendOtp}>
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">Mobile Number</label>
 
@@ -485,15 +363,38 @@ export const Login: React.FC<LoginProps> = () => {
                 </p>
               )}
 
-              <p className="mt-2 text-[11px] text-slate-400 font-medium">
-                Enter digits only — no country code prefix. A verification SMS will be sent.
+              <p className="text-xs text-slate-500 mt-1">
+                Enter digits only — no country code prefix.
               </p>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Email Address</label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                  <Mail className="h-5 w-5" />
+                </span>
+                <input
+                  id="email-input"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => { setEmail(e.target.value.trim()); setEmailError(''); }}
+                  placeholder="Enter your email"
+                  className={`w-full pl-11 pr-4 py-3.5 rounded-2xl border focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-slate-800 placeholder:text-slate-400 font-bold tracking-wide ${emailError ? 'border-red-400 bg-red-50' : 'border-slate-200'}`}
+                />
+              </div>
+              {emailError && (
+                <p className="mt-2 text-xs text-red-600 font-semibold flex items-center gap-1">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                  {emailError}
+                </p>
+              )}
             </div>
 
             <button
               id="send-otp-btn"
-              type="button"
-              onClick={handleSendOtp}
+              type="submit"
               disabled={loading || authLoading}
               className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 px-4 rounded-2xl shadow-lg shadow-primary-light transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
@@ -506,24 +407,31 @@ export const Login: React.FC<LoginProps> = () => {
           </form>
         ) : (
           /* ── SCREEN 2: OTP Verification ─────────────────────────────────── */
-          <form className="space-y-6 animate-fadeIn" noValidate>
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <button
-                  type="button"
-                  onClick={handleBackToPhone}
-                  className="flex items-center text-xs text-primary font-bold hover:underline"
-                >
-                  <ArrowLeft className="h-4 w-4 mr-1" />
-                  Change Number
-                </button>
-                <span className="text-xs text-slate-500 font-semibold">
-                  Sent to {country.code} {mobileNumber}
-                </span>
+          <form className="space-y-6 animate-fadeIn" noValidate onSubmit={handleVerifyOtp}>
+            <div className="mb-8 animate-slideUp">
+              <button
+                type="button"
+                onClick={() => {
+                  setScreen('phone');
+                  setOtpCode('');
+                  setTimer(0);
+                }}
+                className="text-sm font-semibold text-indigo-600 flex items-center hover:text-indigo-700 mb-6 transition-colors"
+              >
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                Change Contact Details
+              </button>
+
+              <h2 className="text-2xl font-bold text-slate-800 mb-3 tracking-tight">Verification Code</h2>
+              <div className="text-sm text-slate-600 leading-relaxed">
+                Enter the 6-digit code we just sent to:
+                <div className="mt-3 bg-indigo-50/80 px-4 py-2.5 rounded-xl border border-indigo-100 font-medium text-indigo-700 flex items-center break-all shadow-sm">
+                  {deliveryMethod === 'sms' ? mobileNumber : email}
+                </div>
               </div>
+            </div>
 
-              <label className="block text-sm font-semibold text-slate-700 mb-2">Verification Code</label>
-
+            <div>
               <input
                 id="otp-input"
                 ref={otpInputRef}
@@ -547,14 +455,13 @@ export const Login: React.FC<LoginProps> = () => {
               )}
 
               <p className="text-[11px] text-slate-400 mt-2 font-medium text-center">
-                Enter the 6-digit code delivered via SMS.
+                Enter the 6-digit code delivered to your Email or SMS.
               </p>
             </div>
 
             <button
               id="verify-otp-btn"
-              type="button"
-              onClick={handleVerifyOtp}
+              type="submit"
               disabled={loading || authLoading || otpCode.length < 6}
               className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 px-4 rounded-2xl shadow-lg shadow-primary-light transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
@@ -584,8 +491,6 @@ export const Login: React.FC<LoginProps> = () => {
         )}
       </div>
 
-      {/* Hidden anchor required by Firebase invisible reCAPTCHA */}
-      <div id="recaptcha-container" style={{ display: 'none' }} />
     </div>
   );
 };

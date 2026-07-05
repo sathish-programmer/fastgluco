@@ -25,6 +25,7 @@ export class PaymentAdminController {
           enableSubscriptions: false,
           enableSubscriptionCoupons: true,
           enableExternalPayments: false,
+          enableIOSExternalPayments: false,
           enableSaferFoodCoupons: true,
           enableHydrationTracker: true,
           hydrationDailyLimitMl: 3000,
@@ -51,6 +52,7 @@ export class PaymentAdminController {
         enableSubscriptions, 
         enableSubscriptionCoupons,
         enableExternalPayments,
+        enableIOSExternalPayments,
         enableSaferFoodCoupons,
         gstPercentage, 
         safeGlucoseThreshold, 
@@ -84,6 +86,7 @@ export class PaymentAdminController {
       if (enableSubscriptions !== undefined) config.enableSubscriptions = enableSubscriptions;
       if (enableSubscriptionCoupons !== undefined) config.enableSubscriptionCoupons = enableSubscriptionCoupons;
       if (enableExternalPayments !== undefined) config.enableExternalPayments = enableExternalPayments;
+      if (enableIOSExternalPayments !== undefined) config.enableIOSExternalPayments = enableIOSExternalPayments;
       if (enableSaferFoodCoupons !== undefined) config.enableSaferFoodCoupons = enableSaferFoodCoupons;
       if (gstPercentage !== undefined) config.gstPercentage = gstPercentage;
       if (safeGlucoseThreshold !== undefined) config.safeGlucoseThreshold = safeGlucoseThreshold;

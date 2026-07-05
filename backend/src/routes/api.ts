@@ -80,7 +80,8 @@ const uploadImage = multer({
 // ==========================================
 // 1. PUBLIC AUTHENTICATION ENDPOINTS
 // ==========================================
-router.post('/auth/verify-otp', AuthController.verifyFirebaseToken);
+router.post('/auth/send-otp', AuthController.sendOtp);
+router.post('/auth/verify-otp', AuthController.verifyOtp);
 router.post('/auth/onboard', authenticateToken, AuthController.onboardNewUser);
 
 // Public System Configuration Endpoint
@@ -139,6 +140,7 @@ router.get('/subscriptions/invoices/:id/download', SubscriptionController.downlo
 router.use('/users', authenticateToken, requireRole(['User']));
 router.get('/users/profile', ProfileController.getProfile);
 router.put('/users/profile', ProfileController.updateProfile);
+router.delete('/users/profile', ProfileController.deleteOwnAccount);
 router.put('/users/profile/request-edit', ProfileController.requestProfileEdit);
 router.post('/users/profile/sync-libre', ProfileController.triggerSync);
 

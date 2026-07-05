@@ -16,6 +16,8 @@ import {
   ShieldCheck
 } from 'lucide-react';
 
+import { Capacitor } from '@capacitor/core';
+
 interface FeatureFlag {
   unlimitedReports: boolean;
   advancedAnalysis: boolean;
@@ -69,6 +71,8 @@ interface SubscriptionPageProps {
 
 export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSuccess, isBlocking = false }) => {
   const { user, token, apiUrl, branding } = useAuth();
+  const isIOSAppStoreBlocked = Capacitor.getPlatform() === 'ios';
+
   const [plans, setPlans] = useState<Plan[]>([]);
   const [activeSub, setActiveSub] = useState<SubscriptionDetails | null>(null);
   const [activePlanDetails, setActivePlanDetails] = useState<Plan | null>(null);
@@ -563,7 +567,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
         </div>
 
         {/* Coupon Input Area */}
-        {branding.enableSubscriptionCoupons && (
+        {branding.enableSubscriptionCoupons && !isIOSAppStoreBlocked && (
           <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-soft mb-4">
             <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5">
               Have a promo coupon code?
@@ -642,7 +646,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                 {/* Accent line */}
                 <div className="h-1.5 w-full" style={{ backgroundColor: color }}></div>
 
-                {plan.badge && plan.badge !== 'None' && (
+                {plan.badge && plan.badge !== 'None' && !isIOSAppStoreBlocked && (
                   <span
                     className="absolute right-4 top-4 text-[9px] font-extrabold px-2 py-0.5 rounded-full text-white"
                     style={{ backgroundColor: color }}
@@ -703,6 +707,10 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                       <div className="text-center py-2.5 text-xs text-green-600 bg-green-50 rounded-2xl border border-green-100 font-extrabold flex items-center justify-center space-x-1.5">
                         <Check className="h-4 w-4" />
                         <span>Active Subscription</span>
+                      </div>
+                    ) : isIOSAppStoreBlocked ? (
+                      <div className="text-center py-2.5 text-xs text-slate-500 bg-slate-50 rounded-2xl border border-slate-200 font-bold px-2">
+                        <span>In-App Purchases coming soon to iOS</span>
                       </div>
                     ) : (
                       <button

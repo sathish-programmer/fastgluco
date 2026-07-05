@@ -61,25 +61,19 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>com.googleusercontent.apps.1063510630357-4o0uc036j3i1tu127atfb9h1pfqh0lq3</string>
-			</array>
-		</dict>
-	</array>
+
 
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSCameraUsageDescription</key>
 	<string>We need access to your camera to take photos of your meals for the food scanner.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>We need microphone access for camera reliability during meal scanning.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>We need access to your photo library to let you upload images of your meals for the food scanner.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>We need access to save photos of your meals to your photo library.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>We need microphone access to support video capture features in the future.</string>
 </dict>
 </plist>

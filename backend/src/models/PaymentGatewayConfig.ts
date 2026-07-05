@@ -6,8 +6,10 @@ export interface IPaymentGatewayConfig extends Document {
   isSandbox: boolean;
   enablePayments: boolean;
   enableSubscriptions: boolean; // Subscription Required ON/OFF
+  enableTwilioOtp: boolean; // Twilio OTP ON/OFF
   enableSubscriptionCoupons: boolean;
   enableExternalPayments: boolean;
+  enableIOSExternalPayments: boolean;
   enableSaferFoodCoupons: boolean;
   gstPercentage: number; // GST Percentage configured by admin (e.g. 18)
   shopGstPercentage: number; // GST for Shop products
@@ -39,8 +41,10 @@ const paymentGatewayConfigSchema = new Schema<IPaymentGatewayConfig>(
     isSandbox: { type: Boolean, default: true, required: true },
     enablePayments: { type: Boolean, default: false, required: true },
     enableSubscriptions: { type: Boolean, default: false, required: true },
+    enableTwilioOtp: { type: Boolean, default: false, required: true },
     enableSubscriptionCoupons: { type: Boolean, default: true },
     enableExternalPayments: { type: Boolean, default: false },
+    enableIOSExternalPayments: { type: Boolean, default: false },
     enableSaferFoodCoupons: { type: Boolean, default: true },
     gstPercentage: { type: Number, default: 18, min: 0, required: true },
     shopGstPercentage: { type: Number, default: 0, min: 0 },

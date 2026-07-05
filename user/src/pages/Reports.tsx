@@ -20,8 +20,11 @@ interface ReportsProps {
   features?: any;
 }
 
+import { Capacitor } from '@capacitor/core';
+
 export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) => {
   const { token, apiUrl, branding } = useAuth();
+  const isIOSAppStoreBlocked = Capacitor.getPlatform() === 'ios' && !branding.enableIOSExternalPayments;
   const { showToast } = useToast();
   
   const [file, setFile] = useState<File | null>(null);
@@ -229,20 +232,25 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
         <div className="h-16 w-16 bg-blue-50 text-primary rounded-full flex items-center justify-center mb-4 shadow-soft">
           <CreditCard className="h-8 w-8" />
         </div>
-        <h3 className="text-lg font-bold text-slate-800">Premium Feature Locked</h3>
+        <h3 className="text-lg font-bold text-slate-800">{isIOSAppStoreBlocked ? 'Feature Unavailable' : 'Premium Feature Locked'}</h3>
         <p className="text-xs text-slate-400 font-semibold max-w-xs mt-2 mb-6">
-          CGM Report Upload requires an active Basic or Premium Plan. Unlock unlimited uploads, analysis, and custom alerts.
+          {isIOSAppStoreBlocked
+            ? 'This feature is currently unavailable on iOS.'
+            : 'CGM Report Upload requires an active Basic or Premium Plan. Unlock unlimited uploads, analysis, and custom alerts.'
+          }
         </p>
-        <button
-          onClick={() => {
-            if (onNavigateToTab) {
-              onNavigateToTab('Profile');
-            }
-          }}
-          className="bg-primary hover:bg-primary/95 text-white font-bold px-6 py-3 rounded-2xl shadow-soft transition-all"
-        >
-          View Subscription Plans
-        </button>
+        {!isIOSAppStoreBlocked && (
+          <button
+            onClick={() => {
+              if (onNavigateToTab) {
+                onNavigateToTab('Profile');
+              }
+            }}
+            className="bg-primary hover:bg-primary/95 text-white font-bold px-6 py-3 rounded-2xl shadow-soft transition-all"
+          >
+            View Subscription Plans
+          </button>
+        )}
       </div>
     );
   }
@@ -272,14 +280,19 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
           <div className="absolute inset-0 z-10 bg-white/70 backdrop-blur-[1.5px] rounded-3xl flex flex-col items-center justify-center p-4">
             <div className="bg-white p-5 rounded-3xl shadow-[0_12px_30px_rgba(0,0,0,0.05)] text-center max-w-xs border border-slate-100/80">
               <Lock className="h-7 w-7 text-amber-500 mx-auto mb-2" />
-              <h4 className="text-sm font-bold text-slate-800 mb-1">Premium Feature</h4>
-              <p className="text-xs text-slate-450 font-semibold mb-3">Upgrade to a premium plan to import new CGM reports.</p>
-              <button 
-                onClick={() => setShowUpgradePrompt(true)}
-                className="bg-primary hover:bg-primary/95 text-white text-xs font-bold px-4 py-2.5 rounded-2xl shadow-soft transition-all"
-              >
-                Upgrade Plan
-              </button>
+              <h4 className="text-sm font-bold text-slate-800 mb-1">{isIOSAppStoreBlocked ? 'Feature Unavailable' : 'Premium Feature'}</h4>
+              <p className="text-xs text-slate-450 font-semibold mb-3">
+                {isIOSAppStoreBlocked ? 'This feature is currently unavailable on iOS.' : 'Upgrade to a premium plan to import new CGM reports.'}
+              </p>
+              {!isIOSAppStoreBlocked && (
+                <button
+                  type="button"
+                  onClick={() => setShowUpgradePrompt(true)}
+                  className="bg-primary hover:bg-primary/95 text-white text-xs font-bold px-4 py-2.5 rounded-2xl shadow-soft transition-all"
+                >
+                  Upgrade Plan
+                </button>
+              )}
             </div>
           </div>
         )}

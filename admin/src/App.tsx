@@ -3635,6 +3635,19 @@ const AdminPanelContent: React.FC = () => {
                           <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-600 cursor-pointer">
                             <input
                               type="checkbox"
+                              checked={paymentConfig.enableTwilioOtp}
+                              onChange={(e) => setPaymentConfig({ ...paymentConfig, enableTwilioOtp: e.target.checked })}
+                              className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
+                            />
+                            <span>Enable Twilio SMS OTP</span>
+                          </label>
+                          <p className="text-[10px] text-slate-400 font-semibold mt-1">If unchecked, OTPs will be sent via Email instead of SMS.</p>
+                        </div>
+
+                        <div>
+                          <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-600 cursor-pointer">
+                            <input
+                              type="checkbox"
                               checked={paymentConfig.enablePayments}
                               onChange={(e) => setPaymentConfig({ ...paymentConfig, enablePayments: e.target.checked })}
                               className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
@@ -3668,6 +3681,19 @@ const AdminPanelContent: React.FC = () => {
                             <span>Enable External Payments (Shop)</span>
                           </label>
                           <p className="text-[10px] text-slate-400 font-semibold mt-1">Enable external payments and checkout flow.</p>
+                        </div>
+                        
+                        <div>
+                          <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-600 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={paymentConfig.enableIOSExternalPayments ?? false}
+                              onChange={(e) => setPaymentConfig({ ...paymentConfig, enableIOSExternalPayments: e.target.checked })}
+                              className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
+                            />
+                            <span>Enable iOS External Payments (Razorpay/Promo)</span>
+                          </label>
+                          <p className="text-[10px] text-slate-400 font-semibold mt-1">If unchecked, iOS App hides Razorpay and Promo Code to comply with Apple Guideline 3.1.1.</p>
                         </div>
                       </div>
                       

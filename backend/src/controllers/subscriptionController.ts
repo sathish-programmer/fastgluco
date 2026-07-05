@@ -36,6 +36,13 @@ export class SubscriptionController {
         return res.status(400).json({ message: 'Coupon code is required.' });
       }
 
+      const config = await PaymentGatewayConfig.findOne();
+      const platformHeader = req.headers['x-platform'];
+      const isIOS = platformHeader === 'ios' || (!platformHeader && /iPhone|iPad|iPod/i.test(req.headers['user-agent'] || ''));
+      if (isIOS && config && !config.enableIOSExternalPayments) {
+        return res.status(403).json({ message: 'Promo code unlock is disabled on iOS.' });
+      }
+
       const coupon = await Coupon.findOne({ 
         code: couponCode.trim().toUpperCase(),
         isActive: true,
@@ -81,8 +88,7 @@ export class SubscriptionController {
         }
       }
 
-      // Fetch global settings config
-      const config = await PaymentGatewayConfig.findOne();
+      // Fetch global settings config (already loaded above)
       const gstPercentage = config ? config.gstPercentage : 18;
       const gstAmount = parseFloat(((finalAmount * gstPercentage) / 100).toFixed(2));
       const totalAmount = parseFloat((finalAmount + gstAmount).toFixed(2));
@@ -161,6 +167,14 @@ export class SubscriptionController {
         return res.status(400).json({ message: 'Plan ID and billing cycle are required.' });
       }
 
+      // Fetch gateway configuration details early for hardblock check
+      const config = await PaymentGatewayConfig.findOne();
+      const platformHeader = req.headers['x-platform'];
+      const isIOS = platformHeader === 'ios' || (!platformHeader && /iPhone|iPad|iPod/i.test(req.headers['user-agent'] || ''));
+      if (isIOS && config && !config.enableIOSExternalPayments) {
+        return res.status(403).json({ message: 'External subscription payments disabled on iOS.' });
+      }
+
       const plan = await SubscriptionPlan.findById(planId);
       if (!plan || !plan.isActive) {
         return res.status(404).json({ message: 'Subscription plan not found or inactive.' });
@@ -204,8 +218,6 @@ export class SubscriptionController {
         }
       }
 
-      // Fetch gateway configuration details
-      const config = await PaymentGatewayConfig.findOne();
       const useRazorpay = !!(config && config.enablePayments && config.razorpayKeyId && config.razorpayKeySecret);
       const gstPercentage = config ? config.gstPercentage : 18;
 
@@ -367,6 +379,13 @@ export class SubscriptionController {
 
       // Fetch gateway configurations
       const config = await PaymentGatewayConfig.findOne();
+
+      const platformHeader = req.headers['x-platform'];
+      const isIOS = platformHeader === 'ios' || (!platformHeader && /iPhone|iPad|iPod/i.test(req.headers['user-agent'] || ''));
+      if (isIOS && config && !config.enableIOSExternalPayments) {
+        return res.status(403).json({ message: 'Payment verification is disabled on iOS.' });
+      }
+
       if (!config || !config.razorpayKeySecret) {
         return res.status(500).json({ message: 'Razorpay keys not configured.' });
       }
@@ -447,6 +466,13 @@ export class SubscriptionController {
 
       if (!orderId) {
         return res.status(400).json({ message: 'Order ID is required.' });
+      }
+
+      const config = await PaymentGatewayConfig.findOne();
+      const platformHeader = req.headers['x-platform'];
+      const isIOS = platformHeader === 'ios' || (!platformHeader && /iPhone|iPad|iPod/i.test(req.headers['user-agent'] || ''));
+      if (isIOS && config && !config.enableIOSExternalPayments) {
+        return res.status(403).json({ message: 'Mock payment verification is disabled on iOS.' });
       }
 
       const transaction = await PaymentTransaction.findOne({ gatewayOrderId: orderId, userId });

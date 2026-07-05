@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { SyncService } from '../services/syncService';
 import { useToast } from '../context/ToastContext';
+import { Capacitor } from '@capacitor/core';
 import {
   Search,
   Plus,
@@ -22,7 +23,6 @@ import {
   Cookie,
   Sparkles,
   Camera,
-  Lock,
   AlertCircle,
   Loader2,
   ShieldCheck
@@ -34,8 +34,9 @@ interface FoodLogProps {
 }
 
 export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) => {
-  const { token, apiUrl } = useAuth();
+  const { token, apiUrl, branding } = useAuth();
   const { showToast } = useToast();
+  const isIOSAppStoreBlocked = Capacitor.getPlatform() === 'ios' && !branding.enableIOSExternalPayments;
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
@@ -90,6 +91,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
   const [isScanning, setIsScanning] = useState(false);
   const [scanningProgress, setScanningProgress] = useState('Initializing Scanner...');
   const [scanResult, setScanResult] = useState<any | null>(null);
+  const [hasAiConsent, setHasAiConsent] = useState<boolean>(false);
 
   interface ScannedItemState {
     enabled: boolean;
@@ -103,6 +105,9 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
   const [activeTab, setActiveTab] = useState<'search' | 'manual' | 'scan'>('search');
   const [portionType, setPortionType] = useState<string>('100');
   const [customGrams, setCustomGrams] = useState<number>(100);
+  const [quantity, setQuantity] = useState<number>(1);
+  const [unit, setUnit] = useState('serving');
+
   const handlePortionChange = (type: string, customVal?: number) => {
     setPortionType(type);
     const val = type === 'custom' ? (customVal ?? customGrams) : parseFloat(type);
@@ -161,8 +166,6 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
   const [protein, setProtein] = useState<number>(0);
   const [fat, setFat] = useState<number>(0);
   const [fiber, setFiber] = useState<number>(0);
-  const [quantity, setQuantity] = useState<number>(1);
-  const [unit, setUnit] = useState('serving');
 
   const [message, setMessage] = useState<string | null>(null);
 
@@ -302,11 +305,11 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
       return false;
     }
     if (fatVal > 150) {
-      showToast(`Fat for "${name}" (${Math.round(fatVal)}g) seems too high. Please verify portion size.`, 'error');
+      showToast(`Fat for "${name}" (${Math.round(fatVal)}g) seem too high. Please verify portion size.`, 'error');
       return false;
     }
     if (fib > 50) {
-      showToast(`Fiber for "${name}" (${Math.round(fib)}g) seems too high. Please verify portion size.`, 'error');
+      showToast(`Fiber for "${name}" (${Math.round(fib)}g) seem too high. Please verify portion size.`, 'error');
       return false;
     }
     return true;
@@ -753,7 +756,6 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
   return (
     <>
       <div className="pb-24 pt-4 px-4 max-w-5xl mx-auto bg-slate-50/70 min-h-screen font-sans antialiased text-slate-800">
-        {/* Title */}
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold text-slate-850">Diet Log</h2>
@@ -772,7 +774,6 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
           </div>
         )}
 
-        {/* Doctor Recommended Foods Banner */}
         <button
           type="button"
           onClick={() => onNavigateToTab?.('Recommended Foods')}
@@ -793,39 +794,32 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
           </div>
         </button>
 
-        {/* AI Photo Food Scanner Banner */}
-        <div className="bg-gradient-to-r from-indigo-600 via-indigo-500 to-primary p-4 rounded-3xl text-white shadow-soft mb-6 relative overflow-hidden flex items-center justify-between">
-          <div className="absolute -right-4 -bottom-4 opacity-10 pointer-events-none">
-            <Sparkles className="h-24 w-24" />
-          </div>
-          <div className="max-w-[70%]">
-            {/* <div className="inline-flex items-center space-x-1.5 px-2 py-0.5 bg-white/20 rounded-full text-[8px] uppercase tracking-wider font-extrabold mb-1.5">
-              <Sparkles className="h-3 w-3 fill-white" />
-              <span>Premium Feature</span>
-            </div> */}
-            <h4 className="text-sm font-extrabold tracking-tight">Food Scanner</h4>
-            <p className="text-[10px] text-indigo-100 font-semibold mt-0.5 leading-tight">
-              Snap a picture of your food to auto-estimate calories & macros instantly!
-            </p>
-          </div>
+        <div className="flex gap-3 mb-6">
           <button
             type="button"
             onClick={handleOpenScanner}
-            className="shrink-0 bg-white text-indigo-600 hover:bg-slate-50 font-bold text-[10px] px-3.5 py-2.5 rounded-2xl shadow-soft transition-all"
+            className="flex-1 bg-gradient-to-r from-indigo-600 via-indigo-500 to-primary p-4 rounded-3xl text-white shadow-soft relative overflow-hidden flex items-center justify-between group"
           >
-            Scan Now
+            <div className="absolute -right-4 -bottom-4 opacity-10 pointer-events-none">
+              <Sparkles className="h-24 w-24" />
+            </div>
+            <div className="max-w-[70%]">
+              <h4 className="text-sm font-extrabold tracking-tight">Food Scanner</h4>
+              <p className="text-[10px] text-indigo-100 font-semibold mt-0.5 leading-tight">
+                Snap a picture of your food to auto-estimate calories & macros!
+              </p>
+            </div>
+            <div className="shrink-0 bg-white text-indigo-600 font-bold text-[10px] px-3.5 py-2.5 rounded-2xl shadow-soft transition-all">
+              Scan
+            </div>
           </button>
         </div>
 
-        {/* Log Form Card */}
         <div className="bg-white border border-slate-100 shadow-[0_12px_24px_rgba(0,0,0,0.02)] rounded-3xl p-5 mb-6">
           <form onSubmit={handleLogSubmit} className="space-y-4">
             <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Log a Meal</h3>
-
-            {/* Tabs Selector */}
             <div className="flex space-x-1.5 p-1 bg-slate-100/80 rounded-2xl mb-4 border border-slate-200/20">
               <button
-                key="search"
                 type="button"
                 onClick={() => {
                   setActiveTab('search');
@@ -834,15 +828,11 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                   setUnit('g');
                   setCustomName('');
                 }}
-                className={`flex-1 py-2 text-center text-xs font-bold rounded-xl transition-all ${activeTab === 'search'
-                  ? 'bg-white text-slate-800 shadow-soft'
-                  : 'text-slate-500 hover:text-slate-700'
-                  }`}
+                className={`flex-1 py-2 text-center text-xs font-bold rounded-xl transition-all ${activeTab === 'search' ? 'bg-white text-slate-800 shadow-soft' : 'text-slate-500 hover:text-slate-700'}`}
               >
-                🔍 Search Food
+                🔍 Search
               </button>
               <button
-                key="manual"
                 type="button"
                 onClick={() => {
                   setActiveTab('manual');
@@ -850,36 +840,13 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                   setQuantity(1);
                   setUnit('serving');
                   setCustomName('');
-                  setCalories(0);
-                  setCarbs(0);
-                  setProtein(0);
-                  setFat(0);
-                  setFiber(0);
                 }}
-                className={`flex-1 py-2 text-center text-xs font-bold rounded-xl transition-all ${activeTab === 'manual'
-                  ? 'bg-white text-slate-800 shadow-soft'
-                  : 'text-slate-500 hover:text-slate-700'
-                  }`}
+                className={`flex-1 py-2 text-center text-xs font-bold rounded-xl transition-all ${activeTab === 'manual' ? 'bg-white text-slate-800 shadow-soft' : 'text-slate-500 hover:text-slate-700'}`}
               >
-                ✍️ Add Manually
-              </button>
-              <button
-                key="scan"
-                type="button"
-                onClick={() => {
-                  setActiveTab('scan');
-                  handleOpenScanner();
-                }}
-                className={`flex-1 py-2 text-center text-xs font-bold rounded-xl transition-all ${activeTab === 'scan'
-                  ? 'bg-white text-slate-800 shadow-soft'
-                  : 'text-slate-500 hover:text-slate-700'
-                  }`}
-              >
-                📷 Scan Food
+                ✍️ Manual
               </button>
             </div>
 
-            {/* TAB CONTENT: SEARCH FOOD */}
             {activeTab === 'search' && (
               <div className="space-y-4">
                 <div className="relative">
@@ -894,7 +861,6 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                     className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-semibold bg-slate-50/30 transition-all"
                   />
 
-                  {/* Auto-suggestion overlay — FoodMaster results */}
                   {libraryFoods.length > 0 && (
                     <div className="absolute left-0 right-0 mt-2 bg-white border border-slate-100 rounded-3xl shadow-[0_12px_30px_rgba(0,0,0,0.08)] max-h-56 overflow-y-auto z-10 divide-y divide-slate-100 overflow-hidden">
                       {libraryFoods.map((food) => (
@@ -915,7 +881,6 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                     </div>
                   )}
 
-                  {/* FatSecret fallback results */}
                   {libraryFoods.length === 0 && (isFatSecretSearching || fatSecretResults.length > 0) && (
                     <div className="absolute left-0 right-0 mt-2 bg-white border border-blue-100 rounded-3xl shadow-[0_12px_30px_rgba(0,0,0,0.08)] max-h-64 overflow-y-auto z-10 overflow-hidden">
                       <div className="px-3 pt-2.5 pb-1 flex items-center gap-1.5">
@@ -932,7 +897,6 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                         <div
                           key={idx}
                           onClick={() => {
-                            // If this food has variants, show picker first
                             if (fatSecretResults.length > 1 && idx === 0) {
                               setFatSecretVariants(fatSecretResults);
                             } else {
@@ -947,14 +911,6 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                           </span>
                         </div>
                       ))}
-                      {fatSecretResults.length > 1 && (
-                        <div
-                          className="p-2.5 text-center text-[10px] font-bold text-blue-500 bg-blue-50/40 cursor-pointer hover:bg-blue-50 transition-all border-t border-blue-100"
-                          onClick={() => setFatSecretVariants(fatSecretResults)}
-                        >
-                          See all {fatSecretResults.length} variants →
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>
@@ -977,7 +933,6 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                       </button>
                     </div>
 
-                    {/* Backdating inputs */}
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Date of Meal</label>
@@ -1017,7 +972,6 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                       </div>
                     </div>
 
-                    {/* Portion Selection */}
                     {(() => {
                       const foodPortionType = selectedLibraryFood?.portionType || 'weight';
                       let options: string[] = ['100', '200', '300', 'custom'];
@@ -1075,43 +1029,6 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                       );
                     })()}
 
-                    {/* Calculated Nutrition Preview */}
-                    <div className="bg-white p-3 rounded-2xl border border-slate-150 space-y-2 mt-4">
-                      <span className="block text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">Calculated Nutrition ({quantity}g)</span>
-                      <div className="grid grid-cols-5 gap-1.5 text-center">
-                        <div className="bg-slate-50 p-1.5 rounded-xl border border-slate-100">
-                          <span className="text-[8px] text-slate-400 font-bold uppercase block">Calories</span>
-                          <span className="text-xs font-extrabold text-slate-700">
-                            {Math.round((selectedLibraryFood.calories / (selectedLibraryFood.servingSize || 100)) * quantity)} kcal
-                          </span>
-                        </div>
-                        <div className="bg-slate-50 p-1.5 rounded-xl border border-slate-100">
-                          <span className="text-[8px] text-slate-400 font-bold uppercase block">Carbs</span>
-                          <span className="text-xs font-extrabold text-slate-700">
-                            {Math.round((selectedLibraryFood.carbs / (selectedLibraryFood.servingSize || 100)) * quantity)}g
-                          </span>
-                        </div>
-                        <div className="bg-slate-50 p-1.5 rounded-xl border border-slate-100">
-                          <span className="text-[8px] text-slate-400 font-bold uppercase block">Protein</span>
-                          <span className="text-xs font-extrabold text-slate-700">
-                            {Math.round((selectedLibraryFood.protein / (selectedLibraryFood.servingSize || 100)) * quantity)}g
-                          </span>
-                        </div>
-                        <div className="bg-slate-50 p-1.5 rounded-xl border border-slate-100">
-                          <span className="text-[8px] text-slate-400 font-bold uppercase block">Fat</span>
-                          <span className="text-xs font-extrabold text-slate-700">
-                            {Math.round((selectedLibraryFood.fat / (selectedLibraryFood.servingSize || 100)) * quantity)}g
-                          </span>
-                        </div>
-                        <div className="bg-slate-50 p-1.5 rounded-xl border border-slate-100">
-                          <span className="text-[8px] text-slate-400 font-bold uppercase block">Fiber</span>
-                          <span className="text-xs font-extrabold text-slate-700">
-                            {Math.round(((selectedLibraryFood.fiber || 0) / (selectedLibraryFood.servingSize || 100)) * quantity)}g
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
                     <button
                       type="submit"
                       className="w-full bg-primary hover:bg-primary/95 text-white font-bold py-3 px-4 rounded-2xl shadow-soft flex items-center justify-center space-x-2 transition-all"
@@ -1128,7 +1045,6 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
               </div>
             )}
 
-            {/* TAB CONTENT: ADD MANUALLY */}
             {activeTab === 'manual' && (
               <div className="space-y-3.5 bg-slate-50/30 p-4 rounded-2xl border border-slate-100/70">
                 <div>
@@ -1143,7 +1059,6 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                   />
                 </div>
 
-                {/* Backdating inputs */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Date of Meal</label>
@@ -1203,11 +1118,9 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                   </div>
                 </div>
 
-                {/* Nutrients inputs */}
                 <div className="pt-3 border-t border-slate-200/60">
                   <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Nutritional Breakdown</span>
                   <div className="grid grid-cols-5 gap-1.5">
-                    {/* Calories */}
                     <div className="p-2 rounded-xl text-center border bg-white border-slate-200/80 focus-within:border-primary/40">
                       <span className="text-[8px] font-bold text-slate-400 block uppercase">Calories</span>
                       <input
@@ -1217,7 +1130,6 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                         className="w-full text-center font-bold text-slate-700 text-xs mt-0.5 bg-transparent focus:outline-none"
                       />
                     </div>
-                    {/* Carbs */}
                     <div className="p-2 rounded-xl text-center border bg-white border-slate-200/80 focus-within:border-primary/40">
                       <span className="text-[8px] font-bold text-slate-400 block uppercase">Carbs</span>
                       <input
@@ -1227,7 +1139,6 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                         className="w-full text-center font-bold text-slate-700 text-xs mt-0.5 bg-transparent focus:outline-none"
                       />
                     </div>
-                    {/* Protein */}
                     <div className="p-2 rounded-xl text-center border bg-white border-slate-200/80 focus-within:border-primary/40">
                       <span className="text-[8px] font-bold text-slate-400 block uppercase">Protein</span>
                       <input
@@ -1237,7 +1148,6 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                         className="w-full text-center font-bold text-slate-700 text-xs mt-0.5 bg-transparent focus:outline-none"
                       />
                     </div>
-                    {/* Fat */}
                     <div className="p-2 rounded-xl text-center border bg-white border-slate-200/80 focus-within:border-primary/40">
                       <span className="text-[8px] font-bold text-slate-400 block uppercase">Fat</span>
                       <input
@@ -1247,7 +1157,6 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                         className="w-full text-center font-bold text-slate-700 text-xs mt-0.5 bg-transparent focus:outline-none"
                       />
                     </div>
-                    {/* Fiber */}
                     <div className="p-2 rounded-xl text-center border bg-white border-slate-200/80 focus-within:border-primary/40">
                       <span className="text-[8px] font-bold text-slate-400 block uppercase">Fiber</span>
                       <input
@@ -1260,7 +1169,6 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                   </div>
                 </div>
 
-                {/* Serving size sizing controls */}
                 <div className="grid grid-cols-2 gap-3 pt-1">
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Serving Qty</label>
@@ -1298,30 +1206,9 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                 </button>
               </div>
             )}
-
-            {/* TAB CONTENT: SCAN FOOD */}
-            {activeTab === 'scan' && (
-              <div className="text-center py-8 space-y-4 border border-dashed border-slate-200 rounded-3xl bg-slate-50/50 animate-in fade-in duration-200">
-                <div className="mx-auto h-16 w-16 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center border border-indigo-100 shadow-sm">
-                  <Camera className="h-7 w-7" />
-                </div>
-                <h4 className="text-xs font-bold text-slate-700">AI Photo Food Scanner</h4>
-                <p className="text-[10px] text-slate-400 font-semibold max-w-[240px] mx-auto leading-normal">
-                  Identify visible food items instantly using Gemini AI and calculate accurate macros using local database matching.
-                </p>
-                <button
-                  type="button"
-                  onClick={handleOpenScanner}
-                  className="px-5 py-2.5 bg-primary hover:bg-primary/95 text-white font-extrabold text-xs rounded-2xl shadow-soft transition-all"
-                >
-                  Launch Camera / Upload
-                </button>
-              </div>
-            )}
           </form>
         </div>
 
-        {/* Log History list */}
         <div>
           <div className="flex flex-row items-center justify-between gap-3 mb-5 border-t border-slate-200/60 pt-6">
             <h3 className="text-sm font-extrabold text-slate-850 flex items-center space-x-1.5 shrink-0">
@@ -1341,7 +1228,6 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
             </div>
           </div>
 
-          {/* Daily Nutrient Summary Card */}
           {logs.length > 0 && (
             <div className="bg-white border border-slate-100 shadow-[0_12px_24px_rgba(0,0,0,0.02)] rounded-3xl p-4 mb-4">
               <h4 className="text-[10px] font-bold text-slate-450 uppercase tracking-wider mb-3">Daily Nutrients Summary</h4>
@@ -1415,17 +1301,6 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                           </span>
                         )}
                       </div>
-
-                      {/* Spike Correlation Quick Indicator */}
-                      {log.glucoseAnalysis && log.glucoseAnalysis.status && (
-                        <span className={`inline-flex items-center text-[9px] font-bold px-2.5 py-0.5 rounded-full mt-2 border ${log.glucoseAnalysis.status === 'Safe' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                          log.glucoseAnalysis.status === 'Moderate' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                            'bg-rose-50 text-rose-600 border-rose-100'
-                          }`}>
-                          <Activity className="h-2.5 w-2.5 mr-1" />
-                          {log.glucoseAnalysis.status.toUpperCase()} SPIKE ({log.glucoseAnalysis.peakGlucose} mg/dL)
-                        </span>
-                      )}
                     </div>
                   </div>
 
@@ -1451,11 +1326,9 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
           </div>
         </div>
 
-        {/* Edit Food Log Modal */}
         {isEditModalOpen && editingLog && (
           <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
             <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl border border-slate-100 overflow-hidden transform transition-all animate-in zoom-in-95 duration-200">
-              {/* Modal Header */}
               <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                 <div>
                   <h3 className="text-sm font-bold text-slate-800">Edit Food Log</h3>
@@ -1470,7 +1343,6 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                 </button>
               </div>
 
-              {/* Modal Body / Form */}
               <form onSubmit={handleEditSubmit} className="p-6 space-y-4">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Meal Name</label>
@@ -1541,7 +1413,6 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                   </div>
                 </div>
 
-                {/* Quantity / Unit */}
                 <div className="grid grid-cols-2 gap-3 pt-1">
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Serving Qty</label>
@@ -1570,7 +1441,6 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                   </div>
                 </div>
 
-                {/* Macros inputs */}
                 <div className="pt-3 border-t border-slate-200/60">
                   <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Nutritional Values (Total)</span>
                   <div className="grid grid-cols-5 gap-1.5">
@@ -1622,7 +1492,6 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                   </div>
                 </div>
 
-                {/* Submit Buttons */}
                 <div className="flex space-x-3 pt-2">
                   <button
                     type="button"
@@ -1642,44 +1511,43 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
             </div>
           </div>
         )}
-        {/* PREMIUM LOCK MODAL */}
+
         {isUpgradeModalOpen && (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl p-6 max-w-sm w-full border border-slate-100 shadow-2xl text-center animate-scaleIn">
-              <div className="inline-flex h-14 w-14 bg-indigo-50 text-indigo-600 rounded-full items-center justify-center mb-4 border border-indigo-100">
-                <Lock className="h-6 w-6" />
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+              <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-6 text-center text-white relative overflow-hidden">
+                <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/20 blur-2xl"></div>
+                <Sparkles className="h-10 w-10 mx-auto mb-3" />
+                <h3 className="text-base font-bold text-slate-900 mb-2">{isIOSAppStoreBlocked ? 'Feature Unavailable' : 'Premium Food Scanner Locked'}</h3>
+                <p className="text-xs text-white/90 font-medium leading-relaxed max-w-[250px] mx-auto">
+                  {isIOSAppStoreBlocked 
+                    ? 'This feature is currently unavailable on iOS.' 
+                    : 'Food Scanner is exclusive to our Premium Plan subscribers. Upgrade to get instant macro estimates and calorie counts from meal photos.'}
+                </p>
               </div>
-              <h3 className="text-base font-bold text-slate-900 mb-2">Premium Food Scanner Locked</h3>
-              <p className="text-xs text-slate-500 font-medium leading-relaxed mb-6">
-                AFood Scanner is exclusive to our <strong>Premium Plan</strong> subscribers. Upgrade to get instant macro estimates and calorie counts from meal photos.
-              </p>
-              <div className="space-y-2">
+              <div className="p-5 space-y-3">
+                {!isIOSAppStoreBlocked && (
+                  <button
+                    onClick={() => {
+                      setIsUpgradeModalOpen(false);
+                      if (onNavigateToTab) onNavigateToTab('profile');
+                    }}
+                    className="w-full bg-slate-900 hover:bg-black text-white text-sm font-extrabold py-3.5 rounded-2xl transition-all shadow-md"
+                  >
+                    View Upgrade Options
+                  </button>
+                )}
                 <button
-                  type="button"
-                  onClick={() => {
-                    setIsUpgradeModalOpen(false);
-                    if (onNavigateToTab) {
-                      onNavigateToTab('Profile');
-                    }
-                  }}
-                  className="w-full py-2.5 bg-primary hover:bg-primary/95 text-white rounded-xl text-xs font-bold shadow-soft flex items-center justify-center space-x-1.5"
-                >
-                  <Sparkles className="h-4 w-4 fill-white" />
-                  <span>View Subscription Plans</span>
-                </button>
-                <button
-                  type="button"
                   onClick={() => setIsUpgradeModalOpen(false)}
-                  className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold"
+                  className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-bold py-3.5 rounded-2xl transition-all"
                 >
-                  Cancel
+                  Maybe Later
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* SCANNER MODAL */}
         {isScannerOpen && (
           <div
             onClick={() => setIsScannerOpen(false)}
@@ -1703,25 +1571,42 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
               </h3>
 
               {!scanPreviewUrl ? (
-                /* UPLOADER / CAMERA INTERFACE */
                 <div className="border-2 border-dashed border-slate-200 hover:border-primary/40 rounded-2xl p-6 text-center transition-all bg-slate-50/50">
                   <input
                     type="file"
                     id="scanner-image-input"
                     accept="image/*"
-                    capture="environment"
                     onChange={handleScanFileChange}
                     className="hidden"
+                    disabled={!hasAiConsent}
                   />
-                  <label htmlFor="scanner-image-input" className="cursor-pointer flex flex-col items-center">
+                  <label 
+                    htmlFor={hasAiConsent ? "scanner-image-input" : undefined} 
+                    className={`flex flex-col items-center ${hasAiConsent ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`}
+                    onClick={() => {
+                      if (!hasAiConsent) {
+                        showToast('Please check the AI consent box to continue.', 'error');
+                      }
+                    }}
+                  >
                     <div className="h-12 w-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-3 border border-indigo-100">
                       <Camera className="h-5 w-5" />
                     </div>
                     <span className="text-xs font-bold text-slate-700 block">Take Photo or Upload Image</span>
-                    <span className="text-[10px] text-slate-450 font-semibold mt-1 max-w-[200px]">
-                      AI will analyze the meal image to estimate ingredients, serving size, and macros.
-                    </span>
                   </label>
+                  
+                  <div className="mt-6 bg-slate-100 p-3 rounded-xl border border-slate-200 text-left flex items-start space-x-3">
+                    <input 
+                      type="checkbox" 
+                      id="ai-consent"
+                      checked={hasAiConsent}
+                      onChange={(e) => setHasAiConsent(e.target.checked)}
+                      className="mt-1 h-4 w-4 text-primary border-slate-300 rounded focus:ring-primary"
+                    />
+                    <label htmlFor="ai-consent" className="text-[10px] text-slate-500 font-medium leading-relaxed cursor-pointer">
+                      <strong>Privacy Consent:</strong> I agree to securely share this meal image with a third-party AI provider (Google Gemini) solely for estimating nutritional content. Images are analyzed transiently and are never stored or used to personally identify you.
+                    </label>
+                  </div>
                 </div>
               ) : (
                 /* PREVIEW & SCANNING INTERFACE */

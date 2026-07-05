@@ -14,8 +14,11 @@ interface AnalysisProps {
   features?: any;
 }
 
+import { Capacitor } from '@capacitor/core';
+
 export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
-  const { token, apiUrl } = useAuth();
+  const { token, apiUrl, branding } = useAuth();
+  const isIOSAppStoreBlocked = Capacitor.getPlatform() === 'ios' && !branding.enableIOSExternalPayments;
 
   const [spikeLogs, setSpikeLogs] = useState<any[]>([]);
   const [topFoods, setTopFoods] = useState<{
@@ -104,20 +107,24 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
         <div className="h-16 w-16 bg-blue-50 text-primary rounded-full flex items-center justify-center mb-4 shadow-soft">
           <CreditCard className="h-8 w-8" />
         </div>
-        <h3 className="text-lg font-extrabold text-slate-800">Advanced Analytics Locked</h3>
+        <h3 className="text-lg font-extrabold text-slate-800">{isIOSAppStoreBlocked ? 'Feature Unavailable' : 'Advanced Analytics Locked'}</h3>
         <p className="text-xs text-slate-500 font-semibold max-w-xs mt-2 mb-6">
-          Advanced glucose trends, food spikes analysis, and classification are available on our premium plans.
+          {isIOSAppStoreBlocked 
+            ? 'This feature is currently unavailable on iOS.'
+            : 'Advanced glucose trends, food spikes analysis, and classification are available on our premium plans.'}
         </p>
-        <button
-          onClick={() => {
-            if (onNavigateToTab) {
-              onNavigateToTab('Profile');
-            }
-          }}
-          className="bg-primary hover:bg-primary-dark text-white font-extrabold px-6 py-3 rounded-2xl shadow-soft transition-all"
-        >
-          View Subscription Plans
-        </button>
+        {!isIOSAppStoreBlocked && (
+          <button
+            onClick={() => {
+              if (onNavigateToTab) {
+                onNavigateToTab('Profile');
+              }
+            }}
+            className="bg-primary hover:bg-primary-dark text-white font-extrabold px-6 py-3 rounded-2xl shadow-soft transition-all"
+          >
+            View Subscription Plans
+          </button>
+        )}
       </div>
     );
   }
