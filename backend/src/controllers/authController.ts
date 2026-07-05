@@ -24,7 +24,7 @@ export class AuthController {
 
       // APPLE APP STORE REVIEWER BYPASS
       const isReviewAccount = process.env.ENABLE_APPLE_REVIEW_BYPASS === 'true' && 
-        (cleanPhone === '+15555555555' || cleanPhone === '+919999999999' || cleanPhone === '+919597042107' || email?.toLowerCase() === 'review@mitoreboot.in' || email?.toLowerCase() === 'sathishkumarksk007@gmail.com');
+        (cleanPhone === '+15555555555' || cleanPhone === '+919999999999' || cleanPhone === '+919597042107' || email?.toLowerCase() === 'review@mitoreboot.in' || email?.toLowerCase() === 'sathishkumarksk007@gmail.com' || email?.toLowerCase().endsWith('@apple.com'));
         
       if (isReviewAccount) {
         return res.status(200).json({ success: true, message: 'OTP sent successfully (Apple Reviewer Account)' });
@@ -170,7 +170,7 @@ export class AuthController {
       
       // APPLE APP STORE REVIEWER BYPASS
       const isReviewAccount = process.env.ENABLE_APPLE_REVIEW_BYPASS === 'true' && 
-        (cleanPhone === '+15555555555' || cleanPhone === '+919999999999' || cleanPhone === '+919597042107' || email?.toLowerCase() === 'review@mitoreboot.in' || email?.toLowerCase() === 'sathishkumarksk007@gmail.com') && 
+        (cleanPhone === '+15555555555' || cleanPhone === '+919999999999' || cleanPhone === '+919597042107' || email?.toLowerCase() === 'review@mitoreboot.in' || email?.toLowerCase() === 'sathishkumarksk007@gmail.com' || email?.toLowerCase().endsWith('@apple.com')) && 
         otp === '123456';
 
       if (isReviewAccount) {
