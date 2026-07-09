@@ -13,13 +13,13 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
   
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(user?.email || '');
 
   // Demographics state
-  const [gender, setGender] = useState<'Male' | 'Female' | 'Other'>('Male');
-  const [age, setAge] = useState<number>(30);
-  const [height, setHeight] = useState<number>(170);
-  const [weight, setWeight] = useState<number>(70);
+  const [gender, setGender] = useState<'Male' | 'Female' | 'Other' | ''>('');
+  const [age, setAge] = useState<number | ''>('');
+  const [height, setHeight] = useState<number | ''>('');
+  const [weight, setWeight] = useState<number | ''>('');
   const [activityLevel, setActivityLevel] = useState<'Sedentary' | 'Lightly active' | 'Moderately active' | 'Very active'>('Moderately active');
   const [goal, setGoal] = useState<'Lose weight' | 'Maintain weight' | 'Gain weight'>('Maintain weight');
   const [cancerJourney, setCancerJourney] = useState<'PREVENTION' | 'TREATMENT' | 'SECONDARY_PREVENTION'>('PREVENTION');
@@ -42,6 +42,11 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!gender || age === '' || height === '' || weight === '') {
+      showToast('Please fill out all required demographic fields.', 'error');
+      return;
+    }
+    
     if ((cancerJourney === 'TREATMENT' || cancerJourney === 'SECONDARY_PREVENTION') && !disclaimerAccepted) {
       showToast('You must accept the medical disclaimer to select this journey.', 'error');
       return;
@@ -50,10 +55,10 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
     const success = await completeOnboarding({
       name,
       email: email.trim() || undefined,
-      gender,
-      age,
-      height,
-      weight,
+      gender: gender as 'Male' | 'Female' | 'Other',
+      age: Number(age),
+      height: Number(height),
+      weight: Number(weight),
       activityLevel,
       goal,
       cancerJourney,
@@ -166,6 +171,7 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
                     onChange={(e: any) => setGender(e.target.value)}
                     className="w-full px-3 py-2.5 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-slate-700 text-sm font-medium"
                   >
+                    <option value="" disabled>Select Gender</option>
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
                     <option value="Other">Other</option>
@@ -179,7 +185,7 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
                     min="10"
                     max="100"
                     value={age}
-                    onChange={(e) => setAge(parseInt(e.target.value, 10) || 30)}
+                    onChange={(e) => setAge(e.target.value === '' ? '' : parseInt(e.target.value, 10) || '')}
                     className="w-full px-3 py-2.5 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-slate-700 text-sm font-medium"
                   />
                 </div>
@@ -194,7 +200,7 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
                     min="100"
                     max="250"
                     value={height}
-                    onChange={(e) => setHeight(parseInt(e.target.value, 10) || 170)}
+                    onChange={(e) => setHeight(e.target.value === '' ? '' : parseInt(e.target.value, 10) || '')}
                     className="w-full px-3 py-2.5 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-slate-700 text-sm font-medium"
                   />
                 </div>
@@ -206,7 +212,7 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
                     min="30"
                     max="200"
                     value={weight}
-                    onChange={(e) => setWeight(parseInt(e.target.value, 10) || 70)}
+                    onChange={(e) => setWeight(e.target.value === '' ? '' : parseInt(e.target.value, 10) || '')}
                     className="w-full px-3 py-2.5 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-slate-700 text-sm font-medium"
                   />
                 </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { Login } from './pages/Login';
@@ -98,7 +99,12 @@ const MainAppContent: React.FC = () => {
               sub.status === 'trialing' ||
               (sub.status === 'cancelled' && new Date(sub.endDate) > new Date())
             );
-            setIsSubscribed(!!hasActive);
+            // Bypass paywall entirely on iOS to comply with App Store Guidelines
+            if (Capacitor.getPlatform() === 'ios') {
+              setIsSubscribed(true);
+            } else {
+              setIsSubscribed(!!hasActive);
+            }
           } else {
             setIsSubscribed(true);
             setPlanFeatures({
@@ -114,11 +120,19 @@ const MainAppContent: React.FC = () => {
           }
         } else {
           // Fallback to checking if they require sub
-          setIsSubscribed(false);
+          if (Capacitor.getPlatform() === 'ios') {
+            setIsSubscribed(true);
+          } else {
+            setIsSubscribed(false);
+          }
         }
       } catch (err) {
         console.error(err);
-        setIsSubscribed(false); // Default to restrictive instead of bypass
+        if (Capacitor.getPlatform() === 'ios') {
+          setIsSubscribed(true);
+        } else {
+          setIsSubscribed(false); // Default to restrictive instead of bypass
+        }
       } finally {
         setCheckingSub(false);
       }
