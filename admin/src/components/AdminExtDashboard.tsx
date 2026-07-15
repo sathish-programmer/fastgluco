@@ -7,8 +7,8 @@ interface AdminExtDashboardProps {
   adminRole?: string;
 }
 
-export const AdminExtDashboard: React.FC<AdminExtDashboardProps> = ({ apiUrl, token }) => {
-  const [activeTab, setActiveTab] = useState<'doctors' | 'availability' | 'vendors' | 'orders' | 'reports'>('doctors');
+export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?: 'doctors' | 'availability' | 'vendors' | 'orders' | 'reports' }> = ({ apiUrl, token, defaultTab }) => {
+  const [activeTab, setActiveTab] = useState<'doctors' | 'availability' | 'vendors' | 'orders' | 'reports'>(defaultTab || 'doctors');
   
   // Doctors Management
   const [doctors, setDoctors] = useState<any[]>([]);

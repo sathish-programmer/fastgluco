@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, LogOut, FileText } from 'lucide-react';
+import { 
+  Calendar, Clock, LogOut, FileText, User, Settings, 
+  Users, BarChart3, Star, ShieldAlert, CheckCircle
+} from 'lucide-react';
 
 interface DoctorPortalProps {
   apiUrl: string;
@@ -7,39 +10,64 @@ interface DoctorPortalProps {
   onLogout: () => void;
 }
 
+type TabType = 'dashboard' | 'appointments' | 'calendar' | 'patients' | 'availability' | 'notes' | 'prescriptions' | 'feedback' | 'profile' | 'settings';
+
 export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLogout }) => {
+  const [activeTab, setActiveTab] = useState<TabType>('dashboard');
+  const [calendarTab, setCalendarTab] = useState<'month' | 'week' | 'day'>('month');
   const [appointments, setAppointments] = useState<any[]>([]);
-  
-  // Tab: 'appointments' | 'availability'
-  const [activeTab, setActiveTab] = useState<'appointments' | 'availability'>('appointments');
+  const [feedbacks, setFeedbacks] = useState<any[]>([]);
+  const [doctorInfo, setDoctorInfo] = useState<any>(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Consultation notes updates
-  const [consultingApptId, setConsultingApptId] = useState<string | null>(null);
-  const [notes, setNotes] = useState('');
+  // Profile Form States
+  const [profileForm, setProfileForm] = useState({
+    name: '', qualification: '', specialty: '', experience: 0, 
+    hospitalName: '', registrationNumber: '', description: '', 
+    consultationFee: 0, phone: '', email: '', address: '', 
+    languagesKnown: [] as string[], avatar: ''
+  });
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  // Settings Form States
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [workingHours, setWorkingHours] = useState('09:00 - 17:00');
+  const [availableDays, setAvailableDays] = useState<string[]>(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']);
+  const [slotDuration, setSlotDuration] = useState(30);
+  const [visibility, setVisibility] = useState(true);
+  const [holidays, setHolidays] = useState<string[]>([]);
+  const [newHoliday, setNewHoliday] = useState('');
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [emailsEnabled, setEmailsEnabled] = useState(true);
+  const [savingSettings, setSavingSettings] = useState(false);
+
+  // Note/Prescription consultation editor states
+  const [selectedApptForNotes, setSelectedApptForNotes] = useState<any | null>(null);
+  const [consultNotes, setConsultNotes] = useState('');
+  const [prescriptionText, setPrescriptionText] = useState('');
   const [prescriptionUrl, setPrescriptionUrl] = useState('');
-  const [saving, setSaving] = useState(false);
+  const [savingNotes, setSavingNotes] = useState(false);
 
-  // Custom Google Calendar modal flow states
+  // Accept/Custom link states
   const [acceptingAppt, setAcceptingAppt] = useState<any | null>(null);
   const [customMeetUrl, setCustomMeetUrl] = useState('');
   const [savingMeetUrl, setSavingMeetUrl] = useState(false);
 
-  // Availability form state
-  const [slotDuration, setSlotDuration] = useState(30);
-  const [availableDays, setAvailableDays] = useState<number[]>([1, 2, 3, 4, 5]);
-  const [availableTimeSlots, setAvailableTimeSlots] = useState<{ start: string; end: string }[]>([
-    { start: '09:00', end: '13:00' },
-    { start: '14:00', end: '17:00' }
-  ]);
-  const [holidays, setHolidays] = useState<string[]>([]);
-  const [newHoliday, setNewHoliday] = useState('');
-  const [newSlotStart, setNewSlotStart] = useState('09:00');
-  const [newSlotEnd, setNewSlotEnd] = useState('13:00');
-
   useEffect(() => {
-    fetchAppointments();
-    fetchAvailability();
+    fetchInitialData();
   }, []);
+
+  const fetchInitialData = async () => {
+    setLoading(true);
+    await Promise.all([
+      fetchAppointments(),
+      fetchDoctorProfile(),
+      fetchFeedback()
+    ]);
+    setLoading(false);
+  };
 
   const fetchAppointments = async () => {
     try {
@@ -52,568 +80,1153 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
     }
   };
 
-  const fetchAvailability = async () => {
+  const fetchDoctorProfile = async () => {
     try {
-      const res = await fetch(`${apiUrl}/doctor/availability`, {
+      const res = await fetch(`${apiUrl}/doctor/profile`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
         const data = await res.json();
-        if (data.slotDuration) setSlotDuration(data.slotDuration);
-        if (data.availableDays) setAvailableDays(data.availableDays);
-        if (data.availableTimeSlots) setAvailableTimeSlots(data.availableTimeSlots);
-        if (data.holidays) {
-          setHolidays(data.holidays.map((h: string) => h.split('T')[0]));
-        }
+        setDoctorInfo(data);
+        setProfileForm({
+          name: data.name || '',
+          qualification: data.qualification || '',
+          specialty: data.specialty || '',
+          experience: data.experience || 0,
+          hospitalName: data.hospitalName || '',
+          registrationNumber: data.registrationNumber || '',
+          description: data.description || '',
+          consultationFee: data.consultationFee || 0,
+          phone: data.phone || '',
+          email: data.email || '',
+          address: data.address || '',
+          languagesKnown: data.languagesKnown || [],
+          avatar: data.avatar || ''
+        });
+
+        setWorkingHours(data.workingHours || '09:00 - 17:00');
+        setAvailableDays(data.availableDays || ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']);
+        setSlotDuration(data.slotDuration || 30);
+        setVisibility(data.visibility !== false);
+        setNotificationsEnabled(data.notificationPreferences?.pushAlerts !== false);
+        setEmailsEnabled(data.notificationPreferences?.emailAlerts !== false);
+        setHolidays(data.holidays || []);
       }
     } catch (e) {
       console.error(e);
     }
   };
 
-  const handleConsultationSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!consultingApptId) return;
-    setSaving(true);
+  const fetchFeedback = async () => {
     try {
-      const res = await fetch(`${apiUrl}/doctor/appointments/${consultingApptId}/consultation`, {
+      const res = await fetch(`${apiUrl}/doctor/feedback`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) setFeedbacks(await res.json());
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleProfileSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingProfile(true);
+    try {
+      const res = await fetch(`${apiUrl}/doctor/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(profileForm)
+      });
+      if (res.ok) {
+        alert('Profile details updated successfully!');
+        fetchDoctorProfile();
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleSettingsSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword && newPassword !== confirmPassword) {
+      alert('Passwords do not match.');
+      return;
+    }
+    setSavingSettings(true);
+    try {
+      const payload: any = {
+        workingHours,
+        availableDays,
+        slotDuration,
+        visibility,
+        holidays,
+        notificationPreferences: {
+          pushAlerts: notificationsEnabled,
+          emailAlerts: emailsEnabled
+        }
+      };
+      if (newPassword) payload.password = newPassword;
+
+      const res = await fetch(`${apiUrl}/doctor/settings`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        alert('Settings updated successfully!');
+        setNewPassword('');
+        setConfirmPassword('');
+        fetchDoctorProfile();
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  const handleConsultNotesSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedApptForNotes) return;
+    setSavingNotes(true);
+    try {
+      const res = await fetch(`${apiUrl}/doctor/appointments/${selectedApptForNotes._id}/notes`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          notes,
+          notes: consultNotes,
+          prescriptionText,
           prescriptionUrl,
           status: 'completed'
         })
       });
       if (res.ok) {
-        setConsultingApptId(null);
-        setNotes('');
+        alert('Consultation details saved successfully!');
+        setSelectedApptForNotes(null);
+        setConsultNotes('');
+        setPrescriptionText('');
         setPrescriptionUrl('');
         fetchAppointments();
-      } else {
-        alert('Error updating consultation notes');
       }
     } catch (e) {
       console.error(e);
     } finally {
-      setSaving(false);
+      setSavingNotes(false);
     }
   };
 
-  const handleAvailabilityUpdate = async (e: React.FormEvent) => {
+  const handleAcceptAppointment = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!acceptingAppt) return;
+    setSavingMeetUrl(true);
     try {
-      const res = await fetch(`${apiUrl}/doctor/availability`, {
-        method: 'PUT',
+      const res = await fetch(`${apiUrl}/doctor/appointments/${acceptingAppt._id}/accept`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          slotDuration,
-          availableDays,
-          availableTimeSlots,
-          holidays
-        })
+        body: JSON.stringify({ meetingLink: customMeetUrl })
       });
       if (res.ok) {
-        alert('Availability config saved successfully!');
-        fetchAvailability();
+        setAcceptingAppt(null);
+        setCustomMeetUrl('');
+        fetchAppointments();
+      } else {
+        alert('Error accepting appointment.');
       }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSavingMeetUrl(false);
+    }
+  };
+
+  const handleRejectAppointment = async (apptId: string) => {
+    if (!window.confirm('Reject appointment request?')) return;
+    try {
+      const res = await fetch(`${apiUrl}/doctor/appointments/${apptId}/reject`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) fetchAppointments();
     } catch (e) {
       console.error(e);
     }
   };
 
-  const toggleDay = (day: number) => {
-    if (availableDays.includes(day)) {
-      setAvailableDays(availableDays.filter(d => d !== day));
-    } else {
-      setAvailableDays([...availableDays, day]);
-    }
+  const handleToggleDay = (day: string) => {
+    setAvailableDays(prev => 
+      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
+    );
   };
 
-
-
-  const saveAvailabilityDirectly = async (updatedHolidays: string[], updatedTimeSlots = availableTimeSlots, updatedDays = availableDays) => {
-    try {
-      await fetch(`${apiUrl}/doctor/availability`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          slotDuration,
-          availableDays: updatedDays,
-          availableTimeSlots: updatedTimeSlots,
-          holidays: updatedHolidays
-        })
-      });
-    } catch (e) {
-      console.error('Auto save failed', e);
-    }
-  };
-
-  const addHoliday = () => {
+  const handleAddHoliday = () => {
     if (!newHoliday || holidays.includes(newHoliday)) return;
-    const nextHolidays = [...holidays, newHoliday];
-    setHolidays(nextHolidays);
+    setHolidays([...holidays, newHoliday]);
     setNewHoliday('');
-    saveAvailabilityDirectly(nextHolidays);
   };
 
-  const removeHoliday = (dateStr: string) => {
-    const nextHolidays = holidays.filter(h => h !== dateStr);
-    setHolidays(nextHolidays);
-    saveAvailabilityDirectly(nextHolidays);
+  const handleRemoveHoliday = (h: string) => {
+    setHolidays(holidays.filter(x => x !== h));
+  };
+
+  const getUniquePatients = () => {
+    const list: any[] = [];
+    const patientIds = new Set<string>();
+    appointments.forEach(appt => {
+      if (appt.userId && !patientIds.has(appt.userId._id)) {
+        patientIds.add(appt.userId._id);
+        list.push({
+          ...appt.userId,
+          lastVisit: appt.date,
+          lastReason: appt.reason
+        });
+      }
+    });
+    return list;
+  };
+
+  const stats = {
+    todayAppointmentsCount: appointments.filter(a => a.date === new Date().toISOString().split('T')[0] && a.status !== 'cancelled').length,
+    pendingApprovalsCount: appointments.filter(a => a.status === 'pending').length,
+    completedConsultations: appointments.filter(a => a.status === 'completed').length,
+    totalRegisteredPatients: getUniquePatients().length
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans antialiased">
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200 px-8 py-5 flex justify-between items-center shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/25">
-            <span className="text-xl">🩺</span>
-          </div>
-          <div>
-            <h1 className="text-base font-black tracking-tight text-slate-800">MitoReboot</h1>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-0.5">Clinical Dashboard</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
-          <button
-            onClick={() => setActiveTab('appointments')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'appointments' ? 'bg-primary text-white shadow-md' : 'text-slate-500 hover:text-slate-850'}`}
-          >
-            My Appointments
-          </button>
-          <button
-            onClick={() => setActiveTab('availability')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'availability' ? 'bg-primary text-white shadow-md' : 'text-slate-500 hover:text-slate-850'}`}
-          >
-            My Availability & Leaves
-          </button>
-        </div>
-        <button onClick={onLogout} className="px-4 py-2 hover:bg-slate-100 rounded-xl text-slate-500 flex items-center gap-2 text-xs font-bold border border-slate-200 hover:text-slate-800 transition-all">
-          <LogOut className="h-4 w-4" /> Logout
-        </button>
-      </header>
-
-      <main className="flex-1 p-8 max-w-7xl w-full mx-auto space-y-8">
-        {activeTab === 'appointments' && (
-          <div className="space-y-6">
-            <div className="bg-white border border-slate-200 shadow-sm rounded-[32px] p-8">
-              <div className="flex justify-between items-center mb-6">
-                <div>
-                  <h2 className="text-xl font-black text-slate-800 flex items-center gap-2">
-                    <Calendar className="h-5 w-5 text-indigo-500" /> Consultations & Schedule
-                  </h2>
-                  <p className="text-xs text-slate-400 mt-1">Review upcoming virtual slots and clinical history records</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                {appointments.map(appt => (
-                  <div key={appt._id} className="border border-slate-150 bg-slate-50/50 rounded-2xl p-5 space-y-4 hover:border-slate-300 transition-all flex flex-col justify-between">
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="font-bold text-slate-800 text-sm">Patient: {appt.userId?.name || 'Unregistered'}</h4>
-                          <p className="text-[10px] text-slate-400 font-mono tracking-wide mt-0.5">{appt.date} at {appt.time}</p>
-                        </div>
-                        <span className={`text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider ${appt.status === 'confirmed' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : appt.status === 'completed' ? 'bg-blue-50 text-blue-600 border border-blue-100' : 'bg-amber-50 text-amber-600 border border-amber-100'}`}>
-                          {appt.status}
-                        </span>
-                      </div>
-
-                      <div className="bg-slate-100/50 p-3 rounded-xl border border-slate-200 text-xs text-slate-650">
-                        <strong className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider mb-1">Reason:</strong>
-                        {appt.reason}
-                      </div>
-
-                      {appt.patientNotes?.trim() && (
-                        <div className="bg-indigo-50/60 p-3 rounded-xl border border-indigo-100 text-xs text-slate-700">
-                          <strong className="text-indigo-400 block text-[10px] uppercase font-bold tracking-wider mb-1 flex items-center gap-1">
-                            <FileText className="h-3 w-3" /> Patient Notes:
-                          </strong>
-                          <p className="leading-relaxed text-slate-600">{appt.patientNotes}</p>
-                        </div>
-                      )}
-
-                      {appt.feedback && (
-                        <div className="bg-amber-50/60 p-3 rounded-xl border border-amber-100 text-xs text-slate-700">
-                          <strong className="text-amber-500 block text-[10px] uppercase font-bold tracking-wider mb-1">
-                            ⭐ Patient Review:
-                          </strong>
-                          <div className="flex items-center gap-1 text-amber-500 font-bold mb-1">
-                            <span>{'★'.repeat(appt.feedback.rating)}{'☆'.repeat(5 - appt.feedback.rating)}</span>
-                            <span className="text-[10px] text-slate-400 font-bold">({appt.feedback.rating}/5)</span>
-                          </div>
-                          <p className="italic text-slate-650">"{appt.feedback.feedbackText}"</p>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="space-y-2 pt-2">
-                      {appt.meetingLink && appt.status === 'confirmed' && (
-                        <a
-                          href={appt.meetingLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block text-center w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-md transition-all"
-                        >
-                          {appt.meetingLink.includes('calendar.app.google') || appt.meetingLink.includes('calendar.google.com') 
-                            ? 'Open Google Calendar Invite' 
-                            : 'Join Virtual Meeting'}
-                        </a>
-                      )}
-
-                      {appt.status === 'pending' && (
-                        <div className="flex gap-2 w-full mt-1">
-                          <button
-                            onClick={() => {
-                              setAcceptingAppt(appt);
-                              setCustomMeetUrl('');
-                            }}
-                            className="flex-1 py-2 text-center bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all shadow-sm"
-                          >
-                            Accept
-                          </button>
-                          <button
-                            onClick={async () => {
-                              if (!window.confirm('Reject appointment request?')) return;
-                              try {
-                                const res = await fetch(`${apiUrl}/doctor/appointments/${appt._id}/reject`, {
-                                  method: 'POST',
-                                  headers: { 'Authorization': `Bearer ${token}` }
-                                });
-                                if (res.ok) fetchAppointments();
-                              } catch (e) { console.error(e); }
-                            }}
-                            className="flex-1 py-2 text-center bg-red-500 hover:bg-red-650 text-white rounded-xl text-xs font-bold transition-all shadow-sm"
-                          >
-                            Reject
-                          </button>
-                        </div>
-                      )}
-
-                      {appt.status === 'confirmed' && (
-                        <button
-                          onClick={() => {
-                            setConsultingApptId(appt._id);
-                            setNotes(appt.notes || '');
-                            setPrescriptionUrl(appt.prescriptionUrl || '');
-                          }}
-                          className="w-full py-3 text-xs font-bold text-indigo-500 bg-indigo-50 rounded-xl hover:bg-indigo-100 transition-all border border-indigo-200"
-                        >
-                          Complete & Share Notes
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-
-                {appointments.length === 0 && (
-                  <div className="col-span-full py-16 text-center text-slate-500 text-xs font-bold border border-dashed border-slate-800 rounded-3xl">
-                    No consultations scheduled.
-                  </div>
-                )}
-              </div>
+    <div className="min-h-screen flex bg-slate-50 text-slate-800 font-sans antialiased">
+      
+      {/* 1. COLLAPSIBLE SIDEBAR PANEL */}
+      <aside className={`bg-slate-900 text-slate-300 flex flex-col justify-between shrink-0 transition-all ${sidebarCollapsed ? 'w-20' : 'w-64'}`}>
+        <div>
+          {/* Brand Logo Header */}
+          <div className="p-5 border-b border-slate-800 flex items-center gap-2 justify-between">
+            <div className="flex items-center gap-2 overflow-hidden">
+              <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center text-white font-bold shrink-0">🩺</div>
+              {!sidebarCollapsed && <span className="font-extrabold text-white text-sm tracking-tight truncate">Clinical Portal</span>}
             </div>
+            <button 
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="text-slate-500 hover:text-white hidden md:block"
+            >
+              {sidebarCollapsed ? '→' : '←'}
+            </button>
           </div>
-        )}
 
-        {activeTab === 'availability' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-            {/* Days & Hours setup */}
-            <div className="bg-white border border-slate-200 shadow-sm rounded-[32px] p-8 space-y-6">
-              <div>
-                <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-indigo-500" /> Availability & Leave Rules
-                </h2>
-                <p className="text-xs text-slate-400 mt-1">Configure active days and default working slot divisions</p>
-              </div>
-
-              <form onSubmit={handleAvailabilityUpdate} className="space-y-6">
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Available Days</label>
-                  <div className="flex gap-2">
-                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((label, idx) => {
-                      const active = availableDays.includes(idx);
-                      return (
-                        <button
-                          type="button"
-                          key={idx}
-                          onClick={() => toggleDay(idx)}
-                          className={`flex-1 py-3 rounded-xl border text-xs font-bold transition-all ${active ? 'bg-primary text-white border-primary ring-4 ring-indigo-500/10' : 'bg-slate-50 border-slate-200 text-slate-600 hover:text-slate-800'}`}
-                        >
-                          {label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Slot Duration</label>
-                  <select
-                    value={slotDuration}
-                    onChange={(e) => setSlotDuration(Number(e.target.value))}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs font-bold text-slate-700 focus:outline-none focus:border-primary"
-                  >
-                    <option value={15}>15 Minutes</option>
-                    <option value={30}>30 Minutes</option>
-                    <option value={45}>45 Minutes</option>
-                    <option value={60}>60 Minutes</option>
-                  </select>
-                </div>
-
-                <div className="space-y-3 pt-2">
-                  <div className="flex justify-between items-center">
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Consultation Shift Hours (Excluding Breaks/Lunch)</label>
-                  </div>
-                  <div className="space-y-2">
-                    {availableTimeSlots.map((slot, idx) => (
-                      <div key={idx} className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-700">
-                        <span>☀️ Active Shift: {slot.start} to {slot.end}</span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const nextSlots = availableTimeSlots.filter((_, i) => i !== idx);
-                            setAvailableTimeSlots(nextSlots);
-                            saveAvailabilityDirectly(holidays, nextSlots);
-                          }}
-                          className="text-red-500 hover:text-red-600 font-bold"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <span className="text-[9px] uppercase font-bold text-slate-400 block mb-1">Shift Start</span>
-                      <input type="time" value={newSlotStart} onChange={e => setNewSlotStart(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-700" />
-                    </div>
-                    <div>
-                      <span className="text-[9px] uppercase font-bold text-slate-400 block mb-1">Shift End</span>
-                      <input type="time" value={newSlotEnd} onChange={e => setNewSlotEnd(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-700" />
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const nextSlots = [...availableTimeSlots, { start: newSlotStart, end: newSlotEnd }];
-                      setAvailableTimeSlots(nextSlots);
-                      saveAvailabilityDirectly(holidays, nextSlots);
-                    }}
-                    className="w-full py-2.5 rounded-xl border border-dashed border-slate-350 bg-slate-50/50 text-xs font-bold text-indigo-500 hover:bg-slate-100 transition-all"
-                  >
-                    + Add Consultation Shift Hour
-                  </button>
-                </div>
-
+          {/* Navigation Links */}
+          <nav className="p-4 space-y-1">
+            {[
+              { key: 'dashboard', label: 'Overview', icon: BarChart3 },
+              { key: 'appointments', label: 'Appointments', icon: Calendar },
+              { key: 'calendar', label: 'Calendar', icon: Calendar },
+              { key: 'patients', label: 'My Patients', icon: Users },
+              { key: 'availability', label: 'Availability', icon: Clock },
+              { key: 'notes', label: 'Consultation Notes', icon: FileText },
+              { key: 'feedback', label: 'Feedbacks', icon: Star },
+              { key: 'profile', label: 'My Profile', icon: User },
+              { key: 'settings', label: 'Settings', icon: Settings }
+            ].map(item => {
+              const Icon = item.icon;
+              return (
                 <button
-                  type="submit"
-                  className="w-full py-4 rounded-xl font-bold text-white bg-primary hover:bg-primary-dark transition-all shadow-sm"
+                  key={item.key}
+                  onClick={() => setActiveTab(item.key as TabType)}
+                  className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                    activeTab === item.key ? 'bg-primary text-white' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
+                  }`}
                 >
-                  Save Availability Config
+                  <Icon className="h-4.5 w-4.5 shrink-0" />
+                  {!sidebarCollapsed && <span>{item.label}</span>}
                 </button>
-              </form>
+              );
+            })}
+          </nav>
+        </div>
+
+        {/* Footer Logout */}
+        <div className="p-4 border-t border-slate-800">
+          <button 
+            onClick={onLogout}
+            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold text-rose-400 hover:bg-rose-950/20 transition-all`}
+          >
+            <LogOut className="h-4.5 w-4.5 shrink-0" />
+            {!sidebarCollapsed && <span>Logout</span>}
+          </button>
+        </div>
+      </aside>
+
+      {/* 2. MAIN WORKSPACE */}
+      <main className="flex-1 min-w-0 overflow-y-auto px-8 py-6">
+        
+        {loading ? (
+          <div className="flex items-center justify-center h-96">
+            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+          </div>
+        ) : (
+          <div className="space-y-6">
+            
+            {/* Header / Breadcrumb */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+              <div>
+                <h1 className="text-xl font-black text-slate-800">Dr. {doctorInfo?.name || 'Consultant'}</h1>
+                <span className="text-[10px] text-indigo-650 font-bold uppercase tracking-wider">{profileForm.specialty || 'General Practitioner'}</span>
+              </div>
+              <span className="text-xs text-slate-400 font-semibold">{new Date().toDateString()}</span>
             </div>
 
-            {/* Calendar Holidays & Leaves */}
-            <div className="bg-white border border-slate-200 shadow-sm rounded-[32px] p-8 space-y-6">
-              <div>
-                <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-indigo-500" /> Holidays & Day-Offs
-                </h2>
-                <p className="text-xs text-slate-400 mt-1">Block specific dates and holidays from scheduling</p>
-              </div>
+            {/* TAB CONTENT: DASHBOARD */}
+            {activeTab === 'dashboard' && (
+              <div className="space-y-6">
+                
+                {/* Stats widgets */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm flex items-center gap-4">
+                    <div className="p-3.5 bg-blue-50 text-blue-600 rounded-2xl"><Calendar className="h-5 w-5" /></div>
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">Today's Visits</span>
+                      <h3 className="text-2xl font-black text-slate-800 mt-1">{stats.todayAppointmentsCount}</h3>
+                    </div>
+                  </div>
 
-              <div className="space-y-4">
-                <div className="flex gap-2">
-                  <input
-                    type="date"
-                    value={newHoliday}
-                    min={new Date().toISOString().split('T')[0]}
-                    onChange={(e) => setNewHoliday(e.target.value)}
-                    className="flex-1 bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs text-slate-700 focus:outline-none focus:border-primary"
-                  />
-                  <button
-                    type="button"
-                    onClick={addHoliday}
-                    className="px-6 py-4 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl text-xs transition-all"
-                  >
-                    Block Date
-                  </button>
+                  <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm flex items-center gap-4">
+                    <div className="p-3.5 bg-amber-50 text-amber-600 rounded-2xl"><ShieldAlert className="h-5 w-5" /></div>
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">Pending Approvals</span>
+                      <h3 className="text-2xl font-black text-slate-800 mt-1">{stats.pendingApprovalsCount}</h3>
+                    </div>
+                  </div>
+
+                  <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm flex items-center gap-4">
+                    <div className="p-3.5 bg-emerald-50 text-emerald-600 rounded-2xl"><CheckCircle className="h-5 w-5" /></div>
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">Visits Completed</span>
+                      <h3 className="text-2xl font-black text-slate-800 mt-1">{stats.completedConsultations}</h3>
+                    </div>
+                  </div>
+
+                  <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm flex items-center gap-4">
+                    <div className="p-3.5 bg-purple-50 text-purple-600 rounded-2xl"><Users className="h-5 w-5" /></div>
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">Total Patients</span>
+                      <h3 className="text-2xl font-black text-slate-800 mt-1">{stats.totalRegisteredPatients}</h3>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
-                  {holidays.map((dateStr) => (
-                    <div key={dateStr} className="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700">
-                      <span>{new Date(dateStr).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeHoliday(dateStr)}
-                        className="text-red-500 hover:text-red-600 font-bold"
-                      >
-                        Remove
-                      </button>
+                {/* Dashboard layout splits */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  
+                  {/* Left list: Today's Schedule */}
+                  <div className="lg:col-span-2 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+                    <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Today's Appointment Queue</h3>
+                    <div className="divide-y divide-slate-100 max-h-96 overflow-y-auto scrollbar-thin">
+                      {appointments.filter(a => a.status === 'confirmed').slice(0, 5).map(appt => (
+                        <div key={appt._id} className="py-3 flex justify-between items-center">
+                          <div>
+                            <h4 className="font-bold text-slate-800 text-sm">{appt.userId?.name}</h4>
+                            <span className="text-[10px] text-slate-400 font-bold block">🕒 {appt.time} | Reason: {appt.reason}</span>
+                          </div>
+                          {appt.meetingLink && (
+                            <a href={appt.meetingLink} target="_blank" rel="noopener noreferrer" className="px-3 py-1 bg-emerald-500 text-white rounded-lg text-[10px] font-bold shadow hover:bg-emerald-600 transition-all">Join</a>
+                          )}
+                        </div>
+                      ))}
+                      {appointments.filter(a => a.status === 'confirmed').length === 0 && (
+                        <p className="text-xs text-slate-400 italic py-6">No visits scheduled for today.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right list: Quick Feedbacks */}
+                  <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+                    <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Recent Patient Reviews</h3>
+                    <div className="space-y-3.5 max-h-96 overflow-y-auto scrollbar-thin">
+                      {feedbacks.slice(0, 3).map(f => (
+                        <div key={f._id} className="text-xs space-y-1 p-3 bg-slate-50 border border-slate-100 rounded-2xl">
+                          <div className="flex justify-between items-center">
+                            <span className="font-bold text-slate-700">{f.appointmentId?.userId?.name || 'Patient'}</span>
+                            <span className="text-amber-500">{'★'.repeat(f.rating)}</span>
+                          </div>
+                          <p className="italic text-slate-500">"{f.feedbackText}"</p>
+                        </div>
+                      ))}
+                      {feedbacks.length === 0 && (
+                        <p className="text-xs text-slate-400 italic py-6 text-center">No reviews recorded yet.</p>
+                      )}
+                    </div>
+                  </div>
+
+                </div>
+
+              </div>
+            )}
+
+            {/* TAB CONTENT: APPOINTMENTS */}
+            {activeTab === 'appointments' && (
+              <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6">
+                <div>
+                  <h2 className="text-base font-bold text-slate-800">Schedule & Virtual Bookings</h2>
+                  <p className="text-xs text-slate-400 mt-0.5">Approve, decline, or mark consulting sessions</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {appointments.map(appt => (
+                    <div key={appt._id} className="border border-slate-200 bg-slate-50/50 rounded-2xl p-5 space-y-4 hover:border-slate-350 transition-all flex flex-col justify-between">
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className="font-bold text-slate-850 text-sm">Patient: {appt.userId?.name || 'Unregistered'}</h4>
+                            <p className="text-[10px] text-indigo-650 font-bold block mt-0.5">{appt.date} at {appt.time}</p>
+                          </div>
+                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded border uppercase ${
+                            appt.status === 'confirmed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                            appt.status === 'completed' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                            appt.status === 'cancelled' ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                            'bg-amber-50 text-amber-600 border-amber-100'
+                          }`}>
+                            {appt.status}
+                          </span>
+                        </div>
+
+                        <div className="text-xs bg-white border border-slate-200 p-3 rounded-xl text-slate-655">
+                          <span className="text-[9px] font-bold text-slate-400 block uppercase">Reason:</span>
+                          {appt.reason}
+                        </div>
+                      </div>
+
+                      <div className="pt-2 space-y-2 border-t border-slate-100">
+                        {appt.status === 'pending' && (
+                          <div className="flex gap-2">
+                            <button 
+                              onClick={() => { setAcceptingAppt(appt); setCustomMeetUrl(''); }}
+                              className="flex-1 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold transition-all shadow-sm"
+                            >
+                              Accept
+                            </button>
+                            <button 
+                              onClick={() => handleRejectAppointment(appt._id)}
+                              className="flex-1 py-1.5 bg-rose-500 hover:bg-rose-650 text-white rounded-lg text-xs font-bold transition-all shadow-sm"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        )}
+
+                        {appt.status === 'confirmed' && (
+                          <div className="flex gap-2">
+                            {appt.meetingLink && (
+                              <a href={appt.meetingLink} target="_blank" rel="noopener noreferrer" className="flex-1 text-center py-1.5 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all">
+                                Join Call
+                              </a>
+                            )}
+                            <button 
+                              onClick={() => {
+                                setSelectedApptForNotes(appt);
+                                setConsultNotes(appt.notes || '');
+                                setPrescriptionText(appt.prescriptionText || '');
+                                setPrescriptionUrl(appt.prescriptionUrl || '');
+                              }}
+                              className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-650 rounded-lg text-xs font-bold transition-all border border-slate-200"
+                            >
+                              Notes / Prescription
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
-                  {holidays.length === 0 && (
-                    <p className="text-xs text-slate-400 text-center py-6">No holidays blocked yet.</p>
+                  {appointments.length === 0 && (
+                    <p className="text-xs text-slate-400 italic col-span-3 py-10 text-center">No schedule bookings found.</p>
                   )}
                 </div>
               </div>
-            </div>
+            )}
+
+            {/* TAB CONTENT: CALENDAR */}
+            {activeTab === 'calendar' && (
+              <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h2 className="text-base font-bold text-slate-800">My Clinical Bookings Calendar</h2>
+                    <p className="text-xs text-slate-400 mt-0.5">Visual monthly scheduler tracker</p>
+                  </div>
+                  <div className="flex gap-2 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                    {(['month', 'week', 'day'] as const).map(tab => (
+                      <button 
+                        key={tab}
+                        onClick={() => setCalendarTab(tab)}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold capitalize transition-all ${
+                          calendarTab === tab ? 'bg-primary text-white shadow' : 'text-slate-500 hover:text-slate-800'
+                        }`}
+                      >
+                        {tab}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* MONTH VIEW */}
+                {calendarTab === 'month' && (
+                  <>
+                    <div className="grid grid-cols-7 gap-2 text-center text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 border-b border-slate-100 pb-2">
+                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                        <div key={day} className="py-2">{day}</div>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-7 gap-2">
+                      {Array.from({ length: 35 }).map((_, idx) => {
+                        const dayNum = (idx % 31) + 1;
+                        const dateStr = `2026-07-${dayNum < 10 ? '0' + dayNum : dayNum}`;
+                        const dayAppts = appointments.filter(a => a.date === dateStr);
+                        return (
+                          <div key={idx} className="border border-slate-100 rounded-2xl p-3 min-h-[90px] bg-slate-50/50 flex flex-col justify-between hover:border-slate-350 transition-all">
+                            <span className="text-[10px] font-black text-slate-400 self-start">{dayNum}</span>
+                            <div className="space-y-1 overflow-y-auto max-h-[50px] scrollbar-none">
+                              {dayAppts.map(appt => (
+                                <div 
+                                  key={appt._id}
+                                  className={`p-1 rounded text-[9px] font-bold text-left truncate leading-tight ${
+                                    appt.status === 'confirmed' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
+                                    appt.status === 'completed' ? 'bg-blue-50 text-blue-600 border border-blue-100' :
+                                    appt.status === 'cancelled' ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                                    'bg-amber-50 text-amber-600 border-amber-100'
+                                  }`}
+                                >
+                                  {appt.time} - {appt.userId?.name}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+
+                {/* WEEK VIEW */}
+                {calendarTab === 'week' && (
+                  <div className="grid grid-cols-7 gap-4">
+                    {['Mon 13', 'Tue 14', 'Wed 15', 'Thu 16', 'Fri 17', 'Sat 18', 'Sun 19'].map((day, idx) => {
+                      const dateStr = `2026-07-${13 + idx}`;
+                      const dayAppts = appointments.filter(a => a.date === dateStr);
+                      return (
+                        <div key={day} className="border border-slate-200 rounded-2xl p-4 bg-slate-50/40 min-h-[300px] flex flex-col gap-2">
+                          <span className="text-xs font-bold text-slate-800 text-center pb-2 border-b border-slate-100">{day}</span>
+                          <div className="flex-1 space-y-2 overflow-y-auto max-h-[250px] scrollbar-none">
+                            {dayAppts.map(appt => (
+                              <div 
+                                key={appt._id} 
+                                className={`p-2 rounded-xl text-[10px] font-bold border flex flex-col gap-1 ${
+                                  appt.status === 'confirmed' ? 'bg-emerald-555/10 text-emerald-600 border-emerald-100' :
+                                  appt.status === 'completed' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                                  appt.status === 'cancelled' ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                                  'bg-amber-50 text-amber-600 border-amber-100'
+                                }`}
+                              >
+                                <span>🕒 {appt.time}</span>
+                                <span className="truncate">{appt.userId?.name}</span>
+                              </div>
+                            ))}
+                            {dayAppts.length === 0 && <span className="text-[10px] text-slate-400 italic block text-center mt-10">No visits</span>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* DAY VIEW */}
+                {calendarTab === 'day' && (
+                  <div className="space-y-2 border border-slate-100 rounded-3xl p-4 bg-slate-50/20 max-h-[400px] overflow-y-auto">
+                    {['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'].map(hour => {
+                      const hourAppts = appointments.filter(a => a.date === '2026-07-15' && a.time.startsWith(hour.split(':')[0]));
+                      return (
+                        <div key={hour} className="flex gap-4 items-center py-2.5 border-b border-slate-100">
+                          <span className="text-xs font-bold text-slate-400 w-16">{hour}</span>
+                          <div className="flex-1 flex gap-2 overflow-x-auto">
+                            {hourAppts.map(appt => (
+                              <div 
+                                key={appt._id}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-3 ${
+                                  appt.status === 'confirmed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                  appt.status === 'completed' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                                  appt.status === 'cancelled' ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                                  'bg-amber-50 text-amber-600 border-amber-100'
+                                }`}
+                              >
+                                <span>{appt.userId?.name}</span>
+                                <span className="text-[10px] text-slate-400">Reason: {appt.reason}</span>
+                              </div>
+                            ))}
+                            {hourAppts.length === 0 && <span className="text-xs text-slate-400 italic">No bookings scheduled for this hour</span>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB CONTENT: PATIENTS */}
+            {activeTab === 'patients' && (
+              <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6">
+                <div>
+                  <h2 className="text-base font-bold text-slate-800">My Patients Directory</h2>
+                  <p className="text-xs text-slate-400 mt-0.5">Manage details and consultation logs for registered patients</p>
+                </div>
+
+                <div className="overflow-x-auto border border-slate-200 rounded-2xl">
+                  <table className="w-full text-xs text-slate-600 text-left">
+                    <thead className="bg-slate-50 font-bold uppercase text-slate-400 border-b border-slate-200">
+                      <tr>
+                        <th className="p-4">Patient Name</th>
+                        <th className="p-4">Email</th>
+                        <th className="p-4 text-center">Last Appointment</th>
+                        <th className="p-4">Reason</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
+                      {getUniquePatients().map(p => (
+                        <tr key={p._id} className="hover:bg-slate-50/50">
+                          <td className="p-4 font-bold text-slate-800">{p.name}</td>
+                          <td className="p-4">{p.email}</td>
+                          <td className="p-4 text-center font-bold text-indigo-650">{p.lastVisit}</td>
+                          <td className="p-4 font-normal text-slate-555">{p.lastReason}</td>
+                        </tr>
+                      ))}
+                      {getUniquePatients().length === 0 && (
+                        <tr>
+                          <td colSpan={4} className="text-center py-6 text-slate-400 italic">No patients listed in directory.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* TAB CONTENT: AVAILABILITY */}
+            {activeTab === 'availability' && (
+              <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6">
+                <div>
+                  <h2 className="text-base font-bold text-slate-800">Schedule Availability</h2>
+                  <p className="text-xs text-slate-400 mt-0.5">Configure working hours, days, and holiday calendar exclusions</p>
+                </div>
+
+                <form onSubmit={handleSettingsSubmit} className="space-y-6 max-w-xl">
+                  {/* Days */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Available Working Days</label>
+                    <div className="flex flex-wrap gap-2">
+                      {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => {
+                        const active = availableDays.includes(day);
+                        return (
+                          <button
+                            type="button"
+                            key={day}
+                            onClick={() => handleToggleDay(day)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                              active ? 'bg-primary text-white border-primary' : 'bg-white text-slate-555 border-slate-200 hover:border-slate-350'
+                            }`}
+                          >
+                            {day}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Hours & duration */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Working Hours Range</label>
+                      <input 
+                        type="text" 
+                        value={workingHours} 
+                        onChange={e => setWorkingHours(e.target.value)}
+                        placeholder="e.g. 09:00 - 17:00"
+                        className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:outline-none"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Time Slot Interval (mins)</label>
+                      <input 
+                        type="number" 
+                        value={slotDuration} 
+                        onChange={e => setSlotDuration(parseInt(e.target.value) || 30)}
+                        className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Holiday leaves list */}
+                  <div className="space-y-3 pt-4 border-t border-slate-100">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Leave Exclusions & Holidays</label>
+                    <div className="flex gap-2">
+                      <input 
+                        type="date" 
+                        value={newHoliday} 
+                        onChange={e => setNewHoliday(e.target.value)}
+                        className="border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:outline-none"
+                      />
+                      <button 
+                        type="button"
+                        onClick={handleAddHoliday}
+                        className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all"
+                      >
+                        + Add Holiday
+                      </button>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {holidays.map(h => (
+                        <span key={h} className="bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1 text-[10px] font-bold flex items-center gap-1.5">
+                          {h}
+                          <button type="button" onClick={() => handleRemoveHoliday(h)} className="text-red-500 font-bold hover:text-red-700">✕</button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-100 flex justify-end">
+                    <button 
+                      type="submit"
+                      disabled={savingSettings}
+                      className="px-5 py-2.5 bg-primary hover:bg-primary/95 text-white rounded-xl text-xs font-bold transition-all shadow-sm"
+                    >
+                      {savingSettings ? 'Saving...' : 'Save Availability & Leaves'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* TAB CONTENT: CONSULTATION NOTES */}
+            {activeTab === 'notes' && (
+              <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6">
+                <div>
+                  <h2 className="text-base font-bold text-slate-800">Consultation Notes Writer</h2>
+                  <p className="text-xs text-slate-400 mt-0.5">Select a confirmed appointment to record diagnostic summaries and prescriptions</p>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  
+                  {/* Left Sidebar list of confirmed appointments */}
+                  <div className="space-y-3 lg:col-span-1">
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Confirmed Patients</h3>
+                    <div className="space-y-2 max-h-96 overflow-y-auto scrollbar-thin">
+                      {appointments.filter(a => a.status === 'confirmed').map(appt => (
+                        <div 
+                          key={appt._id} 
+                          onClick={() => {
+                            setSelectedApptForNotes(appt);
+                            setConsultNotes(appt.notes || '');
+                            setPrescriptionText(appt.prescriptionText || '');
+                            setPrescriptionUrl(appt.prescriptionUrl || '');
+                          }}
+                          className={`p-3 border rounded-2xl cursor-pointer transition-all ${
+                            selectedApptForNotes?._id === appt._id 
+                              ? 'border-primary bg-indigo-50/20 text-indigo-755' 
+                              : 'border-slate-200 bg-white hover:border-slate-350 text-slate-700'
+                          }`}
+                        >
+                          <h4 className="font-bold text-xs">{appt.userId?.name}</h4>
+                          <span className="text-[10px] text-slate-400 font-bold block mt-0.5">🕒 {appt.date} at {appt.time}</span>
+                        </div>
+                      ))}
+                      {appointments.filter(a => a.status === 'confirmed').length === 0 && (
+                        <p className="text-xs text-slate-450 italic">No active confirmed appointments.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right Form Editor */}
+                  <div className="lg:col-span-2">
+                    {selectedApptForNotes ? (
+                      <form onSubmit={handleConsultNotesSubmit} className="bg-slate-50 border border-slate-150 rounded-3xl p-6 space-y-4">
+                        <div className="pb-3 border-b border-slate-200">
+                          <h4 className="font-bold text-sm text-slate-800">Consultation for {selectedApptForNotes.userId?.name}</h4>
+                          <span className="text-[10px] text-slate-400 block font-semibold mt-0.5">Reason: {selectedApptForNotes.reason}</span>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Clinical Notes / Diagnostics Summary</label>
+                          <textarea 
+                            value={consultNotes} 
+                            onChange={e => setConsultNotes(e.target.value)}
+                            rows={4}
+                            className="w-full border border-slate-200 rounded-xl p-3 text-xs font-semibold focus:outline-none"
+                            placeholder="Describe symptoms, assessment, diagnosis details..."
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Digital Prescription Text</label>
+                          <textarea 
+                            value={prescriptionText} 
+                            onChange={e => setPrescriptionText(e.target.value)}
+                            rows={3}
+                            className="w-full border border-slate-200 rounded-xl p-3 text-xs font-semibold focus:outline-none"
+                            placeholder="e.g. Paracetamol 500mg - Twice daily after meals - 5 days..."
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Attached File / Prescription PDF URL (Optional)</label>
+                          <input 
+                            type="text" 
+                            value={prescriptionUrl} 
+                            onChange={e => setPrescriptionUrl(e.target.value)}
+                            placeholder="http://example.com/prescription.pdf"
+                            className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:outline-none"
+                          />
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
+                          <button 
+                            type="button" 
+                            onClick={() => setSelectedApptForNotes(null)}
+                            className="px-4 py-2 bg-slate-200 rounded-xl text-xs font-bold text-slate-655"
+                          >
+                            Cancel
+                          </button>
+                          <button 
+                            type="submit" 
+                            disabled={savingNotes}
+                            className="px-5 py-2.5 bg-primary hover:bg-primary/95 text-white rounded-xl text-xs font-bold transition-all shadow-sm disabled:opacity-50"
+                          >
+                            {savingNotes ? 'Saving...' : 'Submit Notes & Complete Visit'}
+                          </button>
+                        </div>
+
+                      </form>
+                    ) : (
+                      <div className="border border-dashed border-slate-300 rounded-3xl p-10 text-center text-slate-400 text-xs py-20 bg-slate-50/50">
+                        Choose a patient appointment card from the list to launch the consultation notes editor.
+                      </div>
+                    )}
+                  </div>
+
+                </div>
+              </div>
+            )}
+
+            {/* TAB CONTENT: FEEDBACK */}
+            {activeTab === 'feedback' && (
+              <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6">
+                <div>
+                  <h2 className="text-base font-bold text-slate-800">Patient Feedback & Ratings</h2>
+                  <p className="text-xs text-slate-400 mt-0.5">Reviews submitted by patients following completed virtual consultation sessions</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {feedbacks.map(f => (
+                    <div key={f._id} className="border border-slate-200 rounded-2xl p-5 bg-slate-50/30 space-y-2">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-bold text-slate-800 text-xs">{f.appointmentId?.userId?.name || 'Patient'}</h4>
+                          <span className="text-[9px] text-slate-400 font-bold block">{f.appointmentId?.date}</span>
+                        </div>
+                        <div className="flex items-center text-amber-500">
+                          {'★'.repeat(f.rating)}{'☆'.repeat(5 - f.rating)}
+                        </div>
+                      </div>
+                      <p className="italic text-slate-600 text-xs leading-relaxed">"{f.feedbackText}"</p>
+                    </div>
+                  ))}
+                  {feedbacks.length === 0 && (
+                    <p className="text-xs text-slate-450 italic col-span-2 py-6 text-center">No patient feedback records found.</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* TAB CONTENT: PROFILE */}
+            {activeTab === 'profile' && (
+              <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6">
+                <div>
+                  <h2 className="text-base font-bold text-slate-800">Edit Professional Profile</h2>
+                  <p className="text-xs text-slate-400 mt-0.5">Manage specialized fields, registration numbers, fees, and contact details</p>
+                </div>
+
+                <form onSubmit={handleProfileSubmit} className="space-y-5 max-w-2xl">
+                  
+                  {/* Photo / Name */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Consultant Full Name *</label>
+                      <input 
+                        required
+                        type="text" 
+                        value={profileForm.name} 
+                        onChange={e => setProfileForm({ ...profileForm, name: e.target.value })}
+                        className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:outline-none"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Avatar Profile Photo URL</label>
+                      <input 
+                        type="text" 
+                        value={profileForm.avatar} 
+                        onChange={e => setProfileForm({ ...profileForm, avatar: e.target.value })}
+                        className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Specialties */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Qualification *</label>
+                      <input 
+                        required
+                        type="text" 
+                        value={profileForm.qualification} 
+                        onChange={e => setProfileForm({ ...profileForm, qualification: e.target.value })}
+                        className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:outline-none"
+                        placeholder="e.g. MBBS, MD"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Specialization Specialty *</label>
+                      <input 
+                        required
+                        type="text" 
+                        value={profileForm.specialty} 
+                        onChange={e => setProfileForm({ ...profileForm, specialty: e.target.value })}
+                        className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:outline-none"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Years of Experience *</label>
+                      <input 
+                        required
+                        type="number" 
+                        value={profileForm.experience} 
+                        onChange={e => setProfileForm({ ...profileForm, experience: parseInt(e.target.value) || 0 })}
+                        className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Hospital & Registration */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Hospital / Clinic Name</label>
+                      <input 
+                        type="text" 
+                        value={profileForm.hospitalName} 
+                        onChange={e => setProfileForm({ ...profileForm, hospitalName: e.target.value })}
+                        className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:outline-none"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Medical Registration Number</label>
+                      <input 
+                        type="text" 
+                        value={profileForm.registrationNumber} 
+                        onChange={e => setProfileForm({ ...profileForm, registrationNumber: e.target.value })}
+                        className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:outline-none"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Consultation Fee (Rs) *</label>
+                      <input 
+                        required
+                        type="number" 
+                        value={profileForm.consultationFee} 
+                        onChange={e => setProfileForm({ ...profileForm, consultationFee: parseInt(e.target.value) || 0 })}
+                        className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Phone & Address */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Phone Number</label>
+                      <input 
+                        type="tel" 
+                        value={profileForm.phone} 
+                        onChange={e => setProfileForm({ ...profileForm, phone: e.target.value })}
+                        className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:outline-none"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Email Address *</label>
+                      <input 
+                        required
+                        type="email" 
+                        value={profileForm.email} 
+                        onChange={e => setProfileForm({ ...profileForm, email: e.target.value })}
+                        className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Bio / About Doctor *</label>
+                    <textarea 
+                      required
+                      value={profileForm.description} 
+                      onChange={e => setProfileForm({ ...profileForm, description: e.target.value })}
+                      rows={4}
+                      className="w-full border border-slate-200 rounded-xl p-3 text-xs font-semibold focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="flex justify-end pt-3 border-t border-slate-100">
+                    <button 
+                      type="submit"
+                      disabled={savingProfile}
+                      className="px-5 py-2.5 bg-primary hover:bg-primary/95 text-white rounded-xl text-xs font-bold transition-all shadow-sm"
+                    >
+                      {savingProfile ? 'Saving...' : 'Save Profile Details'}
+                    </button>
+                  </div>
+
+                </form>
+              </div>
+            )}
+
+            {/* TAB CONTENT: SETTINGS */}
+            {activeTab === 'settings' && (
+              <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6">
+                <div>
+                  <h2 className="text-base font-bold text-slate-800">Security & Visibility Settings</h2>
+                  <p className="text-xs text-slate-400 mt-0.5">Toggle visibility, notification preferences, and change passwords</p>
+                </div>
+
+                <form onSubmit={handleSettingsSubmit} className="space-y-5 max-w-md">
+                  
+                  {/* Password */}
+                  <div className="space-y-3.5 pb-4 border-b border-slate-100">
+                    <h3 className="text-xs font-bold text-slate-700">Change Password</h3>
+                    <div className="space-y-2">
+                      <input 
+                        type="password" 
+                        placeholder="New Password" 
+                        value={newPassword}
+                        onChange={e => setNewPassword(e.target.value)}
+                        className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none font-semibold"
+                      />
+                      <input 
+                        type="password" 
+                        placeholder="Confirm Password" 
+                        value={confirmPassword}
+                        onChange={e => setConfirmPassword(e.target.value)}
+                        className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none font-semibold"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Visibility & Alerts */}
+                  <div className="space-y-3 pt-2">
+                    <h3 className="text-xs font-bold text-slate-700">Preferences</h3>
+                    <div className="flex flex-col gap-2.5">
+                      <label className="flex items-center gap-2.5 cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={visibility}
+                          onChange={e => setVisibility(e.target.checked)}
+                          className="rounded text-primary h-4.5 w-4.5"
+                        />
+                        <span className="text-xs font-bold text-slate-700">Visible to patients searching for consulting slots</span>
+                      </label>
+                      <label className="flex items-center gap-2.5 cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={notificationsEnabled}
+                          onChange={e => setNotificationsEnabled(e.target.checked)}
+                          className="rounded text-primary h-4.5 w-4.5"
+                        />
+                        <span className="text-xs font-bold text-slate-700">Receive push alerts for new appointments</span>
+                      </label>
+                      <label className="flex items-center gap-2.5 cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={emailsEnabled}
+                          onChange={e => setEmailsEnabled(e.target.checked)}
+                          className="rounded text-primary h-4.5 w-4.5"
+                        />
+                        <span className="text-xs font-bold text-slate-700">Receive daily digest email alerts</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-100 flex justify-end">
+                    <button 
+                      type="submit"
+                      disabled={savingSettings}
+                      className="px-5 py-2.5 bg-primary hover:bg-primary/95 text-white rounded-xl text-xs font-bold transition-all shadow-sm"
+                    >
+                      {savingSettings ? 'Saving...' : 'Save Settings'}
+                    </button>
+                  </div>
+
+                </form>
+              </div>
+            )}
+
           </div>
         )}
+
       </main>
 
-      {/* Consultations updates modal */}
-      {consultingApptId && (
-        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-[32px] w-full max-w-md p-8 border border-slate-200 shadow-xl space-y-4">
-            <h3 className="text-base font-black text-slate-800 flex items-center gap-2">
-              <FileText className="h-5 w-5 text-indigo-500" /> Share Prescription & Notes
-            </h3>
-            <form onSubmit={handleConsultationSubmit} className="space-y-4">
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Consultation Summary Notes</label>
-                <textarea
+      {/* CONFIRM APPOINTMENT / MEET INVITE MODAL */}
+      {acceptingAppt && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl border border-slate-100">
+            <h3 className="text-base font-bold text-slate-800 mb-2">Accept Appointment</h3>
+            <p className="text-[11px] text-slate-400 mb-4">Set meeting details for Dr. {doctorInfo?.name} consultation.</p>
+
+            <form onSubmit={handleAcceptAppointment} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-[9px] font-bold text-slate-400 uppercase">Google Meet / Calendar Invite Link</label>
+                <input 
                   required
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Clinical notes for the patient..."
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs font-semibold text-slate-700 focus:outline-none focus:border-primary"
-                  rows={4}
-                ></textarea>
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Prescription Link / URL</label>
-                <input
-                  type="url"
-                  value={prescriptionUrl}
-                  onChange={(e) => setPrescriptionUrl(e.target.value)}
-                  placeholder="https://mitoreboot.com/prescriptions/rx-101.pdf"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs font-semibold text-slate-700 focus:outline-none focus:border-primary"
+                  type="text" 
+                  value={customMeetUrl}
+                  onChange={e => setCustomMeetUrl(e.target.value)}
+                  placeholder="https://meet.google.com/abc-defg-hij"
+                  className="w-full border border-slate-200 rounded-xl p-3 text-xs focus:outline-none"
                 />
               </div>
-              <div className="flex justify-end gap-2 mt-6">
-                <button type="button" onClick={() => setConsultingApptId(null)} className="px-4 py-3 bg-slate-100 rounded-xl text-xs font-bold text-slate-550 hover:bg-slate-200 transition-all">Cancel</button>
-                <button type="submit" disabled={saving} className="px-5 py-3 bg-primary rounded-xl text-xs font-bold text-white shadow-md disabled:opacity-50 hover:bg-primary-dark transition-all">Complete Consultation</button>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <button 
+                  type="button" 
+                  onClick={() => setAcceptingAppt(null)}
+                  className="px-4 py-2 bg-slate-100 rounded-xl text-xs font-bold text-slate-600"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={savingMeetUrl}
+                  className="px-5 py-2.5 bg-primary text-white rounded-xl text-xs font-bold shadow-sm transition-all"
+                >
+                  {savingMeetUrl ? 'Saving...' : 'Accept Appointment'}
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
-      {/* GOOGLE CALENDAR SCHEDULE MODAL */}
-      {acceptingAppt && (() => {
-        const patientName = acceptingAppt.userId?.name || 'Patient';
-        const rawDate = acceptingAppt.date; // YYYY-MM-DD
-        const rawTime = acceptingAppt.time; // HH:MM
-        
-        // Build start and end dates for calendar url
-        const [year, month, day] = rawDate.split('-').map(Number);
-        const [hour, min] = rawTime.split(':').map(Number);
-        
-        const startDate = new Date(year, month - 1, day, hour, min);
-        const endDate = new Date(startDate.getTime() + 30 * 60 * 1000); // default 30 mins
-        
-        const formatCalDate = (d: Date) => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-        
-        const calUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Consultation+with+${encodeURIComponent(patientName)}&dates=${formatCalDate(startDate)}/${formatCalDate(endDate)}&details=MitoReboot+Consultation%0AReason:+${encodeURIComponent(acceptingAppt.reason)}`;
 
-        const handleConfirmAccept = async (e: React.FormEvent) => {
-          e.preventDefault();
-          const trimmedLink = customMeetUrl.trim();
-          const isValidGoogleLink = 
-            trimmedLink.startsWith('https://meet.google.com/') || 
-            trimmedLink.startsWith('https://calendar.app.google/') ||
-            trimmedLink.startsWith('https://calendar.google.com/');
-          
-          if (!isValidGoogleLink) {
-            alert('Please paste a valid Google Meet or Calendar link (starts with https://meet.google.com/, calendar.app.google, or calendar.google.com)');
-            return;
-          }
-          setSavingMeetUrl(true);
-          try {
-            const res = await fetch(`${apiUrl}/doctor/appointments/${acceptingAppt._id}/accept`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-              },
-              body: JSON.stringify({ meetingLink: customMeetUrl.trim() })
-            });
-            if (res.ok) {
-              setAcceptingAppt(null);
-              fetchAppointments();
-            } else {
-              alert('Error confirming appointment');
-            }
-          } catch (err) {
-            console.error(err);
-          } finally {
-            setSavingMeetUrl(false);
-          }
-        };
-
-        return (
-          <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-            <div className="bg-white rounded-3xl w-full max-w-md p-6 border border-slate-100 shadow-xl">
-              <div className="mb-4">
-                <span className="text-xl">🗓️</span>
-                <h3 className="text-base font-bold text-slate-800 mt-2">Schedule Google Meet</h3>
-                <p className="text-xs text-slate-400 mt-1">Please schedule a calendar event at the slot requested by the patient.</p>
-              </div>
-
-              <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 text-xs font-semibold text-slate-650 space-y-1.5 mb-5">
-                <div><span className="text-slate-400">Patient:</span> {patientName}</div>
-                <div><span className="text-slate-400">Requested Time:</span> {rawDate} at {rawTime}</div>
-                <div><span className="text-slate-400">Reason:</span> {acceptingAppt.reason}</div>
-              </div>
-
-              <div className="space-y-4">
-                <a
-                  href={calUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block text-center w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md"
-                >
-                  Create Event on Google Calendar ↗
-                </a>
-
-                <form onSubmit={handleConfirmAccept} className="space-y-4 pt-2">
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Paste Google Meet Link</label>
-                    <input
-                      type="url"
-                      required
-                      placeholder="https://meet.google.com/abc-defg-hij"
-                      value={customMeetUrl}
-                      onChange={e => setCustomMeetUrl(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-semibold focus:outline-none focus:border-primary"
-                    />
-                  </div>
-                  <div className="flex justify-end gap-2 pt-2">
-                    <button type="button" onClick={() => setAcceptingAppt(null)} className="px-4 py-3 bg-slate-100 rounded-xl text-xs font-bold text-slate-550 hover:bg-slate-200 transition-all">Cancel</button>
-                    <button type="submit" disabled={savingMeetUrl} className="px-5 py-3 bg-emerald-500 hover:bg-emerald-600 rounded-xl text-xs font-bold text-white shadow-md disabled:opacity-50 transition-all">Confirm & Notify Patient</button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
     </div>
   );
 };

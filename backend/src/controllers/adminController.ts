@@ -20,6 +20,11 @@ import { LegalDocument } from '../models/LegalDocument';
 import { EmailService } from '../services/emailService';
 import { AuthRequest } from '../middlewares/authMiddleware';
 import { FCMService } from '../services/fcmService';
+import { Doctor } from '../models/Doctor';
+import { Vendor } from '../models/Vendor';
+import { Appointment } from '../models/Appointment';
+import ShopOrder from '../models/ShopOrder';
+import ShopProduct from '../models/ShopProduct';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_12345!';
 
@@ -179,12 +184,63 @@ export class AdminController {
         { $group: { _id: '$category', count: { $sum: 1 } } }
       ]);
 
+      // NEW DASHBOARD CARDS CALCULATIONS
+      const totalPatients = totalUsers;
+      const totalDoctors = await Doctor.countDocuments({ isDeleted: false });
+      
+      // Today's Date String: YYYY-MM-DD in local time
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      const todayString = `${year}-${month}-${day}`;
+      
+      const todayAppointments = await Appointment.countDocuments({ date: todayString, status: { $ne: 'cancelled' } });
+      
+      const pendingOrders = await ShopOrder.countDocuments({ 
+        deliveryStatus: { $in: ['pending', 'assigned', 'accepted', 'packed', 'shipped'] } 
+      });
+
+      const ordersRevenue = await ShopOrder.aggregate([
+        { $match: { deliveryStatus: 'delivered' } },
+        { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+      ]);
+      const revenue = ordersRevenue[0]?.total || 0;
+
+      const lowStockProducts = await ShopProduct.countDocuments({
+        $or: [
+          { stock: { $lte: 5 } },
+          { 'variants.stock': { $lte: 5 } }
+        ]
+      });
+
+      const activeVendors = await Vendor.countDocuments({ isActive: true });
+
+      // Most recently registered doctor (for notification center)
+      const recentDoctor = await Doctor.findOne({ isDeleted: false })
+        .sort({ createdAt: -1 })
+        .select('name specialty createdAt')
+        .lean();
+
+      const deliveredOrders = await ShopOrder.countDocuments({ deliveryStatus: 'delivered' });
+
       return res.status(200).json({
         totalUsers,
         activeUsers,
         reportsUploaded,
         foodLogs,
-        categoryBreakdown: categoryStats
+        categoryBreakdown: categoryStats,
+        
+        // Extended layout KPIs
+        totalPatients,
+        totalDoctors,
+        todayAppointments,
+        pendingOrders,
+        revenue,
+        lowStockProducts,
+        activeVendors,
+        recentDoctor,
+        deliveredOrders
       });
     } catch (error: any) {
       return res.status(500).json({ message: error.message || 'Error compiling dashboard statistics.' });
@@ -1011,6 +1067,39 @@ export class AdminController {
       return res.status(200).json({ message: 'Legal document updated successfully.', doc });
     } catch (err: any) {
       return res.status(500).json({ message: err.message || 'Error updating legal doc' });
+    }
+  }
+
+  public static async getAppointments(req: AuthRequest, res: Response) {
+    try {
+      const appointments = await Appointment.find()
+        .populate('doctorId', 'name specialty')
+        .populate('userId', 'name email mobileNumber')
+        .sort({ date: -1, time: -1 });
+      return res.status(200).json(appointments);
+    } catch (err: any) {
+      return res.status(500).json({ message: 'Error fetching appointments.' });
+    }
+  }
+
+  public static async globalSearch(req: AuthRequest, res: Response) {
+    try {
+      const q = String(req.query.q || '').trim();
+      if (!q) {
+        return res.status(200).json({ patients: [], doctors: [], vendors: [], products: [], appointments: [], orders: [] });
+      }
+      const regex = new RegExp(q, 'i');
+      const [patients, doctors, vendors, products, appointments, orders] = await Promise.all([
+        User.find({ $or: [{ name: regex }, { email: regex }] }).limit(5).lean(),
+        Doctor.find({ $or: [{ name: regex }, { specialty: regex }] }).limit(5).lean(),
+        Vendor.find({ $or: [{ name: regex }, { email: regex }, { businessName: regex }] }).limit(5).lean(),
+        ShopProduct.find({ name: regex }).limit(5).lean(),
+        Appointment.find({ reason: regex }).populate('userId', 'name').populate('doctorId', 'name').limit(5).lean(),
+        ShopOrder.find({ $or: [{ orderId: regex }, { paymentStatus: regex }, { status: regex }] }).limit(5).lean(),
+      ]);
+      return res.status(200).json({ patients, doctors, vendors, products, appointments, orders });
+    } catch (err: any) {
+      return res.status(500).json({ message: err.message || 'Error processing global search' });
     }
   }
 }

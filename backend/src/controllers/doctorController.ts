@@ -213,4 +213,118 @@ export class DoctorController {
       res.status(500).json({ message: 'Error fetching doctor appointments' });
     }
   }
+
+  public static async getDoctorProfile(req: Request, res: Response) {
+    try {
+      const doctorId = (req as any).user.id;
+      const doc = await Doctor.findById(doctorId);
+      if (!doc) return res.status(404).json({ message: 'Doctor not found.' });
+      res.json(doc);
+    } catch (err: any) {
+      res.status(500).json({ message: 'Error fetching doctor profile' });
+    }
+  }
+
+  public static async updateDoctorProfile(req: Request, res: Response) {
+    try {
+      const doctorId = (req as any).user.id;
+      const doc = await Doctor.findById(doctorId);
+      if (!doc) return res.status(404).json({ message: 'Doctor not found.' });
+
+      const {
+        name, specialty, description, avatar,
+        qualification, experience, hospitalName,
+        registrationNumber, consultationFee, phone,
+        address, languagesKnown
+      } = req.body;
+
+      if (name) doc.name = name;
+      if (specialty) doc.specialty = specialty;
+      if (description) doc.description = description;
+      if (avatar !== undefined) doc.avatar = avatar;
+      if (qualification !== undefined) doc.qualification = qualification;
+      if (experience !== undefined) doc.experience = experience;
+      if (hospitalName !== undefined) doc.hospitalName = hospitalName;
+      if (registrationNumber !== undefined) doc.registrationNumber = registrationNumber;
+      if (consultationFee !== undefined) doc.consultationFee = consultationFee;
+      if (phone !== undefined) doc.phone = phone;
+      if (address !== undefined) doc.address = address;
+      if (languagesKnown !== undefined) doc.languagesKnown = languagesKnown;
+
+      await doc.save();
+      res.json(doc);
+    } catch (err: any) {
+      res.status(500).json({ message: 'Error updating doctor profile' });
+    }
+  }
+
+  public static async updateDoctorSettings(req: Request, res: Response) {
+    try {
+      const doctorId = (req as any).user.id;
+      const doc = await Doctor.findById(doctorId);
+      if (!doc) return res.status(404).json({ message: 'Doctor not found.' });
+
+      const {
+        password, workingHours, availableDays,
+        slotDuration, holidays, visibility,
+        notificationPreferences
+      } = req.body;
+
+      if (password) {
+        doc.passwordHash = await bcrypt.hash(password, 10);
+      }
+      if (workingHours !== undefined) doc.workingHours = workingHours;
+      if (availableDays !== undefined) doc.availableDays = availableDays;
+      if (slotDuration !== undefined) doc.slotDuration = slotDuration;
+      if (holidays !== undefined) doc.holidays = holidays;
+      if (visibility !== undefined) doc.visibility = visibility;
+      if (notificationPreferences !== undefined) {
+        doc.notificationPreferences = typeof notificationPreferences === 'object'
+          ? JSON.stringify(notificationPreferences)
+          : notificationPreferences;
+      }
+
+      await doc.save();
+      res.json(doc);
+    } catch (err: any) {
+      res.status(500).json({ message: 'Error updating doctor settings' });
+    }
+  }
+
+  public static async getDoctorFeedback(req: Request, res: Response) {
+    try {
+      const doctorId = (req as any).user.id;
+      const appointments = await Appointment.find({ doctorId });
+      const appointmentIds = appointments.map(a => a._id);
+      const feedbacks = await Feedback.find({ appointmentId: { $in: appointmentIds } })
+        .populate({
+          path: 'appointmentId',
+          populate: { path: 'userId', select: 'name email' }
+        });
+      res.json(feedbacks);
+    } catch (err: any) {
+      res.status(500).json({ message: 'Error fetching doctor feedback' });
+    }
+  }
+
+  public static async updateAppointmentNotes(req: Request, res: Response) {
+    try {
+      const doctorId = (req as any).user.id;
+      const { appointmentId } = req.params;
+      const { notes, prescriptionText, prescriptionUrl, status } = req.body;
+
+      const appt = await Appointment.findOne({ _id: appointmentId, doctorId });
+      if (!appt) return res.status(404).json({ message: 'Appointment not found or not assigned to you.' });
+
+      if (notes !== undefined) appt.notes = notes;
+      if (prescriptionText !== undefined) appt.prescriptionText = prescriptionText;
+      if (prescriptionUrl !== undefined) appt.prescriptionUrl = prescriptionUrl;
+      if (status !== undefined) appt.status = status;
+
+      await appt.save();
+      res.json(appt);
+    } catch (err: any) {
+      res.status(500).json({ message: 'Error updating consultation notes' });
+    }
+  }
 }

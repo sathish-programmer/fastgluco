@@ -355,6 +355,8 @@ router.get('/admin/screening-tests', ScreeningController.getAdminScreeningTests)
 router.post('/admin/screening-tests', ScreeningController.createAdminScreeningTest);
 router.put('/admin/screening-tests/:id', ScreeningController.updateAdminScreeningTest);
 router.delete('/admin/screening-tests/:id', ScreeningController.deleteAdminScreeningTest);
+router.get('/admin/appointments', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), AdminController.getAppointments);
+router.get('/admin/global-search', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), AdminController.globalSearch);
 
 router.get('/admin/workflow-config/:type', ScreeningController.getAdminWorkflowConfig);
 router.put('/admin/workflow-config/:type', ScreeningController.updateAdminWorkflowConfig);
@@ -416,6 +418,11 @@ router.get('/doctor/appointments', authenticateToken, requireRole(['Doctor']), D
 router.post('/doctor/appointments/:appointmentId/accept', authenticateToken, requireRole(['Doctor']), AppointmentController.adminConfirmAppointment);
 router.post('/doctor/appointments/:appointmentId/reject', authenticateToken, requireRole(['Doctor']), AppointmentController.doctorRejectAppointment);
 router.put('/doctor/appointments/:appointmentId/consultation', authenticateToken, requireRole(['Doctor']), AppointmentController.updateConsultation);
+router.get('/doctor/profile', authenticateToken, requireRole(['Doctor']), DoctorController.getDoctorProfile);
+router.put('/doctor/profile', authenticateToken, requireRole(['Doctor']), DoctorController.updateDoctorProfile);
+router.put('/doctor/settings', authenticateToken, requireRole(['Doctor']), DoctorController.updateDoctorSettings);
+router.get('/doctor/feedback', authenticateToken, requireRole(['Doctor']), DoctorController.getDoctorFeedback);
+router.put('/doctor/appointments/:appointmentId/notes', authenticateToken, requireRole(['Doctor']), DoctorController.updateAppointmentNotes);
 
 // --- VENDOR SIGN IN & PORTAL ROUTES ---
 router.post('/vendor/auth/login', VendorController.vendorLogin);

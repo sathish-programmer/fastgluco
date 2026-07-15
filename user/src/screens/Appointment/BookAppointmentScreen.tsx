@@ -205,6 +205,9 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                       <h4 className="font-bold text-slate-800 text-sm">Dr. {doc.name}</h4>
                       <p className="text-xs text-slate-500 mt-1">{doc.specialty}</p>
                       <p className="text-[10px] text-slate-400 mt-2 line-clamp-2">{doc.description}</p>
+                      {doc.consultationFee !== undefined && doc.consultationFee !== null && (
+                        <p className="text-[11px] font-bold text-indigo-600 mt-1">Consultation Fee: Rs. {doc.consultationFee}</p>
+                      )}
                     </button>
                   ))}
                 </div>

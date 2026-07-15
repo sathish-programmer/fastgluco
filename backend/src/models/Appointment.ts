@@ -10,6 +10,7 @@ export interface IAppointment extends Document {
   meetingLink?: string;
   notes?: string;
   prescriptionUrl?: string;
+  prescriptionText?: string;
   reminders?: { '30min'?: boolean; '10min'?: boolean };
   patientNotes?: string;
   createdAt: Date;
@@ -27,6 +28,7 @@ const AppointmentSchema: Schema = new Schema(
     meetingLink: { type: String },
     notes: { type: String },
     prescriptionUrl: { type: String },
+    prescriptionText: { type: String },
     reminders: {
       '30min': { type: Boolean, default: false },
       '10min': { type: Boolean, default: false }
