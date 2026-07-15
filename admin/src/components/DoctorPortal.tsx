@@ -525,23 +525,81 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
                         )}
 
                         {appt.status === 'confirmed' && (
-                          <div className="flex gap-2">
-                            {appt.meetingLink && (
-                              <a href={appt.meetingLink} target="_blank" rel="noopener noreferrer" className="flex-1 text-center py-1.5 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all">
-                                Join Call
-                              </a>
-                            )}
-                            <button 
-                              onClick={() => {
-                                setSelectedApptForNotes(appt);
-                                setConsultNotes(appt.notes || '');
-                                setPrescriptionText(appt.prescriptionText || '');
-                                setPrescriptionUrl(appt.prescriptionUrl || '');
+                          <div className="flex gap-2 flex-col">
+                            <div className="flex gap-2">
+                              {appt.meetingLink && (
+                                <a href={appt.meetingLink} target="_blank" rel="noopener noreferrer" className="flex-1 text-center py-1.5 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all">
+                                  Join Call
+                                </a>
+                              )}
+                              <button 
+                                onClick={() => {
+                                  setSelectedApptForNotes(appt);
+                                  setConsultNotes(appt.notes || '');
+                                  setPrescriptionText(appt.prescriptionText || '');
+                                  setPrescriptionUrl(appt.prescriptionUrl || '');
+                                }}
+                                className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-650 rounded-lg text-xs font-bold transition-all border border-slate-200"
+                              >
+                                Notes / Prescription
+                              </button>
+                            </div>
+                            {/* Mark Completed button — unlocks feedback for patient in user app */}
+                            <button
+                              onClick={async () => {
+                                if (!window.confirm(`Mark this appointment with ${appt.userId?.name || 'patient'} as Completed?\n\nThe patient will receive a notification to submit their feedback.`)) return;
+                                try {
+                                  const res = await fetch(`${apiUrl}/doctor/appointments/${appt._id}/consultation`, {
+                                    method: 'PUT',
+                                    headers: {
+                                      'Content-Type': 'application/json',
+                                      'Authorization': `Bearer ${token}`
+                                    },
+                                    body: JSON.stringify({ status: 'completed' })
+                                  });
+                                  if (res.ok) {
+                                    fetchAppointments();
+                                  } else {
+                                    alert('Error marking appointment as completed.');
+                                  }
+                                } catch (e) {
+                                  console.error(e);
+                                  alert('Server error. Please try again.');
+                                }
                               }}
-                              className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-650 rounded-lg text-xs font-bold transition-all border border-slate-200"
+                              className="w-full py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5"
                             >
-                              Notes / Prescription
+                              <CheckCircle className="h-3.5 w-3.5" />
+                              Mark as Completed
                             </button>
+                            {/* Inline feedback display if patient submitted */}
+                            {appt.feedback && (
+                              <div className="bg-amber-50/60 border border-amber-100 rounded-xl p-2.5 text-xs text-slate-700 mt-2">
+                                <div className="flex items-center gap-1 text-amber-500 font-bold mb-1">
+                                  <span>{'★'.repeat(appt.feedback.rating)}{'☆'.repeat(5 - appt.feedback.rating)}</span>
+                                  <span className="text-[10px] text-slate-400 font-bold">({appt.feedback.rating}/5)</span>
+                                </div>
+                                <p className="italic">{appt.feedback.feedbackText}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {appt.status === 'completed' && (
+                          <div className="pt-2">
+                            {appt.feedback ? (
+                              <div className="bg-amber-50/60 border border-amber-100 rounded-xl p-2.5 text-xs text-slate-700">
+                                <div className="flex items-center gap-1 text-amber-500 font-bold mb-1">
+                                  <span>{'★'.repeat(appt.feedback.rating)}{'☆'.repeat(5 - appt.feedback.rating)}</span>
+                                  <span className="text-[10px] text-slate-400 font-bold">({appt.feedback.rating}/5)</span>
+                                </div>
+                                <p className="italic">"{appt.feedback.feedbackText}"</p>
+                              </div>
+                            ) : (
+                              <div className="text-center py-2 bg-slate-100 border border-slate-200 rounded-xl text-[11px] font-medium text-slate-500 italic">
+                                Waiting for patient review...
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>

@@ -1469,10 +1469,10 @@ const AdminPanelContent: React.FC = () => {
               <ShieldAlert className="h-8 w-8 text-primary" />
             </span>
             <h2 className="text-2xl font-bold text-slate-800">
-              {isRegistering ? 'Create Admin Account' : 'Admin Console'}
+              {isRegistering ? 'Create Account' : 'Management Console'}
             </h2>
             <p className="text-xs text-slate-400 font-semibold mt-1">
-              {isRegistering ? 'Register a new administrative console user' : 'Central Management Portal'}
+              {isRegistering ? 'Register a new administrative console user' : 'Sign in as Admin, Doctor, or Vendor'}
             </p>
           </div>
 
@@ -1573,19 +1573,19 @@ const AdminPanelContent: React.FC = () => {
             ) : (
               <>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Admin Email</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Email Address</label>
                   <input
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@mitoreboot.com"
+                    placeholder="your@email.com"
                     className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-medium"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Admin Password</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Password</label>
                   <div className="relative">
                     <input
                       type={showLoginPassword ? "text" : "password"}
@@ -1623,7 +1623,33 @@ const AdminPanelContent: React.FC = () => {
             </button>
           </form>
 
-          <div className="text-center mt-6">
+          {!isRegistering && (
+            <div className="mt-5 p-3 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Who can log in here?</p>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="bg-white rounded-xl p-2 border border-slate-100 text-center">
+                  <span className="text-base">🛡️</span>
+                  <p className="text-[10px] font-bold text-slate-600 mt-0.5">Admin</p>
+                  <p className="text-[9px] text-slate-400">Full access</p>
+                </div>
+                <div className="bg-white rounded-xl p-2 border border-slate-100 text-center">
+                  <span className="text-base">🩺</span>
+                  <p className="text-[10px] font-bold text-slate-600 mt-0.5">Doctor</p>
+                  <p className="text-[9px] text-slate-400">Doctor portal</p>
+                </div>
+                <div className="bg-white rounded-xl p-2 border border-slate-100 text-center">
+                  <span className="text-base">📦</span>
+                  <p className="text-[10px] font-bold text-slate-600 mt-0.5">Vendor</p>
+                  <p className="text-[9px] text-slate-400">Order management</p>
+                </div>
+              </div>
+              <p className="text-[9px] text-slate-400 text-center pt-1">
+                Vendors & Doctors: use the credentials created for you by the Admin.
+              </p>
+            </div>
+          )}
+
+          <div className="text-center mt-4">
             <button
               type="button"
               onClick={() => {
