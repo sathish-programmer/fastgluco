@@ -18,7 +18,7 @@ export interface IShopOrder extends Document {
   razorpayPaymentId?: string;
   razorpaySignature?: string;
   vendorId?: mongoose.Types.ObjectId;
-  deliveryStatus?: 'pending' | 'assigned' | 'accepted' | 'packed' | 'shipped' | 'delivered' | 'cancelled';
+  deliveryStatus?: 'pending' | 'assigned' | 'accepted' | 'processing' | 'packed' | 'shipped' | 'out_for_delivery' | 'delivered' | 'cancelled';
   status: 'pending' | 'completed' | 'failed';
   
   // New Fields
@@ -76,7 +76,7 @@ const ShopOrderSchema: Schema = new Schema({
   razorpayOrderId: { type: String },
   razorpayPaymentId: { type: String },
   razorpaySignature: { type: String },
-  deliveryStatus: { type: String, enum: ['pending', 'assigned', 'accepted', 'packed', 'shipped', 'delivered', 'cancelled'], default: 'pending' },
+  deliveryStatus: { type: String, enum: ['pending', 'assigned', 'accepted', 'processing', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'], default: 'pending' },
   status: { type: String, enum: ['pending', 'completed', 'failed'], default: 'pending' },
 
   // New fields

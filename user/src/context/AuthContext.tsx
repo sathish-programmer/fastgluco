@@ -23,6 +23,10 @@ export interface UserProfile {
   cancerDisclaimerAccepted?: boolean;
   cancerDisclaimerAcceptedAt?: string;
   pendingProfileEdits?: Partial<UserProfile>;
+  addressLine1?: string;
+  addressCity?: string;
+  addressState?: string;
+  addressPinCode?: string;
 }
 
 export interface AppBranding {

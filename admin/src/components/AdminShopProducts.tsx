@@ -11,6 +11,42 @@ interface AdminShopProductsProps {
 
 type TabType = 'basic' | 'medical' | 'variants' | 'media';
 
+export const ProductImage: React.FC<{ src: string; apiUrl: string; className?: string; textClassName?: string }> = ({ src, apiUrl, className = "h-10 w-10 object-contain rounded-xl", textClassName = "text-3xl" }) => {
+  const [error, setError] = useState(false);
+
+  if (!src) {
+    return (
+      <div className={`${className} bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-450`}>
+        <Package className="h-5 w-5" />
+      </div>
+    );
+  }
+
+  const isEmoji = !src.startsWith('/') && !src.startsWith('http') && src.length <= 4;
+  if (isEmoji) {
+    return <span className={textClassName}>{src}</span>;
+  }
+
+  if (error) {
+    return (
+      <div className={`${className} bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-450`}>
+        <Package className="h-5 w-5" />
+      </div>
+    );
+  }
+
+  const baseUrl = apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl;
+  const fullUrl = src.startsWith('http') ? src : `${baseUrl}${src}`;
+  return (
+    <img 
+      src={fullUrl} 
+      alt="Product" 
+      className={className} 
+      onError={() => setError(true)}
+    />
+  );
+};
+
 const EMPTY_PRODUCT_FORM = {
   _id: '',
   name: '',
@@ -37,6 +73,7 @@ const EMPTY_PRODUCT_FORM = {
   productWeight: '',
   sku: '',
   productStatus: 'active',
+  discountPercent: '0',
   variants: [] as { name: string; price: number; stock: number; sku: string }[]
 };
 
@@ -52,6 +89,9 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
   const [search, setSearch] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('All');
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [activeMainTab, setActiveMainTab] = useState<'products' | 'reviews'>('products');
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
 
   // Custom Category States
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -67,7 +107,16 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
   useEffect(() => {
     fetchProducts();
     fetchCategories();
+    fetchReviews();
   }, []);
+
+  useEffect(() => {
+    if (activeMainTab === 'reviews') {
+      fetchReviews();
+    } else {
+      fetchProducts();
+    }
+  }, [activeMainTab]);
 
   const fetchProducts = async () => {
     try {
@@ -97,6 +146,43 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
     }
   };
 
+  const fetchReviews = async () => {
+    setLoadingReviews(true);
+    try {
+      const res = await fetch(`${apiUrl}/admin/shop-reviews`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setReviews(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingReviews(false);
+    }
+  };
+
+  const handleUpdateReviewStatus = async (id: string, status: 'approved' | 'rejected') => {
+    try {
+      const res = await fetch(`${apiUrl}/admin/shop-reviews/${id}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status })
+      });
+      if (res.ok) {
+        fetchReviews();
+      } else {
+        alert('Failed to update review status.');
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const handleProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.price || !form.category) {
@@ -115,6 +201,7 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
       const payload = {
         ...form,
         price: Number(form.price),
+        discountPercent: Number(form.discountPercent || 0),
         stock: form.variants.length > 0 ? form.variants.reduce((sum, v) => sum + v.stock, 0) : Number(form.stock),
         keyBenefits: form.keyBenefits.split(',').map(s => s.trim()).filter(Boolean),
         healthBenefits: form.healthBenefits.split(',').map(s => s.trim()).filter(Boolean),
@@ -205,6 +292,34 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
     }
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const res = await fetch(`${apiUrl}/admin/shop-products/upload-image`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setForm(prev => ({ ...prev, image: data.imageUrl }));
+      } else {
+        const err = await res.json();
+        alert(err.message || 'Image upload failed');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Network error during image upload');
+    }
+  };
+
   const openNew = () => {
     setForm({ ...EMPTY_PRODUCT_FORM });
     setIsEditing(false);
@@ -239,6 +354,7 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
       productWeight: prod.productWeight || '',
       sku: prod.sku || '',
       productStatus: prod.productStatus || 'active',
+      discountPercent: String(prod.discountPercent || 0),
       variants: prod.variants || []
     });
     setIsEditing(true);
@@ -319,7 +435,38 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
         </div>
       </div>
 
-      {/* Filter panel */}
+      {/* Tab Switcher */}
+      <div className="flex border-b border-slate-200">
+        <button
+          onClick={() => setActiveMainTab('products')}
+          className={`px-6 py-3 text-xs font-bold transition-all border-b-2 -mb-px flex items-center gap-2 ${
+            activeMainTab === 'products'
+              ? 'border-indigo-650 text-indigo-650'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          📦 Products Directory
+        </button>
+        <button
+          onClick={() => setActiveMainTab('reviews')}
+          className={`px-6 py-3 text-xs font-bold transition-all border-b-2 -mb-px flex items-center gap-2 ${
+            activeMainTab === 'reviews'
+              ? 'border-indigo-650 text-indigo-650'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          ⭐ User Reviews Moderation
+          {reviews.filter(r => r.status === 'pending').length > 0 && (
+            <span className="bg-rose-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-black animate-pulse">
+              {reviews.filter(r => r.status === 'pending').length}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {activeMainTab === 'products' && (
+        <>
+          {/* Filter panel */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="flex gap-2 flex-wrap">
           {['All', ...categories.slice(0, 5).map(c => c.name)].map((cat, idx) => (
@@ -368,7 +515,9 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
                 <div>
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <span className="text-4xl">{p.image}</span>
+                      <div className="h-12 w-12 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+                        <ProductImage src={p.image} apiUrl={apiUrl} className="h-10 w-10 object-contain" textClassName="text-3xl" />
+                      </div>
                       <div>
                         <h3 className="font-bold text-slate-800 text-sm leading-snug">{p.name}</h3>
                         {p.brand && <span className="text-[10px] text-slate-400 block">{p.brand}</span>}
@@ -437,6 +586,124 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
               </div>
             );
           })}
+        </div>
+      )}
+        </>
+      )}
+
+      {activeMainTab === 'reviews' && (
+        <div className="space-y-4">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+            <h3 className="text-sm font-bold text-slate-800 mb-1">User Product Reviews</h3>
+            <p className="text-xs text-slate-500">Moderate product ratings and comments posted by patients after delivery</p>
+          </div>
+
+          {loadingReviews ? (
+            <div className="flex items-center justify-center h-48">
+              <div className="animate-spin h-6 w-6 border-4 border-primary border-t-transparent rounded-full" />
+            </div>
+          ) : reviews.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-48 bg-white rounded-3xl border border-dashed border-slate-200 text-slate-400">
+              <span className="text-3xl mb-2">⭐</span>
+              <p className="text-sm font-bold">No product reviews yet</p>
+              <p className="text-xs mt-1 text-slate-400">Reviews will appear here once patients submit feedback via invoice links.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {reviews.map((r: any) => {
+                const isPending = r.status === 'pending';
+                const isApproved = r.status === 'approved';
+                const isRejected = r.status === 'rejected';
+                
+                return (
+                  <div key={r._id} className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm flex flex-col justify-between space-y-4">
+                    <div>
+                      {/* Product Header */}
+                      <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
+                        <div className="h-10 w-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden shrink-0">
+                          <ProductImage src={r.productId?.image || '💊'} apiUrl={apiUrl} className="h-8 w-8 object-contain" textClassName="text-xl" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-slate-850 text-xs truncate">{r.productId?.name || 'Unknown Product'}</h4>
+                          <p className="text-[10px] text-slate-400">Category: {r.productId?.category || 'N/A'}</p>
+                        </div>
+                        <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                          isPending ? 'bg-amber-50 text-amber-600 border border-amber-100' :
+                          isApproved ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
+                          'bg-rose-50 text-rose-600 border border-rose-100'
+                        }`}>
+                          {r.status}
+                        </span>
+                      </div>
+
+                      {/* Rating Stars */}
+                      <div className="flex items-center gap-1.5 mt-3">
+                        <div className="flex items-center text-amber-400 text-xs">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <span key={i} className={i < r.rating ? 'opacity-100' : 'opacity-20'}>★</span>
+                          ))}
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-bold">by {r.patientName}</span>
+                      </div>
+
+                      {/* Comment */}
+                      {r.comment ? (
+                        <p className="text-xs text-slate-600 mt-2 bg-slate-50 p-3 rounded-2xl border border-slate-100/60 leading-relaxed italic">
+                          "{r.comment}"
+                        </p>
+                      ) : (
+                        <p className="text-xs text-slate-400 italic mt-2">No written comments provided.</p>
+                      )}
+                      
+                      <p className="text-[9px] text-slate-400 mt-2">Submitted on {new Date(r.createdAt).toLocaleDateString()}</p>
+                    </div>
+
+                    {/* Moderation Action Buttons */}
+                    <div className="flex gap-2 pt-2 border-t border-slate-100">
+                      {isPending ? (
+                        <>
+                          <button
+                            onClick={() => handleUpdateReviewStatus(r._id, 'approved')}
+                            className="flex-1 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all"
+                          >
+                            ✓ Approve Review
+                          </button>
+                          <button
+                            onClick={() => handleUpdateReviewStatus(r._id, 'rejected')}
+                            className="flex-1 py-2 bg-rose-50 hover:bg-rose-105 text-rose-600 border border-rose-200 rounded-xl text-xs font-bold transition-all"
+                          >
+                            ✗ Reject Review
+                          </button>
+                        </>
+                      ) : (
+                        <div className="flex items-center justify-between w-full text-xs">
+                          <span className="text-[10px] text-slate-400 font-bold">Moderated</span>
+                          <div className="flex gap-1.5">
+                            {isApproved && (
+                              <button
+                                onClick={() => handleUpdateReviewStatus(r._id, 'rejected')}
+                                className="px-2.5 py-1 text-[10px] font-bold text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                              >
+                                Switch to Reject
+                              </button>
+                            )}
+                            {isRejected && (
+                              <button
+                                onClick={() => handleUpdateReviewStatus(r._id, 'approved')}
+                                className="px-2.5 py-1 text-[10px] font-bold text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
+                              >
+                                Switch to Approve
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -537,7 +804,7 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="space-y-1">
                       <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Price (INR) *</label>
                       <input 
@@ -552,7 +819,20 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
                       />
                     </div>
 
-                    {form.variants.length === 0 && (
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Discount (%)</label>
+                      <input 
+                        type="number" 
+                        min="0"
+                        max="100"
+                        value={form.discountPercent || ''}
+                        onChange={e => setForm({ ...form, discountPercent: e.target.value })}
+                        placeholder="0"
+                        className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none"
+                      />
+                    </div>
+
+                    {form.variants.length === 0 ? (
                       <div className="space-y-1">
                         <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Stock Quantity *</label>
                         <input 
@@ -563,6 +843,16 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
                           onChange={e => setForm({ ...form, stock: e.target.value })}
                           placeholder="0"
                           className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none"
+                        />
+                      </div>
+                    ) : (
+                      <div className="space-y-1 opacity-50 pointer-events-none">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Stock (Sum of Variants)</label>
+                        <input 
+                          disabled
+                          type="text" 
+                          value={form.variants.reduce((sum, v) => sum + v.stock, 0)}
+                          className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none bg-slate-50"
                         />
                       </div>
                     )}
@@ -782,16 +1072,34 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block">Main Icon/Emoji *</label>
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block">Product Icon/Emoji or Image URL *</label>
                       <input 
                         required
                         type="text" 
                         value={form.image}
                         onChange={e => setForm({ ...form, image: e.target.value })}
-                        placeholder="e.g. 💊 or 🍊"
+                        placeholder="e.g. 💊 or /uploads/filename.png"
                         className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none"
                       />
                     </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block">Upload Image File</label>
+                      <div className="flex gap-2">
+                        <input 
+                          type="file" 
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="w-full border border-slate-200 rounded-xl p-1.5 text-xs focus:outline-none bg-white file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[10px] file:font-bold file:bg-indigo-500 file:text-white hover:file:bg-indigo-600 file:cursor-pointer"
+                        />
+                        {form.image && (
+                          <div className="h-9 w-9 border border-slate-200 rounded-lg flex items-center justify-center overflow-hidden shrink-0 bg-slate-50">
+                            <ProductImage src={form.image} apiUrl={apiUrl} className="h-7 w-7 object-contain" textClassName="text-lg" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
 
                     <div className="space-y-1">
                       <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block">Tags (Separate with commas)</label>
@@ -803,7 +1111,6 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
                         className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none"
                       />
                     </div>
-                  </div>
 
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block">Short Description *</label>

@@ -108,7 +108,7 @@ router.get('/config/public', async (req, res) => {
       aiSpikeThreshold: config.aiSpikeThreshold ?? 110,
       enableSubscriptions: config.enableSubscriptions,
       enableSubscriptionCoupons: config.enableSubscriptionCoupons ?? true,
-      enableExternalPayments: config.enableExternalPayments ?? false,
+      enableExternalPayments: config.enableExternalPayments ?? true,
       enableSaferFoodCoupons: config.enableSaferFoodCoupons ?? true,
       enablePayments: config.enablePayments,
       appName: config.appName || 'Mito_Reboot',
@@ -219,6 +219,9 @@ router.post('/shop/validate-coupon', authenticateToken, requireRole(['User']), S
 router.get('/shop/coupons', authenticateToken, requireRole(['User']), ShopController.getAvailableCoupons);
 router.post('/shop/create-order', authenticateToken, requireRole(['User']), ShopController.createOrder);
 router.post('/shop/verify-payment', authenticateToken, requireRole(['User']), ShopController.verifyPayment);
+router.post('/shop/reviews', authenticateToken, requireRole(['User']), ShopController.submitProductReview);
+router.get('/shop/products/:id/reviews', authenticateToken, requireRole(['User']), ShopController.getProductReviews);
+router.get('/patient/reviews', authenticateToken, requireRole(['User']), ShopController.getPatientReviews);
 router.get('/screening/tests', authenticateToken, requireRole(['User']), ScreeningController.getScreeningTests);
 router.get('/workflow-config/:type', authenticateToken, requireRole(['User']), ScreeningController.getWorkflowConfig);
 
@@ -343,10 +346,18 @@ router.delete('/admin/founders/:id', FounderController.delete);
 // Non-Cancer Features Management (Admin)
 router.get('/admin/shop-products', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.getAdminProducts);
 router.post('/admin/shop-products', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.createAdminProduct);
+router.post('/admin/shop-products/upload-image', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), uploadImage.single('image'), (req: any, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'No file uploaded' });
+  }
+  res.json({ imageUrl: `/uploads/${req.file.filename}` });
+});
 router.put('/admin/shop-products/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.updateAdminProduct);
 router.delete('/admin/shop-products/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.deleteAdminProduct);
 router.post('/admin/shop-categories', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.createAdminCategory);
 router.get('/admin/shop-reports', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopReportController.getReportsSummary);
+router.get('/admin/shop-reviews', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.getAdminReviews);
+router.put('/admin/shop-reviews/:id/status', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.updateReviewStatus);
 router.get('/admin/vendors/:id/performance', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminGetVendorPerformance);
 
 
@@ -445,7 +456,10 @@ router.get('/patient/orders', authenticateToken, requireRole(['User']), async (r
   try {
     const userId = (req as any).user.id;
     const ShopOrder = require('../models/ShopOrder').default;
-    const orders = await ShopOrder.find({ userId }).populate('vendorId').sort({ createdAt: -1 });
+    const orders = await ShopOrder.find({ userId })
+      .populate('vendorId')
+      .populate({ path: 'products.productId', select: 'image' })
+      .sort({ createdAt: -1 });
     res.json(orders);
   } catch (err) {
     res.status(500).json({ message: 'Error fetching patient orders.' });

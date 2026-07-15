@@ -43,7 +43,7 @@ const paymentGatewayConfigSchema = new Schema<IPaymentGatewayConfig>(
     enableSubscriptions: { type: Boolean, default: false, required: true },
     enableTwilioOtp: { type: Boolean, default: false, required: true },
     enableSubscriptionCoupons: { type: Boolean, default: true },
-    enableExternalPayments: { type: Boolean, default: false },
+    enableExternalPayments: { type: Boolean, default: true },
     enableIOSExternalPayments: { type: Boolean, default: false },
     enableSaferFoodCoupons: { type: Boolean, default: true },
     gstPercentage: { type: Number, default: 18, min: 0, required: true },

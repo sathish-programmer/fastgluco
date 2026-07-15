@@ -18,6 +18,7 @@ import { Educational } from './pages/Educational';
 import { Coaching } from './pages/Coaching';
 import { BookAppointmentScreen } from './screens/Appointment/BookAppointmentScreen';
 import { ShopOrdersHistoryScreen } from './screens/Shop/ShopOrdersHistoryScreen';
+import { ProductRatingScreen } from './screens/Shop/ProductRatingScreen';
 import {
   Home,
   FileText,
@@ -44,6 +45,7 @@ const MainAppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('Home');
   const [resetToken, setResetToken] = useState<string | null>(null);
   const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
+  const [rateOrderId, setRateOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -52,6 +54,11 @@ const MainAppContent: React.FC = () => {
       setResetToken(tokenParam);
       // Remove query parameter from browser address bar silently
       window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    const rateOrderParam = params.get('rateOrder');
+    if (rateOrderParam) {
+      setRateOrderId(rateOrderParam);
+      setActiveTab('RateProduct');
     }
   }, []);
 
@@ -282,7 +289,21 @@ const MainAppContent: React.FC = () => {
         {activeTab === 'Educational' && <Educational />}
         {activeTab === 'Coaching' && <Coaching features={planFeatures} />}
         {activeTab === 'Book Appointment' && <BookAppointmentScreen />}
-        {activeTab === 'Shop Orders' && <ShopOrdersHistoryScreen />}
+        {activeTab === 'Shop Orders' && (
+          <ShopOrdersHistoryScreen onRateOrder={(orderId) => {
+            setRateOrderId(orderId);
+            setActiveTab('RateProduct');
+          }} />
+        )}
+        {activeTab === 'RateProduct' && rateOrderId && (
+          <ProductRatingScreen orderId={rateOrderId} onBack={() => {
+            const url = new URL(window.location.href);
+            url.searchParams.delete('rateOrder');
+            window.history.replaceState({}, document.title, url.pathname + url.search);
+            setRateOrderId(null);
+            setActiveTab('Home');
+          }} />
+        )}
         {['Terms of Service', 'Privacy Policy', 'Data Deletion', 'Disclaimer', 'Refund Policy', 'Contact Us'].includes(activeTab) && (
           <Legal type={activeTab as any} onBack={() => setActiveTab('Profile')} />
         )}

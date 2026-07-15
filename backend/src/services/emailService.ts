@@ -650,10 +650,16 @@ export class EmailService {
 
       // Send to Patient
       if (order.userId?.email) {
+        const appUrl = process.env.APP_URL || 'http://localhost:3000';
+        const rateLink = `${appUrl}/?rateOrder=${order._id}`;
         subject = `Your Order has been Delivered 🎉`;
         body = `<p>Hi ${order.userId.name || 'Patient'},</p>
                 <p>Your order (ID: ${order._id}) has been successfully delivered. We hope you are satisfied with the items!</p>
-                <p>We have attached the official PDF invoice to this email for your records.</p>`;
+                <p>We have attached the official PDF invoice to this email for your records.</p>
+                <p>We would love to hear your feedback! Please click the link below to rate the products in this order:</p>
+                <div style="margin: 24px 0;">
+                  <a href="${rateLink}" style="background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; font-size: 14px; display: inline-block; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.15);">Rate & Review Products</a>
+                </div>`;
         const html = generateEmailTemplate(subject, body, appName, appTagline);
         try {
           await transporter.sendMail({

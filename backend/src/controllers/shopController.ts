@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import crypto from 'crypto';
 import ShopProduct from '../models/ShopProduct';
+import ProductReview from '../models/ProductReview';
 import ShopOrder from '../models/ShopOrder';
 import { ShopCategory } from '../models/ShopCategory';
 import { PaymentGatewayConfig } from '../models/PaymentGatewayConfig';
@@ -76,6 +77,15 @@ export const createAdminProduct = async (req: Request, res: Response) => {
     } else {
       newProduct.availableStock = newProduct.stock;
     }
+    
+    // Calculate offer price
+    newProduct.regularPrice = newProduct.price;
+    if (newProduct.discountPercent && newProduct.discountPercent > 0) {
+      newProduct.offerPrice = Number((newProduct.price * (1 - newProduct.discountPercent / 100)).toFixed(2));
+    } else {
+      newProduct.offerPrice = newProduct.price;
+    }
+
     await newProduct.save();
     res.status(201).json(newProduct);
   } catch (err: any) {
@@ -92,6 +102,16 @@ export const updateAdminProduct = async (req: Request, res: Response) => {
     } else {
       body.availableStock = body.stock;
     }
+
+    // Calculate offer price
+    body.regularPrice = body.price;
+    if (body.discountPercent && body.discountPercent > 0) {
+      body.offerPrice = Number((body.price * (1 - body.discountPercent / 100)).toFixed(2));
+    } else {
+      body.offerPrice = body.price;
+      body.discountPercent = 0;
+    }
+
     const product = await ShopProduct.findByIdAndUpdate(req.params.id, body, { new: true });
     res.json(product);
   } catch (err) {
@@ -498,5 +518,105 @@ export const getAvailableCoupons = async (req: Request, res: Response) => {
     res.json(coupons);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching coupons' });
+  }
+};
+
+// Submit product review (User)
+export const submitProductReview = async (req: any, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const { productId, orderId, rating, comment } = req.body;
+
+    if (!productId || !orderId || !rating) {
+      return res.status(400).json({ message: 'Product ID, Order ID, and Rating are required.' });
+    }
+
+    // Check if order exists, is completed, and belongs to user
+    const order = await ShopOrder.findOne({ _id: orderId, userId, status: 'completed' });
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found or not completed.' });
+    }
+
+    // Check if product belongs to order
+    const hasProduct = order.products.some(p => p.productId.toString() === productId);
+    if (!hasProduct) {
+      return res.status(400).json({ message: 'This product was not purchased in this order.' });
+    }
+
+    // Check if already reviewed
+    const existing = await ProductReview.findOne({ productId, orderId, userId });
+    if (existing) {
+      return res.status(409).json({ message: 'You have already reviewed this product for this order.' });
+    }
+
+    const userRecord = await User.findById(userId);
+    const patientName = userRecord?.name || 'Valued Patient';
+
+    const review = new ProductReview({
+      productId,
+      orderId,
+      userId,
+      patientName,
+      rating,
+      comment: comment || ''
+    });
+
+    await review.save();
+    res.status(201).json({ message: 'Review submitted successfully. Pending approval.', review });
+  } catch (err: any) {
+    res.status(500).json({ message: err.message || 'Error submitting review.' });
+  }
+};
+
+// Get reviews of a product (Public/User)
+export const getProductReviews = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const reviews = await ProductReview.find({ productId: id, status: 'approved' }).sort({ createdAt: -1 });
+    res.json(reviews);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching reviews' });
+  }
+};
+
+// Get all reviews for admin approval (Admin)
+export const getAdminReviews = async (req: Request, res: Response) => {
+  try {
+    const reviews = await ProductReview.find()
+      .populate('productId', 'name image price')
+      .sort({ createdAt: -1 });
+    res.json(reviews);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching reviews for admin.' });
+  }
+};
+
+// Update review status (Admin approve/reject)
+export const updateReviewStatus = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status. Must be approved or rejected.' });
+    }
+
+    const review = await ProductReview.findByIdAndUpdate(id, { status }, { new: true });
+    if (!review) return res.status(404).json({ message: 'Review not found.' });
+
+    res.json({ message: `Review status updated to ${status}.`, review });
+  } catch (err) {
+    res.status(500).json({ message: 'Error updating review status.' });
+  }
+};
+
+// Get patient's own reviews
+export const getPatientReviews = async (req: any, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const reviews = await ProductReview.find({ userId });
+    res.json(reviews);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching reviews.' });
   }
 };

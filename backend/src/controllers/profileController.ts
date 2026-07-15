@@ -32,7 +32,8 @@ export class ProfileController {
       const { 
         name, email, mobile, mobileNumber, gender, age, height, weight, activityLevel, goal, fcmToken, spikeThreshold, currency,
         libreEmail, librePassword, libreRegion, libreActive,
-        cancerJourney, cancerDisclaimerAccepted, cancerDisclaimerAcceptedAt
+        cancerJourney, cancerDisclaimerAccepted, cancerDisclaimerAcceptedAt,
+        addressLine1, addressCity, addressState, addressPinCode
       } = req.body;
 
       const user = await User.findById(userId);
@@ -74,6 +75,11 @@ export class ProfileController {
       }
       if (cancerDisclaimerAccepted !== undefined) user.cancerDisclaimerAccepted = cancerDisclaimerAccepted;
       if (cancerDisclaimerAcceptedAt !== undefined) user.cancerDisclaimerAcceptedAt = cancerDisclaimerAcceptedAt ? new Date(cancerDisclaimerAcceptedAt) : undefined;
+
+      if (addressLine1 !== undefined) user.addressLine1 = addressLine1;
+      if (addressCity !== undefined) user.addressCity = addressCity;
+      if (addressState !== undefined) user.addressState = addressState;
+      if (addressPinCode !== undefined) user.addressPinCode = addressPinCode;
 
       if (libreEmail !== undefined) user.libreEmail = libreEmail;
       if (librePassword !== undefined) user.librePassword = librePassword;

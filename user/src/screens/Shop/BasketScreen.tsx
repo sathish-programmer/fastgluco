@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Minus, Plus, Trash2, ShieldCheck, Tag, Landmark, User, Mail, Phone, MapPin } from 'lucide-react';
 import type { ShopItem } from './ShopScreen';
+import { ProductImage } from './ShopScreen';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { HabitsService } from '../../services/habitsService';
@@ -23,10 +24,10 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
   const [patientEmail, setPatientEmail] = useState(user?.email || '');
   const [patientPhone, setPatientPhone] = useState(user?.mobileNumber || '');
   
-  const [line1, setLine1] = useState('');
-  const [city, setCity] = useState('');
-  const [state, setState] = useState('');
-  const [postalCode, setPostalCode] = useState('');
+  const [line1, setLine1] = useState(user?.addressLine1 || '');
+  const [city, setCity] = useState(user?.addressCity || '');
+  const [state, setState] = useState(user?.addressState || '');
+  const [postalCode, setPostalCode] = useState(user?.addressPinCode || '');
   const [country, setCountry] = useState('India');
 
   const [couponCode, setCouponCode] = useState('');
@@ -330,8 +331,8 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
 
                   return (
                     <div key={idx} className="py-4 flex gap-4 items-center">
-                      <div className="w-14 h-14 bg-slate-50 rounded-xl flex items-center justify-center text-2xl border border-slate-100 shrink-0">
-                        {p.item.image}
+                      <div className="w-14 h-14 bg-slate-50 rounded-xl flex items-center justify-center overflow-hidden border border-slate-100 shrink-0 shadow-inner">
+                        <ProductImage src={p.item.image} apiUrl={apiUrl} className="h-full w-full object-contain" textClassName="text-2xl" />
                       </div>
                       <div className="flex-1">
                         <h4 className="font-bold text-slate-800 text-xs leading-tight mb-1">{p.item.name}</h4>
