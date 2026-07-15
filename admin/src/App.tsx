@@ -2089,11 +2089,18 @@ const AdminPanelContent: React.FC = () => {
             {/* Notifications Button */}
             <div className="relative">
               <button 
-                onClick={() => setShowNotificationCenter(!showNotificationCenter)}
+                onClick={() => {
+                  setShowNotificationCenter(!showNotificationCenter);
+                  // Ensure real data is loaded when opening notifications
+                  if (!stats) fetchStats();
+                }}
                 className="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl relative transition-all"
               >
                 <Bell className="h-4 w-4 text-slate-600" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full" />
+                {/* Only show red dot when real alerts exist */}
+                {(stats?.pendingOrders > 0 || stats?.lowStockProducts > 0) && (
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full animate-pulse" />
+                )}
               </button>
 
               {/* Notification Drawer */}
