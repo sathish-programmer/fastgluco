@@ -109,6 +109,16 @@ const MainAppContent: React.FC = () => {
             // Bypass paywall entirely on iOS to comply with App Store Guidelines
             if (Capacitor.getPlatform() === 'ios') {
               setIsSubscribed(true);
+              setPlanFeatures({
+                unlimitedReports: true,
+                advancedAnalysis: true,
+                premiumVideos: true,
+                foodInsights: true,
+                exportReports: true,
+                notifications: true,
+                aiCoaching: true,
+                foodScanner: true
+              });
             } else {
               setIsSubscribed(!!hasActive);
             }
@@ -129,6 +139,16 @@ const MainAppContent: React.FC = () => {
           // Fallback to checking if they require sub
           if (Capacitor.getPlatform() === 'ios') {
             setIsSubscribed(true);
+            setPlanFeatures({
+              unlimitedReports: true,
+              advancedAnalysis: true,
+              premiumVideos: true,
+              foodInsights: true,
+              exportReports: true,
+              notifications: true,
+              aiCoaching: true,
+              foodScanner: true
+            });
           } else {
             setIsSubscribed(false);
           }
@@ -137,6 +157,16 @@ const MainAppContent: React.FC = () => {
         console.error(err);
         if (Capacitor.getPlatform() === 'ios') {
           setIsSubscribed(true);
+          setPlanFeatures({
+            unlimitedReports: true,
+            advancedAnalysis: true,
+            premiumVideos: true,
+            foodInsights: true,
+            exportReports: true,
+            notifications: true,
+            aiCoaching: true,
+            foodScanner: true
+          });
         } else {
           setIsSubscribed(false); // Default to restrictive instead of bypass
         }

@@ -165,9 +165,14 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
     if (!token) return;
     try {
       showToast('Report download started.', 'success');
-      // For cross-platform download reliability (especially on mobile web / Safari / Capacitor WebView templates),
-      // redirecting to a direct token-authorized URL triggers the browser's native download UI cleanly.
-      window.open(`${apiUrl}/reports/${reportId}/download?token=${encodeURIComponent(token)}`, '_blank');
+      const downloadUrl = `${apiUrl}/reports/${reportId}/download?token=${encodeURIComponent(token)}`;
+      if (Capacitor.isNativePlatform()) {
+        // In native Android/iOS app shell containers, window.open fails due to strict Webview sandbox rules.
+        // Opening directly in the native device browser allows native OS file download handlers to function.
+        window.open(downloadUrl, '_system');
+      } else {
+        window.open(downloadUrl, '_blank');
+      }
     } catch (err) {
       console.error(err);
       showToast('Error downloading file.', 'error');
@@ -180,9 +185,14 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
       showToast('Generating report PDF. Please wait...', 'info');
       const safeAppName = branding.appName.replace(/[^a-z0-9]/gi, '_');
       const filename = `${safeAppName}_Health_Report-${exportRange}-${new Date().toISOString().split('T')[0]}.pdf`;
+      const downloadUrl = `${apiUrl}/reports/user-pdf?range=${exportRange}&token=${encodeURIComponent(token)}&filename=${encodeURIComponent(filename)}`;
       
-      // Request direct streaming PDF file cleanly in native web/iOS context
-      window.open(`${apiUrl}/reports/user-pdf?range=${exportRange}&token=${encodeURIComponent(token)}&filename=${encodeURIComponent(filename)}`, '_blank');
+      if (Capacitor.isNativePlatform()) {
+        // Trigger system external browser to handle download on native iOS/Android devices
+        window.open(downloadUrl, '_system');
+      } else {
+        window.open(downloadUrl, '_blank');
+      }
     } catch (err: any) {
       console.error(err);
       showToast('Error generating report.', 'error');

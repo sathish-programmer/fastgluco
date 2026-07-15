@@ -169,14 +169,14 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
   }
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
       className="pb-24 pt-4 px-4 max-w-5xl mx-auto bg-slate-50/70 dark:bg-slate-950/70 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100"
     >
       {/* Profile Header */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1, duration: 0.4 }}
@@ -199,7 +199,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
       </motion.div>
 
       {user?.pendingProfileEdits && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.2, duration: 0.4 }}
@@ -232,7 +232,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
       )}
 
       {/* TDEE Recommendation Card */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2, duration: 0.4 }}
@@ -252,7 +252,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
       </motion.div>
 
       {/* Navigation Buttons for Subviews */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, duration: 0.4 }}
@@ -284,7 +284,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
       </motion.div>
 
       {/* Physical Profiling Update Form */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4, duration: 0.4 }}
@@ -328,6 +328,51 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
               className="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 transition-all"
             />
           </div>
+
+
+          <div>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center space-x-1">
+              <Activity className="h-3.5 w-3.5 text-primary dark:text-primary-light" />
+              <span>Cancer Care Journey</span>
+            </label>
+            <select
+              value={cancerJourney}
+              onChange={(e: any) => {
+                const val = e.target.value;
+                setCancerJourney(val);
+                if (val === user?.cancerJourney && user?.cancerDisclaimerAccepted) {
+                  setDisclaimerAccepted(true);
+                } else {
+                  setDisclaimerAccepted(false);
+                  if (val === 'TREATMENT' || val === 'SECONDARY_PREVENTION') {
+                    setShowDisclaimer(true);
+                  }
+                }
+              }}
+              className="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 cursor-pointer transition-all"
+            >
+              <option value="PREVENTION">CANCER PREVENTION [NO HISTORY OF CANCER]</option>
+              <option value="TREATMENT">CANCER TREATMENT</option>
+              <option value="SECONDARY_PREVENTION">CANCER SECONDARY PREVENTION [PREVIOUS HISTORY OF CANCER]</option>
+            </select>
+            {(cancerJourney === 'TREATMENT' || cancerJourney === 'SECONDARY_PREVENTION') && (
+              <div className="mt-1.5 flex items-center justify-between text-[10px] font-bold">
+                <span className={disclaimerAccepted ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}>
+                  {disclaimerAccepted ? '✓ Disclaimer Accepted' : '✗ Disclaimer Declined / Not Accepted'}
+                </span>
+                {!disclaimerAccepted && (
+                  <button
+                    type="button"
+                    onClick={() => setShowDisclaimer(true)}
+                    className="text-primary dark:text-primary-light hover:underline"
+                  >
+                    Read Disclaimer
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
 
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -402,49 +447,6 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
               <option value="Maintain weight">Maintain weight</option>
               <option value="Gain weight">Gain weight</option>
             </select>
-          </div>
-
-          <div>
-            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center space-x-1">
-              <Activity className="h-3.5 w-3.5 text-primary dark:text-primary-light" />
-              <span>Cancer Care Journey</span>
-            </label>
-            <select
-              value={cancerJourney}
-              onChange={(e: any) => {
-                const val = e.target.value;
-                setCancerJourney(val);
-                if (val === user?.cancerJourney && user?.cancerDisclaimerAccepted) {
-                  setDisclaimerAccepted(true);
-                } else {
-                  setDisclaimerAccepted(false);
-                  if (val === 'TREATMENT' || val === 'SECONDARY_PREVENTION') {
-                    setShowDisclaimer(true);
-                  }
-                }
-              }}
-              className="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 cursor-pointer transition-all"
-            >
-              <option value="PREVENTION">CANCER PREVENTION [NO HISTORY OF CANCER]</option>
-              <option value="TREATMENT">CANCER TREATMENT</option>
-              <option value="SECONDARY_PREVENTION">CANCER SECONDARY PREVENTION [PREVIOUS HISTORY OF CANCER]</option>
-            </select>
-            {(cancerJourney === 'TREATMENT' || cancerJourney === 'SECONDARY_PREVENTION') && (
-              <div className="mt-1.5 flex items-center justify-between text-[10px] font-bold">
-                <span className={disclaimerAccepted ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}>
-                  {disclaimerAccepted ? '✓ Disclaimer Accepted' : '✗ Disclaimer Declined / Not Accepted'}
-                </span>
-                {!disclaimerAccepted && (
-                  <button
-                    type="button"
-                    onClick={() => setShowDisclaimer(true)}
-                    className="text-primary dark:text-primary-light hover:underline"
-                  >
-                    Read Disclaimer
-                  </button>
-                )}
-              </div>
-            )}
           </div>
 
           <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
@@ -624,7 +626,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
       {/* Disclaimer Modal Overlay */}
       {showDisclaimer && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-md w-full border border-slate-100 dark:border-slate-800 shadow-xl"
@@ -669,7 +671,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
       {/* Delete Account Modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-md w-full border border-slate-100 dark:border-slate-800 shadow-xl"

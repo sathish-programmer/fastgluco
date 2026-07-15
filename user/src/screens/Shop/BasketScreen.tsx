@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Minus, Plus, Trash2, ShieldCheck, Tag } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, Trash2, ShieldCheck, Tag, Landmark, User, Mail, Phone, MapPin } from 'lucide-react';
 import type { ShopItem } from './ShopScreen';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -7,8 +7,8 @@ import { HabitsService } from '../../services/habitsService';
 
 interface BasketScreenProps {
   onBack: () => void;
-  basket: { item: ShopItem, qty: number }[];
-  setBasket: React.Dispatch<React.SetStateAction<{ item: ShopItem, qty: number }[]>>;
+  basket: { item: ShopItem; variantName?: string; qty: number }[];
+  setBasket: React.Dispatch<React.SetStateAction<{ item: ShopItem; variantName?: string; qty: number }[]>>;
 }
 
 export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setBasket }) => {
@@ -17,6 +17,17 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
   const [loading, setLoading] = useState(false);
   const [ordered, setOrdered] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Address and customer states
+  const [patientName, setPatientName] = useState(user?.name || '');
+  const [patientEmail, setPatientEmail] = useState(user?.email || '');
+  const [patientPhone, setPatientPhone] = useState(user?.mobileNumber || '');
+  
+  const [line1, setLine1] = useState('');
+  const [city, setCity] = useState('');
+  const [state, setState] = useState('');
+  const [postalCode, setPostalCode] = useState('');
+  const [country, setCountry] = useState('India');
 
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
@@ -28,7 +39,16 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
   const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
 
   const curr = user?.currency === 'INR' ? '₹' : '$';
-  const subtotal = basket.reduce((sum, p) => sum + (p.item.price * p.qty), 0);
+  
+  // Subtotal calculated with variants prices
+  const subtotal = basket.reduce((sum, p) => {
+    let price = p.item.price;
+    if (p.variantName && p.item.variants) {
+      const v = p.item.variants.find(x => x.name === p.variantName);
+      if (v) price = v.price;
+    }
+    return sum + (price * p.qty);
+  }, 0);
 
   useEffect(() => {
     // Fetch available coupons
@@ -80,13 +100,11 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
           setAppliedCoupon(code);
         }
       } else if (code) {
-         // It failed validation but we passed a code
          showToast(data.message || 'Invalid coupon', 'error');
          setCouponCode('');
          setAppliedCoupon(null);
-         calculateBreakdown(''); // Re-calc without coupon
+         calculateBreakdown('');
       } else {
-         // Default if NO_COUPON (no coupon applied, just shop discount/gst)
          if (data.finalAmount !== undefined) {
            setDiscountAmount(data.discountAmount);
            setGstAmount(data.gstAmount);
@@ -106,10 +124,23 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
     setValidatingCoupon(false);
   };
 
-  const updateQty = (id: string, delta: number) => {
+  const updateQty = (id: string, variantName: string | undefined, delta: number) => {
     setBasket(prev => prev.map(p => {
-      if (p.item.id === id) {
+      if (p.item.id === id && p.variantName === variantName) {
         const newQty = p.qty + delta;
+        
+        // Stock checking limit
+        let limitStock = p.item.stock;
+        if (variantName && p.item.variants) {
+          const v = p.item.variants.find(x => x.name === variantName);
+          if (v) limitStock = v.stock;
+        }
+
+        if (delta > 0 && newQty > limitStock) {
+          showToast(`Cannot add more. Limit of ${limitStock} items in stock.`, 'info');
+          return p;
+        }
+
         return { ...p, qty: Math.max(0, newQty) };
       }
       return p;
@@ -118,15 +149,34 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
 
   const handleCheckout = async () => {
     if (!user?.id || basket.length === 0) return;
+    
+    // Address validation
+    if (!patientName || !patientEmail || !patientPhone || !line1 || !city || !state || !postalCode) {
+      setError('Please fill in all contact and shipping details.');
+      showToast('Shipping details are incomplete.', 'info');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
-      const items = basket.map(b => ({
-        productId: b.item.id,
-        name: b.item.name,
-        price: b.item.price,
-        qty: b.qty
-      }));
+      const items = basket.map(b => {
+        let price = b.item.price;
+        if (b.variantName && b.item.variants) {
+          const v = b.item.variants.find(x => x.name === b.variantName);
+          if (v) price = v.price;
+        }
+        return {
+          productId: b.item.id,
+          name: b.item.name,
+          variantName: b.variantName || null,
+          price,
+          qty: b.qty
+        };
+      });
+
+      const shippingAddress = { line1, city, state, postalCode, country };
+      const billingAddress = shippingAddress; // Identical billing/shipping address for simplicity
 
       // 1. Create order on backend
       const orderRes = await fetch(`${apiUrl}/shop/create-order`, {
@@ -135,14 +185,22 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ items, totalAmount: subtotal, couponCode: appliedCoupon })
+        body: JSON.stringify({
+          items,
+          totalAmount: subtotal,
+          couponCode: appliedCoupon,
+          patientName,
+          patientEmail,
+          patientPhone,
+          shippingAddress,
+          billingAddress
+        })
       });
 
       const orderData = await orderRes.json();
       if (!orderRes.ok) throw new Error(orderData.message || 'Failed to initialize order.');
 
-      if (orderData.gateway === 'mock') {
-        // Automatically succeed for mock
+      if (orderData.gateway === 'manual_bypass') {
         await HabitsService.logHabit(apiUrl, token, 'ShopOrder', { basket, total: subtotal });
         setBasket([]);
         setOrdered(true);
@@ -153,7 +211,7 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
           amount: orderData.amount,
           currency: orderData.currency,
           name: branding?.appName || 'Mito_Reboot',
-          description: `Order for Safer Products`,
+          description: `Medical Health Order`,
           order_id: orderData.rzpOrderId,
           handler: async (response: any) => {
             setLoading(true);
@@ -173,7 +231,6 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
               const verifyData = await verifyRes.json();
               if (!verifyRes.ok) throw new Error(verifyData.message || 'Payment verification failed.');
 
-              // Log habit upon success
               await HabitsService.logHabit(apiUrl, token, 'ShopOrder', { basket, total: subtotal });
               setBasket([]);
               setOrdered(true);
@@ -184,11 +241,12 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
             }
           },
           prefill: {
-            name: user?.name || '',
-            email: user?.email || ''
+            name: patientName,
+            email: patientEmail,
+            contact: patientPhone
           },
           theme: {
-            color: '#10B981' // emerald-500
+            color: '#4F46E5' // Indigo
           },
           modal: {
             ondismiss: () => {
@@ -210,18 +268,18 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
   if (ordered) {
     return (
       <div className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-slate-50 min-h-screen font-sans antialiased text-slate-800 flex flex-col items-center justify-center">
-        <div className="w-16 h-16 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center mb-6">
+        <div className="w-16 h-16 rounded-full bg-emerald-100 border border-emerald-250 flex items-center justify-center mb-6">
           <ShieldCheck className="h-8 w-8 text-emerald-500" />
         </div>
-        <h2 className="text-2xl font-sans font-bold text-slate-800 mb-2">Order Confirmed</h2>
+        <h2 className="text-2xl font-sans font-bold text-slate-800 mb-2">Order Confirmed!</h2>
         <p className="text-sm text-slate-500 text-center mb-8 px-6">
-          Your items are on the way. Taking steps towards cellular repair.
+          Your order has been submitted successfully. An invoice has been scheduled and will be emailed once our medical partner confirms delivery.
         </p>
         <button 
           onClick={onBack}
-          className="w-full py-3.5 rounded-xl font-bold text-white bg-slate-800 hover:bg-slate-900 transition-all shadow-sm"
+          className="px-6 py-3.5 bg-slate-800 hover:bg-slate-900 text-white rounded-2xl font-bold shadow-sm transition-all"
         >
-          Return to Dashboard
+          Return to Health Store
         </button>
       </div>
     );
@@ -237,13 +295,13 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div>
-          <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Store</span>
-          <h2 className="text-2xl font-sans font-bold text-slate-800 leading-none mt-1">Your Basket</h2>
+          <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Checkout</span>
+          <h2 className="text-2xl font-sans font-bold text-slate-850 leading-none mt-1">Fulfillment Cart</h2>
         </div>
       </div>
 
       {error && (
-        <div className="mb-4 p-3.5 bg-red-50 text-red-700 text-xs font-semibold rounded-2xl border border-red-100">
+        <div className="mb-6 p-4 bg-red-50 text-red-700 text-xs font-semibold rounded-2xl border border-red-150">
           ⚠️ {error}
         </div>
       )}
@@ -251,136 +309,272 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
       {basket.length === 0 ? (
         <div className="text-center py-16 bg-white border border-slate-200 rounded-3xl shadow-sm">
           <span className="text-4xl mb-4 block opacity-50">🛒</span>
-          <p className="text-sm text-slate-400 font-bold">Your basket is empty</p>
+          <p className="text-sm text-slate-400 font-bold">Your cart is empty</p>
         </div>
       ) : (
-        <>
-          <div className="flex flex-col gap-4 mb-6">
-            {basket.map(p => (
-              <div key={p.item.id} className="bg-white border border-slate-200 shadow-sm rounded-2xl p-4 flex gap-4 items-center">
-                <div className="w-16 h-16 bg-slate-50 rounded-xl flex items-center justify-center text-2xl border border-slate-100 shrink-0">
-                  {p.item.image}
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-bold text-slate-800 text-sm leading-tight mb-1">{p.item.name}</h4>
-                  <span className="font-bold text-indigo-600 text-xs">{curr}{(p.item.price * p.qty).toFixed(2)}</span>
-                </div>
-                <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-lg border border-slate-200">
-                  <button onClick={() => updateQty(p.item.id, -1)} className="p-1.5 text-slate-400 hover:text-slate-700 bg-white rounded-md shadow-sm">
-                    {p.qty === 1 ? <Trash2 className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
-                  </button>
-                  <span className="text-xs font-bold w-4 text-center">{p.qty}</span>
-                  <button onClick={() => updateQty(p.item.id, 1)} className="p-1.5 text-slate-400 hover:text-slate-700 bg-white rounded-md shadow-sm">
-                    <Plus className="h-3 w-3" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          {/* Left Column: Basket items & Address Form */}
+          <div className="lg:col-span-2 space-y-6">
+            
+            {/* Cart Items list */}
+            <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-4">
+              <h3 className="font-bold text-sm text-slate-850">Selected Medical Supplies</h3>
+              <div className="divide-y divide-slate-100">
+                {basket.map((p, idx) => {
+                  let price = p.item.price;
+                  if (p.variantName && p.item.variants) {
+                    const v = p.item.variants.find(x => x.name === p.variantName);
+                    if (v) price = v.price;
+                  }
 
-          {branding?.enableSaferFoodCoupons !== false && (
-            <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-5 mb-6">
-              <div className="flex gap-3">
-                <div className="relative flex-1">
-                  <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <input
-                    type="text"
-                    placeholder="Promo Code"
-                    value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value)}
-                    disabled={!!appliedCoupon}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-3 text-sm text-slate-800 font-bold focus:outline-none focus:border-indigo-400 uppercase disabled:opacity-50"
-                  />
-                </div>
-                {!appliedCoupon ? (
-                  <button
-                    onClick={handleApplyCoupon}
-                    disabled={validatingCoupon || !couponCode}
-                    className="px-5 rounded-xl font-bold text-white bg-slate-800 hover:bg-slate-900 transition-all shadow-sm disabled:opacity-50 text-sm"
-                  >
-                    Apply
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => {
-                      setCouponCode('');
-                      setAppliedCoupon(null);
-                      calculateBreakdown('');
-                    }}
-                    className="px-4 rounded-xl font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-all border border-red-100 text-sm"
-                  >
-                    Remove
-                  </button>
-                )}
+                  return (
+                    <div key={idx} className="py-4 flex gap-4 items-center">
+                      <div className="w-14 h-14 bg-slate-50 rounded-xl flex items-center justify-center text-2xl border border-slate-100 shrink-0">
+                        {p.item.image}
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-bold text-slate-800 text-xs leading-tight mb-1">{p.item.name}</h4>
+                        {p.variantName && (
+                          <span className="bg-slate-100 text-slate-500 text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide inline-block mb-1">
+                            Size: {p.variantName}
+                          </span>
+                        )}
+                        <p className="font-black text-indigo-650 text-xs">{curr}{(price * p.qty).toFixed(2)}</p>
+                      </div>
+                      <div className="flex items-center gap-1.5 bg-slate-50 p-1 rounded-lg border border-slate-200">
+                        <button onClick={() => updateQty(p.item.id, p.variantName, -1)} className="p-1 text-slate-400 hover:text-slate-700 bg-white rounded shadow-sm">
+                          {p.qty === 1 ? <Trash2 className="h-3 w-3 text-red-500" /> : <Minus className="h-3 w-3" />}
+                        </button>
+                        <span className="text-xs font-bold w-4 text-center">{p.qty}</span>
+                        <button onClick={() => updateQty(p.item.id, p.variantName, 1)} className="p-1 text-slate-400 hover:text-slate-700 bg-white rounded shadow-sm">
+                          <Plus className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-              {appliedCoupon && (
-                <p className="text-[10px] text-emerald-600 font-bold mt-2 uppercase tracking-wide">
-                  ✓ Coupon applied successfully
-                </p>
-              )}
+            </div>
+
+            {/* Billing / Shipping Details Form */}
+            <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-4">
+              <h3 className="font-bold text-sm text-slate-850 flex items-center gap-1.5">
+                <MapPin className="h-4 w-4 text-indigo-500" /> Patient Contact & Shipping Details
+              </h3>
               
-              {availableCoupons.length > 0 && !appliedCoupon && (
-                <div className="mt-4 pt-4 border-t border-slate-100">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Available Coupons</span>
-                  <div className="flex flex-wrap gap-2">
-                    {availableCoupons.map(c => (
-                      <button 
-                        key={c.code}
-                        onClick={() => setCouponCode(c.code)}
-                        className="text-xs px-2.5 py-1 border border-indigo-200 bg-indigo-50 text-indigo-700 rounded-lg font-bold hover:bg-indigo-100 transition-all"
-                      >
-                        {c.code} ({c.discountType === 'percentage' ? `${c.discountValue}% OFF` : `${curr}${c.discountValue} OFF`})
-                      </button>
-                    ))}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Recipient Name</label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                    <input 
+                      type="text" 
+                      placeholder="Full Name" 
+                      value={patientName} 
+                      onChange={(e) => setPatientName(e.target.value)}
+                      className="w-full bg-slate-55 border border-slate-200 rounded-xl py-2 pl-9 pr-3 text-xs focus:outline-none"
+                    />
                   </div>
                 </div>
-              )}
-            </div>
-          )}
 
-          <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-5">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-slate-500">Subtotal</span>
-              <span className="font-bold text-slate-800">{curr}{subtotal.toFixed(2)}</span>
-            </div>
-            
-            {discountAmount > 0 && (
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-indigo-500">Discount</span>
-                <span className="font-bold text-indigo-500">-{curr}{discountAmount.toFixed(2)}</span>
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Phone Number</label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                    <input 
+                      type="tel" 
+                      placeholder="Mobile Number" 
+                      value={patientPhone} 
+                      onChange={(e) => setPatientPhone(e.target.value)}
+                      className="w-full bg-slate-55 border border-slate-200 rounded-xl py-2 pl-9 pr-3 text-xs focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1 sm:col-span-2">
+                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Email Address</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                    <input 
+                      type="email" 
+                      placeholder="Email Address" 
+                      value={patientEmail} 
+                      onChange={(e) => setPatientEmail(e.target.value)}
+                      className="w-full bg-slate-55 border border-slate-200 rounded-xl py-2 pl-9 pr-3 text-xs focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1 sm:col-span-2">
+                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Delivery Street Address</label>
+                  <input 
+                    type="text" 
+                    placeholder="House No, Apartment, Street Name" 
+                    value={line1} 
+                    onChange={(e) => setLine1(e.target.value)}
+                    className="w-full bg-slate-55 border border-slate-200 rounded-xl py-2 px-3 text-xs focus:outline-none"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">City</label>
+                  <input 
+                    type="text" 
+                    placeholder="City" 
+                    value={city} 
+                    onChange={(e) => setCity(e.target.value)}
+                    className="w-full bg-slate-55 border border-slate-200 rounded-xl py-2 px-3 text-xs focus:outline-none"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">State</label>
+                  <input 
+                    type="text" 
+                    placeholder="State" 
+                    value={state} 
+                    onChange={(e) => setState(e.target.value)}
+                    className="w-full bg-slate-55 border border-slate-200 rounded-xl py-2 px-3 text-xs focus:outline-none"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Postal Code</label>
+                  <input 
+                    type="text" 
+                    placeholder="PIN / Postal Code" 
+                    value={postalCode} 
+                    onChange={(e) => setPostalCode(e.target.value)}
+                    className="w-full bg-slate-55 border border-slate-200 rounded-xl py-2 px-3 text-xs focus:outline-none"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Country</label>
+                  <input 
+                    type="text" 
+                    placeholder="Country" 
+                    value={country} 
+                    onChange={(e) => setCountry(e.target.value)}
+                    className="w-full bg-slate-55 border border-slate-200 rounded-xl py-2 px-3 text-xs focus:outline-none"
+                  />
+                </div>
               </div>
-            )}
-
-            {gstAmount > 0 && (
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-slate-500">Taxes (GST)</span>
-                <span className="font-bold text-slate-600">+{curr}{gstAmount.toFixed(2)}</span>
-              </div>
-            )}
-
-            <div className="flex justify-between items-center mb-4 pb-4 border-b border-slate-100">
-              <span className="text-sm text-slate-500">Shipping</span>
-              {shippingFee > 0 ? (
-                <span className="font-bold text-slate-600">+{curr}{shippingFee.toFixed(2)}</span>
-              ) : (
-                <span className="font-bold text-emerald-500">Free</span>
-              )}
-            </div>
-            
-            <div className="flex justify-between items-center mb-6">
-              <span className="text-sm font-bold text-slate-800 uppercase tracking-wider">Total</span>
-              <span className="text-2xl font-black text-slate-800">{curr}{finalTotal.toFixed(2)}</span>
             </div>
 
-            <button 
-              onClick={handleCheckout}
-              disabled={loading}
-              className="w-full py-4 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-sm disabled:opacity-50"
-            >
-              {loading ? 'Processing...' : 'Checkout & Pay'}
-            </button>
           </div>
-        </>
+
+          {/* Right Column: Pricing breakdown & coupons */}
+          <div className="space-y-6">
+            
+            {/* Promo coupon field */}
+            {branding?.enableSaferFoodCoupons !== false && (
+              <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm">
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Coupon Code"
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value)}
+                      disabled={!!appliedCoupon}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-9 pr-3 text-xs text-slate-800 font-bold focus:outline-none focus:border-indigo-400 uppercase disabled:opacity-50"
+                    />
+                  </div>
+                  {!appliedCoupon ? (
+                    <button
+                      onClick={handleApplyCoupon}
+                      disabled={validatingCoupon || !couponCode}
+                      className="px-4 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl shadow-sm transition-all disabled:opacity-50"
+                    >
+                      Apply
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setCouponCode('');
+                        setAppliedCoupon(null);
+                        calculateBreakdown('');
+                      }}
+                      className="px-3 border border-red-200 bg-red-50 text-red-700 text-xs font-bold rounded-xl hover:bg-red-100 transition-all"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+
+                {availableCoupons.length > 0 && !appliedCoupon && (
+                  <div className="mt-4 pt-4 border-t border-slate-100 space-y-2">
+                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest block">Applicable Coupons</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {availableCoupons.map(c => (
+                        <button 
+                          key={c.code}
+                          onClick={() => setCouponCode(c.code)}
+                          className="text-[10px] px-2 py-1 border border-indigo-200 bg-indigo-50 text-indigo-700 rounded-lg font-bold hover:bg-indigo-100 transition-all"
+                        >
+                          {c.code} ({c.discountType === 'percentage' ? `${c.discountValue}%` : `${curr}${c.discountValue}`})
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Pricing totals card */}
+            <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-4">
+              <h3 className="font-bold text-sm text-slate-850">Billing Breakdown</h3>
+              
+              <div className="space-y-2.5 text-xs">
+                <div className="flex justify-between text-slate-500">
+                  <span>Cart Subtotal</span>
+                  <span className="font-bold text-slate-700">{curr}{subtotal.toFixed(2)}</span>
+                </div>
+                
+                {discountAmount > 0 && (
+                  <div className="flex justify-between text-indigo-600 font-medium">
+                    <span>Discount Code</span>
+                    <span>-{curr}{discountAmount.toFixed(2)}</span>
+                  </div>
+                )}
+
+                {gstAmount > 0 && (
+                  <div className="flex justify-between text-slate-500">
+                    <span>GST Tax</span>
+                    <span className="font-bold text-slate-700">+{curr}{gstAmount.toFixed(2)}</span>
+                  </div>
+                )}
+
+                <div className="flex justify-between text-slate-500 pb-3 border-b border-slate-100">
+                  <span>Shipping Fee</span>
+                  {shippingFee > 0 ? (
+                    <span className="font-bold text-slate-700">+{curr}{shippingFee.toFixed(2)}</span>
+                  ) : (
+                    <span className="font-bold text-emerald-500">Free</span>
+                  )}
+                </div>
+
+                <div className="flex justify-between items-center text-sm pt-2">
+                  <span className="font-bold text-slate-800 uppercase tracking-wider">Payable Total</span>
+                  <span className="text-xl font-black text-slate-850">{curr}{finalTotal.toFixed(2)}</span>
+                </div>
+              </div>
+
+              <button 
+                onClick={handleCheckout}
+                disabled={loading}
+                className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold shadow-sm transition-all disabled:opacity-60 flex items-center justify-center gap-2 text-xs"
+              >
+                <Landmark className="h-4 w-4" /> {loading ? 'Processing Checkout...' : 'Confirm Shipment & Pay'}
+              </button>
+            </div>
+
+          </div>
+
+        </div>
       )}
     </div>
   );

@@ -1,4 +1,6 @@
 import nodemailer from 'nodemailer';
+import fs from 'fs';
+import path from 'path';
 import { PaymentGatewayConfig } from '../models/PaymentGatewayConfig';
 
 // Configure transport (Using Ethereal for testing or real SMTP if provided in ENV)
@@ -489,10 +491,7 @@ export class EmailService {
     }
   }
 
-  /**
-   * Send Shop Order Notifications
-   */
-  public static async sendOrderEmail(type: 'placed' | 'assigned' | 'statusUpdated' | 'delivered', orderId: string) {
+  public static async sendOrderEmail(type: 'placed' | 'assigned' | 'accepted' | 'shipped' | 'delivered', orderId: string) {
     const { appName, appTagline } = await EmailService.getBranding();
     const ShopOrder = require('../models/ShopOrder').default;
 
@@ -500,41 +499,191 @@ export class EmailService {
       .populate('userId')
       .populate('vendorId');
 
-    if (!order || !order.userId?.email) return;
+    if (!order) return;
 
     let subject = '';
     let body = '';
+    let attachments: any[] = [];
+
+    const currencySymbol = order.currency === 'USD' ? '$' : '₹';
 
     if (type === 'placed') {
-      subject = `Order Placed Successfully`;
-      body = `<p>Hi ${order.userId.name},</p>
-              <p>Your order of total amount <strong>${order.currency === 'USD' ? '$' : '₹'}${order.totalAmount}</strong> has been successfully placed.</p>
-              <p>Order ID: ${order._id}</p>`;
-    } else if (type === 'assigned') {
-      subject = `Order Assigned to Vendor`;
-      body = `<p>Hi ${order.userId.name},</p>
-              <p>Your order has been assigned to our vendor <strong>${order.vendorId?.name || 'Local Vendor'}</strong> and is being processed.</p>`;
-    } else if (type === 'statusUpdated') {
-      subject = `Order Status Updated`;
-      body = `<p>Hi ${order.userId.name},</p>
-              <p>Your order status has been updated to: <strong>${order.deliveryStatus || 'Processing'}</strong>.</p>`;
-    } else if (type === 'delivered') {
-      subject = `Order Delivered`;
-      body = `<p>Hi ${order.userId.name},</p>
-              <p>Your order has been successfully delivered! Thank you for shopping with us.</p>`;
+      // 1. Send Placed confirmation to Patient
+      if (order.userId?.email) {
+        subject = `Order Placed Successfully`;
+        body = `<p>Hi ${order.userId.name || 'Patient'},</p>
+                <p>Your order of total amount <strong>${currencySymbol}${order.totalAmount}</strong> has been successfully placed.</p>
+                <p><strong>Order ID:</strong> ${order._id}</p>
+                <p>We are reviewing your order and will assign a vendor shortly.</p>`;
+        const html = generateEmailTemplate(subject, body, appName, appTagline);
+        try {
+          await transporter.sendMail({
+            from: `"${appName} Shop" <shop@mitoreboot.com>`,
+            to: order.userId.email,
+            subject: `[${appName}] ${subject}`,
+            html
+          });
+        } catch (err) {
+          console.error('Error sending order placed mail to user:', err);
+        }
+      }
+
+      // 2. Send New Order notification to Admin
+      try {
+        const adminSubject = `New Order Placed - ID: ${order._id}`;
+        const adminBody = `<p>A new order has been placed on the platform.</p>
+                           <p><strong>Order ID:</strong> ${order._id}</p>
+                           <p><strong>Patient Name:</strong> ${order.patientName || (order.userId as any)?.name || 'N/A'}</p>
+                           <p><strong>Total Amount:</strong> ${currencySymbol}${order.totalAmount}</p>
+                           <p>Please review and assign this order to a vendor in the Admin Dashboard.</p>`;
+        const adminHtml = generateEmailTemplate(adminSubject, adminBody, appName, appTagline);
+        
+        await transporter.sendMail({
+          from: `"${appName} Shop" <shop@mitoreboot.com>`,
+          to: process.env.ADMIN_EMAIL || 'admin@mitoreboot.com',
+          subject: `[Admin] ${adminSubject}`,
+          html: adminHtml
+        });
+      } catch (err) {
+        console.error('Error sending admin notification:', err);
+      }
+
+      return;
     }
 
-    const html = generateEmailTemplate(subject, body, appName, appTagline);
+    if (type === 'assigned') {
+      // Send mail to Patient
+      if (order.userId?.email) {
+        subject = `Your Order has been Assigned`;
+        body = `<p>Hi ${order.userId.name || 'Patient'},</p>
+                <p>Your order (ID: ${order._id}) has been assigned to our trusted vendor partner <strong>${order.vendorId?.name || 'Local Pharmacy Vendor'}</strong>.</p>
+                <p>They are packing your items and will ship them soon.</p>`;
+        const html = generateEmailTemplate(subject, body, appName, appTagline);
+        try {
+          await transporter.sendMail({
+            from: `"${appName} Shop" <shop@mitoreboot.com>`,
+            to: order.userId.email,
+            subject: `[${appName}] ${subject}`,
+            html
+          });
+        } catch (e) {
+          console.error(e);
+        }
+      }
 
-    try {
-      await transporter.sendMail({
-        from: `"${appName} Shop" <shop@mitoreboot.com>`,
-        to: order.userId.email,
-        subject: `[${appName}] ${subject}`,
-        html
-      });
-    } catch (err) {
-      console.error(err);
+      // Send mail to Vendor
+      if (order.vendorId?.email) {
+        const vendorSubject = `New Order Assigned - ID: ${order._id}`;
+        const vendorBody = `<p>Hello ${order.vendorId.name},</p>
+                            <p>You have been assigned a new fulfillment order (ID: ${order._id}).</p>
+                            <p>Please log in to your Vendor Portal to accept and process the shipment.</p>`;
+        const vendorHtml = generateEmailTemplate(vendorSubject, vendorBody, appName, appTagline);
+        try {
+          await transporter.sendMail({
+            from: `"${appName} Shop Logistics" <logistics@mitoreboot.com>`,
+            to: order.vendorId.email,
+            subject: `[Vendor Portal] ${vendorSubject}`,
+            html: vendorHtml
+          });
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      return;
+    }
+
+    if (type === 'accepted') {
+      // Vendor Accepted order - Notify Admin
+      try {
+        const adminSubject = `Vendor Accepted Order - ID: ${order._id}`;
+        const adminBody = `<p>Vendor <strong>${order.vendorId?.name || 'Vendor'}</strong> has accepted the order ${order._id} and started processing it.</p>`;
+        const adminHtml = generateEmailTemplate(adminSubject, adminBody, appName, appTagline);
+        await transporter.sendMail({
+          from: `"${appName} Shop" <shop@mitoreboot.com>`,
+          to: process.env.ADMIN_EMAIL || 'admin@mitoreboot.com',
+          subject: `[Admin] ${adminSubject}`,
+          html: adminHtml
+        });
+      } catch (e) {
+        console.error(e);
+      }
+      return;
+    }
+
+    if (type === 'shipped') {
+      if (order.userId?.email) {
+        subject = `Your Order has been Shipped!`;
+        const courier = order.trackingDetails?.courierName || 'Courier Partner';
+        const trackingId = order.trackingDetails?.trackingId || 'N/A';
+        body = `<p>Hi ${order.userId.name || 'Patient'},</p>
+                <p>Great news! Your order (ID: ${order._id}) has been shipped.</p>
+                <p><strong>Courier:</strong> ${courier}</p>
+                <p><strong>Tracking ID:</strong> ${trackingId}</p>
+                <p>You can track the progress of your delivery directly in the app.</p>`;
+        const html = generateEmailTemplate(subject, body, appName, appTagline);
+        try {
+          await transporter.sendMail({
+            from: `"${appName} Shop" <shop@mitoreboot.com>`,
+            to: order.userId.email,
+            subject: `[${appName}] ${subject}`,
+            html
+          });
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      return;
+    }
+
+    if (type === 'delivered') {
+      // Attach Invoice PDF
+      if (order.invoiceUrl) {
+        const fullPath = path.join(__dirname, '../../', order.invoiceUrl);
+        if (fs.existsSync(fullPath)) {
+          attachments.push({
+            filename: `Invoice-${order._id}.pdf`,
+            path: fullPath
+          });
+        }
+      }
+
+      // Send to Patient
+      if (order.userId?.email) {
+        subject = `Your Order has been Delivered 🎉`;
+        body = `<p>Hi ${order.userId.name || 'Patient'},</p>
+                <p>Your order (ID: ${order._id}) has been successfully delivered. We hope you are satisfied with the items!</p>
+                <p>We have attached the official PDF invoice to this email for your records.</p>`;
+        const html = generateEmailTemplate(subject, body, appName, appTagline);
+        try {
+          await transporter.sendMail({
+            from: `"${appName} Shop" <shop@mitoreboot.com>`,
+            to: order.userId.email,
+            subject: `[${appName}] ${subject}`,
+            html,
+            attachments
+          });
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      // Notify Admin
+      try {
+        const adminSubject = `Order Delivered successfully - ID: ${order._id}`;
+        const adminBody = `<p>Order ${order._id} has been marked as <strong>Delivered</strong> by Vendor <strong>${order.vendorId?.name || 'Vendor'}</strong>.</p>
+                           <p>Fulfillment completed successfully.</p>`;
+        const adminHtml = generateEmailTemplate(adminSubject, adminBody, appName, appTagline);
+        await transporter.sendMail({
+          from: `"${appName} Shop" <shop@mitoreboot.com>`,
+          to: process.env.ADMIN_EMAIL || 'admin@mitoreboot.com',
+          subject: `[Admin] ${adminSubject}`,
+          html: adminHtml
+        });
+      } catch (e) {
+        console.error(e);
+      }
+      return;
     }
   }
 }

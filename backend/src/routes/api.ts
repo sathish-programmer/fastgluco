@@ -27,6 +27,10 @@ import { PaymentGatewayConfig } from '../models/PaymentGatewayConfig';
 import { Appointment } from '../models/Appointment';
 import * as ShopController from '../controllers/shopController';
 import * as ScreeningController from '../controllers/screeningController';
+import { ShopReportController } from '../controllers/shopReportController';
+import { DoctorController } from '../controllers/doctorController';
+import { AppointmentController } from '../controllers/appointmentController';
+import { VendorController } from '../controllers/vendorController';
 
 const router = Router();
 
@@ -209,6 +213,8 @@ router.get('/founders', FounderController.getAll);
 // 2.5 NON-CANCER PATIENT WORKFLOW (USER)
 // ==========================================
 router.get('/shop/products', authenticateToken, requireRole(['User']), ShopController.getProducts);
+router.get('/shop/products/:id', authenticateToken, requireRole(['User']), ShopController.getProductDetails);
+router.get('/shop/categories', authenticateToken, requireRole(['User', 'SuperAdmin', 'Admin', 'Editor']), ShopController.getCategories);
 router.post('/shop/validate-coupon', authenticateToken, requireRole(['User']), ShopController.validateShopCoupon);
 router.get('/shop/coupons', authenticateToken, requireRole(['User']), ShopController.getAvailableCoupons);
 router.post('/shop/create-order', authenticateToken, requireRole(['User']), ShopController.createOrder);
@@ -335,14 +341,15 @@ router.put('/admin/founders/:id', FounderController.update);
 router.delete('/admin/founders/:id', FounderController.delete);
 
 // Non-Cancer Features Management (Admin)
-router.get('/admin/shop-products', ShopController.getAdminProducts);
-router.post('/admin/shop-products', ShopController.createAdminProduct);
-router.put('/admin/shop-products/:id', ShopController.updateAdminProduct);
-router.delete('/admin/shop-products/:id', ShopController.deleteAdminProduct);
+router.get('/admin/shop-products', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.getAdminProducts);
+router.post('/admin/shop-products', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.createAdminProduct);
+router.put('/admin/shop-products/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.updateAdminProduct);
+router.delete('/admin/shop-products/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.deleteAdminProduct);
+router.post('/admin/shop-categories', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.createAdminCategory);
+router.get('/admin/shop-reports', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopReportController.getReportsSummary);
+router.get('/admin/vendors/:id/performance', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminGetVendorPerformance);
 
-import { DoctorController } from '../controllers/doctorController';
-import { AppointmentController } from '../controllers/appointmentController';
-import { VendorController } from '../controllers/vendorController';
+
 
 router.get('/admin/screening-tests', ScreeningController.getAdminScreeningTests);
 router.post('/admin/screening-tests', ScreeningController.createAdminScreeningTest);
@@ -412,8 +419,11 @@ router.put('/doctor/appointments/:appointmentId/consultation', authenticateToken
 
 // --- VENDOR SIGN IN & PORTAL ROUTES ---
 router.post('/vendor/auth/login', VendorController.vendorLogin);
+router.get('/vendor/dashboard', authenticateToken, requireRole(['Vendor']), VendorController.vendorDashboard);
 router.get('/vendor/orders', authenticateToken, requireRole(['Vendor']), VendorController.getVendorOrders);
 router.put('/vendor/orders/:orderId/status', authenticateToken, requireRole(['Vendor']), VendorController.updateOrderStatus);
+router.post('/vendor/orders/:orderId/tracking', authenticateToken, requireRole(['Vendor']), VendorController.uploadTrackingDetails);
+router.post('/vendor/orders/:orderId/confirm-delivery', authenticateToken, requireRole(['Vendor']), VendorController.confirmDelivery);
 
 // --- PATIENT BOOKING ROUTES ---
 router.get('/patient/doctors', authenticateToken, requireRole(['User']), AppointmentController.getAvailableDoctors);

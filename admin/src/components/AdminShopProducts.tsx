@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Plus, Trash2, Edit, Package, Leaf, ShieldCheck, Search,
-  ToggleLeft, ToggleRight, Box, Tag, DollarSign, X, AlertTriangle
+  Plus, Trash2, Edit, Package, Search,
+  ToggleLeft, ToggleRight, Tag, X, AlertTriangle
 } from 'lucide-react';
 
 interface AdminShopProductsProps {
@@ -9,29 +9,65 @@ interface AdminShopProductsProps {
   token: string;
 }
 
-type Category = 'All' | 'Antioxidants' | 'SaferProducts';
+type TabType = 'basic' | 'medical' | 'variants' | 'media';
 
-const EMPTY_FORM = {
+const EMPTY_PRODUCT_FORM = {
   _id: '',
   name: '',
-  description: '',
+  brand: '',
+  category: 'Vitamins & Supplements',
   price: '',
-  image: '',
-  category: 'Antioxidants',
   stock: '0',
-  isActive: true
+  image: '💊', // Default emoji icon
+  isActive: true,
+  shortDescription: '',
+  detailedDescription: '',
+  keyBenefits: '',
+  healthBenefits: '',
+  ingredients: '',
+  usageInstructions: '',
+  suitableFor: '',
+  warnings: '',
+  storageInstructions: '',
+  doctorRecommended: false,
+  prescriptionRequired: false,
+  productTags: '',
+  manufacturer: '',
+  countryOfOrigin: 'India',
+  productWeight: '',
+  sku: '',
+  productStatus: 'active',
+  variants: [] as { name: string; price: number; stock: number; sku: string }[]
 };
 
 export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, token }) => {
   const [products, setProducts] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({ ...EMPTY_FORM });
+  const [form, setForm] = useState({ ...EMPTY_PRODUCT_FORM });
   const [isEditing, setIsEditing] = useState(false);
-  const [showModal, setShowModal] = useState(false);
+  const [showProductModal, setShowProductModal] = useState(false);
+  const [formTab, setFormTab] = useState<TabType>('basic');
   const [saving, setSaving] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<Category>('All');
   const [search, setSearch] = useState('');
-  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('All');
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+
+  // Custom Category States
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryDesc, setNewCategoryDesc] = useState('');
+
+  // Variants Input Helpers
+  const [variantName, setVariantName] = useState('');
+  const [variantPrice, setVariantPrice] = useState('');
+  const [variantStock, setVariantStock] = useState('0');
+  const [variantSku, setVariantSku] = useState('');
+
+  useEffect(() => {
+    fetchProducts();
+    fetchCategories();
+  }, []);
 
   const fetchProducts = async () => {
     try {
@@ -47,10 +83,27 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
     }
   };
 
-  useEffect(() => { fetchProducts(); }, []);
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch(`${apiUrl}/shop/categories`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCategories(data);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.name || !form.price || !form.category) {
+      alert('Please fill in Name, Price, and Category.');
+      return;
+    }
+
     setSaving(true);
     try {
       const method = isEditing ? 'PUT' : 'POST';
@@ -58,25 +111,34 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
         ? `${apiUrl}/admin/shop-products/${form._id}`
         : `${apiUrl}/admin/shop-products`;
 
+      // Format arrays from comma-separated strings
+      const payload = {
+        ...form,
+        price: Number(form.price),
+        stock: form.variants.length > 0 ? form.variants.reduce((sum, v) => sum + v.stock, 0) : Number(form.stock),
+        keyBenefits: form.keyBenefits.split(',').map(s => s.trim()).filter(Boolean),
+        healthBenefits: form.healthBenefits.split(',').map(s => s.trim()).filter(Boolean),
+        ingredients: form.ingredients.split(',').map(s => s.trim()).filter(Boolean),
+        productTags: form.productTags.split(',').map(s => s.trim()).filter(Boolean)
+      };
+
       const res = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          ...form,
-          price: Number(form.price),
-          stock: Number(form.stock)
-        })
+        body: JSON.stringify(payload)
       });
 
       if (res.ok) {
-        setShowModal(false);
-        setForm({ ...EMPTY_FORM });
+        setShowProductModal(false);
+        setForm({ ...EMPTY_PRODUCT_FORM });
+        setFormTab('basic');
         fetchProducts();
       } else {
-        alert('Error saving product');
+        const errData = await res.json();
+        alert(errData.message || 'Error saving product');
       }
     } catch (err) {
       console.error(err);
@@ -85,20 +147,49 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleCreateCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCategoryName) return;
+
     try {
-      await fetch(`${apiUrl}/admin/shop-products/${id}`, {
+      const res = await fetch(`${apiUrl}/admin/shop-categories`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ name: newCategoryName, description: newCategoryDesc })
+      });
+      if (res.ok) {
+        setNewCategoryName('');
+        setNewCategoryDesc('');
+        setShowCategoryModal(false);
+        fetchCategories();
+      } else {
+        const err = await res.json();
+        alert(err.message || 'Failed to create category');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleDeleteProduct = async (id: string) => {
+    try {
+      const res = await fetch(`${apiUrl}/admin/shop-products/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      setDeleteTarget(null);
-      fetchProducts();
+      if (res.ok) {
+        setDeleteTargetId(null);
+        fetchProducts();
+      }
     } catch (err) {
       console.error(err);
     }
   };
 
-  const handleToggleActive = async (prod: any) => {
+  const handleToggleProductActive = async (prod: any) => {
     try {
       await fetch(`${apiUrl}/admin/shop-products/${prod._id}`, {
         method: 'PUT',
@@ -115,33 +206,84 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
   };
 
   const openNew = () => {
-    setForm({ ...EMPTY_FORM });
+    setForm({ ...EMPTY_PRODUCT_FORM });
     setIsEditing(false);
-    setShowModal(true);
+    setFormTab('basic');
+    setShowProductModal(true);
   };
 
   const openEdit = (prod: any) => {
-    setForm({ ...prod, price: String(prod.price), stock: String(prod.stock ?? 0) });
+    setForm({
+      _id: prod._id,
+      name: prod.name,
+      brand: prod.brand || '',
+      category: prod.category,
+      price: String(prod.price),
+      stock: String(prod.stock ?? 0),
+      image: prod.image,
+      isActive: prod.isActive,
+      shortDescription: prod.shortDescription || '',
+      detailedDescription: prod.detailedDescription || '',
+      keyBenefits: Array.isArray(prod.keyBenefits) ? prod.keyBenefits.join(', ') : '',
+      healthBenefits: Array.isArray(prod.healthBenefits) ? prod.healthBenefits.join(', ') : '',
+      ingredients: Array.isArray(prod.ingredients) ? prod.ingredients.join(', ') : '',
+      usageInstructions: prod.usageInstructions || '',
+      suitableFor: prod.suitableFor || '',
+      warnings: prod.warnings || '',
+      storageInstructions: prod.storageInstructions || '',
+      doctorRecommended: prod.doctorRecommended || false,
+      prescriptionRequired: prod.prescriptionRequired || false,
+      productTags: Array.isArray(prod.productTags) ? prod.productTags.join(', ') : '',
+      manufacturer: prod.manufacturer || '',
+      countryOfOrigin: prod.countryOfOrigin || 'India',
+      productWeight: prod.productWeight || '',
+      sku: prod.sku || '',
+      productStatus: prod.productStatus || 'active',
+      variants: prod.variants || []
+    });
     setIsEditing(true);
-    setShowModal(true);
+    setFormTab('basic');
+    setShowProductModal(true);
   };
 
-  const filtered = products.filter(p => {
-    const matchCat = activeCategory === 'All' || p.category === activeCategory;
-    const matchSearch = !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.description.toLowerCase().includes(search.toLowerCase());
+  const addVariant = () => {
+    if (!variantName || !variantPrice) {
+      alert('Variant name and price are required.');
+      return;
+    }
+    const newVariant = {
+      name: variantName,
+      price: Number(variantPrice),
+      stock: Number(variantStock),
+      sku: variantSku || `${form.sku || 'SKU'}-${variantName.toUpperCase()}`
+    };
+    setForm(prev => ({
+      ...prev,
+      variants: [...prev.variants, newVariant]
+    }));
+    setVariantName('');
+    setVariantPrice('');
+    setVariantStock('0');
+    setVariantSku('');
+  };
+
+  const removeVariant = (index: number) => {
+    setForm(prev => ({
+      ...prev,
+      variants: prev.variants.filter((_, idx) => idx !== index)
+    }));
+  };
+
+  const filteredProducts = products.filter(p => {
+    const matchCat = selectedCategoryFilter === 'All' || p.category === selectedCategoryFilter;
+    const matchSearch = !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.description.toLowerCase().includes(search.toLowerCase()) || (p.brand && p.brand.toLowerCase().includes(search.toLowerCase()));
     return matchCat && matchSearch;
   });
 
-  const counts = {
-    All: products.length,
-    Antioxidants: products.filter(p => p.category === 'Antioxidants').length,
-    SaferProducts: products.filter(p => p.category === 'SaferProducts').length
-  };
-
-  const stockStatus = (stock: number) => {
-    if (stock === 0) return { label: 'Out of Stock', cls: 'bg-red-50 text-red-600 border-red-200' };
-    if (stock < 10) return { label: 'Low Stock', cls: 'bg-amber-50 text-amber-600 border-amber-200' };
-    return { label: `${stock} in stock`, cls: 'bg-emerald-50 text-emerald-600 border-emerald-200' };
+  const getStockStatus = (stock: number) => {
+    if (stock === 0) return { label: 'Out of Stock', cls: 'bg-red-50 text-red-650 border-red-100' };
+    if (stock < 10) return { label: `Low Stock (${stock})`, cls: 'bg-amber-50 text-amber-650 border-amber-100' };
+    return { label: `${stock} in stock`, cls: 'bg-emerald-50 text-emerald-650 border-emerald-100' };
   };
 
   if (loading) return (
@@ -152,39 +294,45 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      
+      {/* Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-            <Package className="h-5 w-5 text-primary" />
-            Shop Products
+            <Package className="h-5 w-5 text-indigo-500" /> Medical Product Management
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">Manage Antioxidants & Safer Products for non-cancer patients</p>
+          <p className="text-xs text-slate-500 mt-0.5">Configure health categories, variants, and pricing structures</p>
         </div>
-        <button onClick={openNew}
-          className="bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-sm transition-all hover:shadow-md">
-          <Plus className="h-4 w-4" /> Add Product
-        </button>
+        <div className="flex gap-2">
+          <button 
+            onClick={() => setShowCategoryModal(true)}
+            className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all"
+          >
+            + Create Category
+          </button>
+          <button 
+            onClick={openNew}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-sm transition-all"
+          >
+            <Plus className="h-4 w-4" /> Add Medical Product
+          </button>
+        </div>
       </div>
 
-      {/* Category Tabs + Search */}
+      {/* Filter panel */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="flex gap-2 flex-wrap">
-          {(['All', 'Antioxidants', 'SaferProducts'] as Category[]).map(cat => (
-            <button key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold border transition-all ${
-                activeCategory === cat
+          {['All', ...categories.slice(0, 5).map(c => c.name)].map((cat, idx) => (
+            <button 
+              key={idx}
+              onClick={() => setSelectedCategoryFilter(cat)}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold border transition-all ${
+                selectedCategoryFilter === cat
                   ? 'bg-primary text-white border-primary shadow-sm'
-                  : 'bg-white text-slate-600 border-slate-200 hover:border-primary/40'
-              }`}>
-              {cat === 'Antioxidants' && <Leaf className="h-3 w-3" />}
-              {cat === 'SaferProducts' && <ShieldCheck className="h-3 w-3" />}
-              {cat === 'All' && <Package className="h-3 w-3" />}
-              {cat === 'SaferProducts' ? 'Safer Products' : cat}
-              <span className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] ${
-                activeCategory === cat ? 'bg-white/20' : 'bg-slate-100 text-slate-500'
-              }`}>{counts[cat]}</span>
+                  : 'bg-white text-slate-650 border-slate-200 hover:border-indigo-400'
+              }`}
+            >
+              {cat}
             </button>
           ))}
         </div>
@@ -193,79 +341,98 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search products..."
-            className="pl-8 pr-4 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary w-56"
+            placeholder="Search brand, product..."
+            className="pl-8 pr-4 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-200 w-56"
           />
         </div>
       </div>
 
-      {/* Product Grid */}
-      {filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-48 bg-white rounded-2xl border border-dashed border-slate-200 text-slate-400">
+      {/* Products list grid */}
+      {filteredProducts.length === 0 ? (
+        <div className="flex flex-col items-center justify-center h-48 bg-white rounded-3xl border border-dashed border-slate-200 text-slate-400">
           <Package className="h-10 w-10 mb-2 opacity-40" />
-          <p className="text-sm font-medium">No products found</p>
-          <p className="text-xs mt-1">Try adjusting your filters or add a new product</p>
+          <p className="text-sm font-bold">No products found</p>
+          <p className="text-xs mt-1 text-slate-450">Try adjusting your category filter or keywords</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map(p => {
-            const ss = stockStatus(p.stock ?? 0);
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredProducts.map(p => {
+            const ss = getStockStatus(p.stock ?? 0);
             return (
-              <div key={p._id}
-                className={`bg-white border rounded-2xl p-5 shadow-sm transition-all hover:shadow-md group ${
-                  !p.isActive ? 'opacity-60 border-slate-200' : 'border-slate-200'
-                }`}>
-                {/* Card Header */}
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <span className="text-3xl">{p.image}</span>
-                    <div>
-                      <h3 className={`font-bold text-slate-800 text-sm leading-tight ${!p.isActive ? 'line-through text-slate-400' : ''}`}>
-                        {p.name}
-                      </h3>
-                      <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full mt-1 ${
-                        p.category === 'Antioxidants'
-                          ? 'bg-emerald-50 text-emerald-600'
-                          : 'bg-sky-50 text-sky-600'
-                      }`}>
-                        {p.category === 'Antioxidants' ? <Leaf className="h-2.5 w-2.5" /> : <ShieldCheck className="h-2.5 w-2.5" />}
-                        {p.category === 'SaferProducts' ? 'Safer Products' : p.category}
-                      </span>
+              <div 
+                key={p._id}
+                className={`bg-white border rounded-3xl p-5 shadow-sm transition-all hover:shadow-md flex flex-col justify-between ${
+                  !p.isActive ? 'opacity-65 border-slate-200' : 'border-slate-200'
+                }`}
+              >
+                <div>
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <span className="text-4xl">{p.image}</span>
+                      <div>
+                        <h3 className="font-bold text-slate-800 text-sm leading-snug">{p.name}</h3>
+                        {p.brand && <span className="text-[10px] text-slate-400 block">{p.brand}</span>}
+                        <span className="inline-block text-[8px] font-black bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full mt-1 uppercase">
+                          {p.category}
+                        </span>
+                      </div>
                     </div>
+                    <button 
+                      onClick={() => handleToggleProductActive(p)}
+                      className="text-slate-450 hover:text-indigo-500 transition-colors"
+                    >
+                      {p.isActive 
+                        ? <ToggleRight className="h-6 w-6 text-emerald-500" />
+                        : <ToggleLeft className="h-6 w-6" />}
+                    </button>
                   </div>
-                  {/* Active Toggle */}
-                  <button onClick={() => handleToggleActive(p)} title={p.isActive ? 'Deactivate' : 'Activate'}
-                    className="text-slate-400 hover:text-primary transition-colors">
-                    {p.isActive
-                      ? <ToggleRight className="h-6 w-6 text-emerald-500" />
-                      : <ToggleLeft className="h-6 w-6" />}
-                  </button>
+
+                  <p className="text-xs text-slate-500 mb-4 line-clamp-2 leading-relaxed">{p.description}</p>
+                  
+                  {/* Badges */}
+                  <div className="flex flex-wrap gap-1 mb-4">
+                    {p.doctorRecommended && (
+                      <span className="bg-emerald-50 text-emerald-600 border border-emerald-100 text-[8px] font-bold px-2 py-0.5 rounded">
+                        🩺 Rec
+                      </span>
+                    )}
+                    {p.prescriptionRequired && (
+                      <span className="bg-amber-50 text-amber-600 border border-amber-100 text-[8px] font-bold px-2 py-0.5 rounded">
+                        Rx Required
+                      </span>
+                    )}
+                    {p.variants?.length > 0 && (
+                      <span className="bg-indigo-50 text-indigo-700 border border-indigo-100 text-[8px] font-bold px-2 py-0.5 rounded">
+                        {p.variants.length} Variants
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                {/* Description */}
-                <p className="text-xs text-slate-500 mb-4 line-clamp-2 leading-relaxed">{p.description}</p>
-
-                {/* Stats Row */}
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-1 text-primary font-bold text-sm">
-                    <DollarSign className="h-3.5 w-3.5" />
-                    {Number(p.price).toFixed(2)}
+                <div className="pt-3 border-t border-slate-100 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-indigo-600 font-black text-sm">
+                      {p.variants?.length > 0 ? 'From ' : ''}Rs.{Number(p.price).toFixed(2)}
+                    </span>
+                    <span className={`text-[9px] font-bold border px-2 py-0.5 rounded-full uppercase tracking-wider ${ss.cls}`}>
+                      {ss.label}
+                    </span>
                   </div>
-                  <span className={`text-[10px] font-bold border px-2 py-0.5 rounded-full ${ss.cls}`}>
-                    {ss.label}
-                  </span>
-                </div>
 
-                {/* Actions */}
-                <div className="flex gap-2 pt-3 border-t border-slate-100">
-                  <button onClick={() => openEdit(p)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-slate-50 hover:bg-blue-50 text-slate-600 hover:text-blue-600 rounded-xl text-xs font-bold border border-slate-200 hover:border-blue-200 transition-all">
-                    <Edit className="h-3.5 w-3.5" /> Edit
-                  </button>
-                  <button onClick={() => setDeleteTarget(p._id)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-slate-50 hover:bg-red-50 text-slate-600 hover:text-red-500 rounded-xl text-xs font-bold border border-slate-200 hover:border-red-200 transition-all">
-                    <Trash2 className="h-3.5 w-3.5" /> Delete
-                  </button>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => openEdit(p)}
+                      className="flex-1 py-2 bg-slate-50 hover:bg-indigo-50 text-slate-600 hover:text-indigo-700 border border-slate-200 hover:border-indigo-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1"
+                    >
+                      <Edit className="h-3.5 w-3.5" /> Edit
+                    </button>
+                    <button 
+                      onClick={() => setDeleteTargetId(p._id)}
+                      className="py-2 px-3 bg-slate-50 hover:bg-red-50 text-slate-500 hover:text-red-650 border border-slate-200 hover:border-red-200 rounded-xl text-xs transition-all"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -273,105 +440,465 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
         </div>
       )}
 
-      {/* Add/Edit Modal */}
-      {showModal && (
+      {/* Product Add/Edit Modal */}
+      {showProductModal && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl">
-            {/* Modal Header */}
+          <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
               <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                {isEditing ? <Edit className="h-4 w-4 text-primary" /> : <Plus className="h-4 w-4 text-primary" />}
-                {isEditing ? 'Edit Product' : 'New Product'}
+                <Package className="h-5 w-5 text-indigo-600" />
+                {isEditing ? `Edit Product: ${form.name}` : 'New Medical Product'}
               </h3>
-              <button onClick={() => setShowModal(false)} className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors">
+              <button 
+                onClick={() => setShowProductModal(false)}
+                className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
+              >
                 <X className="h-4 w-4 text-slate-500" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              {/* Name */}
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">Product Name *</label>
-                <input required value={form.name}
-                  onChange={e => setForm({ ...form, name: e.target.value })}
-                  placeholder="e.g. Mito-C Complex"
-                  className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
-              </div>
+            {/* Tabs Selector */}
+            <div className="flex bg-slate-50 border-b border-slate-100 px-4">
+              {([
+                { key: 'basic', label: 'Basic Info' },
+                { key: 'medical', label: 'Medical Metadata' },
+                { key: 'variants', label: 'Variants & Stock' },
+                { key: 'media', label: 'Media & Description' }
+              ] as { key: TabType; label: string }[]).map(t => (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => setFormTab(t.key)}
+                  className={`px-4 py-3 text-xs font-bold border-b-2 transition-all ${
+                    formTab === t.key 
+                      ? 'border-indigo-600 text-indigo-600' 
+                      : 'border-transparent text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
 
-              {/* Description */}
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">Description *</label>
-                <textarea required value={form.description}
-                  onChange={e => setForm({ ...form, description: e.target.value })}
-                  placeholder="Brief product description..."
-                  className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
-                  rows={3} />
-              </div>
+            {/* Form */}
+            <form onSubmit={handleProductSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
+              
+              {/* TAB 1: BASIC DETAILS */}
+              {formTab === 'basic' && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Product Name *</label>
+                      <input 
+                        required 
+                        type="text" 
+                        value={form.name}
+                        onChange={e => setForm({ ...form, name: e.target.value })}
+                        placeholder="e.g. Mito-C Vitamin Complex"
+                        className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Product Brand</label>
+                      <input 
+                        type="text" 
+                        value={form.brand}
+                        onChange={e => setForm({ ...form, brand: e.target.value })}
+                        placeholder="e.g. MitoLife Science"
+                        className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none"
+                      />
+                    </div>
+                  </div>
 
-              {/* Price + Stock */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1 flex items-center gap-1">
-                    <DollarSign className="h-3 w-3" /> Price *
-                  </label>
-                  <input required type="number" step="0.01" min="0" value={form.price}
-                    onChange={e => setForm({ ...form, price: e.target.value })}
-                    placeholder="0.00"
-                    className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1 flex items-center gap-1">
-                    <Box className="h-3 w-3" /> Stock Qty *
-                  </label>
-                  <input required type="number" min="0" value={form.stock}
-                    onChange={e => setForm({ ...form, stock: e.target.value })}
-                    placeholder="0"
-                    className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
-                </div>
-              </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Product Category *</label>
+                      <select
+                        value={form.category}
+                        onChange={e => setForm({ ...form, category: e.target.value })}
+                        className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none bg-white"
+                      >
+                        {categories.map((c, idx) => (
+                          <option key={idx} value={c.name}>{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
 
-              {/* Image + Category */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">Image (Emoji / URL) *</label>
-                  <input required value={form.image}
-                    onChange={e => setForm({ ...form, image: e.target.value })}
-                    placeholder="🍊 or https://..."
-                    className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1 flex items-center gap-1">
-                    <Tag className="h-3 w-3" /> Category *
-                  </label>
-                  <select value={form.category}
-                    onChange={e => setForm({ ...form, category: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white">
-                    <option value="Antioxidants">Antioxidants</option>
-                    <option value="SaferProducts">Safer Products</option>
-                  </select>
-                </div>
-              </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Primary SKU</label>
+                      <input 
+                        type="text" 
+                        value={form.sku}
+                        onChange={e => setForm({ ...form, sku: e.target.value })}
+                        placeholder="e.g. MITO-VIT-C-500"
+                        className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none"
+                      />
+                    </div>
+                  </div>
 
-              {/* Active Toggle */}
-              <div className="flex items-center gap-3 bg-slate-50 rounded-xl p-3">
-                <input type="checkbox" id="active-check" checked={form.isActive}
-                  onChange={e => setForm({ ...form, isActive: e.target.checked })}
-                  className="h-4 w-4 accent-primary" />
-                <label htmlFor="active-check" className="text-sm font-semibold text-slate-700 cursor-pointer">
-                  Active — visible to patients in the shop
-                </label>
-              </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Price (INR) *</label>
+                      <input 
+                        required
+                        type="number" 
+                        step="0.01" 
+                        min="0"
+                        value={form.price}
+                        onChange={e => setForm({ ...form, price: e.target.value })}
+                        placeholder="0.00"
+                        className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none"
+                      />
+                    </div>
+
+                    {form.variants.length === 0 && (
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Stock Quantity *</label>
+                        <input 
+                          required
+                          type="number" 
+                          min="0"
+                          value={form.stock}
+                          onChange={e => setForm({ ...form, stock: e.target.value })}
+                          placeholder="0"
+                          className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={form.doctorRecommended} 
+                        onChange={e => setForm({ ...form, doctorRecommended: e.target.checked })}
+                        className="rounded text-indigo-600 h-4 w-4"
+                      />
+                      <span className="text-xs text-slate-700 font-bold">Recommended by Doctor</span>
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={form.prescriptionRequired} 
+                        onChange={e => setForm({ ...form, prescriptionRequired: e.target.checked })}
+                        className="rounded text-indigo-600 h-4 w-4"
+                      />
+                      <span className="text-xs text-slate-700 font-bold">Prescription (Rx) Required</span>
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: MEDICAL INFO */}
+              {formTab === 'medical' && (
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block">Active Ingredients (Separate with commas)</label>
+                    <input 
+                      type="text" 
+                      value={form.ingredients}
+                      onChange={e => setForm({ ...form, ingredients: e.target.value })}
+                      placeholder="e.g. Vitamin C, Rosehips Extract, Bioflavonoids"
+                      className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block">Key Benefits (Separate with commas)</label>
+                    <input 
+                      type="text" 
+                      value={form.keyBenefits}
+                      onChange={e => setForm({ ...form, keyBenefits: e.target.value })}
+                      placeholder="e.g. Promotes Cellular Repair, Enhances Gut Immunity"
+                      className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block">Health Benefits/Goals (Separate with commas)</label>
+                    <input 
+                      type="text" 
+                      value={form.healthBenefits}
+                      onChange={e => setForm({ ...form, healthBenefits: e.target.value })}
+                      placeholder="e.g. Immunity Boost, Anti-aging, Bone Strength"
+                      className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block">Directions for Use</label>
+                      <input 
+                        type="text" 
+                        value={form.usageInstructions}
+                        onChange={e => setForm({ ...form, usageInstructions: e.target.value })}
+                        placeholder="e.g. Take 1 capsule daily after breakfast"
+                        className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block">Suitable For</label>
+                      <input 
+                        type="text" 
+                        value={form.suitableFor}
+                        onChange={e => setForm({ ...form, suitableFor: e.target.value })}
+                        placeholder="e.g. Adults over 18, Vegetarians"
+                        className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block">Safety Warnings & Precautions</label>
+                    <textarea 
+                      value={form.warnings}
+                      onChange={e => setForm({ ...form, warnings: e.target.value })}
+                      placeholder="e.g. Consult doctor if pregnant. Do not exceed recommended dosage."
+                      rows={2}
+                      className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none resize-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block">Storage Instructions</label>
+                      <input 
+                        type="text" 
+                        value={form.storageInstructions}
+                        onChange={e => setForm({ ...form, storageInstructions: e.target.value })}
+                        placeholder="e.g. Store below 25°C in cool dry place"
+                        className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block">Manufacturer Details</label>
+                      <input 
+                        type="text" 
+                        value={form.manufacturer}
+                        onChange={e => setForm({ ...form, manufacturer: e.target.value })}
+                        placeholder="e.g. PharmaCorp Labs"
+                        className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: VARIANTS */}
+              {formTab === 'variants' && (
+                <div className="space-y-6">
+                  
+                  {/* Add variant sub-form */}
+                  <div className="bg-slate-50 p-4 border border-slate-200 rounded-2xl space-y-3">
+                    <h4 className="font-bold text-xs text-slate-800">Add Product Variant (e.g. 500g, 1kg, 30 Capsules)</h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-semibold text-slate-500 block">Variant Name</label>
+                        <input 
+                          type="text" 
+                          value={variantName}
+                          onChange={e => setVariantName(e.target.value)}
+                          placeholder="e.g. 500g"
+                          className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs focus:outline-none"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-semibold text-slate-500 block">Price (INR)</label>
+                        <input 
+                          type="number" 
+                          value={variantPrice}
+                          onChange={e => setVariantPrice(e.target.value)}
+                          placeholder="Price"
+                          className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs focus:outline-none"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-semibold text-slate-500 block">Stock Qty</label>
+                        <input 
+                          type="number" 
+                          value={variantStock}
+                          onChange={e => setVariantStock(e.target.value)}
+                          placeholder="Stock"
+                          className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs focus:outline-none"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-semibold text-slate-500 block">SKU</label>
+                        <input 
+                          type="text" 
+                          value={variantSku}
+                          onChange={e => setVariantSku(e.target.value)}
+                          placeholder="Variant SKU"
+                          className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={addVariant}
+                      className="py-1.5 px-4 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-755 transition-all shadow-sm"
+                    >
+                      + Append Variant
+                    </button>
+                  </div>
+
+                  {/* List of current variants */}
+                  <div className="space-y-2">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block">Configured Variants ({form.variants.length})</span>
+                    {form.variants.length === 0 ? (
+                      <p className="text-xs text-slate-400 italic">No variants configured. Product will use the default pricing and stock specified on Tab 1.</p>
+                    ) : (
+                      <div className="divide-y divide-slate-100 bg-white border border-slate-200 rounded-2xl p-3">
+                        {form.variants.map((v, index) => (
+                          <div key={index} className="py-2.5 flex justify-between items-center text-xs">
+                            <div>
+                              <span className="font-bold text-slate-800">{v.name}</span>
+                              <span className="text-[10px] text-slate-400 block font-mono">SKU: {v.sku}</span>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <span className="font-bold text-slate-705">Rs.{v.price.toFixed(2)}</span>
+                              <span className="bg-slate-100 px-2 py-0.5 rounded text-[10px] font-semibold">{v.stock} in stock</span>
+                              <button 
+                                type="button" 
+                                onClick={() => removeVariant(index)}
+                                className="text-red-500 p-1 hover:bg-red-50 rounded"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 4: MEDIA & FULL DESCRIPTION */}
+              {formTab === 'media' && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block">Main Icon/Emoji *</label>
+                      <input 
+                        required
+                        type="text" 
+                        value={form.image}
+                        onChange={e => setForm({ ...form, image: e.target.value })}
+                        placeholder="e.g. 💊 or 🍊"
+                        className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block">Tags (Separate with commas)</label>
+                      <input 
+                        type="text" 
+                        value={form.productTags}
+                        onChange={e => setForm({ ...form, productTags: e.target.value })}
+                        placeholder="e.g. natural, sugar-free, organic"
+                        className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block">Short Description *</label>
+                    <input 
+                      required
+                      type="text" 
+                      value={form.shortDescription}
+                      onChange={e => setForm({ ...form, shortDescription: e.target.value })}
+                      placeholder="Brief headline description (1 sentence)"
+                      className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block">Detailed Product Description *</label>
+                    <textarea 
+                      required
+                      value={form.detailedDescription}
+                      onChange={e => setForm({ ...form, detailedDescription: e.target.value })}
+                      placeholder="Full specifications, clinical benefits, and product notes."
+                      rows={5}
+                      className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none resize-none"
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Footer */}
-              <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={() => setShowModal(false)}
-                  className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm font-bold text-slate-600 transition-colors">
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                <button 
+                  type="button" 
+                  onClick={() => setShowProductModal(false)}
+                  className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-colors"
+                >
                   Cancel
                 </button>
-                <button type="submit" disabled={saving}
-                  className="px-5 py-2.5 bg-primary hover:bg-primary/90 rounded-xl text-sm font-bold text-white shadow-sm transition-all disabled:opacity-60 flex items-center gap-2">
+                <button 
+                  type="submit" 
+                  disabled={saving}
+                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 rounded-xl text-xs font-bold text-white shadow-sm transition-all disabled:opacity-60 flex items-center gap-2"
+                >
                   {saving && <span className="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full" />}
-                  {isEditing ? 'Update Product' : 'Add Product'}
+                  {isEditing ? 'Update Medical Product' : 'Create Product'}
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Category Creation Modal */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl p-6 border border-slate-100">
+            <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+              <Tag className="h-4 w-4 text-indigo-500" /> Create Custom Category
+            </h3>
+            <form onSubmit={handleCreateCategory} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase block">Category Name *</label>
+                <input 
+                  required
+                  type="text"
+                  placeholder="e.g. Skin Care"
+                  value={newCategoryName}
+                  onChange={e => setNewCategoryName(e.target.value)}
+                  className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase block">Brief Description</label>
+                <input 
+                  type="text"
+                  placeholder="e.g. Dermaceutical creams and face washes"
+                  value={newCategoryDesc}
+                  onChange={e => setNewCategoryDesc(e.target.value)}
+                  className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button 
+                  type="button" 
+                  onClick={() => setShowCategoryModal(false)}
+                  className="px-4 py-2 bg-slate-100 rounded-xl text-xs font-bold text-indigo-600"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  className="px-4 py-2 bg-primary hover:bg-primary/95 text-white rounded-xl text-xs font-bold transition-all shadow-sm"
+                >
+                  Save Category
                 </button>
               </div>
             </form>
@@ -379,28 +906,33 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
         </div>
       )}
 
-      {/* Delete Confirm Dialog */}
-      {deleteTarget && (
+      {/* Delete Confirmation Modal */}
+      {deleteTargetId && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl p-6 text-center">
+          <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl p-6 text-center border border-slate-100">
             <div className="h-12 w-12 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
               <AlertTriangle className="h-6 w-6 text-red-500" />
             </div>
-            <h3 className="text-base font-bold text-slate-800 mb-1">Delete Product?</h3>
-            <p className="text-xs text-slate-500 mb-6">This action cannot be undone. The product will be permanently removed.</p>
+            <h3 className="text-base font-bold text-slate-800 mb-1">Delete Medical Product?</h3>
+            <p className="text-xs text-slate-450 mb-6">This action cannot be undone. Product variants and inventory logs will be cleared.</p>
             <div className="flex gap-3">
-              <button onClick={() => setDeleteTarget(null)}
-                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm font-bold text-slate-600 transition-colors">
+              <button 
+                onClick={() => setDeleteTargetId(null)}
+                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-colors"
+              >
                 Cancel
               </button>
-              <button onClick={() => handleDelete(deleteTarget)}
-                className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 rounded-xl text-sm font-bold text-white shadow-sm transition-colors">
+              <button 
+                onClick={() => handleDeleteProduct(deleteTargetId)}
+                className="flex-1 py-2.5 bg-red-500 hover:bg-red-650 rounded-xl text-xs font-bold text-white shadow-sm transition-colors"
+              >
                 Yes, Delete
               </button>
             </div>
           </div>
         </div>
       )}
+
     </div>
   );
 };

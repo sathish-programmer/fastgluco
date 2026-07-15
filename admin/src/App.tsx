@@ -57,6 +57,8 @@ import { AdminCancerTests } from './components/AdminCancerTests';
 import { AdminExtDashboard } from './components/AdminExtDashboard';
 import { DoctorPortal } from './components/DoctorPortal';
 import { VendorPortal } from './components/VendorPortal';
+import { AdminVendorManagement } from './components/AdminVendorManagement';
+import { AdminShopReports } from './components/AdminShopReports';
 
 const AdminPanelContent: React.FC = () => {
   const { admin, token, isAuthenticated, login, register, logout, error, clearError, apiUrl } = useAdminAuth();
@@ -83,7 +85,7 @@ const AdminPanelContent: React.FC = () => {
   // Active view: 'dashboard' | 'users' | 'foods' | 'videos' | 'guides' | 'notifications'
   const [activeView, setActiveView] = useState<string>('dashboard');
   const [pendingEdits, setPendingEdits] = useState<any[]>([]);
-  const [nonCancerTab, setNonCancerTab] = useState<'overview' | 'shop' | 'screening' | 'clinical'>('overview');
+  const [nonCancerTab, setNonCancerTab] = useState<'overview' | 'shop' | 'vendors' | 'reports' | 'screening' | 'clinical'>('overview');
 
   // API Data states
   const [stats, setStats] = useState<any>(null);
@@ -2073,6 +2075,8 @@ const AdminPanelContent: React.FC = () => {
                 {[
                   { key: 'overview', label: '📊 Overview & Users' },
                   { key: 'shop', label: '🛒 Safer Products (Shop)' },
+                  { key: 'vendors', label: '🚚 Vendor Management' },
+                  { key: 'reports', label: '📊 Shop Reports' },
                   { key: 'screening', label: '🩺 Cancer Screening' },
                   { key: 'clinical', label: '🩺 Doctor & Vendor Portal' }
                 ].map((tab) => (
@@ -2209,6 +2213,8 @@ const AdminPanelContent: React.FC = () => {
                     <AdminShopProducts apiUrl={apiUrl} token={token} />
                   </div>
                 )}
+                {nonCancerTab === 'vendors' && <AdminVendorManagement apiUrl={apiUrl} token={token || ''} />}
+                {nonCancerTab === 'reports' && <AdminShopReports apiUrl={apiUrl} token={token || ''} />}
                 {nonCancerTab === 'screening' && <AdminCancerTests apiUrl={apiUrl} token={token} />}
                 {nonCancerTab === 'clinical' && <AdminExtDashboard apiUrl={apiUrl} token={token} />}
               </div>
