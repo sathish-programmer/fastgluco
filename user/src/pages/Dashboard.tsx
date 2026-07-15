@@ -19,9 +19,11 @@ import {
   Flame,
   Lightbulb,
   Sparkles,
-  Calendar
+  Calendar,
+  X
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, CartesianGrid } from 'recharts';
+import { motion } from 'framer-motion';
 
 interface DashboardProps {
   onNavigateToTab: (tab: string) => void;
@@ -62,6 +64,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
   const [activityCalories, setActivityCalories] = useState('');
   const [activityTimestamp, setActivityTimestamp] = useState('');
   const [submittingActivity, setSubmittingActivity] = useState(false);
+  const [upcomingAppt, setUpcomingAppt] = useState<any | null>(null);
+  const [isApptDismissed, setIsApptDismissed] = useState<boolean>(false);
 
   // Dynamically calculate glucose stability hours below spikeThreshold (defaults to 90)
   const calculateStabilityHours = () => {
@@ -300,6 +304,26 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
       });
       if (activityRes.ok) {
         await activityRes.json();
+      }
+      // Fetch upcoming confirmed appointments
+      try {
+        const apptRes = await fetch(`${apiUrl}/patient/appointments`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (apptRes.ok) {
+          const appts = await apptRes.json();
+          const confirmedFuture = appts
+            .filter((a: any) => a.status === 'confirmed')
+            .sort((a: any, b: any) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime())[0];
+          
+          if (confirmedFuture) {
+            const dismissedId = localStorage.getItem(`dismissed_appt_${confirmedFuture._id}`);
+            setIsApptDismissed(!!dismissedId);
+          }
+          setUpcomingAppt(confirmedFuture || null);
+        }
+      } catch (apptErr) {
+        console.error('Error fetching upcoming appointments:', apptErr);
       }
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
@@ -583,29 +607,39 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
   };
 
   return (
-    <div className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-gradient-to-b from-slate-50/90 to-slate-100/80 min-h-screen font-sans antialiased text-slate-800">
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-gradient-to-b from-slate-50/90 to-slate-100/80 dark:from-slate-950/90 dark:to-slate-900/80 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100"
+    >
       {/* Welcome Header */}
-      <div className="flex justify-between items-center mb-6">
+      <motion.div 
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1, duration: 0.4 }}
+        className="flex justify-between items-center mb-6"
+      >
         <div>
-          <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Overview</span>
-          <h2 className="text-2xl font-black text-slate-800 mt-0.5 tracking-tight flex items-center space-x-1.5">
+          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-widest uppercase">Overview</span>
+          <h2 className="text-2xl font-black text-slate-800 dark:text-slate-50 mt-0.5 tracking-tight flex items-center space-x-1.5">
             <span>Good day,</span>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-indigo-600">{user?.name || 'Patient'}</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-indigo-600 dark:from-blue-400 dark:to-indigo-400">{user?.name || 'Patient'}</span>
           </h2>
         </div>
         <div className="flex items-center space-x-3">
           <button
             onClick={() => fetchDashboardData()}
-            className="h-10 w-10 bg-white hover:bg-slate-55 text-slate-400 hover:text-slate-700 border border-slate-200/60 rounded-2xl flex items-center justify-center transition-all duration-305 shadow-sm hover:shadow active:scale-90"
+            className="h-10 w-10 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-400 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 border border-slate-200/60 dark:border-slate-700 rounded-2xl flex items-center justify-center transition-all duration-300 shadow-sm hover:shadow active:scale-90"
             title="Refresh Data"
           >
             <RefreshCw className="h-4 w-4" />
           </button>
-          <div className="h-11 w-11 bg-gradient-to-br from-primary to-indigo-650 text-white rounded-2xl flex items-center justify-center font-extrabold shadow-sm tracking-wider">
+          <div className="h-11 w-11 bg-gradient-to-br from-primary to-indigo-600 dark:from-primary-dark dark:to-indigo-800 text-white rounded-2xl flex items-center justify-center font-extrabold shadow-sm tracking-wider">
             {user?.name ? user.name.charAt(0).toUpperCase() : 'P'}
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Offline sync message */}
       {offlineMealsCount > 0 && (
@@ -629,11 +663,59 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
         </div>
       )}
 
+      {/* Upcoming Confirmed Appointment Alert Banner */}
+      {upcomingAppt && !isApptDismissed && (
+        <div className="bg-emerald-50/90 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 rounded-[32px] p-5 mb-6 shadow-[0_8px_30px_rgba(16,185,129,0.04)] flex items-start justify-between gap-4">
+          <div className="flex items-start gap-3.5">
+            <div className="p-3 bg-emerald-500/10 rounded-2xl text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5">
+              <Calendar className="h-6 w-6" />
+            </div>
+            <div>
+              <h4 className="font-extrabold text-emerald-850 dark:text-emerald-300 text-xs">Upcoming Consultation Scheduled</h4>
+              <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-1 leading-relaxed">
+                Your appointment with <strong>Dr. {upcomingAppt.doctorId?.name || 'Specialist'}</strong> is scheduled on <strong>{upcomingAppt.date}</strong> at <strong>{upcomingAppt.time}</strong>.
+              </p>
+              {upcomingAppt.meetingLink && (
+                <a
+                  href={upcomingAppt.meetingLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block mt-3 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-750 px-4 py-2 rounded-xl shadow-sm transition-all"
+                >
+                  {upcomingAppt.meetingLink.includes('calendar.app.google') || upcomingAppt.meetingLink.includes('calendar.google.com')
+                    ? 'Open Google Calendar Invite'
+                    : 'Join Google Meet'}
+                </a>
+              )}
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              localStorage.setItem(`dismissed_appt_${upcomingAppt._id}`, 'true');
+              setIsApptDismissed(true);
+            }}
+            className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-slate-650 dark:hover:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all shrink-0"
+            title="Dismiss Alert"
+          >
+            <X className="h-4.5 w-4.5" />
+          </button>
+        </div>
+      )}
+
       {/* Primary Metrics Hub (Stacked: Hero Stability card + Grid for secondary metrics) */}
-      <div className="flex flex-col gap-3.5 mb-6">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2, duration: 0.5 }}
+        className="flex flex-col gap-3.5 mb-6"
+      >
 
         {/* Stability Card (Full-width, premium layout) */}
-        <div className="bg-white/90 backdrop-blur-xl p-4 rounded-3xl border border-white/80 shadow-[0_8px_30px_rgba(0,0,0,0.015)] flex items-center justify-between transition-all hover:scale-[1.01] gap-4">
+        <motion.div 
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-4 rounded-3xl border border-white/80 dark:border-slate-800 shadow-soft flex items-center justify-between gap-4"
+        >
 
           {/* Progress Ring (Explicit size) */}
           <div className="relative h-20 w-20 shrink-0">
@@ -699,7 +781,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
               Target: Stay below {spikeThreshold} mg/dL for 17 hrs a day
             </p>
           </div>
-        </div>
+        </motion.div>
 
         {/* Supporting Metrics (Glucose & In Range side-by-side) */}
         <div className="grid grid-cols-2 gap-3.5">
@@ -767,7 +849,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
           })()}
 
           {/* In Range */}
-          <div className="bg-white/90 backdrop-blur-xl p-4 rounded-3xl border border-white/80 shadow-[0_8px_30px_rgba(0,0,0,0.015)] flex flex-col justify-between transition-all hover:scale-[1.01]">
+          <motion.div className="bg-white/90 backdrop-blur-xl p-4 rounded-3xl border border-white/80 shadow-[0_8px_30px_rgba(0,0,0,0.015)] flex flex-col justify-between transition-all hover:scale-[1.01]">
             <div className="flex justify-between items-center text-slate-400">
               <span className="text-[10px] font-bold uppercase tracking-wider">In Range</span>
               <TrendingUp className="h-3.5 w-3.5 text-secondary" />
@@ -778,17 +860,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
               <span className="text-[9px] font-bold text-slate-400 uppercase">Time</span>
             </div>
 
-            <div className="pt-1.5 border-t border-slate-50 flex justify-between items-center">
+            <div className="pt-1.5 border-t border-slate-50 dark:border-slate-800 flex justify-between items-center">
               <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Target</span>
-              <span className="text-[8px] font-extrabold text-slate-500 uppercase tracking-wider">70-140</span>
+              <span className="text-[8px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">70-140</span>
             </div>
-          </div>
+          </motion.div>
         </div>
 
-      </div>
+      </motion.div>
 
       {/* Glucose Trend Area Chart */}
-      <div className="bg-white/90 backdrop-blur-xl p-5 rounded-3xl border border-white/80 shadow-[0_8px_30px_rgba(0,0,0,0.015)] hover:shadow-[0_12px_35px_rgba(0,0,0,0.03)] transition-all duration-300 mb-6">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3, duration: 0.5 }}
+        className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-5 rounded-3xl border border-white/80 dark:border-slate-800 shadow-soft hover:shadow-md transition-all duration-300 mb-6"
+      >
         <div className="mb-5 flex flex-col gap-3">
           {/* Header Row: Title & Action Buttons */}
           <div className="flex justify-between items-center">
@@ -814,8 +901,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
           </div>
 
           {/* Controls Row: Date Picker & Range Segmented Control */}
-          <div className="flex items-center justify-between bg-slate-50/80 p-1.5 rounded-2xl border border-slate-100/50">
-            <div className="flex bg-slate-200/50 rounded-xl p-1 w-full sm:w-auto">
+          <div className="flex items-center justify-between bg-slate-50/80 dark:bg-slate-950/50 p-1.5 rounded-2xl border border-slate-100/50 dark:border-slate-800/50">
+            <div className="flex bg-slate-200/50 dark:bg-slate-800/50 rounded-xl p-1 w-full sm:w-auto">
               <button
                 onClick={() => setDateRange('day')}
                 className={`flex-1 sm:flex-none px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest rounded-lg transition-all ${dateRange === 'day' ? 'bg-white shadow-sm text-primary scale-[1.02]' : 'text-slate-400 hover:text-slate-600'}`}
@@ -836,7 +923,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
               </button>
             </div>
 
-            <div className="flex items-center space-x-2 bg-white rounded-xl px-2.5 py-1.5 shadow-sm border border-slate-100/50 ml-2 shrink-0">
+            <div className="flex items-center space-x-2 bg-white dark:bg-slate-900 rounded-xl px-2.5 py-1.5 shadow-sm border border-slate-100/50 dark:border-slate-800 ml-2 shrink-0">
               <Calendar className="h-3.5 w-3.5 text-slate-400" />
               <input
                 type="date"
@@ -912,7 +999,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
             </div>
           </div>
         )}
-      </div>
+      </motion.div>
 
       {/* Stacked Daily Trackers (All displayed together as important cards) */}
       <div className="space-y-6 mb-6">
@@ -986,7 +1073,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
         )}
 
         {/* AI Insights Card */}
-        <div className="bg-white/90 backdrop-blur-xl p-5 rounded-3xl border border-white/80 shadow-[0_8px_30px_rgba(0,0,0,0.015)] transition-all hover:shadow-[0_12px_35px_rgba(0,0,0,0.03)]">
+        <motion.div 
+          className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-5 rounded-3xl border border-white/80 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,0,0,0.015)] transition-all hover:shadow-[0_12px_35px_rgba(0,0,0,0.03)]"
+        >
           <div className="flex items-center justify-between mb-3.5">
             <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center space-x-1.5">
               <Lightbulb className="h-3.5 w-3.5 text-amber-500 fill-amber-100" />
@@ -997,15 +1086,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
               <span>AI Coach</span>
             </span>
           </div>
-          <div className="bg-gradient-to-r from-slate-50 to-slate-100/50 border border-slate-200/30 p-4 rounded-2xl">
-            <p className="text-xs text-slate-650 leading-relaxed font-semibold">
+          <div className="bg-gradient-to-r from-slate-50 to-slate-100/50 dark:from-slate-800/50 dark:to-slate-900/50 border border-slate-200/30 dark:border-slate-800 p-4 rounded-2xl">
+            <p className="text-xs text-slate-650 dark:text-slate-300 leading-relaxed font-semibold">
               {healthInsight}
             </p>
-            <p className="text-[9px] text-slate-400 mt-3 pt-2 border-t border-slate-200/50 italic leading-relaxed">
+            <p className="text-[9px] text-slate-400 mt-3 pt-2 border-t border-slate-200/50 dark:border-slate-700 italic leading-relaxed">
               * Insights are generated by a third-party AI provider (Google Gemini) based on your input. Do not use this as a substitute for professional medical advice. Always consult a doctor before making medical decisions.
             </p>
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* Quick Access Control Buttons */}
@@ -1355,6 +1444,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 };

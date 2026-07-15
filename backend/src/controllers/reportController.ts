@@ -340,9 +340,11 @@ export class ReportController {
       // Initialize PDFDocument
       const doc = new PDFDocument({ margin: 40, size: 'A4' });
 
+      const customFilename = req.query.filename ? (req.query.filename as string) : `Mito_Reboot-User-Report-${new Date().toISOString().split('T')[0]}.pdf`;
+
       // Set headers for download
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="Mito_Reboot-User-Report-${new Date().toISOString().split('T')[0]}.pdf"`);
+      res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(customFilename)}"`);
       doc.pipe(res);
 
       // --- PAGE 1: TITLE & USER METRICS ---

@@ -263,6 +263,10 @@ export const verifyPayment = async (req: Request, res: Response) => {
     order.razorpaySignature = razorpay_signature;
     await order.save();
 
+    // Trigger confirmation email
+    const { EmailService } = require('../services/emailService');
+    EmailService.sendOrderEmail('placed', order._id.toString()).catch(console.error);
+
     res.json({ message: 'Payment verified successfully', order });
   } catch (err) {
     console.error(err);

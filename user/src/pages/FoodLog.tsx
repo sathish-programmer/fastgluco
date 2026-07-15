@@ -12,7 +12,6 @@ import {
   ShoppingBag,
   Activity,
   Wheat,
-  Smile,
   Calendar,
   Pencil,
   X,
@@ -27,6 +26,7 @@ import {
   Loader2,
   ShieldCheck
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface FoodLogProps {
   features?: any;
@@ -755,18 +755,28 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
 
   return (
     <>
-      <div className="pb-24 pt-4 px-4 max-w-5xl mx-auto bg-slate-50/70 min-h-screen font-sans antialiased text-slate-800">
-        <div className="mb-6 flex items-center justify-between">
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="pb-24 pt-4 px-4 max-w-5xl mx-auto bg-slate-50/70 dark:bg-slate-950/70 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100"
+      >
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.4 }}
+          className="mb-6 flex items-center justify-between"
+        >
           <div>
-            <h2 className="text-xl font-bold text-slate-850">Diet Log</h2>
-            <p className="text-xs text-slate-400 font-semibold mt-1">
+            <h2 className="text-xl font-bold text-slate-850 dark:text-slate-100">Diet Log</h2>
+            <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-1">
               Identify meal items causing glucose spikes
             </p>
           </div>
-          <div className="bg-white border border-slate-150 p-2 rounded-2xl shadow-sm text-primary">
+          <div className="bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800 p-2 rounded-2xl shadow-sm text-primary">
             <Activity className="h-5 w-5" />
           </div>
-        </div>
+        </motion.div>
 
         {message && (
           <div className="mb-4 p-3 bg-emerald-50 border border-emerald-100 text-emerald-800 text-xs font-bold rounded-2xl shadow-sm animate-in fade-in duration-200">
@@ -774,51 +784,64 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
           </div>
         )}
 
-        <button
+        <motion.button
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.4 }}
           type="button"
           onClick={() => onNavigateToTab?.('Recommended Foods')}
-          className="w-full bg-emerald-50 border border-emerald-100 p-4 rounded-3xl mb-6 flex items-center justify-between text-left transition-colors hover:bg-emerald-100/50"
+          className="w-full bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-800/50 p-4 rounded-3xl mb-6 flex items-center justify-between text-left transition-colors hover:bg-emerald-100/50 dark:hover:bg-emerald-900/50"
         >
           <div>
-            <div className="inline-flex items-center space-x-1 px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-[10px] uppercase tracking-wider font-extrabold mb-1">
+            <div className="inline-flex items-center space-x-1 px-2 py-0.5 bg-emerald-100 dark:bg-emerald-800/80 text-emerald-700 dark:text-emerald-200 rounded-full text-[10px] uppercase tracking-wider font-extrabold mb-1">
               <ShieldCheck className="h-3 w-3" />
               <span>Doctor Recommended</span>
             </div>
-            <h4 className="text-sm font-extrabold text-emerald-900">Recommended Foods</h4>
-            <p className="text-[10px] text-emerald-700 font-medium mt-0.5 leading-tight pr-4">
+            <h4 className="text-sm font-extrabold text-emerald-900 dark:text-emerald-100">Recommended Foods</h4>
+            <p className="text-[10px] text-emerald-700 dark:text-emerald-300/70 font-medium mt-0.5 leading-tight pr-4">
               View genuine food products recommended by doctors for better glucose management.
             </p>
           </div>
-          <div className="bg-white p-2 rounded-2xl shadow-sm text-emerald-600 shrink-0">
+          <div className="bg-white dark:bg-slate-900 p-2 rounded-2xl shadow-sm text-emerald-600 dark:text-emerald-400 shrink-0">
             <Utensils className="h-5 w-5" />
           </div>
-        </button>
+        </motion.button>
 
-        <div className="flex gap-3 mb-6">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.4 }}
+          className="flex gap-3 mb-6"
+        >
           <button
             type="button"
             onClick={handleOpenScanner}
-            className="flex-1 bg-gradient-to-r from-indigo-600 via-indigo-500 to-primary p-4 rounded-3xl text-white shadow-soft relative overflow-hidden flex items-center justify-between group"
+            className="flex-1 bg-gradient-to-r from-indigo-600 via-indigo-500 to-primary dark:from-indigo-900 dark:via-indigo-800 dark:to-primary-dark p-4 rounded-3xl text-white shadow-soft hover:shadow-md relative overflow-hidden flex items-center justify-between group transition-all"
           >
             <div className="absolute -right-4 -bottom-4 opacity-10 pointer-events-none">
               <Sparkles className="h-24 w-24" />
             </div>
-            <div className="max-w-[70%]">
+            <div className="max-w-[70%] text-left">
               <h4 className="text-sm font-extrabold tracking-tight">Food Scanner</h4>
               <p className="text-[10px] text-indigo-100 font-semibold mt-0.5 leading-tight">
                 Snap a picture of your food to auto-estimate calories & macros!
               </p>
             </div>
-            <div className="shrink-0 bg-white text-indigo-600 font-bold text-[10px] px-3.5 py-2.5 rounded-2xl shadow-soft transition-all">
+            <div className="shrink-0 bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 font-bold text-[10px] px-3.5 py-2.5 rounded-2xl shadow-soft transition-all">
               Scan
             </div>
           </button>
-        </div>
+        </motion.div>
 
-        <div className="bg-white border border-slate-100 shadow-[0_12px_24px_rgba(0,0,0,0.02)] rounded-3xl p-5 mb-6">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.4 }}
+          className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-[0_12px_24px_rgba(0,0,0,0.02)] rounded-3xl p-5 mb-6"
+        >
           <form onSubmit={handleLogSubmit} className="space-y-4">
             <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Log a Meal</h3>
-            <div className="flex space-x-1.5 p-1 bg-slate-100/80 rounded-2xl mb-4 border border-slate-200/20">
+            <div className="flex space-x-1.5 p-1 bg-slate-100/80 dark:bg-slate-950/80 rounded-2xl mb-4 border border-slate-200/20 dark:border-slate-800/50">
               <button
                 type="button"
                 onClick={() => {
@@ -828,7 +851,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                   setUnit('g');
                   setCustomName('');
                 }}
-                className={`flex-1 py-2 text-center text-xs font-bold rounded-xl transition-all ${activeTab === 'search' ? 'bg-white text-slate-800 shadow-soft' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`flex-1 py-2 text-center text-xs font-bold rounded-xl transition-all ${activeTab === 'search' ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-soft' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
               >
                 🔍 Search
               </button>
@@ -1207,50 +1230,54 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
               </div>
             )}
           </form>
-        </div>
+        </motion.div>
 
         <div>
-          <div className="flex flex-row items-center justify-between gap-3 mb-5 border-t border-slate-200/60 pt-6">
-            <h3 className="text-sm font-extrabold text-slate-850 flex items-center space-x-1.5 shrink-0">
-              <Smile className="h-4.5 w-4.5 text-primary" />
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.4 }}
+        >
+          <div className="flex items-center justify-between mb-4 mt-8">
+            <h3 className="text-sm font-extrabold text-slate-800 dark:text-slate-200 flex items-center">
               <span className="hidden sm:inline">Meal Log History</span>
               <span className="sm:hidden">History</span>
             </h3>
-            <div className="flex items-center space-x-2 bg-white border border-slate-100 rounded-2xl px-3 py-1.5 shrink-0 shadow-sm">
+            <div className="flex items-center space-x-2 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl px-3 py-1.5 shrink-0 shadow-sm">
               <Calendar className="h-3.5 w-3.5 text-slate-400" />
               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">View Date:</span>
               <input
                 type="date"
                 value={selectedViewDate}
                 onChange={(e) => setSelectedViewDate(e.target.value)}
-                className="text-xs font-bold text-slate-600 bg-transparent focus:outline-none border-none cursor-pointer"
+                className="text-xs font-bold text-slate-600 dark:text-slate-300 bg-transparent focus:outline-none border-none cursor-pointer"
               />
             </div>
-          </div>
+          </div>         </motion.div>
 
           {logs.length > 0 && (
-            <div className="bg-white border border-slate-100 shadow-[0_12px_24px_rgba(0,0,0,0.02)] rounded-3xl p-4 mb-4">
-              <h4 className="text-[10px] font-bold text-slate-450 uppercase tracking-wider mb-3">Daily Nutrients Summary</h4>
+            <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-[0_12px_24px_rgba(0,0,0,0.02)] rounded-3xl p-4 mb-4">
+              <h4 className="text-[10px] font-bold text-slate-450 dark:text-slate-400 uppercase tracking-wider mb-3">Daily Nutrients Summary</h4>
               <div className="grid grid-cols-5 gap-2 text-center">
-                <div className="bg-slate-50/50 p-1.5 rounded-xl border border-slate-100/60">
+                <div className="bg-slate-50/50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-slate-100/60 dark:border-slate-700/60">
                   <span className="text-[8px] font-bold text-slate-400 block uppercase">Calories</span>
-                  <span className="text-xs font-bold text-slate-700 block mt-0.5">{totalCalories}</span>
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block mt-0.5">{totalCalories}</span>
                 </div>
-                <div className="bg-slate-50/50 p-1.5 rounded-xl border border-slate-100/60">
+                <div className="bg-slate-50/50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-slate-100/60 dark:border-slate-700/60">
                   <span className="text-[8px] font-bold text-slate-400 block uppercase">Carbs</span>
-                  <span className="text-xs font-bold text-slate-700 block mt-0.5">{totalCarbs}g</span>
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block mt-0.5">{totalCarbs}g</span>
                 </div>
-                <div className="bg-slate-50/50 p-1.5 rounded-xl border border-slate-100/60">
+                <div className="bg-slate-50/50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-slate-100/60 dark:border-slate-700/60">
                   <span className="text-[8px] font-bold text-slate-400 block uppercase">Protein</span>
-                  <span className="text-xs font-bold text-slate-700 block mt-0.5">{totalProtein}g</span>
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block mt-0.5">{totalProtein}g</span>
                 </div>
-                <div className="bg-slate-50/50 p-1.5 rounded-xl border border-slate-100/60">
+                <div className="bg-slate-50/50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-slate-100/60 dark:border-slate-700/60">
                   <span className="text-[8px] font-bold text-slate-400 block uppercase">Fat</span>
-                  <span className="text-xs font-bold text-slate-700 block mt-0.5">{totalFat}g</span>
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block mt-0.5">{totalFat}g</span>
                 </div>
-                <div className="bg-slate-50/50 p-1.5 rounded-xl border border-slate-100/60">
+                <div className="bg-slate-50/50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-slate-100/60 dark:border-slate-700/60">
                   <span className="text-[8px] font-bold text-slate-400 block uppercase">Fiber</span>
-                  <span className="text-xs font-bold text-slate-700 block mt-0.5">{totalFiber}g</span>
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block mt-0.5">{totalFiber}g</span>
                 </div>
               </div>
             </div>
@@ -1258,14 +1285,14 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
 
           <div className="space-y-3.5">
             {logs.length === 0 ? (
-              <div className="text-center p-8 bg-white border border-slate-100 rounded-3xl text-xs font-semibold text-slate-400 shadow-[0_12px_24px_rgba(0,0,0,0.02)]">
+              <div className="text-center p-8 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl text-xs font-semibold text-slate-400 shadow-[0_12px_24px_rgba(0,0,0,0.02)]">
                 No foods logged for {new Date(selectedViewDate + 'T12:00:00').toLocaleDateString([], { dateStyle: 'medium' })}.
               </div>
             ) : (
               logs.map((log) => (
                 <div
                   key={log._id}
-                  className="bg-white p-4 rounded-3xl border border-slate-100 shadow-[0_12px_24px_rgba(0,0,0,0.02)] flex items-center justify-between transition-all hover:shadow-md"
+                  className="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-[0_12px_24px_rgba(0,0,0,0.02)] flex items-center justify-between transition-all hover:shadow-md"
                 >
                   <div className="flex items-center space-x-3.5 max-w-[82%]">
                     <div className={`p-3 border rounded-2xl shrink-0 ${getCategoryIconContainerClass(log.category)}`}>
@@ -1273,7 +1300,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                     </div>
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h4 className="text-sm font-bold text-slate-800 tracking-tight leading-tight">{log.name}</h4>
+                        <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 tracking-tight leading-tight">{log.name}</h4>
                         <span className="text-[9px] text-slate-400 font-extrabold bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
                           {new Date(log.loggedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
@@ -1905,7 +1932,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
             </div>
           </div>
         )}
-      </div>
+      </motion.div>
 
       {/* FATSECRET VARIANT PICKER MODAL */}
       {fatSecretVariants && (

@@ -1,0 +1,600 @@
+import React, { useState, useEffect } from 'react';
+import { Plus, Trash2, Edit, UserCheck, UserX } from 'lucide-react';
+
+interface AdminExtDashboardProps {
+  apiUrl: string;
+  token: string;
+  adminRole?: string;
+}
+
+export const AdminExtDashboard: React.FC<AdminExtDashboardProps> = ({ apiUrl, token }) => {
+  const [activeTab, setActiveTab] = useState<'doctors' | 'availability' | 'vendors' | 'orders' | 'reports'>('doctors');
+  
+  // Doctors Management
+  const [doctors, setDoctors] = useState<any[]>([]);
+  const [showDocModal, setShowDocModal] = useState(false);
+  const [docForm, setDocForm] = useState({ _id: '', name: '', email: '', password: '', specialty: '', description: '', avatar: '', isActive: true });
+  const [editingDocId, setEditingDocId] = useState<string | null>(null);
+
+  // Vendor Management
+  const [vendors, setVendors] = useState<any[]>([]);
+  const [showVendorModal, setShowVendorModal] = useState(false);
+  const [vendorForm, setVendorForm] = useState({ _id: '', name: '', email: '', password: '', isActive: true });
+  const [editingVendorId, setEditingVendorId] = useState<string | null>(null);
+
+  // Order Assignments
+  const [orders, setOrders] = useState<any[]>([]);
+  const [assigningOrderId, setAssigningOrderId] = useState<string | null>(null);
+  const [selectedVendorId, setSelectedVendorId] = useState('');
+
+  // Doctor Availability Slot Simulator
+  const [selectedDoctorId, setSelectedDoctorId] = useState('');
+  const [availForm] = useState({
+    availableDays: [1, 2, 3, 4, 5],
+    availableTimeSlots: [{ start: '09:00', end: '13:00' }, { start: '14:00', end: '17:00' }],
+    holidays: [] as string[],
+    leaves: [] as string[],
+    slotDuration: 30
+  });
+
+  // Reports
+  const [salesReport, setSalesReport] = useState({ totalSales: 0, totalOrders: 0, averageValue: 0 });
+  const [vendorStats, setVendorStats] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetchDoctors();
+    fetchVendors();
+    fetchOrders();
+  }, []);
+
+  const fetchDoctors = async () => {
+    try {
+      const res = await fetch(`${apiUrl}/admin/doctors`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setDoctors(data);
+        if (data.length > 0 && !selectedDoctorId) setSelectedDoctorId(data[0]._id);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleDocSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const method = editingDocId ? 'PUT' : 'POST';
+      const url = editingDocId ? `${apiUrl}/admin/doctors/${editingDocId}` : `${apiUrl}/admin/doctors`;
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(docForm)
+      });
+      if (res.ok) {
+        setShowDocModal(false);
+        fetchDoctors();
+      } else {
+        alert('Error saving doctor profile');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleDocDelete = async (id: string) => {
+    if (!window.confirm('Delete doctor?')) return;
+    try {
+      const res = await fetch(`${apiUrl}/admin/doctors/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) fetchDoctors();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fetchVendors = async () => {
+    try {
+      const res = await fetch(`${apiUrl}/admin/vendors`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) setVendors(await res.json());
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleVendorSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const method = editingVendorId ? 'PUT' : 'POST';
+      const url = editingVendorId ? `${apiUrl}/admin/vendors/${editingVendorId}` : `${apiUrl}/admin/vendors`;
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(vendorForm)
+      });
+      if (res.ok) {
+        setShowVendorModal(false);
+        fetchVendors();
+      } else {
+        alert('Error saving vendor account');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fetchOrders = async () => {
+    try {
+      const res = await fetch(`${apiUrl}/admin/orders/all`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) setOrders(await res.json());
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleAssignOrder = async () => {
+    if (!assigningOrderId || !selectedVendorId) return;
+    try {
+      const res = await fetch(`${apiUrl}/admin/orders/${assigningOrderId}/assign`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ vendorId: selectedVendorId })
+      });
+      if (res.ok) {
+        setAssigningOrderId(null);
+        setSelectedVendorId('');
+        fetchOrders();
+      } else {
+        alert('Error assigning order to vendor');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    if (orders.length > 0) {
+      generateReports();
+    }
+  }, [orders, vendors]);
+
+  const generateReports = () => {
+    const completedOrders = orders.filter(o => o.status === 'completed');
+    const totalSales = completedOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+    const totalOrders = completedOrders.length;
+    const averageValue = totalOrders > 0 ? totalSales / totalOrders : 0;
+    setSalesReport({ totalSales, totalOrders, averageValue });
+
+    // Vendor statistics
+    const statsMap: { [vendorName: string]: { totalAssigned: number, completed: number } } = {};
+    vendors.forEach(v => {
+      statsMap[v.name] = { totalAssigned: 0, completed: 0 };
+    });
+
+    orders.forEach(o => {
+      if (o.vendorId && o.vendorId.name) {
+        const vName = o.vendorId.name;
+        if (!statsMap[vName]) statsMap[vName] = { totalAssigned: 0, completed: 0 };
+        statsMap[vName].totalAssigned++;
+        if (o.deliveryStatus === 'delivered') statsMap[vName].completed++;
+      }
+    });
+
+    const vStats = Object.keys(statsMap).map(name => ({
+      name,
+      ...statsMap[name]
+    }));
+    setVendorStats(vStats);
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Tab Selector */}
+      <div className="flex gap-2 border-b border-slate-200 pb-2">
+        {(['doctors', 'availability', 'vendors', 'orders', 'reports'] as const).map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-4 py-2 text-sm font-bold capitalize transition-all rounded-lg ${activeTab === tab ? 'bg-primary text-white' : 'text-slate-500 hover:bg-slate-100'}`}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      {/* DOCTORS TABS */}
+      {activeTab === 'doctors' && (
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-xl font-bold text-slate-800 font-sans">Doctors Management</h2>
+              <p className="text-xs text-slate-500 mt-1">Register, edit and deactivate consultant doctors</p>
+            </div>
+            <button
+              onClick={() => {
+                setDocForm({ _id: '', name: '', email: '', password: '', specialty: '', description: '', avatar: '', isActive: true });
+                setEditingDocId(null);
+                setShowDocModal(true);
+              }}
+              className="bg-primary text-white font-bold text-sm px-4 py-2 rounded-xl flex items-center gap-2 shadow-soft"
+            >
+              <Plus className="h-4 w-4" /> Add Doctor
+            </button>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <table className="w-full text-left text-sm text-slate-600">
+              <thead className="bg-slate-50 text-xs uppercase font-bold text-slate-500">
+                <tr>
+                  <th className="px-6 py-4">Specialist</th>
+                  <th className="px-6 py-4">Specialty</th>
+                  <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
+                {doctors.map(doc => (
+                  <tr key={doc._id}>
+                    <td className="px-6 py-4 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 border border-slate-200">
+                        {doc.avatar ? <img src={doc.avatar} className="w-full h-full rounded-full object-cover" /> : doc.name[0]}
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-slate-800 text-sm">Dr. {doc.name}</h4>
+                        <p className="text-xs text-slate-400 font-normal">{doc.email}</p>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-xs font-bold text-indigo-600">{doc.specialty}</td>
+                    <td className="px-6 py-4">
+                      {doc.isActive ? (
+                        <span className="bg-green-50 text-success text-[10px] font-bold px-2 py-0.5 rounded-full border border-green-100 flex items-center gap-1 w-max">
+                          <UserCheck className="w-3.5 h-3.5" /> Active
+                        </span>
+                      ) : (
+                        <span className="bg-red-50 text-danger text-[10px] font-bold px-2 py-0.5 rounded-full border border-red-100 flex items-center gap-1 w-max">
+                          <UserX className="w-3.5 h-3.5" /> Suspended
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-right flex justify-end gap-2 mt-1">
+                      <button
+                        onClick={() => {
+                          setDocForm({ ...doc, password: '' });
+                          setEditingDocId(doc._id);
+                          setShowDocModal(true);
+                        }}
+                        className="p-2 text-blue-500 bg-blue-50 hover:bg-blue-100 rounded-xl"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDocDelete(doc._id)}
+                        className="p-2 text-red-500 bg-red-50 hover:bg-red-100 rounded-xl"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* AVAILABILITY SIMULATOR TABS */}
+      {activeTab === 'availability' && (
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 space-y-4">
+          <div>
+            <h2 className="text-xl font-bold text-slate-800">Dynamic Slot Simulator</h2>
+            <p className="text-xs text-slate-400 mt-1">Choose a doctor to simulate and preview generated slots.</p>
+          </div>
+
+          <div className="flex gap-4">
+            <div className="w-1/3">
+              <label className="block text-xs font-bold text-slate-500 mb-2">Select Doctor</label>
+              <select
+                value={selectedDoctorId}
+                onChange={(e) => setSelectedDoctorId(e.target.value)}
+                className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-400 font-bold bg-white"
+              >
+                {doctors.map(d => (
+                  <option key={d._id} value={d._id}>Dr. {d.name}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="flex-1 bg-slate-50 rounded-2xl p-4 border border-slate-100">
+              <h3 className="font-bold text-slate-800 text-sm mb-3">Simulation Parameter Defaults</h3>
+              <div className="grid grid-cols-2 gap-4 text-xs font-semibold text-slate-600">
+                <div>
+                  <span className="block text-[10px] text-slate-400 uppercase">Available Days</span>
+                  <span>Monday - Friday</span>
+                </div>
+                <div>
+                  <span className="block text-[10px] text-slate-400 uppercase">Default Working Hours</span>
+                  <span>09:00 - 13:00, 14:00 - 17:00</span>
+                </div>
+                <div>
+                  <span className="block text-[10px] text-slate-400 uppercase">Default Slot Duration</span>
+                  <span>{availForm.slotDuration} minutes</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* VENDORS TABS */}
+      {activeTab === 'vendors' && (
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-xl font-bold text-slate-800">Vendor Management</h2>
+              <p className="text-xs text-slate-500 mt-1">Logistics vendors for patient shop orders</p>
+            </div>
+            <button
+              onClick={() => {
+                setVendorForm({ _id: '', name: '', email: '', password: '', isActive: true });
+                setEditingVendorId(null);
+                setShowVendorModal(true);
+              }}
+              className="bg-primary text-white font-bold text-sm px-4 py-2 rounded-xl flex items-center gap-2 shadow-soft"
+            >
+              <Plus className="h-4 w-4" /> Add Vendor
+            </button>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <table className="w-full text-left text-sm text-slate-600">
+              <thead className="bg-slate-50 text-xs uppercase font-bold text-slate-500">
+                <tr>
+                  <th className="px-6 py-4">Vendor Partner</th>
+                  <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
+                {vendors.map(v => (
+                  <tr key={v._id}>
+                    <td className="px-6 py-4">
+                      <h4 className="font-bold text-slate-800 text-sm">{v.name}</h4>
+                      <p className="text-xs text-slate-400 font-normal">{v.email}</p>
+                    </td>
+                    <td className="px-6 py-4">
+                      {v.isActive ? (
+                        <span className="bg-green-50 text-success text-[10px] font-bold px-2 py-0.5 rounded-full border border-green-100 flex items-center gap-1 w-max">
+                          <UserCheck className="w-3.5 h-3.5" /> Active
+                        </span>
+                      ) : (
+                        <span className="bg-red-50 text-danger text-[10px] font-bold px-2 py-0.5 rounded-full border border-red-100 flex items-center gap-1 w-max">
+                          <UserX className="w-3.5 h-3.5" /> Suspended
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button
+                        onClick={() => {
+                          setVendorForm({ ...v, password: '' });
+                          setEditingVendorId(v._id);
+                          setShowVendorModal(true);
+                        }}
+                        className="p-2 text-blue-500 bg-blue-50 hover:bg-blue-100 rounded-xl"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ORDERS TABS */}
+      {activeTab === 'orders' && (
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-xl font-bold text-slate-800">Admin Order Routing</h2>
+            <p className="text-xs text-slate-500 mt-1">Assign orders to shipment partners and track real-time status</p>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <table className="w-full text-left text-sm text-slate-600">
+              <thead className="bg-slate-50 text-xs uppercase font-bold text-slate-500">
+                <tr>
+                  <th className="px-6 py-4">Order ID & Date</th>
+                  <th className="px-6 py-4">Value</th>
+                  <th className="px-6 py-4">Assigned Partner</th>
+                  <th className="px-6 py-4">Shipment status</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
+                {orders.map(o => (
+                  <tr key={o._id}>
+                    <td className="px-6 py-4">
+                      <h4 className="font-mono text-slate-800 text-xs">{o._id}</h4>
+                      <p className="text-[10px] text-slate-400 font-normal">{new Date(o.createdAt).toLocaleString()}</p>
+                    </td>
+                    <td className="px-6 py-4 font-bold text-slate-800">
+                      {o.currency === 'USD' ? '$' : '₹'}{o.totalAmount.toFixed(2)}
+                    </td>
+                    <td className="px-6 py-4 text-xs font-bold text-indigo-600">
+                      {o.vendorId?.name || <span className="text-amber-500">Unassigned</span>}
+                    </td>
+                    <td className="px-6 py-4 uppercase text-[10px] font-bold">
+                      {o.deliveryStatus || 'pending'}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      {!o.vendorId ? (
+                        <button
+                          onClick={() => setAssigningOrderId(o._id)}
+                          className="bg-primary text-white text-xs font-bold px-3 py-1.5 rounded-xl hover:bg-primary-dark shadow-sm"
+                        >
+                          Assign Vendor
+                        </button>
+                      ) : (
+                        <span className="text-xs text-slate-400">Assigned</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* SALES REPORTS TABS */}
+      {activeTab === 'reports' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-3 gap-4">
+            <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-5">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Total Sales Revenue</span>
+              <h2 className="text-3xl font-black text-slate-800">₹{salesReport.totalSales.toFixed(2)}</h2>
+            </div>
+            <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-5">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Completed Orders</span>
+              <h2 className="text-3xl font-black text-slate-800">{salesReport.totalOrders}</h2>
+            </div>
+            <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-5">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Average Order Value</span>
+              <h2 className="text-3xl font-black text-slate-800">₹{salesReport.averageValue.toFixed(2)}</h2>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-3xl border border-slate-200 p-6">
+            <h3 className="font-bold text-slate-800 text-sm mb-4">Vendor Fulfilment Performance</h3>
+            <table className="w-full text-left text-xs font-bold text-slate-500">
+              <thead>
+                <tr className="border-b border-slate-100 pb-2">
+                  <th className="pb-2">Vendor Name</th>
+                  <th className="pb-2">Total Orders Assigned</th>
+                  <th className="pb-2">Completed Deliveries</th>
+                </tr>
+              </thead>
+              <tbody className="text-slate-700">
+                {vendorStats.map((vs, idx) => (
+                  <tr key={idx} className="border-b border-slate-50/50">
+                    <td className="py-3">{vs.name}</td>
+                    <td className="py-3">{vs.totalAssigned}</td>
+                    <td className="py-3 text-success">{vs.completed}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* DOCTOR CREATE MODAL */}
+      {showDocModal && (
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md p-6 border border-slate-100 shadow-xl">
+            <h3 className="text-base font-bold text-slate-800 mb-4">{editingDocId ? 'Edit Doctor Profile' : 'Add Doctor'}</h3>
+            <form onSubmit={handleDocSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">Name</label>
+                <input required value={docForm.name} onChange={e => setDocForm({ ...docForm, name: e.target.value })} className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-400 font-semibold" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">Email</label>
+                <input required type="email" value={docForm.email} onChange={e => setDocForm({ ...docForm, email: e.target.value })} className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-400 font-semibold" />
+              </div>
+              {!editingDocId && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Password</label>
+                  <input required type="password" value={docForm.password} onChange={e => setDocForm({ ...docForm, password: e.target.value })} className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-400 font-semibold" />
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Specialty</label>
+                  <input required value={docForm.specialty} onChange={e => setDocForm({ ...docForm, specialty: e.target.value })} className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-400 font-semibold" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Avatar (URL)</label>
+                  <input value={docForm.avatar} onChange={e => setDocForm({ ...docForm, avatar: e.target.value })} className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-400 font-semibold" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">Profile Description</label>
+                <textarea required value={docForm.description} onChange={e => setDocForm({ ...docForm, description: e.target.value })} className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-400 font-semibold" rows={3}></textarea>
+              </div>
+              <div className="flex justify-end gap-2 mt-6">
+                <button type="button" onClick={() => setShowDocModal(false)} className="px-4 py-2 bg-slate-100 rounded-xl text-sm font-bold text-slate-600">Cancel</button>
+                <button type="submit" className="px-4 py-2 bg-primary rounded-xl text-sm font-bold text-white shadow-sm">Save Profile</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* VENDOR CREATE MODAL */}
+      {showVendorModal && (
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md p-6 border border-slate-100 shadow-xl">
+            <h3 className="text-base font-bold text-slate-800 mb-4">{editingVendorId ? 'Edit Vendor account' : 'Add Vendor'}</h3>
+            <form onSubmit={handleVendorSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">Vendor Partner Name</label>
+                <input required value={vendorForm.name} onChange={e => setVendorForm({ ...vendorForm, name: e.target.value })} className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-400 font-semibold" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">Email</label>
+                <input required type="email" value={vendorForm.email} onChange={e => setVendorForm({ ...vendorForm, email: e.target.value })} className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-400 font-semibold" />
+              </div>
+              {!editingVendorId && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Password</label>
+                  <input required type="password" value={vendorForm.password} onChange={e => setVendorForm({ ...vendorForm, password: e.target.value })} className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-400 font-semibold" />
+                </div>
+              )}
+              <div className="flex justify-end gap-2 mt-6">
+                <button type="button" onClick={() => setShowVendorModal(false)} className="px-4 py-2 bg-slate-100 rounded-xl text-sm font-bold text-slate-600">Cancel</button>
+                <button type="submit" className="px-4 py-2 bg-primary rounded-xl text-sm font-bold text-white shadow-sm">Save Vendor</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ASSIGN VENDOR ROUTING MODAL */}
+      {assigningOrderId && (
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl w-full max-w-sm p-6 border border-slate-100 shadow-xl">
+            <h3 className="text-base font-bold text-slate-800 mb-4">Route Order to Vendor</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-2">Select Logistics Partner</label>
+                <select
+                  value={selectedVendorId}
+                  onChange={(e) => setSelectedVendorId(e.target.value)}
+                  className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-400 font-bold bg-white"
+                >
+                  <option value="">-- Choose Vendor --</option>
+                  {vendors.map(v => (
+                    <option key={v._id} value={v._id}>{v.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex justify-end gap-2 mt-6">
+                <button type="button" onClick={() => setAssigningOrderId(null)} className="px-4 py-2 bg-slate-100 rounded-xl text-sm font-bold text-slate-600">Cancel</button>
+                <button onClick={handleAssignOrder} disabled={!selectedVendorId} className="px-4 py-2 bg-primary rounded-xl text-sm font-bold text-white shadow-sm disabled:opacity-50">Assign Route</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

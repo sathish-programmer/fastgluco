@@ -11,6 +11,8 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+export const generateEmailTemplatePublic = (title: string, contentHTML: string, appName: string = 'Mito_Reboot', appTagline: string = '') => generateEmailTemplate(title, contentHTML, appName, appTagline);
+
 const generateEmailTemplate = (title: string, contentHTML: string, appName: string = 'Mito_Reboot', appTagline: string = '') => {
   return `
 <!DOCTYPE html>
@@ -48,6 +50,22 @@ export class EmailService {
       appName: config?.appName || 'Mito_Reboot',
       appTagline: config?.appTagline || 'The circadian fasting app'
     };
+  }
+
+  /** Public alias used by cron jobs */
+  public static async getBrandingPublic() {
+    return EmailService.getBranding();
+  }
+
+  /** Send an arbitrary HTML email — used by cron reminders */
+  public static async sendRawEmail(to: string, subject: string, html: string, from?: string) {
+    const { appName } = await EmailService.getBranding();
+    await transporter.sendMail({
+      from: from || `"${appName}" <no-reply@mitoreboot.com>`,
+      to,
+      subject,
+      html
+    });
   }
 
   /**
@@ -387,5 +405,136 @@ export class EmailService {
       <p>If you believe this was a mistake or have any questions, please contact our support team.</p>
     `, appName, appTagline);
     try { await transporter.sendMail({ from: `"${appName} Support" <support@mitoreboot.com>`, to: email, subject: `${appName} Profile Update Notice`, html }); } catch (err) { console.error(err); }
+  }
+
+  /**
+   * Send Appointment Notifications
+   */
+  public static async sendAppointmentEmail(type: 'booked' | 'confirmed' | 'completed' | 'prescription' | 'cancelled', appointmentId: string) {
+    const { appName, appTagline } = await EmailService.getBranding();
+    const { Appointment } = require('../models/Appointment');
+    
+    const appt = await Appointment.findById(appointmentId)
+      .populate('doctorId')
+      .populate('userId');
+
+    if (!appt || !appt.userId?.email) return;
+
+    let subject = '';
+    let body = '';
+
+    if (type === 'booked') {
+      subject = `Appointment Booked - Pending Confirmation`;
+      body = `<p>Hi ${appt.userId.name},</p>
+              <p>Your appointment request with <strong>Dr. ${appt.doctorId.name}</strong> for ${appt.date} at ${appt.time} has been received and is pending confirmation.</p>
+              <p>Reason: ${appt.reason}</p>`;
+    } else if (type === 'confirmed') {
+      subject = `Appointment Confirmed - Google Meet Link`;
+      body = `<p>Hi ${appt.userId.name},</p>
+              <p>Your appointment with <strong>Dr. ${appt.doctorId.name}</strong> is confirmed!</p>
+              <p><strong>Date:</strong> ${appt.date}</p>
+              <p><strong>Time:</strong> ${appt.time}</p>
+              <p><strong>Join Meeting:</strong> <a href="${appt.meetingLink}">${appt.meetingLink}</a></p>`;
+    } else if (type === 'completed') {
+      subject = `Appointment Completed`;
+      body = `<p>Hi ${appt.userId.name},</p>
+              <p>Your consultation with <strong>Dr. ${appt.doctorId.name}</strong> on ${appt.date} has been marked as completed.</p>
+              <p>Notes: ${appt.notes || 'None provided.'}</p>`;
+    } else if (type === 'prescription') {
+      subject = `Prescription Shared`;
+      body = `<p>Hi ${appt.userId.name},</p>
+              <p>Dr. ${appt.doctorId.name} has shared a prescription for your consultation.</p>
+              <p><strong>Download/View:</strong> <a href="${appt.prescriptionUrl}">${appt.prescriptionUrl}</a></p>`;
+    } else if (type === 'cancelled') {
+      subject = `Appointment Request Declined`;
+      body = `<p>Hi ${appt.userId.name},</p>
+              <p>Unfortunately, your appointment request with <strong>Dr. ${appt.doctorId.name}</strong> for <strong>${appt.date} at ${appt.time}</strong> was <strong>not accepted</strong> by the doctor.</p>
+              <p>Please book a different time slot that works better, or contact support if you need assistance.</p>`;
+    }
+
+    const html = generateEmailTemplate(subject, body, appName, appTagline);
+    
+    // Send to Patient
+    try {
+      await transporter.sendMail({
+        from: `"${appName} Appointments" <appointments@mitoreboot.com>`,
+        to: appt.userId.email,
+        subject: `[${appName}] ${subject}`,
+        html
+      });
+    } catch (err) {
+      console.error(err);
+    }
+
+    // Send to Doctor (if confirmed)
+    if (type === 'confirmed' && appt.doctorId?.email) {
+      const docHtml = generateEmailTemplate('Confirmed Appointment with Patient', `
+        <p>Hi Dr. ${appt.doctorId.name},</p>
+        <p>You have a confirmed appointment with patient <strong>${appt.userId.name}</strong>.</p>
+        <p><strong>Date:</strong> ${appt.date}</p>
+        <p><strong>Time:</strong> ${appt.time}</p>
+        <p><strong>Meeting Link:</strong> <a href="${appt.meetingLink}">${appt.meetingLink}</a></p>
+      `, appName, appTagline);
+
+      try {
+        await transporter.sendMail({
+          from: `"${appName} Appointments" <appointments@mitoreboot.com>`,
+          to: appt.doctorId.email,
+          subject: `[${appName}] Confirmed Appointment: ${appt.userId.name}`,
+          html: docHtml
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  }
+
+  /**
+   * Send Shop Order Notifications
+   */
+  public static async sendOrderEmail(type: 'placed' | 'assigned' | 'statusUpdated' | 'delivered', orderId: string) {
+    const { appName, appTagline } = await EmailService.getBranding();
+    const ShopOrder = require('../models/ShopOrder').default;
+
+    const order = await ShopOrder.findById(orderId)
+      .populate('userId')
+      .populate('vendorId');
+
+    if (!order || !order.userId?.email) return;
+
+    let subject = '';
+    let body = '';
+
+    if (type === 'placed') {
+      subject = `Order Placed Successfully`;
+      body = `<p>Hi ${order.userId.name},</p>
+              <p>Your order of total amount <strong>${order.currency === 'USD' ? '$' : '₹'}${order.totalAmount}</strong> has been successfully placed.</p>
+              <p>Order ID: ${order._id}</p>`;
+    } else if (type === 'assigned') {
+      subject = `Order Assigned to Vendor`;
+      body = `<p>Hi ${order.userId.name},</p>
+              <p>Your order has been assigned to our vendor <strong>${order.vendorId?.name || 'Local Vendor'}</strong> and is being processed.</p>`;
+    } else if (type === 'statusUpdated') {
+      subject = `Order Status Updated`;
+      body = `<p>Hi ${order.userId.name},</p>
+              <p>Your order status has been updated to: <strong>${order.deliveryStatus || 'Processing'}</strong>.</p>`;
+    } else if (type === 'delivered') {
+      subject = `Order Delivered`;
+      body = `<p>Hi ${order.userId.name},</p>
+              <p>Your order has been successfully delivered! Thank you for shopping with us.</p>`;
+    }
+
+    const html = generateEmailTemplate(subject, body, appName, appTagline);
+
+    try {
+      await transporter.sendMail({
+        from: `"${appName} Shop" <shop@mitoreboot.com>`,
+        to: order.userId.email,
+        subject: `[${appName}] ${subject}`,
+        html
+      });
+    } catch (err) {
+      console.error(err);
+    }
   }
 }

@@ -54,7 +54,9 @@ import {
 } from 'recharts';
 import { AdminShopProducts } from './components/AdminShopProducts';
 import { AdminCancerTests } from './components/AdminCancerTests';
-import { AdminWorkflow } from './components/AdminWorkflow';
+import { AdminExtDashboard } from './components/AdminExtDashboard';
+import { DoctorPortal } from './components/DoctorPortal';
+import { VendorPortal } from './components/VendorPortal';
 
 const AdminPanelContent: React.FC = () => {
   const { admin, token, isAuthenticated, login, register, logout, error, clearError, apiUrl } = useAdminAuth();
@@ -68,7 +70,7 @@ const AdminPanelContent: React.FC = () => {
   const [isRegistering, setIsRegistering] = useState(false);
   const [regName, setRegName] = useState('');
   const [regEmail, setRegEmail] = useState('');
-  const [regRole, setRegRole] = useState<'Admin' | 'Editor'>('Admin');
+  const [regRole, setRegRole] = useState<'Admin' | 'Editor' | 'Doctor'>('Admin');
   const [regPassword, setRegPassword] = useState('');
   const [regConfirmPassword, setRegConfirmPassword] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -81,7 +83,7 @@ const AdminPanelContent: React.FC = () => {
   // Active view: 'dashboard' | 'users' | 'foods' | 'videos' | 'guides' | 'notifications'
   const [activeView, setActiveView] = useState<string>('dashboard');
   const [pendingEdits, setPendingEdits] = useState<any[]>([]);
-  const [nonCancerTab, setNonCancerTab] = useState<'overview' | 'shop' | 'screening' | 'ai'>('overview');
+  const [nonCancerTab, setNonCancerTab] = useState<'overview' | 'shop' | 'screening' | 'clinical'>('overview');
 
   // API Data states
   const [stats, setStats] = useState<any>(null);
@@ -300,7 +302,7 @@ const AdminPanelContent: React.FC = () => {
 
   // Fetch data depending on active view
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && admin && admin.role !== 'Doctor' && admin.role !== 'Vendor') {
       if (activeView === 'dashboard') { fetchStats(); fetchPaymentStats(); }
       if (activeView === 'users') fetchUsers(1);
       if (activeView === 'nonCancerSettings') fetchNonCancerUsers(1);
@@ -326,13 +328,13 @@ const AdminPanelContent: React.FC = () => {
         fetchPaymentConfig();
       }
     }
-  }, [isAuthenticated, activeView, searchQuery]);
+  }, [isAuthenticated, admin, activeView, searchQuery]);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && admin && admin.role !== 'Doctor' && admin.role !== 'Vendor') {
       fetchPaymentConfig();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, admin]);
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1443,6 +1445,7 @@ const AdminPanelContent: React.FC = () => {
                   >
                     <option value="Admin">Admin (Full Control)</option>
                     <option value="Editor">Editor (Limited Control)</option>
+                    <option value="Doctor">Doctor Specialist</option>
                   </select>
                 </div>
 
@@ -1561,6 +1564,14 @@ const AdminPanelContent: React.FC = () => {
 
   // COLORS FOR CHART LEGEND
   const PIE_COLORS = ['#2563EB', '#14B8A6', '#F97316', '#EF4444', '#8B5CF6'];
+
+  if (admin && admin.role === ('Doctor' as any)) {
+    return <DoctorPortal apiUrl={apiUrl} token={token || ''} onLogout={logout} />;
+  }
+
+  if (admin && admin.role === ('Vendor' as any)) {
+    return <VendorPortal apiUrl={apiUrl} token={token || ''} onLogout={logout} />;
+  }
 
   return (
     <div className="min-h-screen flex bg-slate-50">
@@ -2063,7 +2074,7 @@ const AdminPanelContent: React.FC = () => {
                   { key: 'overview', label: '📊 Overview & Users' },
                   { key: 'shop', label: '🛒 Safer Products (Shop)' },
                   { key: 'screening', label: '🩺 Cancer Screening' },
-                  { key: 'ai', label: '🤖 Intimacy AI Chat' }
+                  { key: 'clinical', label: '🩺 Doctor & Vendor Portal' }
                 ].map((tab) => (
                   <button
                     key={tab.key}
@@ -2199,7 +2210,7 @@ const AdminPanelContent: React.FC = () => {
                   </div>
                 )}
                 {nonCancerTab === 'screening' && <AdminCancerTests apiUrl={apiUrl} token={token} />}
-                {nonCancerTab === 'ai' && <AdminWorkflow apiUrl={apiUrl} token={token} />}
+                {nonCancerTab === 'clinical' && <AdminExtDashboard apiUrl={apiUrl} token={token} />}
               </div>
             </div>
           </div>

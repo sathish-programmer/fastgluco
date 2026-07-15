@@ -8,6 +8,7 @@ import app from './app';
 import { connectDB } from './config/db';
 import cron from 'node-cron';
 import { SubscriptionCron } from './cron/subscriptionCron';
+import { AppointmentReminderCron } from './cron/appointmentReminderCron';
 import { LibreSyncService } from './services/libreSyncService';
 import { FoodSyncService } from './services/foodSyncService';
 
@@ -52,6 +53,12 @@ const bootstrap = async () => {
           console.error('LibreLinkUp background sync failed:', err);
         }
       });
+      // Appointment reminder cron — runs every minute
+      // Sends email reminders 30 mins and 10 mins before confirmed appointments
+      cron.schedule('* * * * *', async () => {
+        await AppointmentReminderCron.sendUpcomingReminders();
+      });
+
       console.log('Cron jobs scheduled successfully.');
 
     });

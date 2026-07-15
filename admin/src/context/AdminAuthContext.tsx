@@ -4,7 +4,7 @@ export interface AdminProfile {
   id: string;
   name: string;
   email: string;
-  role: 'SuperAdmin' | 'Admin' | 'Editor';
+  role: 'SuperAdmin' | 'Admin' | 'Editor' | 'Doctor' | 'Vendor';
 }
 
 interface AdminAuthContextType {
@@ -14,7 +14,7 @@ interface AdminAuthContextType {
   isLoading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<boolean>;
-  register: (name: string, email: string, role: 'Admin' | 'Editor', password: string) => Promise<boolean>;
+  register: (name: string, email: string, role: 'Admin' | 'Editor' | 'Doctor', password: string) => Promise<boolean>;
   logout: () => void;
   clearError: () => void;
   apiUrl: string;
@@ -47,6 +47,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setIsLoading(true);
     setError(null);
     try {
+      // 1. Try standard Admin Login
       const response = await fetch(`${apiUrl}/admin/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -55,27 +56,75 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
       const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Admin login failed.');
+      if (response.ok) {
+        localStorage.setItem('fastgluco_admin_token', data.token);
+        localStorage.setItem('fastgluco_admin_profile', JSON.stringify(data.admin));
+        setToken(data.token);
+        setAdmin(data.admin);
+        return true;
       }
 
-      localStorage.setItem('fastgluco_admin_token', data.token);
-      localStorage.setItem('fastgluco_admin_profile', JSON.stringify(data.admin));
-      setToken(data.token);
-      setAdmin(data.admin);
-      return true;
+      // 2. Try Doctor Portal Login
+      const docRes = await fetch(`${apiUrl}/doctor/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      if (docRes.ok) {
+        const docData = await docRes.json();
+        const profile = { id: docData.doctor.id, name: docData.doctor.name, email: docData.doctor.email, role: 'Doctor' as any };
+        localStorage.setItem('fastgluco_admin_token', docData.token);
+        localStorage.setItem('fastgluco_admin_profile', JSON.stringify(profile));
+        setToken(docData.token);
+        setAdmin(profile);
+        return true;
+      }
+
+      // 3. Try Vendor Portal Login
+      const venRes = await fetch(`${apiUrl}/vendor/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      if (venRes.ok) {
+        const venData = await venRes.json();
+        const profile = { id: venData.vendor.id, name: venData.vendor.name, email: venData.vendor.email, role: 'Vendor' as any };
+        localStorage.setItem('fastgluco_admin_token', venData.token);
+        localStorage.setItem('fastgluco_admin_profile', JSON.stringify(profile));
+        setToken(venData.token);
+        setAdmin(profile);
+        return true;
+      }
+
+      throw new Error(data.message || 'Login failed.');
     } catch (err: any) {
-      setError(err.message || 'An error occurred during admin login.');
+      setError(err.message || 'An error occurred during login.');
       return false;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const register = async (name: string, email: string, role: 'Admin' | 'Editor', password: string): Promise<boolean> => {
+  const register = async (name: string, email: string, role: 'Admin' | 'Editor' | 'Doctor', password: string): Promise<boolean> => {
     setIsLoading(true);
     setError(null);
     try {
+      if (role === 'Doctor') {
+        const response = await fetch(`${apiUrl}/doctor/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password, specialty: 'General Practice', description: 'Consultant Specialist' })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Doctor registration failed.');
+        const profile = { id: data.doctor.id, name: data.doctor.name, email: data.doctor.email, role: 'Doctor' as any };
+        localStorage.setItem('fastgluco_admin_token', data.token);
+        localStorage.setItem('fastgluco_admin_profile', JSON.stringify(profile));
+        setToken(data.token);
+        setAdmin(profile);
+        return true;
+      }
+
       const response = await fetch(`${apiUrl}/admin/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -94,7 +143,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setAdmin(data.admin);
       return true;
     } catch (err: any) {
-      setError(err.message || 'An error occurred during admin registration.');
+      setError(err.message || 'An error occurred during registration.');
       return false;
     } finally {
       setIsLoading(false);

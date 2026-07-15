@@ -24,6 +24,7 @@ import * as HabitController from '../controllers/habitController';
 import { authenticateToken, requireRole } from '../middlewares/authMiddleware';
 import { requireSubscriptionFeature } from '../middlewares/subscriptionMiddleware';
 import { PaymentGatewayConfig } from '../models/PaymentGatewayConfig';
+import { Appointment } from '../models/Appointment';
 import * as ShopController from '../controllers/shopController';
 import * as ScreeningController from '../controllers/screeningController';
 
@@ -339,6 +340,10 @@ router.post('/admin/shop-products', ShopController.createAdminProduct);
 router.put('/admin/shop-products/:id', ShopController.updateAdminProduct);
 router.delete('/admin/shop-products/:id', ShopController.deleteAdminProduct);
 
+import { DoctorController } from '../controllers/doctorController';
+import { AppointmentController } from '../controllers/appointmentController';
+import { VendorController } from '../controllers/vendorController';
+
 router.get('/admin/screening-tests', ScreeningController.getAdminScreeningTests);
 router.post('/admin/screening-tests', ScreeningController.createAdminScreeningTest);
 router.put('/admin/screening-tests/:id', ScreeningController.updateAdminScreeningTest);
@@ -346,5 +351,88 @@ router.delete('/admin/screening-tests/:id', ScreeningController.deleteAdminScree
 
 router.get('/admin/workflow-config/:type', ScreeningController.getAdminWorkflowConfig);
 router.put('/admin/workflow-config/:type', ScreeningController.updateAdminWorkflowConfig);
+
+// --- DOCTOR MANAGEMENT FOR ADMIN ---
+router.get('/admin/doctors', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), DoctorController.adminGetDoctors);
+router.post('/admin/doctors', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), DoctorController.adminAddDoctor);
+router.put('/admin/doctors/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), DoctorController.adminEditDoctor);
+router.delete('/admin/doctors/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), DoctorController.adminDeleteDoctor);
+
+// --- VENDOR MANAGEMENT FOR ADMIN ---
+router.get('/admin/vendors', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminGetVendors);
+router.post('/admin/vendors', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminAddVendor);
+router.put('/admin/vendors/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminEditVendor);
+router.post('/admin/orders/:orderId/assign', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminAssignOrder);
+
+// Admin-specific confirmation for appointments
+router.post('/admin/appointments/:appointmentId/confirm', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), AppointmentController.adminConfirmAppointment);
+
+// One-time fix: regenerate valid Google Meet links for all confirmed appointments with broken mock URLs
+router.post('/admin/appointments/fix-meeting-links', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), async (req, res) => {
+  try {
+    const chars = 'abcdefghijklmnopqrstuvwxyz';
+    const rand = (len: number) =>
+      Array.from({ length: len }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    const genCode = () => `${rand(3)}-${rand(4)}-${rand(3)}`;
+
+    const broken = await Appointment.find({
+      status: 'confirmed',
+      meetingLink: { $regex: /mock-appointment/ }
+    });
+    for (const appt of broken) {
+      appt.meetingLink = `https://meet.google.com/${genCode()}`;
+      await appt.save();
+    }
+    res.json({ fixed: broken.length, message: `${broken.length} appointment(s) updated with valid Meet links.` });
+  } catch (err: any) {
+    res.status(500).json({ message: 'Error fixing meeting links' });
+  }
+});
+
+// Extra order retrieval endpoints for Admin
+router.get('/admin/orders/all', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), async (req, res) => {
+  try {
+    const ShopOrder = require('../models/ShopOrder').default;
+    const orders = await ShopOrder.find().populate('userId').populate('vendorId').sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching all orders' });
+  }
+});
+
+// --- DOCTOR SIGN IN & PORTAL ROUTES ---
+router.post('/doctor/auth/login', DoctorController.doctorLogin);
+router.post('/doctor/auth/register', DoctorController.adminAddDoctor);
+router.get('/doctor/availability', authenticateToken, requireRole(['Doctor']), DoctorController.getDoctorAvailability);
+router.put('/doctor/availability', authenticateToken, requireRole(['Doctor']), DoctorController.updateDoctorAvailability);
+router.get('/doctor/appointments', authenticateToken, requireRole(['Doctor']), DoctorController.getDoctorAppointments);
+router.post('/doctor/appointments/:appointmentId/accept', authenticateToken, requireRole(['Doctor']), AppointmentController.adminConfirmAppointment);
+router.post('/doctor/appointments/:appointmentId/reject', authenticateToken, requireRole(['Doctor']), AppointmentController.doctorRejectAppointment);
+router.put('/doctor/appointments/:appointmentId/consultation', authenticateToken, requireRole(['Doctor']), AppointmentController.updateConsultation);
+
+// --- VENDOR SIGN IN & PORTAL ROUTES ---
+router.post('/vendor/auth/login', VendorController.vendorLogin);
+router.get('/vendor/orders', authenticateToken, requireRole(['Vendor']), VendorController.getVendorOrders);
+router.put('/vendor/orders/:orderId/status', authenticateToken, requireRole(['Vendor']), VendorController.updateOrderStatus);
+
+// --- PATIENT BOOKING ROUTES ---
+router.get('/patient/doctors', authenticateToken, requireRole(['User']), AppointmentController.getAvailableDoctors);
+router.get('/patient/doctors/:doctorId/slots', authenticateToken, requireRole(['User']), AppointmentController.getDoctorSlots);
+router.post('/patient/appointments', authenticateToken, requireRole(['User']), AppointmentController.bookAppointment);
+router.get('/patient/appointments', authenticateToken, requireRole(['User']), AppointmentController.getPatientAppointments);
+router.post('/patient/feedback', authenticateToken, requireRole(['User']), AppointmentController.addFeedback);
+router.get('/patient/doctors/:doctorId/feedback', authenticateToken, requireRole(['User']), AppointmentController.getDoctorFeedback);
+
+// Patient retrieval of own orders (Shop history tracker)
+router.get('/patient/orders', authenticateToken, requireRole(['User']), async (req, res) => {
+  try {
+    const userId = (req as any).user.id;
+    const ShopOrder = require('../models/ShopOrder').default;
+    const orders = await ShopOrder.find({ userId }).populate('vendorId').sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching patient orders.' });
+  }
+});
 
 export default router;

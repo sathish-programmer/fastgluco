@@ -16,6 +16,8 @@ export interface IShopOrder extends Document {
   razorpayOrderId?: string;
   razorpayPaymentId?: string;
   razorpaySignature?: string;
+  vendorId?: mongoose.Types.ObjectId;
+  deliveryStatus?: 'pending' | 'assigned' | 'accepted' | 'packed' | 'shipped' | 'delivered' | 'cancelled';
   status: 'pending' | 'completed' | 'failed';
   createdAt: Date;
   updatedAt: Date;
@@ -23,6 +25,7 @@ export interface IShopOrder extends Document {
 
 const ShopOrderSchema: Schema = new Schema({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  vendorId: { type: Schema.Types.ObjectId, ref: 'Vendor' },
   products: [{
     productId: { type: Schema.Types.ObjectId, ref: 'ShopProduct', required: true },
     name: { type: String, required: true },
@@ -37,6 +40,7 @@ const ShopOrderSchema: Schema = new Schema({
   razorpayOrderId: { type: String },
   razorpayPaymentId: { type: String },
   razorpaySignature: { type: String },
+  deliveryStatus: { type: String, enum: ['pending', 'assigned', 'accepted', 'packed', 'shipped', 'delivered', 'cancelled'], default: 'pending' },
   status: { type: String, enum: ['pending', 'completed', 'failed'], default: 'pending' }
 }, { timestamps: true });
 

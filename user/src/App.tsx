@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { Login } from './pages/Login';
 import { RecommendedFoodsScreen } from './screens/RecommendedFoodsScreen';
 import { Register } from './pages/Register';
@@ -15,6 +16,8 @@ import { Subscription } from './pages/Subscription';
 import { Legal } from './pages/Legal';
 import { Educational } from './pages/Educational';
 import { Coaching } from './pages/Coaching';
+import { BookAppointmentScreen } from './screens/Appointment/BookAppointmentScreen';
+import { ShopOrdersHistoryScreen } from './screens/Shop/ShopOrdersHistoryScreen';
 import {
   Home,
   FileText,
@@ -22,7 +25,10 @@ import {
   Activity,
   UserCircle2,
   Heart,
-  BookOpen
+  BookOpen,
+  Moon,
+  Sun,
+  Calendar
 } from 'lucide-react';
 import { GlobalAICoachPopup } from './components/GlobalAICoachPopup';
 import { NotificationBell } from './components/NotificationBell';
@@ -32,6 +38,7 @@ import { DeleteAccount } from './pages/DeleteAccount';
 
 const MainAppContent: React.FC = () => {
   const { isAuthenticated, isLoading, token, apiUrl, logout, branding, user } = useAuth();
+  const { setTheme, isDark } = useTheme();
 
   // Navigation tabs: 'Home' | 'Reports' | 'Food Log' | 'Analysis' | 'Profile'
   const [activeTab, setActiveTab] = useState<string>('Home');
@@ -187,7 +194,7 @@ const MainAppContent: React.FC = () => {
   }
 
   return (
-    <div className="bg-white h-full flex flex-col justify-between relative">
+    <div className="bg-slate-50 dark:bg-slate-950 h-full flex flex-col justify-between relative transition-colors duration-300">
       {showOnboarding && (
         <OnboardingTour
           onComplete={() => {
@@ -197,7 +204,7 @@ const MainAppContent: React.FC = () => {
         />
       )}
       {/* Dynamic Header with safe area padding for mobile notches */}
-      <header className="sticky top-0 bg-white/95 backdrop-blur-md border-b border-slate-100 z-10 px-4 pt-[calc(env(safe-area-inset-top)+12px)] pb-3 max-w-5xl w-full mx-auto flex items-center justify-between">
+      <header className="sticky top-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 z-10 px-4 pt-[calc(env(safe-area-inset-top)+12px)] pb-3 max-w-5xl w-full mx-auto flex items-center justify-between transition-colors duration-300">
         <div className="flex items-center space-x-2">
           {branding.appLogoUrl ? (
             <img src={branding.appLogoUrl} alt={branding.appName} className="h-6 w-auto object-contain max-w-[40px]" />
@@ -219,6 +226,12 @@ const MainAppContent: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center space-x-2">
+          <button
+            onClick={() => setTheme(isDark ? 'light' : 'dark')}
+            className="p-2 rounded-xl text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors"
+          >
+            {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </button>
           <NotificationBell />
         </div>
       </header>
@@ -238,6 +251,8 @@ const MainAppContent: React.FC = () => {
         {activeTab === 'Subscription' && <Subscription onBack={() => setActiveTab('Dashboard')} />}
         {activeTab === 'Educational' && <Educational />}
         {activeTab === 'Coaching' && <Coaching features={planFeatures} />}
+        {activeTab === 'Book Appointment' && <BookAppointmentScreen />}
+        {activeTab === 'Shop Orders' && <ShopOrdersHistoryScreen />}
         {['Terms of Service', 'Privacy Policy', 'Data Deletion', 'Disclaimer', 'Refund Policy', 'Contact Us'].includes(activeTab) && (
           <Legal type={activeTab as any} onBack={() => setActiveTab('Profile')} />
         )}
@@ -246,7 +261,7 @@ const MainAppContent: React.FC = () => {
       <GlobalAICoachPopup />
 
       {/* Accessability-first Bottom Tab Navigation Menu with safe area padding */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-10 pt-2 pb-[calc(env(safe-area-inset-bottom)+8px)] shadow-lg">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 z-10 pt-2 pb-[calc(env(safe-area-inset-bottom)+8px)] shadow-[0_-10px_40px_-10px_rgba(0,0,0,0.05)] dark:shadow-[0_-10px_40px_-10px_rgba(0,0,0,0.5)] transition-colors duration-300">
         <div className="max-w-5xl mx-auto flex justify-around items-center">
 
           {/* Home Tab */}
@@ -302,6 +317,28 @@ const MainAppContent: React.FC = () => {
             </button>
           )}
 
+          {/* Book Appointment Tab */}
+          {user?.cancerJourney === 'PREVENTION' && (
+            <button
+              onClick={() => setActiveTab('Book Appointment')}
+              className={`flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Book Appointment' ? 'text-primary' : 'text-slate-400'}`}
+            >
+              <Calendar className="h-5.5 w-5.5" />
+              <span className="text-[9px] font-extrabold uppercase tracking-wide">Book Appointment</span>
+            </button>
+          )}
+
+          {/* Shop Orders Tab — Non-cancer patients only */}
+          {user?.cancerJourney === 'PREVENTION' && (
+            <button
+              onClick={() => setActiveTab('Shop Orders')}
+              className={`flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Shop Orders' ? 'text-primary' : 'text-slate-400'}`}
+            >
+              <Activity className="h-5.5 w-5.5" />
+              <span className="text-[9px] font-extrabold uppercase tracking-wide">My Orders</span>
+            </button>
+          )}
+
           {/* Profile Tab */}
           <button
             onClick={() => setActiveTab('Profile')}
@@ -325,10 +362,12 @@ export default function App() {
   }
 
   return (
-    <AuthProvider>
-      <ToastProvider>
-        <MainAppContent />
-      </ToastProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <ToastProvider>
+          <MainAppContent />
+        </ToastProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

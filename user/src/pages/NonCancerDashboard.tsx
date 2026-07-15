@@ -19,7 +19,9 @@ import {
   Palette,
   ShieldCheck,
   Microscope,
-  ArrowRight
+  ArrowRight,
+  Calendar,
+  X
 } from 'lucide-react';
 import { StressLogScreen } from '../screens/HabitScreens/StressLogScreen';
 import { SmokingLogScreen } from '../screens/HabitScreens/SmokingLogScreen';
@@ -38,25 +40,109 @@ interface NonCancerDashboardProps {
   onNavigateToTab: (tab: string) => void;
 }
 
-export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = () => {
+export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNavigateToTab }) => {
   // Navigation State for Habit Screens
   const [activeScreen, setActiveScreen] = useState<string | null>(null);
   const [habits, setHabits] = useState<HabitLog[]>([]);
   const { apiUrl, token } = useAuth();
+  const [showRecommendation, setShowRecommendation] = useState<boolean>(false);
+  const [recommendationReason, setRecommendationReason] = useState<string>('');
+
+  const [upcomingAppt, setUpcomingAppt] = useState<any | null>(null);
+  const [isApptDismissed, setIsApptDismissed] = useState<boolean>(false);
 
   useEffect(() => {
-    const fetchHabits = async () => {
+    const fetchHabitsAndAppointments = async () => {
       try {
         const logs = await HabitsService.getRecentHabits(apiUrl, token, 'all', 30);
         setHabits(logs);
+        checkHealthDanger(logs);
       } catch (err) {
         console.error('Failed to load habits', err);
       }
+
+      // Fetch upcoming confirmed appointments
+      if (token) {
+        try {
+          const res = await fetch(`${apiUrl}/patient/appointments`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            // Find first confirmed appointment in the future
+            const confirmedFuture = data
+              .filter((a: any) => a.status === 'confirmed')
+              .sort((a: any, b: any) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime())[0];
+            
+            if (confirmedFuture) {
+              const dismissedId = localStorage.getItem(`dismissed_appt_${confirmedFuture._id}`);
+              setIsApptDismissed(!!dismissedId);
+            }
+            setUpcomingAppt(confirmedFuture || null);
+          }
+        } catch (e) {
+          console.error('Failed to load appointments', e);
+        }
+      }
     };
     if (activeScreen === null) {
-      fetchHabits();
+      fetchHabitsAndAppointments();
     }
   }, [activeScreen, apiUrl, token]);
+
+  const checkHealthDanger = (logs: HabitLog[]) => {
+    // Group logs by type and date
+    const dailyLogs: { [dateStr: string]: HabitLog[] } = {};
+    logs.forEach(l => {
+      const dateStr = new Date(l.timestamp).toDateString();
+      if (!dailyLogs[dateStr]) dailyLogs[dateStr] = [];
+      dailyLogs[dateStr].push(l);
+    });
+
+    const last3Days: string[] = [];
+    for (let i = 0; i < 3; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      last3Days.push(d.toDateString());
+    }
+
+    const checkDangerForType = (type: string, isDangerFn: (val: any) => boolean): boolean => {
+      return last3Days.every(dateStr => {
+        const dayLogs = dailyLogs[dateStr] || [];
+        const typeLogs = dayLogs.filter(l => l.type === type);
+        if (typeLogs.length === 0) return false;
+        return typeLogs.some(l => isDangerFn(l.value));
+      });
+    };
+
+    // Danger criteria:
+    // Stress: 'stressed' or 'maxed'
+    if (checkDangerForType('Stress', (val) => val.faceId === 'stressed' || val.faceId === 'maxed')) {
+      setRecommendationReason('High Stress');
+      setShowRecommendation(true);
+      return;
+    }
+    // Sleep: hours <= 5
+    if (checkDangerForType('Sleep', (val) => val.hours <= 5)) {
+      setRecommendationReason('Sleep Issues');
+      setShowRecommendation(true);
+      return;
+    }
+    // Smoking: count >= 5
+    if (checkDangerForType('Smoking', (val) => val.count >= 5)) {
+      setRecommendationReason('Smoking');
+      setShowRecommendation(true);
+      return;
+    }
+    // Sex Health: happy === false
+    if (checkDangerForType('Intimacy', (val) => val.happy === false)) {
+      setRecommendationReason('Sex Health');
+      setShowRecommendation(true);
+      return;
+    }
+
+    setShowRecommendation(false);
+  };
 
   const todayStr = new Date().toDateString();
   const todaysHabits = habits.filter(h => new Date(h.timestamp).toDateString() === todayStr);
@@ -153,7 +239,62 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = () => {
         </p>
       </div>
 
-      {/* Cellular Balance Card */}
+      {/* Continuous Health Monitoring Danger recommendation */}
+      {showRecommendation && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4 animate-bounce">
+          <div className="flex-1">
+            <h4 className="font-bold text-amber-800 text-sm">Action Recommended</h4>
+            <p className="text-xs text-amber-700 mt-1">
+              Based on your recent health records for {recommendationReason}, we recommend consulting a doctor. Would you like to book an appointment?
+            </p>
+          </div>
+          <button 
+            onClick={() => onNavigateToTab('Book Appointment')}
+            className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all shadow-sm shrink-0"
+          >
+            Book Appointment
+          </button>
+        </div>
+      )}
+
+      {/* Upcoming Confirmed Appointment Alert Banner */}
+      {upcomingAppt && !isApptDismissed && (
+        <div className="bg-emerald-50/90 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 rounded-2xl p-4 mb-6 shadow-[0_4px_20px_rgba(16,185,129,0.05)] flex items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="p-2.5 bg-emerald-500/10 rounded-xl text-emerald-600 shrink-0 mt-0.5">
+              <Calendar className="h-5 w-5" />
+            </div>
+            <div>
+              <h4 className="font-bold text-emerald-800 dark:text-emerald-300 text-xs">Upcoming Consultation Scheduled</h4>
+              <p className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-0.5">
+                Appointment with <strong>Dr. {upcomingAppt.doctorId?.name || 'Specialist'}</strong> is scheduled on <strong>{upcomingAppt.date}</strong> at <strong>{upcomingAppt.time}</strong>.
+              </p>
+              {upcomingAppt.meetingLink && (
+                <a
+                  href={upcomingAppt.meetingLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block mt-2 text-[10px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-3.5 py-1.5 rounded-lg shadow-sm transition-all"
+                >
+                  {upcomingAppt.meetingLink.includes('calendar.app.google') || upcomingAppt.meetingLink.includes('calendar.google.com')
+                    ? 'Open Google Calendar Invite'
+                    : 'Join Google Meet'}
+                </a>
+              )}
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              localStorage.setItem(`dismissed_appt_${upcomingAppt._id}`, 'true');
+              setIsApptDismissed(true);
+            }}
+            className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-slate-650 dark:hover:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all shrink-0"
+            title="Dismiss Alert"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
       <div className="bg-white/90 backdrop-blur-xl border border-white/80 shadow-[0_8px_30px_rgba(0,0,0,0.015)] rounded-3xl p-5 mb-6">
         <div className="flex justify-between items-center mb-4">
           <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Cellular Balance</span>
