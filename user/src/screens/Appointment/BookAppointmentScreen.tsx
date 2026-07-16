@@ -7,8 +7,36 @@ interface BookAppointmentScreenProps {
   onBack?: () => void;
 }
 
+const getLocalDateString = () => {
+  const d = new Date();
+  const offset = d.getTimezoneOffset();
+  const localDate = new Date(d.getTime() - (offset * 60 * 1000));
+  return localDate.toISOString().split('T')[0];
+};
+
+const isExpired = (apptDate: string, apptTime: string) => {
+  try {
+    const [year, month, day] = apptDate.split('-').map(Number);
+    const [hour, min] = apptTime.split(':').map(Number);
+    const apptDateTime = new Date(year, month - 1, day, hour, min);
+    return apptDateTime < new Date();
+  } catch (e) {
+    return false;
+  }
+};
+
+const formatDate = (dateStr: string | undefined | null): string => {
+  if (!dateStr) return '--';
+  try {
+    const isPlain = /^\d{4}-\d{2}-\d{2}$/.test(dateStr.trim());
+    const date = isPlain ? new Date(dateStr + 'T00:00:00') : new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  } catch { return dateStr; }
+};
+
 export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ onBack }) => {
-  const { apiUrl, token } = useAuth();
+  const { apiUrl, token, user } = useAuth();
   const { showToast } = useToast();
 
   const [doctors, setDoctors] = useState<any[]>([]);
@@ -18,10 +46,12 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
   const [selectedSlot, setSelectedSlot] = useState('');
   const [reason, setReason] = useState('General Consultation');
   const [patientNotes, setPatientNotes] = useState('');
+  const [consultationType, setConsultationType] = useState<'online' | 'offline'>('offline');
 
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [showPendingWarning, setShowPendingWarning] = useState(false);
+  const [showPaymentDisclaimer, setShowPaymentDisclaimer] = useState(false);
 
   // Rating states
   const [ratingApptId, setRatingApptId] = useState<string | null>(null);
@@ -57,7 +87,19 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
-      setDoctors(data);
+      // Sort: highest rated first, then most experienced, then lowest fee
+      const sorted = [...data].sort((a: any, b: any) => {
+        const ratingA = a.avgRating ?? -1;
+        const ratingB = b.avgRating ?? -1;
+        if (ratingB !== ratingA) return ratingB - ratingA;
+        const expA = a.experience ?? 0;
+        const expB = b.experience ?? 0;
+        if (expB !== expA) return expB - expA;
+        const feeA = a.onlineConsultationFee ?? 0;
+        const feeB = b.onlineConsultationFee ?? 0;
+        return feeA - feeB;
+      });
+      setDoctors(sorted);
     } catch (e) {
       console.error(e);
     }
@@ -102,7 +144,12 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
       return;
     }
     setShowPendingWarning(false);
-    confirmBook();
+
+    if (consultationType === 'online' && (selectedDoctor.onlineConsultationFee || 0) > 0) {
+      setShowPaymentDisclaimer(true);
+    } else {
+      confirmBook();
+    }
   };
 
   const confirmBook = async () => {
@@ -119,26 +166,101 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
           date,
           time: selectedSlot,
           reason,
-          patientNotes
+          patientNotes,
+          type: consultationType
         })
       });
-      if (res.ok) {
-        showToast('Appointment requested successfully!', 'success');
-        setSelectedDoctor(null);
-        setDate('');
-        setSelectedSlot('');
-        setReason('General Consultation');
-        setPatientNotes('');
-        fetchAppointments();
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.message || 'Error booking appointment', 'error');
+        setLoading(false);
+        return;
+      }
+
+      const appointment = data.appointment;
+
+      // Handle Razorpay checkout for Online Appointments
+      if (consultationType === 'online' && data.razorpayOrder) {
+        const options = {
+          key: data.razorpayOrder.keyId,
+          amount: data.razorpayOrder.amount,
+          currency: data.razorpayOrder.currency,
+          name: 'Mito_Reboot',
+          description: `Online Consultation with Dr. ${selectedDoctor.name}`,
+          order_id: data.razorpayOrder.id,
+          handler: async (response: any) => {
+            setLoading(true);
+            try {
+              const verifyRes = await fetch(`${apiUrl}/patient/appointments/verify-payment`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                  appointmentId: appointment._id,
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature
+                })
+              });
+              const verifyData = await verifyRes.json();
+              if (!verifyRes.ok) throw new Error(verifyData.message || 'Payment verification failed.');
+
+              showToast('Appointment booked and confirmed successfully!', 'success');
+              resetForm();
+            } catch (err: any) {
+              showToast(err.message || 'Error verifying Razorpay payment signature.', 'error');
+            } finally {
+              setLoading(false);
+            }
+          },
+          prefill: {
+            name: user?.name || '',
+            email: user?.email || '',
+            contact: user?.mobileNumber || ''
+          },
+          theme: {
+            color: '#4F46E5' // Indigo
+          },
+          modal: {
+            ondismiss: async () => {
+              setLoading(false);
+              try {
+                await fetch(`${apiUrl}/patient/appointments/${appointment._id}/cancel-payment`, {
+                  method: 'POST',
+                  headers: { 'Authorization': `Bearer ${token}` }
+                });
+                fetchAppointments();
+              } catch (e) {
+                console.error(e);
+              }
+            }
+          }
+        };
+
+        const rzp = new (window as any).Razorpay(options);
+        rzp.open();
       } else {
-        const err = await res.json();
-        showToast(err.message || 'Error booking appointment', 'error');
+        // Offline or free online consultation
+        showToast('Appointment requested successfully!', 'success');
+        resetForm();
       }
     } catch (e) {
       showToast('Error connecting to server', 'error');
-    } finally {
       setLoading(false);
     }
+  };
+
+  const resetForm = () => {
+    setSelectedDoctor(null);
+    setDate('');
+    setSelectedSlot('');
+    setReason('General Consultation');
+    setPatientNotes('');
+    setConsultationType('offline');
+    setLoading(false);
+    fetchAppointments();
   };
 
   const handleFeedbackSubmit = async (e: React.FormEvent) => {
@@ -202,12 +324,36 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                       onClick={() => setSelectedDoctor(doc)}
                       className={`p-4 rounded-2xl border text-left transition-all ${selectedDoctor?._id === doc._id ? 'border-indigo-500 bg-indigo-50/50 shadow-sm' : 'border-slate-100 bg-slate-50 hover:border-slate-200'}`}
                     >
-                      <h4 className="font-bold text-slate-800 text-sm">Dr. {doc.name}</h4>
-                      <p className="text-xs text-slate-500 mt-1">{doc.specialty}</p>
-                      <p className="text-[10px] text-slate-400 mt-2 line-clamp-2">{doc.description}</p>
-                      {doc.consultationFee !== undefined && doc.consultationFee !== null && (
-                        <p className="text-[11px] font-bold text-indigo-600 mt-1">Consultation Fee: Rs. {doc.consultationFee}</p>
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-slate-800 text-sm">{doc.name}</h4>
+                          <p className="text-xs text-slate-500 mt-0.5">{doc.specialty}</p>
+                        </div>
+                        {doc.avgRating != null && (
+                          <div className="flex flex-col items-end shrink-0">
+                            <div className="flex items-center gap-0.5">
+                              {[1,2,3,4,5].map((star: number) => (
+                                <svg key={star} className={`w-3 h-3 ${star <= Math.round(doc.avgRating) ? 'text-amber-400' : 'text-slate-200'}`} fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.168c.969 0 1.371 1.24.588 1.81l-3.374 2.452a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118L10 14.347l-3.952 2.701c-.784.57-1.838-.196-1.539-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.058 9.394c-.783-.57-.38-1.81.588-1.81h4.168a1 1 0 00.95-.69l1.285-3.967z"/>
+                                </svg>
+                              ))}
+                            </div>
+                            <span className="text-[9px] text-slate-400 mt-0.5">{doc.avgRating} ({doc.ratingCount})</span>
+                          </div>
+                        )}
+                      </div>
+                      {doc.experience != null && (
+                        <p className="text-[10px] text-indigo-500 font-semibold mt-1.5">{doc.experience} yrs exp</p>
                       )}
+                      <p className="text-[10px] text-slate-400 mt-1 line-clamp-2">{doc.description}</p>
+                      <div className="flex gap-3 mt-2">
+                        {doc.onlineConsultationFee !== undefined && (
+                          <span className="text-[10px] font-bold text-emerald-600">🌐 Rs. {doc.onlineConsultationFee}</span>
+                        )}
+                        {doc.offlineConsultationFee !== undefined && (
+                          <span className="text-[10px] font-bold text-purple-600">🏥 Rs. {doc.offlineConsultationFee}</span>
+                        )}
+                      </div>
                     </button>
                   ))}
                 </div>
@@ -215,13 +361,34 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
 
               {selectedDoctor && (
                 <>
+                  <div className="bg-slate-50 border border-slate-200/60 rounded-2xl p-4 my-2">
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Consultation Type</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setConsultationType('online')}
+                        className={`p-3 rounded-xl border text-sm font-bold text-center transition-all ${consultationType === 'online' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'}`}
+                      >
+                        🌐 Online Consultation
+                        <span className="block text-[10px] opacity-80 font-normal mt-0.5">Fee: Rs. {selectedDoctor.onlineConsultationFee || 0}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConsultationType('offline')}
+                        className={`p-3 rounded-xl border text-sm font-bold text-center transition-all ${consultationType === 'offline' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'}`}
+                      >
+                        🏥 Offline Consultation
+                        <span className="block text-[10px] opacity-80 font-normal mt-0.5">Fee: Rs. {selectedDoctor.offlineConsultationFee || 0}</span>
+                      </button>
+                    </div>
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Choose Date</label>
                       <input
                         type="date"
                         value={date}
-                        min={new Date().toISOString().split('T')[0]}
+                        min={getLocalDateString()}
                         onChange={(e) => setDate(e.target.value)}
                         className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-400"
                       />
@@ -249,16 +416,40 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                         </div>
                       ) : (
                         <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                          {availableSlots.map((slot, idx) => (
-                            <button
-                              key={`${slot}-${idx}`}
-                              type="button"
-                              onClick={() => setSelectedSlot(slot)}
-                              className={`py-3 rounded-2xl border text-xs font-bold transition-all text-center flex items-center justify-center gap-1 shadow-sm ${selectedSlot === slot ? 'bg-indigo-600 text-white border-indigo-600 ring-2 ring-indigo-100' : 'bg-slate-50 border-slate-200/60 text-slate-700 hover:bg-slate-100'}`}
-                            >
-                              <Clock className="w-3.5 h-3.5 opacity-65" /> {slot}
-                            </button>
-                          ))}
+                          {availableSlots.map((slotObj: any, idx) => {
+                            const slotTime = slotObj.time || slotObj;
+                            let isAvailable = slotObj.isAvailable !== false;
+
+                            // If date is today, disable past timeslots
+                            const todayStr = getLocalDateString();
+                            if (date === todayStr) {
+                              const [sHour, sMin] = slotTime.split(':').map(Number);
+                              const now = new Date();
+                              const currentHour = now.getHours();
+                              const currentMin = now.getMinutes();
+                              if (sHour < currentHour || (sHour === currentHour && sMin < currentMin)) {
+                                isAvailable = false;
+                              }
+                            }
+
+                            return (
+                              <button
+                                key={`${slotTime}-${idx}`}
+                                type="button"
+                                disabled={!isAvailable}
+                                onClick={() => setSelectedSlot(slotTime)}
+                                className={`py-3 rounded-2xl border text-xs font-bold transition-all text-center flex items-center justify-center gap-1 shadow-sm ${
+                                  !isAvailable 
+                                    ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed opacity-60' 
+                                    : selectedSlot === slotTime 
+                                      ? 'bg-indigo-600 text-white border-indigo-600 ring-2 ring-indigo-100' 
+                                      : 'bg-slate-50 border-slate-200/60 text-slate-700 hover:bg-slate-100'
+                                }`}
+                              >
+                                <Clock className="w-3.5 h-3.5 opacity-65" /> {slotTime} {!isAvailable && (slotObj.isAvailable === false ? '(Booked)' : '(Past)')}
+                              </button>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
@@ -337,11 +528,32 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                   <div className="flex justify-between items-start">
                     <div>
                       <h4 className="font-bold text-slate-800 text-sm">Dr. {appt.doctorId.name}</h4>
-                      <p className="text-[10px] text-slate-400 uppercase font-mono tracking-wide">{appt.date} at {appt.time}</p>
+                      <p className="text-[10px] text-slate-400 uppercase font-mono tracking-wide">{formatDate(appt.date)} at {appt.time}</p>
                     </div>
-                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${appt.status === 'confirmed' ? 'bg-emerald-50 text-emerald-600' : appt.status === 'completed' ? 'bg-blue-50 text-blue-600' : appt.status === 'cancelled' ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-600'}`}>
-                      {appt.status}
-                    </span>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                        appt.paymentStatus === 'failed' 
+                          ? 'bg-rose-50 text-rose-600 border border-rose-100'
+                          : (appt.status === 'pending' || appt.status === 'confirmed') && isExpired(appt.date, appt.time)
+                            ? 'bg-slate-100 text-slate-400 border border-slate-250'
+                            : appt.status === 'confirmed' 
+                              ? 'bg-emerald-50 text-emerald-600' 
+                              : appt.status === 'completed' 
+                                ? 'bg-blue-50 text-blue-600' 
+                                : appt.status === 'cancelled' 
+                                  ? 'bg-rose-50 text-rose-600' 
+                                  : 'bg-amber-50 text-amber-600'
+                      }`}>
+                        {appt.paymentStatus === 'failed' 
+                          ? 'Payment Failed' 
+                          : (appt.status === 'pending' || appt.status === 'confirmed') && isExpired(appt.date, appt.time)
+                            ? 'Expired'
+                            : appt.status}
+                      </span>
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md uppercase ${appt.type === 'online' ? 'bg-teal-50 text-teal-600' : 'bg-purple-50 text-purple-600'}`}>
+                        {appt.type || 'offline'}
+                      </span>
+                    </div>
                   </div>
                   
                   <p className="text-xs text-slate-600"><strong className="text-slate-400">Reason:</strong> {appt.reason}</p>
@@ -354,22 +566,36 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                   )}
 
                   {appt.meetingLink && appt.status === 'confirmed' && (
-                    <a
-                      href={appt.meetingLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block text-center w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold shadow-sm transition-all"
-                    >
-                      {appt.meetingLink.includes('calendar.app.google') || appt.meetingLink.includes('calendar.google.com')
-                        ? 'Open Google Calendar Invite'
-                        : 'Join Google Meet'}
-                    </a>
+                    appt.type === 'online' ? (
+                      <a
+                        href={appt.meetingLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block text-center w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold shadow-sm transition-all"
+                      >
+                        {appt.meetingLink.includes('calendar.app.google') || appt.meetingLink.includes('calendar.google.com')
+                          ? 'Open Google Calendar Invite'
+                          : 'Join Google Meet'}
+                      </a>
+                    ) : (
+                      <div className="bg-purple-50 border border-purple-100 rounded-xl p-3 space-y-1.5">
+                        <p className="text-[9px] font-bold text-purple-400 uppercase tracking-wider">🏥 Clinic Instructions from Doctor:</p>
+                        <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-wrap">{appt.meetingLink}</p>
+                      </div>
+                    )
                   )}
 
                   {appt.notes && (
                     <div className="bg-white border border-slate-100 rounded-xl p-2.5 text-xs text-slate-600 mt-2">
                       <strong className="text-slate-500">Consultation Notes:</strong>
                       <p className="mt-1 font-mono leading-relaxed">{appt.notes}</p>
+                    </div>
+                  )}
+
+                  {appt.prescriptionText && (
+                    <div className="bg-slate-100/80 border border-slate-200/50 rounded-xl p-2.5 text-xs text-slate-700 mt-2 font-sans leading-relaxed">
+                      <strong className="text-slate-500">Prescription Notes:</strong>
+                      <p className="mt-1 font-medium">{appt.prescriptionText}</p>
                     </div>
                   )}
 
@@ -380,7 +606,18 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                       rel="noopener noreferrer"
                       className="block text-center w-full py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-xs font-bold mt-2 shadow-sm transition-all"
                     >
-                      View Prescription
+                      View Prescription Attachment
+                    </a>
+                  )}
+
+                  {appt.invoiceUrl && (
+                    <a
+                      href={`${apiUrl.replace('/api', '')}${appt.invoiceUrl}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block text-center w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold mt-2 shadow-sm transition-all"
+                    >
+                      Download Invoice PDF
                     </a>
                   )}
 
@@ -463,6 +700,45 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Disclaimer Modal */}
+      {showPaymentDisclaimer && (
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-xl border border-slate-100 space-y-4">
+            <div className="h-12 w-12 rounded-full bg-indigo-50 flex items-center justify-center text-2xl">
+              💳
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-slate-800">Redirecting to Payment Gateway</h3>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                To confirm your online consultation with <strong>Dr. {selectedDoctor?.name}</strong>, you will be redirected to our secure payment gateway to complete the transaction of <strong>Rs. {selectedDoctor?.onlineConsultationFee}</strong>.
+              </p>
+            </div>
+            <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-100 text-[10px] text-slate-400 font-medium leading-relaxed">
+              ⚠️ Please do not close the window or hit back while the payment gateway loads. Once payment is confirmed, your appointment request will be saved as pending doctor's confirmation.
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowPaymentDisclaimer(false)}
+                className="px-4 py-2 bg-slate-100 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPaymentDisclaimer(false);
+                  confirmBook();
+                }}
+                className="px-4 py-2 bg-indigo-650 rounded-xl text-xs font-bold text-white shadow hover:bg-indigo-700 transition-colors"
+              >
+                Accept & Pay
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -105,9 +105,36 @@ export class DoctorController {
   public static async adminGetDoctors(req: Request, res: Response) {
     try {
       const docs = await Doctor.find().sort({ createdAt: -1 });
-      res.json(docs);
+      const { Feedback } = require('../models/Feedback');
+      const { Appointment } = require('../models/Appointment');
+
+      const docsWithRating = await Promise.all(
+        docs.map(async (doc: any) => {
+          // Get all completed appointment IDs for this doctor
+          const apptIds = await Appointment.find({ doctorId: doc._id, status: 'completed' }).select('_id');
+          const idList = apptIds.map((a: any) => a._id);
+          const feedbacks = await Feedback.find({ appointmentId: { $in: idList } }).select('rating');
+          const ratingCount = feedbacks.length;
+          const avgRating = ratingCount > 0
+            ? parseFloat((feedbacks.reduce((sum: number, f: any) => sum + f.rating, 0) / ratingCount).toFixed(1))
+            : null;
+          return { ...doc.toObject(), avgRating, ratingCount };
+        })
+      );
+
+      res.json(docsWithRating);
     } catch (err: any) {
       res.status(500).json({ message: 'Error fetching doctors' });
+    }
+  }
+
+  public static async adminGetDoctorAvailability(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const avail = await DoctorAvailability.findOne({ doctorId: id });
+      res.json(avail || null);
+    } catch (err: any) {
+      res.status(500).json({ message: 'Error fetching doctor availability' });
     }
   }
 
@@ -169,7 +196,7 @@ export class DoctorController {
   public static async updateDoctorAvailability(req: Request, res: Response) {
     try {
       const doctorId = (req as any).user.id;
-      const { availableDays, availableTimeSlots, holidays, leaves, slotDuration } = req.body;
+      const { availableDays, availableTimeSlots, holidays, leaves, slotDuration, maxAppointmentsPerSlot } = req.body;
 
       let avail = await DoctorAvailability.findOne({ doctorId });
       if (!avail) {
@@ -181,6 +208,7 @@ export class DoctorController {
       if (holidays) avail.holidays = holidays.map((d: string) => new Date(d));
       if (leaves) avail.leaves = leaves.map((d: string) => new Date(d));
       if (slotDuration) avail.slotDuration = slotDuration;
+      if (maxAppointmentsPerSlot !== undefined) avail.maxAppointmentsPerSlot = maxAppointmentsPerSlot;
 
       await avail.save();
       res.json(avail);
@@ -192,7 +220,13 @@ export class DoctorController {
   public static async getDoctorAppointments(req: Request, res: Response) {
     try {
       const doctorId = (req as any).user.id;
-      const appointments = await Appointment.find({ doctorId })
+      const appointments = await Appointment.find({
+        doctorId,
+        $or: [
+          { type: 'offline' },
+          { type: 'online', paymentStatus: 'paid' }
+        ]
+      })
         .populate('userId', 'name email mobileNumber')
         .sort({ date: 1, time: 1 });
 
@@ -234,7 +268,7 @@ export class DoctorController {
       const {
         name, specialty, description, avatar,
         qualification, experience, hospitalName,
-        registrationNumber, consultationFee, phone,
+        registrationNumber, consultationFee, onlineConsultationFee, offlineConsultationFee, phone,
         address, languagesKnown
       } = req.body;
 
@@ -247,6 +281,8 @@ export class DoctorController {
       if (hospitalName !== undefined) doc.hospitalName = hospitalName;
       if (registrationNumber !== undefined) doc.registrationNumber = registrationNumber;
       if (consultationFee !== undefined) doc.consultationFee = consultationFee;
+      if (onlineConsultationFee !== undefined) doc.onlineConsultationFee = onlineConsultationFee;
+      if (offlineConsultationFee !== undefined) doc.offlineConsultationFee = offlineConsultationFee;
       if (phone !== undefined) doc.phone = phone;
       if (address !== undefined) doc.address = address;
       if (languagesKnown !== undefined) doc.languagesKnown = languagesKnown;
@@ -267,7 +303,8 @@ export class DoctorController {
       const {
         password, workingHours, availableDays,
         slotDuration, holidays, visibility,
-        notificationPreferences
+        notificationPreferences, onlineConsultationFee, offlineConsultationFee,
+        maxAppointmentsPerSlot
       } = req.body;
 
       if (password) {
@@ -278,6 +315,8 @@ export class DoctorController {
       if (slotDuration !== undefined) doc.slotDuration = slotDuration;
       if (holidays !== undefined) doc.holidays = holidays;
       if (visibility !== undefined) doc.visibility = visibility;
+      if (onlineConsultationFee !== undefined) doc.onlineConsultationFee = onlineConsultationFee;
+      if (offlineConsultationFee !== undefined) doc.offlineConsultationFee = offlineConsultationFee;
       if (notificationPreferences !== undefined) {
         doc.notificationPreferences = typeof notificationPreferences === 'object'
           ? JSON.stringify(notificationPreferences)
@@ -285,6 +324,36 @@ export class DoctorController {
       }
 
       await doc.save();
+
+      // Keep DoctorAvailability in sync
+      let avail = await DoctorAvailability.findOne({ doctorId });
+      if (!avail) {
+        avail = new DoctorAvailability({ doctorId });
+      }
+      if (availableDays !== undefined) {
+        const dayMap: Record<string, number> = {
+          'Sunday': 0, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5, 'Saturday': 6
+        };
+        avail.availableDays = availableDays.map((d: string) => dayMap[d]).filter((d: any) => d !== undefined);
+      }
+      if (slotDuration !== undefined) avail.slotDuration = slotDuration;
+      if (holidays !== undefined) {
+        avail.holidays = holidays.map((d: string) => new Date(d));
+      }
+      if (maxAppointmentsPerSlot !== undefined) {
+        avail.maxAppointmentsPerSlot = maxAppointmentsPerSlot;
+      }
+      if (workingHours !== undefined && typeof workingHours === 'string') {
+        const parts = workingHours.split('-');
+        if (parts.length === 2) {
+          avail.availableTimeSlots = [{
+            start: parts[0].trim(),
+            end: parts[1].trim()
+          }];
+        }
+      }
+      await avail.save();
+
       res.json(doc);
     } catch (err: any) {
       res.status(500).json({ message: 'Error updating doctor settings' });
@@ -325,6 +394,46 @@ export class DoctorController {
       res.json(appt);
     } catch (err: any) {
       res.status(500).json({ message: 'Error updating consultation notes' });
+    }
+  }
+
+  public static async getDoctorDashboardStats(req: Request, res: Response) {
+    try {
+      const doctorId = (req as any).user.id;
+      
+      const appointments = await Appointment.find({ doctorId });
+      
+      // Calculate Revenue
+      const onlineAppts = appointments.filter(a => a.type === 'online');
+      const offlineAppts = appointments.filter(a => a.type === 'offline');
+      
+      // Revenue is counted for completed appointments (or paid online ones)
+      const onlineRevenue = onlineAppts
+        .filter(a => a.paymentStatus === 'paid' && a.status !== 'cancelled')
+        .reduce((sum, a) => sum + (a.consultationFee || 0), 0);
+      
+      const offlineRevenue = offlineAppts
+        .filter(a => a.status === 'completed')
+        .reduce((sum, a) => sum + (a.consultationFee || 0), 0);
+        
+      const totalRevenue = onlineRevenue + offlineRevenue;
+      const totalAppointments = appointments.length;
+      
+      const upcoming = appointments.filter(a => a.status === 'confirmed').length;
+      const completed = appointments.filter(a => a.status === 'completed').length;
+      const cancelled = appointments.filter(a => a.status === 'cancelled').length;
+      
+      res.json({
+        onlineRevenue,
+        offlineRevenue,
+        totalRevenue,
+        totalAppointments,
+        upcomingAppointments: upcoming,
+        completedAppointments: completed,
+        cancelledAppointments: cancelled
+      });
+    } catch (err: any) {
+      res.status(500).json({ message: 'Error fetching doctor dashboard statistics.' });
     }
   }
 }

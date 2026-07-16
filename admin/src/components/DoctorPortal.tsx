@@ -1,8 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Calendar, Clock, LogOut, FileText, User, Settings, 
-  Users, BarChart3, Star, ShieldAlert, CheckCircle
+  Users, BarChart3, Star, CheckCircle
 } from 'lucide-react';
+
+// Shared date formatter — handles ISO strings, YYYY-MM-DD, and timestamps
+const formatDate = (dateStr: string | undefined | null, withTime = false): string => {
+  if (!dateStr) return '--';
+  try {
+    // If it looks like YYYY-MM-DD (no time component), parse as local date
+    const isPlain = /^\d{4}-\d{2}-\d{2}$/.test(dateStr.trim());
+    const date = isPlain
+      ? new Date(dateStr + 'T00:00:00')
+      : new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    const opts: Intl.DateTimeFormatOptions = withTime
+      ? { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }
+      : { day: '2-digit', month: 'short', year: 'numeric' };
+    return date.toLocaleDateString('en-IN', opts);
+  } catch {
+    return dateStr;
+  }
+};
 
 interface DoctorPortalProps {
   apiUrl: string;
@@ -36,12 +55,24 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
   const [workingHours, setWorkingHours] = useState('09:00 - 17:00');
   const [availableDays, setAvailableDays] = useState<string[]>(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']);
   const [slotDuration, setSlotDuration] = useState(30);
+  const [maxAppointmentsPerSlot, setMaxAppointmentsPerSlot] = useState(1);
+  const [onlineConsultationFee, setOnlineConsultationFee] = useState(0);
+  const [offlineConsultationFee, setOfflineConsultationFee] = useState(0);
   const [visibility, setVisibility] = useState(true);
   const [holidays, setHolidays] = useState<string[]>([]);
   const [newHoliday, setNewHoliday] = useState('');
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [emailsEnabled, setEmailsEnabled] = useState(true);
   const [savingSettings, setSavingSettings] = useState(false);
+  const [dbStats, setDbStats] = useState<any>({
+    onlineRevenue: 0,
+    offlineRevenue: 0,
+    totalRevenue: 0,
+    totalAppointments: 0,
+    upcomingAppointments: 0,
+    completedAppointments: 0,
+    cancelledAppointments: 0
+  });
 
   // Note/Prescription consultation editor states
   const [selectedApptForNotes, setSelectedApptForNotes] = useState<any | null>(null);
@@ -64,9 +95,23 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
     await Promise.all([
       fetchAppointments(),
       fetchDoctorProfile(),
-      fetchFeedback()
+      fetchFeedback(),
+      fetchDashboardStats()
     ]);
     setLoading(false);
+  };
+
+  const fetchDashboardStats = async () => {
+    try {
+      const res = await fetch(`${apiUrl}/doctor/stats`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setDbStats(await res.json());
+      }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const fetchAppointments = async () => {
@@ -107,10 +152,25 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
         setWorkingHours(data.workingHours || '09:00 - 17:00');
         setAvailableDays(data.availableDays || ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']);
         setSlotDuration(data.slotDuration || 30);
+        setOnlineConsultationFee(data.onlineConsultationFee || 0);
+        setOfflineConsultationFee(data.offlineConsultationFee || 0);
         setVisibility(data.visibility !== false);
         setNotificationsEnabled(data.notificationPreferences?.pushAlerts !== false);
         setEmailsEnabled(data.notificationPreferences?.emailAlerts !== false);
         setHolidays(data.holidays || []);
+
+        // Fetch max appointments limit from availability
+        try {
+          const availRes = await fetch(`${apiUrl}/doctor/availability`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (availRes.ok) {
+            const availData = await availRes.json();
+            setMaxAppointmentsPerSlot(availData.maxAppointmentsPerSlot || 1);
+          }
+        } catch (err) {
+          console.error('Error loading doctor availability settings:', err);
+        }
       }
     } catch (e) {
       console.error(e);
@@ -163,6 +223,9 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
         workingHours,
         availableDays,
         slotDuration,
+        maxAppointmentsPerSlot,
+        onlineConsultationFee,
+        offlineConsultationFee,
         visibility,
         holidays,
         notificationPreferences: {
@@ -198,7 +261,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
     if (!selectedApptForNotes) return;
     setSavingNotes(true);
     try {
-      const res = await fetch(`${apiUrl}/doctor/appointments/${selectedApptForNotes._id}/notes`, {
+      const res = await fetch(`${apiUrl}/doctor/appointments/${selectedApptForNotes._id}/consultation`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -218,6 +281,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
         setPrescriptionText('');
         setPrescriptionUrl('');
         fetchAppointments();
+        fetchDashboardStats();
       }
     } catch (e) {
       console.error(e);
@@ -296,6 +360,40 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
       }
     });
     return list;
+  };
+
+  const getGoogleCalendarUrl = (appt: any) => {
+    if (!appt) return '#';
+    const title = encodeURIComponent(`Consultation: ${appt.userId?.name || 'Patient'}`);
+    const dateClean = appt.date.replace(/-/g, '');
+    const timeClean = appt.time.replace(/:/g, '');
+    
+    // Compute end time (add 30 minutes)
+    const [h, m] = appt.time.split(':').map(Number);
+    let endH = h;
+    let endM = m + 30;
+    if (endM >= 60) {
+      endH += 1;
+      endM -= 60;
+    }
+    const endHStr = String(endH).padStart(2, '0');
+    const endMStr = String(endM).padStart(2, '0');
+    const endTimeClean = `${endHStr}${endMStr}00`;
+    
+    const dates = `${dateClean}T${timeClean}00/${dateClean}T${endTimeClean}`;
+    const details = encodeURIComponent(`Patient Name: ${appt.userId?.name || 'N/A'}\nReason: ${appt.reason || 'Consultation'}\nNotes: ${appt.patientNotes || 'None'}`);
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${details}`;
+  };
+
+  const isExpired = (apptDate: string, apptTime: string) => {
+    try {
+      const [year, month, day] = apptDate.split('-').map(Number);
+      const [hour, min] = apptTime.split(':').map(Number);
+      const apptDateTime = new Date(year, month - 1, day, hour, min);
+      return apptDateTime < new Date();
+    } catch (e) {
+      return false;
+    }
   };
 
   const stats = {
@@ -389,39 +487,58 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
             {/* TAB CONTENT: DASHBOARD */}
             {activeTab === 'dashboard' && (
               <div className="space-y-6">
-                
-                {/* Stats widgets */}
+                          {/* Stats widgets */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm flex items-center gap-4">
                     <div className="p-3.5 bg-blue-50 text-blue-600 rounded-2xl"><Calendar className="h-5 w-5" /></div>
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 uppercase">Today's Visits</span>
-                      <h3 className="text-2xl font-black text-slate-800 mt-1">{stats.todayAppointmentsCount}</h3>
-                    </div>
-                  </div>
-
-                  <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm flex items-center gap-4">
-                    <div className="p-3.5 bg-amber-50 text-amber-600 rounded-2xl"><ShieldAlert className="h-5 w-5" /></div>
-                    <div>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase">Pending Approvals</span>
-                      <h3 className="text-2xl font-black text-slate-800 mt-1">{stats.pendingApprovalsCount}</h3>
+                      <h3 className="text-xl font-black text-slate-800 mt-1">{stats.todayAppointmentsCount}</h3>
                     </div>
                   </div>
 
                   <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm flex items-center gap-4">
                     <div className="p-3.5 bg-emerald-50 text-emerald-600 rounded-2xl"><CheckCircle className="h-5 w-5" /></div>
                     <div>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase">Visits Completed</span>
-                      <h3 className="text-2xl font-black text-slate-800 mt-1">{stats.completedConsultations}</h3>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">Total Revenue</span>
+                      <h3 className="text-xl font-black text-slate-800 mt-1">Rs. {dbStats.totalRevenue || 0}</h3>
+                    </div>
+                  </div>
+
+                  <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm flex items-center gap-4">
+                    <div className="p-3.5 bg-teal-50 text-teal-600 rounded-2xl"><BarChart3 className="h-5 w-5" /></div>
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">Online Revenue</span>
+                      <h3 className="text-xl font-black text-slate-850 mt-1">Rs. {dbStats.onlineRevenue || 0}</h3>
                     </div>
                   </div>
 
                   <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm flex items-center gap-4">
                     <div className="p-3.5 bg-purple-50 text-purple-600 rounded-2xl"><Users className="h-5 w-5" /></div>
                     <div>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase">Total Patients</span>
-                      <h3 className="text-2xl font-black text-slate-800 mt-1">{stats.totalRegisteredPatients}</h3>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">Offline Revenue</span>
+                      <h3 className="text-xl font-black text-slate-800 mt-1">Rs. {dbStats.offlineRevenue || 0}</h3>
                     </div>
+                  </div>
+                </div>
+
+                {/* Additional metrics info */}
+                <div className="grid grid-cols-4 gap-4 bg-slate-100/50 border border-slate-200/60 p-4 rounded-2xl text-center">
+                  <div>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase block">Total Bookings</span>
+                    <strong className="text-sm text-slate-700">{dbStats.totalAppointments || 0}</strong>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase block">Upcoming</span>
+                    <strong className="text-sm text-slate-700">{dbStats.upcomingAppointments || 0}</strong>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase block">Completed</span>
+                    <strong className="text-sm text-slate-700">{dbStats.completedAppointments || 0}</strong>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase block">Cancelled</span>
+                    <strong className="text-sm text-rose-600">{dbStats.cancelledAppointments || 0}</strong>
                   </div>
                 </div>
 
@@ -488,22 +605,36 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
                         <div className="flex justify-between items-start">
                           <div>
                             <h4 className="font-bold text-slate-850 text-sm">Patient: {appt.userId?.name || 'Unregistered'}</h4>
-                            <p className="text-[10px] text-indigo-650 font-bold block mt-0.5">{appt.date} at {appt.time}</p>
+                            <p className="text-[10px] text-indigo-650 font-bold block mt-0.5">{formatDate(appt.date)} at {appt.time}</p>
                           </div>
-                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded border uppercase ${
-                            appt.status === 'confirmed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                            appt.status === 'completed' ? 'bg-blue-50 text-blue-600 border-blue-100' :
-                            appt.status === 'cancelled' ? 'bg-rose-50 text-rose-600 border-rose-100' :
-                            'bg-amber-50 text-amber-600 border-amber-100'
-                          }`}>
-                            {appt.status}
-                          </span>
+                          <div className="flex flex-col items-end gap-1.5 shrink-0">
+                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded border uppercase ${
+                              (appt.status === 'pending' || appt.status === 'confirmed') && isExpired(appt.date, appt.time) ? 'bg-slate-100 text-slate-400 border-slate-200' :
+                              appt.status === 'confirmed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                              appt.status === 'completed' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                              appt.status === 'cancelled' ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                              'bg-amber-50 text-amber-600 border-amber-100'
+                            }`}>
+                              {(appt.status === 'pending' || appt.status === 'confirmed') && isExpired(appt.date, appt.time) ? 'expired' : appt.status}
+                            </span>
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase ${
+                              appt.type === 'online' ? 'bg-teal-50 text-teal-650 border-teal-100' : 'bg-purple-50 text-purple-650 border-purple-100'
+                            }`}>
+                              {appt.type || 'offline'}
+                            </span>
+                          </div>
                         </div>
 
-                        <div className="text-xs bg-white border border-slate-200 p-3 rounded-xl text-slate-655">
+                        <div className="text-xs bg-white border border-slate-200 p-3 rounded-xl text-slate-655 font-bold">
                           <span className="text-[9px] font-bold text-slate-400 block uppercase">Reason:</span>
                           {appt.reason}
                         </div>
+                        {appt.patientNotes && (
+                          <div className="text-xs bg-indigo-50/30 border border-indigo-100 p-3 rounded-xl text-slate-700 font-semibold">
+                            <span className="text-[9px] font-bold text-indigo-400 block uppercase mb-0.5">Patient Notes:</span>
+                            {appt.patientNotes}
+                          </div>
+                        )}
                       </div>
 
                       <div className="pt-2 space-y-2 border-t border-slate-100">
@@ -538,6 +669,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
                                   setConsultNotes(appt.notes || '');
                                   setPrescriptionText(appt.prescriptionText || '');
                                   setPrescriptionUrl(appt.prescriptionUrl || '');
+                                  setActiveTab('notes');
                                 }}
                                 className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-650 rounded-lg text-xs font-bold transition-all border border-slate-200"
                               >
@@ -559,6 +691,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
                                   });
                                   if (res.ok) {
                                     fetchAppointments();
+                                    fetchDashboardStats();
                                   } else {
                                     alert('Error marking appointment as completed.');
                                   }
@@ -807,8 +940,8 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
                     </div>
                   </div>
 
-                  {/* Hours & duration */}
-                  <div className="grid grid-cols-2 gap-4">
+                  {/* Hours & duration & max slot appointments */}
+                  <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-1">
                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Working Hours Range</label>
                       <input 
@@ -823,10 +956,52 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Time Slot Interval (mins)</label>
                       <input 
                         type="number" 
-                        value={slotDuration} 
-                        onChange={e => setSlotDuration(parseInt(e.target.value) || 30)}
+                        value={slotDuration === 0 ? '' : slotDuration}
+                        onChange={e => {
+                          const val = e.target.value;
+                          setSlotDuration(val === '' ? 0 : parseInt(val));
+                        }}
+                        placeholder="e.g. 30"
                         className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:outline-none"
                       />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Max Patients Per Slot</label>
+                      <input 
+                        type="number" 
+                        value={maxAppointmentsPerSlot === 0 ? '' : maxAppointmentsPerSlot}
+                        onChange={e => {
+                          const val = e.target.value;
+                          setMaxAppointmentsPerSlot(val === '' ? 0 : parseInt(val));
+                        }}
+                        placeholder="e.g. 1"
+                        className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Consultation Fees */}
+                  <div className="space-y-3 pt-4 border-t border-slate-100">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Consultation Fees Settings (Rs.)</label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-slate-400 block">Online Consultation Fee</label>
+                        <input 
+                          type="number" 
+                          value={onlineConsultationFee} 
+                          onChange={e => setOnlineConsultationFee(parseInt(e.target.value) || 0)}
+                          className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:outline-none"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-slate-400 block">Offline Consultation Fee</label>
+                        <input 
+                          type="number" 
+                          value={offlineConsultationFee} 
+                          onChange={e => setOfflineConsultationFee(parseInt(e.target.value) || 0)}
+                          className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:outline-none"
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -852,7 +1027,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
                     <div className="flex flex-wrap gap-2">
                       {holidays.map(h => (
                         <span key={h} className="bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1 text-[10px] font-bold flex items-center gap-1.5">
-                          {h}
+                          {formatDate(h)}
                           <button type="button" onClick={() => handleRemoveHoliday(h)} className="text-red-500 font-bold hover:text-red-700">✕</button>
                         </span>
                       ))}
@@ -902,7 +1077,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
                           }`}
                         >
                           <h4 className="font-bold text-xs">{appt.userId?.name}</h4>
-                          <span className="text-[10px] text-slate-400 font-bold block mt-0.5">🕒 {appt.date} at {appt.time}</span>
+                          <span className="text-[10px] text-slate-400 font-bold block mt-0.5">🕒 {formatDate(appt.date)} at {appt.time}</span>
                         </div>
                       ))}
                       {appointments.filter(a => a.status === 'confirmed').length === 0 && (
@@ -996,7 +1171,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
                       <div className="flex justify-between items-start">
                         <div>
                           <h4 className="font-bold text-slate-800 text-xs">{f.appointmentId?.userId?.name || 'Patient'}</h4>
-                          <span className="text-[9px] text-slate-400 font-bold block">{f.appointmentId?.date}</span>
+                          <span className="text-[9px] text-slate-400 font-bold block">{formatDate(f.appointmentId?.date)}</span>
                         </div>
                         <div className="flex items-center text-amber-500">
                           {'★'.repeat(f.rating)}{'☆'.repeat(5 - f.rating)}
@@ -1252,16 +1427,51 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
             <p className="text-[11px] text-slate-400 mb-4">Set meeting details for Dr. {doctorInfo?.name} consultation.</p>
 
             <form onSubmit={handleAcceptAppointment} className="space-y-4">
+              {acceptingAppt.type === 'online' ? (
+                <div className="bg-indigo-50/50 border border-indigo-100 p-3.5 rounded-2xl space-y-2">
+                  <p className="text-[10px] text-slate-600 font-semibold leading-relaxed">
+                    📅 Open Google Calendar to set up a meeting invite and auto-generate a Google Meet link.
+                  </p>
+                  <a 
+                    href={getGoogleCalendarUrl(acceptingAppt)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[10px] font-bold shadow-sm transition-all"
+                  >
+                    Create Calendar Event ↗
+                  </a>
+                </div>
+              ) : (
+                <div className="bg-purple-50/50 border border-purple-100 p-3.5 rounded-2xl">
+                  <p className="text-[10px] text-purple-950 font-semibold leading-relaxed">
+                    🏥 This is an <strong>Offline Visit</strong>. Please enter the clinic room instructions or map location link below.
+                  </p>
+                </div>
+              )}
+
               <div className="space-y-1">
-                <label className="text-[9px] font-bold text-slate-400 uppercase">Google Meet / Calendar Invite Link</label>
-                <input 
-                  required
-                  type="text" 
-                  value={customMeetUrl}
-                  onChange={e => setCustomMeetUrl(e.target.value)}
-                  placeholder="https://meet.google.com/abc-defg-hij"
-                  className="w-full border border-slate-200 rounded-xl p-3 text-xs focus:outline-none"
-                />
+                <label className="text-[9px] font-bold text-slate-400 uppercase">
+                  {acceptingAppt.type === 'online' ? 'Google Meet / Calendar Invite Link' : 'Clinic Instructions / Location Details'}
+                </label>
+                {acceptingAppt.type === 'online' ? (
+                  <input 
+                    required
+                    type="text" 
+                    value={customMeetUrl}
+                    onChange={e => setCustomMeetUrl(e.target.value)}
+                    placeholder="https://meet.google.com/abc-defg-hij"
+                    className="w-full border border-slate-200 rounded-xl p-3 text-xs focus:outline-none"
+                  />
+                ) : (
+                  <textarea 
+                    required
+                    rows={3}
+                    value={customMeetUrl}
+                    onChange={e => setCustomMeetUrl(e.target.value)}
+                    placeholder="e.g. Visit Room 302, 3rd floor. Bring your blood test reports. Map: https://maps.app.goo.gl/..."
+                    className="w-full border border-slate-200 rounded-xl p-3 text-xs focus:outline-none font-bold"
+                  />
+                )}
               </div>
 
               <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">

@@ -7,6 +7,7 @@ export interface IDoctorAvailability extends Document {
   holidays: Date[];
   leaves: Date[];
   slotDuration: number; // in minutes, e.g. 30
+  maxAppointmentsPerSlot?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -23,7 +24,8 @@ const DoctorAvailabilitySchema: Schema = new Schema(
     ],
     holidays: { type: [Date], default: [] },
     leaves: { type: [Date], default: [] },
-    slotDuration: { type: Number, default: 30 }
+    slotDuration: { type: Number, default: 30 },
+    maxAppointmentsPerSlot: { type: Number, default: 1 }
   },
   { timestamps: true }
 );

@@ -377,6 +377,7 @@ router.get('/admin/doctors', authenticateToken, requireRole(['SuperAdmin', 'Admi
 router.post('/admin/doctors', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), DoctorController.adminAddDoctor);
 router.put('/admin/doctors/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), DoctorController.adminEditDoctor);
 router.delete('/admin/doctors/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), DoctorController.adminDeleteDoctor);
+router.get('/admin/doctors/:id/availability', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), DoctorController.adminGetDoctorAvailability);
 
 // --- VENDOR MANAGEMENT FOR ADMIN ---
 router.get('/admin/vendors', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminGetVendors);
@@ -434,6 +435,7 @@ router.put('/doctor/profile', authenticateToken, requireRole(['Doctor']), Doctor
 router.put('/doctor/settings', authenticateToken, requireRole(['Doctor']), DoctorController.updateDoctorSettings);
 router.get('/doctor/feedback', authenticateToken, requireRole(['Doctor']), DoctorController.getDoctorFeedback);
 router.put('/doctor/appointments/:appointmentId/notes', authenticateToken, requireRole(['Doctor']), DoctorController.updateAppointmentNotes);
+router.get('/doctor/stats', authenticateToken, requireRole(['Doctor']), DoctorController.getDoctorDashboardStats);
 
 // --- VENDOR SIGN IN & PORTAL ROUTES ---
 router.post('/vendor/auth/login', VendorController.vendorLogin);
@@ -448,6 +450,8 @@ router.get('/patient/doctors', authenticateToken, requireRole(['User']), Appoint
 router.get('/patient/doctors/:doctorId/slots', authenticateToken, requireRole(['User']), AppointmentController.getDoctorSlots);
 router.post('/patient/appointments', authenticateToken, requireRole(['User']), AppointmentController.bookAppointment);
 router.get('/patient/appointments', authenticateToken, requireRole(['User']), AppointmentController.getPatientAppointments);
+router.post('/patient/appointments/verify-payment', authenticateToken, requireRole(['User']), AppointmentController.verifyAppointmentPayment);
+router.post('/patient/appointments/:appointmentId/cancel-payment', authenticateToken, requireRole(['User']), AppointmentController.cancelAppointmentPayment);
 router.post('/patient/feedback', authenticateToken, requireRole(['User']), AppointmentController.addFeedback);
 router.get('/patient/doctors/:doctorId/feedback', authenticateToken, requireRole(['User']), AppointmentController.getDoctorFeedback);
 

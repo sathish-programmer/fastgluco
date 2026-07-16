@@ -14,6 +14,8 @@ export interface IDoctor extends Document {
   hospitalName?: string;
   registrationNumber?: string;
   consultationFee?: number;
+  onlineConsultationFee?: number;
+  offlineConsultationFee?: number;
   phone?: string;
   address?: string;
   languagesKnown?: string[];
@@ -42,6 +44,8 @@ const DoctorSchema: Schema = new Schema(
     hospitalName: { type: String },
     registrationNumber: { type: String },
     consultationFee: { type: Number },
+    onlineConsultationFee: { type: Number, default: 0 },
+    offlineConsultationFee: { type: Number, default: 0 },
     phone: { type: String },
     address: { type: String },
     languagesKnown: { type: [String], default: [] },

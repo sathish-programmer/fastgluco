@@ -431,17 +431,26 @@ export class EmailService {
               <p>Your appointment request with <strong>Dr. ${appt.doctorId.name}</strong> for ${appt.date} at ${appt.time} has been received and is pending confirmation.</p>
               <p>Reason: ${appt.reason}</p>`;
     } else if (type === 'confirmed') {
-      subject = `Appointment Confirmed - Google Meet Link`;
+      const isOnline = appt.type === 'online';
+      subject = isOnline ? `Appointment Confirmed - Google Meet Link` : `Appointment Confirmed - Clinic Visit Details`;
       body = `<p>Hi ${appt.userId.name},</p>
               <p>Your appointment with <strong>Dr. ${appt.doctorId.name}</strong> is confirmed!</p>
               <p><strong>Date:</strong> ${appt.date}</p>
               <p><strong>Time:</strong> ${appt.time}</p>
-              <p><strong>Join Meeting:</strong> <a href="${appt.meetingLink}">${appt.meetingLink}</a></p>`;
+              ${isOnline 
+                ? `<p><strong>Join Meeting:</strong> <a href="${appt.meetingLink}">${appt.meetingLink}</a></p>` 
+                : `<p><strong>Clinic Instructions & Location:</strong> ${appt.meetingLink || 'Please visit the clinic at the scheduled slot.'}</p>`
+              }`;
     } else if (type === 'completed') {
-      subject = `Appointment Completed`;
+      subject = `Appointment Completed & Invoice Generated`;
+      const invoiceDownload = appt.invoiceUrl ? `<p><strong>Invoice PDF:</strong> <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}${appt.invoiceUrl}">Download Invoice</a></p>` : '';
+      const rxDownload = appt.prescriptionUrl ? `<p><strong>Prescription:</strong> <a href="${appt.prescriptionUrl}">Download Prescription</a></p>` : '';
       body = `<p>Hi ${appt.userId.name},</p>
-              <p>Your consultation with <strong>Dr. ${appt.doctorId.name}</strong> on ${appt.date} has been marked as completed.</p>
-              <p>Notes: ${appt.notes || 'None provided.'}</p>`;
+              <p>Your consultation with <strong>Dr. ${appt.doctorId.name}</strong> on ${appt.date} has been completed.</p>
+              <p><strong>Consultation Notes:</strong> ${appt.notes || 'None provided.'}</p>
+              ${appt.prescriptionText ? `<p><strong>Prescription Notes:</strong> ${appt.prescriptionText}</p>` : ''}
+              ${rxDownload}
+              ${invoiceDownload}`;
     } else if (type === 'prescription') {
       subject = `Prescription Shared`;
       body = `<p>Hi ${appt.userId.name},</p>

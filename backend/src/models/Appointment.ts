@@ -13,6 +13,15 @@ export interface IAppointment extends Document {
   prescriptionText?: string;
   reminders?: { '30min'?: boolean; '10min'?: boolean };
   patientNotes?: string;
+  type?: 'online' | 'offline';
+  paymentStatus?: 'pending' | 'paid' | 'waived' | 'failed';
+  paymentDetails?: {
+    razorpayOrderId?: string;
+    razorpayPaymentId?: string;
+    razorpaySignature?: string;
+  };
+  consultationFee?: number;
+  invoiceUrl?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -33,7 +42,16 @@ const AppointmentSchema: Schema = new Schema(
       '30min': { type: Boolean, default: false },
       '10min': { type: Boolean, default: false }
     },
-    patientNotes: { type: String, default: '' }
+    patientNotes: { type: String, default: '' },
+    type: { type: String, enum: ['online', 'offline'], default: 'offline' },
+    paymentStatus: { type: String, enum: ['pending', 'paid', 'waived', 'failed'], default: 'pending' },
+    paymentDetails: {
+      razorpayOrderId: { type: String },
+      razorpayPaymentId: { type: String },
+      razorpaySignature: { type: String }
+    },
+    consultationFee: { type: Number, default: 0 },
+    invoiceUrl: { type: String }
   },
   { timestamps: true }
 );

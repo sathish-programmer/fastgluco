@@ -1,6 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Edit, UserCheck, UserX } from 'lucide-react';
 
+const formatDate = (dateStr: string | undefined | null, withTime = false): string => {
+  if (!dateStr) return '--';
+  try {
+    const isPlain = /^\d{4}-\d{2}-\d{2}$/.test(dateStr.trim());
+    const date = isPlain ? new Date(dateStr + 'T00:00:00') : new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    const opts: Intl.DateTimeFormatOptions = withTime
+      ? { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }
+      : { day: '2-digit', month: 'short', year: 'numeric' };
+    return date.toLocaleDateString('en-IN', opts);
+  } catch { return dateStr; }
+};
+
 interface AdminExtDashboardProps {
   apiUrl: string;
   token: string;
@@ -29,13 +42,8 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
 
   // Doctor Availability Slot Simulator
   const [selectedDoctorId, setSelectedDoctorId] = useState('');
-  const [availForm] = useState({
-    availableDays: [1, 2, 3, 4, 5],
-    availableTimeSlots: [{ start: '09:00', end: '13:00' }, { start: '14:00', end: '17:00' }],
-    holidays: [] as string[],
-    leaves: [] as string[],
-    slotDuration: 30
-  });
+  const [doctorAvailability, setDoctorAvailability] = useState<any>(null);
+  const [availLoading, setAvailLoading] = useState(false);
 
   // Reports
   const [salesReport, setSalesReport] = useState({ totalSales: 0, totalOrders: 0, averageValue: 0 });
@@ -46,6 +54,25 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
     fetchVendors();
     fetchOrders();
   }, []);
+
+  useEffect(() => {
+    if (!selectedDoctorId) return;
+    const fetchAvailability = async () => {
+      setAvailLoading(true);
+      try {
+        const res = await fetch(`${apiUrl}/admin/doctors/${selectedDoctorId}/availability`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        setDoctorAvailability(data);
+      } catch (e) {
+        setDoctorAvailability(null);
+      } finally {
+        setAvailLoading(false);
+      }
+    };
+    fetchAvailability();
+  }, [selectedDoctorId]);
 
   const fetchDoctors = async () => {
     try {
@@ -235,6 +262,7 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
                 <tr>
                   <th className="px-6 py-4">Specialist</th>
                   <th className="px-6 py-4">Specialty</th>
+                  <th className="px-6 py-4">Rating</th>
                   <th className="px-6 py-4">Status</th>
                   <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
@@ -252,6 +280,23 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
                       </div>
                     </td>
                     <td className="px-6 py-4 text-xs font-bold text-indigo-600">{doc.specialty}</td>
+                    <td className="px-6 py-4">
+                      {doc.avgRating != null ? (
+                        <div className="flex flex-col gap-0.5">
+                          <div className="flex items-center gap-0.5">
+                            {[1,2,3,4,5].map(star => (
+                              <svg key={star} className={`w-3.5 h-3.5 ${star <= Math.round(doc.avgRating) ? 'text-amber-400' : 'text-slate-200'}`} fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.168c.969 0 1.371 1.24.588 1.81l-3.374 2.452a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118L10 14.347l-3.952 2.701c-.784.57-1.838-.196-1.539-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.058 9.394c-.783-.57-.38-1.81.588-1.81h4.168a1 1 0 00.95-.69l1.285-3.967z"/>
+                              </svg>
+                            ))}
+                            <span className="text-xs font-bold text-slate-700 ml-1">{doc.avgRating}</span>
+                          </div>
+                          <span className="text-[10px] text-slate-400">{doc.ratingCount} review{doc.ratingCount !== 1 ? 's' : ''}</span>
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-slate-350 italic">No ratings yet</span>
+                      )}
+                    </td>
                     <td className="px-6 py-4">
                       {doc.isActive ? (
                         <span className="bg-green-50 text-success text-[10px] font-bold px-2 py-0.5 rounded-full border border-green-100 flex items-center gap-1 w-max">
@@ -294,7 +339,7 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
         <div className="bg-white rounded-3xl border border-slate-200 p-6 space-y-4">
           <div>
             <h2 className="text-xl font-bold text-slate-800">Dynamic Slot Simulator</h2>
-            <p className="text-xs text-slate-400 mt-1">Choose a doctor to simulate and preview generated slots.</p>
+            <p className="text-xs text-slate-400 mt-1">Choose a doctor to preview their real configured availability.</p>
           </div>
 
           <div className="flex gap-4">
@@ -310,23 +355,53 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
                 ))}
               </select>
             </div>
-            
+
             <div className="flex-1 bg-slate-50 rounded-2xl p-4 border border-slate-100">
-              <h3 className="font-bold text-slate-800 text-sm mb-3">Simulation Parameter Defaults</h3>
-              <div className="grid grid-cols-2 gap-4 text-xs font-semibold text-slate-600">
-                <div>
-                  <span className="block text-[10px] text-slate-400 uppercase">Available Days</span>
-                  <span>Monday - Friday</span>
+              {availLoading ? (
+                <p className="text-xs text-slate-400">Loading availability...</p>
+              ) : doctorAvailability ? (
+                <>
+                  <h3 className="font-bold text-slate-800 text-sm mb-3">Real Availability Configuration</h3>
+                  <div className="grid grid-cols-2 gap-4 text-xs font-semibold text-slate-600">
+                    <div>
+                      <span className="block text-[10px] text-slate-400 uppercase">Available Days</span>
+                      <span>{(() => {
+                        const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+                        return (doctorAvailability.availableDays || []).map((d: number) => dayNames[d]).join(', ') || 'Not configured';
+                      })()}</span>
+                    </div>
+                    <div>
+                      <span className="block text-[10px] text-slate-400 uppercase">Time Slots</span>
+                      <span>{(doctorAvailability.availableTimeSlots || []).map((s: any) => `${s.start} – ${s.end}`).join(', ') || 'Not configured'}</span>
+                    </div>
+                    <div>
+                      <span className="block text-[10px] text-slate-400 uppercase">Slot Duration</span>
+                      <span>{doctorAvailability.slotDuration || 30} minutes</span>
+                    </div>
+                    <div>
+                      <span className="block text-[10px] text-slate-400 uppercase">Max Per Slot</span>
+                      <span>{doctorAvailability.maxAppointmentsPerSlot || 1} patient(s)</span>
+                    </div>
+                    {(doctorAvailability.holidays || []).length > 0 && (
+                      <div className="col-span-2">
+                        <span className="block text-[10px] text-slate-400 uppercase">Holidays</span>
+                        <span>{(doctorAvailability.holidays as string[]).map(h => formatDate(h)).join(', ')}</span>
+                      </div>
+                    )}
+                    {(doctorAvailability.leaves || []).length > 0 && (
+                      <div className="col-span-2">
+                        <span className="block text-[10px] text-slate-400 uppercase">Leaves</span>
+                        <span>{(doctorAvailability.leaves as string[]).map(l => formatDate(l)).join(', ')}</span>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-sm font-semibold text-slate-500">No availability configured yet</p>
+                  <p className="text-xs text-slate-400 mt-1">Doctor has not set up their schedule in the portal.</p>
                 </div>
-                <div>
-                  <span className="block text-[10px] text-slate-400 uppercase">Default Working Hours</span>
-                  <span>09:00 - 13:00, 14:00 - 17:00</span>
-                </div>
-                <div>
-                  <span className="block text-[10px] text-slate-400 uppercase">Default Slot Duration</span>
-                  <span>{availForm.slotDuration} minutes</span>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
@@ -423,7 +498,7 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
                   <tr key={o._id}>
                     <td className="px-6 py-4">
                       <h4 className="font-mono text-slate-800 text-xs">{o._id}</h4>
-                      <p className="text-[10px] text-slate-400 font-normal">{new Date(o.createdAt).toLocaleString()}</p>
+                      <p className="text-[10px] text-slate-400 font-normal">{formatDate(o.createdAt, true)}</p>
                     </td>
                     <td className="px-6 py-4 font-bold text-slate-800">
                       {o.currency === 'USD' ? '$' : '₹'}{o.totalAmount.toFixed(2)}
