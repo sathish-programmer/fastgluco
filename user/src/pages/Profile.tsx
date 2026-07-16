@@ -486,57 +486,59 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
             </select>
           </div>
 
-          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-3">
-            <h4 className="text-[10px] font-bold text-slate-450 dark:text-slate-400 uppercase tracking-wider flex items-center space-x-1.5">
-              <Globe className="h-4 w-4 text-primary dark:text-primary-light" />
-              <span>Default Shipping Address</span>
-            </h4>
+          {cancerJourney === 'PREVENTION' && (
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-3">
+              <h4 className="text-[10px] font-bold text-slate-450 dark:text-slate-400 uppercase tracking-wider flex items-center space-x-1.5">
+                <Globe className="h-4 w-4 text-primary dark:text-primary-light" />
+                <span>Default Shipping Address</span>
+              </h4>
 
-            <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Street Address</label>
-              <input
-                type="text"
-                value={addressLine1}
-                onChange={(e) => setAddressLine1(e.target.value)}
-                placeholder="e.g. Apartment, Suit, Road number"
-                className="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 transition-all"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">City</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Street Address</label>
                 <input
                   type="text"
-                  value={addressCity}
-                  onChange={(e) => setAddressCity(e.target.value)}
-                  placeholder="e.g. Bangalore"
+                  value={addressLine1}
+                  onChange={(e) => setAddressLine1(e.target.value)}
+                  placeholder="e.g. Apartment, Suit, Road number"
+                  className="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 transition-all"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">City</label>
+                  <input
+                    type="text"
+                    value={addressCity}
+                    onChange={(e) => setAddressCity(e.target.value)}
+                    placeholder="e.g. Bangalore"
+                    className="w-full px-3.5 py-2 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">State</label>
+                  <input
+                    type="text"
+                    value={addressState}
+                    onChange={(e) => setAddressState(e.target.value)}
+                    placeholder="e.g. Karnataka"
+                    className="w-full px-3.5 py-2 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 transition-all"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Postal Code (PIN/ZIP)</label>
+                <input
+                  type="text"
+                  value={addressPinCode}
+                  onChange={(e) => setAddressPinCode(e.target.value)}
+                  placeholder="e.g. 560001"
                   className="w-full px-3.5 py-2 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 transition-all"
                 />
               </div>
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">State</label>
-                <input
-                  type="text"
-                  value={addressState}
-                  onChange={(e) => setAddressState(e.target.value)}
-                  placeholder="e.g. Karnataka"
-                  className="w-full px-3.5 py-2 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 transition-all"
-                />
-              </div>
             </div>
-
-            <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Postal Code (PIN/ZIP)</label>
-              <input
-                type="text"
-                value={addressPinCode}
-                onChange={(e) => setAddressPinCode(e.target.value)}
-                placeholder="e.g. 560001"
-                className="w-full px-3.5 py-2 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 transition-all"
-              />
-            </div>
-          </div>
+          )}
 
           <div className="pt-4 mt-2 border-t border-slate-100 dark:border-slate-800 space-y-4">
             <h4 className="text-[10px] font-bold text-slate-450 dark:text-slate-400 uppercase tracking-wider flex items-center space-x-1.5">
