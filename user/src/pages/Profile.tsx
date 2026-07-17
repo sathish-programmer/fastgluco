@@ -38,8 +38,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
   const [weight, setWeight] = useState(user?.weight || 70);
   const [gender, setGender] = useState<'Male' | 'Female' | 'Other'>(user?.gender || 'Male');
   const [activityLevel, setActivityLevel] = useState(user?.activityLevel || 'Moderately active');
-  const [goal, setGoal] = useState(user?.goal || 'Maintain weight');
-  const [spikeThreshold, setSpikeThreshold] = useState(user?.spikeThreshold || 90);
+  const [spikeThreshold, setSpikeThreshold] = useState(user?.spikeThreshold || 140);
   const [currency, setCurrency] = useState<'INR' | 'USD'>((user?.currency as 'INR' | 'USD') || 'INR');
   const [addressLine1, setAddressLine1] = useState(user?.addressLine1 || '');
   const [addressCity, setAddressCity] = useState(user?.addressCity || '');
@@ -81,7 +80,6 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
       weight,
       gender,
       activityLevel,
-      goal,
       spikeThreshold,
       currency,
       addressLine1,
@@ -253,8 +251,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
             {user?.dailyCalorieTarget || 2000} kcal / day
           </span>
           <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold mt-1 leading-relaxed">
-            Mifflin-St Jeor target calculated from your height, weight, activity, and {user?.goal?.toLowerCase()} goal.{' '}
-            <a href="https://pubmed.ncbi.nlm.nih.gov/15883556/" target="_blank" rel="noreferrer" className="text-primary dark:text-primary-light hover:underline" onClick={(e) => e.stopPropagation()}>[Source]</a>
+            Mifflin-St Jeor target calculated from your height, weight, and activity. <a href="https://pubmed.ncbi.nlm.nih.gov/15883556/" target="_blank" rel="noreferrer" className="text-primary dark:text-primary-light hover:underline" onClick={(e) => e.stopPropagation()}>[Source]</a>
           </p>
         </div>
       </motion.div>
@@ -444,18 +441,6 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
             </select>
           </div>
 
-          <div>
-            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Diet Goal</label>
-            <select
-              value={goal}
-              onChange={(e: any) => setGoal(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 cursor-pointer transition-all"
-            >
-              <option value="Lose weight">Lose weight</option>
-              <option value="Maintain weight">Maintain weight</option>
-              <option value="Gain weight">Gain weight</option>
-            </select>
-          </div>
 
           <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center space-x-1">

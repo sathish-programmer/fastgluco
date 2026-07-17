@@ -3,6 +3,7 @@ import { Capacitor } from '@capacitor/core';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
+import { ConsultationProvider } from './context/ConsultationContext';
 import { Login } from './pages/Login';
 import { RecommendedFoodsScreen } from './screens/RecommendedFoodsScreen';
 import { Register } from './pages/Register';
@@ -415,9 +416,11 @@ export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <ToastProvider>
-          <MainAppContent />
-        </ToastProvider>
+        <ConsultationProvider>
+          <ToastProvider>
+            <MainAppContent />
+          </ToastProvider>
+        </ConsultationProvider>
       </AuthProvider>
     </ThemeProvider>
   );

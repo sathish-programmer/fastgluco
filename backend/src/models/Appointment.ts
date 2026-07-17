@@ -20,6 +20,7 @@ export interface IAppointment extends Document {
     razorpayPaymentId?: string;
     razorpaySignature?: string;
   };
+  recommendationId?: mongoose.Types.ObjectId;
   consultationFee?: number;
   invoiceUrl?: string;
   createdAt: Date;
@@ -30,6 +31,7 @@ const AppointmentSchema: Schema = new Schema(
   {
     doctorId: { type: Schema.Types.ObjectId, ref: 'Doctor', required: true },
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    recommendationId: { type: Schema.Types.ObjectId, ref: 'ConsultationRecommendation' },
     reason: { type: String, required: true },
     date: { type: String, required: true },
     time: { type: String, required: true },

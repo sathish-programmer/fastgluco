@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { User, Activity, Goal, ChevronRight, ChevronLeft, Heart, Mail } from 'lucide-react';
+import { User, Activity, ChevronRight, ChevronLeft, Heart, Mail } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
 interface RegisterProps {
@@ -21,7 +21,6 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
   const [height, setHeight] = useState<number | ''>('');
   const [weight, setWeight] = useState<number | ''>('');
   const [activityLevel, setActivityLevel] = useState<'Sedentary' | 'Lightly active' | 'Moderately active' | 'Very active'>('Moderately active');
-  const [goal, setGoal] = useState<'Lose weight' | 'Maintain weight' | 'Gain weight'>('Maintain weight');
   const [cancerJourney, setCancerJourney] = useState<'PREVENTION' | 'TREATMENT' | 'SECONDARY_PREVENTION'>('PREVENTION');
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
@@ -60,7 +59,6 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
       height: Number(height),
       weight: Number(weight),
       activityLevel,
-      goal,
       cancerJourney,
       cancerDisclaimerAccepted: cancerJourney === 'PREVENTION' ? true : disclaimerAccepted,
       cancerDisclaimerAcceptedAt: cancerJourney === 'PREVENTION' ? undefined : (disclaimerAccepted ? new Date().toISOString() : undefined)
@@ -235,21 +233,6 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1.5 flex items-center space-x-1">
-                  <Goal className="h-4 w-4 text-slate-400" />
-                  <span>Goal Target</span>
-                </label>
-                <select
-                  value={goal}
-                  onChange={(e: any) => setGoal(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-slate-700 text-sm font-medium"
-                >
-                  <option value="Lose weight">Lose weight</option>
-                  <option value="Maintain weight">Maintain weight</option>
-                  <option value="Gain weight">Gain weight</option>
-                </select>
-              </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-500 mb-1.5 flex items-center space-x-1">

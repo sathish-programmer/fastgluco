@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Heart } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { HabitsService } from '../../services/habitsService';
+import { ConsultationBanner } from '../../components/ConsultationBanner';
 
 interface IntimacyCheckScreenProps {
   onBack: () => void;
+  onBookAppointment?: (reason: string) => void;
 }
 
-export const IntimacyCheckScreen: React.FC<IntimacyCheckScreenProps> = ({ onBack }) => {
+export const IntimacyCheckScreen: React.FC<IntimacyCheckScreenProps> = ({ onBack, onBookAppointment }) => {
   const { user, apiUrl, token } = useAuth();
   const [selected, setSelected] = useState<'yes' | 'no' | null>(null);
   const [loading, setLoading] = useState(false);
@@ -101,26 +103,20 @@ export const IntimacyCheckScreen: React.FC<IntimacyCheckScreenProps> = ({ onBack
       )}
 
       {selected === 'no' && (
-        <div className="bg-white border border-amber-200 rounded-2xl p-4 animate-fade-in shadow-sm relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-amber-50 rounded-bl-full -z-10"></div>
-          <h4 className="font-bold text-slate-800 mb-2 flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.4)]"></span>
-            You're not alone — and this is treatable
-          </h4>
-          <p className="text-xs text-slate-600 leading-relaxed mb-4">
-            Most causes — circulation, hormones, mood, medication or stress — are common and very fixable once looked at. A quiet, confidential conversation is the simplest first step.
-          </p>
-          <button 
-            onClick={() => {
-              onBack();
-              // Trigger navigation to Book Appointment via parent router state if possible. Let's just instruct to open from the menu
-              alert("Please click 'Book Appointment' in the navigation menu to schedule a consultation with our specialist.");
-            }}
-            className="w-full py-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-sm transition-all shadow-sm flex justify-center items-center gap-2"
-          >
-            Book Appointment
-          </button>
-        </div>
+        <ConsultationBanner
+          sourceModule="Sexual Health"
+          reason="Sex Health"
+          triggerCondition="Selected 'Not really' happy with sex life"
+          riskLevel="Medium"
+          recommendedSpecialty="Sexologist/Urologist/Gynecologist"
+          title="You're not alone — and this is treatable"
+          description="Most causes — circulation, hormones, mood, medication or stress — are common and very fixable once looked at. A quiet, confidential conversation is the simplest first step."
+          colorTheme="amber"
+          onBookAppointment={(id) => {
+            onBack();
+            if (onBookAppointment) onBookAppointment(id);
+          }}
+        />
       )}
     </div>
   );

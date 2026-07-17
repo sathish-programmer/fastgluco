@@ -40,6 +40,8 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  const [expandedApptId, setExpandedApptId] = useState<string | null>(null);
+
   // Profile Form States
   const [profileForm, setProfileForm] = useState({
     name: '', qualification: '', specialty: '', experience: 0, 
@@ -652,6 +654,14 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
                             >
                               Reject
                             </button>
+                            {appt.recommendationId && (
+                              <button 
+                                onClick={() => setExpandedApptId(expandedApptId === appt._id ? null : appt._id)}
+                                className="flex-1 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold transition-all shadow-sm"
+                              >
+                                {expandedApptId === appt._id ? 'Less Details' : 'More Details'}
+                              </button>
+                            )}
                           </div>
                         )}
 
@@ -675,6 +685,14 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
                               >
                                 Notes / Prescription
                               </button>
+                              {appt.recommendationId && (
+                                <button 
+                                  onClick={() => setExpandedApptId(expandedApptId === appt._id ? null : appt._id)}
+                                  className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold transition-all shadow-sm"
+                                >
+                                  {expandedApptId === appt._id ? 'Less' : 'More'}
+                                </button>
+                              )}
                             </div>
                             {/* Mark Completed button — unlocks feedback for patient in user app */}
                             <button
@@ -731,6 +749,49 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
                             ) : (
                               <div className="text-center py-2 bg-slate-100 border border-slate-200 rounded-xl text-[11px] font-medium text-slate-500 italic">
                                 Waiting for patient review...
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Expandable Section */}
+                        {expandedApptId === appt._id && appt.recommendationId && (
+                          <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3 animate-in fade-in zoom-in-95 duration-200">
+                            <h5 className="font-bold text-slate-800 text-xs border-b border-slate-200 pb-2">Consultation Context</h5>
+                            
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <span className="block text-[10px] text-slate-400 font-bold uppercase mb-1">Source Module</span>
+                                <span className="text-xs font-medium text-slate-700 bg-white px-2 py-1 rounded border border-slate-200">{appt.recommendationId.sourceModule}</span>
+                              </div>
+                              <div>
+                                <span className="block text-[10px] text-slate-400 font-bold uppercase mb-1">Risk Level</span>
+                                <span className={`text-xs font-bold px-2 py-1 rounded border ${
+                                  appt.recommendationId.riskLevel === 'High' ? 'bg-rose-50 text-rose-600 border-rose-200' :
+                                  appt.recommendationId.riskLevel === 'Medium' ? 'bg-amber-50 text-amber-600 border-amber-200' :
+                                  'bg-emerald-50 text-emerald-600 border-emerald-200'
+                                }`}>
+                                  {appt.recommendationId.riskLevel || 'Unknown'}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div>
+                              <span className="block text-[10px] text-slate-400 font-bold uppercase mb-1">Trigger Condition</span>
+                              <p className="text-xs text-slate-600 leading-relaxed bg-white p-2 rounded border border-slate-200">{appt.recommendationId.triggerCondition || 'N/A'}</p>
+                            </div>
+
+                            {appt.recommendationId.assessmentAnswers && Object.keys(appt.recommendationId.assessmentAnswers).length > 0 && (
+                              <div>
+                                <span className="block text-[10px] text-slate-400 font-bold uppercase mb-1">Assessment Answers</span>
+                                <div className="bg-white border border-slate-200 rounded p-2 text-xs text-slate-600 space-y-1">
+                                  {Object.entries(appt.recommendationId.assessmentAnswers).map(([key, val]) => (
+                                    <div key={key} className="flex justify-between border-b border-slate-100 last:border-0 pb-1 last:pb-0">
+                                      <span className="font-medium">{key}:</span>
+                                      <span className="text-slate-500">{String(val)}</span>
+                                    </div>
+                                  ))}
+                                </div>
                               </div>
                             )}
                           </div>

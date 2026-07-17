@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { Calendar as CalendarIcon, Clock, ArrowLeft, Star } from 'lucide-react';
+import { useConsultation } from '../../context/ConsultationContext';
 
 interface BookAppointmentScreenProps {
   onBack?: () => void;
@@ -38,6 +39,7 @@ const formatDate = (dateStr: string | undefined | null): string => {
 export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ onBack }) => {
   const { apiUrl, token, user } = useAuth();
   const { showToast } = useToast();
+  const { pendingRecommendationId, setPendingRecommendationId } = useConsultation();
 
   const [doctors, setDoctors] = useState<any[]>([]);
   const [selectedDoctor, setSelectedDoctor] = useState<any | null>(null);
@@ -58,20 +60,47 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
   const [ratingVal, setRatingVal] = useState(5);
   const [feedbackText, setFeedbackText] = useState('');
 
-  const reasons = [
+  const defaultReasons = [
     'High Stress',
     'Sleep Issues',
     'Smoking',
     'Sex Health',
     'General Consultation',
     'Diabetes Consultation',
+    'Endocrinologist Consultation',
+    'Dentist Consultation',
+    'Gastric Specialist Consultation',
+    'Genetic Counselor Consultation',
     'Other'
   ];
+  const [reasons, setReasons] = useState<string[]>(defaultReasons);
 
   useEffect(() => {
     fetchDoctors();
     fetchAppointments();
-  }, []);
+
+    if (pendingRecommendationId) {
+      fetchRecommendationMetadata(pendingRecommendationId);
+    }
+  }, [pendingRecommendationId]);
+
+  const fetchRecommendationMetadata = async (recId: string) => {
+    try {
+      const res = await fetch(`${apiUrl}/patient/consultations/${recId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const recReason = data.recommendation.reason || data.recommendation.recommendedSpecialty;
+        if (recReason && !defaultReasons.includes(recReason)) {
+          setReasons(prev => [...prev, recReason]);
+        }
+        if (recReason) setReason(recReason);
+      }
+    } catch (err) {
+      console.error('Failed to fetch recommendation metadata', err);
+    }
+  };
 
   useEffect(() => {
     if (selectedDoctor && date) {
@@ -167,7 +196,8 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
           time: selectedSlot,
           reason,
           patientNotes,
-          type: consultationType
+          type: consultationType,
+          recommendationId: pendingRecommendationId
         })
       });
       const data = await res.json();
@@ -207,8 +237,10 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
               const verifyData = await verifyRes.json();
               if (!verifyRes.ok) throw new Error(verifyData.message || 'Payment verification failed.');
 
-              showToast('Appointment booked and confirmed successfully!', 'success');
-              resetForm();
+              showToast('Payment successful and appointment confirmed!', 'success');
+              setPendingRecommendationId(null);
+              await fetchAppointments();
+              fetchSlots();
             } catch (err: any) {
               showToast(err.message || 'Error verifying Razorpay payment signature.', 'error');
             } finally {
@@ -244,6 +276,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
       } else {
         // Offline or free online consultation
         showToast('Appointment requested successfully!', 'success');
+        setPendingRecommendationId(null);
         resetForm();
       }
     } catch (e) {
@@ -259,6 +292,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
     setReason('General Consultation');
     setPatientNotes('');
     setConsultationType('offline');
+    setPendingRecommendationId(null);
     setLoading(false);
     fetchAppointments();
   };
@@ -318,7 +352,15 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
               <div>
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Select Specialist</label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {doctors.map(doc => (
+                  {[...doctors].sort((a, b) => {
+                    if (reason === 'Endocrinologist Consultation') {
+                      const aIsEndo = a.specialty?.toLowerCase().includes('endocrinologist');
+                      const bIsEndo = b.specialty?.toLowerCase().includes('endocrinologist');
+                      if (aIsEndo && !bIsEndo) return -1;
+                      if (!aIsEndo && bIsEndo) return 1;
+                    }
+                    return 0;
+                  }).map(doc => (
                     <button
                       key={doc._id}
                       onClick={() => setSelectedDoctor(doc)}

@@ -9,6 +9,7 @@ import { GlucoseController } from '../controllers/glucoseController';
 import { EducationalController } from '../controllers/educationalController';
 import { AdminController } from '../controllers/adminController';
 import { ReportController } from '../controllers/reportController';
+import { ConsultationController } from '../controllers/ConsultationController';
 import { CoachingController } from '../controllers/coachingController';
 import { SubscriptionController } from '../controllers/subscriptionController';
 import { PlanAdminController } from '../controllers/planAdminController';
@@ -452,6 +453,11 @@ router.post('/patient/appointments', authenticateToken, requireRole(['User']), A
 router.get('/patient/appointments', authenticateToken, requireRole(['User']), AppointmentController.getPatientAppointments);
 router.post('/patient/appointments/verify-payment', authenticateToken, requireRole(['User']), AppointmentController.verifyAppointmentPayment);
 router.post('/patient/appointments/:appointmentId/cancel-payment', authenticateToken, requireRole(['User']), AppointmentController.cancelAppointmentPayment);
+
+// Consultation Recommendation Endpoints
+router.post('/patient/consultations/log', authenticateToken, requireRole(['User']), ConsultationController.logRecommendation);
+router.get('/patient/consultations/:id', authenticateToken, requireRole(['User']), ConsultationController.getRecommendation);
+router.put('/patient/consultations/:id/status', authenticateToken, requireRole(['User']), ConsultationController.updateStatus);
 router.post('/patient/feedback', authenticateToken, requireRole(['User']), AppointmentController.addFeedback);
 router.get('/patient/doctors/:doctorId/feedback', authenticateToken, requireRole(['User']), AppointmentController.getDoctorFeedback);
 

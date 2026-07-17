@@ -7,6 +7,7 @@ import { useToast } from '../../context/ToastContext';
 interface ShopScreenProps {
   onBack: () => void;
   type?: 'Antioxidants' | 'SaferProducts' | string;
+  defaultSearch?: string;
 }
 
 export const ProductImage: React.FC<{ src: string; apiUrl: string; className?: string; textClassName?: string }> = ({ src, apiUrl, className = "h-10 w-10 object-contain rounded-xl", textClassName = "text-3xl" }) => {
@@ -77,7 +78,7 @@ export interface ShopItem {
   regularPrice?: number;
 }
 
-export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type }) => {
+export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSearch }) => {
   const { apiUrl, token, user, branding } = useAuth();
   const { showToast } = useToast();
   const curr = user?.currency === 'INR' ? '₹' : '$';
@@ -89,7 +90,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type }) => {
   const [loading, setLoading] = useState(true);
 
   // Filters state
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(defaultSearch || '');
   const [selectedCategory, setSelectedCategory] = useState<string>(type || 'All');
   const [selectedBrand, setSelectedBrand] = useState<string>('All');
   const [minPrice, setMinPrice] = useState<number | ''>('');
@@ -784,8 +785,8 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type }) => {
           ) : products.length === 0 ? (
             <div className="text-center py-20 bg-white border border-slate-250 rounded-3xl shadow-sm">
               <AlertCircle className="h-10 w-10 text-slate-300 mx-auto mb-4" />
-              <h3 className="font-bold text-slate-700">No matches found</h3>
-              <p className="text-xs text-slate-450 mt-1">Try resetting filters or modify your keywords.</p>
+              <h3 className="font-bold text-slate-700">No items available</h3>
+              <p className="text-xs text-slate-450 mt-1">Try resetting filters or checking for alternative items.</p>
               <button 
                 onClick={() => { setSelectedCategory('All'); setSelectedBrand('All'); setSearch(''); setOnlyDoctorRecommended(false); setOnlyAvailable(false); }}
                 className="mt-4 px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl shadow-sm transition-all"

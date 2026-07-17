@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { Appointment } from '../models/Appointment';
 import { Feedback } from '../models/Feedback';
+import { ConsultationRecommendation } from '../models/ConsultationRecommendation';
 import { Doctor } from '../models/Doctor';
 import { DoctorAvailability } from '../models/DoctorAvailability';
 import { EmailService } from '../services/emailService';
@@ -122,7 +123,7 @@ export class AppointmentController {
   public static async bookAppointment(req: Request, res: Response) {
     try {
       const userId = (req as any).user.id;
-      const { doctorId, date, time, reason, patientNotes, type } = req.body;
+      const { doctorId, date, time, reason, patientNotes, type, recommendationId } = req.body;
       if (!doctorId || !date || !time || !reason) {
         return res.status(400).json({ message: 'Missing required parameters.' });
       }
@@ -160,7 +161,8 @@ export class AppointmentController {
         patientNotes: patientNotes || '',
         type: type || 'offline',
         consultationFee,
-        paymentStatus: type === 'online' ? 'pending' : 'waived'
+        paymentStatus: type === 'online' ? 'pending' : 'waived',
+        recommendationId
       });
 
       // If online consultation has a fee, generate a Razorpay order
@@ -201,6 +203,14 @@ export class AppointmentController {
 
       // Trigger Email log in background
       EmailService.sendAppointmentEmail('booked', appointment._id.toString()).catch(console.error);
+
+      // Update recommendation status if provided
+      if (recommendationId) {
+        await ConsultationRecommendation.findByIdAndUpdate(recommendationId, {
+          status: 'Booked',
+          appointmentId: appointment._id
+        });
+      }
 
       res.status(201).json({ appointment });
     } catch (err: any) {

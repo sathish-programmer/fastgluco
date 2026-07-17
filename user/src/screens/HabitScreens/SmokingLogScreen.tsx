@@ -3,14 +3,16 @@ import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { HabitsService, type HabitLog } from '../../services/habitsService';
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
+import { ConsultationBanner } from '../../components/ConsultationBanner';
 
 interface SmokingLogScreenProps {
   onBack: () => void;
+  onBookAppointment?: (reason: string) => void;
 }
 
-export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack }) => {
+export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBookAppointment }) => {
   const { user, token, apiUrl } = useAuth();
-  const [count, setCount] = useState(0);
+  const [count, setCount] = useState<number>(0);
   const [history, setHistory] = useState<HabitLog[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -144,6 +146,20 @@ export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack }) =>
           </div>
         )}
       </div>
+
+      {history.some(h => h.value.count > 0) && (
+        <ConsultationBanner
+          sourceModule="Smoking"
+          reason="Smoking Cessation Consultation"
+          triggerCondition="Logged > 0 cigarettes"
+          riskLevel="High"
+          recommendedSpecialty="Pulmonologist/De-addiction Specialist"
+          title="Cessation Support"
+          description="Smoking significantly accelerates cellular aging. We offer specialized support to help you quit."
+          colorTheme="rose"
+          onBookAppointment={onBookAppointment!}
+        />
+      )}
     </div>
   );
 };

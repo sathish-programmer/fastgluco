@@ -21,8 +21,13 @@ import {
   Microscope,
   ArrowRight,
   Calendar,
-  X
+  X,
+  Scale,
+  Stethoscope,
+  Flame,
+  Dna
 } from 'lucide-react';
+import { useConsultation } from '../context/ConsultationContext';
 import { StressLogScreen } from '../screens/HabitScreens/StressLogScreen';
 import { SmokingLogScreen } from '../screens/HabitScreens/SmokingLogScreen';
 import { SubstancesLogScreen } from '../screens/HabitScreens/SubstancesLogScreen';
@@ -35,6 +40,10 @@ import { MovementLogScreen } from '../screens/HabitScreens/MovementLogScreen';
 import { AlcoholLogScreen } from '../screens/HabitScreens/AlcoholLogScreen';
 import { ShopScreen } from '../screens/Shop/ShopScreen';
 import { CancerScreeningScreen } from '../screens/HabitScreens/CancerScreeningScreen';
+import { ObesityLogScreen } from '../screens/HabitScreens/ObesityLogScreen';
+import { DentalLogScreen } from '../screens/HabitScreens/DentalLogScreen';
+import { GastritisLogScreen } from '../screens/HabitScreens/GastritisLogScreen';
+import { GeneticLogScreen } from '../screens/HabitScreens/GeneticLogScreen';
 
 interface NonCancerDashboardProps {
   onNavigateToTab: (tab: string) => void;
@@ -43,6 +52,7 @@ interface NonCancerDashboardProps {
 export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNavigateToTab }) => {
   // Navigation State for Habit Screens
   const [activeScreen, setActiveScreen] = useState<string | null>(null);
+  const [shopQuery, setShopQuery] = useState<string>('');
   const [habits, setHabits] = useState<HabitLog[]>([]);
   const { apiUrl, token } = useAuth();
   const [showRecommendation, setShowRecommendation] = useState<boolean>(false);
@@ -206,19 +216,31 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
         { name: 'Repair', value: repairCount, color: '#10b981' }  // emerald-500
       ];
 
-  if (activeScreen === 'Stress') return <StressLogScreen onBack={() => setActiveScreen(null)} />;
-  if (activeScreen === 'Smoking') return <SmokingLogScreen onBack={() => setActiveScreen(null)} />;
+  const { setPendingRecommendationId } = useConsultation();
+
+  const handleBookAppt = (recommendationId: string) => {
+    setPendingRecommendationId(recommendationId);
+    onNavigateToTab('Book Appointment');
+  };
+
+  if (activeScreen === 'Stress') return <StressLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
+  if (activeScreen === 'Smoking') return <SmokingLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
   if (activeScreen === 'Substances') return <SubstancesLogScreen onBack={() => setActiveScreen(null)} />;
-  if (activeScreen === 'Intimacy') return <IntimacyCheckScreen onBack={() => setActiveScreen(null)} />;
-  if (activeScreen === 'Sleep') return <SleepLogScreen onBack={() => setActiveScreen(null)} />;
+  if (activeScreen === 'Intimacy') return <IntimacyCheckScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
+  if (activeScreen === 'Sleep') return <SleepLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
   if (activeScreen === 'Movement') return <MovementLogScreen onBack={() => setActiveScreen(null)} />;
-  if (activeScreen === 'Alcohol') return <AlcoholLogScreen onBack={() => setActiveScreen(null)} />;
+  if (activeScreen === 'Alcohol') return <AlcoholLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
   if (activeScreen === 'Fasting') return <FastingLogScreen onBack={() => setActiveScreen(null)} />;
   if (activeScreen === 'Stillness') return <StillnessLogScreen onBack={() => setActiveScreen(null)} />;
   if (activeScreen === 'Joy') return <JoyLogScreen onBack={() => setActiveScreen(null)} />;
   if (activeScreen === 'Antioxidants') return <ShopScreen type="Antioxidants" onBack={() => setActiveScreen(null)} />;
   if (activeScreen === 'SaferProducts') return <ShopScreen type="SaferProducts" onBack={() => setActiveScreen(null)} />;
   if (activeScreen === 'CancerScreening') return <CancerScreeningScreen onBack={() => setActiveScreen(null)} />;
+  if (activeScreen === 'Obesity') return <ObesityLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
+  if (activeScreen === 'Dental') return <DentalLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
+  if (activeScreen === 'Gastritis') return <GastritisLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} onNavigateToShop={(query) => { setShopQuery(query); setActiveScreen('GastritisShop'); }} />;
+  if (activeScreen === 'GastritisShop') return <ShopScreen type="All" defaultSearch={shopQuery} onBack={() => setActiveScreen('Gastritis')} />;
+  if (activeScreen === 'Genetic') return <GeneticLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
   
   const handleOpenHabit = (screenName: string) => {
     setActiveScreen(screenName);
@@ -386,6 +408,10 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
             <HabitItem icon={<Wine className="h-4 w-4 text-rose-600" />} label="Alcohol" onClick={() => handleOpenHabit('Alcohol')} />
             <HabitItem icon={<Pill className="h-4 w-4 text-amber-500" />} label="Substances" onClick={() => handleOpenHabit('Substances')} />
             <HabitItem icon={<Heart className="h-4 w-4 text-rose-500" />} label="Sexual health" onClick={() => handleOpenHabit('Intimacy')} />
+            <HabitItem icon={<Scale className="h-4 w-4 text-rose-500" />} label="Obesity" onClick={() => handleOpenHabit('Obesity')} />
+            <HabitItem icon={<Stethoscope className="h-4 w-4 text-slate-500" />} label="Dental health" onClick={() => handleOpenHabit('Dental')} />
+            <HabitItem icon={<Flame className="h-4 w-4 text-orange-500" />} label="Gastritis" onClick={() => handleOpenHabit('Gastritis')} />
+            <HabitItem icon={<Dna className="h-4 w-4 text-purple-500" />} label="Genetic risk" onClick={() => handleOpenHabit('Genetic')} />
           </div>
         </div>
 

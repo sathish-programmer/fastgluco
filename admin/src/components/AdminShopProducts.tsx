@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Plus, Trash2, Edit, Package, Search,
-  ToggleLeft, ToggleRight, Tag, X, AlertTriangle
+  ToggleLeft, ToggleRight, Tag, AlertTriangle, ArrowLeft
 } from 'lucide-react';
 
 interface AdminShopProductsProps {
@@ -83,7 +83,7 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ ...EMPTY_PRODUCT_FORM });
   const [isEditing, setIsEditing] = useState(false);
-  const [showProductModal, setShowProductModal] = useState(false);
+  const [viewState, setViewState] = useState<'list' | 'form'>('list');
   const [formTab, setFormTab] = useState<TabType>('basic');
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
@@ -185,8 +185,8 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
 
   const handleProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.price || !form.category) {
-      alert('Please fill in Name, Price, and Category.');
+    if (!form.name || !form.price || !form.category || !form.shortDescription) {
+      alert('Please fill in Name, Short Description, Price, and Category.');
       return;
     }
 
@@ -198,8 +198,9 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
         : `${apiUrl}/admin/shop-products`;
 
       // Format arrays from comma-separated strings
-      const payload = {
+      const payload: any = {
         ...form,
+        description: form.shortDescription,
         price: Number(form.price),
         discountPercent: Number(form.discountPercent || 0),
         stock: form.variants.length > 0 ? form.variants.reduce((sum, v) => sum + v.stock, 0) : Number(form.stock),
@@ -208,6 +209,10 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
         ingredients: form.ingredients.split(',').map(s => s.trim()).filter(Boolean),
         productTags: form.productTags.split(',').map(s => s.trim()).filter(Boolean)
       };
+
+      if (!isEditing) {
+        delete payload._id;
+      }
 
       const res = await fetch(url, {
         method,
@@ -219,7 +224,7 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
       });
 
       if (res.ok) {
-        setShowProductModal(false);
+        setViewState('list');
         setForm({ ...EMPTY_PRODUCT_FORM });
         setFormTab('basic');
         fetchProducts();
@@ -324,7 +329,7 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
     setForm({ ...EMPTY_PRODUCT_FORM });
     setIsEditing(false);
     setFormTab('basic');
-    setShowProductModal(true);
+    setViewState('form');
   };
 
   const openEdit = (prod: any) => {
@@ -359,7 +364,7 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
     });
     setIsEditing(true);
     setFormTab('basic');
-    setShowProductModal(true);
+    setViewState('form');
   };
 
   const addVariant = () => {
@@ -409,9 +414,11 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
       
-      {/* Header Banner */}
+      {viewState === 'list' ? (
+        <>
+          {/* Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
@@ -706,24 +713,24 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
           )}
         </div>
       )}
-
-      {/* Product Add/Edit Modal */}
-      {showProductModal && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-              <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
+      </>
+    ) : (
+        <div className="bg-white rounded-3xl w-full border border-slate-200 shadow-sm overflow-hidden flex flex-col min-h-[80vh]">
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => setViewState('list')}
+                className="p-2 hover:bg-slate-200 rounded-lg transition-colors text-slate-500 hover:text-slate-700"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </button>
+              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                 <Package className="h-5 w-5 text-indigo-600" />
                 {isEditing ? `Edit Product: ${form.name}` : 'New Medical Product'}
               </h3>
-              <button 
-                onClick={() => setShowProductModal(false)}
-                className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
-              >
-                <X className="h-4 w-4 text-slate-500" />
-              </button>
             </div>
+          </div>
 
             {/* Tabs Selector */}
             <div className="flex bg-slate-50 border-b border-slate-100 px-4">
@@ -776,6 +783,18 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
                         className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none"
                       />
                     </div>
+                  </div>
+
+                  <div className="space-y-1 mt-4 mb-4">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block">Short Description *</label>
+                    <input 
+                      required
+                      type="text" 
+                      value={form.shortDescription}
+                      onChange={e => setForm({ ...form, shortDescription: e.target.value })}
+                      placeholder="Brief headline description (1 sentence)"
+                      className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none"
+                    />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1113,18 +1132,6 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
                     </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block">Short Description *</label>
-                    <input 
-                      required
-                      type="text" 
-                      value={form.shortDescription}
-                      onChange={e => setForm({ ...form, shortDescription: e.target.value })}
-                      placeholder="Brief headline description (1 sentence)"
-                      className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block">Detailed Product Description *</label>
                     <textarea 
                       required
@@ -1142,7 +1149,7 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
                 <button 
                   type="button" 
-                  onClick={() => setShowProductModal(false)}
+                  onClick={() => setViewState('list')}
                   className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-colors"
                 >
                   Cancel
@@ -1159,7 +1166,6 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
 
             </form>
           </div>
-        </div>
       )}
 
       {/* Custom Category Creation Modal */}

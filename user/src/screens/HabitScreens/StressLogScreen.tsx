@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { HabitsService, type HabitLog } from '../../services/habitsService';
+import { ConsultationBanner } from '../../components/ConsultationBanner';
 
 interface StressLogScreenProps {
   onBack: () => void;
+  onBookAppointment?: (reason: string) => void;
 }
 
 const faces = [
@@ -15,7 +17,7 @@ const faces = [
   { id: 'maxed', label: 'Maxed', emoji: '😫' },
 ];
 
-export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack }) => {
+export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBookAppointment }) => {
   const { user, token, apiUrl } = useAuth();
   const [selectedFace, setSelectedFace] = useState<string | null>(null);
   const [history, setHistory] = useState<HabitLog[]>([]);
@@ -138,6 +140,20 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack }) => {
           )}
         </div>
       </div>
+
+      {history.some(h => h.value.faceId === 'stressed' || h.value.faceId === 'maxed') && (
+        <ConsultationBanner
+          sourceModule="Stress"
+          reason="Stress Consultation"
+          triggerCondition="Logged high stress"
+          riskLevel="High"
+          recommendedSpecialty="Psychologist/Counselor"
+          title="Stress Management Support"
+          description="You've logged high stress levels recently. Consider talking to a professional to help manage it effectively."
+          colorTheme="amber"
+          onBookAppointment={onBookAppointment!}
+        />
+      )}
     </div>
   );
 };

@@ -2,14 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Check, Minus, Moon, Trash2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { HabitsService, type HabitLog } from '../../services/habitsService';
+import { ConsultationBanner } from '../../components/ConsultationBanner';
 
 interface SleepLogScreenProps {
   onBack: () => void;
+  onBookAppointment?: (reason: string) => void;
 }
 
-export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack }) => {
+export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAppointment }) => {
   const { user, token, apiUrl } = useAuth();
-  const [hours, setHours] = useState(7);
+  const [hours, setHours] = useState<number>(7);
   const [history, setHistory] = useState<HabitLog[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -143,6 +145,20 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack }) => {
           </div>
         )}
       </div>
+
+      {history.some(h => h.value.hours <= 5) && (
+        <ConsultationBanner
+          sourceModule="Sleep"
+          reason="Sleep Consultation"
+          triggerCondition="Logged <= 5 hours of sleep"
+          riskLevel="Medium"
+          recommendedSpecialty="Sleep Specialist"
+          title="Sleep Quality Support"
+          description="You've logged less than 5 hours of sleep recently. Chronic sleep deprivation can accelerate cellular aging. Consider consulting a specialist."
+          colorTheme="indigo"
+          onBookAppointment={onBookAppointment!}
+        />
+      )}
     </div>
   );
 };

@@ -12,7 +12,7 @@ const ThemeContext = createContext<ThemeContextProps | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem('fastgluco_ui_theme') as Theme) || 'system'
+    () => (localStorage.getItem('fastgluco_ui_theme') as Theme) || 'light'
   );
   
   const [isDark, setIsDark] = useState<boolean>(false);

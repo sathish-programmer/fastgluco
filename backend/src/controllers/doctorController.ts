@@ -228,6 +228,7 @@ export class DoctorController {
         ]
       })
         .populate('userId', 'name email mobileNumber')
+        .populate('recommendationId')
         .sort({ date: 1, time: 1 });
 
       const appointmentIds = appointments.map(a => a._id);

@@ -2,14 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Check, Minus, Wine, Trash2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { HabitsService, type HabitLog } from '../../services/habitsService';
+import { ConsultationBanner } from '../../components/ConsultationBanner';
 
 interface AlcoholLogScreenProps {
   onBack: () => void;
+  onBookAppointment?: (reason: string) => void;
 }
 
-export const AlcoholLogScreen: React.FC<AlcoholLogScreenProps> = ({ onBack }) => {
+export const AlcoholLogScreen: React.FC<AlcoholLogScreenProps> = ({ onBack, onBookAppointment }) => {
   const { user, token, apiUrl } = useAuth();
-  const [drinks, setDrinks] = useState(0);
+  const [drinks, setDrinks] = useState<number>(0);
   const [history, setHistory] = useState<HabitLog[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -143,6 +145,20 @@ export const AlcoholLogScreen: React.FC<AlcoholLogScreenProps> = ({ onBack }) =>
           </div>
         )}
       </div>
+
+      {history.some(h => h.value.drinks > 0) && (
+        <ConsultationBanner
+          sourceModule="Alcohol"
+          reason="Alcohol De-addiction Consultation"
+          triggerCondition="Logged > 0 drinks"
+          riskLevel="High"
+          recommendedSpecialty="Hepatologist/De-addiction Specialist"
+          title="De-addiction Support"
+          description="Regular alcohol consumption affects cellular repair and liver health. We provide confidential support to help you reduce intake."
+          colorTheme="rose"
+          onBookAppointment={onBookAppointment!}
+        />
+      )}
     </div>
   );
 };

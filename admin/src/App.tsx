@@ -43,6 +43,7 @@ import {
   EyeOff,
   Bot,
   ShoppingCart,
+  BarChart3,
   Settings,
   Bell
 } from 'lucide-react';
@@ -58,6 +59,7 @@ import { DoctorPortal } from './components/DoctorPortal';
 import { VendorPortal } from './components/VendorPortal';
 import { AdminVendorManagement } from './components/AdminVendorManagement';
 import { AdminShopReports } from './components/AdminShopReports';
+import { ConsultationAnalytics } from './components/ConsultationAnalytics';
 
 const AdminPanelContent: React.FC = () => {
   const { admin, token, isAuthenticated, login, register, logout, error, clearError, apiUrl } = useAdminAuth();
@@ -1884,6 +1886,18 @@ const AdminPanelContent: React.FC = () => {
                   {!sidebarCollapsed && <span>Reports & Analytics</span>}
                 </div>
               </button>
+
+              <button 
+                onClick={() => { setActiveView('consultation-analytics'); setSearchQuery(''); }}
+                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                  activeView === 'consultation-analytics' ? 'bg-primary text-white' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <BarChart3 className="h-4.5 w-4.5 shrink-0" />
+                  {!sidebarCollapsed && <span>Consultation Funnel</span>}
+                </div>
+              </button>
             </div>
 
             {/* GROUP 5: SYSTEM CONTENT */}
@@ -2534,6 +2548,11 @@ const AdminPanelContent: React.FC = () => {
         {/* HEALTH STORE REPORTS VIEW */}
         {activeView === 'store-reports' && (
           <AdminShopReports apiUrl={apiUrl} token={token || ''} />
+        )}
+
+        {/* CONSULTATION ANALYTICS VIEW */}
+        {activeView === 'consultation-analytics' && (
+          <ConsultationAnalytics apiUrl={apiUrl} token={token || ''} />
         )}
 
         {/* REPORTS & ANALYTICS VIEW */}

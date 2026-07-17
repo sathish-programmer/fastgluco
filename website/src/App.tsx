@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Heart,
   Smartphone,
   ShieldCheck,
   Activity,
@@ -561,7 +560,7 @@ const Header: React.FC<{ activeTab: string; onTabChange: (tab: any) => void; bra
           {branding.appLogoUrl ? (
             <img src={branding.appLogoUrl} alt="Logo" className="h-5 w-auto object-contain rounded-md" />
           ) : (
-            <Heart className="h-5 w-5 fill-primary text-primary" />
+            <img src="/favicon.jpg" alt="Logo" className="h-6 w-auto object-contain rounded-md" />
           )}
           <div className="flex flex-col">
             <span className="text-base font-extrabold text-slate-800 tracking-tight leading-none">{branding.appName}</span>
@@ -611,10 +610,19 @@ const Footer: React.FC<{ onTabChange: (tab: any) => void; branding: BrandingProp
     <footer className="bg-slate-900 text-slate-400 py-10 px-6 text-xs border-t border-slate-800">
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
         <div>
-          <span className="text-white font-bold block mb-0.5">{branding.appName}</span>
-          {branding.appTagline && (
-            <span className="text-slate-500 block mb-2">{branding.appTagline}</span>
-          )}
+          <div className="flex items-center space-x-2 mb-2">
+            {branding.appLogoUrl ? (
+              <img src={branding.appLogoUrl} alt="Logo" className="h-6 w-auto object-contain rounded-md" />
+            ) : (
+              <img src="/favicon.jpg" alt="Logo" className="h-8 w-auto object-contain rounded-md" />
+            )}
+            <div className="flex flex-col">
+              <span className="text-white font-bold leading-none">{branding.appName}</span>
+              {branding.appTagline && (
+                <span className="text-[10px] text-slate-500 font-semibold leading-none mt-1">{branding.appTagline}</span>
+              )}
+            </div>
+          </div>
           <span>© 2026 {branding.appName}. All rights reserved.</span>
         </div>
         <div className="flex space-x-4 font-semibold">
