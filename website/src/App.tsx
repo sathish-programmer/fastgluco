@@ -9,7 +9,9 @@ import {
   Mail,
   User,
   Phone,
-  ExternalLink
+  ExternalLink,
+  Stethoscope,
+  ShoppingCart
 } from 'lucide-react';
 
 const getEmbedUrl = (url: string) => {
@@ -216,7 +218,7 @@ export default function App() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid md:grid-cols-3 gap-8 mb-8">
           <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 shadow-soft space-y-4">
             <div className="p-3 bg-blue-50 text-primary rounded-2xl inline-block">
               <FileText className="h-6 w-6" />
@@ -244,6 +246,28 @@ export default function App() {
             <h3 className="text-base font-bold text-slate-800">Pre-seeded Indian Foods</h3>
             <p className="text-xs text-slate-500 font-semibold leading-relaxed">
               Search a pre-seeded library covering common South/North Indian cuisines, snacks, fruits, and beverages to log food in seconds.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 shadow-soft space-y-4">
+            <div className="p-3 bg-purple-50 text-purple-600 rounded-2xl inline-block">
+              <Stethoscope className="h-6 w-6" />
+            </div>
+            <h3 className="text-base font-bold text-slate-800">Doctor & Lab Appointments</h3>
+            <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+              Book consultations with top specialists and schedule lab tests with home collection or lab visit options directly from the app.
+            </p>
+          </div>
+
+          <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 shadow-soft space-y-4">
+            <div className="p-3 bg-orange-50 text-orange-500 rounded-2xl inline-block">
+              <ShoppingCart className="h-6 w-6" />
+            </div>
+            <h3 className="text-base font-bold text-slate-800">Health Products Store</h3>
+            <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+              Shop for premium CGM patches, health supplements, and testing kits. Track your orders with real-time updates and seamless checkout.
             </p>
           </div>
         </div>
