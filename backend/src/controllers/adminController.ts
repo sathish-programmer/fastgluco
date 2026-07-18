@@ -60,7 +60,11 @@ export class AdminController {
         return res.status(401).json({ message: 'Invalid admin credentials.' });
       }
 
-      const token = jwt.sign({ id: admin._id, email: admin.email, role: admin.role }, JWT_SECRET, { expiresIn: '24h' });
+      const payload: any = { id: admin._id, email: admin.email, role: admin.role };
+      if (admin.laboratoryId) {
+        payload.laboratoryId = admin.laboratoryId;
+      }
+      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' });
 
       // Determine platform context (location/device/time)
       const ip = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '').split(',')[0].trim();

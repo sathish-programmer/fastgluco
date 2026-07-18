@@ -161,7 +161,7 @@ export class AppointmentController {
         patientNotes: patientNotes || '',
         type: type || 'offline',
         consultationFee,
-        paymentStatus: type === 'online' ? 'pending' : 'waived',
+        paymentStatus: (type === 'online' && consultationFee > 0) ? 'pending' : 'waived',
         recommendationId
       });
 

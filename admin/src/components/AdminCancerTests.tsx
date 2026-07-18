@@ -9,7 +9,7 @@ interface AdminCancerTestsProps {
 export const AdminCancerTests: React.FC<AdminCancerTestsProps> = ({ apiUrl, token }) => {
   const [tests, setTests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({ _id: '', name: '', description: '', frequency: '', category: 'Universal', isActive: true });
+  const [form, setForm] = useState({ _id: '', name: '', description: '', frequency: '', category: 'Universal', isActive: true, whyItIsNeeded: '', recommendedAge: '', generalPreparationInstructions: '' });
   const [isEditing, setIsEditing] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
@@ -71,13 +71,18 @@ export const AdminCancerTests: React.FC<AdminCancerTestsProps> = ({ apiUrl, toke
   };
 
   const openNew = () => {
-    setForm({ _id: '', name: '', description: '', frequency: '', category: 'Universal', isActive: true });
+    setForm({ _id: '', name: '', description: '', frequency: '', category: 'Universal', isActive: true, whyItIsNeeded: '', recommendedAge: '', generalPreparationInstructions: '' });
     setIsEditing(false);
     setShowModal(true);
   };
 
   const openEdit = (t: any) => {
-    setForm({ ...t });
+    setForm({ 
+      ...t, 
+      whyItIsNeeded: t.whyItIsNeeded || '', 
+      recommendedAge: t.recommendedAge || '', 
+      generalPreparationInstructions: t.generalPreparationInstructions || '' 
+    });
     setIsEditing(true);
     setShowModal(true);
   };
@@ -124,7 +129,7 @@ export const AdminCancerTests: React.FC<AdminCancerTestsProps> = ({ apiUrl, toke
 
       {showModal && (
         <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md p-6">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-bold mb-4">{isEditing ? 'Edit Test' : 'New Test'}</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
@@ -146,6 +151,18 @@ export const AdminCancerTests: React.FC<AdminCancerTestsProps> = ({ apiUrl, toke
                   <option value="Female">Female</option>
                   <option value="Universal">Universal</option>
                 </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">Why It Is Needed</label>
+                <textarea value={form.whyItIsNeeded} onChange={e => setForm({...form, whyItIsNeeded: e.target.value})} className="w-full border border-slate-200 rounded-lg p-2 text-sm" rows={2}></textarea>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">Recommended Age</label>
+                <input value={form.recommendedAge} onChange={e => setForm({...form, recommendedAge: e.target.value})} placeholder="e.g. 50-70 years" className="w-full border border-slate-200 rounded-lg p-2 text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">Preparation Instructions</label>
+                <textarea value={form.generalPreparationInstructions} onChange={e => setForm({...form, generalPreparationInstructions: e.target.value})} placeholder="e.g. Fasting for 12 hours" className="w-full border border-slate-200 rounded-lg p-2 text-sm" rows={2}></textarea>
               </div>
               <div className="flex justify-end gap-2 mt-6">
                 <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 bg-slate-100 rounded-lg text-sm font-bold text-slate-600">Cancel</button>

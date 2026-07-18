@@ -420,7 +420,10 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
                   </div>
                 )}
                 {selectedProduct.shortDescription ? (
-                  <p className="text-sm font-medium text-slate-500 mt-2 leading-relaxed">{selectedProduct.shortDescription}</p>
+                  <div 
+                    className="text-sm font-medium text-slate-500 mt-2 leading-relaxed [&_p]:mb-1 [&_strong]:font-bold [&_em]:italic [&_ul]:list-disc [&_ul]:ml-4 [&_ol]:list-decimal [&_ol]:ml-4"
+                    dangerouslySetInnerHTML={{ __html: selectedProduct.shortDescription }}
+                  />
                 ) : (
                   <p className="text-xs text-slate-400 mt-2 italic">High quality therapeutic grade health formulation.</p>
                 )}
@@ -481,7 +484,10 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
                 {selectedProduct.detailedDescription && (
                   <div className="space-y-1">
                     <span className="font-extrabold text-slate-800 uppercase tracking-wider text-[9px] block">Product Details</span>
-                    <p className="leading-relaxed text-slate-500">{selectedProduct.detailedDescription}</p>
+                    <div 
+                      className="leading-relaxed text-slate-500 [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:font-bold [&_em]:italic [&_ul]:list-disc [&_ul]:ml-4 [&_ol]:list-decimal [&_ol]:ml-4 [&_h1]:text-lg [&_h1]:font-bold [&_h1]:mt-4 [&_h1]:mb-2 [&_h2]:text-base [&_h2]:font-bold [&_h2]:mt-3 [&_h2]:mb-2 [&_h3]:text-sm [&_h3]:font-bold [&_h3]:mt-2 [&_h3]:mb-1 [&_a]:text-primary [&_a]:underline"
+                      dangerouslySetInnerHTML={{ __html: selectedProduct.detailedDescription }}
+                    />
                   </div>
                 )}
 

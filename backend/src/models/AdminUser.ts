@@ -4,7 +4,8 @@ export interface IAdminUser extends Document {
   name: string;
   email: string;
   passwordHash: string;
-  role: 'SuperAdmin' | 'Admin' | 'Editor';
+  role: 'SuperAdmin' | 'Admin' | 'Editor' | 'LabPartner' | 'LabAdmin' | 'Technician' | 'Collector' | string;
+  laboratoryId?: string;
   isBlocked: boolean;
   isDeleted: boolean;
   lastLoginAlertSentAt?: Date;
@@ -17,9 +18,9 @@ const adminUserSchema = new Schema<IAdminUser>(
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, index: true, lowercase: true, trim: true },
     passwordHash: { type: String, required: true },
+    laboratoryId: { type: Schema.Types.ObjectId, ref: 'Laboratory' },
     role: { 
       type: String, 
-      enum: ['SuperAdmin', 'Admin', 'Editor'], 
       default: 'Admin' 
     },
     isBlocked: { type: Boolean, default: false },

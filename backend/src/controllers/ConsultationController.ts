@@ -124,7 +124,7 @@ export const ConsultationController = {
       ]);
 
       res.status(200).json({
-        overview: {
+        funnel: {
           totalGenerated,
           totalViewed,
           totalClicked,
@@ -133,7 +133,7 @@ export const ConsultationController = {
           totalCancelled,
           conversionRate
         },
-        moduleStats
+        byModule: moduleStats
       });
     } catch (error) {
       console.error('Error fetching analytics:', error);

@@ -701,4 +701,34 @@ export class EmailService {
       return;
     }
   }
+
+  /**
+   * Send Report Ready Email
+   */
+  public static async sendReportReadyEmail(email: string, name: string, pdfUrl?: string) {
+    const { appName, appTagline } = await EmailService.getBranding();
+    
+    const digitalReportSection = pdfUrl ? `
+      <div style="margin-top: 20px;">
+        <a href="${pdfUrl}" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+          View Digital Report (PDF)
+        </a>
+      </div>
+    ` : '';
+
+    const html = generateEmailTemplate(`Your Lab Report is Ready`, `
+      <p>Hi ${name},</p>
+      <p>Good news! Your lab test report is now ready.</p>
+      ${digitalReportSection}
+      <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #22c55e; padding: 16px; border-radius: 8px; margin: 20px 0;">
+        <p style="margin: 0; color: #166534; font-weight: 600;">Next Steps:</p>
+        <ul style="margin-top: 8px; margin-bottom: 0; color: #15803d; padding-left: 20px;">
+          <li>If you opted for a physical report, you can now collect it from the diagnostic center.</li>
+          <li>Check your ${appName} app to track your booking status.</li>
+        </ul>
+      </div>
+      <p>Thank you for choosing ${appName}!</p>
+    `, appName, appTagline);
+    try { await transporter.sendMail({ from: `"${appName}" <no-reply@mitoreboot.com>`, to: email, subject: `Your Lab Report is Ready`, html }); } catch (err) { console.error(err); }
+  }
 }

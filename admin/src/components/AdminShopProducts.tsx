@@ -3,7 +3,8 @@ import {
   Plus, Trash2, Edit, Package, Search,
   ToggleLeft, ToggleRight, Tag, AlertTriangle, ArrowLeft
 } from 'lucide-react';
-
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 interface AdminShopProductsProps {
   apiUrl: string;
   token: string;
@@ -543,7 +544,10 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
                     </button>
                   </div>
 
-                  <p className="text-xs text-slate-500 mb-4 line-clamp-2 leading-relaxed">{p.description}</p>
+                  <div 
+                    className="text-xs text-slate-500 mb-4 line-clamp-2 leading-relaxed"
+                    dangerouslySetInnerHTML={{ __html: p.description }}
+                  />
                   
                   {/* Badges */}
                   <div className="flex flex-wrap gap-1 mb-4">
@@ -787,13 +791,12 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
 
                   <div className="space-y-1 mt-4 mb-4">
                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block">Short Description *</label>
-                    <input 
-                      required
-                      type="text" 
+                    <ReactQuill 
+                      theme="snow"
                       value={form.shortDescription}
-                      onChange={e => setForm({ ...form, shortDescription: e.target.value })}
+                      onChange={(val) => setForm({ ...form, shortDescription: val })}
                       placeholder="Brief headline description (1 sentence)"
-                      className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none"
+                      className="bg-white rounded-xl overflow-hidden [&_.ql-container]:min-h-[100px]"
                     />
                   </div>
 
@@ -1133,13 +1136,12 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
 
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block">Detailed Product Description *</label>
-                    <textarea 
-                      required
+                    <ReactQuill 
+                      theme="snow"
                       value={form.detailedDescription}
-                      onChange={e => setForm({ ...form, detailedDescription: e.target.value })}
+                      onChange={(val) => setForm({ ...form, detailedDescription: val })}
                       placeholder="Full specifications, clinical benefits, and product notes."
-                      rows={5}
-                      className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none resize-none"
+                      className="bg-white rounded-xl overflow-hidden [&_.ql-container]:min-h-[200px]"
                     />
                   </div>
                 </div>

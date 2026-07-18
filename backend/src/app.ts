@@ -42,6 +42,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // 6. Bind Master Router
+import labRoutes from './routes/labRoutes';
+app.use('/api/labs', labRoutes);
 app.use('/api', apiRouter);
 
 // 7. Base healthcheck

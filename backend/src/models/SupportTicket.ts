@@ -8,6 +8,8 @@ export interface ISupportTicket extends Document {
   question: string;
   answer?: string;
   status: 'Open' | 'Answered';
+  relatedId?: string; // Order ID or Booking ID
+  type?: 'PRODUCT' | 'LAB_TEST' | 'GENERAL';
   createdAt: Date;
   updatedAt: Date;
   answeredAt?: Date;
@@ -22,6 +24,8 @@ const supportTicketSchema = new Schema<ISupportTicket>(
     question: { type: String, required: true, trim: true },
     answer: { type: String, trim: true },
     status: { type: String, enum: ['Open', 'Answered'], default: 'Open' },
+    relatedId: { type: String },
+    type: { type: String, enum: ['PRODUCT', 'LAB_TEST', 'GENERAL'], default: 'GENERAL' },
     answeredAt: { type: Date }
   },
   {

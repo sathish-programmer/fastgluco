@@ -9,7 +9,7 @@ export class SupportController {
    */
   public static async submitTicket(req: AuthRequest, res: Response) {
     try {
-      const { name, email, mobile, question } = req.body;
+      const { name, email, mobile, question, relatedId, type } = req.body;
       if (!name || !email || !question) {
         return res.status(400).json({ message: 'Name, email, and question are required.' });
       }
@@ -19,7 +19,9 @@ export class SupportController {
         name,
         email,
         mobile,
-        question
+        question,
+        relatedId,
+        type: type || 'GENERAL'
       });
 
       await ticket.save();
@@ -46,6 +48,46 @@ export class SupportController {
       return res.status(200).json(faqs);
     } catch (error: any) {
       return res.status(500).json({ message: error.message || 'Error fetching FAQs.' });
+    }
+  }
+
+  // ================= ADMIN METHODS =================
+
+  public static async getAllTickets(req: AuthRequest, res: Response) {
+    try {
+      const tickets = await SupportTicket.find().sort({ createdAt: -1 });
+      return res.status(200).json(tickets);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message || 'Error fetching tickets.' });
+    }
+  }
+
+  public static async replyToTicket(req: AuthRequest, res: Response) {
+    try {
+      const { id } = req.params;
+      const { answer } = req.body;
+
+      if (!answer) {
+        return res.status(400).json({ message: 'Answer is required.' });
+      }
+
+      const ticket = await SupportTicket.findById(id);
+      if (!ticket) {
+        return res.status(404).json({ message: 'Ticket not found.' });
+      }
+
+      ticket.answer = answer;
+      ticket.status = 'Answered';
+      ticket.answeredAt = new Date();
+      await ticket.save();
+
+      // Send Email to User
+      const { EmailService } = require('../services/emailService');
+      await EmailService.sendSupportAnswerEmail(ticket.email, ticket.name, ticket.question, answer);
+
+      return res.status(200).json({ message: 'Replied successfully', ticket });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message || 'Error replying to ticket.' });
     }
   }
 }

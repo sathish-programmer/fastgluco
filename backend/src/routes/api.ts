@@ -248,6 +248,9 @@ router.post('/admin/profile-edits/:id/approve', AdminController.approveProfileEd
 router.post('/admin/profile-edits/:id/reject', AdminController.rejectProfileEdit);
 router.get('/admin/users/:userId/coaching', CoachingController.getSessionsForUser);
 router.put('/admin/users/:id/block', AdminController.toggleUserBlock);
+
+router.get('/admin/support/tickets', SupportController.getAllTickets);
+router.post('/admin/support/tickets/:id/reply', SupportController.replyToTicket);
 router.delete('/admin/users/:id', AdminController.deleteUser);
 router.delete('/admin/reports/:id', ReportController.deleteReportAsAdmin);
 
@@ -455,6 +458,7 @@ router.post('/patient/appointments/verify-payment', authenticateToken, requireRo
 router.post('/patient/appointments/:appointmentId/cancel-payment', authenticateToken, requireRole(['User']), AppointmentController.cancelAppointmentPayment);
 
 // Consultation Recommendation Endpoints
+router.get('/admin/consultations/analytics', authenticateToken, requireRole(['SuperAdmin']), ConsultationController.getAnalytics);
 router.post('/patient/consultations/log', authenticateToken, requireRole(['User']), ConsultationController.logRecommendation);
 router.get('/patient/consultations/:id', authenticateToken, requireRole(['User']), ConsultationController.getRecommendation);
 router.put('/patient/consultations/:id/status', authenticateToken, requireRole(['User']), ConsultationController.updateStatus);

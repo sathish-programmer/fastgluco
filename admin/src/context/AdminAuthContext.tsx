@@ -4,7 +4,7 @@ export interface AdminProfile {
   id: string;
   name: string;
   email: string;
-  role: 'SuperAdmin' | 'Admin' | 'Editor' | 'Doctor' | 'Vendor';
+  role: 'SuperAdmin' | 'Admin' | 'Editor' | 'Doctor' | 'Vendor' | 'LabPartner';
 }
 
 interface AdminAuthContextType {
@@ -92,6 +92,22 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         localStorage.setItem('fastgluco_admin_token', venData.token);
         localStorage.setItem('fastgluco_admin_profile', JSON.stringify(profile));
         setToken(venData.token);
+        setAdmin(profile);
+        return true;
+      }
+
+      // 4. Try Lab Portal Login
+      const labRes = await fetch(`${apiUrl}/labs/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      if (labRes.ok) {
+        const labData = await labRes.json();
+        const profile = { id: labData._id, name: labData.name, email: labData.email, role: 'LabPartner' as any, laboratoryId: labData.laboratoryId };
+        localStorage.setItem('fastgluco_admin_token', labData.token);
+        localStorage.setItem('fastgluco_admin_profile', JSON.stringify(profile));
+        setToken(labData.token);
         setAdmin(profile);
         return true;
       }

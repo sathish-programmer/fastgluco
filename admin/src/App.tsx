@@ -60,6 +60,9 @@ import { VendorPortal } from './components/VendorPortal';
 import { AdminVendorManagement } from './components/AdminVendorManagement';
 import { AdminShopReports } from './components/AdminShopReports';
 import { ConsultationAnalytics } from './components/ConsultationAnalytics';
+import { AdminLabs } from './components/AdminLabs';
+import { LabPortal } from './components/LabPortal';
+import { SupportPortal } from './components/SupportPortal';
 
 const AdminPanelContent: React.FC = () => {
   const { admin, token, isAuthenticated, login, register, logout, error, clearError, apiUrl } = useAdminAuth();
@@ -91,6 +94,7 @@ const AdminPanelContent: React.FC = () => {
     dashboard: true,
     users: true,
     appointments: true,
+    diagnostics: true,
     store: true,
     reports: true,
     settings: false
@@ -360,7 +364,7 @@ const AdminPanelContent: React.FC = () => {
 
   // Fetch data depending on active view
   useEffect(() => {
-    if (isAuthenticated && admin && admin.role !== 'Doctor' && admin.role !== 'Vendor') {
+    if (isAuthenticated && admin && admin.role !== 'Doctor' && admin.role !== 'Vendor' && admin.role !== 'LabPartner') {
       if (activeView === 'dashboard') { fetchStats(); fetchPaymentStats(); }
       if (activeView === 'users') fetchUsers(1);
       if (activeView === 'pendingEdits') fetchPendingEdits();
@@ -391,7 +395,7 @@ const AdminPanelContent: React.FC = () => {
   }, [isAuthenticated, admin, activeView, searchQuery]);
 
   useEffect(() => {
-    if (isAuthenticated && admin && admin.role !== 'Doctor' && admin.role !== 'Vendor') {
+    if (isAuthenticated && admin && admin.role !== 'Doctor' && admin.role !== 'Vendor' && admin.role !== 'LabPartner') {
       fetchPaymentConfig();
     }
   }, [isAuthenticated, admin]);
@@ -1680,6 +1684,10 @@ const AdminPanelContent: React.FC = () => {
     return <VendorPortal apiUrl={apiUrl} token={token || ''} onLogout={logout} />;
   }
 
+  if (admin && admin.role === ('LabPartner' as any)) {
+    return <LabPortal apiUrl={apiUrl} token={token || ''} onLogout={logout} adminProfile={admin} />;
+  }
+
   return (
     <div className="min-h-screen flex bg-slate-50">
 
@@ -1769,6 +1777,14 @@ const AdminPanelContent: React.FC = () => {
                   >
                     Vendors
                   </button>
+                  <button 
+                    onClick={() => { setActiveView('partner-labs'); setSearchQuery(''); }}
+                    className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                      activeView === 'partner-labs' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Lab Staff
+                  </button>
                 </div>
               )}
             </div>
@@ -1819,6 +1835,24 @@ const AdminPanelContent: React.FC = () => {
                   >
                     Cancelled
                   </button>
+                </div>
+              )}
+            </div>
+
+            {/* GROUP: DIAGNOSTICS */}
+            <div className="space-y-1">
+              <button 
+                onClick={() => toggleGroup('diagnostics')}
+                className="w-full flex items-center justify-between px-4 py-2 text-slate-550 hover:text-white transition-all"
+              >
+                <div className="flex items-center gap-3">
+                  <Activity className="h-4.5 w-4.5 shrink-0" />
+                  {!sidebarCollapsed && <span className="text-[10px] font-black uppercase tracking-wider">Diagnostics</span>}
+                </div>
+                {!sidebarCollapsed && (openGroups.diagnostics ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />)}
+              </button>
+              {openGroups.diagnostics && !sidebarCollapsed && (
+                <div className="pl-6 space-y-1">
                   <button 
                     onClick={() => { setActiveView('screening-tests'); setSearchQuery(''); }}
                     className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
@@ -1826,6 +1860,14 @@ const AdminPanelContent: React.FC = () => {
                     }`}
                   >
                     Screening Tests
+                  </button>
+                  <button 
+                    onClick={() => { setActiveView('partner-labs'); setSearchQuery(''); }}
+                    className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                      activeView === 'partner-labs' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Partner Labs
                   </button>
                 </div>
               )}
@@ -1978,6 +2020,14 @@ const AdminPanelContent: React.FC = () => {
                   >
                     Support Q&A
                   </button>
+                  <button 
+                    onClick={() => { setActiveView('product-support'); setSearchQuery(''); }}
+                    className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                      activeView === 'product-support' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Product Support
+                  </button>
                 </div>
               )}
             </div>
@@ -2078,7 +2128,7 @@ const AdminPanelContent: React.FC = () => {
           {/* Left: Breadcrumbs & Recently Used */}
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-400">
-              {['Admin', ...(activeView === 'dashboard' ? ['Dashboard'] : activeView === 'users' ? ['Users', 'Patients'] : activeView === 'pendingEdits' ? ['Users', 'Profile Edits'] : activeView === 'doctors-management' ? ['Users', 'Doctors'] : activeView === 'vendors-management' ? ['Users', 'Vendors'] : activeView.startsWith('appointments-') ? ['Appointments', activeView.replace('appointments-', '')] : activeView === 'screening-tests' ? ['Appointments', 'Screening Tests'] : activeView === 'store-products' ? ['Health Store', 'Products'] : activeView === 'store-orders' ? ['Health Store', 'Orders Routing'] : activeView === 'store-reports' ? ['Health Store', 'Sales Reports'] : [activeView])].map((part, idx, arr) => (
+              {['Admin', ...(activeView === 'dashboard' ? ['Dashboard'] : activeView === 'users' ? ['Users', 'Patients'] : activeView === 'pendingEdits' ? ['Users', 'Profile Edits'] : activeView === 'doctors-management' ? ['Users', 'Doctors'] : activeView === 'vendors-management' ? ['Users', 'Vendors'] : activeView.startsWith('appointments-') ? ['Appointments', activeView.replace('appointments-', '')] : activeView === 'screening-tests' ? ['Appointments', 'Screening Tests'] : activeView === 'partner-labs' ? ['Appointments', 'Partner Labs'] : activeView === 'store-products' ? ['Health Store', 'Products'] : activeView === 'store-orders' ? ['Health Store', 'Orders Routing'] : activeView === 'store-reports' ? ['Health Store', 'Sales Reports'] : [activeView])].map((part, idx, arr) => (
                 <React.Fragment key={idx}>
                   {idx > 0 && <span className="text-[10px]">/</span>}
                   <span className={idx === arr.length - 1 ? 'text-slate-800 font-extrabold' : ''}>{part}</span>
@@ -2665,6 +2715,10 @@ const AdminPanelContent: React.FC = () => {
         {/* SCREENING TESTS VIEW */}
         {activeView === 'screening-tests' && (
           <AdminCancerTests apiUrl={apiUrl} token={token} />
+        )}
+        
+        {activeView === 'partner-labs' && (
+          <AdminLabs apiUrl={apiUrl} token={token} />
         )}
 
         {/* APPOINTMENTS CALENDAR VIEW */}
@@ -3911,6 +3965,9 @@ const AdminPanelContent: React.FC = () => {
               </div>
             </div>
           </div>
+        )}
+        {activeView === 'product-support' && (
+          <SupportPortal />
         )}
 
         {/* VIEW 6.2: TICKETS */}

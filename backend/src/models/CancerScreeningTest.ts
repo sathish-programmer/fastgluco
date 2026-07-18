@@ -5,6 +5,9 @@ export interface ICancerScreeningTest extends Document {
   description: string;
   frequency: string;
   category: 'Male' | 'Female' | 'Universal';
+  whyItIsNeeded: string;
+  recommendedAge: string;
+  generalPreparationInstructions: string;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -15,6 +18,9 @@ const CancerScreeningTestSchema: Schema = new Schema({
   description: { type: String, required: true },
   frequency: { type: String, required: true },
   category: { type: String, enum: ['Male', 'Female', 'Universal'], required: true },
+  whyItIsNeeded: { type: String, default: '' },
+  recommendedAge: { type: String, default: '' },
+  generalPreparationInstructions: { type: String, default: '' },
   isActive: { type: Boolean, default: true }
 }, { timestamps: true });
 

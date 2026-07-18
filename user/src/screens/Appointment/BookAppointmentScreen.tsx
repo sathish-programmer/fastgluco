@@ -210,7 +210,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
       const appointment = data.appointment;
 
       // Handle Razorpay checkout for Online Appointments
-      if (consultationType === 'online' && data.razorpayOrder) {
+      if (consultationType === 'online' && data.razorpayOrder && data.razorpayOrder.amount > 0) {
         const options = {
           key: data.razorpayOrder.keyId,
           amount: data.razorpayOrder.amount,

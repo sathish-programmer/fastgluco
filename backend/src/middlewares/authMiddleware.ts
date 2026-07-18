@@ -5,7 +5,8 @@ export interface AuthRequest extends Request {
   user?: {
     id: string;
     email: string;
-    role: 'User' | 'SuperAdmin' | 'Admin' | 'Editor';
+    role: 'User' | 'SuperAdmin' | 'Admin' | 'Editor' | 'Doctor' | 'Vendor' | 'LabPartner';
+    laboratoryId?: string;
   };
 }
 
@@ -32,19 +33,22 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
     req.user = {
       id: decoded.id,
       email: decoded.email,
-      role: decoded.role || 'User'
+      role: decoded.role || 'User',
+      laboratoryId: decoded.laboratoryId
     };
     next();
   });
 };
 
-export const requireRole = (allowedRoles: Array<'User' | 'SuperAdmin' | 'Admin' | 'Editor' | 'Doctor' | 'Vendor'>) => {
+type AllowedRole = 'User' | 'Vendor' | 'SuperAdmin' | 'Admin' | 'Editor' | 'Doctor' | 'LabPartner';
+
+export const requireRole = (allowedRoles: AllowedRole[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
       return res.status(401).json({ message: 'Authentication required.' });
     }
 
-    if (!allowedRoles.includes(req.user.role as any)) {
+    if (!allowedRoles.includes(req.user.role as AllowedRole)) {
       return res.status(403).json({ message: 'Access denied: Insufficient permissions.' });
     }
 
