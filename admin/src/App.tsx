@@ -1467,6 +1467,26 @@ const AdminPanelContent: React.FC = () => {
   // RENDER SPLIT FOR AUTHENTICATION
   if (!isAuthenticated) {
     const displayedError = validationError || error;
+    
+    // Dynamic Portal Titles based on URL
+    const path = window.location.pathname.toLowerCase();
+    let portalTitle = 'Management Console';
+    let portalDesc = 'Sign in as Admin, Doctor, Vendor, or Lab';
+    
+    if (path.includes('/doctor')) {
+      portalTitle = 'Doctor Portal';
+      portalDesc = 'Sign in to access your physician dashboard';
+    } else if (path.includes('/lab')) {
+      portalTitle = 'Laboratory Portal';
+      portalDesc = 'Sign in to manage patient tests and reports';
+    } else if (path.includes('/vendor')) {
+      portalTitle = 'Vendor Portal';
+      portalDesc = 'Sign in to manage your health store orders';
+    } else if (path.includes('/admin')) {
+      portalTitle = 'Central Admin Console';
+      portalDesc = 'Sign in with full administrative access';
+    }
+
     return (
       <div className="min-h-screen bg-slate-100 flex items-center justify-center px-4 py-8">
         <div className="bg-white p-8 rounded-3xl shadow-lg border border-slate-200 w-full max-w-md">
@@ -1475,10 +1495,10 @@ const AdminPanelContent: React.FC = () => {
               <ShieldAlert className="h-8 w-8 text-primary" />
             </span>
             <h2 className="text-2xl font-bold text-slate-800">
-              {isRegistering ? 'Create Account' : 'Management Console'}
+              {isRegistering ? 'Create Account' : portalTitle}
             </h2>
             <p className="text-xs text-slate-400 font-semibold mt-1">
-              {isRegistering ? 'Register a new administrative console user' : 'Sign in as Admin, Doctor, or Vendor'}
+              {isRegistering ? 'Register a new administrative console user' : portalDesc}
             </p>
           </div>
 
@@ -1629,7 +1649,7 @@ const AdminPanelContent: React.FC = () => {
             </button>
           </form>
 
-          {!isRegistering && (
+          {!isRegistering && !path.includes('/doctor') && !path.includes('/lab') && !path.includes('/vendor') && (
             <div className="mt-5 p-3 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Who can log in here?</p>
               <div className="grid grid-cols-3 gap-2">
@@ -1649,7 +1669,7 @@ const AdminPanelContent: React.FC = () => {
                   <p className="text-[9px] text-slate-400">Order management</p>
                 </div>
               </div>
-              <p className="text-[9px] text-slate-400 text-center pt-1">
+              <p className="text-[9px] text-slate-400 text-center mt-2 font-medium">
                 Vendors & Doctors: use the credentials created for you by the Admin.
               </p>
             </div>

@@ -60,6 +60,13 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
   const [ratingVal, setRatingVal] = useState(5);
   const [feedbackText, setFeedbackText] = useState('');
 
+  // Generate next 14 days for the date picker
+  const upcomingDates = Array.from({length: 14}, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() + i);
+    return d.toISOString().split('T')[0];
+  });
+
   const defaultReasons = [
     'High Stress',
     'Sleep Issues',
@@ -424,19 +431,39 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                       </button>
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Choose Date</label>
-                      <input
-                        type="date"
-                        value={date}
-                        min={getLocalDateString()}
-                        onChange={(e) => setDate(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-400"
-                      />
+                  <div className="mb-4">
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                      <CalendarIcon className="h-3.5 w-3.5" /> Choose a Date
+                    </label>
+                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                      {upcomingDates.map(d => {
+                        const dateObj = new Date(d);
+                        const isSelected = date === d;
+                        const isHoliday = (selectedDoctor?.holidays || []).includes(d);
+                        return (
+                          <button
+                            key={d}
+                            type="button"
+                            onClick={() => { if (!isHoliday) setDate(d); }}
+                            disabled={isHoliday}
+                            className={`flex-shrink-0 flex flex-col items-center justify-center p-3 rounded-xl border-2 min-w-[70px] transition-all ${
+                              isHoliday ? 'border-rose-100 bg-rose-50 opacity-60 cursor-not-allowed' :
+                              isSelected ? 'border-indigo-600 bg-indigo-600 text-white shadow-md' : 'border-slate-100 bg-white text-slate-600 hover:border-slate-200'
+                            }`}
+                          >
+                            <span className={`text-[10px] uppercase font-bold tracking-widest ${isHoliday ? 'text-rose-400' : isSelected ? 'text-indigo-200' : 'text-slate-400'}`}>
+                              {dateObj.toLocaleDateString('en-US', { weekday: 'short' })}
+                            </span>
+                            <span className={`text-xl font-black mt-1 ${isHoliday ? 'text-rose-700' : ''}`}>
+                              {dateObj.getDate()}
+                            </span>
+                          </button>
+                        )
+                      })}
                     </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Reason for Appointment</label>
+                  </div>
+                  <div className="mb-4">
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Reason for Appointment</label>
                       <select
                         value={reason}
                         onChange={(e) => setReason(e.target.value)}
@@ -447,7 +474,6 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                         ))}
                       </select>
                     </div>
-                  </div>
 
                   {date && (
                     <div className="space-y-3">
