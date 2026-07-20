@@ -161,12 +161,12 @@ export class AppointmentController {
         patientNotes: patientNotes || '',
         type: type || 'offline',
         consultationFee,
-        paymentStatus: (type === 'online' && consultationFee > 0) ? 'pending' : 'waived',
+        paymentStatus: (consultationFee > 0) ? 'pending' : 'waived',
         recommendationId
       });
 
-      // If online consultation has a fee, generate a Razorpay order
-      if (type === 'online' && consultationFee > 0) {
+      // If consultation has a fee, generate a Razorpay order
+      if (consultationFee > 0) {
         const config = await PaymentGatewayConfig.findOne();
         if (config && config.razorpayKeyId && config.razorpayKeySecret) {
           const razorpay = new Razorpay({

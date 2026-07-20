@@ -104,11 +104,11 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
 
   if (showUpgradePrompt) {
     return (
-      <div className="pb-24 pt-12 px-6 max-w-5xl mx-auto bg-white min-h-[80vh] flex flex-col items-center justify-center text-center">
-        <div className="h-16 w-16 bg-blue-50 text-primary rounded-full flex items-center justify-center mb-4 shadow-soft">
+      <div className="pb-24 pt-12 px-6 max-w-5xl mx-auto bg-white dark:bg-slate-950 min-h-[80vh] flex flex-col items-center justify-center text-center transition-colors duration-300">
+        <div className="h-16 w-16 bg-blue-50 dark:bg-blue-900/30 text-primary dark:text-primary-light rounded-full flex items-center justify-center mb-4 shadow-soft">
           <CreditCard className="h-8 w-8" />
         </div>
-        <h3 className="text-lg font-extrabold text-slate-800">{isIOSAppStoreBlocked ? 'Feature Unavailable' : 'Advanced Analytics Locked'}</h3>
+        <h3 className="text-lg font-extrabold text-slate-800 dark:text-slate-100">{isIOSAppStoreBlocked ? 'Feature Unavailable' : 'Advanced Analytics Locked'}</h3>
         <p className="text-xs text-slate-500 font-semibold max-w-xs mt-2 mb-6">
           {isIOSAppStoreBlocked 
             ? 'This feature is currently unavailable on iOS.'

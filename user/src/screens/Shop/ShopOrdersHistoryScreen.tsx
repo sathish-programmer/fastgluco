@@ -172,29 +172,29 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
   };
 
   return (
-    <div className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-slate-50 min-h-screen font-sans antialiased text-slate-800">
+    <div className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 transition-colors duration-300">
       <div className="flex justify-between items-center mb-6">
         <div>
           <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">MitoReboot</span>
-          <h2 className="text-2xl font-sans font-bold text-slate-850 leading-none mt-1">My Orders & History</h2>
+          <h2 className="text-2xl font-sans font-bold text-slate-850 dark:text-slate-100 leading-none mt-1">My Orders & History</h2>
         </div>
         {onBack && (
-          <button onClick={onBack} className="h-10 w-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-50 shadow-sm transition-all">
+          <button onClick={onBack} className="h-10 w-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all">
             <ArrowLeft className="h-5 w-5" />
           </button>
         )}
       </div>
 
-      <div className="flex bg-slate-200/50 p-1 rounded-xl mb-6 shadow-inner">
+      <div className="flex bg-slate-200/50 dark:bg-slate-800/50 p-1 rounded-xl mb-6 shadow-inner">
         <button
           onClick={() => setActiveTab('products')}
-          className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${activeTab === 'products' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+          className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${activeTab === 'products' ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
         >
           <Package className="h-4 w-4" /> Products
         </button>
         <button
           onClick={() => setActiveTab('tests')}
-          className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${activeTab === 'tests' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+          className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${activeTab === 'tests' ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
         >
           <Beaker className="h-4 w-4" /> Test History
         </button>
@@ -207,9 +207,9 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
         </div>
       ) : activeTab === 'products' ?
         orders.length === 0 ? (
-        <div className="text-center py-16 bg-white border border-slate-200 rounded-3xl shadow-sm">
+        <div className="text-center py-16 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm">
           <Package className="h-12 w-12 text-slate-355 mx-auto mb-4" />
-          <h3 className="font-bold text-slate-700">No orders placed yet</h3>
+          <h3 className="font-bold text-slate-700 dark:text-slate-200">No orders placed yet</h3>
           <p className="text-xs text-slate-450 mt-1">Navigate to the Health Store to place your first order.</p>
         </div>
       ) : (
@@ -222,12 +222,12 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
             const hasRated = userReviews.some(r => r.orderId === order._id);
 
             return (
-              <div key={order._id} className="bg-white border border-slate-200 shadow-sm rounded-3xl p-5 space-y-4 hover:shadow-md transition-all">
+              <div key={order._id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-3xl p-5 space-y-4 hover:shadow-md transition-all">
                 {/* Header Row */}
-                <div className="flex flex-wrap justify-between items-center gap-3 pb-3 border-b border-slate-100">
+                <div className="flex flex-wrap justify-between items-center gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
                   <div className="space-y-1">
                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Order ID</span>
-                    <span className="text-xs font-mono font-bold text-slate-700">{order._id}</span>
+                    <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-200">{order._id}</span>
                   </div>
                   
                   <div className="flex flex-wrap gap-2">
@@ -245,8 +245,8 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
                   <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Ordered Supplies</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {order.products.map((p: any, idx: number) => (
-                      <div key={idx} className="flex items-center gap-3 bg-slate-50 border border-slate-100/80 rounded-2xl p-3">
-                        <div className="h-11 w-11 rounded-xl bg-white border border-slate-100 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+                      <div key={idx} className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800 border border-slate-100/80 dark:border-slate-700 rounded-2xl p-3">
+                        <div className="h-11 w-11 rounded-xl bg-white dark:bg-slate-700 border border-slate-100 dark:border-slate-600 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
                           <ProductImage src={p.productId?.image || p.image} apiUrl={apiUrl} className="h-8 w-8 object-contain" textClassName="text-xl" />
                         </div>
                         <div className="flex-1 min-w-0">

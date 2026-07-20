@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useTheme } from '../context/ThemeContext';
 import {
   ChevronRight,
   LogOut,
@@ -14,7 +15,9 @@ import {
   Globe,
   Activity,
   Heart,
-  Trash2
+  Trash2,
+  Moon,
+  Sun
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Educational } from './Educational'; // import the sub-view
@@ -24,6 +27,7 @@ import { Capacitor } from '@capacitor/core';
 export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = () => {
   const { user, token, apiUrl, logout, updateProfile, isLoading, error, branding } = useAuth();
   const { showToast } = useToast();
+  const { setTheme, isDark } = useTheme();
   const isIOSAppStoreBlocked = Capacitor.getPlatform() === 'ios';
 
   // Tabs for profile section: 'settings' or 'education' or 'subscription'
@@ -524,6 +528,29 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
               </div>
             </div>
           )}
+
+          <div className="pt-4 mt-2 border-t border-slate-100 dark:border-slate-800 space-y-4">
+            <h4 className="text-[10px] font-bold text-slate-450 dark:text-slate-400 uppercase tracking-wider flex items-center space-x-1.5">
+              {isDark ? <Moon className="h-4 w-4 text-primary dark:text-primary-light" /> : <Sun className="h-4 w-4 text-primary dark:text-primary-light" />}
+              <span>App Appearance</span>
+            </h4>
+            <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl">
+              <button
+                type="button"
+                onClick={() => setTheme('light')}
+                className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${!isDark ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}
+              >
+                Light
+              </button>
+              <button
+                type="button"
+                onClick={() => setTheme('dark')}
+                className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${isDark ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-500'}`}
+              >
+                Dark
+              </button>
+            </div>
+          </div>
 
           <div className="pt-4 mt-2 border-t border-slate-100 dark:border-slate-800 space-y-4">
             <h4 className="text-[10px] font-bold text-slate-450 dark:text-slate-400 uppercase tracking-wider flex items-center space-x-1.5">

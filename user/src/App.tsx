@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
-import { ThemeProvider, useTheme } from './context/ThemeContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { ConsultationProvider } from './context/ConsultationContext';
 import { Login } from './pages/Login';
 import { RecommendedFoodsScreen } from './screens/RecommendedFoodsScreen';
@@ -28,8 +28,6 @@ import {
   UserCircle2,
   Heart,
   BookOpen,
-  Moon,
-  Sun,
   Calendar
 } from 'lucide-react';
 import { GlobalAICoachPopup } from './components/GlobalAICoachPopup';
@@ -40,7 +38,7 @@ import { DeleteAccount } from './pages/DeleteAccount';
 
 const MainAppContent: React.FC = () => {
   const { isAuthenticated, isLoading, token, apiUrl, logout, branding, user } = useAuth();
-  const { setTheme, isDark } = useTheme();
+  // Theme toggle moved to Profile settings
 
   // Navigation tabs: 'Home' | 'Reports' | 'Food Log' | 'Analysis' | 'Profile'
   const [activeTab, setActiveTab] = useState<string>('Home');
@@ -251,7 +249,7 @@ const MainAppContent: React.FC = () => {
           )}
           <div className="flex flex-col">
             <div className="flex items-center space-x-1.5">
-              <h1 className="text-sm font-extrabold text-slate-800 tracking-tight leading-tight">{branding.appName}</h1>
+              <h1 className="text-sm font-extrabold text-slate-800 dark:text-slate-100 tracking-tight leading-tight">{branding.appName}</h1>
               {branding.enableSubscriptions !== false && (
                 <span className="text-[8px] font-bold bg-primary-light text-primary px-1.5 py-0.5 rounded-full">
                   {basicPlan}
@@ -259,17 +257,11 @@ const MainAppContent: React.FC = () => {
               )}
             </div>
             {branding.appTagline && (
-              <span className="text-[9px] text-slate-500 leading-none mt-0.5">{branding.appTagline}</span>
+              <span className="text-[9px] text-slate-500 dark:text-slate-400 leading-none mt-0.5">{branding.appTagline}</span>
             )}
           </div>
         </div>
         <div className="flex items-center space-x-2">
-          <button
-            onClick={() => setTheme(isDark ? 'light' : 'dark')}
-            className="p-2 rounded-xl text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors"
-          >
-            {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-          </button>
           <NotificationBell />
         </div>
       </header>

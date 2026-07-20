@@ -181,7 +181,8 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
     }
     setShowPendingWarning(false);
 
-    if (consultationType === 'online' && (selectedDoctor.onlineConsultationFee || 0) > 0) {
+    const fee = consultationType === 'online' ? (selectedDoctor.onlineConsultationFee || 0) : (selectedDoctor.offlineConsultationFee || 0);
+    if (fee > 0) {
       setShowPaymentDisclaimer(true);
     } else {
       confirmBook();
@@ -216,14 +217,14 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
 
       const appointment = data.appointment;
 
-      // Handle Razorpay checkout for Online Appointments
-      if (consultationType === 'online' && data.razorpayOrder && data.razorpayOrder.amount > 0) {
+      // Handle Razorpay checkout for Appointments
+      if (data.razorpayOrder && data.razorpayOrder.amount > 0) {
         const options = {
           key: data.razorpayOrder.keyId,
           amount: data.razorpayOrder.amount,
           currency: data.razorpayOrder.currency,
           name: 'Mito_Reboot',
-          description: `Online Consultation with Dr. ${selectedDoctor.name}`,
+          description: `${consultationType === 'online' ? 'Online' : 'Offline'} Consultation with Dr. ${selectedDoctor.name}`,
           order_id: data.razorpayOrder.id,
           handler: async (response: any) => {
             setLoading(true);
@@ -334,14 +335,14 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
   };
 
   return (
-    <div className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-slate-50 min-h-screen font-sans antialiased text-slate-800">
+    <div className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 transition-colors duration-300">
       <div className="flex justify-between items-center mb-6">
         <div>
           <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Consultation</span>
-          <h2 className="text-2xl font-sans font-bold text-slate-800 leading-none mt-1">Book Appointment</h2>
+          <h2 className="text-2xl font-sans font-bold text-slate-800 dark:text-slate-100 leading-none mt-1">Book Appointment</h2>
         </div>
         {onBack && (
-          <button onClick={onBack} className="h-10 w-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-50 shadow-sm transition-all">
+          <button onClick={onBack} className="h-10 w-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all">
             <ArrowLeft className="h-5 w-5" />
           </button>
         )}
@@ -350,8 +351,8 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Side: Booking Form */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-5">
-            <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-3xl p-5 transition-colors duration-300">
+            <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
               <CalendarIcon className="h-5 w-5 text-indigo-500" /> Appointment Schedule
             </h3>
             
@@ -375,7 +376,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                     >
                       <div className="flex justify-between items-start gap-2">
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-bold text-slate-800 text-sm">{doc.name}</h4>
+                          <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">{doc.name}</h4>
                           <p className="text-xs text-slate-500 mt-0.5">{doc.specialty}</p>
                         </div>
                         {doc.avgRating != null && (
@@ -410,7 +411,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
 
               {selectedDoctor && (
                 <>
-                  <div className="bg-slate-50 border border-slate-200/60 rounded-2xl p-4 my-2">
+                  <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl p-4 my-2">
                     <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Consultation Type</label>
                     <div className="grid grid-cols-2 gap-3">
                       <button
@@ -585,8 +586,8 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
 
         {/* Right Side: Appointment List & Feedback */}
         <div className="space-y-4">
-          <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-5">
-            <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-3xl p-5 transition-colors duration-300">
+            <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
               <Clock className="h-5 w-5 text-indigo-500" /> Upcoming & Past Visits
             </h3>
 
@@ -782,7 +783,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
             <div>
               <h3 className="text-base font-bold text-slate-800">Redirecting to Payment Gateway</h3>
               <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                To confirm your online consultation with <strong>Dr. {selectedDoctor?.name}</strong>, you will be redirected to our secure payment gateway to complete the transaction of <strong>Rs. {selectedDoctor?.onlineConsultationFee}</strong>.
+                To confirm your {consultationType} consultation with <strong>Dr. {selectedDoctor?.name}</strong>, you will be redirected to our secure payment gateway to complete the transaction of <strong>Rs. {consultationType === 'online' ? selectedDoctor?.onlineConsultationFee : selectedDoctor?.offlineConsultationFee}</strong>.
               </p>
             </div>
             <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-100 text-[10px] text-slate-400 font-medium leading-relaxed">

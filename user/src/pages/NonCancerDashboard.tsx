@@ -247,16 +247,16 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
   };
 
   return (
-    <div className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-gradient-to-b from-slate-50/90 to-slate-100/80 min-h-screen font-sans antialiased text-slate-800">
+    <div className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-gradient-to-b from-slate-50/90 to-slate-100/80 dark:from-slate-900/90 dark:to-slate-950/80 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-200 transition-colors duration-300">
       {/* Header section */}
       <div className="text-center mb-6 mt-2">
         <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">
           Every day, your cells choose a side
         </span>
-        <h2 className="text-xl md:text-2xl font-sans text-slate-800 mt-2 tracking-tight leading-snug px-4">
+        <h2 className="text-xl md:text-2xl font-sans text-slate-800 dark:text-slate-100 mt-2 tracking-tight leading-snug px-4">
           A quiet <span className="text-amber-500 italic">tug-of-war</span> runs inside every cell you own.
         </h2>
-        <p className="text-xs text-slate-500 mt-2 max-w-[280px] mx-auto leading-relaxed">
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 max-w-[280px] mx-auto leading-relaxed">
           Damage pulls one way. Repair pulls the other. The habits you log here decide which side wins today.
         </p>
       </div>
@@ -317,10 +317,10 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
           </button>
         </div>
       )}
-      <div className="bg-white/90 backdrop-blur-xl border border-white/80 shadow-[0_8px_30px_rgba(0,0,0,0.015)] rounded-3xl p-5 mb-6">
+      <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-white/80 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,0,0,0.015)] rounded-3xl p-5 mb-6 transition-colors duration-300">
         <div className="flex justify-between items-center mb-4">
           <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Cellular Balance</span>
-          <span className="text-[10px] font-bold text-amber-500 tracking-widest uppercase flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100/50">
+          <span className="text-[10px] font-bold text-amber-500 tracking-widest uppercase flex items-center gap-1 bg-amber-50 dark:bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-100/50 dark:border-amber-500/20">
             <span className="w-1.5 h-1.5 rounded-full border border-amber-500"></span>
             {streak > 0 ? `${streak} day streak 🔥` : 'no streak yet'}
           </span>
@@ -350,26 +350,26 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
               </PieChart>
             </ResponsiveContainer>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-xl font-black text-slate-800 leading-none">{totalLogs}</span>
+              <span className="text-xl font-black text-slate-800 dark:text-slate-100 leading-none">{totalLogs}</span>
               <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Logs</span>
             </div>
           </div>
           
           <div>
-            <h3 className="text-lg font-sans text-slate-800 font-bold">Start logging</h3>
-            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+            <h3 className="text-lg font-sans text-slate-800 dark:text-slate-100 font-bold">Start logging</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
               Log a habit on either side and your balance comes to life.
             </p>
           </div>
         </div>
 
         {/* Tug of war bar */}
-        <div className="relative w-full h-2 bg-slate-100 rounded-full mb-3 flex overflow-hidden shadow-inner">
+        <div className="relative w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full mb-3 flex overflow-hidden shadow-inner">
           <div className="h-full bg-rose-500 transition-all duration-700 ease-out" style={{ width: `${damagePct}%` }}></div>
           <div className="h-full bg-emerald-500 transition-all duration-700 ease-out" style={{ width: `${repairPct}%` }}></div>
           {/* Center puck */}
           <div 
-            className="absolute top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 bg-white border border-slate-200 rounded-full shadow-md flex items-center justify-center transition-all duration-700 ease-out"
+            className="absolute top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full shadow-md flex items-center justify-center transition-all duration-700 ease-out"
             style={{ left: `${damagePct}%` }}
           >
             <Activity className="h-3 w-3 text-slate-400" />
@@ -388,12 +388,12 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
       <div className="flex items-center gap-3 mb-4">
         <span className="text-xs text-slate-400 font-mono font-bold">01</span>
         <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Track the two forces</span>
-        <div className="flex-1 h-px bg-slate-200"></div>
+        <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800"></div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 mb-8">
         {/* Damage Column */}
-        <div className="bg-white/90 backdrop-blur-xl border border-rose-100 shadow-[0_8px_30px_rgba(225,29,72,0.03)] rounded-2xl p-1.5 flex flex-col">
+        <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-rose-100 dark:border-rose-900/30 shadow-[0_8px_30px_rgba(225,29,72,0.03)] rounded-2xl p-1.5 flex flex-col transition-colors duration-300">
           <div className="px-2 pt-3 pb-4">
             <h3 className="text-rose-500 font-sans text-lg font-bold flex items-center gap-1.5 mb-0.5">
               <Skull className="h-5 w-5" /> Damage
@@ -416,7 +416,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
         </div>
 
         {/* Repair Column */}
-        <div className="bg-white/90 backdrop-blur-xl border border-emerald-100 shadow-[0_8px_30px_rgba(16,185,129,0.03)] rounded-2xl p-1.5 flex flex-col">
+        <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-emerald-100 dark:border-emerald-900/30 shadow-[0_8px_30px_rgba(16,185,129,0.03)] rounded-2xl p-1.5 flex flex-col transition-colors duration-300">
           <div className="px-2 pt-3 pb-4">
             <h3 className="text-emerald-500 font-sans text-lg font-bold flex items-center gap-1.5 mb-0.5">
               <Leaf className="h-5 w-5" /> Repair
@@ -438,20 +438,20 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
       <div className="flex items-center gap-3 mb-4">
         <span className="text-xs text-slate-400 font-mono font-bold">02</span>
         <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Catch it early</span>
-        <div className="flex-1 h-px bg-slate-200"></div>
+        <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800"></div>
       </div>
 
       {/* Cancer Screening Card */}
       <button 
         onClick={() => handleOpenHabit('CancerScreening')}
-        className="w-full bg-white/90 backdrop-blur-xl border border-indigo-100 shadow-[0_8px_30px_rgba(99,102,241,0.04)] rounded-2xl p-4 flex items-center gap-4 text-left transition-all active:scale-95 hover:shadow-md"
+        className="w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-indigo-100 dark:border-indigo-900/30 shadow-[0_8px_30px_rgba(99,102,241,0.04)] rounded-2xl p-4 flex items-center gap-4 text-left transition-all active:scale-95 hover:shadow-md"
       >
-        <div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0">
+        <div className="h-10 w-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center shrink-0">
           <Microscope className="h-5 w-5 text-indigo-500" />
         </div>
         <div className="flex-1">
-          <h4 className="text-indigo-600 font-sans font-bold text-lg leading-tight">Cancer Screening</h4>
-          <p className="text-[9px] text-slate-500 leading-snug mt-1">
+          <h4 className="text-indigo-600 dark:text-indigo-400 font-sans font-bold text-lg leading-tight">Cancer Screening</h4>
+          <p className="text-[9px] text-slate-500 dark:text-slate-400 leading-snug mt-1">
             PSA · CEA · CA-125 · Pap · Mammogram · Whole-Body MRI · Genetic & liquid biopsy
           </p>
         </div>
@@ -465,7 +465,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
 const HabitItem = ({ icon, label, onClick }: { icon: React.ReactNode, label: string, onClick: () => void }) => (
   <button 
     onClick={onClick}
-    className="flex items-center justify-between w-full p-2.5 bg-slate-50/50 hover:bg-slate-100 rounded-xl transition-all"
+    className="flex items-center justify-between w-full p-2.5 bg-slate-50/50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all"
   >
     <div className="flex items-center gap-2.5">
       {icon}

@@ -1004,17 +1004,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
       {/* Stacked Daily Trackers (All displayed together as important cards) */}
       <div className="space-y-6 mb-6">
         {/* Calorie Tracker Card */}
-        <div className="bg-white/90 backdrop-blur-xl p-5 rounded-3xl border border-white/80 shadow-[0_8px_30px_rgba(0,0,0,0.015)] transition-all hover:shadow-[0_12px_35px_rgba(0,0,0,0.03)]">
+        <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-5 rounded-3xl border border-white/80 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,0,0,0.015)] transition-all hover:shadow-[0_12px_35px_rgba(0,0,0,0.03)] transition-colors duration-300">
           <div className="flex justify-between items-center mb-3.5">
             <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center space-x-1.5">
               <span>🍳</span>
               <span>Calories Tracker</span>
             </h4>
-            <span className="text-xs font-extrabold text-slate-800">
+            <span className="text-xs font-extrabold text-slate-800 dark:text-slate-100">
               {todayCalories} <span className="text-slate-400 font-bold">/ {user?.dailyCalorieTarget || 2000} kcal</span>
             </span>
           </div>
-          <div className="w-full bg-slate-100 rounded-full h-2">
+          <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
             <div
               className="bg-gradient-to-r from-primary to-indigo-600 h-2 rounded-full transition-all duration-500 shadow-sm shadow-primary/20"
               style={{ width: `${Math.min((todayCalories / (user?.dailyCalorieTarget || 2000)) * 100, 100)}%` }}
@@ -1028,7 +1028,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
 
         {/* Hydration Tracker Card */}
         {enableHydration && (
-          <div className="bg-white/90 backdrop-blur-xl p-5 rounded-3xl border border-white/80 shadow-[0_8px_30px_rgba(0,0,0,0.015)] transition-all hover:shadow-[0_12px_35px_rgba(0,0,0,0.03)]">
+          <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-5 rounded-3xl border border-white/80 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,0,0,0.015)] transition-all hover:shadow-[0_12px_35px_rgba(0,0,0,0.03)] transition-colors duration-300">
             <div className="flex justify-between items-center mb-3.5">
               <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center space-x-1.5">
                 <span>💧</span>
@@ -1038,7 +1038,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
                 {todayWater} <span className="text-slate-450 font-bold">/ {hydrationGoal} ml</span>
               </span>
             </div>
-            <div className="w-full bg-slate-100 rounded-full h-2 mb-5">
+            <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 mb-5">
               <div
                 className="bg-gradient-to-r from-sky-400 to-blue-505 h-2 rounded-full transition-all duration-500 shadow-sm shadow-blue-500/10"
                 style={{ width: `${Math.min((todayWater / hydrationGoal) * 100, 100)}%` }}
@@ -1047,13 +1047,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
             <div className="flex space-x-2.5">
               <button
                 onClick={() => handleAddWater(250)}
-                className="flex-1 bg-white hover:bg-slate-55 border border-slate-200/60 text-slate-700 text-xs font-extrabold py-2.5 rounded-2xl transition-all shadow-sm active:scale-95"
+                className="flex-1 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200/60 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-extrabold py-2.5 rounded-2xl transition-all shadow-sm active:scale-95"
               >
                 +250ml
               </button>
               <button
                 onClick={() => handleAddWater(500)}
-                className="flex-1 bg-white hover:bg-slate-55 border border-slate-200/60 text-slate-700 text-xs font-extrabold py-2.5 rounded-2xl transition-all shadow-sm active:scale-95"
+                className="flex-1 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200/60 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-extrabold py-2.5 rounded-2xl transition-all shadow-sm active:scale-95"
               >
                 +500ml
               </button>
@@ -1064,7 +1064,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
                   setTodayWater(0);
                   localStorage.removeItem(key);
                 }}
-                className="px-3 bg-slate-105 hover:bg-slate-55 text-slate-505 rounded-2xl transition-all text-xs font-bold active:scale-95"
+                className="px-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-2xl transition-all text-xs font-bold active:scale-95"
               >
                 Reset
               </button>
