@@ -92,6 +92,10 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
   const [scanningProgress, setScanningProgress] = useState('Initializing Scanner...');
   const [scanResult, setScanResult] = useState<any | null>(null);
   const [hasAiConsent, setHasAiConsent] = useState<boolean>(false);
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [cropStartY, setCropStartY] = useState(0);     // 0.0 - 1.0
+  const [cropEndY, setCropEndY] = useState(1);         // 0.0 - 1.0
+  const [originalImageSize, setOriginalImageSize] = useState({ w: 0, h: 0 });
 
   interface ScannedItemState {
     enabled: boolean;
@@ -102,6 +106,11 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
 
   const [scanError, setScanError] = useState<string | null>(null);
   const [scanMealType, setScanMealType] = useState<'Breakfast' | 'Lunch' | 'Dinner' | 'Snack'>('Breakfast');
+  const [scanLoggedAt, setScanLoggedAt] = useState<string>(() => {
+    const now = new Date();
+    now.setSeconds(0, 0);
+    return now.toISOString().slice(0, 16); // 'YYYY-MM-DDTHH:mm'
+  });
   const [activeTab, setActiveTab] = useState<'search' | 'manual' | 'scan'>('search');
   const [portionType, setPortionType] = useState<string>('100');
   const [customGrams, setCustomGrams] = useState<number>(100);
@@ -552,12 +561,58 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
   const handleScanFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
+      const url = URL.createObjectURL(file);
       setScanFile(file);
-      setScanPreviewUrl(URL.createObjectURL(file));
+      setScanPreviewUrl(url);
       setScanResult(null);
       setScanError(null);
+
+      // Auto-detect if image is very tall — offer crop before scanning
+      const img = new Image();
+      img.onload = () => {
+        setOriginalImageSize({ w: img.naturalWidth, h: img.naturalHeight });
+        if (img.naturalHeight > img.naturalWidth * 1.6) {
+          // Tall portrait image — default crop to center 60%
+          setCropStartY(0.15);
+          setCropEndY(0.85);
+          setShowCropModal(true);
+        } else {
+          setCropStartY(0);
+          setCropEndY(1);
+        }
+      };
+      img.src = url;
     }
   };
+
+  const applyCrop = () => {
+    if (!scanPreviewUrl || !originalImageSize.w) return;
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const cropH = Math.round(originalImageSize.h * (cropEndY - cropStartY));
+      canvas.width = originalImageSize.w;
+      canvas.height = cropH;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(
+        img,
+        0, Math.round(originalImageSize.h * cropStartY),   // source x, y
+        originalImageSize.w, cropH,                         // source w, h
+        0, 0,                                               // dest x, y
+        originalImageSize.w, cropH                          // dest w, h
+      );
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        const croppedFile = new File([blob], 'cropped_food.jpg', { type: 'image/jpeg' });
+        const croppedUrl = URL.createObjectURL(croppedFile);
+        setScanFile(croppedFile);
+        setScanPreviewUrl(croppedUrl);
+        setShowCropModal(false);
+      }, 'image/jpeg', 0.92);
+    };
+    img.src = scanPreviewUrl;
+  };
+
 
   const triggerScanImage = async () => {
     if (!scanFile || !token) return;
@@ -685,7 +740,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
           fiber: (item.fiber || 0) / baseServingSize,
           quantity: grams,
           unit: item.servingUnit === 'ml' ? 'ml' : 'g',
-          loggedAt: new Date().toISOString()
+          loggedAt: new Date(scanLoggedAt).toISOString()
         };
 
         // FatSecret items: send confirmation signal to backend so it saves to FoodMaster
@@ -1638,8 +1693,42 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
               ) : (
                 /* PREVIEW & SCANNING INTERFACE */
                 <div className="space-y-4">
-                  <div className="relative rounded-2xl overflow-hidden border border-slate-200 w-full">
-                    <img src={scanPreviewUrl} alt="Preview" className="w-full h-auto block" />
+                  <div className="relative rounded-2xl overflow-hidden border border-slate-200 w-full bg-black">
+                    <img
+                      src={scanPreviewUrl}
+                      alt="Preview"
+                      className="w-full max-h-72 object-cover block"
+                      style={{ objectPosition: `center ${Math.round((cropStartY + cropEndY) / 2 * 100)}%` }}
+                    />
+                    {/* Crop Mode Overlay */}
+                    {showCropModal && !isScanning && (
+                      <div className="absolute inset-0 flex flex-col">
+                        {/* Dark mask top */}
+                        <div
+                          className="bg-black/60 transition-all"
+                          style={{ flex: cropStartY }}
+                        />
+                        {/* Crop selection window */}
+                        <div
+                          className="border-2 border-white border-dashed relative"
+                          style={{ flex: cropEndY - cropStartY }}
+                        >
+                          <div className="absolute top-0 left-0 w-5 h-5 border-t-4 border-l-4 border-white rounded-tl-lg" />
+                          <div className="absolute top-0 right-0 w-5 h-5 border-t-4 border-r-4 border-white rounded-tr-lg" />
+                          <div className="absolute bottom-0 left-0 w-5 h-5 border-b-4 border-l-4 border-white rounded-bl-lg" />
+                          <div className="absolute bottom-0 right-0 w-5 h-5 border-b-4 border-r-4 border-white rounded-br-lg" />
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="text-white text-xs font-bold bg-black/40 px-2 py-1 rounded-full">Crop Area</span>
+                          </div>
+                        </div>
+                        {/* Dark mask bottom */}
+                        <div
+                          className="bg-black/60 transition-all"
+                          style={{ flex: 1 - cropEndY }}
+                        />
+                      </div>
+                    )}
+
                     {isScanning && (
                       <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent shadow-[0_0_12px_rgba(37,99,235,0.8)] top-0 animate-bounce" />
                     )}
@@ -1658,11 +1747,62 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                     </div>
                   )}
 
+                  {/* Crop Controls — shown when image is too tall */}
+                  {showCropModal && !isScanning && (
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-3">
+                      <p className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                        ✂️ Crop Image — Adjust the area to scan
+                      </p>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">Top edge ({Math.round(cropStartY * 100)}%)</label>
+                        <input
+                          type="range" min="0" max="0.6" step="0.01"
+                          value={cropStartY}
+                          onChange={e => {
+                            const v = parseFloat(e.target.value);
+                            setCropStartY(v);
+                            if (v >= cropEndY - 0.1) setCropEndY(v + 0.1);
+                          }}
+                          className="w-full h-2 rounded-full accent-primary"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">Bottom edge ({Math.round(cropEndY * 100)}%)</label>
+                        <input
+                          type="range" min="0.4" max="1" step="0.01"
+                          value={cropEndY}
+                          onChange={e => {
+                            const v = parseFloat(e.target.value);
+                            setCropEndY(v);
+                            if (v <= cropStartY + 0.1) setCropStartY(v - 0.1);
+                          }}
+                          className="w-full h-2 rounded-full accent-primary"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowCropModal(false)}
+                          className="flex-1 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold transition-all"
+                        >
+                          Skip Crop
+                        </button>
+                        <button
+                          type="button"
+                          onClick={applyCrop}
+                          className="flex-1 py-2 bg-primary hover:bg-primary-dark text-white rounded-xl text-xs font-bold shadow-soft transition-all"
+                        >
+                          ✂️ Apply Crop
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {!isScanning && !scanResult && (
                     <div className="flex space-x-3">
                       <button
                         type="button"
-                        onClick={() => { setScanFile(null); setScanPreviewUrl(null); }}
+                        onClick={() => { setScanFile(null); setScanPreviewUrl(null); setShowCropModal(false); }}
                         className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all"
                       >
                         Choose Different Photo
@@ -1906,6 +2046,28 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                             <option value="Dinner">Dinner</option>
                             <option value="Snack">Snack</option>
                           </select>
+                        </div>
+                        {/* Date & Time picker */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Date</label>
+                            <input
+                              type="date"
+                              value={scanLoggedAt.slice(0, 10)}
+                              max={new Date().toISOString().slice(0, 10)}
+                              onChange={e => setScanLoggedAt(e.target.value + 'T' + scanLoggedAt.slice(11, 16))}
+                              className="w-full px-2 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Time</label>
+                            <input
+                              type="time"
+                              value={scanLoggedAt.slice(11, 16)}
+                              onChange={e => setScanLoggedAt(scanLoggedAt.slice(0, 10) + 'T' + e.target.value)}
+                              className="w-full px-2 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                            />
+                          </div>
                         </div>
                       </div>
 

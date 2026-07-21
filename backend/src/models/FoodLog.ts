@@ -3,7 +3,7 @@ import { Schema, model, Document } from 'mongoose';
 export interface IFoodLog extends Document {
   userId: Schema.Types.ObjectId;
   name: string;
-  category: 'South Indian' | 'North Indian' | 'Snacks' | 'Fruits' | 'Beverages' | 'Vegetables' | 'Dairy' | 'Non-Veg' | 'Sweets' | 'Custom';
+  category: string;  // Open string — no enum restriction (supports Indian, foreign & custom foods)
   mealType: 'Breakfast' | 'Lunch' | 'Dinner' | 'Snack';
   calories: number;
   carbs: number;
@@ -36,8 +36,8 @@ const foodLogSchema = new Schema<IFoodLog>(
     name: { type: String, required: true, trim: true },
     category: { 
       type: String, 
-      enum: ['South Indian', 'North Indian', 'Snacks', 'Fruits', 'Vegetables', 'Beverages', 'Dairy', 'Non-Veg', 'Sweets', 'Custom'],
-      required: true 
+      required: true,
+      default: 'Custom'  // Fallback for any food not in predefined categories
     },
     mealType: { 
       type: String, 
