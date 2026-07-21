@@ -167,11 +167,20 @@ export class AppointmentController {
 
       // If consultation has a fee, generate a Razorpay order
       if (consultationFee > 0) {
+        let rzpKeyId = process.env.RAZORPAY_KEY_ID;
+        let rzpSecret = process.env.RAZORPAY_KEY_SECRET;
+
+        // Try getting from DB first
         const config = await PaymentGatewayConfig.findOne();
         if (config && config.razorpayKeyId && config.razorpayKeySecret) {
+          rzpKeyId = config.razorpayKeyId;
+          rzpSecret = config.razorpayKeySecret;
+        }
+
+        if (rzpKeyId && rzpSecret) {
           const razorpay = new Razorpay({
-            key_id: config.razorpayKeyId,
-            key_secret: config.razorpayKeySecret
+            key_id: rzpKeyId,
+            key_secret: rzpSecret
           });
           const rzpOrder = await razorpay.orders.create({
             amount: consultationFee * 100, // in paise/cents
@@ -190,10 +199,11 @@ export class AppointmentController {
               id: rzpOrder.id,
               amount: rzpOrder.amount,
               currency: rzpOrder.currency,
-              keyId: config.razorpayKeyId
+              keyId: rzpKeyId
             }
           });
         } else {
+          // No gateway configured anywhere!
           appointment.paymentStatus = 'paid';
         }
       }

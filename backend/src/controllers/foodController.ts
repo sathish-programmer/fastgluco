@@ -4,7 +4,9 @@ import { FoodLog } from '../models/FoodLog';
 import { FoodMaster } from '../models/FoodMaster';
 import { GlucoseService } from '../services/glucoseService';
 import * as FatSecretService from '../services/fatSecretService';
+import { GeminiVisionService, GeminiFoodDetectionResult } from '../services/geminiVisionService';
 import { GoogleVisionService } from '../services/googleVisionService';
+import { lookupNutrition } from '../services/localNutritionDB';
 import { determinePortionType } from '../utils/foodUtils';
 export class FoodController {
   /**
@@ -339,31 +341,58 @@ export class FoodController {
    * Look up a food name: FoodMaster first, then FatSecret.
    * Returns a normalized result item or null.
    */
-  private static async resolveFoodItem(detectedName: string, confidence: number) {
-    const isLowConfidence = confidence < 0.75;
+  private static async resolveFoodItem(detectedItem: GeminiFoodDetectionResult) {
+    const detectedName = detectedItem.name;
+    const confidence = detectedItem.confidence;
+    const isLowConfidence = confidence < 75;
+    const hasGeminiMacros = detectedItem.calories !== undefined && detectedItem.calories > 0;
 
-    // 1. Try FoodMaster (local, fast)
-    const localFood = await FoodController.findFoodInLocalLibrary(detectedName);
-    if (localFood) {
+    // 1. Try local nutrition DB FIRST (precise match prevents fuzzy false positives in FoodMaster)
+    const localNutrition = lookupNutrition(detectedName);
+    if (localNutrition) {
       return {
-        foodName: localFood.name,
+        foodName: detectedName,
         confidence,
-        calories: localFood.calories,
-        carbs: localFood.carbs,
-        protein: localFood.protein,
-        fat: localFood.fat,
-        fiber: localFood.fiber || 0,
-        servingSize: localFood.servingSize,
-        servingUnit: localFood.servingUnit,
-        category: localFood.category,
+        calories: localNutrition.calories,
+        carbs: localNutrition.carbs,
+        protein: localNutrition.protein,
+        fat: localNutrition.fat,
+        fiber: localNutrition.fiber,
+        servingSize: localNutrition.servingSize,
+        servingUnit: localNutrition.servingUnit,
+        category: localNutrition.category,
         isExternal: false,
         isLowConfidence,
-        portionType: localFood.portionType,
+        requiresManualEntry: false,
+        portionType: determinePortionType(detectedName),
         source: 'FoodMaster' as const
       };
     }
 
-    // 2. Fallback to FatSecret
+    // 2. Try FoodMaster DB (exact match only — skip fuzzy to avoid false positives like Grilled Chicken for Grilled Sandwich)
+    const exactFood = await FoodMaster.findOne({
+      name: { $regex: new RegExp(`^${FoodController.escapeRegExp(detectedName)}$`, 'i') }
+    }).sort({ verified: -1 });
+    if (exactFood) {
+      return {
+        foodName: exactFood.name,
+        confidence,
+        calories: exactFood.calories,
+        carbs: exactFood.carbs,
+        protein: exactFood.protein,
+        fat: exactFood.fat,
+        fiber: exactFood.fiber || 0,
+        servingSize: exactFood.servingSize,
+        servingUnit: exactFood.servingUnit,
+        category: exactFood.category,
+        isExternal: false,
+        isLowConfidence,
+        portionType: exactFood.portionType,
+        source: 'FoodMaster' as const
+      };
+    }
+
+    // 3. Fallback to FatSecret
     try {
       const fatSecretResults = await FatSecretService.searchFood(detectedName);
       if (fatSecretResults.length > 0) {
@@ -392,7 +421,27 @@ export class FoodController {
       console.error(`FatSecret lookup failed for "${detectedName}":`, fsErr.message);
     }
 
-    // 3. No result found anywhere
+    // 3. No result found anywhere - Fallback to Gemini's estimated macros!
+    if (hasGeminiMacros) {
+      return {
+        foodName: detectedName,
+        confidence,
+        calories: detectedItem.calories || 0,
+        carbs: detectedItem.carbs || 0,
+        protein: detectedItem.protein || 0,
+        fat: detectedItem.fat || 0,
+        fiber: detectedItem.fiber || 0,
+        servingSize: detectedItem.servingSize || 100,
+        servingUnit: detectedItem.servingUnit || 'g',
+        category: 'Snacks' as const,
+        isExternal: true,
+        isLowConfidence,
+        requiresManualEntry: false, // We have AI estimates
+        portionType: determinePortionType(detectedName),
+        source: 'AI Estimation' as const
+      };
+    }
+
     return {
       foodName: detectedName,
       confidence,
@@ -422,9 +471,10 @@ export class FoodController {
         return res.status(400).json({ message: 'No food image file uploaded.' });
       }
 
-      const detectedNames = await GoogleVisionService.detectFoodLabels(req.file.path);
+      // Use Google Vision (reliable, no auth issues) with smart food mapping
+      const visionItems = await GoogleVisionService.detectFoodLabels(req.file.path);
 
-      if (detectedNames.length === 0) {
+      if (visionItems.length === 0) {
         return res.status(200).json({
           success: false,
           requiresManualEntry: true,
@@ -432,11 +482,11 @@ export class FoodController {
         });
       }
 
-      // Resolve each detected name → FoodMaster first, then FatSecret
+      // Resolve each detected name → FoodMaster → Local Nutrition DB → FatSecret
       const resultItems = await Promise.all(
-        detectedNames
+        visionItems
           .filter(d => d.name && d.name.toLowerCase() !== 'unknown')
-          .map(d => FoodController.resolveFoodItem(d.name, d.confidence / 100))
+          .map(d => FoodController.resolveFoodItem({ name: d.name, confidence: d.confidence }))
       );
 
       if (resultItems.length === 0) {
@@ -447,10 +497,20 @@ export class FoodController {
         });
       }
 
+      // Deduplicate by resolved food name (e.g. "Bread" and "Bread Toast" both → "Bread Toast")
+      const seenNames = new Set<string>();
+      const uniqueItems = resultItems.filter(item => {
+        if (!item) return false;
+        const key = (item.foodName || '').toLowerCase().trim();
+        if (seenNames.has(key)) return false;
+        seenNames.add(key);
+        return true;
+      });
+
       return res.status(200).json({
         success: true,
         imageUrl: `/uploads/${req.file.filename}`,
-        items: resultItems
+        items: uniqueItems
       });
 
     } catch (error: any) {

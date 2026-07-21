@@ -1638,8 +1638,8 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
               ) : (
                 /* PREVIEW & SCANNING INTERFACE */
                 <div className="space-y-4">
-                  <div className="relative rounded-2xl overflow-hidden aspect-video bg-slate-100 border border-slate-200">
-                    <img src={scanPreviewUrl} alt="Preview" className="w-full h-full object-contain bg-slate-800" />
+                  <div className="relative rounded-2xl overflow-hidden border border-slate-200 w-full">
+                    <img src={scanPreviewUrl} alt="Preview" className="w-full h-auto block" />
                     {isScanning && (
                       <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent shadow-[0_0_12px_rgba(37,99,235,0.8)] top-0 animate-bounce" />
                     )}
@@ -1712,7 +1712,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                                       )}
                                       {item.source === 'FoodMaster' && (
                                         <span className="text-[7px] font-extrabold bg-emerald-50 text-emerald-600 border border-emerald-100 px-1.5 py-0.5 rounded-md uppercase tracking-wider">
-                                          {Math.round((item.confidence || 0) * 100)}% Match
+                                          {Math.round(item.confidence || 0)}% MATCH
                                         </span>
                                       )}
                                       {item.requiresManualEntry && (
