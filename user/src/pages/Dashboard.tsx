@@ -1098,7 +1098,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
       </div>
 
       {/* Quick Access Control Buttons */}
-      <div className={`grid ${enableWorkout ? 'grid-cols-4' : 'grid-cols-3'} gap-2.5 mb-6`}>
+      <div className={`grid grid-cols-2 sm:${enableWorkout ? 'grid-cols-4' : 'grid-cols-3'} gap-2.5 mb-6`}>
         <button
           onClick={() => onNavigateToTab('Food Log')}
           className="bg-white hover:bg-slate-55 text-slate-800 border border-slate-200/60 text-xs font-extrabold py-4 px-3 rounded-2xl shadow-sm hover:shadow active:scale-95 transition-all duration-200 flex flex-col items-center space-y-1.5"

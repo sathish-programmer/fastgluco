@@ -1143,7 +1143,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
 
                 <div className="pt-3 border-t border-slate-200/60">
                   <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Nutritional Breakdown</span>
-                  <div className="grid grid-cols-5 gap-1.5">
+                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
                     <div className="p-2 rounded-xl text-center border bg-white border-slate-200/80 focus-within:border-primary/40">
                       <span className="text-[8px] font-bold text-slate-400 block uppercase">Calories</span>
                       <input
@@ -1470,7 +1470,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
 
                 <div className="pt-3 border-t border-slate-200/60">
                   <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Nutritional Values (Total)</span>
-                  <div className="grid grid-cols-5 gap-1.5">
+                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
                     <div className="p-2 rounded-xl text-center border bg-slate-50 border-slate-100 focus-within:border-primary/40 transition-all">
                       <span className="text-[8px] font-bold text-slate-450 block uppercase">Calories</span>
                       <input
