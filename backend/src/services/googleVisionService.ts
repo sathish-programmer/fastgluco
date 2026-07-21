@@ -109,17 +109,11 @@ export class GoogleVisionService {
         .filter((item) => {
           const nameLower = item.name.toLowerCase();
 
-          const isAllowed = GoogleVisionService.ALLOWED_FOODS.some(
-            keyword =>
-              nameLower === keyword ||
-              nameLower.includes(keyword)
-          );
-
           const isIgnored = GoogleVisionService.IGNORED_LABELS.some(keyword =>
             nameLower.includes(keyword)
           );
 
-          return isAllowed && !isIgnored && item.confidence >= 60;
+          return !isIgnored && item.confidence >= 60;
         })
         .sort((a, b) => b.confidence - a.confidence);
 

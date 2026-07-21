@@ -803,7 +803,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                   setShowPaymentDisclaimer(false);
                   confirmBook();
                 }}
-                className="px-4 py-2 bg-indigo-650 rounded-xl text-xs font-bold text-white shadow hover:bg-indigo-700 transition-colors"
+                className="px-4 py-2 bg-indigo-600 rounded-xl text-xs font-bold text-white shadow hover:bg-indigo-700 transition-colors"
               >
                 Accept & Pay
               </button>

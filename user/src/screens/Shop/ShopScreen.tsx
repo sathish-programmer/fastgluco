@@ -601,18 +601,19 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
     <div className="pb-24 pt-6 px-4 max-w-6xl mx-auto bg-slate-50 min-h-screen font-sans antialiased text-slate-800">
       
       {/* Header Panel */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between mb-6 sticky top-0 z-50 bg-slate-50 py-3 -mx-4 px-4 shadow-sm gap-2">
+        <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
           <button 
             onClick={onBack}
-            className="h-10 w-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-50 shadow-sm transition-all"
+            className="h-10 w-10 shrink-0 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-50 shadow-sm transition-all"
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">MitoReboot Health</span>
-            <h2 className="text-2xl font-sans font-bold text-slate-850 leading-none mt-1 flex items-center gap-2">
-              🩺 Medical & Health Store
+          <div className="min-w-0 flex-1">
+            <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 tracking-[0.15em] sm:tracking-[0.2em] uppercase block truncate">MitoReboot Health</span>
+            <h2 className="text-base sm:text-2xl font-sans font-bold text-slate-850 leading-tight mt-0.5 flex items-center gap-1 sm:gap-2 truncate">
+              <span className="shrink-0">🩺</span>
+              <span className="truncate">Medical & Health Store</span>
             </h2>
           </div>
         </div>
@@ -620,12 +621,12 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
         {branding.enableExternalPayments !== false && (
           <button 
             onClick={() => setShowBasket(true)}
-            className="relative h-12 px-4 bg-white border border-slate-200 rounded-2xl flex items-center gap-2 text-slate-700 hover:bg-slate-50 shadow-sm transition-all"
+            className="relative shrink-0 h-10 px-3 sm:h-12 sm:px-4 bg-white border border-slate-200 rounded-xl sm:rounded-2xl flex items-center justify-center gap-1.5 sm:gap-2 text-slate-700 hover:bg-slate-50 shadow-sm transition-all"
           >
-            <ShoppingCart className="h-5 w-5 text-indigo-500" />
-            <span className="text-xs font-bold hidden sm:inline">My Basket</span>
+            <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-500" />
+            <span className="text-[11px] sm:text-xs font-bold hidden sm:inline">My Basket</span>
             {totalItems > 0 && (
-              <span className="bg-indigo-600 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-sm">
+              <span className="bg-indigo-600 text-white text-[9px] sm:text-[10px] font-bold w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center shadow-sm">
                 {totalItems}
               </span>
             )}

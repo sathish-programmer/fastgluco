@@ -11,9 +11,11 @@ interface ThemeContextProps {
 const ThemeContext = createContext<ThemeContextProps | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem('fastgluco_ui_theme') as Theme) || 'light'
-  );
+  const [theme, setTheme] = useState<Theme>(() => {
+    const saved = localStorage.getItem('fastgluco_ui_theme') as Theme;
+    if (saved === 'system') return 'light';
+    return saved || 'light';
+  });
   
   const [isDark, setIsDark] = useState<boolean>(false);
 

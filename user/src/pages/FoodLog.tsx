@@ -1639,7 +1639,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                 /* PREVIEW & SCANNING INTERFACE */
                 <div className="space-y-4">
                   <div className="relative rounded-2xl overflow-hidden aspect-video bg-slate-100 border border-slate-200">
-                    <img src={scanPreviewUrl} alt="Preview" className="w-full h-full object-cover" />
+                    <img src={scanPreviewUrl} alt="Preview" className="w-full h-full object-contain bg-slate-800" />
                     {isScanning && (
                       <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent shadow-[0_0_12px_rgba(37,99,235,0.8)] top-0 animate-bounce" />
                     )}
