@@ -4545,7 +4545,7 @@ const AdminPanelContent: React.FC = () => {
                         </div>
                         <div>
                           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Total Revenue</span>
-                          <span className="text-2xl font-extrabold text-slate-800">₹{paymentStats.totalRevenue}</span>
+                          <span className="text-2xl font-extrabold text-slate-800">₹{Number(paymentStats.totalRevenue || 0).toFixed(2)}</span>
                         </div>
                       </div>
 
@@ -4565,7 +4565,7 @@ const AdminPanelContent: React.FC = () => {
                         </div>
                         <div>
                           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Monthly Revenue</span>
-                          <span className="text-2xl font-extrabold text-slate-800">₹{paymentStats.monthlyRevenue}</span>
+                          <span className="text-2xl font-extrabold text-slate-800">₹{Number(paymentStats.monthlyRevenue || 0).toFixed(2)}</span>
                         </div>
                       </div>
 
@@ -4575,7 +4575,7 @@ const AdminPanelContent: React.FC = () => {
                         </div>
                         <div>
                           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Today's Sales</span>
-                          <span className="text-2xl font-extrabold text-slate-800">₹{paymentStats.todayRevenue}</span>
+                          <span className="text-2xl font-extrabold text-slate-800">₹{Number(paymentStats.todayRevenue || 0).toFixed(2)}</span>
                         </div>
                       </div>
                     </div>
@@ -4775,27 +4775,42 @@ const AdminPanelContent: React.FC = () => {
 
                     <div className="grid grid-cols-1 gap-6 pt-4 border-t border-slate-100">
                       <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Cancer Treatment Disclaimer</label>
-                        <textarea
-                          rows={3}
-                          value={paymentConfig.cancerTreatmentDisclaimer !== undefined ? paymentConfig.cancerTreatmentDisclaimer : ''}
-                          onChange={(e) => setPaymentConfig({ ...paymentConfig, cancerTreatmentDisclaimer: e.target.value })}
-                          placeholder="Disclaimer: This app is for informational purposes only. If you are undergoing active cancer treatment, please consult with your oncologist before starting any circadian fasting protocols."
-                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
-                        />
-                        <p className="text-[10px] text-slate-400 font-semibold mt-1">This disclaimer popup is shown to users during registration if they select "CANCER TREATMENT".</p>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Cancer Treatment Disclaimer</label>
+                        <div className="bg-white [&_.ql-container]:rounded-b-2xl [&_.ql-toolbar]:rounded-t-2xl [&_.ql-editor]:min-h-[150px]">
+                          <ReactQuill
+                            theme="snow"
+                            value={paymentConfig.cancerTreatmentDisclaimer !== undefined ? paymentConfig.cancerTreatmentDisclaimer : ''}
+                            onChange={(val) => setPaymentConfig({ ...paymentConfig, cancerTreatmentDisclaimer: val })}
+                            placeholder="Enter Cancer Treatment Disclaimer..."
+                          />
+                        </div>
+                        <p className="text-[10px] text-slate-400 font-semibold mt-1.5">This disclaimer popup is shown to users during registration if they select "CANCER TREATMENT".</p>
                       </div>
 
                       <div className="pt-4 border-t border-slate-100/50">
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Cancer Secondary Prevention Disclaimer</label>
-                        <textarea
-                          rows={3}
-                          value={paymentConfig.cancerSecondaryDisclaimer !== undefined ? paymentConfig.cancerSecondaryDisclaimer : ''}
-                          onChange={(e) => setPaymentConfig({ ...paymentConfig, cancerSecondaryDisclaimer: e.target.value })}
-                          placeholder="Disclaimer: This app is for informational purposes only. If you have a previous history of cancer (secondary prevention), please consult with your medical team before starting any circadian fasting protocols."
-                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
-                        />
-                        <p className="text-[10px] text-slate-400 font-semibold mt-1">This disclaimer popup is shown to users during registration if they select "CANCER SECONDARY PREVENTION".</p>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Cancer Secondary Prevention Disclaimer</label>
+                        <div className="bg-white [&_.ql-container]:rounded-b-2xl [&_.ql-toolbar]:rounded-t-2xl [&_.ql-editor]:min-h-[150px]">
+                          <ReactQuill
+                            theme="snow"
+                            value={paymentConfig.cancerSecondaryDisclaimer !== undefined ? paymentConfig.cancerSecondaryDisclaimer : ''}
+                            onChange={(val) => setPaymentConfig({ ...paymentConfig, cancerSecondaryDisclaimer: val })}
+                            placeholder="Enter Cancer Secondary Prevention Disclaimer..."
+                          />
+                        </div>
+                        <p className="text-[10px] text-slate-400 font-semibold mt-1.5">This disclaimer popup is shown to users during registration if they select "CANCER SECONDARY PREVENTION".</p>
+                      </div>
+
+                      <div className="pt-4 border-t border-slate-100/50">
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Cancer Prevention / General Public Disclaimer</label>
+                        <div className="bg-white [&_.ql-container]:rounded-b-2xl [&_.ql-toolbar]:rounded-t-2xl [&_.ql-editor]:min-h-[150px]">
+                          <ReactQuill
+                            theme="snow"
+                            value={paymentConfig.cancerPreventionDisclaimer !== undefined ? paymentConfig.cancerPreventionDisclaimer : ''}
+                            onChange={(val) => setPaymentConfig({ ...paymentConfig, cancerPreventionDisclaimer: val })}
+                            placeholder="Enter General Public Disclaimer..."
+                          />
+                        </div>
+                        <p className="text-[10px] text-slate-400 font-semibold mt-1.5">This disclaimer popup is shown to users during registration if they select "CANCER PREVENTION [NO HISTORY OF CANCER]".</p>
                       </div>
                     </div>
 

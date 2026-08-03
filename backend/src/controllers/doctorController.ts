@@ -301,13 +301,13 @@ export class DoctorController {
       const doc = await Doctor.findById(doctorId);
       if (!doc) return res.status(404).json({ message: 'Doctor not found.' });
 
-      const {
+       const {
         password, workingHours, availableDays,
         slotDuration, holidays, visibility,
         notificationPreferences, onlineConsultationFee, offlineConsultationFee,
-        maxAppointmentsPerSlot
+        maxAppointmentsPerSlot, deaddictionHelpline
       } = req.body;
-
+ 
       if (password) {
         doc.passwordHash = await bcrypt.hash(password, 10);
       }
@@ -318,12 +318,13 @@ export class DoctorController {
       if (visibility !== undefined) doc.visibility = visibility;
       if (onlineConsultationFee !== undefined) doc.onlineConsultationFee = onlineConsultationFee;
       if (offlineConsultationFee !== undefined) doc.offlineConsultationFee = offlineConsultationFee;
+      if (deaddictionHelpline !== undefined) doc.deaddictionHelpline = deaddictionHelpline;
       if (notificationPreferences !== undefined) {
         doc.notificationPreferences = typeof notificationPreferences === 'object'
           ? JSON.stringify(notificationPreferences)
           : notificationPreferences;
       }
-
+ 
       await doc.save();
 
       // Keep DoctorAvailability in sync
@@ -435,6 +436,17 @@ export class DoctorController {
       });
     } catch (err: any) {
       res.status(500).json({ message: 'Error fetching doctor dashboard statistics.' });
+    }
+  }
+
+  public static async getDeaddictionNumber(req: Request, res: Response) {
+    try {
+      const doc = await Doctor.findOne({ deaddictionHelpline: { $exists: true, $ne: "" }, visibility: true });
+      const number = doc ? doc.deaddictionHelpline : "1800-11-0031";
+      res.status(200).json({ number });
+    } catch (error) {
+      console.error('Error fetching deaddiction number:', error);
+      res.status(200).json({ number: "1800-11-0031" });
     }
   }
 }

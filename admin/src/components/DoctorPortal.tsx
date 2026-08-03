@@ -65,6 +65,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
   const [newHoliday, setNewHoliday] = useState('');
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [emailsEnabled, setEmailsEnabled] = useState(true);
+  const [deaddictionHelpline, setDeaddictionHelpline] = useState('1800-11-0031');
   const [savingSettings, setSavingSettings] = useState(false);
   const [dbStats, setDbStats] = useState<any>({
     onlineRevenue: 0,
@@ -82,6 +83,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
   const [prescriptionText, setPrescriptionText] = useState('');
   const [prescriptionUrl, setPrescriptionUrl] = useState('');
   const [savingNotes, setSavingNotes] = useState(false);
+  const [completingAppt, setCompletingAppt] = useState<any | null>(null);
 
   // Accept/Custom link states
   const [acceptingAppt, setAcceptingAppt] = useState<any | null>(null);
@@ -160,6 +162,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
         setNotificationsEnabled(data.notificationPreferences?.pushAlerts !== false);
         setEmailsEnabled(data.notificationPreferences?.emailAlerts !== false);
         setHolidays(data.holidays || []);
+        setDeaddictionHelpline(data.deaddictionHelpline || '1800-11-0031');
 
         // Fetch max appointments limit from availability
         try {
@@ -230,6 +233,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
         offlineConsultationFee,
         visibility,
         holidays,
+        deaddictionHelpline,
         notificationPreferences: {
           pushAlerts: notificationsEnabled,
           emailAlerts: emailsEnabled
@@ -261,6 +265,10 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
   const handleConsultNotesSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedApptForNotes) return;
+    if (!consultNotes.trim()) {
+      alert('Clinical consultation notes are mandatory to complete the appointment.');
+      return;
+    }
     setSavingNotes(true);
     try {
       const res = await fetch(`${apiUrl}/doctor/appointments/${selectedApptForNotes._id}/consultation`, {
@@ -277,16 +285,62 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
         })
       });
       if (res.ok) {
-        alert('Consultation details saved successfully!');
+        alert('Consultation completed successfully! Confirmation email and SMS sent to doctor and patient.');
         setSelectedApptForNotes(null);
         setConsultNotes('');
         setPrescriptionText('');
         setPrescriptionUrl('');
         fetchAppointments();
         fetchDashboardStats();
+      } else {
+        const errData = await res.json();
+        alert(errData.message || 'Error marking appointment as completed.');
       }
     } catch (e) {
       console.error(e);
+      alert('Server error. Please try again.');
+    } finally {
+      setSavingNotes(false);
+    }
+  };
+
+  const handlePopupNotesSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!completingAppt) return;
+    if (!consultNotes.trim()) {
+      alert('Clinical consultation notes are mandatory to complete the appointment.');
+      return;
+    }
+    setSavingNotes(true);
+    try {
+      const res = await fetch(`${apiUrl}/doctor/appointments/${completingAppt._id}/consultation`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          notes: consultNotes,
+          prescriptionText,
+          prescriptionUrl,
+          status: 'completed'
+        })
+      });
+      if (res.ok) {
+        alert('Consultation completed successfully! Confirmation email and SMS sent to doctor and patient.');
+        setCompletingAppt(null);
+        setConsultNotes('');
+        setPrescriptionText('');
+        setPrescriptionUrl('');
+        fetchAppointments();
+        fetchDashboardStats();
+      } else {
+        const errData = await res.json();
+        alert(errData.message || 'Error marking appointment as completed.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Server error. Please try again.');
     } finally {
       setSavingNotes(false);
     }
@@ -503,7 +557,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
                     <div className="p-3.5 bg-emerald-50 text-emerald-600 rounded-2xl"><CheckCircle className="h-5 w-5" /></div>
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 uppercase">Total Revenue</span>
-                      <h3 className="text-xl font-black text-slate-800 mt-1">Rs. {dbStats.totalRevenue || 0}</h3>
+                      <h3 className="text-xl font-black text-slate-800 mt-1">Rs. {Number(dbStats.totalRevenue || 0).toFixed(2)}</h3>
                     </div>
                   </div>
 
@@ -511,7 +565,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
                     <div className="p-3.5 bg-teal-50 text-teal-600 rounded-2xl"><BarChart3 className="h-5 w-5" /></div>
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 uppercase">Online Revenue</span>
-                      <h3 className="text-xl font-black text-slate-850 mt-1">Rs. {dbStats.onlineRevenue || 0}</h3>
+                      <h3 className="text-xl font-black text-slate-850 mt-1">Rs. {Number(dbStats.onlineRevenue || 0).toFixed(2)}</h3>
                     </div>
                   </div>
 
@@ -519,7 +573,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
                     <div className="p-3.5 bg-purple-50 text-purple-600 rounded-2xl"><Users className="h-5 w-5" /></div>
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 uppercase">Offline Revenue</span>
-                      <h3 className="text-xl font-black text-slate-800 mt-1">Rs. {dbStats.offlineRevenue || 0}</h3>
+                      <h3 className="text-xl font-black text-slate-800 mt-1">Rs. {Number(dbStats.offlineRevenue || 0).toFixed(2)}</h3>
                     </div>
                   </div>
                 </div>
@@ -694,29 +748,13 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
                                 </button>
                               )}
                             </div>
-                            {/* Mark Completed button — unlocks feedback for patient in user app */}
+                            {/* Mark Completed button — opens notes popup */}
                             <button
-                              onClick={async () => {
-                                if (!window.confirm(`Mark this appointment with ${appt.userId?.name || 'patient'} as Completed?\n\nThe patient will receive a notification to submit their feedback.`)) return;
-                                try {
-                                  const res = await fetch(`${apiUrl}/doctor/appointments/${appt._id}/consultation`, {
-                                    method: 'PUT',
-                                    headers: {
-                                      'Content-Type': 'application/json',
-                                      'Authorization': `Bearer ${token}`
-                                    },
-                                    body: JSON.stringify({ status: 'completed' })
-                                  });
-                                  if (res.ok) {
-                                    fetchAppointments();
-                                    fetchDashboardStats();
-                                  } else {
-                                    alert('Error marking appointment as completed.');
-                                  }
-                                } catch (e) {
-                                  console.error(e);
-                                  alert('Server error. Please try again.');
-                                }
+                              onClick={() => {
+                                setCompletingAppt(appt);
+                                setConsultNotes(appt.notes || '');
+                                setPrescriptionText(appt.prescriptionText || '');
+                                setPrescriptionUrl(appt.prescriptionUrl || '');
                               }}
                               className="w-full py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5"
                             >
@@ -1180,13 +1218,14 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
                         </div>
 
                         <div className="space-y-1">
-                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Clinical Notes / Diagnostics Summary</label>
+                          <label className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block">Clinical Notes / Diagnostics Summary <span className="text-rose-500">*</span></label>
                           <textarea 
+                            required
                             value={consultNotes} 
                             onChange={e => setConsultNotes(e.target.value)}
                             rows={4}
                             className="w-full border border-slate-200 rounded-xl p-3 text-xs font-semibold focus:outline-none"
-                            placeholder="Describe symptoms, assessment, diagnosis details..."
+                            placeholder="Describe symptoms, assessment, diagnosis details... (Mandatory)"
                           />
                         </div>
 
@@ -1484,6 +1523,21 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
                     </div>
                   </div>
 
+                  {/* Deaddiction Settings */}
+                  <div className="space-y-3 pt-2 pb-2">
+                    <h3 className="text-xs font-bold text-slate-700">Deaddiction Referral Settings</h3>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Deaddiction Helpline Number</label>
+                      <input 
+                        type="text" 
+                        value={deaddictionHelpline} 
+                        onChange={e => setDeaddictionHelpline(e.target.value)} 
+                        className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none font-semibold text-slate-800" 
+                        placeholder="e.g. 1800-11-0031" 
+                      />
+                    </div>
+                  </div>
+
                   <div className="pt-4 border-t border-slate-100 flex justify-end">
                     <button 
                       type="submit"
@@ -1572,6 +1626,83 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
                   className="px-5 py-2.5 bg-primary text-white rounded-xl text-xs font-bold shadow-sm transition-all"
                 >
                   {savingMeetUrl ? 'Saving...' : 'Accept Appointment'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {completingAppt && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl border border-slate-100 space-y-4 animate-in zoom-in duration-200">
+            <div className="flex items-center gap-2 text-primary">
+              <FileText className="h-5 w-5" />
+              <h3 className="text-base font-bold text-slate-800">Complete Consultation</h3>
+            </div>
+            <p className="text-[11px] text-slate-400">
+              Please enter consultation notes to complete the appointment with <strong>{completingAppt.userId?.name || 'patient'}</strong>.
+            </p>
+
+            <form onSubmit={handlePopupNotesSubmit} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block">
+                  Clinical Notes / Diagnostics Summary <span className="text-rose-500">*</span>
+                </label>
+                <textarea 
+                  required
+                  value={consultNotes} 
+                  onChange={e => setConsultNotes(e.target.value)}
+                  rows={4}
+                  className="w-full border border-slate-200 rounded-xl p-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                  placeholder="Describe symptoms, assessment, diagnosis details... (Mandatory)"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block">
+                  Digital Prescription Text (Optional)
+                </label>
+                <textarea 
+                  value={prescriptionText} 
+                  onChange={e => setPrescriptionText(e.target.value)}
+                  rows={2}
+                  className="w-full border border-slate-200 rounded-xl p-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                  placeholder="e.g. Paracetamol 500mg - Twice daily after meals - 5 days..."
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block">
+                  Attached File / Prescription PDF URL (Optional)
+                </label>
+                <input 
+                  type="text" 
+                  value={prescriptionUrl} 
+                  onChange={e => setPrescriptionUrl(e.target.value)}
+                  placeholder="http://example.com/prescription.pdf"
+                  className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    setCompletingAppt(null);
+                    setConsultNotes('');
+                    setPrescriptionText('');
+                    setPrescriptionUrl('');
+                  }}
+                  className="px-4 py-2 bg-slate-100 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200 transition-all"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={savingNotes || !consultNotes.trim()}
+                  className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-sm transition-all disabled:opacity-50"
+                >
+                  {savingNotes ? 'Completing...' : 'Submit & Complete'}
                 </button>
               </div>
             </form>

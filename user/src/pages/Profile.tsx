@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useTheme } from '../context/ThemeContext';
@@ -68,10 +68,32 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
 
   const [saveSuccess, setSaveSuccess] = useState(false);
 
+  // Manage subView state signaling for Android hardware back button
+  useEffect(() => {
+    if (subView !== 'settings') {
+      (window as any).profileSubViewActive = true;
+    } else {
+      (window as any).profileSubViewActive = false;
+    }
+
+    const handleBackEvent = () => {
+      if (subView !== 'settings') {
+        setSubView('settings');
+      }
+    };
+
+    window.addEventListener('appBackButton', handleBackEvent);
+
+    return () => {
+      (window as any).profileSubViewActive = false;
+      window.removeEventListener('appBackButton', handleBackEvent);
+    };
+  }, [subView]);
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if ((cancerJourney === 'TREATMENT' || cancerJourney === 'SECONDARY_PREVENTION') && !disclaimerAccepted) {
-      showToast('You must accept the medical disclaimer to select this cancer care journey.', 'error');
+    if (!disclaimerAccepted) {
+      showToast('You must accept the disclaimer to select this journey.', 'error');
       return;
     }
     setSaveSuccess(false);
@@ -95,8 +117,8 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
       libreRegion,
       libreActive,
       cancerJourney,
-      cancerDisclaimerAccepted: cancerJourney === 'PREVENTION' ? true : disclaimerAccepted,
-      cancerDisclaimerAcceptedAt: cancerJourney === 'PREVENTION' ? undefined : (disclaimerAccepted ? new Date().toISOString() : undefined)
+      cancerDisclaimerAccepted: disclaimerAccepted,
+      cancerDisclaimerAcceptedAt: disclaimerAccepted ? new Date().toISOString() : undefined
     });
     if (success) {
       showToast('Profile updated successfully!', 'success');
@@ -349,14 +371,8 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
               onChange={(e: any) => {
                 const val = e.target.value;
                 setCancerJourney(val);
-                if (val === user?.cancerJourney && user?.cancerDisclaimerAccepted) {
-                  setDisclaimerAccepted(true);
-                } else {
-                  setDisclaimerAccepted(false);
-                  if (val === 'TREATMENT' || val === 'SECONDARY_PREVENTION') {
-                    setShowDisclaimer(true);
-                  }
-                }
+                setDisclaimerAccepted(false);
+                setShowDisclaimer(true);
               }}
               className="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 cursor-pointer transition-all"
             >
@@ -364,22 +380,18 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
               <option value="TREATMENT">CANCER TREATMENT</option>
               <option value="SECONDARY_PREVENTION">CANCER SECONDARY PREVENTION [PREVIOUS HISTORY OF CANCER]</option>
             </select>
-            {(cancerJourney === 'TREATMENT' || cancerJourney === 'SECONDARY_PREVENTION') && (
-              <div className="mt-1.5 flex items-center justify-between text-[10px] font-bold">
-                <span className={disclaimerAccepted ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}>
-                  {disclaimerAccepted ? '✓ Disclaimer Accepted' : '✗ Disclaimer Declined / Not Accepted'}
-                </span>
-                {!disclaimerAccepted && (
-                  <button
-                    type="button"
-                    onClick={() => setShowDisclaimer(true)}
-                    className="text-primary dark:text-primary-light hover:underline"
-                  >
-                    Read Disclaimer
-                  </button>
-                )}
-              </div>
-            )}
+            <div className="mt-1.5 flex items-center justify-between text-[10px] font-bold">
+              <span className={disclaimerAccepted ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}>
+                {disclaimerAccepted ? '✓ Disclaimer Accepted' : '✗ Disclaimer Declined / Not Accepted'}
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowDisclaimer(true)}
+                className="text-primary dark:text-primary-light hover:underline"
+              >
+                Read Disclaimer
+              </button>
+            </div>
           </div>
 
 
@@ -665,7 +677,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
 
           <button
             type="submit"
-            disabled={isLoading || ((cancerJourney === 'TREATMENT' || cancerJourney === 'SECONDARY_PREVENTION') && !disclaimerAccepted)}
+            disabled={isLoading}
             className="w-full bg-primary hover:bg-primary/95 dark:bg-primary-dark text-white font-bold py-3 rounded-2xl shadow-soft flex items-center justify-center space-x-2 transition-all hover:shadow-md disabled:opacity-50"
           >
             <Save className="h-4 w-4" />
@@ -709,12 +721,16 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
               <Heart className="h-5 w-5 text-rose-500 dark:text-rose-400 fill-rose-500 dark:fill-rose-400/20" />
               <span>Medical Disclaimer</span>
             </h3>
-            <p className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed mb-6">
-              {cancerJourney === 'TREATMENT'
-                ? (branding.cancerTreatmentDisclaimer || 'Disclaimer: This app is for informational purposes only. If you are undergoing active cancer treatment, please consult with your oncologist before starting any circadian fasting protocols.')
-                : (branding.cancerSecondaryDisclaimer || 'Disclaimer: This app is for informational purposes only. If you have a previous history of cancer (secondary prevention), please consult with your medical team before starting any circadian fasting protocols.')
-              }
-            </p>
+            <div
+              className="max-h-60 overflow-y-auto pr-1 text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed mb-6 whitespace-pre-line"
+              dangerouslySetInnerHTML={{
+                __html: cancerJourney === 'TREATMENT'
+                  ? branding.cancerTreatmentDisclaimer
+                  : cancerJourney === 'SECONDARY_PREVENTION'
+                  ? branding.cancerSecondaryDisclaimer
+                  : branding.cancerPreventionDisclaimer
+              }}
+            ></div>
             <div className="flex space-x-3">
               <button
                 type="button"

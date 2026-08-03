@@ -381,6 +381,10 @@ export class AppointmentController {
       if (status !== undefined) appt.status = status;
 
       if (status === 'completed') {
+        const finalNotes = appt.notes || '';
+        if (!finalNotes.trim()) {
+          return res.status(400).json({ message: 'Clinical consultation notes are mandatory to complete the appointment.' });
+        }
         // If offline consultation, we assume payment is collected at clinic
         if (appt.type === 'offline') {
           appt.paymentStatus = 'paid';

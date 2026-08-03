@@ -25,6 +25,7 @@ export interface IDoctor extends Document {
   holidays?: string[];
   visibility?: boolean;
   notificationPreferences?: string;
+  deaddictionHelpline?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -54,7 +55,8 @@ const DoctorSchema: Schema = new Schema(
     slotDuration: { type: Number, default: 30 },
     holidays: { type: [String], default: [] },
     visibility: { type: Boolean, default: true },
-    notificationPreferences: { type: String, default: "{}" }
+    notificationPreferences: { type: String, default: "{}" },
+    deaddictionHelpline: { type: String, default: "1800-11-0031" }
   },
   { timestamps: true }
 );

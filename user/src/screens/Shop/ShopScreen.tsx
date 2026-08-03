@@ -843,7 +843,9 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
                       )}
                       
                       <h4 className="font-bold text-slate-850 text-sm mb-1 leading-tight group-hover:text-indigo-600 transition-colors">{item.name}</h4>
-                      <p className="text-[10px] text-slate-450 mb-4 line-clamp-2 leading-relaxed">{item.desc}</p>
+                      <p className="text-[10px] text-slate-450 mb-4 line-clamp-2 leading-relaxed">
+                        {(item.desc || '').replace(/<[^>]*>/g, '')}
+                      </p>
                     </div>
 
                     <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">

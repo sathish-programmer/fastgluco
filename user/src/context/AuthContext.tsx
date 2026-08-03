@@ -35,6 +35,7 @@ export interface AppBranding {
   appLogoUrl: string;
   cancerTreatmentDisclaimer: string;
   cancerSecondaryDisclaimer: string;
+  cancerPreventionDisclaimer: string;
   enableSubscriptionCoupons: boolean;
   enableSaferFoodCoupons: boolean;
   enableSubscriptions?: boolean;
@@ -69,8 +70,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     appName: 'Mito_Reboot',
     appTagline: 'The circadian fasting app',
     appLogoUrl: '',
-    cancerTreatmentDisclaimer: 'Disclaimer: This app is for informational purposes only. If you are undergoing active cancer treatment, please consult with your oncologist before starting any circadian fasting protocols.',
-    cancerSecondaryDisclaimer: 'Disclaimer: This app is for informational purposes only. If you have a previous history of cancer (secondary prevention), please consult with your medical team before starting any circadian fasting protocols.',
+    cancerTreatmentDisclaimer: '',
+    cancerSecondaryDisclaimer: '',
+    cancerPreventionDisclaimer: '',
     enableSubscriptionCoupons: true,
     enableSaferFoodCoupons: true,
     enableSubscriptions: false,
@@ -92,6 +94,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               appLogoUrl: config.appLogoUrl || '',
               cancerTreatmentDisclaimer: config.cancerTreatmentDisclaimer || '',
               cancerSecondaryDisclaimer: config.cancerSecondaryDisclaimer || '',
+              cancerPreventionDisclaimer: config.cancerPreventionDisclaimer || '',
               enableSubscriptionCoupons: config.enableSubscriptionCoupons ?? true,
               enableSaferFoodCoupons: config.enableSaferFoodCoupons ?? true,
               enableSubscriptions: config.enableSubscriptions,

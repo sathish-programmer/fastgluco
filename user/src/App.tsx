@@ -41,10 +41,22 @@ const MainAppContent: React.FC = () => {
   // Theme toggle moved to Profile settings
 
   // Navigation tabs: 'Home' | 'Reports' | 'Food Log' | 'Analysis' | 'Profile'
-  const [activeTab, setActiveTab] = useState<string>('Home');
+  const [activeTab, _setActiveTab] = useState<string>('Home');
+  const [navigationHistory, setNavigationHistory] = useState<string[]>(['Home']);
+
+  const setActiveTab = (tab: string | ((prev: string) => string)) => {
+    const nextTab = typeof tab === 'function' ? tab(activeTab) : tab;
+    _setActiveTab(nextTab);
+    setNavigationHistory(prev => {
+      // Don't add duplicate consecutive tabs
+      if (prev[prev.length - 1] === nextTab) return prev;
+      return [...prev, nextTab];
+    });
+  };
   const [resetToken, setResetToken] = useState<string | null>(null);
   const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
   const [rateOrderId, setRateOrderId] = useState<string | null>(null);
+  const [showCancerCGMDashboard, setShowCancerCGMDashboard] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -64,7 +76,8 @@ const MainAppContent: React.FC = () => {
   // Reset tab to Home and trigger onboarding tour for new users upon successful authentication
   useEffect(() => {
     if (isAuthenticated) {
-      setActiveTab('Home');
+      _setActiveTab('Home');
+      setNavigationHistory(['Home']);
       const completed = localStorage.getItem('fastgluco_onboarding_completed');
       if (!completed) {
         setShowOnboarding(true);
@@ -80,6 +93,57 @@ const MainAppContent: React.FC = () => {
     }
     window.scrollTo(0, 0);
   }, [activeTab]);
+
+  // Listen to Android hardware back button for stack-based navigation
+  useEffect(() => {
+    let active = true;
+    let listener: any = null;
+
+    const setupBackButton = async () => {
+      try {
+        const { App } = await import('@capacitor/app');
+        if (!active) return;
+
+        const handle = await App.addListener('backButton', () => {
+          if (!active) return;
+
+          // If a child view (like Profile settings subview) has captured/intercepted the back button
+          if (activeTab === 'Profile' && (window as any).profileSubViewActive) {
+            window.dispatchEvent(new CustomEvent('appBackButton'));
+            return;
+          }
+
+          if (navigationHistory.length > 1) {
+            const newHistory = [...navigationHistory];
+            newHistory.pop(); // Remove the current tab
+            const previousTab = newHistory[newHistory.length - 1];
+            setNavigationHistory(newHistory);
+            _setActiveTab(previousTab);
+          } else {
+            // Already at the Home tab, exit the app
+            App.exitApp();
+          }
+        });
+
+        if (!active) {
+          handle.remove();
+        } else {
+          listener = handle;
+        }
+      } catch (err) {
+        // Not in Capacitor environment
+      }
+    };
+
+    setupBackButton();
+
+    return () => {
+      active = false;
+      if (listener) {
+        listener.remove();
+      }
+    };
+  }, [activeTab, navigationHistory]);
 
 
   const [isSubscribed, setIsSubscribed] = useState<boolean | null>(null);
@@ -195,6 +259,15 @@ const MainAppContent: React.FC = () => {
     }
   }, [branding.enableExternalPayments, branding.enableSubscriptions]);
 
+  if (!isAuthenticated) {
+    return (
+      <Login 
+        resetToken={resetToken}
+        onClearResetToken={() => setResetToken(null)}
+      />
+    );
+  }
+
   if (isLoading || checkingSub) {
     return (
       <div className="h-full flex items-center justify-center bg-white text-primary">
@@ -203,15 +276,6 @@ const MainAppContent: React.FC = () => {
           <span className="font-bold text-slate-700 text-sm animate-pulse">{branding.appName} Loading...</span>
         </div>
       </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <Login 
-        resetToken={resetToken}
-        onClearResetToken={() => setResetToken(null)}
-      />
     );
   }
 
@@ -269,8 +333,11 @@ const MainAppContent: React.FC = () => {
       {/* Main Tab Screen Content Area */}
       <main className="flex-1 overflow-y-auto w-full">
         {activeTab === 'Home' && (
-          (user?.cancerJourney as string) === 'TREATMENT' || (user?.cancerJourney as string) === 'SECONDARY_PREVENTION' || (user?.cancerJourney as string) === 'CANCER TREATMENT' || (user?.cancerJourney as string) === 'CANCER SECONDARY PREVENTION [PREVIOUS HISTORY OF CANCER]'
-            ? <Dashboard onNavigateToTab={setActiveTab} />
+          ((user?.cancerJourney as string) === 'TREATMENT' || (user?.cancerJourney as string) === 'CANCER TREATMENT')
+            ? (showCancerCGMDashboard 
+                ? <Dashboard onNavigateToTab={setActiveTab} onBackToTugOfWar={() => setShowCancerCGMDashboard(false)} />
+                : <NonCancerDashboard onNavigateToTab={setActiveTab} onGoToCGMDashboard={() => setShowCancerCGMDashboard(true)} />
+              )
             : <NonCancerDashboard onNavigateToTab={setActiveTab} />
         )}
         {activeTab === 'Reports' && <Reports features={planFeatures} />}
@@ -318,7 +385,7 @@ const MainAppContent: React.FC = () => {
           </button>
 
           {/* Reports Tab */}
-          {user?.cancerJourney !== 'PREVENTION' && (
+          {((user?.cancerJourney as string) === 'TREATMENT' || (user?.cancerJourney as string) === 'CANCER TREATMENT') && (
             <button
               onClick={() => setActiveTab('Reports')}
               className={`flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Reports' ? 'text-primary' : 'text-slate-400'}`}
@@ -329,7 +396,7 @@ const MainAppContent: React.FC = () => {
           )}
 
           {/* Food Log Tab */}
-          {user?.cancerJourney !== 'PREVENTION' && (
+          {((user?.cancerJourney as string) === 'TREATMENT' || (user?.cancerJourney as string) === 'CANCER TREATMENT') && (
             <button
               onClick={() => setActiveTab('Food Log')}
               className={`flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Food Log' ? 'text-primary' : 'text-slate-400'}`}
@@ -340,7 +407,7 @@ const MainAppContent: React.FC = () => {
           )}
 
           {/* Analysis Tab */}
-          {user?.cancerJourney !== 'PREVENTION' && (
+          {((user?.cancerJourney as string) === 'TREATMENT' || (user?.cancerJourney as string) === 'CANCER TREATMENT') && (
             <button
               onClick={() => setActiveTab('Analysis')}
               className={`flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Analysis' ? 'text-primary' : 'text-slate-400'}`}
@@ -351,7 +418,7 @@ const MainAppContent: React.FC = () => {
           )}
 
           {/* Educational Tab for Prevention Users */}
-          {user?.cancerJourney === 'PREVENTION' && (
+          {((user?.cancerJourney as string) !== 'TREATMENT' && (user?.cancerJourney as string) !== 'CANCER TREATMENT') && (
             <button
               onClick={() => setActiveTab('Educational')}
               className={`flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Educational' ? 'text-primary' : 'text-slate-400'}`}
@@ -362,7 +429,7 @@ const MainAppContent: React.FC = () => {
           )}
 
           {/* Book Appointment Tab */}
-          {user?.cancerJourney === 'PREVENTION' && (
+          {((user?.cancerJourney as string) !== 'TREATMENT' && (user?.cancerJourney as string) !== 'CANCER TREATMENT') && (
             <button
               onClick={() => setActiveTab('Book Appointment')}
               className={`flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Book Appointment' ? 'text-primary' : 'text-slate-400'}`}
@@ -373,7 +440,7 @@ const MainAppContent: React.FC = () => {
           )}
 
           {/* Shop Orders Tab — Non-cancer patients only */}
-          {user?.cancerJourney === 'PREVENTION' && (
+          {((user?.cancerJourney as string) !== 'TREATMENT' && (user?.cancerJourney as string) !== 'CANCER TREATMENT') && (
             <button
               onClick={() => setActiveTab('Shop Orders')}
               className={`flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Shop Orders' ? 'text-primary' : 'text-slate-400'}`}

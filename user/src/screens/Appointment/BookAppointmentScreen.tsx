@@ -92,6 +92,14 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
   }, [pendingRecommendationId]);
 
   const fetchRecommendationMetadata = async (recId: string) => {
+    if (recId.startsWith('pending_')) {
+      const parsedReason = recId.replace('pending_', '');
+      if (parsedReason && !defaultReasons.includes(parsedReason)) {
+        setReasons(prev => [...prev, parsedReason]);
+      }
+      if (parsedReason) setReason(parsedReason);
+      return;
+    }
     try {
       const res = await fetch(`${apiUrl}/patient/consultations/${recId}`, {
         headers: { Authorization: `Bearer ${token}` }

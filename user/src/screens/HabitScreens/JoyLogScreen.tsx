@@ -14,6 +14,8 @@ export const JoyLogScreen: React.FC<JoyLogScreenProps> = ({ onBack }) => {
   const [history, setHistory] = useState<HabitLog[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [showPromptModal, setShowPromptModal] = useState(false);
+  const [promptActivityValue, setPromptActivityValue] = useState('');
 
   useEffect(() => {
     if (user?.id) loadHistory();
@@ -44,11 +46,18 @@ export const JoyLogScreen: React.FC<JoyLogScreenProps> = ({ onBack }) => {
   };
 
   const handleLog = async (done: boolean) => {
+    let activity = joy.trim();
+    if (done && !activity) {
+      setPromptActivityValue('');
+      setShowPromptModal(true);
+      return;
+    }
+
     setDidDoJoy(done);
     if (!user?.id) return;
     setLoading(true);
     try {
-      await HabitsService.logHabit(apiUrl, token, 'Joy', { joyActivity: joy, done });
+      await HabitsService.logHabit(apiUrl, token, 'Joy', { joyActivity: activity || 'Things I love', done });
       await loadHistory();
     } catch (err) {
       console.error('Failed to log joy', err);
@@ -87,22 +96,25 @@ export const JoyLogScreen: React.FC<JoyLogScreenProps> = ({ onBack }) => {
           placeholder="Painting, gardening, music, cooking..."
           value={joy}
           onChange={(e) => setJoy(e.target.value)}
-          className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 mb-6 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 mb-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
         />
+        <p className="text-[11px] text-indigo-600 dark:text-indigo-400 font-semibold mb-6 pl-1 leading-normal">
+          Do you like singing? Do it! Do you like painting? Splash some colour on the paper!
+        </p>
 
         <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-4">Did you give it 30 minutes today?</span>
         
         <div className="grid grid-cols-2 gap-3">
           <button 
             onClick={() => handleLog(true)}
-            disabled={loading || !joy}
+            disabled={loading}
             className={`py-3.5 rounded-xl font-bold transition-all shadow-sm disabled:opacity-50 ${didDoJoy === true ? 'bg-indigo-500 text-white' : 'bg-white text-slate-700 border border-slate-200 hover:border-indigo-300'}`}
           >
             Yes!
           </button>
           <button 
             onClick={() => handleLog(false)}
-            disabled={loading || !joy}
+            disabled={loading}
             className={`py-3.5 rounded-xl font-bold transition-all shadow-sm disabled:opacity-50 ${didDoJoy === false ? 'bg-slate-200 text-slate-800' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'}`}
           >
             Not today
@@ -126,7 +138,7 @@ export const JoyLogScreen: React.FC<JoyLogScreenProps> = ({ onBack }) => {
               <div key={h.id} className="bg-white border border-slate-200 shadow-sm rounded-xl p-3 flex justify-between items-center">
                 <div>
                   <span className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                    {h.value.done ? '🎉' : '😔'} {h.value.done ? 'My joy' : 'Missed'}
+                    {h.value.done ? '🎉' : '😔'} {h.value.done ? (h.value.joyActivity || 'My joy') : 'Missed'}
                   </span>
                   <span className="text-[10px] text-slate-400 mt-1 block">
                     {new Date(h.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })}
@@ -143,6 +155,53 @@ export const JoyLogScreen: React.FC<JoyLogScreenProps> = ({ onBack }) => {
           </div>
         )}
       </div>
+
+      {showPromptModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl animate-scale-in">
+            <h3 className="text-base font-bold text-slate-800 dark:text-slate-105 mb-2">What did you do for joy today?</h3>
+            <p className="text-xs text-slate-500 mb-4 leading-normal">Please mention the activity you did for at least 30 minutes today.</p>
+            <input 
+              type="text" 
+              placeholder="Painting, singing, walking..."
+              value={promptActivityValue}
+              onChange={(e) => setPromptActivityValue(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 mb-5 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+              autoFocus
+            />
+            <div className="flex gap-3 justify-end">
+              <button 
+                onClick={() => setShowPromptModal(false)}
+                className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={async () => {
+                  const finalVal = promptActivityValue.trim() || 'Things I love';
+                  setJoy(finalVal);
+                  setShowPromptModal(false);
+                  
+                  setDidDoJoy(true);
+                  if (!user?.id) return;
+                  setLoading(true);
+                  try {
+                    await HabitsService.logHabit(apiUrl, token, 'Joy', { joyActivity: finalVal, done: true });
+                    await loadHistory();
+                  } catch (err) {
+                    console.error('Failed to log joy', err);
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                className="px-4 py-2 text-xs font-bold text-white bg-indigo-500 hover:bg-indigo-600 rounded-lg transition-colors shadow-sm"
+              >
+                Log
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -422,7 +422,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
   return (
     <div className={`pb-32 ${isBlocking ? 'pt-0' : 'pt-2'} px-6 md:px-10 lg:px-16 max-w-3xl mx-auto bg-slate-50 min-h-full h-full overflow-y-auto w-full`}>
       {/* Header */}
-      <div className={`flex items-center justify-between mb-6 bg-white -mx-6 px-6 py-4 border-b border-slate-100 sticky ${isBlocking ? 'top-0' : 'top-12'} z-20 shadow-sm`}>
+      <div className="flex items-center justify-between mb-6 bg-white -mx-6 px-6 py-4 border-b border-slate-100 sticky top-0 z-20 shadow-sm">
         <div className="flex items-center space-x-3">
           {!isBlocking && (
             <button onClick={onBack} className="p-1 text-slate-500 hover:text-slate-700">

@@ -1,14 +1,31 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Dna } from 'lucide-react';
 import { ConsultationBanner } from '../../components/ConsultationBanner';
-
+import { useAuth } from '../../context/AuthContext';
+import { HabitsService } from '../../services/habitsService';
+ 
 interface GeneticLogScreenProps {
   onBack: () => void;
   onBookAppointment?: (reason: string) => void;
 }
-
+ 
 export const GeneticLogScreen: React.FC<GeneticLogScreenProps> = ({ onBack, onBookAppointment }) => {
+  const { user, token, apiUrl } = useAuth();
   const [geneticLink, setGeneticLink] = useState<boolean | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleSelectGenetic = async (val: boolean) => {
+    setGeneticLink(val);
+    if (!user?.id) return;
+    setLoading(true);
+    try {
+      await HabitsService.logHabit(apiUrl, token, 'Genetic', { geneticLink: val });
+    } catch (err) {
+      console.error('Failed to log genetic family history log', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-slate-50 min-h-screen font-sans antialiased text-slate-800">
@@ -41,14 +58,16 @@ export const GeneticLogScreen: React.FC<GeneticLogScreenProps> = ({ onBack, onBo
           </p>
           <div className="flex gap-3">
             <button 
-              onClick={() => setGeneticLink(true)}
-              className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${geneticLink === true ? 'bg-primary text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+              onClick={() => handleSelectGenetic(true)}
+              disabled={loading}
+              className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${geneticLink === true ? 'bg-primary text-white shadow-md' : 'bg-slate-100 text-slate-655 hover:bg-slate-200'} disabled:opacity-50`}
             >
               Yes
             </button>
             <button 
-              onClick={() => setGeneticLink(false)}
-              className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${geneticLink === false ? 'bg-primary text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+              onClick={() => handleSelectGenetic(false)}
+              disabled={loading}
+              className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${geneticLink === false ? 'bg-primary text-white shadow-md' : 'bg-slate-100 text-slate-655 hover:bg-slate-200'} disabled:opacity-50`}
             >
               No
             </button>

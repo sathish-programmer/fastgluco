@@ -106,10 +106,10 @@ export class AuthController {
         methodUsed = 'mock';
       } else {
         const config = await PaymentGatewayConfig.findOne();
-        const useTwilio = config?.enableTwilioOtp || false;
+        const useTwilio = config?.enableTwilioOtp || (process.env.TWILIO_ACCOUNT_SID ? true : false);
 
         if (useTwilio) {
-          methodUsed = 'sms';
+          methodUsed = 'sms_and_email';
           const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
           const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
           const TWILIO_PHONE_NUMBER = process.env.TWILIO_PHONE_NUMBER;
@@ -142,6 +142,11 @@ export class AuthController {
             console.error(`Twilio Error (${twilioResponse.status}):`, twilioData);
             return res.status(500).json({ message: 'Failed to send SMS via provider.' });
           }
+
+          // Also send via Email asynchronously
+          EmailService.sendOtpEmail(email, plainOtp).catch(err => {
+            console.error('[Background] Failed to send OTP email:', err);
+          });
         } else {
           // Send via Email (SMTP) asynchronously to avoid blocking the API response
           EmailService.sendOtpEmail(email, plainOtp).catch(err => {

@@ -1,15 +1,44 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Stethoscope } from 'lucide-react';
 import { ConsultationBanner } from '../../components/ConsultationBanner';
-
+import { useAuth } from '../../context/AuthContext';
+import { HabitsService } from '../../services/habitsService';
+ 
 interface DentalLogScreenProps {
   onBack: () => void;
   onBookAppointment?: (reason: string) => void;
 }
-
+ 
 export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBookAppointment }) => {
+  const { user, token, apiUrl } = useAuth();
   const [sharpTooth, setSharpTooth] = useState<boolean | null>(null);
   const [tobacco, setTobacco] = useState<boolean | null>(null);
+  const [illFittingDenture, setIllFittingDenture] = useState<boolean | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleSelectDental = async (fieldName: string, value: boolean) => {
+    const nextSharpTooth = fieldName === 'sharpTooth' ? value : sharpTooth;
+    const nextTobacco = fieldName === 'tobacco' ? value : tobacco;
+    const nextIllFittingDenture = fieldName === 'illFittingDenture' ? value : illFittingDenture;
+
+    if (fieldName === 'sharpTooth') setSharpTooth(value);
+    if (fieldName === 'tobacco') setTobacco(value);
+    if (fieldName === 'illFittingDenture') setIllFittingDenture(value);
+
+    if (!user?.id) return;
+    setLoading(true);
+    try {
+      await HabitsService.logHabit(apiUrl, token, 'Dental', {
+        sharpTooth: nextSharpTooth,
+        tobacco: nextTobacco,
+        illFittingDenture: nextIllFittingDenture
+      });
+    } catch (err) {
+      console.error('Failed to log dental log', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-slate-50 min-h-screen font-sans antialiased text-slate-800">
@@ -40,14 +69,16 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
           <p className="font-semibold text-slate-800 text-sm mb-4">Do you have any sharp tooth?</p>
           <div className="flex gap-3">
             <button 
-              onClick={() => setSharpTooth(true)}
-              className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${sharpTooth === true ? 'bg-primary text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+              onClick={() => handleSelectDental('sharpTooth', true)}
+              disabled={loading}
+              className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${sharpTooth === true ? 'bg-primary text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'} disabled:opacity-50`}
             >
               Yes
             </button>
             <button 
-              onClick={() => setSharpTooth(false)}
-              className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${sharpTooth === false ? 'bg-primary text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+              onClick={() => handleSelectDental('sharpTooth', false)}
+              disabled={loading}
+              className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${sharpTooth === false ? 'bg-primary text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'} disabled:opacity-50`}
             >
               No
             </button>
@@ -78,14 +109,16 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
           <p className="font-semibold text-slate-800 text-sm mb-4">Do you have tobacco staining on your teeth?</p>
           <div className="flex gap-3">
             <button 
-              onClick={() => setTobacco(true)}
-              className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${tobacco === true ? 'bg-primary text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+              onClick={() => handleSelectDental('tobacco', true)}
+              disabled={loading}
+              className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${tobacco === true ? 'bg-primary text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'} disabled:opacity-50`}
             >
               Yes
             </button>
             <button 
-              onClick={() => setTobacco(false)}
-              className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${tobacco === false ? 'bg-primary text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+              onClick={() => handleSelectDental('tobacco', false)}
+              disabled={loading}
+              className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${tobacco === false ? 'bg-primary text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'} disabled:opacity-50`}
             >
               No
             </button>
@@ -108,6 +141,46 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
           {tobacco === false && (
             <div className="mt-4 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
               <p className="text-emerald-700 text-xs font-semibold">Good! A clean smile is a healthy smile.</p>
+            </div>
+          )}
+        </div>
+
+        <div className="pt-6 border-t border-slate-100">
+          <p className="font-semibold text-slate-800 text-sm mb-4">Do you have ill fitting denture?</p>
+          <div className="flex gap-3">
+            <button 
+              onClick={() => handleSelectDental('illFittingDenture', true)}
+              disabled={loading}
+              className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${illFittingDenture === true ? 'bg-primary text-white shadow-md' : 'bg-slate-100 text-slate-650 hover:bg-slate-200'} disabled:opacity-50`}
+            >
+              Yes
+            </button>
+            <button 
+              onClick={() => handleSelectDental('illFittingDenture', false)}
+              disabled={loading}
+              className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${illFittingDenture === false ? 'bg-primary text-white shadow-md' : 'bg-slate-100 text-slate-650 hover:bg-slate-200'} disabled:opacity-50`}
+            >
+              No
+            </button>
+          </div>
+
+          {illFittingDenture === true && (
+            <ConsultationBanner
+              sourceModule="Dental"
+              reason="Dentist Consultation"
+              triggerCondition="Has ill-fitting denture"
+              riskLevel="Medium"
+              recommendedSpecialty="Dentist"
+              title="Recommendation"
+              description="An ill-fitting denture can cause chronic mucosal irritation, ulcers, or other long-term oral health issues. Please consult a dentist."
+              colorTheme="amber"
+              onBookAppointment={onBookAppointment!}
+            />
+          )}
+
+          {illFittingDenture === false && (
+            <div className="mt-4 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+              <p className="text-emerald-700 text-xs font-semibold">Good! Well-fitting dentures ensure chewing comfort and oral health.</p>
             </div>
           )}
         </div>

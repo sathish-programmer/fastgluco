@@ -1,7 +1,7 @@
 import { Schema, model, Document } from 'mongoose';
 
 export interface ILegalDocument extends Document {
-  type: 'PrivacyPolicy' | 'TermsOfService';
+  type: 'PrivacyPolicy' | 'TermsOfService' | 'Disclaimer';
   content: string;
   updatedAt: Date;
 }
@@ -10,7 +10,7 @@ const legalDocumentSchema = new Schema<ILegalDocument>(
   {
     type: { 
       type: String, 
-      enum: ['PrivacyPolicy', 'TermsOfService'], 
+      enum: ['PrivacyPolicy', 'TermsOfService', 'Disclaimer'], 
       required: true, 
       unique: true 
     },

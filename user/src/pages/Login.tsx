@@ -100,7 +100,7 @@ export const Login: React.FC<LoginProps> = () => {
   const [otpCode, setOtpCode] = useState('');
   const [otpError, setOtpError] = useState('');
   const [timer, setTimer] = useState(0);
-  const [deliveryMethod, setDeliveryMethod] = useState<'email' | 'sms' | 'mock'>('email');
+  const [deliveryMethod, setDeliveryMethod] = useState<'email' | 'sms' | 'sms_and_email' | 'mock'>('email');
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const otpInputRef = useRef<HTMLInputElement>(null);
@@ -195,7 +195,14 @@ export const Login: React.FC<LoginProps> = () => {
 
       setScreen('otp');
       setTimer(30); // 30 second cooldown
-      showToast(`Verification code sent to ${email}`, 'success');
+      
+      let toastMsg = `Verification code sent to ${email}`;
+      if (data.method === 'sms') {
+        toastMsg = `Verification code sent to ${mobileNumber}`;
+      } else if (data.method === 'sms_and_email' || data.method === 'mock') {
+        toastMsg = 'Verification code sent to your Mobile & Email';
+      }
+      showToast(toastMsg, 'success');
       setTimeout(() => otpInputRef.current?.focus(), 100);
     } catch (err: any) {
       console.error('sendOtp error:', err);
@@ -425,8 +432,21 @@ export const Login: React.FC<LoginProps> = () => {
               <h2 className="text-2xl font-bold text-slate-800 mb-3 tracking-tight">Verification Code</h2>
               <div className="text-sm text-slate-600 leading-relaxed">
                 Enter the 6-digit code we just sent to:
-                <div className="mt-3 bg-indigo-50/80 px-4 py-2.5 rounded-xl border border-indigo-100 font-medium text-indigo-700 flex items-center break-all shadow-sm">
-                  {deliveryMethod === 'sms' ? mobileNumber : email}
+                <div className="mt-3 bg-indigo-50/80 px-4 py-3 rounded-xl border border-indigo-100 font-medium text-indigo-700 flex items-center break-all shadow-sm">
+                  {deliveryMethod === 'sms' && <span>{mobileNumber}</span>}
+                  {deliveryMethod === 'email' && <span>{email}</span>}
+                  {(deliveryMethod === 'sms_and_email' || deliveryMethod === 'mock') && (
+                    <div className="flex flex-col w-full text-left space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-indigo-400 font-bold uppercase mr-4">Mobile</span>
+                        <span className="text-sm font-semibold">{mobileNumber}</span>
+                      </div>
+                      <div className="border-t border-indigo-100 pt-1.5 flex items-center justify-between">
+                        <span className="text-xs text-indigo-400 font-bold uppercase mr-4">Email</span>
+                        <span className="text-sm font-semibold">{email}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

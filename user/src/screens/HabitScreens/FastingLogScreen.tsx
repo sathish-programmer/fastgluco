@@ -60,9 +60,9 @@ export const FastingLogScreen: React.FC<FastingLogScreenProps> = ({ onBack }) =>
       </div>
 
       <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-4 mb-4">
-        <h3 className="font-bold text-slate-800 mb-1.5">Time-restricted eating.</h3>
+        <h3 className="font-bold text-slate-800 mb-1.5">Fasting & Eating Window</h3>
         <p className="text-xs text-slate-500 leading-relaxed">
-          Window 9 AM–7 PM · aim for a 14–16 h fast · lower glucose gives repair pathways room to work.
+          Eating window guidelines: Wind up dinner by 7 PM, take breakfast by 9 AM. Maintain your calorie intake, and avoid processed and unhealthy food.
         </p>
       </div>
 

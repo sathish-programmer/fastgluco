@@ -46,8 +46,9 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
       return;
     }
     
-    if ((cancerJourney === 'TREATMENT' || cancerJourney === 'SECONDARY_PREVENTION') && !disclaimerAccepted) {
-      showToast('You must accept the medical disclaimer to select this journey.', 'error');
+    if (!disclaimerAccepted) {
+      showToast('You must accept the disclaimer to proceed.', 'error');
+      setShowDisclaimer(true);
       return;
     }
     
@@ -245,9 +246,7 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
                     const val = e.target.value;
                     setCancerJourney(val);
                     setDisclaimerAccepted(false);
-                    if (val === 'TREATMENT' || val === 'SECONDARY_PREVENTION') {
-                      setShowDisclaimer(true);
-                    }
+                    setShowDisclaimer(true);
                   }}
                   className="w-full px-3 py-2.5 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-slate-700 text-sm font-medium"
                 >
@@ -255,22 +254,18 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
                   <option value="TREATMENT">CANCER TREATMENT</option>
                   <option value="SECONDARY_PREVENTION">CANCER SECONDARY PREVENTION [PREVIOUS HISTORY OF CANCER]</option>
                 </select>
-                {(cancerJourney === 'TREATMENT' || cancerJourney === 'SECONDARY_PREVENTION') && (
-                  <div className="mt-1.5 flex items-center justify-between text-[10px] font-bold">
-                    <span className={disclaimerAccepted ? 'text-emerald-600' : 'text-rose-500'}>
-                      {disclaimerAccepted ? '✓ Disclaimer Accepted' : '✗ Disclaimer Declined / Not Accepted'}
-                    </span>
-                    {!disclaimerAccepted && (
-                      <button
-                        type="button"
-                        onClick={() => setShowDisclaimer(true)}
-                        className="text-primary hover:underline"
-                      >
-                        Read Disclaimer
-                      </button>
-                    )}
-                  </div>
-                )}
+                <div className="mt-1.5 flex items-center justify-between text-[10px] font-bold">
+                  <span className={disclaimerAccepted ? 'text-emerald-600' : 'text-rose-500'}>
+                    {disclaimerAccepted ? '✓ Disclaimer Accepted' : '✗ Disclaimer Not Accepted'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowDisclaimer(true)}
+                    className="text-primary hover:underline"
+                  >
+                    Read Disclaimer
+                  </button>
+                </div>
               </div>
 
               <div className="flex space-x-3 mt-6">
@@ -284,7 +279,7 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
                 </button>
                 <button
                   type="submit"
-                  disabled={isLoading || ((cancerJourney === 'TREATMENT' || cancerJourney === 'SECONDARY_PREVENTION') && !disclaimerAccepted)}
+                  disabled={isLoading || !disclaimerAccepted}
                   className="flex-1 bg-primary hover:bg-primary-dark text-white font-semibold py-3 rounded-2xl shadow-soft disabled:opacity-50"
                 >
                   {isLoading ? 'Completing...' : 'Finish Setup'}
@@ -303,12 +298,16 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
               <Heart className="h-5 w-5 text-rose-500 fill-rose-500" />
               <span>Medical Disclaimer</span>
             </h3>
-            <p className="text-xs text-slate-600 font-medium leading-relaxed mb-6">
-              {cancerJourney === 'TREATMENT' 
-                ? (branding.cancerTreatmentDisclaimer || 'Disclaimer: This app is for informational purposes only. If you are undergoing active cancer treatment, please consult with your oncologist before starting any circadian fasting protocols.')
-                : (branding.cancerSecondaryDisclaimer || 'Disclaimer: This app is for informational purposes only. If you have a previous history of cancer (secondary prevention), please consult with your medical team before starting any circadian fasting protocols.')
-              }
-            </p>
+            <div
+              className="max-h-60 overflow-y-auto pr-1 text-xs text-slate-600 font-medium leading-relaxed mb-6 whitespace-pre-line"
+              dangerouslySetInnerHTML={{
+                __html: cancerJourney === 'TREATMENT'
+                  ? branding.cancerTreatmentDisclaimer
+                  : cancerJourney === 'SECONDARY_PREVENTION'
+                  ? branding.cancerSecondaryDisclaimer
+                  : branding.cancerPreventionDisclaimer
+              }}
+            ></div>
             <div className="flex space-x-3">
               <button
                 type="button"

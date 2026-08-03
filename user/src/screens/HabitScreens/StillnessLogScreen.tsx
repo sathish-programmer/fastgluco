@@ -69,20 +69,20 @@ export const StillnessLogScreen: React.FC<StillnessLogScreenProps> = ({ onBack }
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div>
-          <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Repair · Stillness</span>
-          <h2 className="text-2xl font-sans font-bold text-slate-800 leading-none mt-1">Fifteen quiet minutes</h2>
+          <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Repair · Stillness-Meditation</span>
+          <h2 className="text-2xl font-sans font-bold text-slate-800 leading-none mt-1">Ten quiet minutes</h2>
         </div>
       </div>
 
       <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-4 mb-4">
-        <h3 className="font-bold text-slate-800 mb-1.5">Stillness lowers cortisol.</h3>
+        <h3 className="font-bold text-slate-800 mb-1.5">Stillness-Meditation lowers cortisol.</h3>
         <p className="text-xs text-slate-500 leading-relaxed">
-          Linked to longer telomeres and steadier immunity. Fifteen minutes is plenty.
+          Stillness and meditation lower cortisol, supporting immunity and longevity. Aim for at least 10 minutes.
         </p>
       </div>
 
       <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-5 mb-4">
-        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-4">Did you sit today?</span>
+        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-4">Did you meditate / sit for 10 min minimum today?</span>
         
         <div className="grid grid-cols-2 gap-3">
           <button 
@@ -97,7 +97,7 @@ export const StillnessLogScreen: React.FC<StillnessLogScreenProps> = ({ onBack }
             disabled={loading}
             className={`py-3.5 rounded-xl font-bold transition-all shadow-sm disabled:opacity-50 ${didSit === false ? 'bg-slate-200 text-slate-800' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'}`}
           >
-            Not yet
+            No
           </button>
         </div>
       </div>
@@ -150,7 +150,7 @@ export const StillnessLogScreen: React.FC<StillnessLogScreenProps> = ({ onBack }
               <div key={h.id} className="bg-white border border-slate-200 shadow-sm rounded-xl p-3 flex justify-between items-center">
                 <div>
                   <span className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                    {h.value.sat ? '🧘' : '☁️'} {h.value.sat ? 'Sat' : 'Missed'}
+                    {h.value.sat ? '🧘' : '☁️'} {h.value.sat ? 'Meditated (>=10 min)' : 'No'}
                   </span>
                   <span className="text-[10px] text-slate-400 mt-1 block">
                     {new Date(h.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })}

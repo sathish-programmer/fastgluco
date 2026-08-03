@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useConsultation } from '../context/ConsultationContext';
 import { SyncService } from '../services/syncService';
 import { useToast } from '../context/ToastContext';
 import {
@@ -28,11 +29,13 @@ import { motion } from 'framer-motion';
 interface DashboardProps {
   onNavigateToTab: (tab: string) => void;
   features?: { exportReports?: boolean };
+  onBackToTugOfWar?: () => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features, onBackToTugOfWar }) => {
   const { token, user, apiUrl, branding } = useAuth();
   const { showToast } = useToast();
+  const { setPendingRecommendationId } = useConsultation();
 
   const [currentGlucose, setCurrentGlucose] = useState<number | null>(null);
   const [glucoseReadings, setGlucoseReadings] = useState<any[]>([]);
@@ -63,6 +66,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
   const [activitySteps, setActivitySteps] = useState('');
   const [activityCalories, setActivityCalories] = useState('');
   const [activityTimestamp, setActivityTimestamp] = useState('');
+  const [showDieticianModal, setShowDieticianModal] = useState(false);
+  const [dieticianModalDismissed, setDieticianModalDismissed] = useState(false);
   const [submittingActivity, setSubmittingActivity] = useState(false);
   const [upcomingAppt, setUpcomingAppt] = useState<any | null>(null);
   const [isApptDismissed, setIsApptDismissed] = useState<boolean>(false);
@@ -156,6 +161,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
       setSpikeThreshold(user.spikeThreshold);
     }
   }, [user]);
+
+  useEffect(() => {
+    if (glucoseReadings.length > 0) {
+      const stability = calculateStabilityHours();
+      if (stability.hasData && stability.hours < 14 && !dieticianModalDismissed) {
+        setShowDieticianModal(true);
+      }
+    }
+  }, [glucoseReadings, dieticianModalDismissed]);
 
   useEffect(() => {
     if (isChartExpanded && fullscreenScrollRef.current) {
@@ -618,7 +632,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1, duration: 0.4 }}
-        className="flex justify-between items-center mb-6"
+        className="flex items-center justify-between gap-4 mb-5"
       >
         <div>
           <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-widest uppercase">Overview</span>
@@ -640,6 +654,48 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
           </div>
         </div>
       </motion.div>
+
+      {/* Tug of War Hero Banner */}
+      {onBackToTugOfWar && (
+        <motion.button
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15, duration: 0.4 }}
+          whileHover={{ scale: 1.015 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={onBackToTugOfWar}
+          className="w-full mb-5 relative overflow-hidden rounded-3xl p-5 flex items-center justify-between gap-4 text-left shadow-lg"
+          style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #6366F1 100%)' }}
+        >
+          {/* Decorative background circles */}
+          <div className="absolute -top-6 -right-6 h-32 w-32 rounded-full bg-white/5" />
+          <div className="absolute -bottom-4 right-16 h-20 w-20 rounded-full bg-white/5" />
+          <div className="absolute top-2 right-32 h-10 w-10 rounded-full bg-white/10" />
+
+          <div className="flex items-center gap-4 relative z-10">
+            <div className="h-12 w-12 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-2xl shrink-0 border border-white/20">
+              ⚖️
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-0.5">
+                <span className="text-sm font-extrabold text-white tracking-tight">Cellular Defense Strength</span>
+                <span className="flex items-center gap-1 text-[9px] font-bold bg-white/20 text-white px-2 py-0.5 rounded-full border border-white/20">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 animate-pulse inline-block"></span>
+                  LIVE
+                </span>
+              </div>
+              <p className="text-xs text-indigo-200 font-medium leading-snug">See how your daily habits shift the balance between repair & damage</p>
+            </div>
+          </div>
+
+          <div className="relative z-10 h-9 w-9 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0">
+            <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+        </motion.button>
+      )}
+
 
       {/* Offline sync message */}
       {offlineMealsCount > 0 && (
@@ -1223,6 +1279,41 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features 
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showDieticianModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-fadeIn">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm border border-slate-150 shadow-2xl animate-scaleIn text-slate-800 text-center">
+            <div className="mx-auto w-12 h-12 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center mb-3">
+              <span className="text-2xl">🥗</span>
+            </div>
+            <h3 className="text-lg font-black text-slate-900 mb-1">Consult a Dietician</h3>
+            <p className="text-xs text-slate-500 leading-relaxed mb-5">
+              Your CGM data shows you are not able to achieve a blood sugar level of &lt;90 mg/dL for at least 14 hours. We highly recommend consulting a dietician.
+            </p>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => {
+                  setShowDieticianModal(false);
+                  setPendingRecommendationId(`pending_Dietician_High glucose levels (unable to maintain <90 mg/dL for 14 hours)`);
+                  onNavigateToTab('Book Appointment');
+                }}
+                className="w-full bg-primary hover:bg-primary-dark text-white text-xs font-extrabold py-3.5 rounded-2xl transition-all shadow-sm"
+              >
+                Book Dietician Consult
+              </button>
+              <button
+                onClick={() => {
+                  setShowDieticianModal(false);
+                  setDieticianModalDismissed(true);
+                }}
+                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-extrabold py-3.5 rounded-2xl transition-all"
+              >
+                Dismiss
+              </button>
+            </div>
           </div>
         </div>
       )}

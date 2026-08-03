@@ -12,6 +12,8 @@ interface SleepLogScreenProps {
 export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAppointment }) => {
   const { user, token, apiUrl } = useAuth();
   const [hours, setHours] = useState<number>(7);
+  const [quality, setQuality] = useState<string>('good');
+  const [showSleepPopup, setShowSleepPopup] = useState<boolean>(false);
   const [history, setHistory] = useState<HabitLog[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -48,8 +50,11 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
     if (!user?.id) return;
     setLoading(true);
     try {
-      await HabitsService.logHabit(apiUrl, token, 'Sleep', { hours });
+      await HabitsService.logHabit(apiUrl, token, 'Sleep', { hours, quality });
       await loadHistory();
+      if (quality === 'poor' || hours < 6) {
+        setShowSleepPopup(true);
+      }
     } catch (err) {
       console.error('Failed to log sleep', err);
     } finally {
@@ -103,6 +108,30 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
           </button>
         </div>
 
+        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-3">Sleep Quality</span>
+        <div className="grid grid-cols-4 gap-2 mb-6">
+          {[
+            { value: 'poor', label: 'Poor', emoji: '🥱' },
+            { value: 'fair', label: 'Fair', emoji: '😴' },
+            { value: 'good', label: 'Good', emoji: '😊' },
+            { value: 'excellent', label: 'Excellent', emoji: '🌟' }
+          ].map(q => (
+            <button
+              key={q.value}
+              type="button"
+              onClick={() => setQuality(q.value)}
+              className={`py-2 px-1 rounded-xl flex flex-col items-center justify-center border transition-all text-center ${
+                quality === q.value 
+                  ? 'border-indigo-500 bg-indigo-50/50 text-indigo-755 font-bold shadow-sm' 
+                  : 'border-slate-200 bg-white hover:border-slate-350 text-slate-650'
+              }`}
+            >
+              <span className="text-xl mb-1">{q.emoji}</span>
+              <span className="text-[10px] font-bold">{q.label}</span>
+            </button>
+          ))}
+        </div>
+
         <button 
           onClick={handleLog}
           disabled={loading}
@@ -132,6 +161,7 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
                   </span>
                   <span className="text-[10px] text-slate-400 mt-1 block">
                     {new Date(h.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                    {h.value.quality && ` · Quality: ${h.value.quality.charAt(0).toUpperCase() + h.value.quality.slice(1)}`}
                   </span>
                 </div>
                 {h.value.hours >= 7 ? (
@@ -158,6 +188,56 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
           colorTheme="indigo"
           onBookAppointment={onBookAppointment!}
         />
+      )}
+
+      {/* SLEEP ADVISORY POPUP */}
+      {showSleepPopup && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl border border-slate-100 space-y-4 animate-in zoom-in duration-200">
+            <div className="text-center">
+              <div className="mx-auto w-12 h-12 bg-indigo-50 text-indigo-500 rounded-2xl flex items-center justify-center mb-3">
+                <Moon className="h-6 w-6" />
+              </div>
+              <h3 className="text-base font-bold text-slate-800">Sleep Advisory Alert</h3>
+              <p className="text-xs text-slate-500 leading-relaxed mt-2">
+                Your sleep quality is poor or duration is less than 6 hours. Please select the option that best describes your situation:
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2 pt-2">
+              <button 
+                onClick={() => {
+                  setShowSleepPopup(false);
+                  if (onBookAppointment) onBookAppointment('pending_Mental Health Specialist');
+                }}
+                className="w-full text-left p-3.5 bg-rose-50/50 hover:bg-rose-50 border border-rose-100 hover:border-rose-200 rounded-2xl text-xs transition-all flex flex-col gap-1"
+              >
+                <span className="font-bold text-rose-800 uppercase tracking-wide text-[9px]">Option 1</span>
+                <span className="font-bold text-slate-750">Stressed and hence sleep issue</span>
+                <span className="text-[10px] text-slate-500 font-semibold">Consult a Mental Health Specialist</span>
+              </button>
+
+              <button 
+                onClick={() => {
+                  setShowSleepPopup(false);
+                  if (onBookAppointment) onBookAppointment('pending_Sleep Specialist');
+                }}
+                className="w-full text-left p-3.5 bg-indigo-50/50 hover:bg-indigo-100 border border-indigo-100 hover:border-indigo-200 rounded-2xl text-xs transition-all flex flex-col gap-1"
+              >
+                <span className="font-bold text-indigo-850 uppercase tracking-wide text-[9px]">Option 2</span>
+                <span className="font-bold text-slate-750">Not stressed</span>
+                <span className="text-[10px] text-slate-500 font-semibold">Book a Sleep Specialist Consult</span>
+              </button>
+
+              <button 
+                onClick={() => setShowSleepPopup(false)}
+                className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition-all text-center mt-2"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

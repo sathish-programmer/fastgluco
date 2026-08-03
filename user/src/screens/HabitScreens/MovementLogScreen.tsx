@@ -72,15 +72,15 @@ export const MovementLogScreen: React.FC<MovementLogScreenProps> = ({ onBack }) 
 
       <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-4 mb-6">
         <h3 className="font-bold text-slate-800 mb-1.5 flex items-center gap-2">
-          <User className="h-4 w-4 text-amber-500" /> Movement signals life.
+          <User className="h-4 w-4 text-amber-500" /> Exercise is essential.
         </h3>
         <p className="text-xs text-slate-500 leading-relaxed">
-          Muscle contractions release myokines, which reduce systemic inflammation and support metabolic health.
+          Brisk walking or exercising for at least 20 minutes daily reduces systemic inflammation and supports metabolic defenses.
         </p>
       </div>
 
       <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-5 mb-8">
-        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-6">Minutes active today</span>
+        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-6">Did you exercise or brisk walk for 20 min a day minimum?</span>
         
         <div className="flex items-center justify-between mb-8">
           <button 

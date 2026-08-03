@@ -2,6 +2,7 @@ import nodemailer from 'nodemailer';
 import fs from 'fs';
 import path from 'path';
 import { PaymentGatewayConfig } from '../models/PaymentGatewayConfig';
+import { SMSService } from './smsService';
 
 // Configure transport (Using Ethereal for testing or real SMTP if provided in ENV)
 const transporter = nodemailer.createTransport({
@@ -443,7 +444,8 @@ export class EmailService {
               }`;
     } else if (type === 'completed') {
       subject = `Appointment Completed & Invoice Generated`;
-      const invoiceDownload = appt.invoiceUrl ? `<p><strong>Invoice PDF:</strong> <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}${appt.invoiceUrl}">Download Invoice</a></p>` : '';
+      const backendUrl = process.env.BACKEND_URL || 'http://localhost:5001';
+      const invoiceDownload = appt.invoiceUrl ? `<p><strong>Invoice PDF:</strong> <a href="${backendUrl}${appt.invoiceUrl}">Download Invoice</a></p>` : '';
       const rxDownload = appt.prescriptionUrl ? `<p><strong>Prescription:</strong> <a href="${appt.prescriptionUrl}">Download Prescription</a></p>` : '';
       body = `<p>Hi ${appt.userId.name},</p>
               <p>Your consultation with <strong>Dr. ${appt.doctorId.name}</strong> on ${appt.date} has been completed.</p>
@@ -467,11 +469,23 @@ export class EmailService {
     
     // Send to Patient
     try {
+      const patientAttachments: any[] = [];
+      if (type === 'completed' && appt.invoiceUrl) {
+        const fullPath = path.join(__dirname, '../../', appt.invoiceUrl);
+        if (fs.existsSync(fullPath)) {
+          patientAttachments.push({
+            filename: `Invoice-${appt._id}.pdf`,
+            path: fullPath
+          });
+        }
+      }
+
       await transporter.sendMail({
         from: `"${appName} Appointments" <appointments@mitoreboot.com>`,
         to: appt.userId.email,
         subject: `[${appName}] ${subject}`,
-        html
+        html,
+        attachments: patientAttachments
       });
     } catch (err) {
       console.error(err);
@@ -497,6 +511,73 @@ export class EmailService {
       } catch (err) {
         console.error(err);
       }
+    }
+
+    // Send to Doctor (if completed)
+    if (type === 'completed' && appt.doctorId?.email) {
+      const docHtml = generateEmailTemplate('Consultation Completed Successfully', `
+        <p>Hi Dr. ${appt.doctorId.name},</p>
+        <p>Your consultation with patient <strong>${appt.userId.name}</strong> on ${appt.date} has been completed.</p>
+        <p><strong>Consultation Notes:</strong> ${appt.notes || 'None provided.'}</p>
+        ${appt.prescriptionText ? `<p><strong>Prescription Notes:</strong> ${appt.prescriptionText}</p>` : ''}
+      `, appName, appTagline);
+
+      const docAttachments: any[] = [];
+      if (appt.invoiceUrl) {
+        const fullPath = path.join(__dirname, '../../', appt.invoiceUrl);
+        if (fs.existsSync(fullPath)) {
+          docAttachments.push({
+            filename: `Invoice-${appt._id}.pdf`,
+            path: fullPath
+          });
+        }
+      }
+
+      try {
+        await transporter.sendMail({
+          from: `"${appName} Appointments" <appointments@mitoreboot.com>`,
+          to: appt.doctorId.email,
+          subject: `[${appName}] Consultation Completed: ${appt.userId.name}`,
+          html: docHtml,
+          attachments: docAttachments
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // Trigger SMS Notifications asynchronously
+    try {
+      if (type === 'booked' && appt.doctorId?.phone) {
+        const docMessage = `[Mito Reboot] Hello Dr. ${appt.doctorId.name}, you have a new appointment request from patient ${appt.userId?.name || 'User'} on ${appt.date} at ${appt.time}. Reason: ${appt.reason || 'General Consultation'}. Please check your dashboard to accept/reject.`;
+        SMSService.sendSMS(appt.doctorId.phone, docMessage).catch(err => {
+          console.error('[Background] Failed to send Doctor booking SMS:', err);
+        });
+      } else if (type === 'confirmed' && appt.userId?.mobileNumber) {
+        const isOnline = appt.type === 'online';
+        const patientMessage = isOnline 
+          ? `[Mito Reboot] Hi ${appt.userId.name}, your appointment with Dr. ${appt.doctorId.name} is confirmed for ${appt.date} at ${appt.time}. Join Meeting: ${appt.meetingLink}`
+          : `[Mito Reboot] Hi ${appt.userId.name}, your appointment with Dr. ${appt.doctorId.name} is confirmed for ${appt.date} at ${appt.time}. Details: ${appt.meetingLink || 'Please visit the clinic at the scheduled slot.'}`;
+        
+        SMSService.sendSMS(appt.userId.mobileNumber, patientMessage).catch(err => {
+          console.error('[Background] Failed to send Patient confirmation SMS:', err);
+        });
+      } else if (type === 'completed') {
+        if (appt.doctorId?.phone) {
+          const docMessage = `[Mito Reboot] Hello Dr. ${appt.doctorId.name}, your consultation with patient ${appt.userId?.name || 'User'} on ${appt.date} has been completed. Notes: ${appt.notes || 'None'}`;
+          SMSService.sendSMS(appt.doctorId.phone, docMessage).catch(err => {
+            console.error('[Background] Failed to send Doctor completion SMS:', err);
+          });
+        }
+        if (appt.userId?.mobileNumber) {
+          const patientMessage = `[Mito Reboot] Hi ${appt.userId.name}, your consultation with Dr. ${appt.doctorId.name} has been completed. Notes: ${appt.notes || 'None'}`;
+          SMSService.sendSMS(appt.userId.mobileNumber, patientMessage).catch(err => {
+            console.error('[Background] Failed to send Patient completion SMS:', err);
+          });
+        }
+      }
+    } catch (smsErr) {
+      console.error('[Background] Error in SMS dispatch hook:', smsErr);
     }
   }
 

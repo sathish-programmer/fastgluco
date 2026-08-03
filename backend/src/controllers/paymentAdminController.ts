@@ -69,6 +69,7 @@ export class PaymentAdminController {
         appLogoUrl,
         cancerTreatmentDisclaimer,
         cancerSecondaryDisclaimer,
+        cancerPreventionDisclaimer,
         shopGstPercentage,
         shopDiscountPercentage,
         shopShippingFee
@@ -103,6 +104,7 @@ export class PaymentAdminController {
       if (appLogoUrl !== undefined) config.appLogoUrl = appLogoUrl;
       if (cancerTreatmentDisclaimer !== undefined) config.cancerTreatmentDisclaimer = cancerTreatmentDisclaimer;
       if (cancerSecondaryDisclaimer !== undefined) config.cancerSecondaryDisclaimer = cancerSecondaryDisclaimer;
+      if (cancerPreventionDisclaimer !== undefined) config.cancerPreventionDisclaimer = cancerPreventionDisclaimer;
       if (shopGstPercentage !== undefined) config.shopGstPercentage = shopGstPercentage;
       if (shopDiscountPercentage !== undefined) config.shopDiscountPercentage = shopDiscountPercentage;
       if (shopShippingFee !== undefined) config.shopShippingFee = shopShippingFee;
