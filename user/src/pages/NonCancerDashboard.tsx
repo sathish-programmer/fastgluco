@@ -44,6 +44,7 @@ import { ObesityLogScreen } from '../screens/HabitScreens/ObesityLogScreen';
 import { DentalLogScreen } from '../screens/HabitScreens/DentalLogScreen';
 import { GastritisLogScreen } from '../screens/HabitScreens/GastritisLogScreen';
 import { GeneticLogScreen } from '../screens/HabitScreens/GeneticLogScreen';
+import { AntioxidantLogScreen } from '../screens/HabitScreens/AntioxidantLogScreen';
 
 interface NonCancerDashboardProps {
   onNavigateToTab: (tab: string) => void;
@@ -313,7 +314,8 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
   if (activeScreen === 'Fasting') return <FastingLogScreen onBack={() => setActiveScreen(null)} />;
   if (activeScreen === 'Stillness') return <StillnessLogScreen onBack={() => setActiveScreen(null)} />;
   if (activeScreen === 'Joy') return <JoyLogScreen onBack={() => setActiveScreen(null)} />;
-  if (activeScreen === 'Antioxidants') return <ShopScreen type="Antioxidants" onBack={() => setActiveScreen(null)} />;
+  if (activeScreen === 'Antioxidants') return <AntioxidantLogScreen onBack={() => setActiveScreen(null)} onViewShop={() => setActiveScreen('AntioxidantsShop')} />;
+  if (activeScreen === 'AntioxidantsShop') return <ShopScreen type="Antioxidants" onBack={() => setActiveScreen('Antioxidants')} />;
   if (activeScreen === 'SaferProducts') return <ShopScreen type="SaferProducts" onBack={() => setActiveScreen(null)} />;
   if (activeScreen === 'CancerScreening') return <CancerScreeningScreen onBack={() => setActiveScreen(null)} />;
   if (activeScreen === 'Obesity') return <ObesityLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
