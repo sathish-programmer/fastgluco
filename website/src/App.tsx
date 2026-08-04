@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Smartphone,
-  ShieldCheck,
   Activity,
   Sparkles,
   FileText,
@@ -11,7 +10,9 @@ import {
   Phone,
   ExternalLink,
   Stethoscope,
-  ShoppingCart
+  ShoppingCart,
+  BrainCircuit,
+  Globe
 } from 'lucide-react';
 
 const getEmbedUrl = (url: string) => {
@@ -49,6 +50,14 @@ export default function App() {
   const [videosData, setVideosData] = useState<any[]>([]);
   const [foundersData, setFoundersData] = useState<any[]>([]);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+
+  // Interactive Mockup Simulator State
+  const [simStress, setSimStress] = useState<boolean>(true);
+  const [simEnv, setSimEnv] = useState<boolean>(true);
+  const [simFasting, setSimFasting] = useState<boolean>(true);
+  const [simExercise, setSimExercise] = useState<boolean>(true);
+  const [simAntioxidants, setSimAntioxidants] = useState<boolean>(false);
+  const [simJoy, setSimJoy] = useState<boolean>(true);
   
   const [branding, setBranding] = useState({
     appName: 'Mito_Reboot',
@@ -161,23 +170,27 @@ export default function App() {
       <Header activeTab={activeTab} onTabChange={setActiveTab} branding={branding} foundersCount={foundersData.length} />
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-b from-blue-50/50 to-white py-16 px-6 md:py-24">
-        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+      <section className="relative overflow-hidden bg-gradient-to-b from-blue-50/50 via-white to-white py-16 px-6 md:py-24">
+        {/* Floating Ambient Blobs */}
+        <div className="absolute top-1/4 left-5 w-72 h-72 bg-blue-400/20 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse pointer-events-none"></div>
+        <div className="absolute top-1/3 right-5 w-80 h-80 bg-teal-400/20 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse pointer-events-none"></div>
+
+        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center relative z-10">
           <div className="space-y-6">
             <span className="inline-flex items-center space-x-1 px-3 py-1 bg-primary-light text-primary text-xs font-bold rounded-full">
               <Sparkles className="h-3.5 w-3.5 fill-primary" />
-              <span>Patient-Centric Health Tracking</span>
+              <span>Track the Two Forces: Damage vs Repair</span>
             </span>
             <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
-              Master Your Circadian Fasting with <span className="text-primary">{branding.appName}</span>
+              Master Your Cellular Health with <span className="text-primary">{branding.appName}</span>
             </h1>
             <p className="text-sm md:text-base text-slate-500 font-medium leading-relaxed">
-              Upload Abbott FreeStyle Libre reports, log common Indian foods, calculate daily calorie target, and identify items causing blood sugar spikes instantly to reset your metabolism.
+              Log daily habits, upload Abbott CGM sensors, analyze blood sugar spikes, track environmental carcinogens, and keep stress balanced to reset your metabolism.
             </p>
 
             {/* Download Buttons */}
             <div className="flex flex-wrap gap-4 pt-2">
-              <button className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-3 rounded-2xl flex items-center space-x-3 transition-all shadow-lg shadow-slate-900/10">
+              <button className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-3 rounded-2xl flex items-center space-x-3 transition-all shadow-lg hover:translate-y-[-2px]">
                 <Smartphone className="h-6 w-6 text-white" />
                 <div className="text-left">
                   <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Download on the</span>
@@ -185,7 +198,7 @@ export default function App() {
                 </div>
               </button>
 
-              <button className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-3 rounded-2xl flex items-center space-x-3 transition-all shadow-lg shadow-slate-900/10">
+              <button className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-3 rounded-2xl flex items-center space-x-3 transition-all shadow-lg hover:translate-y-[-2px]">
                 <Play className="h-6 w-6 fill-white text-white" />
                 <div className="text-left">
                   <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Get it on</span>
@@ -195,15 +208,135 @@ export default function App() {
             </div>
           </div>
 
-          {/* Visual Mobile CSS Mockup Card */}
+          {/* Interactive CSS Mobile Mockup Simulator */}
           <div className="flex justify-center">
-            <div className="bg-slate-900 p-3 rounded-[40px] shadow-2xl border-4 border-slate-800 max-w-[340px] w-full relative overflow-hidden">
-              {/* Actual Dashboard Screen Screenshot */}
-              <img
-                src="/screenshot_dashboard.png"
-                alt="Mito_Reboot App Dashboard"
-                className="w-full h-auto rounded-[32px] block"
-              />
+            <div className="bg-slate-900 p-3.5 rounded-[44px] shadow-2xl border-4 border-slate-800 max-w-[340px] w-full relative overflow-hidden select-none">
+              {/* Notch */}
+              <div className="absolute top-0 inset-x-0 h-4 flex justify-center z-20">
+                <div className="bg-slate-900 w-28 h-4 rounded-b-xl"></div>
+              </div>
+
+              {/* Simulated Screen */}
+              <div className="bg-slate-50 dark:bg-slate-950 rounded-[32px] overflow-hidden p-4 pt-6 text-left font-sans">
+                {/* Simulated Header */}
+                <div className="flex justify-between items-center mb-3">
+                  <div className="flex items-center gap-1.5">
+                    <div className="h-5 w-5 bg-primary rounded-md flex items-center justify-center">
+                      <span className="text-[10px] text-white font-bold">M</span>
+                    </div>
+                    <span className="text-xs font-black text-slate-800 dark:text-slate-200">{branding.appName}</span>
+                  </div>
+                  <span className="text-[8px] bg-blue-100 text-blue-700 font-bold px-1.5 py-0.5 rounded-full uppercase">Premium</span>
+                </div>
+
+                {/* Simulated Tug of War Card */}
+                <div className="bg-white dark:bg-slate-900 border border-slate-200/60 rounded-2xl p-4 shadow-sm space-y-3">
+                  <div className="text-center">
+                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest block">Cellular Balance Score</span>
+                    <span className={`text-xl font-black block mt-0.5 ${
+                      (simFasting ? 1 : 0) + (simExercise ? 1 : 0) + (simAntioxidants ? 1 : 0) + (simJoy ? 1 : 0) - (simStress ? 1 : 0) - (simEnv ? 1 : 0) >= 0 
+                        ? 'text-emerald-500' 
+                        : 'text-rose-500'
+                    }`}>
+                      {((simFasting ? 1 : 0) + (simExercise ? 1 : 0) + (simAntioxidants ? 1 : 0) + (simJoy ? 1 : 0) - (simStress ? 1 : 0) - (simEnv ? 1 : 0) > 0 ? '+' : '')}
+                      {(simFasting ? 1 : 0) + (simExercise ? 1 : 0) + (simAntioxidants ? 1 : 0) + (simJoy ? 1 : 0) - (simStress ? 1 : 0) - (simEnv ? 1 : 0)}
+                    </span>
+                  </div>
+
+                  {/* Balance Bar */}
+                  <div>
+                    <div className="flex justify-between text-[8px] font-bold uppercase mb-1">
+                      <span className="text-rose-500">Damage ({(simStress ? 1 : 0) + (simEnv ? 1 : 0)})</span>
+                      <span className="text-emerald-500">Repair ({(simFasting ? 1 : 0) + (simExercise ? 1 : 0) + (simAntioxidants ? 1 : 0) + (simJoy ? 1 : 0)})</span>
+                    </div>
+                    <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden flex">
+                      <div 
+                        className="bg-rose-500 transition-all duration-500" 
+                        style={{ width: `${(((simStress ? 1 : 0) + (simEnv ? 1 : 0)) / (((simStress ? 1 : 0) + (simEnv ? 1 : 0)) + ((simFasting ? 1 : 0) + (simExercise ? 1 : 0) + (simAntioxidants ? 1 : 0) + (simJoy ? 1 : 0)) || 1)) * 100}%` }}
+                      ></div>
+                      <div 
+                        className="bg-emerald-500 transition-all duration-500 flex-1"
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Click Hint */}
+                <p className="text-[7px] text-center font-black text-indigo-600 uppercase tracking-wider my-3 animate-pulse">
+                  👉 Tap items below to log & see metrics change!
+                </p>
+
+                {/* Simulated Columns */}
+                <div className="grid grid-cols-2 gap-2">
+                  {/* Damage Column */}
+                  <div className="space-y-1.5">
+                    <span className="text-[8px] font-bold text-rose-500 uppercase tracking-widest block pl-1">Damage</span>
+                    <button 
+                      onClick={() => setSimStress(!simStress)}
+                      className={`w-full p-2 rounded-xl text-left border flex justify-between items-center transition-all ${
+                        simStress ? 'bg-rose-50/50 border-rose-200 text-rose-700' : 'bg-white border-slate-200/80 text-slate-400'
+                      }`}
+                    >
+                      <span className="text-[9px] font-bold">Stress</span>
+                      <span className="text-[8px] font-extrabold">{simStress ? '-1' : '•'}</span>
+                    </button>
+
+                    <button 
+                      onClick={() => setSimEnv(!simEnv)}
+                      className={`w-full p-2 rounded-xl text-left border flex justify-between items-center transition-all ${
+                        simEnv ? 'bg-rose-50/50 border-rose-200 text-rose-700' : 'bg-white border-slate-200/80 text-slate-400'
+                      }`}
+                    >
+                      <span className="text-[9px] font-bold">Environment</span>
+                      <span className="text-[8px] font-extrabold">{simEnv ? '-1' : '•'}</span>
+                    </button>
+                  </div>
+
+                  {/* Repair Column */}
+                  <div className="space-y-1.5">
+                    <span className="text-[8px] font-bold text-emerald-500 uppercase tracking-widest block pl-1">Repair</span>
+                    <button 
+                      onClick={() => setSimFasting(!simFasting)}
+                      className={`w-full p-2 rounded-xl text-left border flex justify-between items-center transition-all ${
+                        simFasting ? 'bg-emerald-50/50 border-emerald-200 text-emerald-700' : 'bg-white border-slate-200/80 text-slate-400'
+                      }`}
+                    >
+                      <span className="text-[9px] font-bold">Fasting</span>
+                      <span className="text-[8px] font-extrabold">{simFasting ? '+1' : '•'}</span>
+                    </button>
+
+                    <button 
+                      onClick={() => setSimExercise(!simExercise)}
+                      className={`w-full p-2 rounded-xl text-left border flex justify-between items-center transition-all ${
+                        simExercise ? 'bg-emerald-50/50 border-emerald-200 text-emerald-700' : 'bg-white border-slate-200/80 text-slate-400'
+                      }`}
+                    >
+                      <span className="text-[9px] font-bold">Exercise</span>
+                      <span className="text-[8px] font-extrabold">{simExercise ? '+1' : '•'}</span>
+                    </button>
+
+                    <button 
+                      onClick={() => setSimAntioxidants(!simAntioxidants)}
+                      className={`w-full p-2 rounded-xl text-left border flex justify-between items-center transition-all ${
+                        simAntioxidants ? 'bg-emerald-50/50 border-emerald-200 text-emerald-700' : 'bg-white border-slate-200/80 text-slate-400'
+                      }`}
+                    >
+                      <span className="text-[9px] font-bold">Antioxidant</span>
+                      <span className="text-[8px] font-extrabold">{simAntioxidants ? '+1' : '•'}</span>
+                    </button>
+
+                    <button 
+                      onClick={() => setSimJoy(!simJoy)}
+                      className={`w-full p-2 rounded-xl text-left border flex justify-between items-center transition-all ${
+                        simJoy ? 'bg-emerald-50/50 border-emerald-200 text-emerald-700' : 'bg-white border-slate-200/80 text-slate-400'
+                      }`}
+                    >
+                      <span className="text-[9px] font-bold">Things I Love</span>
+                      <span className="text-[8px] font-extrabold">{simJoy ? '+1' : '•'}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -212,62 +345,76 @@ export default function App() {
       {/* Features Grid */}
       <section id="features" className="py-20 px-6 max-w-6xl mx-auto">
         <div className="text-center max-w-2xl mx-auto mb-16">
-          <h2 className="text-3xl font-bold text-slate-900">Designed for Simple Self-Tracking</h2>
+          <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">Designed for Simple Self-Tracking</h2>
           <p className="text-sm text-slate-400 font-semibold mt-2">
-            No complex analytics. Plain insights and clear guidelines tailored for daily health.
+            No complex medical jargon. Plain insights and clear guidelines tailored for daily cellular health.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 mb-8">
-          <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 shadow-soft space-y-4">
+        <div className="grid md:grid-cols-3 gap-8">
+          {/* Card 1 */}
+          <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100 shadow-soft space-y-4 hover:translate-y-[-4px] transition-all duration-300">
             <div className="p-3 bg-blue-50 text-primary rounded-2xl inline-block">
               <FileText className="h-6 w-6" />
             </div>
             <h3 className="text-base font-bold text-slate-800">CGM Report Upload</h3>
             <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-              Export your CSV or PDF log from Abbott FreeStyle Libre and upload directly. Our system extracts continuous readings automatically.
+              Export your CSV or PDF log from Abbott FreeStyle Libre and upload directly. Our system extracts continuous glucose readings automatically.
             </p>
           </div>
 
-          <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 shadow-soft space-y-4">
+          {/* Card 2 */}
+          <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100 shadow-soft space-y-4 hover:translate-y-[-4px] transition-all duration-300">
             <div className="p-3 bg-teal-50 text-secondary rounded-2xl inline-block">
               <Activity className="h-6 w-6" />
             </div>
             <h3 className="text-base font-bold text-slate-800">Glycemic Spike Analysis</h3>
             <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-              Match food logs with glucose readings. Classify foods as Safe, Moderate, or Avoid based on post-meal blood sugar peaks.
+              Match food logs with glucose readings. Classify meals as Safe, Moderate, or Avoid based on post-meal blood sugar peaks.
             </p>
           </div>
 
-          <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 shadow-soft space-y-4">
-            <div className="p-3 bg-green-50 text-success rounded-2xl inline-block">
-              <ShieldCheck className="h-6 w-6 text-success" />
+          {/* Card 3 (New - Environmental) */}
+          <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100 shadow-soft space-y-4 hover:translate-y-[-4px] transition-all duration-300">
+            <div className="p-3 bg-indigo-50 text-indigo-650 rounded-2xl inline-block">
+              <Globe className="h-6 w-6 text-indigo-600" />
             </div>
-            <h3 className="text-base font-bold text-slate-800">Pre-seeded Indian Foods</h3>
+            <h3 className="text-base font-bold text-slate-800">Environmental Exposure Tracker</h3>
             <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-              Search a pre-seeded library covering common South/North Indian cuisines, snacks, fruits, and beverages to log food in seconds.
+              Assess carcinogen loads. Log Air Quality (AQI), screen drinking water, review pesticide residues (Dirty Dozen), and limit Microplastics.
             </p>
           </div>
-        </div>
 
-        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 shadow-soft space-y-4">
-            <div className="p-3 bg-purple-50 text-purple-600 rounded-2xl inline-block">
-              <Stethoscope className="h-6 w-6" />
+          {/* Card 4 (New - Stress & Intimacy) */}
+          <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100 shadow-soft space-y-4 hover:translate-y-[-4px] transition-all duration-300">
+            <div className="p-3 bg-rose-50 text-rose-600 rounded-2xl inline-block">
+              <BrainCircuit className="h-6 w-6 text-rose-500" />
             </div>
-            <h3 className="text-base font-bold text-slate-800">Doctor & Lab Appointments</h3>
+            <h3 className="text-base font-bold text-slate-800">Stress & Intimacy Logs</h3>
             <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-              Book consultations with top specialists and schedule lab tests with home collection or lab visit options directly from the app.
+              Log contributors like work-life balance, mood swings, or intimacy. Instantly access specialist support and mental wellness consultants.
             </p>
           </div>
 
-          <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 shadow-soft space-y-4">
+          {/* Card 5 (Updated - Doctor & Lab) */}
+          <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100 shadow-soft space-y-4 hover:translate-y-[-4px] transition-all duration-300">
+            <div className="p-3 bg-purple-50 text-purple-650 rounded-2xl inline-block">
+              <Stethoscope className="h-6 w-6 text-purple-650" />
+            </div>
+            <h3 className="text-base font-bold text-slate-800">Specialist Appointments</h3>
+            <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+              Book consults with Oncologists, Pulmonologists, or Counselors, and schedule local diagnostic vitamin screening with home sample collection.
+            </p>
+          </div>
+
+          {/* Card 6 */}
+          <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100 shadow-soft space-y-4 hover:translate-y-[-4px] transition-all duration-300">
             <div className="p-3 bg-orange-50 text-orange-500 rounded-2xl inline-block">
               <ShoppingCart className="h-6 w-6" />
             </div>
             <h3 className="text-base font-bold text-slate-800">Health Products Store</h3>
             <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-              Shop for premium CGM patches, health supplements, and testing kits. Track your orders with real-time updates and seamless checkout.
+              Order continuous glucose patches, premium antioxidant supplements, and drinking water testing kits with live tracking and checkout.
             </p>
           </div>
         </div>
