@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Heart, AlertCircle, Smartphone, ChevronDown, Search, ArrowLeft, RefreshCw, Mail } from 'lucide-react';
+import { AlertCircle, Smartphone, ChevronDown, Search, ArrowLeft, RefreshCw, Mail } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
 
@@ -269,11 +269,19 @@ export const Login: React.FC<LoginProps> = () => {
       <div className="w-full max-w-md">
         {/* Brand Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center p-3 bg-primary-light text-primary rounded-2xl mb-3 shadow-soft">
+          <div className="inline-flex items-center justify-center p-4 bg-primary-light text-primary rounded-[2rem] mb-4 shadow-soft">
             {branding.appLogoUrl ? (
-              <img src={branding.appLogoUrl} alt="Logo" className="h-8 w-auto object-contain rounded-md" />
+              <img 
+                src={branding.appLogoUrl.startsWith('http') ? branding.appLogoUrl : `${apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl}${branding.appLogoUrl.startsWith('/') ? '' : '/'}${branding.appLogoUrl}`} 
+                alt="Logo" 
+                className="h-20 w-20 object-contain rounded-2xl" 
+              />
             ) : (
-              <Heart className="h-8 w-8 fill-primary text-primary" />
+              <img 
+                src="/icon.png" 
+                alt="Logo" 
+                className="h-20 w-20 object-contain rounded-2xl" 
+              />
             )}
           </div>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">{branding.appName}</h1>

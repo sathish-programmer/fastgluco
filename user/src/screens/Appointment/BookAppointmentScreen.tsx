@@ -386,6 +386,9 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                         <div className="flex-1 min-w-0">
                           <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">{doc.name}</h4>
                           <p className="text-xs text-slate-500 mt-0.5">{doc.specialty}</p>
+                          {doc.languagesKnown && doc.languagesKnown.length > 0 && (
+                            <p className="text-[10px] text-slate-400 font-semibold mt-0.5">🗣️ {doc.languagesKnown.join(', ')}</p>
+                          )}
                         </div>
                         {doc.avgRating != null && (
                           <div className="flex flex-col items-end shrink-0">

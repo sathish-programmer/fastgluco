@@ -26,7 +26,7 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
   // Doctors Management
   const [doctors, setDoctors] = useState<any[]>([]);
   const [showDocModal, setShowDocModal] = useState(false);
-  const [docForm, setDocForm] = useState({ _id: '', name: '', email: '', password: '', specialty: '', description: '', avatar: '', isActive: true });
+  const [docForm, setDocForm] = useState({ _id: '', name: '', email: '', password: '', specialty: '', description: '', avatar: '', isActive: true, languagesKnown: [] as string[] });
   const [editingDocId, setEditingDocId] = useState<string | null>(null);
 
   // Vendor Management
@@ -94,10 +94,16 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
     try {
       const method = editingDocId ? 'PUT' : 'POST';
       const url = editingDocId ? `${apiUrl}/admin/doctors/${editingDocId}` : `${apiUrl}/admin/doctors`;
+      const payload = {
+        ...docForm,
+        languagesKnown: typeof docForm.languagesKnown === 'string'
+          ? (docForm.languagesKnown as string).split(',').map(s => s.trim()).filter(Boolean)
+          : docForm.languagesKnown
+      };
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(docForm)
+        body: JSON.stringify(payload)
       });
       if (res.ok) {
         setShowDocModal(false);
@@ -246,7 +252,7 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
             </div>
             <button
               onClick={() => {
-                setDocForm({ _id: '', name: '', email: '', password: '', specialty: '', description: '', avatar: '', isActive: true });
+                setDocForm({ _id: '', name: '', email: '', password: '', specialty: '', description: '', avatar: '', isActive: true, languagesKnown: [] });
                 setEditingDocId(null);
                 setShowDocModal(true);
               }}
@@ -311,7 +317,7 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
                     <td className="px-6 py-4 text-right flex justify-end gap-2 mt-1">
                       <button
                         onClick={() => {
-                          setDocForm({ ...doc, password: '' });
+                          setDocForm({ ...doc, password: '', languagesKnown: doc.languagesKnown || [] });
                           setEditingDocId(doc._id);
                           setShowDocModal(true);
                         }}
@@ -600,6 +606,15 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
                   <label className="block text-xs font-bold text-slate-500 mb-1">Avatar (URL)</label>
                   <input value={docForm.avatar} onChange={e => setDocForm({ ...docForm, avatar: e.target.value })} className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-400 font-semibold" />
                 </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">Languages Spoken (comma separated)</label>
+                <input 
+                  value={Array.isArray(docForm.languagesKnown) ? docForm.languagesKnown.join(', ') : docForm.languagesKnown || ''} 
+                  onChange={e => setDocForm({ ...docForm, languagesKnown: e.target.value as any })} 
+                  placeholder="e.g. English, Hindi, Tamil" 
+                  className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-400 font-semibold" 
+                />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1">Profile Description</label>

@@ -197,13 +197,19 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
     e.preventDefault();
     setSavingProfile(true);
     try {
+      const payload = {
+        ...profileForm,
+        languagesKnown: typeof profileForm.languagesKnown === 'string'
+          ? (profileForm.languagesKnown as string).split(',').map(s => s.trim()).filter(Boolean)
+          : profileForm.languagesKnown
+      };
       const res = await fetch(`${apiUrl}/doctor/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(profileForm)
+        body: JSON.stringify(payload)
       });
       if (res.ok) {
         alert('Profile details updated successfully!');
@@ -1374,6 +1380,16 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
                         value={profileForm.experience} 
                         onChange={e => setProfileForm({ ...profileForm, experience: parseInt(e.target.value) || 0 })}
                         className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:outline-none"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Languages Spoken (comma separated)</label>
+                      <input 
+                        type="text" 
+                        value={Array.isArray(profileForm.languagesKnown) ? profileForm.languagesKnown.join(', ') : profileForm.languagesKnown || ''} 
+                        onChange={e => setProfileForm({ ...profileForm, languagesKnown: e.target.value as any })}
+                        className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:outline-none"
+                        placeholder="e.g. English, Hindi, Tamil"
                       />
                     </div>
                   </div>

@@ -6,6 +6,7 @@ import { HabitsService, type HabitLog } from '../../services/habitsService';
 interface AntioxidantLogScreenProps {
   onBack: () => void;
   onViewShop?: () => void;
+  onNavigateToDiagnostics?: () => void;
 }
 
 const ANTIOXIDANT_FOODS = [
@@ -71,7 +72,7 @@ const antioxidantColors: Record<string, string> = {
   'Omega-3': 'bg-sky-50 text-sky-700 border-sky-100',
 };
 
-export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({ onBack, onViewShop }) => {
+export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({ onBack, onViewShop, onNavigateToDiagnostics }) => {
   const { user, token, apiUrl } = useAuth();
   const [answer, setAnswer] = useState<'yes' | 'no' | null>(null);
   const [history, setHistory] = useState<HabitLog[]>([]);
@@ -164,7 +165,16 @@ export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({ onBa
             <Info className="h-3.5 w-3.5 ml-0.5 text-emerald-500" />
           </button>
           {' '}or take antioxidant supplements{' '}
-          <span className="text-slate-400 font-medium">[TABLETS]</span>
+          {onViewShop ? (
+            <button
+              onClick={onViewShop}
+              className="text-indigo-600 dark:text-indigo-400 font-bold hover:underline transition-all"
+            >
+              [TABLETS]
+            </button>
+          ) : (
+            <span className="text-slate-400 font-medium">[TABLETS]</span>
+          )}
           {' '}to support your body's repair mechanisms{' '}
           <span className="font-bold text-slate-800 dark:text-slate-50">EVERYDAY?</span>
         </p>
@@ -314,6 +324,31 @@ export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({ onBa
           </div>
         )}
       </div>
+      {/* Check Vitamin Levels (Lab Testing) */}
+      {onNavigateToDiagnostics && (
+        <div className="mt-6">
+          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-widest uppercase block mb-3">Want to check your actual levels?</span>
+          <button
+            onClick={onNavigateToDiagnostics}
+            className="w-full relative overflow-hidden rounded-3xl p-5 flex items-center justify-between gap-4 text-left shadow-md bg-white border border-slate-200"
+          >
+            <div className="flex items-center gap-4 relative z-10">
+              <div className="h-12 w-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-2xl shrink-0 border border-indigo-100">
+                🧪
+              </div>
+              <div>
+                <p className="text-sm font-extrabold text-slate-800">Check Vitamin Levels</p>
+                <p className="text-xs text-slate-400 mt-0.5 font-medium">Book a lab test with our partner diagnostics vendors</p>
+              </div>
+            </div>
+            <div className="relative z-10 h-9 w-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0">
+              <svg className="h-4 w-4 text-indigo-650" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </button>
+        </div>
+      )}
       {/* Shop for Supplements */}
       {onViewShop && (
         <div className="mt-6">

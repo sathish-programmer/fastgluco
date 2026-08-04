@@ -8,7 +8,7 @@ interface RegisterProps {
 }
 
 export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
-  const { completeOnboarding, error, isLoading, branding, user } = useAuth();
+  const { completeOnboarding, error, isLoading, branding, user, apiUrl } = useAuth();
   const { showToast } = useToast();
   
   const [step, setStep] = useState(1);
@@ -20,48 +20,48 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
   const [age, setAge] = useState<number | ''>('');
   const [height, setHeight] = useState<number | ''>('');
   const [weight, setWeight] = useState<number | ''>('');
-  const [activityLevel, setActivityLevel] = useState<'Sedentary' | 'Lightly active' | 'Moderately active' | 'Very active'>('Moderately active');
-  const [cancerJourney, setCancerJourney] = useState<'PREVENTION' | 'TREATMENT' | 'SECONDARY_PREVENTION'>('PREVENTION');
-  const [showDisclaimer, setShowDisclaimer] = useState(false);
+
+  // Lifestyle state
+  const [activityLevel, setActivityLevel] = useState<'Sedentary' | 'Lightly active' | 'Moderately active' | 'Very active' | ''>('');
+
+  // Medical state
+  const [cancerJourney, setCancerJourney] = useState<'PREVENTION' | 'TREATMENT' | 'SECONDARY_PREVENTION' | ''>('');
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
+  const [showDisclaimer, setShowDisclaimer] = useState(false);
+
+  const totalSteps = 4;
 
   const handleNext = () => {
-    if (step === 1) {
-      if (!name) {
-        showToast('Please enter your full name.', 'error');
-        return;
-      }
-      setStep(2);
-    }
+    if (step < totalSteps) setStep(step + 1);
   };
 
   const handleBack = () => {
-    setStep(prev => Math.max(prev - 1, 1));
+    if (step > 1) setStep(step - 1);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!gender || age === '' || height === '' || weight === '') {
-      showToast('Please fill out all required demographic fields.', 'error');
+    if (!gender || age === '' || height === '' || weight === '' || !activityLevel || !cancerJourney) {
+      showToast('Please complete all profile details.', 'error');
       return;
     }
-    
-    if (!disclaimerAccepted) {
-      showToast('You must accept the disclaimer to proceed.', 'error');
-      setShowDisclaimer(true);
+
+    if (cancerJourney !== 'PREVENTION' && !disclaimerAccepted) {
+      showToast('You must accept the journey disclaimer to proceed.', 'error');
       return;
     }
-    
+
     const success = await completeOnboarding({
       name,
       email: email.trim() || undefined,
-      gender: gender as 'Male' | 'Female' | 'Other',
+      gender: gender as any,
       age: Number(age),
       height: Number(height),
       weight: Number(weight),
-      activityLevel,
-      cancerJourney,
-      cancerDisclaimerAccepted: cancerJourney === 'PREVENTION' ? true : disclaimerAccepted,
+      activityLevel: activityLevel as any,
+      goal: 'Maintain weight',
+      cancerJourney: cancerJourney as any,
+      cancerDisclaimerAccepted: cancerJourney === 'PREVENTION' ? undefined : disclaimerAccepted,
       cancerDisclaimerAcceptedAt: cancerJourney === 'PREVENTION' ? undefined : (disclaimerAccepted ? new Date().toISOString() : undefined)
     });
 
@@ -75,11 +75,19 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
       <div className="w-full max-w-md">
         {/* Brand Header */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center p-3 bg-primary-light text-primary rounded-2xl mb-3 shadow-soft">
+          <div className="inline-flex items-center justify-center p-4 bg-primary-light text-primary rounded-[2rem] mb-4 shadow-soft">
             {branding.appLogoUrl ? (
-              <img src={branding.appLogoUrl} alt="Logo" className="h-6 w-6 object-contain rounded-md" />
+              <img 
+                src={branding.appLogoUrl.startsWith('http') ? branding.appLogoUrl : `${apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl}${branding.appLogoUrl.startsWith('/') ? '' : '/'}${branding.appLogoUrl}`} 
+                alt="Logo" 
+                className="h-20 w-20 object-contain rounded-2xl" 
+              />
             ) : (
-              <Heart className="h-6 w-6 fill-primary" />
+              <img 
+                src="/icon.png" 
+                alt="Logo" 
+                className="h-20 w-20 object-contain rounded-2xl" 
+              />
             )}
           </div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Complete Profile</h1>

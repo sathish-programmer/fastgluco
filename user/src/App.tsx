@@ -269,11 +269,20 @@ const MainAppContent: React.FC = () => {
   }
 
   if (isLoading || checkingSub) {
+    const logoSrc = branding.appLogoUrl 
+      ? (branding.appLogoUrl.startsWith('http') ? branding.appLogoUrl : `${apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl}${branding.appLogoUrl.startsWith('/') ? '' : '/'}${branding.appLogoUrl}`)
+      : '/icon.png';
     return (
-      <div className="h-full flex items-center justify-center bg-white text-primary">
-        <div className="flex flex-col items-center space-y-3">
-          <Heart className="h-10 w-10 fill-primary animate-pulse" />
-          <span className="font-bold text-slate-700 text-sm animate-pulse">{branding.appName} Loading...</span>
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="p-4 bg-primary-light text-primary rounded-[2.5rem] shadow-soft animate-pulse">
+            <img 
+              src={logoSrc} 
+              alt="Logo" 
+              className="h-24 w-24 object-contain rounded-3xl" 
+            />
+          </div>
+          <span className="font-extrabold text-slate-700 text-sm tracking-wide animate-pulse">{branding.appName}</span>
         </div>
       </div>
     );
@@ -307,7 +316,7 @@ const MainAppContent: React.FC = () => {
       <header className="sticky top-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 z-10 px-4 pt-[calc(env(safe-area-inset-top)+12px)] pb-3 max-w-5xl w-full mx-auto flex items-center justify-between transition-colors duration-300">
         <div className="flex items-center space-x-2">
           {branding.appLogoUrl ? (
-            <img src={branding.appLogoUrl} alt={branding.appName} className="h-6 w-auto object-contain max-w-[40px]" />
+            <img src={branding.appLogoUrl.startsWith('http') ? branding.appLogoUrl : `${apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl}${branding.appLogoUrl.startsWith('/') ? '' : '/'}${branding.appLogoUrl}`} alt={branding.appName} className="h-6 w-auto object-contain max-w-[40px]" />
           ) : (
             <Heart className="h-5 w-5 fill-primary text-primary" />
           )}

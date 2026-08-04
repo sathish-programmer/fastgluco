@@ -13,7 +13,7 @@ export class DoctorController {
 
   public static async adminAddDoctor(req: Request, res: Response) {
     try {
-      const { name, email, password, specialty, description, avatar } = req.body;
+      const { name, email, password, specialty, description, avatar, languagesKnown } = req.body;
       if (!name || !email || !password || !specialty || !description) {
         return res.status(400).json({ message: 'Missing required doctor fields.' });
       }
@@ -30,7 +30,8 @@ export class DoctorController {
         passwordHash,
         specialty,
         description,
-        avatar
+        avatar,
+        languagesKnown: Array.isArray(languagesKnown) ? languagesKnown : []
       });
       await doc.save();
 
@@ -59,8 +60,7 @@ export class DoctorController {
           name: doc.name,
           email: doc.email,
           specialty: doc.specialty,
-          description: doc.description,
-          avatar: doc.avatar
+          languagesKnown: doc.languagesKnown
         }
       });
     } catch (err: any) {
@@ -71,7 +71,7 @@ export class DoctorController {
   public static async adminEditDoctor(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const { name, specialty, description, isActive, avatar } = req.body;
+      const { name, specialty, description, isActive, avatar, languagesKnown } = req.body;
       const doc = await Doctor.findById(id);
       if (!doc) return res.status(404).json({ message: 'Doctor not found.' });
 
@@ -80,6 +80,9 @@ export class DoctorController {
       if (description) doc.description = description;
       if (isActive !== undefined) doc.isActive = isActive;
       if (avatar !== undefined) doc.avatar = avatar;
+      if (languagesKnown !== undefined) {
+        doc.languagesKnown = Array.isArray(languagesKnown) ? languagesKnown : [];
+      }
 
       await doc.save();
       res.json(doc);

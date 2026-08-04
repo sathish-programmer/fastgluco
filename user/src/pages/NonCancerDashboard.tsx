@@ -10,7 +10,6 @@ import {
   Cigarette,
   Wine,
   Pill,
-  Heart,
   Leaf,
   Timer,
   Cherry,
@@ -25,7 +24,9 @@ import {
   Scale,
   Stethoscope,
   Flame,
-  Dna
+  Dna,
+  Globe,
+  BrainCircuit
 } from 'lucide-react';
 import { useConsultation } from '../context/ConsultationContext';
 import { StressLogScreen } from '../screens/HabitScreens/StressLogScreen';
@@ -45,6 +46,7 @@ import { DentalLogScreen } from '../screens/HabitScreens/DentalLogScreen';
 import { GastritisLogScreen } from '../screens/HabitScreens/GastritisLogScreen';
 import { GeneticLogScreen } from '../screens/HabitScreens/GeneticLogScreen';
 import { AntioxidantLogScreen } from '../screens/HabitScreens/AntioxidantLogScreen';
+import { EnvironmentalExposuresLogScreen } from '../screens/HabitScreens/EnvironmentalExposuresLogScreen';
 
 interface NonCancerDashboardProps {
   onNavigateToTab: (tab: string) => void;
@@ -55,6 +57,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
   // Navigation State for Habit Screens
   const [activeScreen, setActiveScreen] = useState<string | null>(null);
   const [shopQuery, setShopQuery] = useState<string>('');
+  const [showStressedModal, setShowStressedModal] = useState<boolean>(false);
   const [habits, setHabits] = useState<HabitLog[]>([]);
   const { apiUrl, token, user } = useAuth();
   const [showRecommendation, setShowRecommendation] = useState<boolean>(false);
@@ -195,6 +198,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
       if (h.type === 'Dental' && (h.value.sharpTooth === true || h.value.tobacco === true || h.value.illFittingDenture === true)) count += 1;
       if (h.type === 'Gastritis' && h.value.gastritis === true) count += 1;
       if (h.type === 'Genetic' && h.value.geneticLink === true) count += 1;
+      if (h.type === 'Environmental' && h.value.score < 0) count += 1;
     });
     return count;
   };
@@ -285,6 +289,100 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
     return 0;
   };
 
+  const getStressScore = () => {
+    const logs = habits.filter(h => h.type === 'Stress').sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    if (logs.length === 0) return null;
+    const value = logs[0].value;
+    if (value.faceId === 'stressed' || value.faceId === 'maxed') return -1;
+    return 0;
+  };
+
+  const getSleepScore = () => {
+    const logs = habits.filter(h => h.type === 'Sleep').sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    if (logs.length === 0) return null;
+    const value = logs[0].value;
+    if (value.hours < 6) return -1;
+    return 0;
+  };
+
+  const getSmokingScore = () => {
+    const logs = habits.filter(h => h.type === 'Smoking').sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    if (logs.length === 0) return null;
+    const value = logs[0].value;
+    if (value.count > 0) return -1;
+    return 0;
+  };
+
+  const getAlcoholScore = () => {
+    const logs = habits.filter(h => h.type === 'Alcohol').sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    if (logs.length === 0) return null;
+    const value = logs[0].value;
+    if (value.drinks > 0) return -1;
+    return 0;
+  };
+
+  const getSubstancesScore = () => {
+    const logs = habits.filter(h => h.type === 'Substances').sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    if (logs.length === 0) return null;
+    const value = logs[0].value;
+    if (value.used === true) return -1;
+    return 0;
+  };
+
+  const getObesityScore = () => {
+    if (!user?.height || !user?.weight) return null;
+    const bmi = user.weight / Math.pow(user.height / 100, 2);
+    if (bmi >= 25) return -1;
+    return 0;
+  };
+
+  const getFastingScore = () => {
+    const logs = habits.filter(h => h.type === 'Fasting').sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    if (logs.length === 0) return null;
+    const value = logs[0].value;
+    return value.hours >= 12 ? 1 : 0;
+  };
+
+  const getAntioxidantsScore = () => {
+    const logs = habits.filter(h => h.type === 'Antioxidants').sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    if (logs.length === 0) return null;
+    const value = logs[0].value;
+    return value.consumed === true ? 1 : 0;
+  };
+
+  const getMovementScore = () => {
+    const logs = habits.filter(h => h.type === 'Movement').sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    if (logs.length === 0) return null;
+    const value = logs[0].value;
+    return value.minutes >= 20 ? 1 : 0;
+  };
+
+  const getStillnessScore = () => {
+    const logs = habits.filter(h => h.type === 'Stillness').sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    if (logs.length === 0) return null;
+    const value = logs[0].value;
+    return value.sat === true ? 1 : 0;
+  };
+
+  const getJoyScore = () => {
+    const logs = habits.filter(h => h.type === 'Joy').sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    if (logs.length === 0) return null;
+    const value = logs[0].value;
+    return value.done !== false ? 1 : 0;
+  };
+
+  const getSaferProductsScore = () => {
+    const logs = habits.filter(h => h.type === 'SaferProducts').sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    if (logs.length === 0) return null;
+    return 1;
+  };
+
+  const getEnvironmentalScore = () => {
+    const logs = habits.filter(h => h.type === 'Environmental').sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    if (logs.length === 0) return null;
+    return logs[0].value.score;
+  };
+
   // Calculate percentages for the tug-of-war bar
   const damagePct = totalLogs === 0 ? 50 : (damageCount / totalLogs) * 100;
   const repairPct = totalLogs === 0 ? 50 : (repairCount / totalLogs) * 100;
@@ -300,21 +398,24 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
   const { setPendingRecommendationId } = useConsultation();
 
   const handleBookAppt = (recommendationId: string) => {
-    setPendingRecommendationId(recommendationId);
+    const isObjectId = /^[0-9a-fA-F]{24}$/.test(recommendationId);
+    const resolvedId = isObjectId ? recommendationId : `pending_${recommendationId}`;
+    setPendingRecommendationId(resolvedId);
     onNavigateToTab('Book Appointment');
   };
 
-  if (activeScreen === 'Stress') return <StressLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
+  if (activeScreen === 'Stress') return <StressLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} onNavigateToIntimacy={() => setActiveScreen('Intimacy')} />;
   if (activeScreen === 'Smoking') return <SmokingLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
   if (activeScreen === 'Substances') return <SubstancesLogScreen onBack={() => setActiveScreen(null)} />;
   if (activeScreen === 'Intimacy') return <IntimacyCheckScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
+  if (activeScreen === 'Environmental') return <EnvironmentalExposuresLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
   if (activeScreen === 'Sleep') return <SleepLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
   if (activeScreen === 'Movement') return <MovementLogScreen onBack={() => setActiveScreen(null)} />;
   if (activeScreen === 'Alcohol') return <AlcoholLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
   if (activeScreen === 'Fasting') return <FastingLogScreen onBack={() => setActiveScreen(null)} />;
   if (activeScreen === 'Stillness') return <StillnessLogScreen onBack={() => setActiveScreen(null)} />;
   if (activeScreen === 'Joy') return <JoyLogScreen onBack={() => setActiveScreen(null)} />;
-  if (activeScreen === 'Antioxidants') return <AntioxidantLogScreen onBack={() => setActiveScreen(null)} onViewShop={() => setActiveScreen('AntioxidantsShop')} />;
+  if (activeScreen === 'Antioxidants') return <AntioxidantLogScreen onBack={() => setActiveScreen(null)} onViewShop={() => setActiveScreen('AntioxidantsShop')} onNavigateToDiagnostics={() => setActiveScreen('CancerScreening')} />;
   if (activeScreen === 'AntioxidantsShop') return <ShopScreen type="Antioxidants" onBack={() => setActiveScreen('Antioxidants')} />;
   if (activeScreen === 'SaferProducts') return <ShopScreen type="SaferProducts" onBack={() => setActiveScreen(null)} />;
   if (activeScreen === 'CancerScreening') return <CancerScreeningScreen onBack={() => setActiveScreen(null)} />;
@@ -499,13 +600,13 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
             </div>
             
             <div className="flex flex-col gap-1">
-              <HabitItem icon={<Frown className="h-4 w-4 text-amber-500" />} label="Stress" onClick={() => handleOpenHabit('Stress')} />
-              <HabitItem icon={<Moon className="h-4 w-4 text-indigo-400" />} label="Sleep debt" onClick={() => handleOpenHabit('Sleep')} />
-              <HabitItem icon={<Cigarette className="h-4 w-4 text-slate-400" />} label="Smoking" onClick={() => handleOpenHabit('Smoking')} />
-              <HabitItem icon={<Wine className="h-4 w-4 text-rose-600" />} label="Alcohol" onClick={() => handleOpenHabit('Alcohol')} />
-              <HabitItem icon={<Pill className="h-4 w-4 text-amber-500" />} label="Substances" onClick={() => handleOpenHabit('Substances')} />
-              <HabitItem icon={<Heart className="h-4 w-4 text-rose-500" />} label="Sexual health" onClick={() => handleOpenHabit('Intimacy')} />
-              <HabitItem icon={<Scale className="h-4 w-4 text-rose-500" />} label="Obesity" onClick={() => handleOpenHabit('Obesity')} />
+              <HabitItem icon={<Frown className="h-4 w-4 text-amber-500" />} label="Stress" onClick={() => handleOpenHabit('Stress')} score={getStressScore()} />
+              <HabitItem icon={<Moon className="h-4 w-4 text-indigo-400" />} label="Sleep debt" onClick={() => handleOpenHabit('Sleep')} score={getSleepScore()} />
+              <HabitItem icon={<Cigarette className="h-4 w-4 text-slate-400" />} label="Smoking" onClick={() => handleOpenHabit('Smoking')} score={getSmokingScore()} />
+              <HabitItem icon={<Wine className="h-4 w-4 text-rose-600" />} label="Alcohol" onClick={() => handleOpenHabit('Alcohol')} score={getAlcoholScore()} />
+              <HabitItem icon={<Pill className="h-4 w-4 text-amber-500" />} label="Substances" onClick={() => handleOpenHabit('Substances')} score={getSubstancesScore()} />
+              <HabitItem icon={<Globe className="h-4 w-4 text-cyan-500" />} label="Environmental exposures" onClick={() => handleOpenHabit('Environmental')} score={getEnvironmentalScore()} />
+              <HabitItem icon={<Scale className="h-4 w-4 text-rose-500" />} label="Obesity" onClick={() => handleOpenHabit('Obesity')} score={getObesityScore()} />
               <HabitItem icon={<Stethoscope className="h-4 w-4 text-slate-500" />} label="Dental health" onClick={() => handleOpenHabit('Dental')} score={getDentalScore()} />
               <HabitItem icon={<Flame className="h-4 w-4 text-orange-500" />} label="Gastritis" onClick={() => handleOpenHabit('Gastritis')} score={getGastritisScore()} />
               <HabitItem icon={<Dna className="h-4 w-4 text-purple-500" />} label="Genetic risk" onClick={() => handleOpenHabit('Genetic')} score={getGeneticScore()} />
@@ -527,19 +628,20 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
           <div className="flex flex-col gap-1">
             {isCancerPatient ? (
               <>
-                <HabitItem icon={<Timer className="h-4 w-4 text-sky-500" />} label="INTERMITTENT FASTING" onClick={() => handleOpenHabit('Fasting')} />
-                <HabitItem icon={<User className="h-4 w-4 text-amber-500" />} label="MOVEMENT" onClick={() => handleOpenHabit('Movement')} />
-                <HabitItem icon={<User className="h-4 w-4 text-amber-600" />} label="STILLNESS-MEDIDATION/BOX BREATHING" onClick={() => handleOpenHabit('Stillness')} />
-                <HabitItem icon={<Palette className="h-4 w-4 text-indigo-400" />} label="THINGS YOU LOVE" onClick={() => handleOpenHabit('Joy')} />
+                <HabitItem icon={<Timer className="h-4 w-4 text-sky-500" />} label="INTERMITTENT FASTING" onClick={() => handleOpenHabit('Fasting')} score={getFastingScore()} />
+                <HabitItem icon={<User className="h-4 w-4 text-amber-500" />} label="MOVEMENT" onClick={() => handleOpenHabit('Movement')} score={getMovementScore()} />
+                <HabitItem icon={<User className="h-4 w-4 text-amber-600" />} label="STILLNESS-MEDIDATION/BOX BREATHING" onClick={() => handleOpenHabit('Stillness')} score={getStillnessScore()} />
+                <HabitItem icon={<Palette className="h-4 w-4 text-indigo-400" />} label="THINGS YOU LOVE" onClick={() => handleOpenHabit('Joy')} score={getJoyScore()} />
+                <HabitItem icon={<BrainCircuit className="h-4 w-4 text-rose-500" />} label="ARE YOU STRESSED/WORRIED?" onClick={() => setShowStressedModal(true)} />
               </>
             ) : (
               <>
-                <HabitItem icon={<Timer className="h-4 w-4 text-sky-500" />} label="Fasting" onClick={() => handleOpenHabit('Fasting')} />
-                <HabitItem icon={<Cherry className="h-4 w-4 text-rose-400" />} label="Antioxidants" onClick={() => handleOpenHabit('Antioxidants')} />
-                <HabitItem icon={<User className="h-4 w-4 text-amber-500" />} label="Exercise" onClick={() => handleOpenHabit('Movement')} />
-                <HabitItem icon={<User className="h-4 w-4 text-amber-600" />} label="Stillness-Meditation" onClick={() => handleOpenHabit('Stillness')} />
-                <HabitItem icon={<Palette className="h-4 w-4 text-indigo-400" />} label="Things you love" onClick={() => handleOpenHabit('Joy')} />
-                <HabitItem icon={<ShieldCheck className="h-4 w-4 text-emerald-500" />} label="Safer products" onClick={() => handleOpenHabit('SaferProducts')} />
+                <HabitItem icon={<Timer className="h-4 w-4 text-sky-500" />} label="Fasting" onClick={() => handleOpenHabit('Fasting')} score={getFastingScore()} />
+                <HabitItem icon={<Cherry className="h-4 w-4 text-rose-400" />} label="Antioxidants" onClick={() => handleOpenHabit('Antioxidants')} score={getAntioxidantsScore()} />
+                <HabitItem icon={<User className="h-4 w-4 text-amber-500" />} label="Exercise" onClick={() => handleOpenHabit('Movement')} score={getMovementScore()} />
+                <HabitItem icon={<User className="h-4 w-4 text-amber-600" />} label="Stillness-Meditation" onClick={() => handleOpenHabit('Stillness')} score={getStillnessScore()} />
+                <HabitItem icon={<Palette className="h-4 w-4 text-indigo-400" />} label="Things you love" onClick={() => handleOpenHabit('Joy')} score={getJoyScore()} />
+                <HabitItem icon={<ShieldCheck className="h-4 w-4 text-emerald-500" />} label="Safer products" onClick={() => handleOpenHabit('SaferProducts')} score={getSaferProductsScore()} />
               </>
             )}
           </div>
@@ -635,6 +737,37 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
           </button>
         </div>
       )}
+
+      {showStressedModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-xl">
+            <div className="h-12 w-12 rounded-full bg-rose-50 dark:bg-rose-950/30 flex items-center justify-center mx-auto text-2xl">
+              🧠
+            </div>
+            <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">Talk to our mental health expert</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+              Facing cancer can be overwhelming. We recommend speaking to our supportive mental health professionals to help you navigate your emotions.
+            </p>
+            <div className="flex flex-col gap-2 pt-2">
+              <button
+                onClick={() => {
+                  setShowStressedModal(false);
+                  handleBookAppt('Mental Health Specialist Consultation');
+                }}
+                className="w-full py-3 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs uppercase shadow-sm transition-all"
+              >
+                Talk to expert
+              </button>
+              <button
+                onClick={() => setShowStressedModal(false)}
+                className="w-full py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-350 font-bold rounded-xl text-xs transition-all"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -654,7 +787,7 @@ const HabitItem = ({ icon, label, onClick, score }: { icon: React.ReactNode, lab
           ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400' 
           : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400'
       }`}>
-        {score}
+        {score > 0 ? `+${score}` : score}
       </span>
     ) : (
       <div className="w-1.5 h-1.5 rounded-full bg-slate-200"></div>

@@ -49,8 +49,10 @@ export class AuthController {
       }
 
       let otpRecord = await Otp.findOne({ 
-        mobileNumber: cleanPhone,
-        email: cleanEmail 
+        $or: [
+          { mobileNumber: cleanPhone },
+          { email: cleanEmail }
+        ]
       });
       const now = new Date();
 
@@ -84,17 +86,21 @@ export class AuthController {
       if (!otpRecord) {
         otpRecord = new Otp({
           mobileNumber: cleanPhone,
-          email: email.toLowerCase().trim(),
+          email: cleanEmail,
           otpHash,
           attemptCount: 0,
           resendCount: 1,
           lastSentAt: now,
+          createdAt: now
         });
       } else {
+        otpRecord.mobileNumber = cleanPhone;
+        otpRecord.email = cleanEmail;
         otpRecord.otpHash = otpHash;
         otpRecord.attemptCount = 0;
         otpRecord.resendCount += 1;
         otpRecord.lastSentAt = now;
+        otpRecord.createdAt = now; // Reset TTL timer
       }
       await otpRecord.save();
 
@@ -102,7 +108,7 @@ export class AuthController {
 
       // Check mock mode
       if (process.env.OTP_MOCK_MODE === 'true') {
-        console.log(`[MOCK OTP] OTP for ${cleanPhone} / ${email} is: ${plainOtp}`);
+        console.log(`[MOCK OTP] OTP for ${cleanPhone} / ${cleanEmail} is: ${plainOtp}`);
         methodUsed = 'mock';
       } else {
         const config = await PaymentGatewayConfig.findOne();
@@ -116,40 +122,50 @@ export class AuthController {
           
           if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER) {
             console.error("Twilio credentials missing in environment variables!", { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER });
-            return res.status(500).json({ message: "SMS configuration error." });
-          }
-          
-          // Call Twilio API using standard fetch
-          const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;
-          
-          const params = new URLSearchParams();
-          params.append('To', cleanPhone);
-          params.append('From', TWILIO_PHONE_NUMBER);
-          params.append('Body', `Your Mito Reboot verification code is: ${plainOtp}. Valid for 10 minutes.`);
+            // Fallback to email only
+            methodUsed = 'email';
+            EmailService.sendOtpEmail(cleanEmail, plainOtp).catch(err => {
+              console.error('[Background] Failed to send OTP email after Twilio config missing:', err);
+            });
+          } else {
+            try {
+              // Call Twilio API using standard fetch
+              const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;
+              
+              const params = new URLSearchParams();
+              params.append('To', cleanPhone);
+              params.append('From', TWILIO_PHONE_NUMBER);
+              params.append('Body', `Your Mito Reboot verification code is: ${plainOtp}. Valid for 10 minutes.`);
 
-          const twilioResponse = await fetch(twilioUrl, {
-            method: 'POST',
-            headers: {
-              'Authorization': 'Basic ' + Buffer.from(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`).toString('base64'),
-              'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: params
-          });
-          
-          const twilioData = await twilioResponse.json();
-          
-          if (!twilioResponse.ok) {
-            console.error(`Twilio Error (${twilioResponse.status}):`, twilioData);
-            return res.status(500).json({ message: 'Failed to send SMS via provider.' });
-          }
+              const twilioResponse = await fetch(twilioUrl, {
+                method: 'POST',
+                headers: {
+                  'Authorization': 'Basic ' + Buffer.from(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`).toString('base64'),
+                  'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: params
+              });
+              
+              const twilioData = await twilioResponse.json();
+              
+              if (!twilioResponse.ok) {
+                console.error(`Twilio Error (${twilioResponse.status}):`, twilioData);
+                // Fallback to email only, do not return 500
+                methodUsed = 'email';
+              }
+            } catch (twilioErr) {
+              console.error('Failed to send Twilio SMS due to network/fetch error:', twilioErr);
+              methodUsed = 'email';
+            }
 
-          // Also send via Email asynchronously
-          EmailService.sendOtpEmail(email, plainOtp).catch(err => {
-            console.error('[Background] Failed to send OTP email:', err);
-          });
+            // Always send OTP via email as fallback/secondary
+            EmailService.sendOtpEmail(cleanEmail, plainOtp).catch(err => {
+              console.error('[Background] Failed to send OTP email:', err);
+            });
+          }
         } else {
           // Send via Email (SMTP) asynchronously to avoid blocking the API response
-          EmailService.sendOtpEmail(email, plainOtp).catch(err => {
+          EmailService.sendOtpEmail(cleanEmail, plainOtp).catch(err => {
             console.error('[Background] Failed to send OTP email:', err);
           });
         }
@@ -157,7 +173,10 @@ export class AuthController {
 
       return res.status(200).json({ success: true, message: 'OTP sent successfully', method: methodUsed });
     } catch (error: any) {
-      return res.status(500).json({ message: error.message || 'Error sending OTP' });
+      if (error.code === 11000) {
+        return res.status(400).json({ message: 'A verification request is already pending for this phone number or email. Please wait a moment.' });
+      }
+      return res.status(500).json({ message: 'An error occurred while sending the verification code. Please try again.' });
     }
   }
 
