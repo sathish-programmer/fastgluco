@@ -6,6 +6,7 @@ dotenv.config({ path: path.join(__dirname, '../.env') });
 
 import app from './app';
 import { connectDB } from './config/db';
+import { EmailService } from './services/emailService';
 import cron from 'node-cron';
 import { SubscriptionCron } from './cron/subscriptionCron';
 import { AppointmentReminderCron } from './cron/appointmentReminderCron';
@@ -19,6 +20,9 @@ const bootstrap = async () => {
   try {
     // Connect to database
     await connectDB();
+
+    // Verify Brevo SMTP connection
+    await EmailService.verifyConnection();
 
     app.listen(PORT, () => {
       console.log(`===================================================`);

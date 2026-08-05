@@ -47,6 +47,8 @@ import { GastritisLogScreen } from '../screens/HabitScreens/GastritisLogScreen';
 import { GeneticLogScreen } from '../screens/HabitScreens/GeneticLogScreen';
 import { AntioxidantLogScreen } from '../screens/HabitScreens/AntioxidantLogScreen';
 import { EnvironmentalExposuresLogScreen } from '../screens/HabitScreens/EnvironmentalExposuresLogScreen';
+import { ModeSwitcher } from '../components/ModeSwitcher';
+import { Dashboard } from './Dashboard';
 
 interface NonCancerDashboardProps {
   onNavigateToTab: (tab: string) => void;
@@ -58,8 +60,10 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
   const [activeScreen, setActiveScreen] = useState<string | null>(null);
   const [shopQuery, setShopQuery] = useState<string>('');
   const [showStressedModal, setShowStressedModal] = useState<boolean>(false);
+  const [showCaregiverModal, setShowCaregiverModal] = useState<boolean>(false);
+  const [showTugOfWar, setShowTugOfWar] = useState<boolean>(false);
   const [habits, setHabits] = useState<HabitLog[]>([]);
-  const { apiUrl, token, user } = useAuth();
+  const { apiUrl, token, user, activeMode } = useAuth();
   const [showRecommendation, setShowRecommendation] = useState<boolean>(false);
   const [recommendationReason, setRecommendationReason] = useState<string>('');
 
@@ -408,7 +412,13 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
   if (activeScreen === 'Smoking') return <SmokingLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
   if (activeScreen === 'Substances') return <SubstancesLogScreen onBack={() => setActiveScreen(null)} />;
   if (activeScreen === 'Intimacy') return <IntimacyCheckScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
-  if (activeScreen === 'Environmental') return <EnvironmentalExposuresLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
+  if (activeScreen === 'Environmental') return <EnvironmentalExposuresLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} onNavigateToShop={(query) => { setShopQuery(query); setActiveScreen('EnvironmentalShop'); }} />;
+  if (activeScreen === 'EnvironmentalShop') {
+    if (shopQuery === 'SaferProducts') {
+      return <ShopScreen type="SaferProducts" onBack={() => setActiveScreen('Environmental')} />;
+    }
+    return <ShopScreen type="All" defaultSearch={shopQuery} onBack={() => setActiveScreen('Environmental')} />;
+  }
   if (activeScreen === 'Sleep') return <SleepLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
   if (activeScreen === 'Movement') return <MovementLogScreen onBack={() => setActiveScreen(null)} />;
   if (activeScreen === 'Alcohol') return <AlcoholLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
@@ -423,24 +433,35 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
   if (activeScreen === 'Dental') return <DentalLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
   if (activeScreen === 'Gastritis') return <GastritisLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} onNavigateToShop={(query) => { setShopQuery(query); setActiveScreen('GastritisShop'); }} />;
   if (activeScreen === 'GastritisShop') return <ShopScreen type="All" defaultSearch={shopQuery} onBack={() => setActiveScreen('Gastritis')} />;
-  if (activeScreen === 'Genetic') return <GeneticLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
+  if (activeScreen === 'Genetic') return <GeneticLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} onNavigateToShop={(query) => { setShopQuery(query); setActiveScreen('GeneticShop'); }} />;
+  if (activeScreen === 'GeneticShop') return <ShopScreen type="All" defaultSearch={shopQuery} onBack={() => setActiveScreen('Genetic')} />;
   
-  const isCancerPatient = (user?.cancerJourney as string) === 'TREATMENT' || (user?.cancerJourney as string) === 'CANCER TREATMENT';
+  const isCancerPatient = activeMode === 'TREATMENT';
 
   const handleOpenHabit = (screenName: string) => {
     if (isCancerPatient) {
       if (screenName !== 'Joy') {
-        if (onGoToCGMDashboard) {
-          onGoToCGMDashboard();
-        }
+        setShowTugOfWar(false);
         return;
       }
     }
     setActiveScreen(screenName);
   };
 
+  // Treatment Mode
+  if (activeMode === 'TREATMENT' && !showTugOfWar) {
+    return (
+      <div className="pb-24 pt-4 px-3.5 max-w-5xl mx-auto bg-gradient-to-b from-slate-50/90 to-slate-100/80 dark:from-slate-950/90 dark:to-slate-900/80 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-200 transition-colors duration-300">
+        <ModeSwitcher />
+        <Dashboard onNavigateToTab={onNavigateToTab} onBackToTugOfWar={() => setShowTugOfWar(true)} />
+      </div>
+    );
+  }
+
+
+
   return (
-    <div className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-gradient-to-b from-slate-50/90 to-slate-100/80 dark:from-slate-900/90 dark:to-slate-950/80 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-200 transition-colors duration-300">
+    <div className="pb-24 pt-4 px-3.5 max-w-5xl mx-auto bg-gradient-to-b from-slate-50/90 to-slate-100/80 dark:from-slate-900/90 dark:to-slate-950/80 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-200 transition-colors duration-300">
       {/* Header section */}
       <div className="text-center mb-6 mt-2">
         <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">
@@ -453,6 +474,8 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
           Damage pulls one way. Repair pulls the other. The habits you log here decide which side wins today.
         </p>
       </div>
+
+      <ModeSwitcher />
 
       {/* Continuous Health Monitoring Danger recommendation */}
       {showRecommendation && (
@@ -605,7 +628,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
               <HabitItem icon={<Cigarette className="h-4 w-4 text-slate-400" />} label="Smoking" onClick={() => handleOpenHabit('Smoking')} score={getSmokingScore()} />
               <HabitItem icon={<Wine className="h-4 w-4 text-rose-600" />} label="Alcohol" onClick={() => handleOpenHabit('Alcohol')} score={getAlcoholScore()} />
               <HabitItem icon={<Pill className="h-4 w-4 text-amber-500" />} label="Substances" onClick={() => handleOpenHabit('Substances')} score={getSubstancesScore()} />
-              <HabitItem icon={<Globe className="h-4 w-4 text-cyan-500" />} label="Environmental exposures" onClick={() => handleOpenHabit('Environmental')} score={getEnvironmentalScore()} />
+              <HabitItem icon={<Globe className="h-4 w-4 text-cyan-500" />} label="Environment" onClick={() => handleOpenHabit('Environmental')} score={getEnvironmentalScore()} />
               <HabitItem icon={<Scale className="h-4 w-4 text-rose-500" />} label="Obesity" onClick={() => handleOpenHabit('Obesity')} score={getObesityScore()} />
               <HabitItem icon={<Stethoscope className="h-4 w-4 text-slate-500" />} label="Dental health" onClick={() => handleOpenHabit('Dental')} score={getDentalScore()} />
               <HabitItem icon={<Flame className="h-4 w-4 text-orange-500" />} label="Gastritis" onClick={() => handleOpenHabit('Gastritis')} score={getGastritisScore()} />
@@ -630,16 +653,17 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
               <>
                 <HabitItem icon={<Timer className="h-4 w-4 text-sky-500" />} label="INTERMITTENT FASTING" onClick={() => handleOpenHabit('Fasting')} score={getFastingScore()} />
                 <HabitItem icon={<User className="h-4 w-4 text-amber-500" />} label="MOVEMENT" onClick={() => handleOpenHabit('Movement')} score={getMovementScore()} />
-                <HabitItem icon={<User className="h-4 w-4 text-amber-600" />} label="STILLNESS-MEDIDATION/BOX BREATHING" onClick={() => handleOpenHabit('Stillness')} score={getStillnessScore()} />
+                <HabitItem icon={<User className="h-4 w-4 text-amber-600" />} label="Stillness" onClick={() => handleOpenHabit('Stillness')} score={getStillnessScore()} />
                 <HabitItem icon={<Palette className="h-4 w-4 text-indigo-400" />} label="THINGS YOU LOVE" onClick={() => handleOpenHabit('Joy')} score={getJoyScore()} />
                 <HabitItem icon={<BrainCircuit className="h-4 w-4 text-rose-500" />} label="ARE YOU STRESSED/WORRIED?" onClick={() => setShowStressedModal(true)} />
+                <HabitItem icon={<User className="h-4 w-4 text-teal-500" />} label="CAREGIVER STRESS" onClick={() => setShowCaregiverModal(true)} />
               </>
             ) : (
               <>
                 <HabitItem icon={<Timer className="h-4 w-4 text-sky-500" />} label="Fasting" onClick={() => handleOpenHabit('Fasting')} score={getFastingScore()} />
                 <HabitItem icon={<Cherry className="h-4 w-4 text-rose-400" />} label="Antioxidants" onClick={() => handleOpenHabit('Antioxidants')} score={getAntioxidantsScore()} />
                 <HabitItem icon={<User className="h-4 w-4 text-amber-500" />} label="Exercise" onClick={() => handleOpenHabit('Movement')} score={getMovementScore()} />
-                <HabitItem icon={<User className="h-4 w-4 text-amber-600" />} label="Stillness-Meditation" onClick={() => handleOpenHabit('Stillness')} score={getStillnessScore()} />
+                <HabitItem icon={<User className="h-4 w-4 text-amber-600" />} label="Stillness" onClick={() => handleOpenHabit('Stillness')} score={getStillnessScore()} />
                 <HabitItem icon={<Palette className="h-4 w-4 text-indigo-400" />} label="Things you love" onClick={() => handleOpenHabit('Joy')} score={getJoyScore()} />
                 <HabitItem icon={<ShieldCheck className="h-4 w-4 text-emerald-500" />} label="Safer products" onClick={() => handleOpenHabit('SaferProducts')} score={getSaferProductsScore()} />
               </>
@@ -717,7 +741,10 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
 
           {/* Metabolic & CGM Redirection Card */}
           <button
-            onClick={() => onGoToCGMDashboard?.()}
+            onClick={() => {
+              if (onGoToCGMDashboard) onGoToCGMDashboard();
+              else setShowTugOfWar(false);
+            }}
             className="w-full bg-gradient-to-br from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white rounded-3xl p-5 text-left transition-all duration-300 shadow-[0_8px_30px_rgba(99,102,241,0.12)] hover:shadow-lg active:scale-[0.98] group flex items-center justify-between gap-4"
           >
             <div className="flex-1">
@@ -760,6 +787,37 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
               </button>
               <button
                 onClick={() => setShowStressedModal(false)}
+                className="w-full py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-350 font-bold rounded-xl text-xs transition-all"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCaregiverModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-xl">
+            <div className="h-12 w-12 rounded-full bg-teal-50 dark:bg-teal-950/30 flex items-center justify-center mx-auto text-2xl">
+              🤝
+            </div>
+            <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">Caregiver Stress</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+              Caring for a loved one with cancer can be challenging. Connect with a psycho-oncologist to support your mental well-being.
+            </p>
+            <div className="flex flex-col gap-2 pt-2">
+              <button
+                onClick={() => {
+                  setShowCaregiverModal(false);
+                  handleBookAppt('Psycho-Oncologist Consultation');
+                }}
+                className="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl text-xs uppercase shadow-sm transition-all"
+              >
+                Consult & Connect
+              </button>
+              <button
+                onClick={() => setShowCaregiverModal(false)}
                 className="w-full py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-350 font-bold rounded-xl text-xs transition-all"
               >
                 Close

@@ -57,6 +57,8 @@ interface AuthContextType {
   clearError: () => void;
   apiUrl: string;
   branding: AppBranding;
+  activeMode: 'PREVENTION' | 'TREATMENT' | 'SECONDARY_PREVENTION';
+  setActiveMode: (mode: 'PREVENTION' | 'TREATMENT' | 'SECONDARY_PREVENTION') => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -78,8 +80,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     enableSubscriptions: false,
     enableExternalPayments: false
   });
+  const [activeMode, _setActiveMode] = useState<'PREVENTION' | 'TREATMENT' | 'SECONDARY_PREVENTION'>('PREVENTION');
 
   const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5001/api' : 'https://api.mitoreboot.in/api');
+
+  useEffect(() => {
+    if (user) {
+      const cached = localStorage.getItem('fastgluco_active_mode') as any;
+      if (cached && ['PREVENTION', 'TREATMENT', 'SECONDARY_PREVENTION'].includes(cached)) {
+        _setActiveMode(cached);
+      } else if (user.cancerJourney) {
+        _setActiveMode(user.cancerJourney);
+        localStorage.setItem('fastgluco_active_mode', user.cancerJourney);
+      }
+    }
+  }, [user]);
 
   useEffect(() => {
     const fetchBranding = async () => {
@@ -260,6 +275,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const setActiveMode = async (mode: 'PREVENTION' | 'TREATMENT' | 'SECONDARY_PREVENTION') => {
+    _setActiveMode(mode);
+    localStorage.setItem('fastgluco_active_mode', mode);
+    await updateProfile({ cancerJourney: mode });
+  };
+
   const requestProfileUpdate = async (profileUpdates: Partial<UserProfile>): Promise<boolean> => {
     if (!token) return false;
     setError(null);
@@ -305,7 +326,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         requestProfileUpdate,
         clearError,
         apiUrl,
-        branding
+        branding,
+        activeMode,
+        setActiveMode
       }}
     >
       {children}

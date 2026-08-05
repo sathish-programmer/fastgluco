@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Info, ShieldAlert, Award } from 'lucide-react';
+import { ArrowLeft, Info, ShieldAlert, Award, ShoppingBag, ExternalLink } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { HabitsService } from '../../services/habitsService';
 import { ConsultationBanner } from '../../components/ConsultationBanner';
@@ -7,9 +7,10 @@ import { ConsultationBanner } from '../../components/ConsultationBanner';
 interface EnvironmentalExposuresLogScreenProps {
   onBack: () => void;
   onBookAppointment?: (reason: string) => void;
+  onNavigateToShop?: (query: string) => void;
 }
 
-export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLogScreenProps> = ({ onBack, onBookAppointment }) => {
+export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLogScreenProps> = ({ onBack, onBookAppointment, onNavigateToShop }) => {
   const { user, token, apiUrl } = useAuth();
   
   // Sub-screens: 'hub' | 'air' | 'water' | 'pesticides' | 'microplastics'
@@ -23,6 +24,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
   const [microplasticsQ1, setMicroplasticsQ1] = useState<boolean | null>(null); // true = Yes, false = No
 
   const [showWaterInfo, setShowWaterInfo] = useState(false);
+  const [showAirModal, setShowAirModal] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Restore from localStorage or load latest habit log
@@ -31,6 +33,12 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
       loadHistory();
     }
   }, [user]);
+
+  useEffect(() => {
+    if (airQ1 !== null && airQ2 !== null) {
+      setShowAirModal(true);
+    }
+  }, [airQ1, airQ2]);
 
   const loadHistory = async () => {
     if (!user?.id) return;
@@ -138,9 +146,9 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div>
-          <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Damage · Environmental Exposures</span>
+          <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Damage · Environment</span>
           <h2 className="text-2xl font-sans font-bold text-slate-800 dark:text-slate-50 leading-none mt-1">
-            {currentView === 'hub' && 'Environmental Exposures'}
+            {currentView === 'hub' && 'Environment'}
             {currentView === 'air' && 'Air Pollution'}
             {currentView === 'water' && 'Water Carcinogens'}
             {currentView === 'pesticides' && 'Pesticide Exposure'}
@@ -349,6 +357,32 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
             />
           )}
 
+          {airQ1 !== null && airQ2 !== null && (
+            <div className="bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 rounded-2xl p-4 space-y-4 animate-in fade-in duration-300">
+              <p className="text-xs text-indigo-750 dark:text-indigo-400 font-semibold leading-relaxed">
+                ℹ️ <strong>Recommendation:</strong> Reduce your exposure to air pollution where possible. Use an N95 mask and an air purifier when appropriate.
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <button 
+                  onClick={() => onNavigateToShop?.('N95 Mask')}
+                  className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-indigo-300 dark:hover:border-indigo-800 transition-all text-center group w-full"
+                >
+                  <ShoppingBag className="h-5 w-5 text-indigo-500 mb-1 group-hover:scale-110 transition-transform" />
+                  <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200">Order N95 Masks</span>
+                  <span className="text-[9px] text-slate-400 mt-0.5 inline-flex items-center gap-0.5">Shop now <ExternalLink className="h-2 w-2" /></span>
+                </button>
+                <button 
+                  onClick={() => onNavigateToShop?.('Air Purifier')}
+                  className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-indigo-300 dark:hover:border-indigo-800 transition-all text-center group w-full"
+                >
+                  <ShoppingBag className="h-5 w-5 text-indigo-500 mb-1 group-hover:scale-110 transition-transform" />
+                  <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200">Order Air Purifier</span>
+                  <span className="text-[9px] text-slate-400 mt-0.5 inline-flex items-center gap-0.5">Shop now <ExternalLink className="h-2 w-2" /></span>
+                </button>
+              </div>
+            </div>
+          )}
+
           <button 
             onClick={() => setCurrentView('hub')}
             disabled={airQ1 === null || airQ2 === null}
@@ -444,6 +478,20 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
             </div>
           )}
 
+          {waterQ1 !== null && (
+            <div className="bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 rounded-2xl p-4 mt-4 space-y-2 animate-in fade-in duration-200">
+              <p className="text-xs text-indigo-700 dark:text-indigo-400 font-semibold">
+                Use a certified water filter to eliminate carcinogenic contaminants like heavy metals and microplastics.
+              </p>
+              <button 
+                onClick={() => onNavigateToShop?.('Water Filter')}
+                className="inline-flex items-center gap-1.5 text-xs text-indigo-650 hover:underline font-bold text-left"
+              >
+                🔗 Click here to Order Water Filter
+              </button>
+            </div>
+          )}
+
           <button 
             onClick={() => setCurrentView('hub')}
             disabled={waterQ1 === null}
@@ -488,6 +536,20 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
                 <li>Prioritize buying organic versions for the "Dirty Dozen" (strawberries, spinach, kale, nectarines, apples, grapes).</li>
               </ul>
             </div>
+
+            {pesticidesQ1 !== null && (
+              <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl p-4 mt-4 space-y-2 animate-in fade-in duration-200">
+                <p className="text-xs text-emerald-700 dark:text-emerald-450 font-semibold">
+                  Choosing organic produce drastically reduces chemical pesticide residue levels in your diet.
+                </p>
+                <button 
+                  onClick={() => onNavigateToShop?.('Organic')}
+                  className="inline-flex items-center gap-1.5 text-xs text-emerald-650 hover:underline font-bold text-left"
+                >
+                  🥬 Click here to Order Organic Food
+                </button>
+              </div>
+            )}
           </div>
 
           <button 
@@ -539,6 +601,20 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
                 </div>
               </div>
             </div>
+
+            {microplasticsQ1 !== null && (
+              <div className="bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 rounded-2xl p-4 mt-4 space-y-2 animate-in fade-in duration-200">
+                <p className="text-xs text-indigo-700 dark:text-indigo-400 font-semibold">
+                  Swap plastic storage for premium borosilicate glass or stainless steel containers.
+                </p>
+                <button 
+                  onClick={() => onNavigateToShop?.('SaferProducts')}
+                  className="inline-flex items-center gap-1.5 text-xs text-indigo-650 hover:underline font-bold text-left"
+                >
+                  🥛 Click here to Order Plastic-Free Products
+                </button>
+              </div>
+            )}
           </div>
 
           <button 
@@ -548,6 +624,46 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
           >
             Done with Microplastics Category
           </button>
+        </div>
+      )}
+
+      {showAirModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-xl">
+            <div className="h-12 w-12 rounded-full bg-indigo-50 dark:bg-indigo-950/30 flex items-center justify-center mx-auto text-2xl">
+              🌬️
+            </div>
+            <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">Air Safety Recommendations</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+              Reduce your exposure to air pollution where possible. Use an N95 mask and an air purifier when appropriate.
+            </p>
+            <div className="grid grid-cols-2 gap-2 pt-2">
+              <button
+                onClick={() => {
+                  setShowAirModal(false);
+                  onNavigateToShop?.('N95 Mask');
+                }}
+                className="py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-[10px] uppercase shadow-sm transition-all flex flex-col items-center justify-center cursor-pointer"
+              >
+                <span>N95 Masks 😷</span>
+              </button>
+              <button
+                onClick={() => {
+                  setShowAirModal(false);
+                  onNavigateToShop?.('Air Purifier');
+                }}
+                className="py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-[10px] uppercase shadow-sm transition-all flex flex-col items-center justify-center cursor-pointer"
+              >
+                <span>Air Purifier 🌀</span>
+              </button>
+            </div>
+            <button
+              onClick={() => setShowAirModal(false)}
+              className="w-full py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-350 font-bold rounded-xl text-xs transition-all"
+            >
+              Dismiss
+            </button>
+          </div>
         </div>
       )}
 

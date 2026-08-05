@@ -4,15 +4,63 @@ import path from 'path';
 import { PaymentGatewayConfig } from '../models/PaymentGatewayConfig';
 import { SMSService } from './smsService';
 
-// Configure transport (Using Ethereal for testing or real SMTP if provided in ENV)
+// Configure transporter using SMTP environment variables
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.ethereal.email',
-  port: parseInt(process.env.EMAIL_PORT || process.env.SMTP_PORT || '587'),
+  host: process.env.SMTP_HOST || 'smtp-relay.brevo.com',
+  port: parseInt(process.env.SMTP_PORT || '587'),
   auth: {
-    user: process.env.EMAIL_USER || process.env.SMTP_USER || 'test@ethereal.email',
-    pass: process.env.EMAIL_PASS || process.env.SMTP_PASS || 'testpassword'
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || ''
   }
 });
+
+const originalSendMail = transporter.sendMail.bind(transporter);
+
+// Define retry/logger wrapper for centralized email sending
+transporter.sendMail = (async (mailOptions: any, callback?: any) => {
+  const maxRetries = 3;
+  let attempt = 0;
+  
+  const defaultFromAddress = process.env.MAIL_FROM_ADDRESS;
+  const defaultFromName = process.env.MAIL_FROM_NAME;
+  
+  if (!defaultFromAddress || !defaultFromName) {
+    const err = new Error('SMTP Configuration Error: MAIL_FROM_ADDRESS or MAIL_FROM_NAME is not set.');
+    console.error(err.message);
+    if (callback) callback(err);
+    throw err;
+  }
+
+  // Rewrite sender address to use the verified MAIL_FROM_ADDRESS to prevent Brevo from dropping the email
+  if (mailOptions.from) {
+    const match = mailOptions.from.match(/^"([^"]+)"\s*<([^>]+)>/) || mailOptions.from.match(/^([^<]+)<([^>]+)>/);
+    if (match) {
+      const displayName = match[1].trim().replace(/^"+|"+$/g, '');
+      mailOptions.from = `"${displayName}" <${defaultFromAddress}>`;
+    } else {
+      mailOptions.from = `"${defaultFromName}" <${defaultFromAddress}>`;
+    }
+  } else {
+    mailOptions.from = `"${defaultFromName}" <${defaultFromAddress}>`;
+  }
+
+  while (attempt < maxRetries) {
+    try {
+      attempt++;
+      const info = await originalSendMail(mailOptions);
+      console.log(`[EmailService] Email sent successfully to ${mailOptions.to}. MessageId: ${info.messageId}`);
+      if (callback) callback(null, info);
+      return info;
+    } catch (err: any) {
+      console.error(`[EmailService] SMTP send attempt ${attempt} failed to ${mailOptions.to}. Error: ${err.message || err}`);
+      if (attempt >= maxRetries) {
+        if (callback) callback(err);
+        throw err;
+      }
+      await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+    }
+  }
+}) as any;
 
 export const generateEmailTemplatePublic = (title: string, contentHTML: string, appName: string = 'Mito_Reboot', appTagline: string = '') => generateEmailTemplate(title, contentHTML, appName, appTagline);
 
@@ -47,6 +95,41 @@ const generateEmailTemplate = (title: string, contentHTML: string, appName: stri
 };
 
 export class EmailService {
+  /**
+   * Verifies SMTP connection to Brevo on application startup
+   */
+  public static async verifyConnection(): Promise<boolean> {
+    const requiredEnvVars = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'MAIL_FROM_NAME', 'MAIL_FROM_ADDRESS'];
+    const missing = requiredEnvVars.filter(envVar => !process.env[envVar]);
+    if (missing.length > 0) {
+      throw new Error(`SMTP Configuration Error: Missing required environment variables: ${missing.join(', ')}`);
+    }
+
+    try {
+      await transporter.verify();
+      console.log('✓ Brevo SMTP connected');
+      return true;
+    } catch (err: any) {
+      console.error('✗ Brevo SMTP connection failed');
+      console.error('Error details:', err.message || err);
+      return false;
+    }
+  }
+
+  /**
+   * Generic sendEmail method
+   */
+  public static async sendEmail(params: { to: string; subject: string; html: string; text?: string; from?: string; attachments?: any[] }) {
+    return transporter.sendMail({
+      to: params.to,
+      subject: params.subject,
+      html: params.html,
+      text: params.text,
+      from: params.from,
+      attachments: params.attachments
+    });
+  }
+
   private static async getBranding() {
     const config = await PaymentGatewayConfig.findOne();
     return {

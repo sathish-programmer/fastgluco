@@ -625,7 +625,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-gradient-to-b from-slate-50/90 to-slate-100/80 dark:from-slate-950/90 dark:to-slate-900/80 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100"
+      className="pb-6 pt-2 px-0 max-w-5xl mx-auto font-sans antialiased text-slate-800 dark:text-slate-100"
     >
       {/* Welcome Header */}
       <motion.div 
@@ -1127,6 +1127,37 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
             </div>
           </div>
         )}
+
+        {/* Caregiver Stress Card */}
+        <motion.div 
+          className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-5 rounded-3xl border border-white/80 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,0,0,0.015)] transition-all hover:shadow-[0_12px_35px_rgba(0,0,0,0.03)]"
+        >
+          <div className="flex items-center justify-between mb-3.5">
+            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center space-x-1.5">
+              <span>🤝</span>
+              <span>Caregiver Stress Support</span>
+            </h4>
+            <span className="text-[9px] font-bold uppercase tracking-wider text-teal-600 bg-teal-50 dark:bg-teal-950/20 px-2.5 py-0.5 rounded-full border border-teal-100/50">
+              Mental Health
+            </span>
+          </div>
+          <div className="bg-gradient-to-r from-slate-50 to-slate-100/50 dark:from-slate-800/50 dark:to-slate-900/50 border border-slate-200/30 dark:border-slate-800 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex-1">
+              <p className="text-xs text-slate-650 dark:text-slate-300 leading-relaxed font-semibold">
+                Caring for a loved one with cancer can be challenging. Connect with a psycho-oncologist to support your mental well-being and get professional guidance.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setPendingRecommendationId('pending_Psycho-Oncologist_Caregiver stress support');
+                onNavigateToTab('Book Appointment');
+              }}
+              className="bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm shrink-0 whitespace-nowrap"
+            >
+              Consult & Connect to a Psycho-Oncologist
+            </button>
+          </div>
+        </motion.div>
 
         {/* AI Insights Card */}
         <motion.div 

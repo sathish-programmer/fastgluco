@@ -69,15 +69,15 @@ export const StillnessLogScreen: React.FC<StillnessLogScreenProps> = ({ onBack }
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div>
-          <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Repair · Stillness-Meditation</span>
+          <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Repair · Stillness</span>
           <h2 className="text-2xl font-sans font-bold text-slate-800 leading-none mt-1">Ten quiet minutes</h2>
         </div>
       </div>
 
       <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-4 mb-4">
-        <h3 className="font-bold text-slate-800 mb-1.5">Stillness-Meditation lowers cortisol.</h3>
+        <h3 className="font-bold text-slate-800 mb-1.5">Stillness lowers cortisol.</h3>
         <p className="text-xs text-slate-500 leading-relaxed">
-          Stillness and meditation lower cortisol, supporting immunity and longevity. Aim for at least 10 minutes.
+          Stillness lowers cortisol, supporting immunity and longevity. Aim for at least 10 minutes.
         </p>
       </div>
 

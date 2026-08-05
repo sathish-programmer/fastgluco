@@ -7,7 +7,6 @@ import { ConsultationProvider } from './context/ConsultationContext';
 import { Login } from './pages/Login';
 import { RecommendedFoodsScreen } from './screens/RecommendedFoodsScreen';
 import { Register } from './pages/Register';
-import { Dashboard } from './pages/Dashboard';
 import { NonCancerDashboard } from './pages/NonCancerDashboard';
 import { Reports } from './pages/Reports';
 import { FoodLog } from './pages/FoodLog';
@@ -37,7 +36,7 @@ import { OnboardingTour } from './components/OnboardingTour';
 import { DeleteAccount } from './pages/DeleteAccount';
 
 const MainAppContent: React.FC = () => {
-  const { isAuthenticated, isLoading, token, apiUrl, logout, branding, user } = useAuth();
+  const { isAuthenticated, isLoading, token, apiUrl, logout, branding, user, activeMode } = useAuth();
   // Theme toggle moved to Profile settings
 
   // Navigation tabs: 'Home' | 'Reports' | 'Food Log' | 'Analysis' | 'Profile'
@@ -56,7 +55,6 @@ const MainAppContent: React.FC = () => {
   const [resetToken, setResetToken] = useState<string | null>(null);
   const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
   const [rateOrderId, setRateOrderId] = useState<string | null>(null);
-  const [showCancerCGMDashboard, setShowCancerCGMDashboard] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -342,12 +340,9 @@ const MainAppContent: React.FC = () => {
       {/* Main Tab Screen Content Area */}
       <main className="flex-1 overflow-y-auto w-full">
         {activeTab === 'Home' && (
-          ((user?.cancerJourney as string) === 'TREATMENT' || (user?.cancerJourney as string) === 'CANCER TREATMENT')
-            ? (showCancerCGMDashboard 
-                ? <Dashboard onNavigateToTab={setActiveTab} onBackToTugOfWar={() => setShowCancerCGMDashboard(false)} />
-                : <NonCancerDashboard onNavigateToTab={setActiveTab} onGoToCGMDashboard={() => setShowCancerCGMDashboard(true)} />
-              )
-            : <NonCancerDashboard onNavigateToTab={setActiveTab} />
+          <NonCancerDashboard 
+            onNavigateToTab={setActiveTab} 
+          />
         )}
         {activeTab === 'Reports' && <Reports features={planFeatures} />}
         {activeTab === 'Food Log' && <FoodLog features={planFeatures} onNavigateToTab={setActiveTab} />}
@@ -387,17 +382,17 @@ const MainAppContent: React.FC = () => {
           {/* Home Tab */}
           <button
             onClick={() => setActiveTab('Home')}
-            className={`flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Home' ? 'text-primary' : 'text-slate-400'}`}
+            className={`flex-1 flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Home' ? 'text-primary' : 'text-slate-400'}`}
           >
             <Home className="h-5.5 w-5.5" />
             <span className="text-[9px] font-extrabold uppercase tracking-wide">Home</span>
           </button>
 
           {/* Reports Tab */}
-          {((user?.cancerJourney as string) === 'TREATMENT' || (user?.cancerJourney as string) === 'CANCER TREATMENT') && (
+          {(activeMode === 'TREATMENT') && (
             <button
               onClick={() => setActiveTab('Reports')}
-              className={`flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Reports' ? 'text-primary' : 'text-slate-400'}`}
+              className={`flex-1 flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Reports' ? 'text-primary' : 'text-slate-400'}`}
             >
               <FileText className="h-5.5 w-5.5" />
               <span className="text-[9px] font-extrabold uppercase tracking-wide">Reports</span>
@@ -405,10 +400,10 @@ const MainAppContent: React.FC = () => {
           )}
 
           {/* Food Log Tab */}
-          {((user?.cancerJourney as string) === 'TREATMENT' || (user?.cancerJourney as string) === 'CANCER TREATMENT') && (
+          {(activeMode === 'TREATMENT') && (
             <button
               onClick={() => setActiveTab('Food Log')}
-              className={`flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Food Log' ? 'text-primary' : 'text-slate-400'}`}
+              className={`flex-1 flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Food Log' ? 'text-primary' : 'text-slate-400'}`}
             >
               <Utensils className="h-5.5 w-5.5" />
               <span className="text-[9px] font-extrabold uppercase tracking-wide">Food Log</span>
@@ -416,10 +411,10 @@ const MainAppContent: React.FC = () => {
           )}
 
           {/* Analysis Tab */}
-          {((user?.cancerJourney as string) === 'TREATMENT' || (user?.cancerJourney as string) === 'CANCER TREATMENT') && (
+          {(activeMode === 'TREATMENT') && (
             <button
               onClick={() => setActiveTab('Analysis')}
-              className={`flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Analysis' ? 'text-primary' : 'text-slate-400'}`}
+              className={`flex-1 flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Analysis' ? 'text-primary' : 'text-slate-400'}`}
             >
               <Activity className="h-5.5 w-5.5" />
               <span className="text-[9px] font-extrabold uppercase tracking-wide">Analysis</span>
@@ -427,10 +422,10 @@ const MainAppContent: React.FC = () => {
           )}
 
           {/* Educational Tab for Prevention Users */}
-          {((user?.cancerJourney as string) !== 'TREATMENT' && (user?.cancerJourney as string) !== 'CANCER TREATMENT') && (
+          {(activeMode !== 'TREATMENT') && (
             <button
               onClick={() => setActiveTab('Educational')}
-              className={`flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Educational' ? 'text-primary' : 'text-slate-400'}`}
+              className={`flex-1 flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Educational' ? 'text-primary' : 'text-slate-400'}`}
             >
               <BookOpen className="h-5.5 w-5.5" />
               <span className="text-[9px] font-extrabold uppercase tracking-wide">Learn</span>
@@ -438,21 +433,21 @@ const MainAppContent: React.FC = () => {
           )}
 
           {/* Book Appointment Tab */}
-          {((user?.cancerJourney as string) !== 'TREATMENT' && (user?.cancerJourney as string) !== 'CANCER TREATMENT') && (
+          {(activeMode !== 'TREATMENT') && (
             <button
               onClick={() => setActiveTab('Book Appointment')}
-              className={`flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Book Appointment' ? 'text-primary' : 'text-slate-400'}`}
+              className={`flex-1 flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Book Appointment' ? 'text-primary' : 'text-slate-400'}`}
             >
               <Calendar className="h-5.5 w-5.5" />
-              <span className="text-[9px] font-extrabold uppercase tracking-wide">Book Appointment</span>
+              <span className="text-[9px] font-extrabold uppercase tracking-wide">Book Appt</span>
             </button>
           )}
 
-          {/* Shop Orders Tab — Non-cancer patients only */}
-          {((user?.cancerJourney as string) !== 'TREATMENT' && (user?.cancerJourney as string) !== 'CANCER TREATMENT') && (
+          {/* Shop Orders Tab — Non-treatment patients only */}
+          {(activeMode !== 'TREATMENT') && (
             <button
               onClick={() => setActiveTab('Shop Orders')}
-              className={`flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Shop Orders' ? 'text-primary' : 'text-slate-400'}`}
+              className={`flex-1 flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Shop Orders' ? 'text-primary' : 'text-slate-400'}`}
             >
               <Activity className="h-5.5 w-5.5" />
               <span className="text-[9px] font-extrabold uppercase tracking-wide">My Orders</span>
@@ -462,7 +457,7 @@ const MainAppContent: React.FC = () => {
           {/* Profile Tab */}
           <button
             onClick={() => setActiveTab('Profile')}
-            className={`flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Profile' ? 'text-primary' : 'text-slate-400'}`}
+            className={`flex-1 flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Profile' ? 'text-primary' : 'text-slate-400'}`}
           >
             <UserCircle2 className="h-5.5 w-5.5" />
             <span className="text-[9px] font-extrabold uppercase tracking-wide">Profile</span>

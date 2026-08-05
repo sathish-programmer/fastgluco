@@ -7,9 +7,10 @@ import { HabitsService } from '../../services/habitsService';
 interface GeneticLogScreenProps {
   onBack: () => void;
   onBookAppointment?: (reason: string) => void;
+  onNavigateToShop?: (query: string) => void;
 }
  
-export const GeneticLogScreen: React.FC<GeneticLogScreenProps> = ({ onBack, onBookAppointment }) => {
+export const GeneticLogScreen: React.FC<GeneticLogScreenProps> = ({ onBack, onBookAppointment, onNavigateToShop }) => {
   const { user, token, apiUrl } = useAuth();
   const [geneticLink, setGeneticLink] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(false);
@@ -47,6 +48,21 @@ export const GeneticLogScreen: React.FC<GeneticLogScreenProps> = ({ onBack, onBo
         <p className="text-xs text-slate-500 leading-relaxed">
           Understanding your genetic background can help identify predispositions to certain conditions and allow for early preventative screening.
         </p>
+      </div>
+
+      <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-4 mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h3 className="font-bold text-slate-800 flex items-center gap-2">🔍 Check Genetic Tendency</h3>
+          <p className="text-xs text-slate-500 leading-relaxed">
+            Order a clinical-grade blood test to screen for hereditary gene mutations and disease susceptibilities.
+          </p>
+        </div>
+        <button 
+          onClick={() => onNavigateToShop?.('Genetic')}
+          className="bg-purple-600 hover:bg-purple-750 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm shrink-0 whitespace-nowrap text-center cursor-pointer"
+        >
+          Blood Test
+        </button>
       </div>
 
       <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-5 mb-8">
