@@ -221,10 +221,17 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
   };
 
   const handleDownloadPDF = async (invoiceId: string, invoiceNumber: string) => {
-    setActionLoading(true);
     setError(null);
     setSuccessMsg(null);
 
+    if (Capacitor.isNativePlatform()) {
+      const downloadUrl = `${apiUrl}/subscriptions/invoices/${invoiceId}/download?token=${encodeURIComponent(token || '')}`;
+      window.open(downloadUrl, '_system');
+      setSuccessMsg('Invoice download started.');
+      return;
+    }
+
+    setActionLoading(true);
     try {
       const res = await fetch(`${apiUrl}/subscriptions/invoices/${invoiceId}/download`, {
         headers: {

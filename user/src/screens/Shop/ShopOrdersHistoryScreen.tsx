@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { ArrowLeft, Package, Truck, Download, Calendar, Star, Beaker, FileText, HelpCircle } from 'lucide-react';
 import { ProductImage } from './ShopScreen';
+import { Capacitor } from '@capacitor/core';
 
 interface ShopOrdersHistoryScreenProps {
   onBack?: () => void;
@@ -128,7 +129,11 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
         const report = await res.json();
         if (report && report.pdfUrl) {
           const downloadUrl = report.pdfUrl.startsWith('http') ? report.pdfUrl : `${apiUrl.replace('/api', '')}${report.pdfUrl}`;
-          window.open(downloadUrl, '_blank');
+          if (Capacitor.isNativePlatform()) {
+            window.open(downloadUrl, '_system');
+          } else {
+            window.open(downloadUrl, '_blank');
+          }
         } else {
           alert('Report file not found. It might be available for physical pickup.');
         }
@@ -360,14 +365,21 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
                       <HelpCircle className="h-3.5 w-3.5 text-slate-500" /> Need Help?
                     </button>
                     {invoiceDownloadLink && (
-                      <a 
-                        href={invoiceDownloadLink} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
+                      <button 
+                        onClick={() => {
+                          const downloadUrl = invoiceDownloadLink.startsWith('http') 
+                            ? invoiceDownloadLink 
+                            : `${apiUrl.replace('/api', '')}${order.invoiceUrl}`;
+                          if (Capacitor.isNativePlatform()) {
+                            window.open(downloadUrl, '_system');
+                          } else {
+                            window.open(downloadUrl, '_blank');
+                          }
+                        }}
                         className="py-2 px-4 border border-slate-200 bg-white hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-650 flex items-center gap-1.5 transition-all shadow-sm"
                       >
                         <Download className="h-3.5 w-3.5 text-indigo-500" /> Invoice PDF
-                      </a>
+                      </button>
                     )}
                     {order.deliveryStatus === 'delivered' && hasRated && (
                       <span className="py-2 px-4 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm">

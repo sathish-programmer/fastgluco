@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
@@ -151,62 +151,31 @@ const MainAppContent: React.FC = () => {
   const [basicPlan, setBasicPlan] = useState<string>('Basic');
   const [planFeatures, setPlanFeatures] = useState<any>(null);
 
-  useEffect(() => {
-    const checkSubscription = async () => {
-      if (!isAuthenticated || !token) {
-        setIsSubscribed(null);
-        setCheckingSub(false);
-        return;
-      }
-      setCheckingSub(true);
-      try {
-        const response = await fetch(`${apiUrl}/subscriptions/current`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          if (data.plan && data.plan.name) {
-            setBasicPlan(data.plan.name);
-            setPlanFeatures(data.plan.features || null);
-          }
-          if (data.subscriptionsRequired) {
-            const sub = data.subscription;
-            const hasActive = sub && (
-              sub.status === 'active' ||
-              sub.status === 'trialing' ||
-              (sub.status === 'cancelled' && new Date(sub.endDate) > new Date())
-            );
-            // Bypass paywall entirely on iOS to comply with App Store Guidelines
-            if (Capacitor.getPlatform() === 'ios') {
-              setIsSubscribed(true);
-              setPlanFeatures({
-                unlimitedReports: true,
-                advancedAnalysis: true,
-                premiumVideos: true,
-                foodInsights: true,
-                exportReports: true,
-                notifications: true,
-                aiCoaching: true,
-                foodScanner: true
-              });
-            } else {
-              setIsSubscribed(!!hasActive);
-            }
-          } else {
-            setIsSubscribed(true);
-            setPlanFeatures({
-              unlimitedReports: true,
-              advancedAnalysis: true,
-              premiumVideos: true,
-              foodInsights: true,
-              exportReports: true,
-              notifications: true,
-              aiCoaching: true,
-              foodScanner: true
-            });
-          }
-        } else {
-          // Fallback to checking if they require sub
+  const checkSubscription = useCallback(async () => {
+    if (!isAuthenticated || !token) {
+      setIsSubscribed(null);
+      setCheckingSub(false);
+      return;
+    }
+    setCheckingSub(true);
+    try {
+      const response = await fetch(`${apiUrl}/subscriptions/current`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.plan && data.plan.name) {
+          setBasicPlan(data.plan.name);
+          setPlanFeatures(data.plan.features || null);
+        }
+        if (data.subscriptionsRequired) {
+          const sub = data.subscription;
+          const hasActive = sub && (
+            sub.status === 'active' ||
+            sub.status === 'trialing' ||
+            (sub.status === 'cancelled' && new Date(sub.endDate) > new Date())
+          );
+          // Bypass paywall entirely on iOS to comply with App Store Guidelines
           if (Capacitor.getPlatform() === 'ios') {
             setIsSubscribed(true);
             setPlanFeatures({
@@ -220,11 +189,23 @@ const MainAppContent: React.FC = () => {
               foodScanner: true
             });
           } else {
-            setIsSubscribed(false);
+            setIsSubscribed(!!hasActive);
           }
+        } else {
+          setIsSubscribed(true);
+          setPlanFeatures({
+            unlimitedReports: true,
+            advancedAnalysis: true,
+            premiumVideos: true,
+            foodInsights: true,
+            exportReports: true,
+            notifications: true,
+            aiCoaching: true,
+            foodScanner: true
+          });
         }
-      } catch (err) {
-        console.error(err);
+      } else {
+        // Fallback to checking if they require sub
         if (Capacitor.getPlatform() === 'ios') {
           setIsSubscribed(true);
           setPlanFeatures({
@@ -238,14 +219,34 @@ const MainAppContent: React.FC = () => {
             foodScanner: true
           });
         } else {
-          setIsSubscribed(false); // Default to restrictive instead of bypass
+          setIsSubscribed(false);
         }
-      } finally {
-        setCheckingSub(false);
       }
-    };
-    checkSubscription();
+    } catch (err) {
+      console.error(err);
+      if (Capacitor.getPlatform() === 'ios') {
+        setIsSubscribed(true);
+        setPlanFeatures({
+          unlimitedReports: true,
+          advancedAnalysis: true,
+          premiumVideos: true,
+          foodInsights: true,
+          exportReports: true,
+          notifications: true,
+          aiCoaching: true,
+          foodScanner: true
+        });
+      } else {
+        setIsSubscribed(false); // Default to restrictive instead of bypass
+      }
+    } finally {
+      setCheckingSub(false);
+    }
   }, [isAuthenticated, token, apiUrl]);
+
+  useEffect(() => {
+    checkSubscription();
+  }, [checkSubscription]);
 
   useEffect(() => {
     if (branding.enableExternalPayments || branding.enableSubscriptions) {
@@ -296,7 +297,10 @@ const MainAppContent: React.FC = () => {
     return (
       <Subscription
         onBack={logout}
-        onSuccess={() => setIsSubscribed(true)}
+        onSuccess={() => {
+          setIsSubscribed(true);
+          checkSubscription();
+        }}
         isBlocking={true}
       />
     );
@@ -354,7 +358,15 @@ const MainAppContent: React.FC = () => {
         {activeTab === 'Recommended Foods' && <RecommendedFoodsScreen onBack={() => setActiveTab('Food Log')} />}
         {activeTab === 'Analysis' && <Analysis features={planFeatures} />}
         {activeTab === 'Profile' && <Profile />}
-        {activeTab === 'Subscription' && <Subscription onBack={() => setActiveTab('Dashboard')} />}
+        {activeTab === 'Subscription' && (
+          <Subscription 
+            onBack={() => setActiveTab('Dashboard')} 
+            onSuccess={() => {
+              checkSubscription();
+              setActiveTab('Home');
+            }} 
+          />
+        )}
         {activeTab === 'Educational' && <Educational />}
         {activeTab === 'Coaching' && <Coaching features={planFeatures} />}
         {activeTab === 'Book Appointment' && <BookAppointmentScreen />}

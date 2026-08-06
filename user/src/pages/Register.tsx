@@ -235,6 +235,7 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
                   onChange={(e: any) => setActivityLevel(e.target.value)}
                   className="w-full px-3 py-2.5 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-slate-700 text-sm font-medium"
                 >
+                  <option value="" disabled>Select Activity Level</option>
                   <option value="Sedentary">Sedentary (no exercise)</option>
                   <option value="Lightly active">Lightly active (1-2 days/wk)</option>
                   <option value="Moderately active">Moderately active (3-5 days/wk)</option>
@@ -258,6 +259,7 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
                   }}
                   className="w-full px-3 py-2.5 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-slate-700 text-sm font-medium"
                 >
+                  <option value="" disabled>Select Cancer Care Journey</option>
                   <option value="PREVENTION">CANCER PREVENTION [NO HISTORY OF CANCER]</option>
                   <option value="TREATMENT">CANCER TREATMENT</option>
                   <option value="SECONDARY_PREVENTION">CANCER SECONDARY PREVENTION [PREVIOUS HISTORY OF CANCER]</option>
