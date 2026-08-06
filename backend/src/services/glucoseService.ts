@@ -45,6 +45,8 @@ export class GlucoseService {
       }
     }
 
+    const isRecentSpike = (Date.now() - peakReading.timestamp.getTime()) < 24 * 60 * 60 * 1000;
+
     const beforeGlucose = beforeReading ? beforeReading.value : 80; // Fallback default baseline if missing
     const peakGlucose = peakReading.value;
     const difference = parseFloat((peakGlucose - beforeGlucose).toFixed(1));
@@ -105,7 +107,7 @@ export class GlucoseService {
         }
       }
 
-      if (user && user.email) {
+      if (user && user.email && isRecentSpike) {
         const intervalHours = config?.glucoseAlertMinIntervalHours ?? 2;
         let shouldSendAlert = true;
         if (user.lastGlucoseAlertSentAt) {
@@ -133,7 +135,7 @@ export class GlucoseService {
 
     // AI Coaching Trigger — only when glucose actually spiked above threshold DUE TO this meal
     const aiSpikeThreshold = config?.aiSpikeThreshold ?? 110;
-    if (peakGlucose >= aiSpikeThreshold && netRise > 10) {
+    if (isRecentSpike && peakGlucose >= aiSpikeThreshold && netRise > 10) {
       // Must have: (1) peak is high AND (2) glucose actually rose meaningfully after eating
       // 1. Check if user has AI Coaching feature enabled
       const activeSub = await UserSubscription.findOne({ 

@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { Calendar as CalendarIcon, Clock, ArrowLeft, Star } from 'lucide-react';
 import { useConsultation } from '../../context/ConsultationContext';
+import { Capacitor } from '@capacitor/core';
 
 interface BookAppointmentScreenProps {
   onBack?: () => void;
@@ -680,14 +681,21 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                   )}
 
                   {appt.prescriptionUrl && (
-                    <a
-                      href={appt.prescriptionUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      onClick={() => {
+                        const downloadUrl = appt.prescriptionUrl.startsWith('http') 
+                          ? appt.prescriptionUrl 
+                          : `${apiUrl.replace(/\/api$/, '')}${appt.prescriptionUrl}`;
+                        if (Capacitor.isNativePlatform()) {
+                          window.open(downloadUrl, '_system');
+                        } else {
+                          window.open(downloadUrl, '_blank');
+                        }
+                      }}
                       className="block text-center w-full py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-xs font-bold mt-2 shadow-sm transition-all"
                     >
                       View Prescription Attachment
-                    </a>
+                    </button>
                   )}
 
                   {appt.invoiceUrl && (

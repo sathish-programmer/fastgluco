@@ -624,7 +624,9 @@ export default function App() {
         <div className="max-w-xl mx-auto bg-white p-8 rounded-3xl border border-slate-200 shadow-soft">
           <div className="text-center mb-6">
             <h2 className="text-2xl font-bold text-slate-800">Get in Touch</h2>
-            <p className="text-xs text-slate-400 font-semibold mt-1">Have inquiries about Mito_Reboot? Complete the contact form below.</p>
+            <p className="text-xs text-slate-400 font-semibold mt-1">
+              Have inquiries about Mito_Reboot? Complete the contact form below or email us directly at <a href="mailto:support@mitoreboot.in" className="text-primary hover:underline">support@mitoreboot.in</a>.
+            </p>
           </div>
 
           {formSuccess && (
@@ -794,7 +796,7 @@ const Footer: React.FC<{ onTabChange: (tab: any) => void; branding: BrandingProp
               )}
             </div>
           </div>
-          <span>© 2026 {branding.appName}. All rights reserved.</span>
+          <span>© 2026 {branding.appName}. All rights reserved. | Contact: <a href="mailto:support@mitoreboot.in" className="hover:text-white underline">support@mitoreboot.in</a></span>
         </div>
         <div className="flex space-x-4 font-semibold">
           {hasFounders && (

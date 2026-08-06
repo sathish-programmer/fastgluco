@@ -57,7 +57,25 @@ interface NonCancerDashboardProps {
 
 export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNavigateToTab, onGoToCGMDashboard }) => {
   // Navigation State for Habit Screens
-  const [activeScreen, setActiveScreen] = useState<string | null>(null);
+  const [activeScreen, _setActiveScreen] = useState<string | null>(null);
+  const setActiveScreen = (val: string | null) => {
+    _setActiveScreen(val);
+    (window as any).activeSubScreen = val;
+    window.dispatchEvent(new CustomEvent('subScreenChange', { detail: val }));
+  };
+
+  useEffect(() => {
+    const handleBack = () => {
+      if (activeScreen) {
+        setActiveScreen(null);
+      }
+    };
+    window.addEventListener('appBackButton', handleBack);
+    return () => {
+      window.removeEventListener('appBackButton', handleBack);
+    };
+  }, [activeScreen]);
+
   const [shopQuery, setShopQuery] = useState<string>('');
   const [showStressedModal, setShowStressedModal] = useState<boolean>(false);
   const [showCaregiverModal, setShowCaregiverModal] = useState<boolean>(false);

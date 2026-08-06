@@ -29,7 +29,7 @@ export const ModeSwitcher: React.FC = () => {
     },
     {
       key: 'TREATMENT' as const,
-      title: 'Cancer',
+      title: 'Cancer Treatment',
       description: 'Monitor treatments, logs symptoms, manage medications, and check glucose.',
       icon: Heart,
       gradient: 'from-indigo-500 to-violet-600',

@@ -28,7 +28,9 @@ import {
   UserCircle2,
   Heart,
   BookOpen,
-  Calendar
+  Calendar,
+  Headphones,
+  X
 } from 'lucide-react';
 import { GlobalAICoachPopup } from './components/GlobalAICoachPopup';
 import { NotificationBell } from './components/NotificationBell';
@@ -57,6 +59,7 @@ const MainAppContent: React.FC = () => {
   const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
   const [rateOrderId, setRateOrderId] = useState<string | null>(null);
   const [showCancerCGMDashboard, setShowCancerCGMDashboard] = useState<boolean>(false);
+  const [showHelpModal, setShowHelpModal] = useState<boolean>(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -85,14 +88,26 @@ const MainAppContent: React.FC = () => {
     }
   }, [isAuthenticated]);
 
-  // Scroll to top when active tab changes
+  // Listen to subScreenChange events to track header visibility
+  const [isSubScreenActive, setIsSubScreenActive] = useState<boolean>(false);
+  useEffect(() => {
+    const handleSubScreen = (e: any) => {
+      setIsSubScreenActive(!!e.detail);
+    };
+    window.addEventListener('subScreenChange', handleSubScreen);
+    return () => {
+      window.removeEventListener('subScreenChange', handleSubScreen);
+    };
+  }, []);
+
+  // Scroll to top when active tab or sub-screen changes
   useEffect(() => {
     const mainEl = document.querySelector('main');
     if (mainEl) {
       mainEl.scrollTop = 0;
     }
     window.scrollTo(0, 0);
-  }, [activeTab]);
+  }, [activeTab, isSubScreenActive, showCancerCGMDashboard]);
 
   // Listen to Android hardware back button for stack-based navigation
   useEffect(() => {
@@ -109,6 +124,18 @@ const MainAppContent: React.FC = () => {
 
           // If a child view (like Profile settings subview) has captured/intercepted the back button
           if (activeTab === 'Profile' && (window as any).profileSubViewActive) {
+            window.dispatchEvent(new CustomEvent('appBackButton'));
+            return;
+          }
+
+          // If the Cancer CGM dashboard sub-view is active
+          if (activeTab === 'Home' && showCancerCGMDashboard) {
+            setShowCancerCGMDashboard(false);
+            return;
+          }
+
+          // If a sub-screen on the Home dashboard is active
+          if (activeTab === 'Home' && (window as any).activeSubScreen) {
             window.dispatchEvent(new CustomEvent('appBackButton'));
             return;
           }
@@ -143,7 +170,7 @@ const MainAppContent: React.FC = () => {
         listener.remove();
       }
     };
-  }, [activeTab, navigationHistory]);
+  }, [activeTab, navigationHistory, showCancerCGMDashboard]);
 
 
   const [isSubscribed, setIsSubscribed] = useState<boolean | null>(null);
@@ -317,31 +344,41 @@ const MainAppContent: React.FC = () => {
         />
       )}
       {/* Dynamic Header with safe area padding for mobile notches */}
-      <header className="sticky top-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 z-10 px-4 pt-[calc(env(safe-area-inset-top)+12px)] pb-3 max-w-5xl w-full mx-auto flex items-center justify-between transition-colors duration-300">
-        <div className="flex items-center space-x-2">
-          {branding.appLogoUrl ? (
-            <img src={branding.appLogoUrl.startsWith('http') ? branding.appLogoUrl : `${apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl}${branding.appLogoUrl.startsWith('/') ? '' : '/'}${branding.appLogoUrl}`} alt={branding.appName} className="h-6 w-auto object-contain max-w-[40px]" />
-          ) : (
-            <Heart className="h-5 w-5 fill-primary text-primary" />
-          )}
-          <div className="flex flex-col">
-            <div className="flex items-center space-x-1.5">
-              <h1 className="text-sm font-extrabold text-slate-800 dark:text-slate-100 tracking-tight leading-tight">{branding.appName}</h1>
-              {branding.enableSubscriptions !== false && (
-                <span className="text-[8px] font-bold bg-primary-light text-primary px-1.5 py-0.5 rounded-full">
-                  {basicPlan}
-                </span>
+      {!isSubScreenActive && !showCancerCGMDashboard && activeTab !== 'Subscription' && activeTab !== 'Recommended Foods' && (
+        <header className="sticky top-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 z-10 px-4 pt-[calc(env(safe-area-inset-top)+12px)] pb-3 max-w-5xl w-full mx-auto flex items-center justify-between transition-colors duration-300">
+          <div className="flex items-center space-x-2">
+            {branding.appLogoUrl ? (
+              <img src={branding.appLogoUrl.startsWith('http') ? branding.appLogoUrl : `${apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl}${branding.appLogoUrl.startsWith('/') ? '' : '/'}${branding.appLogoUrl}`} alt={branding.appName} className="h-6 w-auto object-contain max-w-[40px]" />
+            ) : (
+              <Heart className="h-5 w-5 fill-primary text-primary" />
+            )}
+            <div className="flex flex-col">
+              <div className="flex items-center space-x-1.5">
+                <h1 className="text-sm font-extrabold text-slate-800 dark:text-slate-100 tracking-tight leading-tight">{branding.appName}</h1>
+                {branding.enableSubscriptions !== false && (
+                  <span className="text-[8px] font-bold bg-primary-light text-primary px-1.5 py-0.5 rounded-full">
+                    {basicPlan}
+                  </span>
+                )}
+              </div>
+              {branding.appTagline && (
+                <span className="text-[9px] text-slate-500 dark:text-slate-400 leading-none mt-0.5">{branding.appTagline}</span>
               )}
             </div>
-            {branding.appTagline && (
-              <span className="text-[9px] text-slate-500 dark:text-slate-400 leading-none mt-0.5">{branding.appTagline}</span>
-            )}
           </div>
-        </div>
-        <div className="flex items-center space-x-2">
-          <NotificationBell />
-        </div>
-      </header>
+          <div className="flex items-center space-x-1">
+            <button
+              onClick={() => setShowHelpModal(true)}
+              className="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              title="Help & Support"
+              aria-label="Help & Support"
+            >
+              <Headphones className="h-5 w-5" />
+            </button>
+            <NotificationBell />
+          </div>
+        </header>
+      )}
 
       {/* Main Tab Screen Content Area */}
       <main className="flex-1 overflow-y-auto w-full">
@@ -481,6 +518,34 @@ const MainAppContent: React.FC = () => {
           </button>
         </div>
       </nav>
+
+      {/* Help & Support Modal */}
+      {showHelpModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-sm w-full border border-slate-100 dark:border-slate-800 shadow-xl text-center relative">
+            <button
+              onClick={() => setShowHelpModal(false)}
+              className="absolute top-4 right-4 p-1.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 dark:text-slate-500 rounded-full transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Headphones className="h-6 w-6 text-primary" />
+            </div>
+            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-2">Help & Support</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
+              Have questions or need assistance? Reach out to our support team directly via email.
+            </p>
+            <a
+              href="mailto:support@mitoreboot.in"
+              onClick={() => setShowHelpModal(false)}
+              className="block w-full py-2.5 bg-primary hover:bg-primary/95 text-white rounded-xl text-xs font-bold shadow-sm transition-all text-center"
+            >
+              Email support@mitoreboot.in
+            </a>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
