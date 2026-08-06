@@ -761,7 +761,7 @@ const Header: React.FC<{ activeTab: string; onTabChange: (tab: any) => void; bra
             </button>
           )}
           <a
-            href={`${import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : (import.meta.env.DEV ? 'http://localhost:5001' : 'https://api.mitoreboot.in')}/health`}
+            href={`${import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api$/, '') : (import.meta.env.DEV ? 'http://localhost:5001' : 'https://api.mitoreboot.in')}/health`}
             target="_blank"
             rel="noopener noreferrer"
             className="bg-primary hover:bg-primary-dark text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center space-x-1 transition-all"

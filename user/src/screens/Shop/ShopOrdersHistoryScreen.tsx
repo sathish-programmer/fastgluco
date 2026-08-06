@@ -128,7 +128,7 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
       if (res.ok) {
         const report = await res.json();
         if (report && report.pdfUrl) {
-          const downloadUrl = report.pdfUrl.startsWith('http') ? report.pdfUrl : `${apiUrl.replace('/api', '')}${report.pdfUrl}`;
+          const downloadUrl = report.pdfUrl.startsWith('http') ? report.pdfUrl : `${apiUrl.replace(/\/api$/, '')}${report.pdfUrl}`;
           if (Capacitor.isNativePlatform()) {
             window.open(downloadUrl, '_system');
           } else {
@@ -222,7 +222,7 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
           {orders.map(order => {
             const steps = getFulfillmentSteps(order.deliveryStatus);
             const isCancelled = order.deliveryStatus === 'cancelled';
-            const invoiceDownloadLink = order.invoiceUrl ? `${apiUrl.replace('/api', '')}${order.invoiceUrl}` : null;
+            const invoiceDownloadLink = order.invoiceUrl ? `${apiUrl.replace(/\/api$/, '')}${order.invoiceUrl}` : null;
             const currencySymbol = order.currency === 'USD' ? '$' : '₹';
             const hasRated = userReviews.some(r => r.orderId === order._id);
 
@@ -369,7 +369,7 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
                         onClick={() => {
                           const downloadUrl = invoiceDownloadLink.startsWith('http') 
                             ? invoiceDownloadLink 
-                            : `${apiUrl.replace('/api', '')}${order.invoiceUrl}`;
+                            : `${apiUrl.replace(/\/api$/, '')}${order.invoiceUrl}`;
                           if (Capacitor.isNativePlatform()) {
                             window.open(downloadUrl, '_system');
                           } else {

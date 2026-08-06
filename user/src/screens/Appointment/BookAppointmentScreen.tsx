@@ -692,7 +692,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
 
                   {appt.invoiceUrl && (
                     <a
-                      href={`${apiUrl.replace('/api', '')}${appt.invoiceUrl}`}
+                      href={`${apiUrl.replace(/\/api$/, '')}${appt.invoiceUrl}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="block text-center w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold mt-2 shadow-sm transition-all"

@@ -1,10 +1,16 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { ShieldCheck, Heart, Sparkles, Check, ChevronRight, X } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export const ModeSwitcher: React.FC = () => {
-  const { activeMode, setActiveMode } = useAuth();
+  const { activeMode, setActiveMode, updateProfile, branding } = useAuth();
+  const { showToast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
+  const [showDisclaimer, setShowDisclaimer] = useState(false);
+  const [pendingMode, setPendingMode] = useState<'PREVENTION' | 'TREATMENT' | 'SECONDARY_PREVENTION' | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const modesConfig = [
     {
@@ -55,7 +61,12 @@ export const ModeSwitcher: React.FC = () => {
   const ActiveIcon = currentDetails.icon;
 
   const handleSelectMode = (key: 'PREVENTION' | 'TREATMENT' | 'SECONDARY_PREVENTION') => {
-    setActiveMode(key);
+    if (key === activeMode) {
+      setIsOpen(false);
+      return;
+    }
+    setPendingMode(key);
+    setShowDisclaimer(true);
     setIsOpen(false);
   };
 
@@ -163,6 +174,74 @@ export const ModeSwitcher: React.FC = () => {
               })}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Disclaimer Modal Overlay */}
+      {showDisclaimer && pendingMode && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-md w-full border border-slate-100 dark:border-slate-800 shadow-xl"
+          >
+            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-3 flex items-center space-x-2">
+              <Heart className="h-5 w-5 text-rose-500 dark:text-rose-400 fill-rose-500 dark:fill-rose-400/20" />
+              <span>Medical Disclaimer</span>
+            </h3>
+            <div
+              className="max-h-60 overflow-y-auto pr-1 text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed mb-6 whitespace-pre-line"
+              dangerouslySetInnerHTML={{
+                __html: pendingMode === 'TREATMENT'
+                  ? branding.cancerTreatmentDisclaimer
+                  : pendingMode === 'SECONDARY_PREVENTION'
+                  ? branding.cancerSecondaryDisclaimer
+                  : branding.cancerPreventionDisclaimer
+              }}
+            ></div>
+            <div className="flex space-x-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDisclaimer(false);
+                  setPendingMode(null);
+                }}
+                className="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold"
+                disabled={isSaving}
+              >
+                Decline
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  setIsSaving(true);
+                  try {
+                    const success = await updateProfile({
+                      cancerJourney: pendingMode,
+                      cancerDisclaimerAccepted: true,
+                      cancerDisclaimerAcceptedAt: new Date().toISOString()
+                    });
+                    if (success) {
+                      await setActiveMode(pendingMode);
+                      showToast('Focus journey updated successfully!', 'success');
+                    } else {
+                      showToast('Failed to update focus journey.', 'error');
+                    }
+                  } catch (err) {
+                    showToast('An error occurred while updating.', 'error');
+                  } finally {
+                    setIsSaving(false);
+                    setShowDisclaimer(false);
+                    setPendingMode(null);
+                  }
+                }}
+                className="flex-1 py-2.5 bg-primary hover:bg-primary/90 dark:bg-primary-dark text-white rounded-xl text-xs font-semibold shadow-soft flex items-center justify-center"
+                disabled={isSaving}
+              >
+                {isSaving ? 'Saving...' : 'I Understand & Accept'}
+              </button>
+            </div>
+          </motion.div>
         </div>
       )}
     </div>
