@@ -61,7 +61,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
   const [shopQuery, setShopQuery] = useState<string>('');
   const [showStressedModal, setShowStressedModal] = useState<boolean>(false);
   const [showCaregiverModal, setShowCaregiverModal] = useState<boolean>(false);
-  const [showTugOfWar, setShowTugOfWar] = useState<boolean>(false);
+  const [showTugOfWar, setShowTugOfWar] = useState<boolean>(true);
   const [habits, setHabits] = useState<HabitLog[]>([]);
   const { apiUrl, token, user, activeMode } = useAuth();
   const [showRecommendation, setShowRecommendation] = useState<boolean>(false);
@@ -69,6 +69,10 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
 
   const [upcomingAppt, setUpcomingAppt] = useState<any | null>(null);
   const [isApptDismissed, setIsApptDismissed] = useState<boolean>(false);
+
+  useEffect(() => {
+    setShowTugOfWar(true);
+  }, [activeMode]);
 
   useEffect(() => {
     const fetchHabitsAndAppointments = async () => {

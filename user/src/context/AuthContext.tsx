@@ -85,16 +85,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5001/api' : 'https://api.mitoreboot.in/api');
 
   useEffect(() => {
-    if (user) {
-      const cached = localStorage.getItem('fastgluco_active_mode') as any;
-      if (cached && ['PREVENTION', 'TREATMENT', 'SECONDARY_PREVENTION'].includes(cached)) {
-        _setActiveMode(cached);
-      } else if (user.cancerJourney) {
-        _setActiveMode(user.cancerJourney);
-        localStorage.setItem('fastgluco_active_mode', user.cancerJourney);
-      }
+    if (user && user.cancerJourney) {
+      _setActiveMode(user.cancerJourney as any);
+      localStorage.setItem('fastgluco_active_mode', user.cancerJourney);
     }
-  }, [user]);
+  }, [user?.cancerJourney]);
 
   useEffect(() => {
     const fetchBranding = async () => {

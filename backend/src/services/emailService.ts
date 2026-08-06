@@ -147,7 +147,7 @@ export class EmailService {
   public static async sendRawEmail(to: string, subject: string, html: string, from?: string) {
     const { appName } = await EmailService.getBranding();
     await transporter.sendMail({
-      from: from || `"${appName}" <no-reply@mitoreboot.com>`,
+      from: from || `"${appName}" <support@mitoreboot.in>`,
       to,
       subject,
       html
@@ -175,7 +175,7 @@ export class EmailService {
       </div>
       <p>If you have any questions, feel free to contact our support team.</p>
     `, appName, appTagline);
-    try { await transporter.sendMail({ from: `"${appName}" <hello@mitoreboot.com>`, to: email, subject: `Welcome to ${appName}!`, html }); } catch (err) { console.error(err); }
+    try { await transporter.sendMail({ from: `"${appName}" <support@mitoreboot.in>`, to: email, subject: `Welcome to ${appName}!`, html }); } catch (err) { console.error(err); }
   }
 
   /**
@@ -194,7 +194,7 @@ export class EmailService {
     
     try { 
       await transporter.sendMail({ 
-        from: `"${appName} Security" <security@mitoreboot.com>`, 
+        from: `"${appName} Security" <support@mitoreboot.in>`, 
         to: email, 
         subject: `${otpCode} is your ${appName} verification code`, 
         html 
@@ -225,7 +225,7 @@ export class EmailService {
     `, appName, appTagline);
 
     const mailOptions: any = {
-      from: `"${appName} Billing" <billing@mitoreboot.com>`,
+      from: `"${appName} Billing" <support@mitoreboot.in>`,
       to: email,
       subject: `Your ${appName} Subscription Confirmed`,
       html
@@ -254,7 +254,7 @@ export class EmailService {
       <p>Your subscription has been successfully updated to the <strong>${newPlanName}</strong> plan.</p>
       <p>Your new features are available immediately! You can manage your billing cycle and view upcoming charges in your Profile.</p>
     `, appName, appTagline);
-    try { await transporter.sendMail({ from: `"${appName} Billing" <billing@mitoreboot.com>`, to: email, subject: `Your ${appName} Subscription has been Updated`, html }); } catch (err) { console.error(err); }
+    try { await transporter.sendMail({ from: `"${appName} Billing" <support@mitoreboot.in>`, to: email, subject: `Your ${appName} Subscription has been Updated`, html }); } catch (err) { console.error(err); }
   }
 
   /**
@@ -270,7 +270,7 @@ export class EmailService {
       </div>
       <p>If you change your mind, you can always reactivate your subscription from your Profile.</p>
     `, appName, appTagline);
-    try { await transporter.sendMail({ from: `"${appName} Billing" <billing@mitoreboot.com>`, to: email, subject: `${appName} Subscription Cancellation`, html }); } catch (err) { console.error(err); }
+    try { await transporter.sendMail({ from: `"${appName} Billing" <support@mitoreboot.in>`, to: email, subject: `${appName} Subscription Cancellation`, html }); } catch (err) { console.error(err); }
   }
 
   /**
@@ -291,7 +291,7 @@ export class EmailService {
       </div>
       <p>Please log into the app to view your analysis and review your recent meals.</p>
     `, appName, appTagline);
-    try { await transporter.sendMail({ from: `"${appName} Alerts" <alerts@mitoreboot.com>`, to: email, subject: `Urgent: High Glucose Spike Detected (${appName})`, html }); } catch (err) { console.error(err); }
+    try { await transporter.sendMail({ from: `"${appName} Alerts" <support@mitoreboot.in>`, to: email, subject: `Urgent: High Glucose Spike Detected (${appName})`, html }); } catch (err) { console.error(err); }
   }
 
   /**
@@ -308,7 +308,7 @@ export class EmailService {
       </div>
       <p>If you believe this is a mistake or have questions, please contact our support team.</p>
     `, appName, appTagline);
-    try { await transporter.sendMail({ from: `"${appName} Security" <security@mitoreboot.com>`, to: email, subject: `${appName} Account Suspended`, html }); } catch (err) { console.error(err); }
+    try { await transporter.sendMail({ from: `"${appName} Security" <support@mitoreboot.in>`, to: email, subject: `${appName} Account Suspended`, html }); } catch (err) { console.error(err); }
   }
 
   /**
@@ -324,7 +324,7 @@ export class EmailService {
       </div>
       <p>This reset link will expire in 30 minutes. If you did not make this request, you can safely ignore this email.</p>
     `, appName, appTagline);
-    try { await transporter.sendMail({ from: `"${appName} Security" <security@mitoreboot.com>`, to: email, subject: `${appName} Password Reset Link`, html }); } catch (err) { console.error(err); }
+    try { await transporter.sendMail({ from: `"${appName} Security" <support@mitoreboot.in>`, to: email, subject: `${appName} Password Reset Link`, html }); } catch (err) { console.error(err); }
   }
 
   /**
@@ -342,7 +342,7 @@ export class EmailService {
       <p style="font-weight: 600;">Our Answer:</p>
       <p>${answer}</p>
     `, appName, appTagline);
-    try { await transporter.sendMail({ from: `"${appName} Support" <support@mitoreboot.com>`, to: email, subject: `Re: Your ${appName} Support Question`, html }); } catch (err) { console.error(err); }
+    try { await transporter.sendMail({ from: `"${appName} Support" <support@mitoreboot.in>`, to: email, subject: `Re: Your ${appName} Support Question`, html }); } catch (err) { console.error(err); }
   }
 
   /**
@@ -361,7 +361,7 @@ export class EmailService {
       <p>Please ensure your payment method is up to date, or renew your subscription to avoid losing access to your premium features (like your Food Scanner, glucose spiking charts, and PDF reports).</p>
       <p>To renew your plan, please log into the app and update your subscription details in your Profile.</p>
     `, appName, appTagline);
-    try { await transporter.sendMail({ from: `"${appName} Billing" <billing@mitoreboot.com>`, to: email, subject, html }); } catch (err) { console.error(err); }
+    try { await transporter.sendMail({ from: `"${appName} Billing" <support@mitoreboot.in>`, to: email, subject, html }); } catch (err) { console.error(err); }
   }
 
   /**
@@ -375,7 +375,7 @@ export class EmailService {
       <p>Your logged meals and glucose logs remain saved. However, to re-enable continuous syncing, food scanning, and advanced analytics, you will need to choose a plan and reactivate your subscription.</p>
       <p>You can update your billing status anytime by logging into the app and visiting your Profile configurations.</p>
     `, appName, appTagline);
-    try { await transporter.sendMail({ from: `"${appName} Billing" <billing@mitoreboot.com>`, to: email, subject: `Your ${appName} Subscription Has Expired`, html }); } catch (err) { console.error(err); }
+    try { await transporter.sendMail({ from: `"${appName} Billing" <support@mitoreboot.in>`, to: email, subject: `Your ${appName} Subscription Has Expired`, html }); } catch (err) { console.error(err); }
   }
 
   /**
@@ -386,7 +386,7 @@ export class EmailService {
     const html = generateEmailTemplate(title, `
       <p>${body.replace(/\n/g, '<br/>')}</p>
     `, appName, appTagline);
-    try { await transporter.sendMail({ from: `"${appName} Admin" <admin@mitoreboot.com>`, to: email, subject: title, html }); } catch (err) { console.error(err); }
+    try { await transporter.sendMail({ from: `"${appName} Admin" <support@mitoreboot.in>`, to: email, subject: title, html }); } catch (err) { console.error(err); }
   }
 
   /**
@@ -404,7 +404,7 @@ export class EmailService {
       <p>The refunded amount will reflect in your original payment source within 5-7 business days.</p>
       <p>If you have any questions, please contact our support team.</p>
     `, appName, appTagline);
-    try { await transporter.sendMail({ from: `"${appName} Billing" <billing@mitoreboot.com>`, to: email, subject: `${appName} Refund Processed`, html }); } catch (err) { console.error(err); }
+    try { await transporter.sendMail({ from: `"${appName} Billing" <support@mitoreboot.in>`, to: email, subject: `${appName} Refund Processed`, html }); } catch (err) { console.error(err); }
   }
 
   /**
@@ -422,7 +422,7 @@ export class EmailService {
       </div>
       <p>You can check your current subscription validity anytime under "Profile" > "Billing" in the app.</p>
     `, appName, appTagline);
-    try { await transporter.sendMail({ from: `"${appName} Billing" <billing@mitoreboot.com>`, to: email, subject: `${appName} Alert: ${title}`, html }); } catch (err) { console.error(err); }
+    try { await transporter.sendMail({ from: `"${appName} Billing" <support@mitoreboot.in>`, to: email, subject: `${appName} Alert: ${title}`, html }); } catch (err) { console.error(err); }
   }
 
   /**
@@ -455,7 +455,7 @@ export class EmailService {
     `, appName, appTagline);
     try {
       await transporter.sendMail({
-        from: `"${appName} Security" <security@mitoreboot.com>`,
+        from: `"${appName} Security" <support@mitoreboot.in>`,
         to: email,
         subject: `Security Alert: New Login to ${appName}`,
         html
@@ -476,7 +476,7 @@ export class EmailService {
       <p>Great news! Your recent request to update your profile information has been reviewed and <strong>approved</strong> by our administrative team.</p>
       <p>The changes have now been applied to your account. You can log into the app to see your updated profile.</p>
     `, appName, appTagline);
-    try { await transporter.sendMail({ from: `"${appName} Support" <support@mitoreboot.com>`, to: email, subject: `${appName} Profile Update Approved`, html }); } catch (err) { console.error(err); }
+    try { await transporter.sendMail({ from: `"${appName} Support" <support@mitoreboot.in>`, to: email, subject: `${appName} Profile Update Approved`, html }); } catch (err) { console.error(err); }
   }
 
   /**
@@ -490,7 +490,7 @@ export class EmailService {
       <p>After reviewing the requested changes, our administrative team was unable to approve them at this time. Your profile remains unchanged.</p>
       <p>If you believe this was a mistake or have any questions, please contact our support team.</p>
     `, appName, appTagline);
-    try { await transporter.sendMail({ from: `"${appName} Support" <support@mitoreboot.com>`, to: email, subject: `${appName} Profile Update Notice`, html }); } catch (err) { console.error(err); }
+    try { await transporter.sendMail({ from: `"${appName} Support" <support@mitoreboot.in>`, to: email, subject: `${appName} Profile Update Notice`, html }); } catch (err) { console.error(err); }
   }
 
   /**
@@ -564,7 +564,7 @@ export class EmailService {
       }
 
       await transporter.sendMail({
-        from: `"${appName} Appointments" <appointments@mitoreboot.com>`,
+        from: `"${appName} Appointments" <support@mitoreboot.in>`,
         to: appt.userId.email,
         subject: `[${appName}] ${subject}`,
         html,
@@ -586,7 +586,7 @@ export class EmailService {
 
       try {
         await transporter.sendMail({
-          from: `"${appName} Appointments" <appointments@mitoreboot.com>`,
+          from: `"${appName} Appointments" <support@mitoreboot.in>`,
           to: appt.doctorId.email,
           subject: `[${appName}] Confirmed Appointment: ${appt.userId.name}`,
           html: docHtml
@@ -618,7 +618,7 @@ export class EmailService {
 
       try {
         await transporter.sendMail({
-          from: `"${appName} Appointments" <appointments@mitoreboot.com>`,
+          from: `"${appName} Appointments" <support@mitoreboot.in>`,
           to: appt.doctorId.email,
           subject: `[${appName}] Consultation Completed: ${appt.userId.name}`,
           html: docHtml,
@@ -691,7 +691,7 @@ export class EmailService {
         const html = generateEmailTemplate(subject, body, appName, appTagline);
         try {
           await transporter.sendMail({
-            from: `"${appName} Shop" <shop@mitoreboot.com>`,
+            from: `"${appName} Shop" <support@mitoreboot.in>`,
             to: order.userId.email,
             subject: `[${appName}] ${subject}`,
             html
@@ -712,8 +712,8 @@ export class EmailService {
         const adminHtml = generateEmailTemplate(adminSubject, adminBody, appName, appTagline);
         
         await transporter.sendMail({
-          from: `"${appName} Shop" <shop@mitoreboot.com>`,
-          to: process.env.ADMIN_EMAIL || 'admin@mitoreboot.com',
+          from: `"${appName} Shop" <support@mitoreboot.in>`,
+          to: process.env.ADMIN_EMAIL || 'support@mitoreboot.in',
           subject: `[Admin] ${adminSubject}`,
           html: adminHtml
         });
@@ -734,7 +734,7 @@ export class EmailService {
         const html = generateEmailTemplate(subject, body, appName, appTagline);
         try {
           await transporter.sendMail({
-            from: `"${appName} Shop" <shop@mitoreboot.com>`,
+            from: `"${appName} Shop" <support@mitoreboot.in>`,
             to: order.userId.email,
             subject: `[${appName}] ${subject}`,
             html
@@ -753,7 +753,7 @@ export class EmailService {
         const vendorHtml = generateEmailTemplate(vendorSubject, vendorBody, appName, appTagline);
         try {
           await transporter.sendMail({
-            from: `"${appName} Shop Logistics" <logistics@mitoreboot.com>`,
+            from: `"${appName} Shop Logistics" <support@mitoreboot.in>`,
             to: order.vendorId.email,
             subject: `[Vendor Portal] ${vendorSubject}`,
             html: vendorHtml
@@ -773,8 +773,8 @@ export class EmailService {
         const adminBody = `<p>Vendor <strong>${order.vendorId?.name || 'Vendor'}</strong> has accepted the order ${order._id} and started processing it.</p>`;
         const adminHtml = generateEmailTemplate(adminSubject, adminBody, appName, appTagline);
         await transporter.sendMail({
-          from: `"${appName} Shop" <shop@mitoreboot.com>`,
-          to: process.env.ADMIN_EMAIL || 'admin@mitoreboot.com',
+          from: `"${appName} Shop" <support@mitoreboot.in>`,
+          to: process.env.ADMIN_EMAIL || 'support@mitoreboot.in',
           subject: `[Admin] ${adminSubject}`,
           html: adminHtml
         });
@@ -797,7 +797,7 @@ export class EmailService {
         const html = generateEmailTemplate(subject, body, appName, appTagline);
         try {
           await transporter.sendMail({
-            from: `"${appName} Shop" <shop@mitoreboot.com>`,
+            from: `"${appName} Shop" <support@mitoreboot.in>`,
             to: order.userId.email,
             subject: `[${appName}] ${subject}`,
             html
@@ -836,7 +836,7 @@ export class EmailService {
         const html = generateEmailTemplate(subject, body, appName, appTagline);
         try {
           await transporter.sendMail({
-            from: `"${appName} Shop" <shop@mitoreboot.com>`,
+            from: `"${appName} Shop" <support@mitoreboot.in>`,
             to: order.userId.email,
             subject: `[${appName}] ${subject}`,
             html,
@@ -854,8 +854,8 @@ export class EmailService {
                            <p>Fulfillment completed successfully.</p>`;
         const adminHtml = generateEmailTemplate(adminSubject, adminBody, appName, appTagline);
         await transporter.sendMail({
-          from: `"${appName} Shop" <shop@mitoreboot.com>`,
-          to: process.env.ADMIN_EMAIL || 'admin@mitoreboot.com',
+          from: `"${appName} Shop" <support@mitoreboot.in>`,
+          to: process.env.ADMIN_EMAIL || 'support@mitoreboot.in',
           subject: `[Admin] ${adminSubject}`,
           html: adminHtml
         });
@@ -893,6 +893,6 @@ export class EmailService {
       </div>
       <p>Thank you for choosing ${appName}!</p>
     `, appName, appTagline);
-    try { await transporter.sendMail({ from: `"${appName}" <no-reply@mitoreboot.com>`, to: email, subject: `Your Lab Report is Ready`, html }); } catch (err) { console.error(err); }
+    try { await transporter.sendMail({ from: `"${appName}" <support@mitoreboot.in>`, to: email, subject: `Your Lab Report is Ready`, html }); } catch (err) { console.error(err); }
   }
 }

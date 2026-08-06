@@ -672,19 +672,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
           <div className="absolute -bottom-4 right-16 h-20 w-20 rounded-full bg-white/5" />
           <div className="absolute top-2 right-32 h-10 w-10 rounded-full bg-white/10" />
 
-          <div className="flex items-center gap-4 relative z-10">
+          <div className="flex-1 min-w-0 flex items-center gap-3 md:gap-4 relative z-10">
             <div className="h-12 w-12 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-2xl shrink-0 border border-white/20">
               ⚖️
             </div>
-            <div>
-              <div className="flex items-center gap-2 mb-0.5">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-0.5">
                 <span className="text-sm font-extrabold text-white tracking-tight">Cellular Defense Strength</span>
-                <span className="flex items-center gap-1 text-[9px] font-bold bg-white/20 text-white px-2 py-0.5 rounded-full border border-white/20">
+                <span className="flex items-center gap-1 text-[9px] font-bold bg-white/20 text-white px-2 py-0.5 rounded-full border border-white/20 shrink-0">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 animate-pulse inline-block"></span>
                   LIVE
                 </span>
               </div>
-              <p className="text-xs text-indigo-200 font-medium leading-snug">See how your daily habits shift the balance between repair & damage</p>
+              <p className="text-[11px] md:text-xs text-indigo-200 font-medium leading-tight">See how your daily habits shift the balance between repair & damage</p>
             </div>
           </div>
 

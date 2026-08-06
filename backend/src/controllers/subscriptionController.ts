@@ -761,7 +761,7 @@ export class SubscriptionController {
       // Issued By details
       doc.fillColor('#1E293B').fontSize(12).font('Helvetica-Bold').text('Issued By:', 300, 135);
       doc.fillColor('#334155').fontSize(10).font('Helvetica').text('Mito_Reboot Platform Inc.', 300, 155);
-      doc.text('support@mitoreboot.com', 300, 170);
+      doc.text('support@mitoreboot.in', 300, 170);
       doc.text('Bangalore, Karnataka, India', 300, 185);
 
       // Table Header
@@ -856,7 +856,7 @@ export class SubscriptionController {
       // Issued By details
       doc.fillColor('#1E293B').fontSize(12).font('Helvetica-Bold').text('Issued By:', 300, 135);
       doc.fillColor('#334155').fontSize(10).font('Helvetica').text('Mito_Reboot Platform Inc.', 300, 155);
-      doc.text('support@mitoreboot.com', 300, 170);
+      doc.text('support@mitoreboot.in', 300, 170);
       doc.text('Bangalore, Karnataka, India', 300, 185);
 
       // Table Header

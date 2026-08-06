@@ -1536,7 +1536,7 @@ const AdminPanelContent: React.FC = () => {
                     required
                     value={regEmail}
                     onChange={(e) => setRegEmail(e.target.value)}
-                    placeholder="admin@mitoreboot.com"
+                    placeholder="admin@mitoreboot.in"
                     className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-medium"
                   />
                 </div>

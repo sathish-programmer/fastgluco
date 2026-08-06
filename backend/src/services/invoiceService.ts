@@ -55,7 +55,7 @@ export class InvoiceService {
           if (vendor.taxId) doc.text(`GSTIN/Tax ID: ${vendor.taxId}`, 320, 184);
         } else {
           doc.text('Mito_Reboot Health Store', 320, 148);
-          doc.text('shop@mitoreboot.com', 320, 160);
+          doc.text('support@mitoreboot.in', 320, 160);
         }
 
         // Table Header

@@ -25,7 +25,7 @@ import { Subscription } from './Subscription';
 import { Capacitor } from '@capacitor/core';
 
 export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = () => {
-  const { user, token, apiUrl, logout, updateProfile, isLoading, error, branding } = useAuth();
+  const { user, token, apiUrl, logout, updateProfile, isLoading, error, branding, setActiveMode } = useAuth();
   const { showToast } = useToast();
   const { setTheme, isDark } = useTheme();
   const isIOSAppStoreBlocked = Capacitor.getPlatform() === 'ios';
@@ -121,6 +121,9 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
       cancerDisclaimerAcceptedAt: disclaimerAccepted ? new Date().toISOString() : undefined
     });
     if (success) {
+      if (setActiveMode) {
+        await setActiveMode(cancerJourney);
+      }
       showToast('Profile updated successfully!', 'success');
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);

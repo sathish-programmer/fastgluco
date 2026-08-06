@@ -8,6 +8,7 @@ import { Login } from './pages/Login';
 import { RecommendedFoodsScreen } from './screens/RecommendedFoodsScreen';
 import { Register } from './pages/Register';
 import { NonCancerDashboard } from './pages/NonCancerDashboard';
+import { Dashboard } from './pages/Dashboard';
 import { Reports } from './pages/Reports';
 import { FoodLog } from './pages/FoodLog';
 import { Analysis } from './pages/Analysis';
@@ -55,6 +56,7 @@ const MainAppContent: React.FC = () => {
   const [resetToken, setResetToken] = useState<string | null>(null);
   const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
   const [rateOrderId, setRateOrderId] = useState<string | null>(null);
+  const [showCancerCGMDashboard, setShowCancerCGMDashboard] = useState<boolean>(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -340,9 +342,12 @@ const MainAppContent: React.FC = () => {
       {/* Main Tab Screen Content Area */}
       <main className="flex-1 overflow-y-auto w-full">
         {activeTab === 'Home' && (
-          <NonCancerDashboard 
-            onNavigateToTab={setActiveTab} 
-          />
+          (activeMode === 'TREATMENT')
+            ? (showCancerCGMDashboard 
+                ? <Dashboard onNavigateToTab={setActiveTab} onBackToTugOfWar={() => setShowCancerCGMDashboard(false)} />
+                : <NonCancerDashboard onNavigateToTab={setActiveTab} onGoToCGMDashboard={() => setShowCancerCGMDashboard(true)} />
+              )
+            : <NonCancerDashboard onNavigateToTab={setActiveTab} />
         )}
         {activeTab === 'Reports' && <Reports features={planFeatures} />}
         {activeTab === 'Food Log' && <FoodLog features={planFeatures} onNavigateToTab={setActiveTab} />}

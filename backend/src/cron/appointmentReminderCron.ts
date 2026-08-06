@@ -67,7 +67,7 @@ export class AppointmentReminderCron {
 
           const { generateEmailTemplatePublic } = await import('../services/emailService');
 
-          const emailFrom = `"${appName} Appointments" <appointments@mitoreboot.com>`;
+          const emailFrom = `"${appName} Appointments" <support@mitoreboot.in>`;
           const subject = `[${appName}] Appointment Reminder — Starts in ${reminderLabel}`;
 
           if (patient?.email) {
