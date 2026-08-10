@@ -32,6 +32,7 @@ import { ShopReportController } from '../controllers/shopReportController';
 import { DoctorController } from '../controllers/doctorController';
 import { AppointmentController } from '../controllers/appointmentController';
 import { VendorController } from '../controllers/vendorController';
+import * as AdminReviewController from '../controllers/adminReviewController';
 
 const router = Router();
 
@@ -327,6 +328,12 @@ router.get('/workflow-config/:type', authenticateToken, requireRole(['User']), S
 router.get('/patient/deaddiction-number', authenticateToken, requireRole(['User']), DoctorController.getDeaddictionNumber);
 
 router.use('/habits', authenticateToken, requireRole(['User']));
+router.post('/habits/upload', uploadImage.single('image'), (req: any, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'No file uploaded' });
+  }
+  res.json({ imageUrl: `/uploads/${req.file.filename}` });
+});
 router.post('/habits', HabitController.logHabit);
 router.get('/habits', HabitController.getRecentHabits);
 router.delete('/habits/:id', HabitController.deleteHabit);
@@ -336,6 +343,13 @@ router.delete('/habits/:id', HabitController.deleteHabit);
 // ==========================================
 router.post('/admin/auth/login', AdminController.login);
 router.post('/admin/auth/register', AdminController.register);
+
+// Doctor/Admin shared review routes (Defined before general admin role check to allow Doctors)
+router.get('/admin/stain-reviews', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor', 'Doctor']), AdminReviewController.getStainReviews);
+router.post('/admin/stain-reviews/:logId/recommendation', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor', 'Doctor']), AdminReviewController.submitRecommendation);
+router.get('/admin/patients', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor', 'Doctor']), AdminReviewController.getPatients);
+router.get('/admin/patients/:patientId/activity', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor', 'Doctor']), AdminReviewController.getPatientTimeline);
+router.get('/admin/stain-image/:filename', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor', 'Doctor']), AdminReviewController.getStainImage);
 
 // Admin Authorized Area
 router.use('/admin', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']));

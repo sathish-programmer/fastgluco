@@ -45,7 +45,9 @@ import {
   ShoppingCart,
   BarChart3,
   Settings,
-  Bell
+  Bell,
+  Sparkles,
+  History
 } from 'lucide-react';
 import {
   BarChart, Bar, PieChart, Pie, Cell,
@@ -63,6 +65,74 @@ import { ConsultationAnalytics } from './components/ConsultationAnalytics';
 import { AdminLabs } from './components/AdminLabs';
 import { LabPortal } from './components/LabPortal';
 import { SupportPortal } from './components/SupportPortal';
+
+const getCategoryStyle = (score: number) => {
+  if (score <= 15) return 'bg-emerald-50 text-emerald-700 border-emerald-250';
+  if (score <= 35) return 'bg-yellow-50 text-yellow-700 border-yellow-250';
+  if (score <= 60) return 'bg-amber-50 text-amber-700 border-amber-250';
+  return 'bg-rose-50 text-rose-700 border-rose-250';
+};
+
+const StainTrendChart: React.FC<{ patientId: string }> = ({ patientId }) => {
+  const { token, apiUrl } = useAdminAuth();
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchTrend = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`${apiUrl}/admin/patients/${patientId}/activity`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const resData = await res.json();
+          const stainLogs = (resData.timeline || [])
+            .filter((t: any) => t.type === 'TOBACCO_STAIN')
+            .map((t: any) => ({
+              date: new Date(t.date).toLocaleDateString([], { month: 'short', day: 'numeric' }),
+              score: t.score
+            }))
+            .reverse();
+          setData(stainLogs);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTrend();
+  }, [patientId, token, apiUrl]);
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-soft p-5 text-center flex justify-center items-center h-40">
+        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (data.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="bg-white rounded-3xl border border-slate-200 shadow-soft p-5">
+      <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase">Score Discoloration Trend</span>
+      <div className="h-40 mt-3">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={data}>
+            <XAxis dataKey="date" tick={{ fontSize: 8 }} />
+            <YAxis domain={[0, 100]} tick={{ fontSize: 8 }} />
+            <Tooltip />
+            <Area type="monotone" dataKey="score" stroke="#2563EB" fillOpacity={0.2} fill="#3b82f6" />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+};
 
 const AdminPanelContent: React.FC = () => {
   const { admin, token, isAuthenticated, login, register, logout, error, clearError, apiUrl } = useAdminAuth();
@@ -93,6 +163,7 @@ const AdminPanelContent: React.FC = () => {
   const [openGroups, setOpenGroups] = useState<{ [key: string]: boolean }>({
     dashboard: true,
     users: true,
+    dental: true,
     appointments: true,
     diagnostics: true,
     store: true,
@@ -170,6 +241,29 @@ const AdminPanelContent: React.FC = () => {
     tryingToSolve: '',
     videoUrl: ''
   });
+
+  // Tobacco Stain Reviews & Patient Activity states
+  const [stainReviews, setStainReviews] = useState<any[]>([]);
+  const [stainReviewsLoading, setStainReviewsLoading] = useState(false);
+  const [selectedStainReview, setSelectedStainReview] = useState<any | null>(null);
+  const [stainFilter, setStainFilter] = useState<'all' | 'pending' | 'reviewed'>('all');
+  
+  const [patients, setPatients] = useState<any[]>([]);
+  const [patientsLoading, setPatientsLoading] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState<any | null>(null);
+  const [patientTimeline, setPatientTimeline] = useState<any[]>([]);
+  const [patientTimelineLoading, setPatientTimelineLoading] = useState(false);
+  const [patientSearch, setPatientSearch] = useState('');
+  const [patientStatusFilter, setPatientStatusFilter] = useState('all');
+
+  // Recommendation form state
+  const [recommendationText, setRecommendationText] = useState('');
+  const [notificationChannels, setNotificationChannels] = useState<{ email: boolean; sms: boolean; push: boolean }>({
+    email: false,
+    sms: false,
+    push: false
+  });
+  const [recommendationSending, setRecommendationSending] = useState(false);
 
   // CRUD Form states
   const [showFoodModal, setShowFoodModal] = useState(false);
@@ -400,6 +494,17 @@ const AdminPanelContent: React.FC = () => {
     }
   }, [isAuthenticated, admin]);
 
+  useEffect(() => {
+    if (isAuthenticated && admin && (admin.role === 'SuperAdmin' || admin.role === 'Admin' || admin.role === 'Doctor' || admin.role === 'Editor')) {
+      if (activeView === 'stain-reviews') {
+        fetchStainReviews();
+      }
+      if (activeView === 'patient-activity') {
+        fetchPatients();
+      }
+    }
+  }, [isAuthenticated, admin, activeView]);
+
   const exportToCSV = (data: any[], filename: string) => {
     if (!data || !data.length) {
       alert("No data available to export");
@@ -450,6 +555,99 @@ const AdminPanelContent: React.FC = () => {
   };
 
   // --- API OPERATIONS ---
+
+  const fetchStainReviews = async () => {
+    setStainReviewsLoading(true);
+    try {
+      const res = await fetch(`${apiUrl}/admin/stain-reviews`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setStainReviews(await res.json());
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setStainReviewsLoading(false);
+    }
+  };
+
+  const fetchPatients = async () => {
+    setPatientsLoading(true);
+    try {
+      const res = await fetch(`${apiUrl}/admin/patients`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setPatients(await res.json());
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setPatientsLoading(false);
+    }
+  };
+
+  const fetchPatientTimeline = async (patientId: string) => {
+    setPatientTimelineLoading(true);
+    try {
+      const res = await fetch(`${apiUrl}/admin/patients/${patientId}/activity`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSelectedPatient(data.patient);
+        setPatientTimeline(data.timeline);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setPatientTimelineLoading(false);
+    }
+  };
+
+  const submitRecommendation = async (logId: string) => {
+    if (!recommendationText.trim()) {
+      alert('Please enter a recommendation.');
+      return;
+    }
+    const channels = Object.keys(notificationChannels).filter(k => (notificationChannels as any)[k]);
+    if (channels.length === 0) {
+      alert('Please select at least one delivery channel (Email, SMS, or Push).');
+      return;
+    }
+
+    setRecommendationSending(true);
+    try {
+      const res = await fetch(`${apiUrl}/admin/stain-reviews/${logId}/recommendation`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          recommendationText,
+          channels
+        })
+      });
+
+      if (res.ok) {
+        alert('Recommendation sent successfully!');
+        setRecommendationText('');
+        setNotificationChannels({ email: false, sms: false, push: false });
+        setSelectedStainReview(null);
+        fetchStainReviews();
+      } else {
+        const data = await res.json();
+        alert(`Error: ${data.message}`);
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Failed to send recommendation.');
+    } finally {
+      setRecommendationSending(false);
+    }
+  };
 
   const fetchAdminAppointments = async () => {
     setAppointmentsLoading(true);
@@ -1750,6 +1948,20 @@ const AdminPanelContent: React.FC = () => {
                 </div>
               </button>
             </div>
+            {/* Patient Activity Menu */}
+            <div className="space-y-1">
+              <button 
+                onClick={() => { setActiveView('patient-activity'); setSearchQuery(''); setSelectedPatient(null); }}
+                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                  activeView === 'patient-activity' ? 'bg-primary text-white' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Activity className="h-4.5 w-4.5 shrink-0" />
+                  {!sidebarCollapsed && <span>Patient Activity</span>}
+                </div>
+              </button>
+            </div>
 
             {/* GROUP 2: USERS & STAFF */}
             <div className="space-y-1">
@@ -1804,6 +2016,40 @@ const AdminPanelContent: React.FC = () => {
                     }`}
                   >
                     Lab Staff
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* GROUP: DENTAL / ORAL HEALTH */}
+            <div className="space-y-1">
+              <button 
+                onClick={() => toggleGroup('dental')}
+                className="w-full flex items-center justify-between px-4 py-2 text-slate-550 hover:text-white transition-all"
+              >
+                <div className="flex items-center gap-3">
+                  <Sparkles className="h-4.5 w-4.5 shrink-0 text-primary" />
+                  {!sidebarCollapsed && <span className="text-[10px] font-black uppercase tracking-wider">Dental / Oral Health</span>}
+                </div>
+                {!sidebarCollapsed && (openGroups.dental ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />)}
+              </button>
+              {openGroups.dental && !sidebarCollapsed && (
+                <div className="pl-6 space-y-1">
+                  <button 
+                    onClick={() => { setActiveView('dental-consultations'); setSearchQuery(''); }}
+                    className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                      activeView === 'dental-consultations' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Dental Consultations
+                  </button>
+                  <button 
+                    onClick={() => { setActiveView('stain-reviews'); setSearchQuery(''); setSelectedStainReview(null); }}
+                    className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                      activeView === 'stain-reviews' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Tobacco Stain Reviews
                   </button>
                 </div>
               )}
@@ -2369,6 +2615,565 @@ const AdminPanelContent: React.FC = () => {
                       <Bar dataKey="count" fill="#2563EB" radius={[8, 8, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* VIEW: PATIENT ACTIVITY TIMELINE */}
+        {activeView === 'patient-activity' && (
+          <div className="space-y-6">
+            {!selectedPatient ? (
+              // 1. Patient Directory List View
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-800">Patient Activity Monitoring</h2>
+                    <p className="text-xs text-slate-500 mt-1">Select a patient to view their complete activity timeline across modules.</p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                    <select
+                      value={patientStatusFilter}
+                      onChange={(e) => setPatientStatusFilter(e.target.value)}
+                      className="px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+                    >
+                      <option value="all">All Statuses</option>
+                      <option value="Pending Review">Pending Review</option>
+                      <option value="Active">Active</option>
+                      <option value="New Account">New Account</option>
+                    </select>
+                    <div className="relative w-full sm:w-64">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                        <Search className="h-4 w-4" />
+                      </span>
+                      <input
+                        type="text"
+                        value={patientSearch}
+                        onChange={(e) => setPatientSearch(e.target.value)}
+                        placeholder="Search by name, ID or email..."
+                        className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm bg-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {patientsLoading ? (
+                  <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                    <p className="text-xs text-slate-500 mt-2">Loading patient database...</p>
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-2xl border border-slate-200 shadow-soft overflow-x-auto">
+                    <table className="min-w-full divide-y divide-slate-200">
+                      <thead className="bg-slate-50">
+                        <tr>
+                          <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Patient Name</th>
+                          <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Patient ID</th>
+                          <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Last Active</th>
+                          <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Logs</th>
+                          <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tobacco Staining</th>
+                          <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Overall Status</th>
+                          <th className="px-6 py-3.5 text-right text-[10px] font-bold text-slate-400 uppercase tracking-wider">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-slate-200">
+                        {patients
+                          .filter(p => {
+                            const q = patientSearch.toLowerCase();
+                            const matchesSearch = (p.name || '').toLowerCase().includes(q) || (p.email || '').toLowerCase().includes(q) || p._id.toLowerCase().includes(q);
+                            const matchesFilter = patientStatusFilter === 'all' || p.overallStatus === patientStatusFilter;
+                            return matchesSearch && matchesFilter;
+                          })
+                          .map(p => (
+                            <tr key={p._id} className="hover:bg-slate-50/50 transition-colors">
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm font-bold text-slate-800">{p.name || 'Anonymous'}</div>
+                                <div className="text-[10px] text-slate-400">{p.email || 'No Email'}</div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-xs font-mono text-slate-500">{p._id}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-600">
+                                {new Date(p.lastActive).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })} at {new Date(p.lastActive).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-xs font-semibold text-slate-800">{p.totalLogs} logs</td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${p.tobaccoStatus === 'Yes' ? 'bg-amber-50 text-amber-600 border-amber-200' : p.tobaccoStatus === 'No' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
+                                  {p.tobaccoStatus === 'Yes' ? 'Stained' : p.tobaccoStatus === 'No' ? 'Clear' : 'No Info'}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${p.overallStatus === 'Pending Review' ? 'bg-amber-100 text-amber-800 border-amber-250' : p.overallStatus === 'Active' ? 'bg-emerald-100 text-emerald-800 border-emerald-250' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                                  {p.overallStatus}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-right text-xs font-medium">
+                                <button
+                                  onClick={() => fetchPatientTimeline(p._id)}
+                                  className="text-primary hover:text-blue-800 font-bold bg-primary/10 px-3 py-1.5 rounded-lg transition-all"
+                                >
+                                  View Timeline
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            ) : (
+              // 2. Individual Patient Timeline View
+              <div className="space-y-6">
+                {/* Back Link */}
+                <button
+                  onClick={() => setSelectedPatient(null)}
+                  className="flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors"
+                >
+                  &larr; Back to Patient List
+                </button>
+
+                {/* Patient Summary Header */}
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-soft p-5">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-5 border-b border-slate-100">
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Patient Profile</span>
+                      <h2 className="text-2xl font-bold text-slate-800 mt-1">{selectedPatient.name || 'Anonymous'}</h2>
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500 mt-1">
+                        <span><strong>ID:</strong> {selectedPatient._id}</span>
+                        <span><strong>Email:</strong> {selectedPatient.email || 'N/A'}</span>
+                        <span><strong>Phone:</strong> {selectedPatient.mobileNumber || 'N/A'}</span>
+                      </div>
+                    </div>
+                    <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
+                      Registered: {new Date(selectedPatient.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+
+                  {/* Summary Metric Cards */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
+                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/50">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Status</span>
+                      <p className="text-sm font-bold text-slate-800">
+                        {patientTimeline.filter(t => t.type === 'TOBACCO_STAIN' && !t.reviewed).length > 0 ? 'Pending Review' : 'Reviewed / Up to Date'}
+                      </p>
+                    </div>
+                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/50">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Total Logs</span>
+                      <p className="text-sm font-bold text-slate-800">{patientTimeline.filter(t => t.type !== 'ACCOUNT_CREATED').length} entries</p>
+                    </div>
+                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/50">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Latest Stain Score</span>
+                      <p className="text-sm font-bold text-slate-800">
+                        {patientTimeline.find(t => t.type === 'TOBACCO_STAIN')?.score || 'N/A'}
+                      </p>
+                    </div>
+                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/50">
+                      <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block mb-1">Recommendations</span>
+                      <p className="text-sm font-bold text-slate-800">
+                        {patientTimeline.filter(t => t.type === 'DOCTOR_RECOMMENDATION').length} sent
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Chronological Timeline */}
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-soft p-6">
+                  <h3 className="text-base font-bold text-slate-800 mb-6 flex items-center gap-2">
+                    <History className="h-4.5 w-4.5 text-primary" /> Patient Activity Timeline
+                  </h3>
+
+                  {patientTimelineLoading ? (
+                    <div className="text-center py-12">
+                      <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
+                    </div>
+                  ) : (
+                    <div className="relative border-l border-slate-100 pl-6 ml-3 space-y-8">
+                      {patientTimeline.map((item, idx) => (
+                        <div key={idx} className="relative">
+                          {/* Timeline dot */}
+                          <span className={`absolute -left-[31px] top-1.5 w-2.5 h-2.5 rounded-full border-2 border-white shadow-sm ${
+                            item.type === 'TOBACCO_STAIN' ? 'bg-amber-500' :
+                            item.type === 'DENTAL_CONSULTATION' ? 'bg-indigo-500' :
+                            item.type === 'DOCTOR_RECOMMENDATION' ? 'bg-emerald-500' : 'bg-slate-400'
+                          }`} />
+
+                          {/* Timeline details */}
+                          <div>
+                            <span className="text-[10px] font-bold text-slate-400">
+                              {new Date(item.date).toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                            <h4 className="text-sm font-bold text-slate-800 mt-0.5">{item.title}</h4>
+                            <p className="text-xs text-slate-600 mt-1 leading-relaxed bg-slate-50 p-2.5 rounded-xl border border-slate-200/40">{item.description}</p>
+
+                            {/* Additional display for Tobacco Stain submissions */}
+                            {item.type === 'TOBACCO_STAIN' && (
+                              <div className="mt-3 flex items-start gap-4 p-3 bg-slate-50/50 rounded-xl border border-slate-200/50">
+                                {item.imageUrl && (
+                                  <div className="relative shrink-0">
+                                    <img
+                                      src={item.imageUrl.startsWith('http') ? item.imageUrl : `${apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl}/api/admin/stain-image/${item.imageUrl.split('/').pop()}?token=${token}`}
+                                      alt="Tooth check"
+                                      className="h-16 w-16 object-cover rounded-lg border border-slate-200 cursor-pointer"
+                                      onClick={() => {
+                                        // Fake selectedStainReview to open the review panel
+                                        setSelectedStainReview({
+                                          _id: item.logId,
+                                          userId: selectedPatient,
+                                          value: {
+                                            imageUrl: item.imageUrl,
+                                            score: item.score,
+                                            category: item.category,
+                                            date: item.date
+                                          }
+                                        });
+                                      }}
+                                    />
+                                    <span className="absolute bottom-1 right-1 bg-black/60 text-[8px] font-bold text-white px-1 rounded">View</span>
+                                  </div>
+                                )}
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[11px] font-bold text-slate-700">Discoloration Level: {item.score}/100</span>
+                                    <span className="text-[9px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">{item.category}</span>
+                                  </div>
+                                  <p className="text-[10px] text-slate-500 mt-1">Click the photo thumbnail to review the full details and submit clinical advice.</p>
+                                  {item.reviewed ? (
+                                    <span className="text-[9px] font-extrabold text-emerald-600 mt-1.5 block">✓ Reviewed by Clinician</span>
+                                  ) : (
+                                    <button
+                                      onClick={() => {
+                                        // Set review trigger
+                                        setSelectedStainReview({
+                                          _id: item.logId,
+                                          userId: selectedPatient,
+                                          value: {
+                                            imageUrl: item.imageUrl,
+                                            score: item.score,
+                                            category: item.category,
+                                            date: item.date
+                                          }
+                                        });
+                                      }}
+                                      className="text-[10px] font-bold text-primary hover:underline mt-2 block"
+                                    >
+                                      Needs Doctor Review &rarr;
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Additional display for Doctor Recommendations */}
+                            {item.type === 'DOCTOR_RECOMMENDATION' && item.deliveryStatus && (
+                              <div className="mt-2.5 flex flex-wrap gap-2">
+                                {Object.keys(item.deliveryStatus).map((channel) => {
+                                  const chData = item.deliveryStatus[channel];
+                                  const isDelivered = chData?.status === 'delivered';
+                                  return (
+                                    <span
+                                      key={channel}
+                                      className={`text-[9px] font-extrabold px-2 py-0.5 rounded border ${isDelivered ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-rose-50 text-rose-700 border-rose-100'}`}
+                                      title={chData?.error || ''}
+                                    >
+                                      {channel.toUpperCase()}: {isDelivered ? 'Delivered' : `Failed (${chData?.error || 'unconfigured'})`}
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* VIEW: TOBACCO STAIN REVIEWS */}
+        {activeView === 'stain-reviews' && !selectedStainReview && (
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-slate-800">Tobacco Stain Reviews</h2>
+                <p className="text-xs text-slate-500 mt-1">Review photo-based discoloration trends and dispatch clinical recommendations.</p>
+              </div>
+
+              {/* Tabs */}
+              <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+                <button
+                  onClick={() => setStainFilter('all')}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${stainFilter === 'all' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setStainFilter('pending')}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${stainFilter === 'pending' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}
+                >
+                  Pending Review
+                </button>
+                <button
+                  onClick={() => setStainFilter('reviewed')}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${stainFilter === 'reviewed' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}
+                >
+                  Reviewed
+                </button>
+              </div>
+            </div>
+
+            {stainReviewsLoading ? (
+              <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                <p className="text-xs text-slate-500 mt-2">Loading submissions list...</p>
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-soft overflow-x-auto">
+                <table className="min-w-full divide-y divide-slate-200">
+                  <thead className="bg-slate-50">
+                    <tr>
+                      <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Patient</th>
+                      <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Date Submitted</th>
+                      <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Score</th>
+                      <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Category</th>
+                      <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Review Status</th>
+                      <th className="px-6 py-3.5 text-right text-[10px] font-bold text-slate-400 uppercase tracking-wider">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-slate-200">
+                    {stainReviews
+                      .filter(review => {
+                        if (stainFilter === 'pending') return !review.reviewed;
+                        if (stainFilter === 'reviewed') return review.reviewed;
+                        return true;
+                      })
+                      .map(review => {
+                        const patientName = review.userId?.name || 'Anonymous';
+                        const patientEmail = review.userId?.email || 'No Email';
+                        return (
+                          <tr key={review._id} className="hover:bg-slate-55 hover:bg-slate-50/50 transition-colors">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm font-bold text-slate-800">{patientName}</div>
+                              <div className="text-[10px] text-slate-400">{patientEmail}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-600">
+                              {new Date(review.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-xs font-bold text-slate-800">{review.value.score} / 100</td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${getCategoryStyle(review.value.score)}`}>
+                                {review.value.category}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${review.reviewed ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200 animate-pulse'}`}>
+                                {review.reviewed ? 'Reviewed' : 'Pending Review'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-xs font-medium">
+                              <button
+                                onClick={() => setSelectedStainReview(review)}
+                                className="text-primary hover:text-blue-800 font-bold bg-primary/10 px-3 py-1.5 rounded-lg"
+                              >
+                                {review.reviewed ? 'View details' : 'Review & Advise'}
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TOBACCO STAIN DETAIL REVIEW PANEL */}
+        {selectedStainReview && (
+          <div className="space-y-6">
+            {/* Back Button */}
+            <button
+              onClick={() => setSelectedStainReview(null)}
+              className="flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors"
+            >
+              &larr; Back to Reviews List
+            </button>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Left Column: Image viewer and patient details */}
+              <div className="lg:col-span-7 space-y-6">
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-soft p-5">
+                  <div className="flex justify-between items-center pb-4 mb-4 border-b border-slate-100">
+                    <div>
+                      <span className="text-[9px] font-bold text-slate-400 tracking-wider uppercase">Patient Detail</span>
+                      <h3 className="text-lg font-bold text-slate-800 mt-0.5">{selectedStainReview.userId?.name || 'Anonymous'}</h3>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[9px] font-bold text-slate-400 block">Uploaded On</span>
+                      <span className="text-xs font-semibold text-slate-700">{new Date(selectedStainReview.timestamp).toLocaleString()}</span>
+                    </div>
+                  </div>
+
+                  {/* Visual Image Viewer with absolute markers */}
+                  <div className="flex justify-center bg-slate-900 rounded-2xl overflow-hidden relative border border-slate-200">
+                    <div className="relative inline-block max-w-full">
+                      <img
+                        src={selectedStainReview.value.imageUrl.startsWith('http') 
+                          ? selectedStainReview.value.imageUrl 
+                          : `${apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl}/api/admin/stain-image/${selectedStainReview.value.imageUrl.split('/').pop()}?token=${token}`}
+                        alt="Patient teeth discoloration"
+                        className="max-h-[400px] w-auto object-contain rounded-xl"
+                        style={{ width: `${selectedStainReview.value.canvasWidth || 300}px` }}
+                      />
+                      {selectedStainReview.value.enamelPoint && (
+                        <div
+                          className="absolute w-6 h-6 border-2 border-emerald-500 rounded-full flex items-center justify-center -translate-x-1/2 -translate-y-1/2 bg-emerald-500/30 text-[10px] font-extrabold text-emerald-800 shadow-lg"
+                          style={{
+                            left: `${(selectedStainReview.value.enamelPoint.x / (selectedStainReview.value.canvasWidth || 300)) * 100}%`,
+                            top: `${(selectedStainReview.value.enamelPoint.y / (selectedStainReview.value.canvasHeight || 300)) * 100}%`
+                          }}
+                        >
+                          E
+                        </div>
+                      )}
+                      {selectedStainReview.value.stainPoint && (
+                        <div
+                          className="absolute w-6 h-6 border-2 border-amber-600 rounded-full flex items-center justify-center -translate-x-1/2 -translate-y-1/2 bg-amber-650/30 bg-amber-600/30 text-[10px] font-extrabold text-amber-800 shadow-lg"
+                          style={{
+                            left: `${(selectedStainReview.value.stainPoint.x / (selectedStainReview.value.canvasWidth || 300)) * 100}%`,
+                            top: `${(selectedStainReview.value.stainPoint.y / (selectedStainReview.value.canvasHeight || 300)) * 100}%`
+                          }}
+                        >
+                          S
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Color details */}
+                  <div className="flex gap-4 justify-center mt-4">
+                    {selectedStainReview.value.enamelColor && (
+                      <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200 shadow-sm text-[10px] font-bold text-slate-600">
+                        <span className="w-3.5 h-3.5 rounded-full border border-slate-350 shadow-inner" style={{ backgroundColor: `rgb(${selectedStainReview.value.enamelColor.r}, ${selectedStainReview.value.enamelColor.g}, ${selectedStainReview.value.enamelColor.b})` }} />
+                        Enamel Color Reference
+                      </div>
+                    )}
+                    {selectedStainReview.value.stainColor && (
+                      <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200 shadow-sm text-[10px] font-bold text-slate-600">
+                        <span className="w-3.5 h-3.5 rounded-full border border-slate-350 shadow-inner" style={{ backgroundColor: `rgb(${selectedStainReview.value.stainColor.r}, ${selectedStainReview.value.stainColor.g}, ${selectedStainReview.value.stainColor.b})` }} />
+                        Stained Color Reference
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Recommendation Form and Trend Analytics */}
+              <div className="lg:col-span-5 space-y-6">
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-soft p-5">
+                  <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase">Score Placement</span>
+                  <div className="flex items-center gap-3 mt-1.5 mb-4">
+                    <span className="text-3xl font-bold text-slate-800">{selectedStainReview.value.score} / 100</span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${getCategoryStyle(selectedStainReview.value.score)}`}>
+                      {selectedStainReview.value.category}
+                    </span>
+                  </div>
+
+                  {/* Indicator slider */}
+                  <div className="relative w-full h-2 bg-slate-100 rounded-full flex overflow-hidden">
+                    <div className="h-full bg-emerald-500" style={{ width: '15%' }} />
+                    <div className="h-full bg-yellow-400" style={{ width: '20%' }} />
+                    <div className="h-full bg-amber-500" style={{ width: '25%' }} />
+                    <div className="h-full bg-rose-500" style={{ width: '40%' }} />
+                  </div>
+                  <div className="relative w-full h-3 mb-4">
+                    <div
+                      className="absolute -top-3 w-3 h-3 bg-slate-800 border border-white rounded-full shadow-md -translate-x-1/2 transition-all duration-300"
+                      style={{ left: `${selectedStainReview.value.score}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Patient Trend Chart (Recharts Area Chart) */}
+                {selectedStainReview.userId?._id && (
+                  <StainTrendChart patientId={selectedStainReview.userId._id} />
+                )}
+
+                {/* Doctor Recommendation Form */}
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-soft p-5">
+                  <h4 className="font-bold text-slate-800 text-sm mb-3">Add Doctor Recommendation</h4>
+
+                  {selectedStainReview.reviewed ? (
+                    <div className="bg-emerald-50 border border-emerald-250 p-4 rounded-2xl text-emerald-800 text-xs leading-relaxed border-emerald-200">
+                      <strong>✓ Already Reviewed</strong>
+                      <p className="mt-1">This stain reading has already been reviewed by a clinician. Additional recommendations can be sent directly through the patient activity page.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Clinical Advice / Notes</label>
+                        <textarea
+                          rows={4}
+                          value={recommendationText}
+                          onChange={(e) => setRecommendationText(e.target.value)}
+                          placeholder="Provide custom advice, cleaning intervals, or notes for the patient..."
+                          className="w-full border border-slate-200 rounded-xl p-3 text-xs focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-slate-50"
+                        />
+                      </div>
+
+                      {/* Delivery Notification options */}
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase block mb-2">Delivery Channels</label>
+                        <div className="flex flex-col gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                          <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={notificationChannels.email}
+                              onChange={(e) => setNotificationChannels(prev => ({ ...prev, email: e.target.checked }))}
+                              className="rounded border-slate-300 text-primary focus:ring-primary"
+                            />
+                            Email Address
+                          </label>
+                          <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={notificationChannels.sms}
+                              onChange={(e) => setNotificationChannels(prev => ({ ...prev, sms: e.target.checked }))}
+                              className="rounded border-slate-300 text-primary focus:ring-primary"
+                            />
+                            SMS Text Message
+                          </label>
+                          <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={notificationChannels.push}
+                              onChange={(e) => setNotificationChannels(prev => ({ ...prev, push: e.target.checked }))}
+                              className="rounded border-slate-300 text-primary focus:ring-primary"
+                            />
+                            App Push Notification
+                          </label>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => submitRecommendation(selectedStainReview._id)}
+                        disabled={recommendationSending}
+                        className="w-full py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                      >
+                        {recommendationSending ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span>Processing Recommendation...</span>
+                          </>
+                        ) : (
+                          <span>Send Recommendation</span>
+                        )}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

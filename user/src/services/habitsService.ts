@@ -7,14 +7,14 @@ export interface HabitLog {
 }
 
 export const HabitsService = {
-  logHabit: async (apiUrl: string, token: string, type: string, value: any): Promise<void> => {
+  logHabit: async (apiUrl: string, token: string, type: string, value: any, timestamp?: string): Promise<void> => {
     const res = await fetch(`${apiUrl}/habits`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({ type, value, timestamp: new Date().toISOString() })
+      body: JSON.stringify({ type, value, timestamp: timestamp || new Date().toISOString() })
     });
     if (!res.ok) throw new Error('Failed to log habit');
   },

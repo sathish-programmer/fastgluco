@@ -24,6 +24,105 @@ interface TestItem {
   generalPreparationInstructions?: string;
 }
 
+const GROUPS = [
+  {
+    id: "women-under40",
+    title: "Women, under 40",
+    accent: "#C1682E",
+    tests: [
+      {
+        name: "Breast self-exam / breast awareness",
+        freq: "Monthly",
+        note: "Get familiar with how your breasts normally look and feel, on the same days each cycle. Report any new lump, skin change, or discharge promptly.",
+        evidence: "Trial data hasn't shown formal monthly self-exam reduces breast cancer deaths, and it can lead to extra biopsies — most guidelines now favour general breast awareness over a rigid technique. In India, where most breast cancers are still caught late, many clinicians still teach it as a low-cost early-detection habit.",
+        video: { label: "NHS — How to check your breasts or chest", url: "https://www.youtube.com/watch?v=xcg7jWrlLJ8" },
+      },
+      {
+        name: "Pap smear",
+        freq: "Every 3 years, from age 21 (or within 3 years of first intercourse)",
+        note: "Screens for cervical pre-cancer/cancer.",
+      },
+      {
+        name: "HPV vaccination",
+        freq: "One-time series if not already given",
+        note: "Most effective before first sexual activity; catch-up doses are still worthwhile later — discuss timing with a gynaecologist.",
+      },
+    ],
+  },
+  {
+    id: "women-over40",
+    title: "Women, 40 and over",
+    accent: "#A13E2B",
+    tests: [
+      { name: "Breast self-exam / breast awareness", freq: "Monthly", note: "As above — continue alongside clinical exam and mammogram." },
+      { name: "Mammogram", freq: "Yearly", note: "Digital mammography for early detection; add breast ultrasound/MRI if dense breast tissue or high risk." },
+      { name: "Pap smear", freq: "Every 3 years (or HPV co-testing every 5 years, per gynaecologist)", note: "Continue until roughly age 65 or as advised." },
+      {
+        name: "CA-125",
+        freq: "Yearly (as an adjunct, not a standalone screen)",
+        note: "For ovarian cancer risk awareness.",
+        evidence: "CA-125 alone has poor specificity in average-risk women and isn't endorsed as a population screening test by most bodies — it's more useful for women with a strong family history/BRCA status or alongside pelvic ultrasound and symptom review.",
+      },
+    ],
+  },
+  {
+    id: "men-smokers",
+    title: "Men who smoke, any age",
+    accent: "#5B4A8A",
+    tests: [
+      {
+        name: "Low-dose CT chest (LDCT)",
+        freq: "Yearly",
+        note: "Screens for lung cancer.",
+        evidence: "Most guidelines (USPSTF, NCCN) reserve annual LDCT for heavier, longer-term smokers — typically ages 50–80 with a substantial pack-year history, current smokers or those who quit within 15 years. Worth risk-stratifying by pack-years rather than applying to every smoker regardless of age.",
+      },
+      { name: "Oral cancer screening", freq: "Yearly, or sooner if lesions noticed", note: "Visual and physical exam of the mouth/throat — especially important with any tobacco use (smoked or chewed), given India's high oral cancer burden." },
+      {
+        name: "S. CEA",
+        freq: "Yearly (as an adjunct)",
+        note: "Carcinoembryonic antigen, sometimes used as a general tumour-marker check.",
+        evidence: "CEA isn't validated as a standalone screening test for any cancer — it's mainly used to monitor known GI/colorectal cancer, not to detect a new one. A raised level should prompt further work-up, not reassurance either way if normal.",
+      },
+    ],
+  },
+  {
+    id: "men-nonsmokers-60",
+    title: "Men, non-smokers, 60 and over",
+    accent: "#3E7C6B",
+    tests: [
+      {
+        name: "S. PSA",
+        freq: "Yearly",
+        note: "Prostate-specific antigen, for prostate cancer risk awareness.",
+        evidence: "PSA screening involves a real trade-off between catching aggressive cancers early and over-detecting slow-growing ones that would never cause harm. Most guidelines suggest shared decision-making rather than routine yearly testing for every man — worth framing that way in-app.",
+      },
+    ],
+  },
+];
+
+const SYMPTOMS = [
+  "Non-healing mouth ulcer, or a white/red patch inside the mouth",
+  "Persistent hoarseness of voice or a cough",
+  "A lump or thickening anywhere — breast, neck, testicle, or elsewhere",
+  "Unusual bleeding or discharge — between periods, after menopause, after intercourse, or blood in urine/sputum",
+  "Blood in stools, or black/tarry stools",
+  "Change in stool passing routine — new constipation, diarrhoea, or altered frequency lasting beyond a few days",
+  "Change in bladder habits",
+  "Difficulty swallowing, or persistent indigestion/acidity",
+  "Unexplained weight loss",
+  "Persistent fatigue that doesn't improve with rest",
+  "A sore that doesn't heal, or a mole/wart that changes size, shape, or colour",
+  "Unexplained, persistent pain — abdominal, bone, or otherwise",
+  "Unexplained fever or night sweats",
+];
+
+const TAB_LABELS: { [key: string]: string } = {
+  "women-under40": "Women <40",
+  "women-over40": "Women 40+",
+  "men-smokers": "Men, smokers",
+  "men-nonsmokers-60": "Men 60+",
+};
+
 export const CancerScreeningScreen: React.FC<CancerScreeningScreenProps> = ({ onBack }) => {
   const { user, apiUrl, token } = useAuth();
   
@@ -37,11 +136,9 @@ export const CancerScreeningScreen: React.FC<CancerScreeningScreenProps> = ({ on
   const [bookingData, setBookingData] = useState<any>(null);
   const [activeBookingId, setActiveBookingId] = useState<string>('');
   const [selectedLabTestId, setSelectedLabTestId] = useState<string | null>(null);
-  const [expandedTestId, setExpandedTestId] = useState<string | null>(null);
-  const [tab, setTab] = useState<'Male' | 'Female' | 'Universal'>('Universal');
+  const [activeTab, setActiveTab] = useState(GROUPS[0].id);
   const [tests, setTests] = useState<TestItem[]>([]);
   const [testsLoading, setTestsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
   
   // Form state
   const [testName, setTestName] = useState('');
@@ -54,10 +151,20 @@ export const CancerScreeningScreen: React.FC<CancerScreeningScreenProps> = ({ on
   useEffect(() => {
     if (user?.id) {
       loadHistory();
+      if (user.gender === 'Female') {
+        if (user.age && user.age >= 40) {
+          setActiveTab('women-over40');
+        } else {
+          setActiveTab('women-under40');
+        }
+      } else if (user.gender === 'Male') {
+        if (user.age && user.age >= 60) {
+          setActiveTab('men-nonsmokers-60');
+        } else {
+          setActiveTab('men-smokers');
+        }
+      }
     }
-    if (user?.gender === 'Male') setTab('Male');
-    if (user?.gender === 'Female') setTab('Female');
-
     fetchTests();
   }, [user]);
 
@@ -106,14 +213,13 @@ export const CancerScreeningScreen: React.FC<CancerScreeningScreenProps> = ({ on
     }
   };
 
-  const currentTabTests = tests.filter(t => {
-    if (searchQuery) {
-      return t.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-             t.description.toLowerCase().includes(searchQuery.toLowerCase());
-    }
-    if (tab === 'Universal') return true;
-    return t.category === tab || t.category === 'Universal';
-  });
+  const findMatchingDbTest = (tName: string) => {
+    const normName = tName.toLowerCase().replace(/s\.\s+/, 'serum ').replace('smear', '').trim();
+    return tests.find(t => {
+      const dbNorm = t.name.toLowerCase().replace(/s\.\s+/, 'serum ').replace('smear', '').trim();
+      return dbNorm.includes(normName) || normName.includes(dbNorm);
+    });
+  };
 
   if (activeView === 'LABS' && selectedTest) {
     return <PartnerLabsScreen testId={selectedTest._id || selectedTest.id} testName={selectedTest.name} onBack={() => setActiveView('TEST_LIST')} onSelectLab={(lab, price, labTestId) => { setSelectedLab(lab); setSelectedPrice(price); setSelectedLabTestId(labTestId); setActiveView('SLOTS'); }} />;
@@ -135,191 +241,217 @@ export const CancerScreeningScreen: React.FC<CancerScreeningScreenProps> = ({ on
     return <ReportViewerScreen bookingId={activeBookingId} onBack={() => setActiveView('TRACKING')} />;
   }
 
+  const activeGroup = GROUPS.find((g) => g.id === activeTab) || GROUPS[0];
+
   return (
-    <div className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-slate-50 min-h-screen font-sans antialiased text-slate-800">
-      <div className="flex items-center gap-4 mb-6">
-        <button 
-          onClick={onBack}
-          className="h-10 w-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-50 shadow-sm transition-all"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
-        <div>
-          <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Catch it early</span>
-          <h2 className="text-2xl font-sans font-bold text-slate-800 leading-none mt-1">Cancer screening</h2>
-        </div>
-      </div>
-
-      <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-4 mb-6">
-        <h3 className="font-bold text-slate-800 mb-1.5">Early detection saves lives.</h3>
-        <p className="text-xs text-slate-500 leading-relaxed">
-          Pick a profile for the tests worth discussing with your doctor.
-        </p>
-      </div>
-
-      <div className="flex bg-slate-200/50 p-1 rounded-xl mb-6 shadow-inner">
-        {(['Male', 'Female', 'Universal'] as const).map(t => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${tab === t ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+    <div style={{ background: "#FAF6EE", minHeight: "100vh", color: "#2B2B28" }} className="pb-24 pt-6 px-4 font-sans antialiased">
+      <div className="max-w-3xl mx-auto space-y-6">
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={onBack}
+            className="h-10 w-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-50 shadow-sm transition-all"
           >
-            {t === 'Universal' ? 'All Tests' : t}
+            <ArrowLeft className="h-5 w-5" />
           </button>
-        ))}
-      </div>
+          <div>
+            <span className="text-[10px] font-bold text-slate-400 tracking-[0.14em] uppercase">Mito Reboot · Cancer Screening</span>
+            <h2 className="text-2xl font-bold text-slate-800 leading-none mt-1">Screening Guide by Age & Risk Group</h2>
+          </div>
+        </div>
 
-      <div className="mb-6 relative">
-        <input 
-          type="text" 
-          placeholder="Search for tests (e.g. colonoscopy, PSA...)" 
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full bg-white border border-slate-200 rounded-xl py-3 px-10 text-sm text-slate-800 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 shadow-sm"
-        />
-        <svg className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
-      </div>
+        <p className="text-xs text-slate-600 leading-relaxed bg-white/60 p-3.5 rounded-2xl border border-slate-200/50">
+          General guidance for adults in India. This isn't personalised medical advice — actual intervals should be set with a treating doctor based on individual and family history.
+        </p>
 
-      <div className="flex flex-col gap-3 mb-8">
-        {testsLoading ? (
-          <div className="text-center py-6 text-xs font-bold text-slate-400 animate-pulse">Loading tests...</div>
-        ) : currentTabTests.length === 0 ? (
-          <div className="text-center py-6 text-xs font-bold text-slate-400">No tests added for this category.</div>
-        ) : (
-          currentTabTests.map((test, idx) => (
-            <div key={idx} className="bg-white border border-slate-200 shadow-sm rounded-3xl p-5">
-              <div className="flex justify-between items-start mb-2">
-                <h4 className="font-bold text-slate-800 text-lg flex items-center gap-2">
-                  <span className="text-xl">🧬</span> {test.name}
-                </h4>
-                <div className="flex items-center gap-1 text-[10px] text-indigo-600 font-bold bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-100">
-                  <Calendar className="h-3 w-3" />
-                  {test.frequency}
-                </div>
-              </div>
-              
-              <p className="text-sm text-slate-600 leading-relaxed mb-4">
-                {test.description}
-              </p>
+        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex sticky top-0 z-10">
+          {GROUPS.map((g) => {
+            const isActive = g.id === activeTab;
+            return (
+              <button
+                key={g.id}
+                onClick={() => setActiveTab(g.id)}
+                className="flex-1 text-center py-3.5 px-2 text-xs font-bold transition-all border-b-3"
+                style={{
+                  borderBottom: `3px solid ${isActive ? g.accent : "transparent"}`,
+                  color: isActive ? g.accent : "#8A7B5E",
+                }}
+              >
+                {TAB_LABELS[g.id]}
+              </button>
+            );
+          })}
+        </div>
 
-              {expandedTestId === test.id && (
-                <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                  {test.whyItIsNeeded && (
-                    <div className="bg-slate-50 p-3 rounded-xl mb-3 border border-slate-100">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Why it's needed</span>
-                      <p className="text-xs text-slate-700 leading-relaxed">{test.whyItIsNeeded}</p>
-                    </div>
-                  )}
-                  {!test.whyItIsNeeded && !test.recommendedAge && !test.generalPreparationInstructions && (
-                    <div className="bg-slate-50 p-3 rounded-xl mb-3 border border-slate-100">
-                      <p className="text-xs text-slate-500 italic">No additional details available for this test yet.</p>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-3 mb-5">
-                    {test.recommendedAge && (
-                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Recommended Age</span>
-                        <p className="text-xs text-slate-700 font-medium">{test.recommendedAge}</p>
-                      </div>
-                    )}
-                    {test.generalPreparationInstructions && (
-                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Preparation</span>
-                        <p className="text-xs text-slate-700 font-medium">{test.generalPreparationInstructions}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div className="flex gap-3 mt-4">
-                <button 
-                  onClick={() => { setSelectedTest(test); setActiveView('LABS'); }}
-                  className="flex-1 py-3 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-sm shadow-indigo-200"
-                >
-                  Book Test
-                </button>
-                <button 
-                  onClick={() => setExpandedTestId(expandedTestId === test.id ? null : test.id)}
-                  className="flex-1 py-3 bg-white border border-slate-200 text-slate-700 text-sm font-bold rounded-xl hover:bg-slate-50 transition-all"
-                >
-                  {expandedTestId === test.id ? 'Hide Details' : 'Learn More'}
-                </button>
-              </div>
+        <section
+          className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm"
+          style={{ borderLeftWidth: 4, borderLeftColor: activeGroup.accent }}
+        >
+          <h3 className="text-base font-bold mb-4" style={{ color: activeGroup.accent }}>{activeGroup.title}</h3>
+          
+          {testsLoading ? (
+            <div className="text-center py-6 text-xs font-bold text-slate-400 animate-pulse">Loading tests information...</div>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {activeGroup.tests.map((test, idx) => {
+                const matchedDbTest = findMatchingDbTest(test.name);
+                return (
+                  <TestRowItem
+                    key={idx}
+                    test={test}
+                    matchedDbTest={matchedDbTest}
+                    onBook={() => {
+                      if (matchedDbTest) {
+                        setSelectedTest(matchedDbTest);
+                        setActiveView('LABS');
+                      }
+                    }}
+                  />
+                );
+              })}
             </div>
-          ))
-        )}
-      </div>
+          )}
+        </section>
 
-      <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-5 mb-6">
-        <span className="text-xs font-bold text-slate-500 block mb-4">Already completed this test elsewhere?</span>
-        
-        <div className="flex flex-col gap-3 mb-4">
-          <input 
-            type="text" 
-            placeholder="Test (PSA, CA-125...)" 
-            value={testName}
-            onChange={(e) => setTestName(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm text-slate-800 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-          />
-          <div className="flex gap-3">
-            <input 
-              type="date" 
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="flex-1 bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm text-slate-800 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-            />
+        <section className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm">
+          <h3 className="text-sm font-extrabold text-[#5B4A8A] uppercase tracking-wider mb-2">High genetic risk / strong family history</h3>
+          <p className="text-xs text-[#4A3E63] bg-[#EFE9F5] border border-[#DCD0EA] rounded-2xl p-3.5 leading-relaxed">
+            <strong>Whole-body MRI</strong> — yearly, from age 60 — is suggested in addition to the standard screening above for individuals with a known genetic predisposition (e.g. BRCA1/2, Lynch syndrome) or a strong family history of cancer, or anyone otherwise assessed as high-risk. This should be discussed with a genetic counsellor or oncologist rather than done as a routine test for the general population.
+          </p>
+        </section>
+
+        <section className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm">
+          <h3 className="text-sm font-extrabold text-[#A13E2B] uppercase tracking-wider mb-2">Watch for these symptoms</h3>
+          <div className="text-xs text-[#6B5B3E] bg-[#F3EAD8] border border-[#E0D3B8] rounded-2xl p-3.5 font-bold mb-3">
+            Rule of thumb: if any symptom below lasts more than 3 weeks, consult a doctor — don't wait it out.
+          </div>
+          <ul className="list-disc pl-5 text-xs text-slate-700 space-y-2">
+            {SYMPTOMS.map((s, i) => (
+              <li key={i} className="leading-relaxed">{s}</li>
+            ))}
+          </ul>
+        </section>
+
+        <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-5">
+          <span className="text-xs font-bold text-slate-500 block mb-4">Already completed this test elsewhere?</span>
+          
+          <div className="flex flex-col gap-3 mb-4">
             <input 
               type="text" 
-              placeholder="Result / value" 
-              value={result}
-              onChange={(e) => setResult(e.target.value)}
-              className="flex-1 bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm text-slate-800 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+              placeholder="Test (PSA, CA-125...)" 
+              value={testName}
+              onChange={(e) => setTestName(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm text-slate-800 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+            />
+            <div className="flex gap-3">
+              <input 
+                type="date" 
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="flex-1 bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm text-slate-800 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+              />
+              <input 
+                type="text" 
+                placeholder="Result / value" 
+                value={result}
+                onChange={(e) => setResult(e.target.value)}
+                className="flex-1 bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm text-slate-800 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+              />
+            </div>
+            <input 
+              type="text" 
+              placeholder="Note (e.g. follow-up booked)" 
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm text-slate-800 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
             />
           </div>
-          <input 
-            type="text" 
-            placeholder="Note (e.g. follow-up booked)" 
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm text-slate-800 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-          />
+
+          <button 
+            onClick={handleSave}
+            disabled={loading || !testName || !result}
+            className="w-full py-3.5 rounded-xl font-bold text-white bg-indigo-500 hover:bg-indigo-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm"
+          >
+            {loading ? 'Saving...' : <><Save className="h-4 w-4" /> Save result</>}
+          </button>
         </div>
 
-        <button 
-          onClick={handleSave}
-          disabled={loading || !testName || !result}
-          className="w-full py-3.5 rounded-xl font-bold text-white bg-indigo-500 hover:bg-indigo-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm"
-        >
-          {loading ? 'Saving...' : <><Save className="h-4 w-4" /> Save result</>}
-        </button>
-      </div>
-
-      {history.length > 0 && (
-        <div>
-          <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-3">Previous Results</span>
-          <div className="flex flex-col gap-2">
-            {history.map((h) => (
-              <div key={h.id} className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm flex justify-between items-center">
-                <div>
-                  <span className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                    <Beaker className="h-4 w-4 text-slate-400" /> {h.value.testName}
-                  </span>
-                  <span className="text-[10px] text-slate-500 mt-1 flex items-center gap-1">
-                    <Calendar className="h-3 w-3" /> {h.value.date}
-                  </span>
+        {history.length > 0 && (
+          <div>
+            <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-3">Previous Results</span>
+            <div className="flex flex-col gap-2">
+              {history.map((h) => (
+                <div key={h.id} className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm flex justify-between items-center">
+                  <div>
+                    <span className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                      <Beaker className="h-4 w-4 text-slate-400" /> {h.value.testName}
+                    </span>
+                    <span className="text-[10px] text-slate-500 mt-1 flex items-center gap-1">
+                      <Calendar className="h-3 w-3" /> {h.value.date}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-sm font-bold text-indigo-600 block">{h.value.result}</span>
+                    {h.value.note && <span className="text-[9px] text-slate-400 block max-w-[120px] truncate">{h.value.note}</span>}
+                  </div>
                 </div>
-                <div className="text-right">
-                  <span className="text-sm font-bold text-indigo-600 block">{h.value.result}</span>
-                  {h.value.note && <span className="text-[9px] text-slate-400 block max-w-[120px] truncate">{h.value.note}</span>}
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const TestRowItem: React.FC<{
+  test: any;
+  matchedDbTest: any;
+  onBook: () => void;
+}> = ({ test, matchedDbTest, onBook }) => {
+  const [showEvidence, setShowEvidence] = useState(false);
+
+  return (
+    <div className="py-4 border-b border-slate-100 last:border-0">
+      <div className="flex justify-between items-baseline gap-2">
+        <h4 className="text-sm font-bold text-slate-800">{test.name}</h4>
+        <span className="text-xs font-semibold text-slate-500 shrink-0">{test.freq}</span>
+      </div>
+      <p className="text-xs text-slate-600 mt-1 leading-relaxed">{test.note}</p>
+
+      {test.video && (
+        <a
+          href={test.video.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 mt-2 text-xs text-teal-800 font-bold hover:underline"
+        >
+          ▶️ {test.video.label}
+        </a>
+      )}
+
+      {test.evidence && (
+        <div className="mt-2.5">
+          <button
+            onClick={() => setShowEvidence((s) => !s)}
+            className="text-[11px] text-[#B08A3E] font-bold focus:outline-none"
+          >
+            {showEvidence ? "Hide clinical note ▲" : "Clinical note ▼"}
+          </button>
+          {showEvidence && (
+            <p className="text-xs text-[#6B5F4A] bg-[#F3EAD8]/60 border border-[#E7DECD] rounded-xl p-3 mt-2 leading-relaxed">
+              {test.evidence}
+            </p>
+          )}
         </div>
+      )}
+
+      {matchedDbTest && (
+        <button
+          onClick={onBook}
+          className="mt-3 px-4 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 transition-all shadow-sm"
+        >
+          Book Appointment Test
+        </button>
       )}
     </div>
   );
