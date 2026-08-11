@@ -56,36 +56,36 @@ export const MovementLogScreen: React.FC<MovementLogScreenProps> = ({ onBack }) 
   };
 
   return (
-    <div className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-slate-50 min-h-screen font-sans antialiased text-slate-800">
+    <div className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 transition-colors duration-300">
       <div className="flex items-center gap-4 mb-6">
         <button 
           onClick={onBack}
-          className="h-10 w-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-50 shadow-sm transition-all"
+          className="h-10 w-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all"
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div>
           <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Repair · Movement</span>
-          <h2 className="text-2xl font-sans font-bold text-slate-800 leading-none mt-1">Keep it moving</h2>
+          <h2 className="text-2xl font-sans font-bold text-slate-800 dark:text-slate-100 leading-none mt-1">Keep it moving</h2>
         </div>
       </div>
 
-      <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-4 mb-6">
-        <h3 className="font-bold text-slate-800 mb-1.5 flex items-center gap-2">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl p-4 mb-6">
+        <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-1.5 flex items-center gap-2">
           <User className="h-4 w-4 text-amber-500" /> Exercise is essential.
         </h3>
-        <p className="text-xs text-slate-500 leading-relaxed">
+        <p className="text-xs text-slate-555 dark:text-slate-450 leading-relaxed">
           Brisk walking or exercising for at least 20 minutes daily reduces systemic inflammation and supports metabolic defenses.
         </p>
       </div>
 
-      <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-5 mb-8">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-3xl p-5 mb-8">
         <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-6">Did you exercise or brisk walk for 20 min a day minimum?</span>
         
         <div className="flex items-center justify-between mb-8">
           <button 
             onClick={() => setMinutes(Math.max(0, minutes - 5))}
-            className="h-12 w-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 active:scale-95 transition-all text-slate-500"
+            className="h-12 w-12 rounded-full border border-slate-200 dark:border-slate-800 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 transition-all text-slate-500 dark:text-slate-400"
           >
             <Minus className="h-5 w-5" />
           </button>
@@ -95,7 +95,7 @@ export const MovementLogScreen: React.FC<MovementLogScreenProps> = ({ onBack }) 
           </div>
           <button 
             onClick={() => setMinutes(Math.min(300, minutes + 5))}
-            className="h-12 w-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 active:scale-95 transition-all text-slate-500"
+            className="h-12 w-12 rounded-full border border-slate-200 dark:border-slate-800 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 transition-all text-slate-500 dark:text-slate-400"
           >
             <span className="text-2xl leading-none font-light">+</span>
           </button>

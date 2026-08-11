@@ -220,6 +220,8 @@ const AdminPanelContent: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+
+
   // API Data states
   const [stats, setStats] = useState<any>(null);
   const [users, setUsers] = useState<any[]>([]);
@@ -265,6 +267,32 @@ const AdminPanelContent: React.FC = () => {
     push: false
   });
   const [recommendationSending, setRecommendationSending] = useState(false);
+
+  // Sync activeView with browser history back/forward
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      if (e.state && e.state.view) {
+        setActiveView(e.state.view);
+        if (e.state.selectedPatientId === null) {
+          setSelectedPatient(null);
+        }
+        if (e.state.selectedStainReviewId === null) {
+          setSelectedStainReview(null);
+        }
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    
+    // Initialize history state
+    window.history.replaceState({ view: activeView, selectedPatientId: selectedPatient?._id || null, selectedStainReviewId: selectedStainReview?._id || null }, '');
+    
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [activeView, selectedPatient, selectedStainReview]);
+
+  const navigateToView = (viewName: string) => {
+    setActiveView(viewName);
+    window.history.pushState({ view: viewName, selectedPatientId: null, selectedStainReviewId: null }, '', `#${viewName}`);
+  };
 
   // CRUD Form states
   const [showFoodModal, setShowFoodModal] = useState(false);
@@ -2082,7 +2110,7 @@ const AdminPanelContent: React.FC = () => {
                 {openGroups.dental && !sidebarCollapsed && (
                   <div className="pl-6 space-y-1 border-l border-slate-800 ml-6">
                     <button 
-                      onClick={() => { setActiveView('dental-consultations'); setSearchQuery(''); }}
+                      onClick={() => { navigateToView('dental-consultations'); setSearchQuery(''); }}
                       className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
                         activeView === 'dental-consultations' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
                       }`}
@@ -2090,7 +2118,7 @@ const AdminPanelContent: React.FC = () => {
                       Dental Consultations
                     </button>
                     <button 
-                      onClick={() => { setActiveView('stain-reviews'); setSearchQuery(''); setSelectedStainReview(null); }}
+                      onClick={() => { navigateToView('stain-reviews'); setSearchQuery(''); setSelectedStainReview(null); }}
                       className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold flex items-center justify-between ${
                         activeView === 'stain-reviews' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
                       }`}
@@ -2796,7 +2824,13 @@ const AdminPanelContent: React.FC = () => {
               <div className="space-y-6">
                 {/* Back Link */}
                 <button
-                  onClick={() => setSelectedPatient(null)}
+                  onClick={() => {
+                    if (window.history.state && window.history.state.view === 'patient-activity') {
+                      window.history.back();
+                    } else {
+                      setSelectedPatient(null);
+                    }
+                  }}
                   className="flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors"
                 >
                   &larr; Back to Patient List
@@ -3159,7 +3193,13 @@ const AdminPanelContent: React.FC = () => {
           <div className="space-y-6">
             {/* Back Button */}
             <button
-              onClick={() => setSelectedStainReview(null)}
+              onClick={() => {
+                if (window.history.state && window.history.state.view === 'stain-reviews') {
+                  window.history.back();
+                } else {
+                  setSelectedStainReview(null);
+                }
+              }}
               className="flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors"
             >
               &larr; Back to Reviews List

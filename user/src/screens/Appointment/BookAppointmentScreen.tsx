@@ -381,7 +381,11 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                     <button
                       key={doc._id}
                       onClick={() => setSelectedDoctor(doc)}
-                      className={`p-4 rounded-2xl border text-left transition-all ${selectedDoctor?._id === doc._id ? 'border-indigo-500 bg-indigo-50/50 shadow-sm' : 'border-slate-100 bg-slate-50 hover:border-slate-200'}`}
+                      className={`p-4 rounded-2xl border text-left transition-all ${
+                        selectedDoctor?._id === doc._id 
+                          ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/20 shadow-sm text-slate-800 dark:text-slate-100' 
+                          : 'border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 hover:border-slate-200 dark:hover:border-slate-700'
+                      }`}
                     >
                       <div className="flex justify-between items-start gap-2">
                         <div className="flex-1 min-w-0">
@@ -605,25 +609,25 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
 
             <div className="space-y-3 overflow-y-auto max-h-[500px]">
               {appointments.map(appt => (
-                <div key={appt._id} className="border border-slate-100 bg-slate-50/50 rounded-2xl p-4 space-y-2">
+                <div key={appt._id} className="border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/60 rounded-2xl p-4 space-y-2">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h4 className="font-bold text-slate-800 text-sm">Dr. {appt.doctorId.name}</h4>
+                      <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">Dr. {appt.doctorId.name}</h4>
                       <p className="text-[10px] text-slate-400 uppercase font-mono tracking-wide">{formatDate(appt.date)} at {appt.time}</p>
                     </div>
                     <div className="flex flex-col items-end gap-1">
                       <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
                         appt.paymentStatus === 'failed' 
-                          ? 'bg-rose-50 text-rose-600 border border-rose-100'
+                          ? 'bg-rose-50 dark:bg-rose-950/20 text-rose-600 border border-rose-100 dark:border-rose-900/30'
                           : (appt.status === 'pending' || appt.status === 'confirmed') && isExpired(appt.date, appt.time)
-                            ? 'bg-slate-100 text-slate-400 border border-slate-250'
+                            ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-250 dark:border-slate-700'
                             : appt.status === 'confirmed' 
-                              ? 'bg-emerald-50 text-emerald-600' 
+                              ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400' 
                               : appt.status === 'completed' 
-                                ? 'bg-blue-50 text-blue-600' 
+                                ? 'bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400' 
                                 : appt.status === 'cancelled' 
-                                  ? 'bg-rose-50 text-rose-600' 
-                                  : 'bg-amber-50 text-amber-600'
+                                  ? 'bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-450' 
+                                  : 'bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400'
                       }`}>
                         {appt.paymentStatus === 'failed' 
                           ? 'Payment Failed' 
@@ -631,18 +635,18 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                             ? 'Expired'
                             : appt.status}
                       </span>
-                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md uppercase ${appt.type === 'online' ? 'bg-teal-50 text-teal-600' : 'bg-purple-50 text-purple-600'}`}>
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md uppercase ${appt.type === 'online' ? 'bg-teal-50 dark:bg-teal-950/20 text-teal-600' : 'bg-purple-50 dark:bg-purple-950/20 text-purple-600'}`}>
                         {appt.type || 'offline'}
                       </span>
                     </div>
                   </div>
                   
-                  <p className="text-xs text-slate-600"><strong className="text-slate-400">Reason:</strong> {appt.reason}</p>
+                  <p className="text-xs text-slate-655 dark:text-slate-350"><strong className="text-slate-400">Reason:</strong> {appt.reason}</p>
 
                   {appt.patientNotes?.trim() && (
-                    <div className="bg-indigo-50/60 border border-indigo-100 rounded-xl p-3">
+                    <div className="bg-indigo-50/40 dark:bg-indigo-950/10 border border-indigo-100/50 dark:border-indigo-900/30 rounded-xl p-3">
                       <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider mb-1">📝 My Notes to Doctor:</p>
-                      <p className="text-xs text-slate-600 leading-relaxed">{appt.patientNotes}</p>
+                      <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">{appt.patientNotes}</p>
                     </div>
                   )}
 
@@ -667,14 +671,14 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                   )}
 
                   {appt.notes && (
-                    <div className="bg-white border border-slate-100 rounded-xl p-2.5 text-xs text-slate-600 mt-2">
+                    <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl p-2.5 text-xs text-slate-655 dark:text-slate-300 mt-2">
                       <strong className="text-slate-500">Consultation Notes:</strong>
                       <p className="mt-1 font-mono leading-relaxed">{appt.notes}</p>
                     </div>
                   )}
 
                   {appt.prescriptionText && (
-                    <div className="bg-slate-100/80 border border-slate-200/50 rounded-xl p-2.5 text-xs text-slate-700 mt-2 font-sans leading-relaxed">
+                    <div className="bg-slate-100/80 dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700/60 rounded-xl p-2.5 text-xs text-slate-700 dark:text-slate-300 mt-2 font-sans leading-relaxed">
                       <strong className="text-slate-500">Prescription Notes:</strong>
                       <p className="mt-1 font-medium">{appt.prescriptionText}</p>
                     </div>
@@ -712,19 +716,19 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                   {appt.status === 'completed' && !appt.hasFeedback && (
                     <button
                       onClick={() => setRatingApptId(appt._id)}
-                      className="w-full py-2 text-xs font-bold text-indigo-500 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors mt-2"
+                      className="w-full py-2 text-xs font-bold text-indigo-500 bg-indigo-50 dark:bg-indigo-950/20 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900 transition-colors mt-2"
                     >
                       Give Feedback & Rating
                     </button>
                   )}
 
                   {appt.feedback && (
-                    <div className="bg-amber-50/60 border border-amber-100 rounded-xl p-2.5 text-xs text-slate-700 mt-2">
+                    <div className="bg-amber-50/60 dark:bg-amber-950/10 border border-amber-100 dark:border-amber-900/30 rounded-xl p-2.5 text-xs text-slate-700 dark:text-slate-350 mt-2">
                       <div className="flex items-center gap-1 text-amber-500 font-bold mb-1">
                         <span>{'★'.repeat(appt.feedback.rating)}{'☆'.repeat(5 - appt.feedback.rating)}</span>
                         <span className="text-[10px] text-slate-400 font-bold">({appt.feedback.rating}/5)</span>
                       </div>
-                      <p className="italic text-slate-600">"{appt.feedback.feedbackText}"</p>
+                      <p className="italic text-slate-655 dark:text-slate-400">"{appt.feedback.feedbackText}"</p>
                     </div>
                   )}
                 </div>
@@ -741,8 +745,8 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
       {/* Feedback Modal */}
       {ratingApptId && (
         <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-xl border border-slate-100">
-            <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-slate-800">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-md p-6 shadow-xl border border-slate-100 dark:border-slate-800">
+            <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-slate-800 dark:text-slate-100">
               <Star className="h-5 w-5 text-amber-500 fill-amber-500" /> Consultation Feedback
             </h3>
             <form onSubmit={handleFeedbackSubmit} className="space-y-4">

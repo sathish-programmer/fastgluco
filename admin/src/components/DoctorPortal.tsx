@@ -650,37 +650,57 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
             {/* TAB CONTENT: DASHBOARD */}
             {activeTab === 'dashboard' && (
               <div className="space-y-6">
-                          {/* Stats widgets */}
+                {/* Modern Hero Greeting Banner */}
+                <div className="bg-gradient-to-r from-slate-900 to-indigo-950 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="space-y-2">
+                    <span className="bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider">Clinician Portal</span>
+                    <h2 className="text-xl md:text-2xl font-black tracking-tight">Welcome back, Dr. {doctorInfo?.name || 'Consultant'}!</h2>
+                    <p className="text-slate-350 text-xs font-semibold max-w-md">Access patient stain tracker logs, schedule consultations, diagnostic reports, and manage availability settings.</p>
+                  </div>
+                  <div className="flex gap-4 self-end md:self-auto shrink-0 bg-white/5 border border-white/10 backdrop-blur-md p-4 rounded-2xl">
+                    <div className="text-center">
+                      <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-extrabold">Visits Pending</span>
+                      <strong className="text-xl font-black text-white">{dbStats.upcomingAppointments || 0}</strong>
+                    </div>
+                    <div className="border-r border-white/10 my-1" />
+                    <div className="text-center">
+                      <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-extrabold">Assigned Reviews</span>
+                      <strong className="text-xl font-black text-indigo-400">{assignedStains.filter(s => !s.reviewed).length + assignedLabs.filter(l => !l.doctorNotes).length}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stats widgets */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm flex items-center gap-4">
-                    <div className="p-3.5 bg-blue-50 text-blue-600 rounded-2xl"><Calendar className="h-5 w-5" /></div>
+                  <div className="bg-white border border-slate-150 rounded-3xl p-5 shadow-soft hover:shadow-md transition-all flex items-center gap-4">
+                    <div className="p-3.5 bg-gradient-to-br from-indigo-500 to-indigo-650 text-white rounded-2xl shadow-md shadow-indigo-500/20"><Calendar className="h-5 w-5" /></div>
                     <div>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase">Today's Visits</span>
+                      <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block">Today's Visits</span>
                       <h3 className="text-xl font-black text-slate-800 mt-1">{stats.todayAppointmentsCount}</h3>
                     </div>
                   </div>
 
-                  <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm flex items-center gap-4">
-                    <div className="p-3.5 bg-emerald-50 text-emerald-600 rounded-2xl"><CheckCircle className="h-5 w-5" /></div>
+                  <div className="bg-white border border-slate-150 rounded-3xl p-5 shadow-soft hover:shadow-md transition-all flex items-center gap-4">
+                    <div className="p-3.5 bg-gradient-to-br from-emerald-500 to-emerald-650 text-white rounded-2xl shadow-md shadow-emerald-500/20"><CheckCircle className="h-5 w-5" /></div>
                     <div>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase">Total Revenue</span>
-                      <h3 className="text-xl font-black text-slate-800 mt-1">Rs. {Number(dbStats.totalRevenue || 0).toFixed(2)}</h3>
+                      <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block">Total Revenue</span>
+                      <h3 className="text-xl font-black text-slate-800 mt-1">Rs. {Number(dbStats.totalRevenue || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</h3>
                     </div>
                   </div>
 
-                  <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm flex items-center gap-4">
-                    <div className="p-3.5 bg-teal-50 text-teal-600 rounded-2xl"><BarChart3 className="h-5 w-5" /></div>
+                  <div className="bg-white border border-slate-150 rounded-3xl p-5 shadow-soft hover:shadow-md transition-all flex items-center gap-4">
+                    <div className="p-3.5 bg-gradient-to-br from-cyan-500 to-cyan-650 text-white rounded-2xl shadow-md shadow-cyan-500/20"><BarChart3 className="h-5 w-5" /></div>
                     <div>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase">Online Revenue</span>
-                      <h3 className="text-xl font-black text-slate-850 mt-1">Rs. {Number(dbStats.onlineRevenue || 0).toFixed(2)}</h3>
+                      <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block">Online Revenue</span>
+                      <h3 className="text-xl font-black text-slate-850 mt-1">Rs. {Number(dbStats.onlineRevenue || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</h3>
                     </div>
                   </div>
 
-                  <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm flex items-center gap-4">
-                    <div className="p-3.5 bg-purple-50 text-purple-600 rounded-2xl"><Users className="h-5 w-5" /></div>
+                  <div className="bg-white border border-slate-150 rounded-3xl p-5 shadow-soft hover:shadow-md transition-all flex items-center gap-4">
+                    <div className="p-3.5 bg-gradient-to-br from-purple-500 to-purple-650 text-white rounded-2xl shadow-md shadow-purple-500/20"><Users className="h-5 w-5" /></div>
                     <div>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase">Offline Revenue</span>
-                      <h3 className="text-xl font-black text-slate-800 mt-1">Rs. {Number(dbStats.offlineRevenue || 0).toFixed(2)}</h3>
+                      <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block">Offline Revenue</span>
+                      <h3 className="text-xl font-black text-slate-800 mt-1">Rs. {Number(dbStats.offlineRevenue || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</h3>
                     </div>
                   </div>
                 </div>

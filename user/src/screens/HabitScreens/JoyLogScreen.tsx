@@ -67,28 +67,28 @@ export const JoyLogScreen: React.FC<JoyLogScreenProps> = ({ onBack }) => {
   };
 
   return (
-    <div className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-slate-50 min-h-screen font-sans antialiased text-slate-800">
+    <div className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 transition-colors duration-300">
       <div className="flex items-center gap-4 mb-6">
         <button 
           onClick={onBack}
-          className="h-10 w-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-50 shadow-sm transition-all"
+          className="h-10 w-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all"
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div>
           <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Repair · Joy</span>
-          <h2 className="text-2xl font-sans font-bold text-slate-800 leading-none mt-1">Do what you love</h2>
+          <h2 className="text-2xl font-sans font-bold text-slate-800 dark:text-slate-100 leading-none mt-1">Do what you love</h2>
         </div>
       </div>
 
-      <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-4 mb-6">
-        <h3 className="font-bold text-slate-800 mb-1.5">Joy is biochemistry.</h3>
-        <p className="text-xs text-slate-500 leading-relaxed">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl p-4 mb-6">
+        <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-1.5">Joy is biochemistry.</h3>
+        <p className="text-xs text-slate-550 dark:text-slate-400 leading-relaxed">
           Thirty minutes of something you love shifts you into the calm, repair-friendly state.
         </p>
       </div>
 
-      <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-5 mb-8">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-3xl p-5 mb-8">
         <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-3">Your joy this week</span>
         
         <input 
@@ -96,7 +96,7 @@ export const JoyLogScreen: React.FC<JoyLogScreenProps> = ({ onBack }) => {
           placeholder="Painting, gardening, music, cooking..."
           value={joy}
           onChange={(e) => setJoy(e.target.value)}
-          className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 mb-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+          className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 mb-3 text-sm text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-950/30"
         />
         <p className="text-[11px] text-indigo-600 dark:text-indigo-400 font-semibold mb-6 pl-1 leading-normal">
           Do you like singing? Do it! Do you like painting? Splash some colour on the paper!
@@ -108,14 +108,14 @@ export const JoyLogScreen: React.FC<JoyLogScreenProps> = ({ onBack }) => {
           <button 
             onClick={() => handleLog(true)}
             disabled={loading}
-            className={`py-3.5 rounded-xl font-bold transition-all shadow-sm disabled:opacity-50 ${didDoJoy === true ? 'bg-indigo-500 text-white' : 'bg-white text-slate-700 border border-slate-200 hover:border-indigo-300'}`}
+            className={`py-3.5 rounded-xl font-bold transition-all shadow-sm disabled:opacity-50 ${didDoJoy === true ? 'bg-indigo-500 text-white' : 'bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-indigo-300'}`}
           >
             Yes!
           </button>
           <button 
             onClick={() => handleLog(false)}
             disabled={loading}
-            className={`py-3.5 rounded-xl font-bold transition-all shadow-sm disabled:opacity-50 ${didDoJoy === false ? 'bg-slate-200 text-slate-800' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'}`}
+            className={`py-3.5 rounded-xl font-bold transition-all shadow-sm disabled:opacity-50 ${didDoJoy === false ? 'bg-slate-250 dark:bg-slate-800 text-slate-800 dark:text-slate-200' : 'bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850'}`}
           >
             Not today
           </button>
@@ -130,14 +130,14 @@ export const JoyLogScreen: React.FC<JoyLogScreenProps> = ({ onBack }) => {
           </div>
         ) : history.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-xs text-slate-400">No days logged yet</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500">No days logged yet</p>
           </div>
         ) : (
           <div className="flex flex-col gap-2">
             {history.map((h) => (
-              <div key={h.id} className="bg-white border border-slate-200 shadow-sm rounded-xl p-3 flex justify-between items-center">
+              <div key={h.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-xl p-3 flex justify-between items-center">
                 <div>
-                  <span className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                  <span className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
                     {h.value.done ? '🎉' : '😔'} {h.value.done ? (h.value.joyActivity || 'My joy') : 'Missed'}
                   </span>
                   <span className="text-[10px] text-slate-400 mt-1 block">

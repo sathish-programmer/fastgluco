@@ -598,20 +598,20 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
   }
 
   return (
-    <div className="pb-24 pt-6 px-4 max-w-6xl mx-auto bg-slate-50 min-h-screen font-sans antialiased text-slate-800">
+    <div className="pb-24 pt-6 px-4 max-w-6xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 transition-colors duration-300">
       
       {/* Header Panel */}
-      <div className="flex items-center justify-between mb-6 sticky top-0 z-50 bg-slate-50 py-3 -mx-4 px-4 shadow-sm gap-2">
+      <div className="flex items-center justify-between mb-6 sticky top-0 z-50 bg-slate-50 dark:bg-slate-950 py-3 -mx-4 px-4 shadow-sm gap-2">
         <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
           <button 
             onClick={onBack}
-            className="h-10 w-10 shrink-0 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-50 shadow-sm transition-all"
+            className="h-10 w-10 shrink-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all"
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div className="min-w-0 flex-1">
             <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 tracking-[0.15em] sm:tracking-[0.2em] uppercase block truncate">MitoReboot Health</span>
-            <h2 className="text-base sm:text-2xl font-sans font-bold text-slate-850 leading-tight mt-0.5 flex items-center gap-1 sm:gap-2 truncate">
+            <h2 className="text-base sm:text-2xl font-sans font-bold text-slate-850 dark:text-slate-100 leading-none mt-0.5 flex items-center gap-1 sm:gap-2 truncate">
               <span className="shrink-0">🩺</span>
               <span className="truncate">Medical & Health Store</span>
             </h2>
@@ -621,7 +621,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
         {branding.enableExternalPayments !== false && (
           <button 
             onClick={() => setShowBasket(true)}
-            className="relative shrink-0 h-10 px-3 sm:h-12 sm:px-4 bg-white border border-slate-200 rounded-xl sm:rounded-2xl flex items-center justify-center gap-1.5 sm:gap-2 text-slate-700 hover:bg-slate-50 shadow-sm transition-all"
+            className="relative shrink-0 h-10 px-3 sm:h-12 sm:px-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl sm:rounded-2xl flex items-center justify-center gap-1.5 sm:gap-2 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all"
           >
             <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-500" />
             <span className="text-[11px] sm:text-xs font-bold hidden sm:inline">My Basket</span>
@@ -638,23 +638,22 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         
         {/* Left Filters Panel */}
-        <div className={`md:block space-y-5 bg-white border border-slate-150 p-5 rounded-3xl shadow-sm ${showFiltersPanel ? 'block' : 'hidden'}`}>
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <h3 className="font-bold text-sm text-slate-800 flex items-center gap-1.5">
+        <div className={`md:block space-y-5 bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800 p-5 rounded-3xl shadow-sm ${showFiltersPanel ? 'block' : 'hidden'}`}>
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+            <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
               <SlidersHorizontal className="h-4 w-4 text-indigo-500" /> Search Filters
             </h3>
             {showFiltersPanel && (
               <button onClick={() => setShowFiltersPanel(false)} className="text-xs text-indigo-500 font-bold md:hidden">Close</button>
             )}
           </div>
-
           {/* Categories Filter */}
           <div className="space-y-2">
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Category</label>
             <select 
               value={selectedCategory} 
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-700 font-bold focus:outline-none focus:border-indigo-400 bg-white"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-xs text-slate-700 dark:text-slate-200 font-bold focus:outline-none focus:border-indigo-400 cursor-pointer"
             >
               <option value="All">All Categories</option>
               {categories.map((cat, idx) => (
@@ -670,7 +669,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
               <select 
                 value={selectedBrand} 
                 onChange={(e) => setSelectedBrand(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-700 font-bold focus:outline-none focus:border-indigo-400 bg-white"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-xs text-slate-700 dark:text-slate-200 font-bold focus:outline-none focus:border-indigo-400 cursor-pointer"
               >
                 <option value="All">All Brands</option>
                 {distinctBrands.map((b, idx) => (
@@ -689,34 +688,34 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
                 placeholder="Min" 
                 value={minPrice} 
                 onChange={(e) => setMinPrice(e.target.value ? Number(e.target.value) : '')}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-700 font-bold focus:outline-none"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-xs text-slate-700 dark:text-slate-200 font-bold focus:outline-none"
               />
               <input 
                 type="number" 
                 placeholder="Max" 
                 value={maxPrice} 
                 onChange={(e) => setMaxPrice(e.target.value ? Number(e.target.value) : '')}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-700 font-bold focus:outline-none"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-xs text-slate-700 dark:text-slate-200 font-bold focus:outline-none"
               />
             </div>
             <button 
               onClick={fetchProducts} 
-              className="w-full py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold transition-all mt-1"
+              className="w-full py-2 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded-xl text-xs font-bold transition-all mt-1"
             >
               Apply Price Filter
             </button>
           </div>
 
           {/* Toggles */}
-          <div className="space-y-3 pt-3 border-t border-slate-100">
+          <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800">
             <label className="flex items-center gap-2 cursor-pointer">
               <input 
                 type="checkbox" 
                 checked={onlyDoctorRecommended} 
                 onChange={(e) => setOnlyDoctorRecommended(e.target.checked)}
-                className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                className="rounded border-slate-350 dark:border-slate-750 bg-white dark:bg-slate-950 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
               />
-              <span className="text-xs text-slate-600 font-medium">Doctor Recommended Only</span>
+              <span className="text-xs text-slate-600 dark:text-slate-350 font-medium">Doctor Recommended Only</span>
             </label>
 
             <label className="flex items-center gap-2 cursor-pointer">
@@ -724,9 +723,9 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
                 type="checkbox" 
                 checked={onlyAvailable} 
                 onChange={(e) => setOnlyAvailable(e.target.checked)}
-                className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                className="rounded border-slate-350 dark:border-slate-750 bg-white dark:bg-slate-950 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
               />
-              <span className="text-xs text-slate-600 font-medium">In Stock Only</span>
+              <span className="text-xs text-slate-600 dark:text-slate-355 font-medium">In Stock Only</span>
             </label>
           </div>
         </div>
@@ -735,7 +734,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
         <div className="md:col-span-3 space-y-6">
           
           {/* Top Search bar and Sort control */}
-          <div className="flex flex-col sm:flex-row gap-3 bg-white p-3.5 border border-slate-150 rounded-2xl shadow-sm">
+          <div className="flex flex-col sm:flex-row gap-3 bg-white dark:bg-slate-900 p-3.5 border border-slate-150 dark:border-slate-800 rounded-2xl shadow-sm">
             <form onSubmit={handleSearchSubmit} className="relative flex-1">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <input 
@@ -743,21 +742,21 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
                 placeholder="Search vitamins, CGM patches, wellness brands..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-400"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-805 rounded-xl py-2.5 pl-10 pr-4 text-xs font-bold text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-indigo-400"
               />
             </form>
             <div className="flex gap-2">
               <button 
                 type="button" 
                 onClick={() => setShowFiltersPanel(!showFiltersPanel)}
-                className="px-4 py-2.5 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-2 md:hidden"
+                className="px-4 py-2.5 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 md:hidden"
               >
                 <SlidersHorizontal className="h-3.5 w-3.5" /> Filters
               </button>
               <select 
                 value={sortBy} 
                 onChange={(e) => setSortBy(e.target.value)}
-                className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-700 font-bold focus:outline-none focus:border-indigo-400"
+                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-700 dark:text-slate-350 font-bold focus:outline-none focus:border-indigo-400"
               >
                 <option value="newest">Sort: Newest</option>
                 <option value="price_asc">Price: Low to High</option>
@@ -775,7 +774,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
                 className={`px-4 py-2 rounded-full text-xs font-bold border transition-all whitespace-nowrap ${
                   selectedCategory === cat 
                     ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm'
-                    : 'bg-white border-slate-200 text-slate-600 hover:border-slate-350'
+                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-slate-350 dark:hover:border-slate-700'
                 }`}
               >
                 {cat}
@@ -785,14 +784,14 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
 
           {/* Products Grid */}
           {loading ? (
-            <div className="text-center py-20 bg-white border border-slate-200 rounded-3xl shadow-sm">
+            <div className="text-center py-20 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm">
               <div className="w-8 h-8 border-4 border-slate-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4"></div>
               <p className="text-xs text-slate-450 font-bold">Refreshing products feed...</p>
             </div>
           ) : products.length === 0 ? (
-            <div className="text-center py-20 bg-white border border-slate-250 rounded-3xl shadow-sm">
+            <div className="text-center py-20 bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-800 rounded-3xl shadow-sm">
               <AlertCircle className="h-10 w-10 text-slate-300 mx-auto mb-4" />
-              <h3 className="font-bold text-slate-700">No items available</h3>
+              <h3 className="font-bold text-slate-700 dark:text-slate-200">No items available</h3>
               <p className="text-xs text-slate-450 mt-1">Try resetting filters or checking for alternative items.</p>
               <button 
                 onClick={() => { setSelectedCategory('All'); setSelectedBrand('All'); setSearch(''); setOnlyDoctorRecommended(false); setOnlyAvailable(false); }}
@@ -811,7 +810,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
                 return (
                   <div 
                     key={item.id} 
-                    className="bg-white border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] rounded-[2rem] p-5 flex flex-col justify-between hover:shadow-[0_20px_50px_rgba(37,99,235,0.06)] hover:border-indigo-100 transition-all duration-300 transform hover:-translate-y-1 group relative cursor-pointer"
+                    className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-[0_8px_30px_rgb(0,0,0,0.02)] rounded-[2rem] p-5 flex flex-col justify-between hover:shadow-[0_20px_50px_rgba(37,99,235,0.06)] dark:hover:shadow-none hover:border-indigo-100 dark:hover:border-indigo-950 transition-all duration-300 transform hover:-translate-y-1 group relative cursor-pointer"
                     onClick={() => openProductDetails(item)}
                   >
                     <div>
@@ -834,35 +833,35 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
                         )}
                       </div>
 
-                      <div className="w-full aspect-square bg-slate-50/70 rounded-2xl mb-4 flex items-center justify-center overflow-hidden transition-all duration-500 group-hover:scale-[1.02] shadow-inner relative">
+                      <div className="w-full aspect-square bg-slate-50/70 dark:bg-slate-950/60 rounded-2xl mb-4 flex items-center justify-center overflow-hidden transition-all duration-500 group-hover:scale-[1.02] shadow-inner relative">
                         <ProductImage src={item.image} apiUrl={apiUrl} className="h-full w-full object-contain" textClassName="text-6xl" />
                       </div>
 
                       {item.brand && (
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-1">{item.brand}</span>
+                        <span className="text-[9px] font-bold text-slate-450 dark:text-slate-500 uppercase tracking-widest block mb-1">{item.brand}</span>
                       )}
                       
-                      <h4 className="font-bold text-slate-850 text-sm mb-1 leading-tight group-hover:text-indigo-600 transition-colors">{item.name}</h4>
-                      <p className="text-[10px] text-slate-450 mb-4 line-clamp-2 leading-relaxed">
+                      <h4 className="font-bold text-slate-850 dark:text-slate-100 text-sm mb-1 leading-tight group-hover:text-indigo-650 dark:group-hover:text-indigo-400 transition-colors">{item.name}</h4>
+                      <p className="text-[10px] text-slate-450 dark:text-slate-500 mb-4 line-clamp-2 leading-relaxed">
                         {(item.desc || '').replace(/<[^>]*>/g, '')}
                       </p>
                     </div>
 
-                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                       <div>
                         {hasVariants ? (
-                          <span className="text-[9px] text-slate-400 block font-semibold">From</span>
+                          <span className="text-[9px] text-slate-450 dark:text-slate-500 block font-semibold">From</span>
                         ) : null}
                         <div className="flex items-center gap-1.5">
-                          <span className="font-black text-slate-900 text-base">{curr}{finalPrice.toFixed(2)}</span>
+                          <span className="font-black text-slate-900 dark:text-slate-100 text-base">{curr}{finalPrice.toFixed(2)}</span>
                           {discountPercent > 0 && (
-                            <span className="text-xs text-slate-405 line-through font-semibold">{curr}{regularPrice.toFixed(2)}</span>
+                            <span className="text-xs text-slate-405 dark:text-slate-500 line-through font-semibold">{curr}{regularPrice.toFixed(2)}</span>
                           )}
                         </div>
                       </div>
                       
                       {isOutOfStock ? (
-                        <span className="text-[9px] font-black text-red-500 bg-red-50 px-2.5 py-1 rounded-lg uppercase">Sold Out</span>
+                        <span className="text-[9px] font-black text-red-500 bg-red-50 dark:bg-red-950/20 px-2.5 py-1 rounded-lg uppercase">Sold Out</span>
                       ) : branding.enableExternalPayments !== false ? (
                         <button 
                           onClick={(e) => {
@@ -878,7 +877,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
                           {hasVariants ? 'Options' : 'Add to Cart'}
                         </button>
                       ) : (
-                        <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-xl">View Info</span>
+                        <span className="text-[10px] font-bold text-indigo-650 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/20 px-3 py-1.5 rounded-xl">View Info</span>
                       )}
                     </div>
                   </div>

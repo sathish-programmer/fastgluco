@@ -244,26 +244,26 @@ export const CancerScreeningScreen: React.FC<CancerScreeningScreenProps> = ({ on
   const activeGroup = GROUPS.find((g) => g.id === activeTab) || GROUPS[0];
 
   return (
-    <div style={{ background: "#FAF6EE", minHeight: "100vh", color: "#2B2B28" }} className="pb-24 pt-6 px-4 font-sans antialiased">
+    <div className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 transition-colors duration-300">
       <div className="max-w-3xl mx-auto space-y-6">
         <div className="flex items-center gap-4">
           <button 
             onClick={onBack}
-            className="h-10 w-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-50 shadow-sm transition-all"
+            className="h-10 w-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all"
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div>
             <span className="text-[10px] font-bold text-slate-400 tracking-[0.14em] uppercase">Mito Reboot · Cancer Screening</span>
-            <h2 className="text-2xl font-bold text-slate-800 leading-none mt-1">Screening Guide by Age & Risk Group</h2>
+            <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 leading-none mt-1">Screening Guide by Age & Risk Group</h2>
           </div>
         </div>
 
-        <p className="text-xs text-slate-600 leading-relaxed bg-white/60 p-3.5 rounded-2xl border border-slate-200/50">
+        <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed bg-white/65 dark:bg-slate-900/65 p-3.5 rounded-2xl border border-slate-200/50 dark:border-slate-800">
           General guidance for adults in India. This isn't personalised medical advice — actual intervals should be set with a treating doctor based on individual and family history.
         </p>
 
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex sticky top-0 z-10">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm flex sticky top-0 z-10">
           {GROUPS.map((g) => {
             const isActive = g.id === activeTab;
             return (
@@ -283,15 +283,15 @@ export const CancerScreeningScreen: React.FC<CancerScreeningScreenProps> = ({ on
         </div>
 
         <section
-          className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm"
+          className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm"
           style={{ borderLeftWidth: 4, borderLeftColor: activeGroup.accent }}
         >
           <h3 className="text-base font-bold mb-4" style={{ color: activeGroup.accent }}>{activeGroup.title}</h3>
           
           {testsLoading ? (
-            <div className="text-center py-6 text-xs font-bold text-slate-400 animate-pulse">Loading tests information...</div>
+            <div className="text-center py-6 text-xs font-bold text-slate-405 animate-pulse">Loading tests information...</div>
           ) : (
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-slate-100 dark:divide-slate-800">
               {activeGroup.tests.map((test, idx) => {
                 const matchedDbTest = findMatchingDbTest(test.name);
                 return (
@@ -312,27 +312,27 @@ export const CancerScreeningScreen: React.FC<CancerScreeningScreenProps> = ({ on
           )}
         </section>
 
-        <section className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm">
-          <h3 className="text-sm font-extrabold text-[#5B4A8A] uppercase tracking-wider mb-2">High genetic risk / strong family history</h3>
-          <p className="text-xs text-[#4A3E63] bg-[#EFE9F5] border border-[#DCD0EA] rounded-2xl p-3.5 leading-relaxed">
+        <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm">
+          <h3 className="text-sm font-extrabold text-[#5B4A8A] dark:text-indigo-400 uppercase tracking-wider mb-2">High genetic risk / strong family history</h3>
+          <p className="text-xs text-[#4A3E63] dark:text-indigo-350 bg-[#EFE9F5] dark:bg-indigo-950/20 border border-[#DCD0EA] dark:border-indigo-900/30 rounded-2xl p-3.5 leading-relaxed">
             <strong>Whole-body MRI</strong> — yearly, from age 60 — is suggested in addition to the standard screening above for individuals with a known genetic predisposition (e.g. BRCA1/2, Lynch syndrome) or a strong family history of cancer, or anyone otherwise assessed as high-risk. This should be discussed with a genetic counsellor or oncologist rather than done as a routine test for the general population.
           </p>
         </section>
 
-        <section className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm">
-          <h3 className="text-sm font-extrabold text-[#A13E2B] uppercase tracking-wider mb-2">Watch for these symptoms</h3>
-          <div className="text-xs text-[#6B5B3E] bg-[#F3EAD8] border border-[#E0D3B8] rounded-2xl p-3.5 font-bold mb-3">
+        <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm">
+          <h3 className="text-sm font-extrabold text-[#A13E2B] dark:text-rose-400 uppercase tracking-wider mb-2">Watch for these symptoms</h3>
+          <div className="text-xs text-[#6B5B3E] dark:text-amber-400 bg-[#F3EAD8] dark:bg-amber-950/20 border border-[#E0D3B8] dark:border-amber-900/30 rounded-2xl p-3.5 font-bold mb-3">
             Rule of thumb: if any symptom below lasts more than 3 weeks, consult a doctor — don't wait it out.
           </div>
-          <ul className="list-disc pl-5 text-xs text-slate-700 space-y-2">
+          <ul className="list-disc pl-5 text-xs text-slate-700 dark:text-slate-300 space-y-2">
             {SYMPTOMS.map((s, i) => (
               <li key={i} className="leading-relaxed">{s}</li>
             ))}
           </ul>
         </section>
 
-        <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-5">
-          <span className="text-xs font-bold text-slate-500 block mb-4">Already completed this test elsewhere?</span>
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-3xl p-5">
+          <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-4">Already completed this test elsewhere?</span>
           
           <div className="flex flex-col gap-3 mb-4">
             <input 
@@ -340,21 +340,21 @@ export const CancerScreeningScreen: React.FC<CancerScreeningScreenProps> = ({ on
               placeholder="Test (PSA, CA-125...)" 
               value={testName}
               onChange={(e) => setTestName(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm text-slate-800 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-sm text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-950/30"
             />
             <div className="flex gap-3">
               <input 
                 type="date" 
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="flex-1 bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm text-slate-800 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-950/30"
               />
               <input 
                 type="text" 
                 placeholder="Result / value" 
                 value={result}
                 onChange={(e) => setResult(e.target.value)}
-                className="flex-1 bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm text-slate-800 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-950/30"
               />
             </div>
             <input 
@@ -362,7 +362,7 @@ export const CancerScreeningScreen: React.FC<CancerScreeningScreenProps> = ({ on
               placeholder="Note (e.g. follow-up booked)" 
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm text-slate-800 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-950/30"
             />
           </div>
 
@@ -380,18 +380,18 @@ export const CancerScreeningScreen: React.FC<CancerScreeningScreenProps> = ({ on
             <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-3">Previous Results</span>
             <div className="flex flex-col gap-2">
               {history.map((h) => (
-                <div key={h.id} className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm flex justify-between items-center">
+                <div key={h.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 shadow-sm flex justify-between items-center">
                   <div>
-                    <span className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                      <Beaker className="h-4 w-4 text-slate-400" /> {h.value.testName}
+                    <span className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                      <Beaker className="h-4 w-4 text-slate-450" /> {h.value.testName}
                     </span>
-                    <span className="text-[10px] text-slate-500 mt-1 flex items-center gap-1">
+                    <span className="text-[10px] text-slate-500 dark:text-slate-450 mt-1 flex items-center gap-1">
                       <Calendar className="h-3 w-3" /> {h.value.date}
                     </span>
                   </div>
                   <div className="text-right">
-                    <span className="text-sm font-bold text-indigo-600 block">{h.value.result}</span>
-                    {h.value.note && <span className="text-[9px] text-slate-400 block max-w-[120px] truncate">{h.value.note}</span>}
+                    <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400 block">{h.value.result}</span>
+                    {h.value.note && <span className="text-[9px] text-slate-400 dark:text-slate-500 block max-w-[120px] truncate">{h.value.note}</span>}
                   </div>
                 </div>
               ))}
@@ -411,19 +411,19 @@ const TestRowItem: React.FC<{
   const [showEvidence, setShowEvidence] = useState(false);
 
   return (
-    <div className="py-4 border-b border-slate-100 last:border-0">
+    <div className="py-4 border-b border-slate-100 dark:border-slate-800 last:border-0 animate-in fade-in duration-200">
       <div className="flex justify-between items-baseline gap-2">
-        <h4 className="text-sm font-bold text-slate-800">{test.name}</h4>
-        <span className="text-xs font-semibold text-slate-500 shrink-0">{test.freq}</span>
+        <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100">{test.name}</h4>
+        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 shrink-0">{test.freq}</span>
       </div>
-      <p className="text-xs text-slate-600 mt-1 leading-relaxed">{test.note}</p>
+      <p className="text-xs text-slate-600 dark:text-slate-350 mt-1 leading-relaxed">{test.note}</p>
 
       {test.video && (
         <a
           href={test.video.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 mt-2 text-xs text-teal-800 font-bold hover:underline"
+          className="inline-flex items-center gap-1 mt-2 text-xs text-teal-800 dark:text-teal-400 font-bold hover:underline"
         >
           ▶️ {test.video.label}
         </a>
@@ -433,12 +433,12 @@ const TestRowItem: React.FC<{
         <div className="mt-2.5">
           <button
             onClick={() => setShowEvidence((s) => !s)}
-            className="text-[11px] text-[#B08A3E] font-bold focus:outline-none"
+            className="text-[11px] text-[#B08A3E] dark:text-[#d3a950] font-bold focus:outline-none"
           >
             {showEvidence ? "Hide clinical note ▲" : "Clinical note ▼"}
           </button>
           {showEvidence && (
-            <p className="text-xs text-[#6B5F4A] bg-[#F3EAD8]/60 border border-[#E7DECD] rounded-xl p-3 mt-2 leading-relaxed">
+            <p className="text-xs text-[#6B5F4A] dark:text-amber-350 bg-[#F3EAD8]/60 dark:bg-amber-950/20 border border-[#E7DECD] dark:border-amber-900/35 rounded-xl p-3 mt-2 leading-relaxed">
               {test.evidence}
             </p>
           )}

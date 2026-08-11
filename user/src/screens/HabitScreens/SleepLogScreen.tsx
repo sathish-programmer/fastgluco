@@ -63,36 +63,36 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
   };
 
   return (
-    <div className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-slate-50 min-h-screen font-sans antialiased text-slate-800">
+    <div className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 transition-colors duration-300">
       <div className="flex items-center gap-4 mb-6">
         <button 
           onClick={onBack}
-          className="h-10 w-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-50 shadow-sm transition-all"
+          className="h-10 w-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all"
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div>
           <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Damage · Sleep Debt</span>
-          <h2 className="text-2xl font-sans font-bold text-slate-800 leading-none mt-1">Catch up on rest</h2>
+          <h2 className="text-2xl font-sans font-bold text-slate-800 dark:text-slate-100 leading-none mt-1">Catch up on rest</h2>
         </div>
       </div>
 
-      <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-4 mb-6">
-        <h3 className="font-bold text-slate-800 mb-1.5 flex items-center gap-2">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl p-4 mb-6">
+        <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-1.5 flex items-center gap-2">
           <Moon className="h-4 w-4 text-indigo-400" /> Sleep clears the brain.
         </h3>
-        <p className="text-xs text-slate-500 leading-relaxed">
+        <p className="text-xs text-slate-555 dark:text-slate-450 leading-relaxed">
           Deep sleep triggers the glymphatic system to wash away metabolic waste. Aim for 7-9 hours.
         </p>
       </div>
 
-      <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-5 mb-8">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-3xl p-5 mb-8">
         <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-6">Hours slept last night</span>
         
         <div className="flex items-center justify-between mb-8">
           <button 
             onClick={() => setHours(Math.max(0, hours - 0.5))}
-            className="h-12 w-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 active:scale-95 transition-all text-slate-500"
+            className="h-12 w-12 rounded-full border border-slate-200 dark:border-slate-800 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 transition-all text-slate-500 dark:text-slate-400"
           >
             <Minus className="h-5 w-5" />
           </button>
@@ -102,7 +102,7 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
           </div>
           <button 
             onClick={() => setHours(Math.min(24, hours + 0.5))}
-            className="h-12 w-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 active:scale-95 transition-all text-slate-500"
+            className="h-12 w-12 rounded-full border border-slate-200 dark:border-slate-800 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 transition-all text-slate-500 dark:text-slate-400"
           >
             <span className="text-2xl leading-none font-light">+</span>
           </button>
@@ -122,8 +122,8 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
               onClick={() => setQuality(q.value)}
               className={`py-2 px-1 rounded-xl flex flex-col items-center justify-center border transition-all text-center ${
                 quality === q.value 
-                  ? 'border-indigo-500 bg-indigo-50/50 text-indigo-755 font-bold shadow-sm' 
-                  : 'border-slate-200 bg-white hover:border-slate-350 text-slate-650'
+                  ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-755 dark:text-indigo-400 font-bold shadow-sm' 
+                  : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 hover:border-slate-350 dark:hover:border-slate-700 text-slate-650 dark:text-slate-300'
               }`}
             >
               <span className="text-xl mb-1">{q.emoji}</span>
@@ -149,14 +149,14 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
           </div>
         ) : history.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-xs text-slate-400">No days logged yet</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500">No days logged yet</p>
           </div>
         ) : (
           <div className="flex flex-col gap-2">
             {history.map((h) => (
-              <div key={h.id} className="bg-white border border-slate-200 shadow-sm rounded-xl p-3 flex justify-between items-center">
+              <div key={h.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-xl p-3 flex justify-between items-center">
                 <div>
-                  <span className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                  <span className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
                     {h.value.hours >= 7 ? '🌟' : '🥱'} {h.value.hours} hours
                   </span>
                   <span className="text-[10px] text-slate-400 mt-1 block">

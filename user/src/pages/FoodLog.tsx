@@ -940,17 +940,17 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                   />
 
                   {libraryFoods.length > 0 && (
-                    <div className="absolute left-0 right-0 mt-2 bg-white border border-slate-100 rounded-3xl shadow-[0_12px_30px_rgba(0,0,0,0.08)] max-h-56 overflow-y-auto z-10 divide-y divide-slate-100 overflow-hidden">
+                    <div className="absolute left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl shadow-[0_12px_30px_rgba(0,0,0,0.08)] max-h-56 overflow-y-auto z-10 divide-y divide-slate-100 dark:divide-slate-800 overflow-hidden">
                       {libraryFoods.map((food) => (
                         <div
                           key={food._id}
                           onClick={() => handleSelectLibraryFood(food, false)}
-                          className="p-3 hover:bg-slate-50 cursor-pointer flex justify-between items-center text-sm transition-all"
+                          className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer flex justify-between items-center text-sm transition-all"
                         >
-                          <span className="font-bold text-slate-700">{food.name}</span>
-                          <span className="text-[10px] font-extrabold text-slate-400 bg-slate-100/80 px-2 py-1 rounded-lg flex items-center gap-1.5">
+                          <span className="font-bold text-slate-700 dark:text-slate-200">{food.name}</span>
+                          <span className="text-[10px] font-extrabold text-slate-400 bg-slate-100/80 dark:bg-slate-800 px-2 py-1 rounded-lg flex items-center gap-1.5">
                             {food.category}
-                            <span className="text-[9px] bg-white border border-slate-100 px-1 py-0.5 rounded font-black text-primary">
+                            <span className="text-[9px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 px-1 py-0.5 rounded font-black text-primary">
                               {food.calories} kcal / {food.servingSize}{food.servingUnit}
                             </span>
                           </span>
@@ -960,10 +960,10 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                   )}
 
                   {libraryFoods.length === 0 && (isFatSecretSearching || fatSecretResults.length > 0) && (
-                    <div className="absolute left-0 right-0 mt-2 bg-white border border-blue-100 rounded-3xl shadow-[0_12px_30px_rgba(0,0,0,0.08)] max-h-64 overflow-y-auto z-10 overflow-hidden">
+                    <div className="absolute left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/30 rounded-3xl shadow-[0_12px_30px_rgba(0,0,0,0.08)] max-h-64 overflow-y-auto z-10 overflow-hidden">
                       <div className="px-3 pt-2.5 pb-1 flex items-center gap-1.5">
-                        <span className="text-[9px] font-extrabold text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full uppercase tracking-wider">🌐 FatSecret</span>
-                        <span className="text-[9px] text-slate-400 font-semibold">Not in local DB — showing verified external results</span>
+                        <span className="text-[9px] font-extrabold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 px-2 py-0.5 rounded-full uppercase tracking-wider">🌐 FatSecret</span>
+                        <span className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold">Not in local DB — showing verified external results</span>
                       </div>
                       {isFatSecretSearching && (
                         <div className="px-3 py-3 flex items-center gap-2 text-xs text-slate-400 font-semibold">
@@ -981,10 +981,10 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                               handleSelectLibraryFood(food, true);
                             }
                           }}
-                          className="p-3 hover:bg-blue-50/50 cursor-pointer flex justify-between items-center text-sm transition-all border-t border-slate-100 first:border-0"
+                          className="p-3 hover:bg-blue-50/50 dark:hover:bg-slate-850 cursor-pointer flex justify-between items-center text-sm transition-all border-t border-slate-100 dark:border-slate-800 first:border-0"
                         >
-                          <span className="font-bold text-slate-700">{food.name}</span>
-                          <span className="text-[10px] font-extrabold text-blue-500 bg-blue-50 px-2 py-1 rounded-lg flex items-center gap-1.5">
+                          <span className="font-bold text-slate-700 dark:text-slate-200">{food.name}</span>
+                          <span className="text-[10px] font-extrabold text-blue-500 bg-blue-50 dark:bg-blue-950/30 px-2 py-1 rounded-lg flex items-center gap-1.5">
                             {food.calories} kcal / 100{food.servingUnit}
                           </span>
                         </div>

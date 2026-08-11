@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  .bg-cardBg {
+    @apply bg-white dark:bg-slate-900;
+  }
+}
+
 @layer base {
   html, body, #root {
     @apply h-full w-full overflow-hidden;

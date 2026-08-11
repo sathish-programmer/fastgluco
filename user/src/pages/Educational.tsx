@@ -249,19 +249,19 @@ export const Educational: React.FC = () => {
                   faqs.map((faq) => {
                     const isOpen = openFaqId === faq._id;
                     return (
-                      <div key={faq._id} className="bg-cardBg rounded-2xl border border-slate-100 shadow-soft overflow-hidden transition-all">
+                      <div key={faq._id} className="bg-cardBg rounded-2xl border border-slate-100 dark:border-slate-800 shadow-soft overflow-hidden transition-all">
                         <button
                           onClick={() => setOpenFaqId(isOpen ? null : faq._id)}
-                          className="w-full flex justify-between items-center p-4 text-left hover:bg-slate-50 transition-all focus:outline-none"
+                          className="w-full flex justify-between items-center p-4 text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all focus:outline-none"
                         >
-                          <span className="text-sm font-bold text-slate-800">{faq.question}</span>
-                          <span className="text-slate-400 text-[10px] ml-3">
+                          <span className="text-sm font-bold text-slate-800 dark:text-slate-100">{faq.question}</span>
+                          <span className="text-slate-400 dark:text-slate-500 text-[10px] ml-3">
                             {isOpen ? '▲' : '▼'}
                           </span>
                         </button>
                         {isOpen && (
                           <div 
-                            className="px-4 pb-4 pt-2 text-xs text-slate-600 border-t border-slate-50 leading-relaxed whitespace-pre-line"
+                            className="px-4 pb-4 pt-2 text-xs text-slate-600 dark:text-slate-350 border-t border-slate-50 dark:border-slate-800 leading-relaxed whitespace-pre-line"
                             dangerouslySetInnerHTML={{ __html: faq.answer }}
                           />
                         )}
@@ -275,28 +275,28 @@ export const Educational: React.FC = () => {
 
           {/* Support Ticket form */}
           {activeCategory === 'support' && (
-            <div className="bg-cardBg p-5 rounded-3xl border border-slate-100 shadow-soft">
-              <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wider mb-4 flex items-center space-x-1.5">
+            <div className="bg-cardBg p-5 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-soft">
+              <h3 className="text-sm font-bold text-slate-655 dark:text-slate-200 uppercase tracking-wider mb-4 flex items-center space-x-1.5">
                 <MessageSquare className="h-4.5 w-4.5 text-primary" />
                 <span>Ask Support</span>
               </h3>
               {supportStatus && (
-                <div className="mb-4 p-3 bg-green-50 text-success text-xs font-bold rounded-xl border border-green-100">
+                <div className="mb-4 p-3 bg-green-50 dark:bg-green-950/20 text-success text-xs font-bold rounded-xl border border-green-100 dark:border-green-900/35">
                   {supportStatus}
                 </div>
               )}
               <form onSubmit={handleSupportSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Your Name</label>
-                  <input type="text" required value={supportForm.name} onChange={e => setSupportForm({...supportForm, name: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm" />
+                  <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Your Name</label>
+                  <input type="text" required value={supportForm.name} onChange={e => setSupportForm({...supportForm, name: e.target.value})} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 rounded-xl text-sm bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-150 focus:outline-none focus:ring-1 focus:ring-primary" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Email</label>
-                  <input type="email" required value={supportForm.email} onChange={e => setSupportForm({...supportForm, email: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm" />
+                  <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Email</label>
+                  <input type="email" required value={supportForm.email} onChange={e => setSupportForm({...supportForm, email: e.target.value})} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 rounded-xl text-sm bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-150 focus:outline-none focus:ring-1 focus:ring-primary" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Question</label>
-                  <textarea required value={supportForm.question} onChange={e => setSupportForm({...supportForm, question: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm h-32" />
+                  <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Question</label>
+                  <textarea required value={supportForm.question} onChange={e => setSupportForm({...supportForm, question: e.target.value})} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 rounded-xl text-sm h-32 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-150 focus:outline-none focus:ring-1 focus:ring-primary" />
                 </div>
                 <button type="submit" className="w-full bg-primary text-white font-bold py-3 rounded-xl shadow-soft flex justify-center items-center space-x-2">
                   <Send className="h-4.5 w-4.5" />
