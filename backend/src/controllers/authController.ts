@@ -27,6 +27,7 @@ export class AuthController {
         (cleanPhone === '+15555555555' || cleanPhone === '15555555555' || 
          cleanPhone === '+919999999999' || cleanPhone === '9999999999' || 
          cleanPhone === '+919597042107' || cleanPhone === '9597042107' || 
+         cleanPhone === '919597042107' || cleanPhone === '+91919597042107' || cleanPhone === '91919597042107' ||
          email?.toLowerCase() === 'review@mitoreboot.in' || 
          email?.toLowerCase() === 'sathishkumarksk007@gmail.com' || 
          email?.toLowerCase().endsWith('@apple.com'));
