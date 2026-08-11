@@ -473,3 +473,25 @@ export const addPortalStaff = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to create portal staff' });
   }
 };
+
+export const assignLabBookingDoctor = async (req: Request, res: Response) => {
+  try {
+    const adminId = (req as any).user?.id;
+    const { bookingId } = req.params;
+    const { doctorId } = req.body;
+
+    const booking = await LabBooking.findById(bookingId);
+    if (!booking) {
+      return res.status(404).json({ error: 'Lab booking not found' });
+    }
+
+    booking.assignedDoctorId = doctorId ? new mongoose.Types.ObjectId(doctorId) : undefined;
+    await booking.save();
+
+    res.json({ message: 'Doctor assigned successfully to lab report', booking });
+  } catch (error) {
+    console.error('Error assigning doctor to lab booking:', error);
+    res.status(500).json({ error: 'Failed to assign doctor to lab booking' });
+  }
+};
+

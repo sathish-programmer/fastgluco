@@ -19,6 +19,8 @@ export interface ILabBooking extends Document {
   commissionCalculated: boolean;
   platformShare?: number;
   labShare?: number;
+  assignedDoctorId?: mongoose.Types.ObjectId;
+  doctorNotes?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -41,7 +43,9 @@ const LabBookingSchema: Schema = new Schema({
   status: { type: String, enum: ['PENDING', 'CONFIRMED', 'SAMPLE_ASSIGNED', 'SAMPLE_COLLECTED', 'IN_PROCESSING', 'REPORT_READY', 'COMPLETED', 'CANCELLED'], default: 'PENDING' },
   commissionCalculated: { type: Boolean, default: false },
   platformShare: { type: Number },
-  labShare: { type: Number }
+  labShare: { type: Number },
+  assignedDoctorId: { type: Schema.Types.ObjectId, ref: 'Doctor' },
+  doctorNotes: { type: String, default: '' }
 }, { timestamps: true });
 
 export default mongoose.model<ILabBooking>('LabBooking', LabBookingSchema);

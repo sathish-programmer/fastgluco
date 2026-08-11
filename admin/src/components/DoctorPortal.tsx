@@ -39,8 +39,15 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
   const [doctorInfo, setDoctorInfo] = useState<any>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [loading, setLoading] = useState(true);
-
   const [expandedApptId, setExpandedApptId] = useState<string | null>(null);
+
+  // Assigned Issues lists
+  const [assignedStains, setAssignedStains] = useState<any[]>([]);
+  const [assignedLabs, setAssignedLabs] = useState<any[]>([]);
+  const [stainReviewNotes, setStainReviewNotes] = useState<Record<string, string>>({});
+  const [labReviewNotes, setLabReviewNotes] = useState<Record<string, string>>({});
+  const [submittingStainNotesId, setSubmittingStainNotesId] = useState<string | null>(null);
+  const [submittingLabNotesId, setSubmittingLabNotesId] = useState<string | null>(null);
 
   // Profile Form States
   const [profileForm, setProfileForm] = useState({
@@ -100,9 +107,95 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
       fetchAppointments(),
       fetchDoctorProfile(),
       fetchFeedback(),
-      fetchDashboardStats()
+      fetchDashboardStats(),
+      fetchAssignedStainReviews(),
+      fetchAssignedLabBookings()
     ]);
     setLoading(false);
+  };
+
+  const fetchAssignedStainReviews = async () => {
+    try {
+      const res = await fetch(`${apiUrl}/doctor/assigned-stain-reviews`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setAssignedStains(await res.json());
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fetchAssignedLabBookings = async () => {
+    try {
+      const res = await fetch(`${apiUrl}/doctor/assigned-lab-bookings`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setAssignedLabs(await res.json());
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const submitStainReviewNotes = async (logId: string) => {
+    const notes = stainReviewNotes[logId];
+    if (!notes || !notes.trim()) {
+      alert('Please enter clinical advice notes.');
+      return;
+    }
+    setSubmittingStainNotesId(logId);
+    try {
+      const res = await fetch(`${apiUrl}/doctor/assigned-stain-reviews/${logId}/notes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ doctorNotes: notes })
+      });
+      if (res.ok) {
+        alert('Stain review notes submitted!');
+        fetchAssignedStainReviews();
+      } else {
+        alert('Failed to submit notes.');
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSubmittingStainNotesId(null);
+    }
+  };
+
+  const submitLabBookingNotes = async (bookingId: string) => {
+    const notes = labReviewNotes[bookingId];
+    if (!notes || !notes.trim()) {
+      alert('Please enter doctor notes.');
+      return;
+    }
+    setSubmittingLabNotesId(bookingId);
+    try {
+      const res = await fetch(`${apiUrl}/doctor/assigned-lab-bookings/${bookingId}/notes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ doctorNotes: notes })
+      });
+      if (res.ok) {
+        alert('Lab report notes submitted!');
+        fetchAssignedLabBookings();
+      } else {
+        alert('Failed to submit notes.');
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSubmittingLabNotesId(null);
+    }
   };
 
   const fetchDashboardStats = async () => {
@@ -492,6 +585,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
               { key: 'appointments', label: 'Appointments', icon: Calendar },
               { key: 'calendar', label: 'Calendar', icon: Calendar },
               { key: 'patients', label: 'My Patients', icon: Users },
+              { key: 'assigned-reviews', label: 'Assigned Issues', icon: FileText, count: assignedStains.filter(s => !s.reviewed).length + assignedLabs.filter(l => !l.doctorNotes).length },
               { key: 'availability', label: 'Availability', icon: Clock },
               { key: 'notes', label: 'Consultation Notes', icon: FileText },
               { key: 'feedback', label: 'Feedbacks', icon: Star },
@@ -502,13 +596,20 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
               return (
                 <button
                   key={item.key}
-                  onClick={() => setActiveTab(item.key as TabType)}
-                  className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                    activeTab === item.key ? 'bg-primary text-white' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
+                  onClick={() => setActiveTab(item.key as any)}
+                  className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                    activeTab === item.key ? 'bg-primary text-white shadow-md shadow-primary/20' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
                   }`}
                 >
-                  <Icon className="h-4.5 w-4.5 shrink-0" />
-                  {!sidebarCollapsed && <span>{item.label}</span>}
+                  <div className="flex items-center gap-3">
+                    <Icon className="h-4.5 w-4.5 shrink-0" />
+                    {!sidebarCollapsed && <span>{item.label}</span>}
+                  </div>
+                  {!sidebarCollapsed && item.count !== undefined && item.count > 0 && (
+                    <span className="bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shrink-0">
+                      {item.count}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -1312,6 +1413,147 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
                   {feedbacks.length === 0 && (
                     <p className="text-xs text-slate-450 italic col-span-2 py-6 text-center">No patient feedback records found.</p>
                   )}
+                </div>
+              </div>
+            )}
+
+            {/* TAB CONTENT: ASSIGNED REVIEWS */}
+            {activeTab === ('assigned-reviews' as any) && (
+              <div className="space-y-6">
+                {/* Tooth Stain reviews assigned queue */}
+                <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6">
+                  <div>
+                    <h3 className="text-base font-black text-slate-850">Assigned Tobacco Stain Reviews</h3>
+                    <p className="text-xs text-slate-400 font-medium">Dental staining logs assigned to you for consultation and advice.</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {assignedStains.map((stain) => (
+                      <div key={stain._id} className="border border-slate-200 bg-slate-50/30 rounded-2xl p-5 space-y-4 hover:border-slate-350 transition-all flex flex-col justify-between">
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h4 className="font-bold text-slate-800 text-sm">Patient: {stain.userId?.name || 'Anonymous'}</h4>
+                              <span className="text-[10px] text-slate-400 font-bold">{new Date(stain.timestamp).toLocaleString()}</span>
+                            </div>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${stain.reviewed ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
+                              {stain.reviewed ? 'Reviewed' : 'Action Required'}
+                            </span>
+                          </div>
+                          
+                          <div className="flex justify-center bg-slate-900 rounded-xl overflow-hidden py-2 border border-slate-200">
+                            <img
+                              src={stain.value.imageUrl.startsWith('http') ? stain.value.imageUrl : `${apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl}/api/admin/stain-image/${stain.value.imageUrl.split('/').pop()}?token=${token}`}
+                              alt="Teeth"
+                              className="max-h-[160px] w-auto object-contain"
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="bg-white p-2 rounded-lg border border-slate-100">
+                              <span className="text-[9px] text-slate-400 uppercase block">Stain Score</span>
+                              <strong className="text-slate-850 text-sm">{stain.value.score} / 100</strong>
+                            </div>
+                            <div className="bg-white p-2 rounded-lg border border-slate-100">
+                              <span className="text-[9px] text-slate-400 uppercase block">Category</span>
+                              <strong className="text-slate-850 text-sm">{stain.value.category}</strong>
+                            </div>
+                          </div>
+
+                          {stain.doctorNotes && (
+                            <div className="p-3 bg-emerald-50/40 rounded-xl border border-emerald-100 text-xs">
+                              <span className="text-[9px] text-emerald-500 font-bold uppercase block mb-1">Your Diagnostic Notes:</span>
+                              <p className="text-slate-700 font-semibold">{stain.doctorNotes}</p>
+                            </div>
+                          )}
+                        </div>
+
+                        {!stain.reviewed && (
+                          <div className="space-y-2 pt-3 border-t border-slate-100">
+                            <label className="text-[9px] text-slate-400 font-bold uppercase block">Clinical Notes / Recommendations</label>
+                            <textarea
+                              rows={2}
+                              value={stainReviewNotes[stain._id] || ''}
+                              onChange={(e) => setStainReviewNotes({ ...stainReviewNotes, [stain._id]: e.target.value })}
+                              placeholder="Enter advice..."
+                              className="w-full border border-slate-200 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-transparent bg-white"
+                            />
+                            <button
+                              onClick={() => submitStainReviewNotes(stain._id)}
+                              disabled={submittingStainNotesId === stain._id}
+                              className="w-full py-2 bg-primary hover:bg-primary/95 text-white font-bold rounded-xl text-xs shadow-sm transition-all"
+                            >
+                              Submit Diagnostic Notes
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    {assignedStains.length === 0 && (
+                      <p className="text-xs text-slate-400 italic py-6">No stain reviews assigned to you.</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Lab report reviews assigned queue */}
+                <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6">
+                  <div>
+                    <h3 className="text-base font-black text-slate-850">Assigned Lab Booking Reports</h3>
+                    <p className="text-xs text-slate-400 font-medium">Lab screening test bookings assigned to you for clinical notes and review.</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {assignedLabs.map((booking) => (
+                      <div key={booking._id} className="border border-slate-200 bg-slate-50/30 rounded-2xl p-5 space-y-4 hover:border-slate-350 transition-all flex flex-col justify-between">
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h4 className="font-bold text-slate-800 text-sm">Patient: {booking.userId?.name || 'Anonymous'}</h4>
+                              <span className="text-[10px] text-slate-400 font-bold">{new Date(booking.createdAt).toLocaleDateString()}</span>
+                            </div>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${booking.doctorNotes ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
+                              {booking.doctorNotes ? 'Reviewed' : 'Pending Notes'}
+                            </span>
+                          </div>
+
+                          <div className="bg-white p-3 rounded-xl border border-slate-150 text-xs">
+                            <span className="text-[9px] text-slate-400 uppercase block">Screening Test</span>
+                            <strong className="text-slate-850">{booking.labTestId?.cancerScreeningTestId?.name || 'Screening Test'}</strong>
+                          </div>
+
+                          {booking.doctorNotes && (
+                            <div className="p-3 bg-emerald-50/40 rounded-xl border border-emerald-100 text-xs">
+                              <span className="text-[9px] text-emerald-500 font-bold uppercase block mb-1">Your Diagnostic Notes:</span>
+                              <p className="text-slate-700 font-semibold">{booking.doctorNotes}</p>
+                            </div>
+                          )}
+                        </div>
+
+                        {!booking.doctorNotes && (
+                          <div className="space-y-2 pt-3 border-t border-slate-100">
+                            <label className="text-[9px] text-slate-400 font-bold uppercase block">Clinical Review / Report Notes</label>
+                            <textarea
+                              rows={2}
+                              value={labReviewNotes[booking._id] || ''}
+                              onChange={(e) => setLabReviewNotes({ ...labReviewNotes, [booking._id]: e.target.value })}
+                              placeholder="Add report diagnostics review notes..."
+                              className="w-full border border-slate-200 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-transparent bg-white"
+                            />
+                            <button
+                              onClick={() => submitLabBookingNotes(booking._id)}
+                              disabled={submittingLabNotesId === booking._id}
+                              className="w-full py-2 bg-primary hover:bg-primary/95 text-white font-bold rounded-xl text-xs shadow-sm transition-all"
+                            >
+                              Submit Report Review
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    {assignedLabs.length === 0 && (
+                      <p className="text-xs text-slate-400 italic py-6">No lab reports assigned to you.</p>
+                    )}
+                  </div>
                 </div>
               </div>
             )}

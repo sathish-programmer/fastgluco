@@ -247,6 +247,7 @@ const AdminPanelContent: React.FC = () => {
   const [stainReviewsLoading, setStainReviewsLoading] = useState(false);
   const [selectedStainReview, setSelectedStainReview] = useState<any | null>(null);
   const [stainFilter, setStainFilter] = useState<'all' | 'pending' | 'reviewed'>('all');
+  const [activeDoctors, setActiveDoctors] = useState<any[]>([]);
   
   const [patients, setPatients] = useState<any[]>([]);
   const [patientsLoading, setPatientsLoading] = useState(false);
@@ -491,6 +492,8 @@ const AdminPanelContent: React.FC = () => {
   useEffect(() => {
     if (isAuthenticated && admin && admin.role !== 'Doctor' && admin.role !== 'Vendor' && admin.role !== 'LabPartner') {
       fetchPaymentConfig();
+      fetchTickets();
+      fetchStainReviews();
     }
   }, [isAuthenticated, admin]);
 
@@ -565,10 +568,47 @@ const AdminPanelContent: React.FC = () => {
       if (res.ok) {
         setStainReviews(await res.json());
       }
+      fetchActiveDoctors();
     } catch (e) {
       console.error(e);
     } finally {
       setStainReviewsLoading(false);
+    }
+  };
+
+  const fetchActiveDoctors = async () => {
+    try {
+      const res = await fetch(`${apiUrl}/admin/doctors`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setActiveDoctors(await res.json());
+      }
+    } catch (e) {
+      console.error('Error fetching active doctors:', e);
+    }
+  };
+
+  const assignDoctorToReview = async (logId: string, doctorId: string) => {
+    try {
+      const res = await fetch(`${apiUrl}/admin/stain-reviews/${logId}/assign`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ doctorId })
+      });
+      if (res.ok) {
+        alert('Doctor assigned successfully!');
+        fetchStainReviews();
+      } else {
+        const err = await res.json();
+        alert(err.message || 'Failed to assign doctor.');
+      }
+    } catch (e) {
+      console.error('Error assigning doctor:', e);
+      alert('Error communicating with server.');
     }
   };
 
@@ -1933,13 +1973,16 @@ const AdminPanelContent: React.FC = () => {
             </button>
           </div>
 
-          <nav className="p-4 space-y-2 overflow-y-auto max-h-[calc(100vh-140px)] scrollbar-thin">
-            {/* GROUP 1: DASHBOARD */}
+          <nav className="p-4 space-y-4 overflow-y-auto max-h-[calc(100vh-140px)] scrollbar-thin">
+            {/* CATEGORY: CORE */}
             <div className="space-y-1">
+              {!sidebarCollapsed && <p className="px-4 text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-2">Core</p>}
+              
+              {/* GROUP 1: DASHBOARD */}
               <button 
                 onClick={() => { setActiveView('dashboard'); setSearchQuery(''); }}
                 className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                  activeView === 'dashboard' ? 'bg-primary text-white' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
+                  activeView === 'dashboard' ? 'bg-primary text-white shadow-md shadow-primary/20' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -1947,13 +1990,12 @@ const AdminPanelContent: React.FC = () => {
                   {!sidebarCollapsed && <span>Dashboard</span>}
                 </div>
               </button>
-            </div>
-            {/* Patient Activity Menu */}
-            <div className="space-y-1">
+
+              {/* Patient Activity Menu */}
               <button 
                 onClick={() => { setActiveView('patient-activity'); setSearchQuery(''); setSelectedPatient(null); }}
                 className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                  activeView === 'patient-activity' ? 'bg-primary text-white' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
+                  activeView === 'patient-activity' ? 'bg-primary text-white shadow-md shadow-primary/20' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -1963,230 +2005,243 @@ const AdminPanelContent: React.FC = () => {
               </button>
             </div>
 
-            {/* GROUP 2: USERS & STAFF */}
+            {/* CATEGORY: USERS & CLINICAL */}
             <div className="space-y-1">
-              <button 
-                onClick={() => toggleGroup('users')}
-                className="w-full flex items-center justify-between px-4 py-2 text-slate-550 hover:text-white transition-all"
-              >
-                <div className="flex items-center gap-3">
-                  <Users className="h-4.5 w-4.5 shrink-0" />
-                  {!sidebarCollapsed && <span className="text-[10px] font-black uppercase tracking-wider">Users & Staff</span>}
-                </div>
-                {!sidebarCollapsed && (openGroups.users ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />)}
-              </button>
-              {openGroups.users && !sidebarCollapsed && (
-                <div className="pl-6 space-y-1">
-                  <button 
-                    onClick={() => { setActiveView('users'); setSearchQuery(''); }}
-                    className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                      activeView === 'users' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Patients
-                  </button>
-                  <button 
-                    onClick={() => { setActiveView('pendingEdits'); setSearchQuery(''); }}
-                    className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                      activeView === 'pendingEdits' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Profile Edits
-                  </button>
-                  <button 
-                    onClick={() => { setActiveView('doctors-management'); setSearchQuery(''); }}
-                    className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                      activeView === 'doctors-management' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Doctors
-                  </button>
-                  <button 
-                    onClick={() => { setActiveView('vendors-management'); setSearchQuery(''); }}
-                    className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                      activeView === 'vendors-management' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Vendors
-                  </button>
-                  <button 
-                    onClick={() => { setActiveView('partner-labs'); setSearchQuery(''); }}
-                    className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                      activeView === 'partner-labs' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Lab Staff
-                  </button>
-                </div>
-              )}
+              {!sidebarCollapsed && <p className="px-4 text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-2">Users & Clinical</p>}
+
+              {/* GROUP 2: USERS & STAFF */}
+              <div className="space-y-1">
+                <button 
+                  onClick={() => toggleGroup('users')}
+                  className="w-full flex items-center justify-between px-4 py-2 text-slate-400 hover:text-white transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <Users className="h-4.5 w-4.5 shrink-0" />
+                    {!sidebarCollapsed && <span className="text-[10px] font-black uppercase tracking-wider">Users & Staff</span>}
+                  </div>
+                  {!sidebarCollapsed && (openGroups.users ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />)}
+                </button>
+                {openGroups.users && !sidebarCollapsed && (
+                  <div className="pl-6 space-y-1 border-l border-slate-800 ml-6">
+                    <button 
+                      onClick={() => { setActiveView('users'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'users' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Patients
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('pendingEdits'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'pendingEdits' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Profile Edits
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('doctors-management'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'doctors-management' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Doctors
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('vendors-management'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'vendors-management' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Vendors
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('partner-labs'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'partner-labs' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Lab Staff
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* GROUP: DENTAL / ORAL HEALTH */}
+              <div className="space-y-1">
+                <button 
+                  onClick={() => toggleGroup('dental')}
+                  className="w-full flex items-center justify-between px-4 py-2 text-slate-400 hover:text-white transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <Sparkles className="h-4.5 w-4.5 shrink-0 text-primary" />
+                    {!sidebarCollapsed && <span className="text-[10px] font-black uppercase tracking-wider">Dental / Oral</span>}
+                  </div>
+                  {!sidebarCollapsed && (openGroups.dental ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />)}
+                </button>
+                {openGroups.dental && !sidebarCollapsed && (
+                  <div className="pl-6 space-y-1 border-l border-slate-800 ml-6">
+                    <button 
+                      onClick={() => { setActiveView('dental-consultations'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'dental-consultations' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Dental Consultations
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('stain-reviews'); setSearchQuery(''); setSelectedStainReview(null); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold flex items-center justify-between ${
+                        activeView === 'stain-reviews' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <span>Tobacco Stain Reviews</span>
+                      {stainReviews.filter(r => !r.reviewed).length > 0 && (
+                        <span className="bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shrink-0">
+                          {stainReviews.filter(r => !r.reviewed).length}
+                        </span>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* GROUP 3: APPOINTMENTS */}
+              <div className="space-y-1">
+                <button 
+                  onClick={() => toggleGroup('appointments')}
+                  className="w-full flex items-center justify-between px-4 py-2 text-slate-400 hover:text-white transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <Calendar className="h-4.5 w-4.5 shrink-0" />
+                    {!sidebarCollapsed && <span className="text-[10px] font-black uppercase tracking-wider">Appointments</span>}
+                  </div>
+                  {!sidebarCollapsed && (openGroups.appointments ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />)}
+                </button>
+                {openGroups.appointments && !sidebarCollapsed && (
+                  <div className="pl-6 space-y-1 border-l border-slate-800 ml-6">
+                    <button 
+                      onClick={() => { setActiveView('appointments-calendar'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'appointments-calendar' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Calendar
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('appointments-upcoming'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'appointments-upcoming' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Upcoming
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('appointments-completed'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'appointments-completed' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Completed
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('appointments-cancelled'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'appointments-cancelled' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Cancelled
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* GROUP: DIAGNOSTICS */}
+              <div className="space-y-1">
+                <button 
+                  onClick={() => toggleGroup('diagnostics')}
+                  className="w-full flex items-center justify-between px-4 py-2 text-slate-400 hover:text-white transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <Activity className="h-4.5 w-4.5 shrink-0" />
+                    {!sidebarCollapsed && <span className="text-[10px] font-black uppercase tracking-wider">Diagnostics</span>}
+                  </div>
+                  {!sidebarCollapsed && (openGroups.diagnostics ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />)}
+                </button>
+                {openGroups.diagnostics && !sidebarCollapsed && (
+                  <div className="pl-6 space-y-1 border-l border-slate-800 ml-6">
+                    <button 
+                      onClick={() => { setActiveView('screening-tests'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'screening-tests' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Screening Tests
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('partner-labs'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'partner-labs' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Partner Labs
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* GROUP: DENTAL / ORAL HEALTH */}
+            {/* CATEGORY: COMMERCE & METRICS */}
             <div className="space-y-1">
-              <button 
-                onClick={() => toggleGroup('dental')}
-                className="w-full flex items-center justify-between px-4 py-2 text-slate-550 hover:text-white transition-all"
-              >
-                <div className="flex items-center gap-3">
-                  <Sparkles className="h-4.5 w-4.5 shrink-0 text-primary" />
-                  {!sidebarCollapsed && <span className="text-[10px] font-black uppercase tracking-wider">Dental / Oral Health</span>}
-                </div>
-                {!sidebarCollapsed && (openGroups.dental ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />)}
-              </button>
-              {openGroups.dental && !sidebarCollapsed && (
-                <div className="pl-6 space-y-1">
-                  <button 
-                    onClick={() => { setActiveView('dental-consultations'); setSearchQuery(''); }}
-                    className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                      activeView === 'dental-consultations' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Dental Consultations
-                  </button>
-                  <button 
-                    onClick={() => { setActiveView('stain-reviews'); setSearchQuery(''); setSelectedStainReview(null); }}
-                    className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                      activeView === 'stain-reviews' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Tobacco Stain Reviews
-                  </button>
-                </div>
-              )}
-            </div>
+              {!sidebarCollapsed && <p className="px-4 text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-2">Commerce & Metrics</p>}
 
-            {/* GROUP 3: APPOINTMENTS */}
-            <div className="space-y-1">
-              <button 
-                onClick={() => toggleGroup('appointments')}
-                className="w-full flex items-center justify-between px-4 py-2 text-slate-550 hover:text-white transition-all"
-              >
-                <div className="flex items-center gap-3">
-                  <Calendar className="h-4.5 w-4.5 shrink-0" />
-                  {!sidebarCollapsed && <span className="text-[10px] font-black uppercase tracking-wider">Appointments</span>}
-                </div>
-                {!sidebarCollapsed && (openGroups.appointments ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />)}
-              </button>
-              {openGroups.appointments && !sidebarCollapsed && (
-                <div className="pl-6 space-y-1">
-                  <button 
-                    onClick={() => { setActiveView('appointments-calendar'); setSearchQuery(''); }}
-                    className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                      activeView === 'appointments-calendar' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Calendar
-                  </button>
-                  <button 
-                    onClick={() => { setActiveView('appointments-upcoming'); setSearchQuery(''); }}
-                    className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                      activeView === 'appointments-upcoming' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Upcoming
-                  </button>
-                  <button 
-                    onClick={() => { setActiveView('appointments-completed'); setSearchQuery(''); }}
-                    className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                      activeView === 'appointments-completed' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Completed
-                  </button>
-                  <button 
-                    onClick={() => { setActiveView('appointments-cancelled'); setSearchQuery(''); }}
-                    className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                      activeView === 'appointments-cancelled' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Cancelled
-                  </button>
-                </div>
-              )}
-            </div>
+              {/* GROUP 4: HEALTH STORE */}
+              <div className="space-y-1">
+                <button 
+                  onClick={() => toggleGroup('store')}
+                  className="w-full flex items-center justify-between px-4 py-2 text-slate-400 hover:text-white transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <ShoppingCart className="h-4.5 w-4.5 shrink-0" />
+                    {!sidebarCollapsed && <span className="text-[10px] font-black uppercase tracking-wider">Health Store</span>}
+                  </div>
+                  {!sidebarCollapsed && (openGroups.store ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />)}
+                </button>
+                {openGroups.store && !sidebarCollapsed && (
+                  <div className="pl-6 space-y-1 border-l border-slate-800 ml-6">
+                    <button 
+                      onClick={() => { setActiveView('store-products'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'store-products' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Products
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('store-orders'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'store-orders' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Orders Routing
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('store-reports'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'store-reports' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Sales Reports
+                    </button>
+                  </div>
+                )}
+              </div>
 
-            {/* GROUP: DIAGNOSTICS */}
-            <div className="space-y-1">
-              <button 
-                onClick={() => toggleGroup('diagnostics')}
-                className="w-full flex items-center justify-between px-4 py-2 text-slate-550 hover:text-white transition-all"
-              >
-                <div className="flex items-center gap-3">
-                  <Activity className="h-4.5 w-4.5 shrink-0" />
-                  {!sidebarCollapsed && <span className="text-[10px] font-black uppercase tracking-wider">Diagnostics</span>}
-                </div>
-                {!sidebarCollapsed && (openGroups.diagnostics ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />)}
-              </button>
-              {openGroups.diagnostics && !sidebarCollapsed && (
-                <div className="pl-6 space-y-1">
-                  <button 
-                    onClick={() => { setActiveView('screening-tests'); setSearchQuery(''); }}
-                    className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                      activeView === 'screening-tests' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Screening Tests
-                  </button>
-                  <button 
-                    onClick={() => { setActiveView('partner-labs'); setSearchQuery(''); }}
-                    className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                      activeView === 'partner-labs' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Partner Labs
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* GROUP 4: HEALTH STORE */}
-            <div className="space-y-1">
-              <button 
-                onClick={() => toggleGroup('store')}
-                className="w-full flex items-center justify-between px-4 py-2 text-slate-550 hover:text-white transition-all"
-              >
-                <div className="flex items-center gap-3">
-                  <ShoppingCart className="h-4.5 w-4.5 shrink-0" />
-                  {!sidebarCollapsed && <span className="text-[10px] font-black uppercase tracking-wider">Health Store</span>}
-                </div>
-                {!sidebarCollapsed && (openGroups.store ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />)}
-              </button>
-              {openGroups.store && !sidebarCollapsed && (
-                <div className="pl-6 space-y-1">
-                  <button 
-                    onClick={() => { setActiveView('store-products'); setSearchQuery(''); }}
-                    className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                      activeView === 'store-products' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Products
-                  </button>
-                  <button 
-                    onClick={() => { setActiveView('store-orders'); setSearchQuery(''); }}
-                    className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                      activeView === 'store-orders' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Orders Routing
-                  </button>
-                  <button 
-                    onClick={() => { setActiveView('store-reports'); setSearchQuery(''); }}
-                    className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                      activeView === 'store-reports' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Sales Reports
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* GROUP 4.5: REPORTS & ANALYTICS */}
-            <div className="space-y-1">
+              {/* GROUP 4.5: REPORTS & ANALYTICS */}
               <button 
                 onClick={() => { setActiveView('reports-analytics'); setSearchQuery(''); }}
                 className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                  activeView === 'reports-analytics' ? 'bg-primary text-white' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
+                  activeView === 'reports-analytics' ? 'bg-primary text-white shadow-md shadow-primary/20' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -2198,7 +2253,7 @@ const AdminPanelContent: React.FC = () => {
               <button 
                 onClick={() => { setActiveView('consultation-analytics'); setSearchQuery(''); }}
                 className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                  activeView === 'consultation-analytics' ? 'bg-primary text-white' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
+                  activeView === 'consultation-analytics' ? 'bg-primary text-white shadow-md shadow-primary/20' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -2208,160 +2263,175 @@ const AdminPanelContent: React.FC = () => {
               </button>
             </div>
 
-            {/* GROUP 5: SYSTEM CONTENT */}
+            {/* CATEGORY: RESOURCES & CONTENT */}
             <div className="space-y-1">
-              <button 
-                onClick={() => toggleGroup('reports')}
-                className="w-full flex items-center justify-between px-4 py-2 text-slate-555 hover:text-white transition-all"
-              >
-                <div className="flex items-center gap-3">
-                  <FileText className="h-4.5 w-4.5 shrink-0" />
-                  {!sidebarCollapsed && <span className="text-[10px] font-black uppercase tracking-wider">Library & Content</span>}
-                </div>
-                {!sidebarCollapsed && (openGroups.reports ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />)}
-              </button>
-              {openGroups.reports && !sidebarCollapsed && (
-                <div className="pl-6 space-y-1">
-                  <button 
-                    onClick={() => { setActiveView('foods'); setSearchQuery(''); }}
-                    className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                      activeView === 'foods' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Food Library
-                  </button>
-                  <button 
-                    onClick={() => { setActiveView('recFoods'); setSearchQuery(''); }}
-                    className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                      activeView === 'recFoods' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Recommended Foods
-                  </button>
-                  <button 
-                    onClick={() => { setActiveView('videos'); setSearchQuery(''); }}
-                    className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                      activeView === 'videos' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Videos
-                  </button>
-                  <button 
-                    onClick={() => { setActiveView('guides'); setSearchQuery(''); }}
-                    className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                      activeView === 'guides' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Guides
-                  </button>
-                  <button 
-                    onClick={() => { setActiveView('notifications'); setSearchQuery(''); }}
-                    className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                      activeView === 'notifications' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Communications
-                  </button>
-                  <button 
-                    onClick={() => { setActiveView('faqs'); setSearchQuery(''); }}
-                    className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                      activeView === 'faqs' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    FAQs
-                  </button>
-                  <button 
-                    onClick={() => { setActiveView('healthInsights'); setSearchQuery(''); }}
-                    className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                      activeView === 'healthInsights' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Insights
-                  </button>
-                  <button 
-                    onClick={() => { setActiveView('tickets'); setSearchQuery(''); }}
-                    className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                      activeView === 'tickets' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Support Q&A
-                  </button>
-                  <button 
-                    onClick={() => { setActiveView('product-support'); setSearchQuery(''); }}
-                    className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                      activeView === 'product-support' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Product Support
-                  </button>
-                </div>
-              )}
+              {!sidebarCollapsed && <p className="px-4 text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-2">Content & Library</p>}
+
+              {/* GROUP 5: SYSTEM CONTENT */}
+              <div className="space-y-1">
+                <button 
+                  onClick={() => toggleGroup('reports')}
+                  className="w-full flex items-center justify-between px-4 py-2 text-slate-400 hover:text-white transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <FileText className="h-4.5 w-4.5 shrink-0" />
+                    {!sidebarCollapsed && <span className="text-[10px] font-black uppercase tracking-wider">Library & Content</span>}
+                  </div>
+                  {!sidebarCollapsed && (openGroups.reports ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />)}
+                </button>
+                {openGroups.reports && !sidebarCollapsed && (
+                  <div className="pl-6 space-y-1 border-l border-slate-800 ml-6">
+                    <button 
+                      onClick={() => { setActiveView('foods'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'foods' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Food Library
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('recFoods'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'recFoods' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Recommended Foods
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('videos'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'videos' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Videos
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('guides'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'guides' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Guides
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('notifications'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'notifications' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Communications
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('faqs'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'faqs' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      FAQs
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('healthInsights'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'healthInsights' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Insights
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('tickets'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold flex items-center justify-between ${
+                        activeView === 'tickets' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <span>Support Q&A</span>
+                      {tickets.filter(t => t.status === 'Open').length > 0 && (
+                        <span className="bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shrink-0">
+                          {tickets.filter(t => t.status === 'Open').length}
+                        </span>
+                      )}
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('product-support'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'product-support' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Product Support
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* GROUP 6: SETTINGS */}
+            {/* CATEGORY: SETTINGS */}
             <div className="space-y-1">
-              <button 
-                onClick={() => toggleGroup('settings')}
-                className="w-full flex items-center justify-between px-4 py-2 text-slate-555 hover:text-white transition-all"
-              >
-                <div className="flex items-center gap-3">
-                  <Settings className="h-4.5 w-4.5 shrink-0" />
-                  {!sidebarCollapsed && <span className="text-[10px] font-black uppercase tracking-wider">System Settings</span>}
-                </div>
-                {!sidebarCollapsed && (openGroups.settings ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />)}
-              </button>
-              {openGroups.settings && !sidebarCollapsed && (
-                <div className="pl-6 space-y-1">
-                  <button 
-                    onClick={() => { setActiveView('plans'); setSearchQuery(''); }}
-                    className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                      activeView === 'plans' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Subscription Plans
-                  </button>
-                  <button 
-                    onClick={() => { setActiveView('aicoach'); setSearchQuery(''); }}
-                    className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                      activeView === 'aicoach' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    AI Coach
-                  </button>
-                  <button 
-                    onClick={() => { setActiveView('payments'); setSearchQuery(''); }}
-                    className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                      activeView === 'payments' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Payments & Logos
-                  </button>
-                  <button 
-                    onClick={() => { setActiveView('coupons'); setSearchQuery(''); }}
-                    className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                      activeView === 'coupons' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Promo Coupons
-                  </button>
-                  <button 
-                    onClick={() => { setActiveView('founders'); setSearchQuery(''); }}
-                    className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                      activeView === 'founders' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Founders Section
-                  </button>
-                  <button 
-                    onClick={() => { setActiveView('legal'); setSearchQuery(''); }}
-                    className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
-                      activeView === 'legal' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Legal Docs
-                  </button>
-                </div>
-              )}
+              {!sidebarCollapsed && <p className="px-4 text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-2">Settings</p>}
+
+              {/* GROUP 6: SETTINGS */}
+              <div className="space-y-1">
+                <button 
+                  onClick={() => toggleGroup('settings')}
+                  className="w-full flex items-center justify-between px-4 py-2 text-slate-400 hover:text-white transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <Settings className="h-4.5 w-4.5 shrink-0" />
+                    {!sidebarCollapsed && <span className="text-[10px] font-black uppercase tracking-wider">System Settings</span>}
+                  </div>
+                  {!sidebarCollapsed && (openGroups.settings ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />)}
+                </button>
+                {openGroups.settings && !sidebarCollapsed && (
+                  <div className="pl-6 space-y-1 border-l border-slate-800 ml-6">
+                    <button 
+                      onClick={() => { setActiveView('plans'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'plans' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Subscription Plans
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('aicoach'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'aicoach' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      AI Coach
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('payments'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'payments' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Payments & Branding
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('coupons'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'coupons' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Promo Coupons
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('founders'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'founders' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Founders Section
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('legal'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'legal' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Legal Docs
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
           </nav>
@@ -2837,29 +2907,108 @@ const AdminPanelContent: React.FC = () => {
                                     <span className="text-[9px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">{item.category}</span>
                                   </div>
                                   <p className="text-[10px] text-slate-500 mt-1">Click the photo thumbnail to review the full details and submit clinical advice.</p>
-                                  {item.reviewed ? (
-                                    <span className="text-[9px] font-extrabold text-emerald-600 mt-1.5 block">✓ Reviewed by Clinician</span>
-                                  ) : (
-                                    <button
-                                      onClick={() => {
-                                        // Set review trigger
-                                        setSelectedStainReview({
-                                          _id: item.logId,
-                                          userId: selectedPatient,
-                                          value: {
-                                            imageUrl: item.imageUrl,
-                                            score: item.score,
-                                            category: item.category,
-                                            date: item.date
-                                          }
-                                        });
-                                      }}
-                                      className="text-[10px] font-bold text-primary hover:underline mt-2 block"
+                                  <div className="mt-2 flex flex-wrap items-center gap-3">
+                                    <span className="text-[9px] font-bold text-slate-400">Assign Doctor:</span>
+                                    <select
+                                      value={item.assignedDoctor?._id || item.assignedDoctor || ''}
+                                      onChange={(e) => assignDoctorToReview(item.logId, e.target.value)}
+                                      className="text-[10px] bg-white border border-slate-200 rounded p-0.5 font-semibold text-slate-700 focus:outline-none"
                                     >
-                                      Needs Doctor Review &rarr;
-                                    </button>
+                                      <option value="">-- Unassigned --</option>
+                                      {activeDoctors.map((doc: any) => (
+                                        <option key={doc._id} value={doc._id}>
+                                          Dr. {doc.name}
+                                        </option>
+                                      ))}
+                                    </select>
+                                    
+                                    {item.reviewed ? (
+                                      <span className="text-[9px] font-extrabold text-emerald-600">✓ Reviewed by Clinician</span>
+                                    ) : (
+                                      <button
+                                        onClick={() => {
+                                          setSelectedStainReview({
+                                            _id: item.logId,
+                                            userId: selectedPatient,
+                                            value: {
+                                              imageUrl: item.imageUrl,
+                                              score: item.score,
+                                              category: item.category,
+                                              date: item.date
+                                            }
+                                          });
+                                        }}
+                                        className="text-[10px] text-primary font-bold hover:underline"
+                                      >
+                                        Review & Advise
+                                      </button>
+                                    )}
+                                  </div>
+
+                                  {item.doctorNotes && (
+                                    <div className="mt-2 p-2 bg-emerald-50 border border-emerald-100 rounded-lg text-[10px]">
+                                      <span className="font-extrabold text-emerald-700 block uppercase">Clinician Notes:</span>
+                                      <p className="text-slate-700 font-semibold">{item.doctorNotes}</p>
+                                    </div>
                                   )}
                                 </div>
+                              </div>
+                            )}
+
+                            {/* Additional display for Lab Report bookings */}
+                            {item.type === 'LAB_REPORT' && (
+                              <div className="mt-3 p-3 bg-slate-50/50 rounded-xl border border-slate-200/50 space-y-2">
+                                <div className="flex flex-wrap items-center gap-3">
+                                  <span className="text-[9px] font-bold text-slate-400">Assign Reviewing Doctor:</span>
+                                  <select
+                                    value={item.assignedDoctor?._id || item.assignedDoctor || ''}
+                                    onChange={async (e) => {
+                                      try {
+                                        const res = await fetch(`${apiUrl}/admin/lab-bookings/${item.bookingId}/assign`, {
+                                          method: 'POST',
+                                          headers: {
+                                            'Content-Type': 'application/json',
+                                            'Authorization': `Bearer ${token}`
+                                          },
+                                          body: JSON.stringify({ doctorId: e.target.value })
+                                        });
+                                        if (res.ok) {
+                                          alert('Doctor assigned to lab report review!');
+                                          fetchPatients(); // reload patient
+                                          if (selectedPatient) {
+                                            // reload timeline
+                                            const resTimeline = await fetch(`${apiUrl}/admin/patients/${selectedPatient._id}/activity`, {
+                                              headers: { 'Authorization': `Bearer ${token}` }
+                                            });
+                                            if (resTimeline.ok) {
+                                              const tlData = await resTimeline.json();
+                                              setPatientTimeline(tlData.timeline || []);
+                                            }
+                                          }
+                                        } else {
+                                          alert('Failed to assign doctor.');
+                                        }
+                                      } catch (err) {
+                                        console.error(err);
+                                      }
+                                    }}
+                                    className="text-[10px] bg-white border border-slate-200 rounded p-0.5 font-semibold text-slate-700 focus:outline-none"
+                                  >
+                                    <option value="">-- Unassigned --</option>
+                                    {activeDoctors.map((doc: any) => (
+                                      <option key={doc._id} value={doc._id}>
+                                        Dr. {doc.name}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+
+                                {item.doctorNotes && (
+                                  <div className="p-2 bg-emerald-50 border border-emerald-100 rounded-lg text-[10px]">
+                                    <span className="font-extrabold text-emerald-700 block uppercase">Clinician Notes / Remarks:</span>
+                                    <p className="text-slate-700 font-semibold">{item.doctorNotes}</p>
+                                  </div>
+                                )}
                               </div>
                             )}
 
@@ -2939,6 +3088,7 @@ const AdminPanelContent: React.FC = () => {
                       <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Score</th>
                       <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Category</th>
                       <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Review Status</th>
+                      <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Assigned Doctor</th>
                       <th className="px-6 py-3.5 text-right text-[10px] font-bold text-slate-400 uppercase tracking-wider">Action</th>
                     </tr>
                   </thead>
@@ -2971,6 +3121,20 @@ const AdminPanelContent: React.FC = () => {
                               <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${review.reviewed ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200 animate-pulse'}`}>
                                 {review.reviewed ? 'Reviewed' : 'Pending Review'}
                               </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <select
+                                value={review.assignedDoctorId?._id || review.assignedDoctorId || ''}
+                                onChange={(e) => assignDoctorToReview(review._id, e.target.value)}
+                                className="text-xs bg-slate-50 border border-slate-200 rounded-lg p-1 font-semibold text-slate-700 focus:outline-none"
+                              >
+                                <option value="">-- Unassigned --</option>
+                                {activeDoctors.map((doc: any) => (
+                                  <option key={doc._id} value={doc._id}>
+                                    Dr. {doc.name} ({doc.specialty})
+                                  </option>
+                                ))}
+                              </select>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-right text-xs font-medium">
                               <button

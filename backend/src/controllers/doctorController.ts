@@ -452,4 +452,86 @@ export class DoctorController {
       res.status(200).json({ number: "1800-11-0031" });
     }
   }
+
+  public static async getAssignedStainReviews(req: Request, res: Response) {
+    try {
+      const doctorId = (req as any).user.id;
+      const HabitLog = mongoose.model('HabitLog');
+      const reviews = await HabitLog.find({ type: 'TobaccoStainTracker', assignedDoctorId: doctorId })
+        .populate('userId', 'name email mobileNumber')
+        .sort({ timestamp: -1 });
+      res.json(reviews);
+    } catch (error: any) {
+      res.status(500).json({ message: 'Error fetching assigned reviews.' });
+    }
+  }
+
+  public static async submitStainReviewNotes(req: Request, res: Response) {
+    try {
+      const doctorId = (req as any).user.id;
+      const { logId } = req.params;
+      const { doctorNotes } = req.body;
+
+      const HabitLog = mongoose.model('HabitLog');
+      const log = await HabitLog.findOne({ _id: logId, assignedDoctorId: doctorId });
+      if (!log) {
+        return res.status(404).json({ message: 'Assigned review log not found.' });
+      }
+
+      log.doctorNotes = doctorNotes;
+      log.reviewed = true;
+      log.reviewedAt = new Date();
+      log.reviewedBy = doctorId;
+      await log.save();
+
+      res.json({ message: 'Review notes submitted successfully', log });
+    } catch (error: any) {
+      res.status(500).json({ message: 'Error submitting review notes.' });
+    }
+  }
+
+  public static async getAssignedLabBookings(req: Request, res: Response) {
+    try {
+      const doctorId = (req as any).user.id;
+      const LabBooking = mongoose.model('LabBooking');
+      const bookings = await LabBooking.find({ assignedDoctorId: doctorId })
+        .populate('userId', 'name email mobileNumber')
+        .populate({
+          path: 'labTestId',
+          populate: {
+            path: 'cancerScreeningTestId',
+            select: 'name'
+          }
+        })
+        .sort({ createdAt: -1 });
+      res.json(bookings);
+    } catch (error: any) {
+      res.status(500).json({ message: 'Error fetching assigned lab bookings.' });
+    }
+  }
+
+  public static async submitLabBookingNotes(req: Request, res: Response) {
+    try {
+      const doctorId = (req as any).user.id;
+      const { bookingId } = req.params;
+      const { doctorNotes } = req.body;
+
+      const LabBooking = mongoose.model('LabBooking');
+      const booking = await LabBooking.findOne({ _id: bookingId, assignedDoctorId: doctorId });
+      if (!booking) {
+        return res.status(404).json({ message: 'Assigned lab booking not found.' });
+      }
+
+      booking.doctorNotes = doctorNotes;
+      booking.status = 'REPORT_READY'; // Keep standard booking status
+      await booking.save();
+
+      res.json({ message: 'Lab report review notes submitted successfully', booking });
+    } catch (error: any) {
+      res.status(500).json({ message: 'Error submitting lab report notes.' });
+    }
+  }
 }
+
+import mongoose from 'mongoose';
+

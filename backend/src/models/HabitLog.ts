@@ -8,6 +8,8 @@ export interface IHabitLog extends Document {
   reviewed?: boolean;
   reviewedAt?: Date;
   reviewedBy?: mongoose.Types.ObjectId;
+  assignedDoctorId?: mongoose.Types.ObjectId;
+  doctorNotes?: string;
 }
 
 const habitLogSchema = new Schema<IHabitLog>(
@@ -18,7 +20,9 @@ const habitLogSchema = new Schema<IHabitLog>(
     timestamp: { type: Date, default: Date.now },
     reviewed: { type: Boolean, default: false },
     reviewedAt: { type: Date },
-    reviewedBy: { type: Schema.Types.ObjectId, ref: 'AdminUser' }
+    reviewedBy: { type: Schema.Types.ObjectId, ref: 'AdminUser' },
+    assignedDoctorId: { type: Schema.Types.ObjectId, ref: 'Doctor' },
+    doctorNotes: { type: String, default: '' }
   },
   { timestamps: true }
 );

@@ -15,6 +15,7 @@ export const getStainReviews = async (req: Request, res: Response) => {
     // Fetch all logs of type TobaccoStainTracker
     const logs = await HabitLog.find({ type: 'TobaccoStainTracker' })
       .populate('userId', 'name email mobileNumber')
+      .populate('assignedDoctorId', 'name specialty description avatar')
       .sort({ timestamp: -1 });
 
     res.json(logs);
@@ -23,6 +24,34 @@ export const getStainReviews = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Error fetching stain reviews' });
   }
 };
+
+export const assignStainReviewDoctor = async (req: Request, res: Response) => {
+  try {
+    const adminId = (req as any).user?.id;
+    const { logId } = req.params;
+    const { doctorId } = req.body;
+
+    const log = await HabitLog.findById(logId);
+    if (!log) {
+      return res.status(404).json({ message: 'Stain tracker log not found' });
+    }
+
+    log.assignedDoctorId = doctorId ? new mongoose.Types.ObjectId(doctorId) : undefined;
+    await log.save();
+
+    await AuditLog.create({
+      adminId,
+      action: 'ASSIGN_STAIN_REVIEW_DOCTOR',
+      details: `Assigned doctor ${doctorId || 'None'} to stain review log ID: ${logId}`
+    });
+
+    res.json({ message: 'Doctor assigned successfully', log });
+  } catch (error) {
+    console.error('Error assigning doctor to stain review:', error);
+    res.status(500).json({ message: 'Error assigning doctor to stain review' });
+  }
+};
+
 
 export const submitRecommendation = async (req: Request, res: Response) => {
   try {
@@ -179,7 +208,9 @@ export const getPatientTimeline = async (req: Request, res: Response) => {
     }
 
     // 3. Fetch Tobacco Stain Tracker logs
-    const stainLogs = await HabitLog.find({ userId: patientId, type: 'TobaccoStainTracker' }).sort({ timestamp: -1 });
+    const stainLogs = await HabitLog.find({ userId: patientId, type: 'TobaccoStainTracker' })
+      .populate('assignedDoctorId', 'name specialty description avatar')
+      .sort({ timestamp: -1 });
     for (const log of stainLogs) {
       timeline.push({
         date: log.timestamp,
@@ -191,7 +222,35 @@ export const getPatientTimeline = async (req: Request, res: Response) => {
         imageUrl: log.value.imageUrl,
         reviewed: log.reviewed,
         reviewedAt: log.reviewedAt,
+        assignedDoctor: log.assignedDoctorId,
+        doctorNotes: log.doctorNotes,
         logId: log._id
+      });
+    }
+
+    // 3.5 Fetch Lab Bookings for this patient
+    const LabBooking = mongoose.model('LabBooking');
+    const labBookings = await LabBooking.find({ userId: patientId })
+      .populate('assignedDoctorId', 'name specialty description avatar')
+      .populate({
+        path: 'labTestId',
+        populate: {
+          path: 'cancerScreeningTestId',
+          select: 'name'
+        }
+      })
+      .sort({ createdAt: -1 });
+
+    for (const booking of labBookings as any[]) {
+      timeline.push({
+        date: booking.createdAt,
+        type: 'LAB_REPORT',
+        title: `Lab Booking: ${booking.labTestId?.cancerScreeningTestId?.name || 'Screening'}`,
+        description: `Status: ${booking.status} | Price: Rs. ${booking.totalAmount}`,
+        status: booking.status,
+        assignedDoctor: booking.assignedDoctorId,
+        doctorNotes: booking.doctorNotes,
+        bookingId: booking._id
       });
     }
 

@@ -33,6 +33,7 @@ import { DoctorController } from '../controllers/doctorController';
 import { AppointmentController } from '../controllers/appointmentController';
 import { VendorController } from '../controllers/vendorController';
 import * as AdminReviewController from '../controllers/adminReviewController';
+import { assignLabBookingDoctor } from '../controllers/labController';
 
 const router = Router();
 
@@ -347,6 +348,8 @@ router.post('/admin/auth/register', AdminController.register);
 // Doctor/Admin shared review routes (Defined before general admin role check to allow Doctors)
 router.get('/admin/stain-reviews', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor', 'Doctor']), AdminReviewController.getStainReviews);
 router.post('/admin/stain-reviews/:logId/recommendation', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor', 'Doctor']), AdminReviewController.submitRecommendation);
+router.post('/admin/stain-reviews/:logId/assign', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), AdminReviewController.assignStainReviewDoctor);
+router.post('/admin/lab-bookings/:bookingId/assign', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), assignLabBookingDoctor);
 router.get('/admin/patients', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor', 'Doctor']), AdminReviewController.getPatients);
 router.get('/admin/patients/:patientId/activity', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor', 'Doctor']), AdminReviewController.getPatientTimeline);
 router.get('/admin/stain-image/:filename', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor', 'Doctor']), AdminReviewController.getStainImage);
@@ -554,6 +557,10 @@ router.put('/doctor/settings', authenticateToken, requireRole(['Doctor']), Docto
 router.get('/doctor/feedback', authenticateToken, requireRole(['Doctor']), DoctorController.getDoctorFeedback);
 router.put('/doctor/appointments/:appointmentId/notes', authenticateToken, requireRole(['Doctor']), DoctorController.updateAppointmentNotes);
 router.get('/doctor/stats', authenticateToken, requireRole(['Doctor']), DoctorController.getDoctorDashboardStats);
+router.get('/doctor/assigned-stain-reviews', authenticateToken, requireRole(['Doctor']), DoctorController.getAssignedStainReviews);
+router.post('/doctor/assigned-stain-reviews/:logId/notes', authenticateToken, requireRole(['Doctor']), DoctorController.submitStainReviewNotes);
+router.get('/doctor/assigned-lab-bookings', authenticateToken, requireRole(['Doctor']), DoctorController.getAssignedLabBookings);
+router.post('/doctor/assigned-lab-bookings/:bookingId/notes', authenticateToken, requireRole(['Doctor']), DoctorController.submitLabBookingNotes);
 
 // --- VENDOR SIGN IN & PORTAL ROUTES ---
 router.post('/vendor/auth/login', VendorController.vendorLogin);
