@@ -50,6 +50,7 @@ interface Invoice {
   billingName: string;
   billingEmail: string;
   createdAt: string;
+  paymentTransactionId?: string;
 }
 
 interface SubscriptionDetails {
@@ -96,6 +97,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
   const [couponLoading, setCouponLoading] = useState<boolean>(false);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [couponSuccess, setCouponSuccess] = useState<string | null>(null);
+  const [showTrialPopup, setShowTrialPopup] = useState<boolean>(false);
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
@@ -152,6 +154,15 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
           setInvoices(subData.invoices || []);
           if (subData.gstPercentage !== undefined) {
             setGstPercentage(subData.gstPercentage);
+          }
+          // Show popup if the user does not have an active subscription
+          const hasActive = subData.subscription && (
+            subData.subscription.status === 'active' ||
+            subData.subscription.status === 'trialing' ||
+            (subData.subscription.status === 'cancelled' && new Date(subData.subscription.endDate) > new Date())
+          );
+          if (!hasActive) {
+            setShowTrialPopup(true);
           }
         }
       }
@@ -417,26 +428,26 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
 
   if (loading) {
     return (
-      <div className="min-h-full bg-slate-50 flex flex-col pt-12 pb-24 px-6 md:px-10 lg:px-16">
+      <div className="min-h-full bg-slate-50 dark:bg-slate-950 flex flex-col pt-12 pb-24 px-6 md:px-10 lg:px-16">
         <div className="w-full max-w-3xl mx-auto flex-1 flex flex-col justify-center items-center space-y-2">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          <span className="text-xs text-slate-500 font-bold">Fetching plans and billing data...</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-bold">Fetching plans and billing data...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`pb-32 ${isBlocking ? 'pt-0' : 'pt-2'} px-6 md:px-10 lg:px-16 max-w-3xl mx-auto bg-slate-50 min-h-full h-full overflow-y-auto w-full`}>
+    <div className={`pb-32 ${isBlocking ? 'pt-0' : 'pt-2'} px-6 md:px-10 lg:px-16 max-w-3xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-full h-full overflow-y-auto w-full`}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6 bg-white -mx-6 px-6 py-4 border-b border-slate-100 sticky top-0 z-20 shadow-sm">
+      <div className="flex items-center justify-between mb-6 bg-white dark:bg-slate-900 -mx-6 px-6 py-4 border-b border-slate-100 dark:border-slate-800 sticky top-0 z-20 shadow-sm">
         <div className="flex items-center space-x-3">
           {!isBlocking && (
-            <button onClick={onBack} className="p-1 text-slate-500 hover:text-slate-700">
+            <button onClick={onBack} className="p-1 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
               <ArrowLeft className="h-5 w-5" />
             </button>
           )}
-          <span className="font-extrabold text-slate-800 text-sm">Subscription & Billing</span>
+          <span className="font-extrabold text-slate-800 dark:text-slate-100 text-sm">Subscription & Billing</span>
         </div>
         {isBlocking && (
           <button
@@ -464,60 +475,60 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
 
       {/* Active Subscription Banner */}
       {activeSub && activePlanDetails ? (
-        <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-soft mb-6">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-soft mb-6">
           <div className="flex justify-between items-start mb-3">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
                 Your Current Tier
               </span>
-              <h3 className="text-xl font-extrabold text-slate-800 mt-1 flex items-center space-x-2">
+              <h3 className="text-xl font-extrabold text-slate-800 dark:text-slate-100 mt-1 flex items-center space-x-2">
                 <span style={{ color: activePlanDetails.color }}>{activePlanDetails.name}</span>
                 {activeSub.status === 'trialing' && (
-                  <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded-full">
                     Free Trial
                   </span>
                 )}
               </h3>
             </div>
             <div className="text-right">
-              <span className="text-xs font-extrabold text-slate-700">
+              <span className="text-xs font-extrabold text-slate-700 dark:text-slate-200">
                 ₹{activeSub.billingCycle === 'yearly' ? activePlanDetails.yearlyPrice : activePlanDetails.monthlyPrice}
               </span>
-              <span className="text-[9px] text-slate-400 font-bold block">
+              <span className="text-[9px] text-slate-400 dark:text-slate-500 font-bold block">
                 / {activeSub.billingCycle}
               </span>
             </div>
           </div>
 
-          <p className="text-xs text-slate-500 font-semibold mb-4">
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold mb-4">
             {activePlanDetails.description}
           </p>
 
-          <div className="border-t border-slate-100 pt-4 space-y-2">
-            <div className="flex justify-between items-center text-xs font-semibold text-slate-600">
+          <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-2">
+            <div className="flex justify-between items-center text-xs font-semibold text-slate-600 dark:text-slate-400">
               <span className="flex items-center space-x-1.5">
-                <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                <Calendar className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
                 <span>Start Date</span>
               </span>
-              <span className="text-slate-800 font-bold">
+              <span className="text-slate-800 dark:text-slate-100 font-bold">
                 {new Date(activeSub.startDate).toLocaleDateString()}
               </span>
             </div>
 
-            <div className="flex justify-between items-center text-xs font-semibold text-slate-600">
+            <div className="flex justify-between items-center text-xs font-semibold text-slate-600 dark:text-slate-400">
               <span className="flex items-center space-x-1.5">
-                <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                <Calendar className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
                 <span>{activeSub.status === 'trialing' ? 'Trial Expiry' : activeSub.cancelAtPeriodEnd ? 'Expiry Date' : 'Renewal Date'}</span>
               </span>
-              <span className="text-slate-800 font-bold">
+              <span className="text-slate-800 dark:text-slate-100 font-bold">
                 {new Date(activeSub.status === 'trialing' && activeSub.trialEndDate ? activeSub.trialEndDate : activeSub.endDate).toLocaleDateString()}
               </span>
             </div>
 
             {activeSub.cancelAtPeriodEnd ? (
               <div className="space-y-2.5 pt-2">
-                <div className="p-2.5 bg-amber-50 text-amber-800 text-[10px] font-bold rounded-xl border border-amber-100 flex items-start space-x-1.5">
-                  <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-600" />
+                <div className="p-2.5 bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300 text-[10px] font-bold rounded-xl border border-amber-100 dark:border-amber-900/30 flex items-start space-x-1.5">
+                  <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-500" />
                   <span>Auto-renew is disabled. Your access will expire on {new Date(activeSub.endDate).toLocaleDateString()}.</span>
                 </div>
                 <button
@@ -533,7 +544,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                 <button
                   onClick={handleCancelAutoRenew}
                   disabled={actionLoading}
-                  className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2.5 rounded-xl transition-all"
+                  className="w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold py-2.5 rounded-xl transition-all"
                 >
                   {actionLoading ? 'Processing...' : 'Turn Off Auto-Renewal'}
                 </button>
@@ -542,10 +553,10 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
           </div>
         </div>
       ) : (
-        <div className="bg-primary/5 border border-primary/10 rounded-3xl p-5 mb-6 text-center">
+        <div className="bg-primary/5 border border-primary/10 dark:bg-primary/10 dark:border-primary/20 rounded-3xl p-5 mb-6 text-center">
           <Sparkles className="h-8 w-8 text-primary mx-auto mb-2 animate-bounce" />
-          <h3 className="text-sm font-extrabold text-slate-800">Unlock Full {branding.appName} Access</h3>
-          <p className="text-xs text-slate-500 font-medium mt-1">
+          <h3 className="text-sm font-extrabold text-slate-800 dark:text-slate-100">Unlock Full {branding.appName} Access</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
             Choose a premium tier to upload CGM reports, calculate insights, and receive spike alerts.
           </p>
         </div>
@@ -554,19 +565,19 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
       {/* Pricing Cards Listing */}
       <div className="mb-8">
         <div className="flex justify-between items-center mb-4">
-          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Available Pricing Plans</h4>
+          <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Available Pricing Plans</h4>
 
           {/* Toggle Cycle */}
-          <div className="bg-slate-200 p-0.5 rounded-full inline-flex items-center text-[10px] font-bold">
+          <div className="bg-slate-200 dark:bg-slate-800 p-0.5 rounded-full inline-flex items-center text-[10px] font-bold">
             <button
               onClick={() => setBillingCycle('monthly')}
-              className={`px-3 py-1 rounded-full transition-all ${billingCycle === 'monthly' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'}`}
+              className={`px-3 py-1 rounded-full transition-all ${billingCycle === 'monthly' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}
             >
               Monthly
             </button>
             <button
               onClick={() => setBillingCycle('yearly')}
-              className={`px-3 py-1 rounded-full transition-all ${billingCycle === 'yearly' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'}`}
+              className={`px-3 py-1 rounded-full transition-all ${billingCycle === 'yearly' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}
             >
               Yearly (Save ~15%)
             </button>
@@ -575,8 +586,8 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
 
         {/* Coupon Input Area */}
         {branding.enableSubscriptionCoupons && !isIOSAppStoreBlocked && (
-          <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-soft mb-4">
-            <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-200 dark:border-slate-800 shadow-soft mb-4">
+            <label className="block text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5">
               Have a promo coupon code?
             </label>
             <div className="flex space-x-2">
@@ -586,7 +597,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                 value={couponCode}
                 onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                 disabled={couponLoading || !!appliedCoupon}
-                className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 bg-slate-50 uppercase focus:outline-none focus:ring-2 focus:ring-primary focus:bg-white disabled:opacity-70"
+                className="flex-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800 uppercase focus:outline-none focus:ring-2 focus:ring-primary focus:bg-white dark:focus:bg-slate-900 disabled:opacity-70"
               />
               {appliedCoupon ? (
                 <button
@@ -596,13 +607,14 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                     setCouponCode('');
                     setCouponSuccess(null);
                   }}
-                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-extrabold px-4 py-2 rounded-xl transition-all border border-slate-200"
+                  className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-extrabold px-4 py-2 rounded-xl transition-all border border-slate-200 dark:border-slate-700"
                 >
                   Clear
                 </button>
               ) : (
                 <button
                   type="button"
+                  id="apply-coupon-btn"
                   onClick={handleApplyCoupon}
                   disabled={couponLoading || !couponCode.trim()}
                   className="bg-primary hover:bg-primary-dark text-white text-xs font-extrabold px-4 py-2 rounded-xl transition-all shadow-sm disabled:opacity-50"
@@ -617,7 +629,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
               </p>
             )}
             {couponSuccess && (
-              <p className="text-[10px] text-green-600 font-extrabold mt-1.5 flex items-center space-x-1">
+              <p className="text-[10px] text-green-600 dark:text-green-400 font-extrabold mt-1.5 flex items-center space-x-1">
                 <span>✅ {couponSuccess}</span>
               </p>
             )}
@@ -648,7 +660,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
             return (
               <div
                 key={plan._id}
-                className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-soft transition-all hover:border-slate-300 relative"
+                className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-soft transition-all hover:border-slate-300 dark:hover:border-slate-700 relative"
               >
                 {/* Accent line */}
                 <div className="h-1.5 w-full" style={{ backgroundColor: color }}></div>
@@ -663,18 +675,18 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                 )}
 
                 <div className="p-5">
-                  <h4 className="text-base font-extrabold text-slate-800 mb-1" style={{ color: color }}>
+                  <h4 className="text-base font-extrabold mb-1" style={{ color: color }}>
                     {plan.name}
                   </h4>
-                  <p className="text-xs text-slate-400 font-semibold mb-4">
+                  <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mb-4">
                     {plan.description}
                   </p>
 
                   {/* Price breakdown: Base, GST, Total */}
-                  <div className="mb-4 text-xs font-semibold text-slate-600 space-y-1.5 bg-slate-50/70 p-3 rounded-2xl border border-slate-100">
+                  <div className="mb-4 text-xs font-semibold text-slate-600 dark:text-slate-400 space-y-1.5 bg-slate-50/70 dark:bg-slate-800/50 p-3 rounded-2xl border border-slate-100 dark:border-slate-800">
                     <div className="flex justify-between">
                       <span>Base Plan Price:</span>
-                      <span className="text-slate-800 font-extrabold">{currencySymbol}{discount > 0 ? finalPrice : price}</span>
+                      <span className="text-slate-800 dark:text-slate-200 font-extrabold">{currencySymbol}{discount > 0 ? finalPrice : price}</span>
                     </div>
                     {discount > 0 && (
                       <div className="flex justify-between text-red-500 text-[10px] font-bold">
@@ -684,19 +696,19 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                     )}
                     <div className="flex justify-between text-[11px]">
                       <span>GST ({gstPercentage}%):</span>
-                      <span className="text-slate-800 font-bold">{currencySymbol}{((discount > 0 ? finalPrice : price) * gstPercentage / 100).toFixed(2)}</span>
+                      <span className="text-slate-800 dark:text-slate-200 font-bold">{currencySymbol}{((discount > 0 ? finalPrice : price) * gstPercentage / 100).toFixed(2)}</span>
                     </div>
-                    <div className="border-t border-slate-200/50 my-1"></div>
-                    <div className="flex justify-between font-black text-slate-800 text-sm">
+                    <div className="border-t border-slate-200/50 dark:border-slate-750/50 my-1"></div>
+                    <div className="flex justify-between font-black text-slate-800 dark:text-slate-100 text-sm">
                       <span className="flex items-baseline space-x-0.5">
                         <span>Total Price</span>
-                        <span className="text-[10px] text-slate-400 font-bold ml-1">/ {billingCycle === 'yearly' ? 'year' : 'month'}</span>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold ml-1">/ {billingCycle === 'yearly' ? 'year' : 'month'}</span>
                       </span>
                       <span className="text-primary font-black">{currencySymbol}{((discount > 0 ? finalPrice : price) * (1 + gstPercentage / 100)).toFixed(2)}</span>
                     </div>
                     {plan.trialDays > 0 && (
                       <div className="pt-1 flex items-center justify-between">
-                        <span className="text-[10px] font-extrabold text-blue-700 bg-blue-50/75 border border-blue-100 px-2 py-0.5 rounded-md">
+                        <span className="text-[10px] font-extrabold text-blue-700 dark:text-blue-300 bg-blue-50/75 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/30 px-2 py-0.5 rounded-md">
                           {plan.trialDays} Days Free Trial included
                         </span>
                       </div>
@@ -704,19 +716,19 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                   </div>
 
                   {/* Feature Checklist */}
-                  <div className="border-t border-slate-100 pt-3">
+                  <div className="border-t border-slate-100 dark:border-slate-800 pt-3">
                     {renderFeatureList(plan.features)}
                   </div>
 
                   {/* Action Button */}
                   <div className="mt-4">
                     {isActivePlan ? (
-                      <div className="text-center py-2.5 text-xs text-green-600 bg-green-50 rounded-2xl border border-green-100 font-extrabold flex items-center justify-center space-x-1.5">
+                      <div className="text-center py-2.5 text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/20 rounded-2xl border border-green-100 dark:border-green-900/30 font-extrabold flex items-center justify-center space-x-1.5">
                         <Check className="h-4 w-4" />
                         <span>Active Subscription</span>
                       </div>
                     ) : isIOSAppStoreBlocked ? (
-                      <div className="text-center py-2.5 text-xs text-slate-500 bg-slate-50 rounded-2xl border border-slate-200 font-bold px-2">
+                      <div className="text-center py-2.5 text-xs text-slate-500 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 font-bold px-2">
                         <span>In-App Purchases coming soon to iOS</span>
                       </div>
                     ) : (
@@ -740,26 +752,26 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
 
       {/* Invoice Directory */}
       {invoices.length > 0 && (
-        <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-soft">
-          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center space-x-1.5">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-soft">
+          <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3 flex items-center space-x-1.5">
             <FileText className="h-4 w-4" />
             <span>Billing & Invoice History</span>
           </h4>
 
-          <div className="divide-y divide-slate-100 max-h-60 overflow-y-auto no-scrollbar">
+          <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-60 overflow-y-auto no-scrollbar">
             {invoices.map((inv) => (
               <div key={inv._id} className="py-3 flex justify-between items-center text-xs font-semibold">
                 <div>
-                  <span className="text-slate-800 font-bold block">{inv.invoiceNumber}</span>
-                  <span className="text-[10px] text-slate-400 font-semibold">
+                  <span className="text-slate-800 dark:text-slate-100 font-bold block">{inv.invoiceNumber}</span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">
                     {new Date(inv.createdAt).toLocaleDateString()}
                   </span>
                 </div>
                 <div className="flex items-center space-x-3">
-                  <span className="text-slate-700 font-bold">₹{inv.totalAmount.toFixed(2)}</span>
+                  <span className="text-slate-700 dark:text-slate-200 font-bold">₹{inv.totalAmount.toFixed(2)}</span>
                   <button
                     onClick={() => setSelectedInvoice(inv)}
-                    className="p-1.5 bg-slate-50 hover:bg-slate-100 rounded-lg text-primary transition-all"
+                    className="p-1.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-primary transition-all"
                   >
                     <Download className="h-4.5 w-4.5" />
                   </button>
@@ -772,52 +784,56 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
 
       {/* Invoice Modal Details */}
       {selectedInvoice && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
-          <div className="bg-white w-full max-w-sm rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl border border-slate-100 overflow-hidden relative animate-fade-in">
-            <div className="flex justify-between items-center pb-3 border-b border-slate-100 mb-4">
-              <span className="text-xs font-black text-slate-800 flex items-center space-x-1">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden relative animate-fade-in">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
+              <span className="text-xs font-black text-slate-800 dark:text-slate-100 flex items-center space-x-1">
                 <FileText className="h-4 w-4 text-primary" />
                 <span>Invoice Details</span>
               </span>
               <button
                 onClick={() => setSelectedInvoice(null)}
-                className="text-xs font-bold text-slate-400 hover:text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full"
+                className="text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-full"
               >
                 Close
               </button>
             </div>
 
-            <div className="text-center mb-6">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Invoice Number</span>
-              <span className="text-lg font-black text-slate-800">{selectedInvoice.invoiceNumber}</span>
-              <span className="text-[10px] text-slate-400 font-bold block mt-0.5">
-                Date: {new Date(selectedInvoice.createdAt).toLocaleString()}
-              </span>
-            </div>
-
-            <div className="bg-slate-50 rounded-2xl p-4 mb-4 text-xs font-semibold text-slate-600 space-y-2.5 border border-slate-100">
+            <div className="space-y-2 mb-6 text-xs text-slate-500 dark:text-slate-400 font-semibold">
+              <div className="flex justify-between">
+                <span>Invoice Number:</span>
+                <span className="text-slate-800 dark:text-slate-100 font-bold">{selectedInvoice.invoiceNumber}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Payment Reference:</span>
+                <span className="text-slate-850 dark:text-slate-200 font-mono text-[10px]">{selectedInvoice.paymentTransactionId || 'Promo Code / Manual'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Billing Date:</span>
+                <span className="text-slate-800 dark:text-slate-100 font-bold">{new Date(selectedInvoice.createdAt).toLocaleDateString()}</span>
+              </div>
               <div className="flex justify-between">
                 <span>Billing Name:</span>
-                <span className="text-slate-800 font-bold">{selectedInvoice.billingName}</span>
+                <span className="text-slate-800 dark:text-slate-100 font-bold">{selectedInvoice.billingName}</span>
               </div>
               <div className="flex justify-between">
                 <span>Billing Email:</span>
-                <span className="text-slate-800 font-bold">{selectedInvoice.billingEmail}</span>
+                <span className="text-slate-800 dark:text-slate-100 font-bold">{selectedInvoice.billingEmail}</span>
               </div>
-              <div className="border-t border-slate-200/60 my-2"></div>
+              <div className="border-t border-slate-200/60 dark:border-slate-800/60 my-2"></div>
               <div className="flex justify-between">
                 <span>Base Amount (Taxable):</span>
-                <span className="text-slate-800 font-bold">₹{selectedInvoice.amount.toFixed(2)}</span>
+                <span className="text-slate-800 dark:text-slate-100 font-bold">₹{selectedInvoice.amount.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="flex items-center space-x-1">
                   <Percent className="h-3 w-3 text-slate-400" />
                   <span>GST ({Math.round((selectedInvoice.taxAmount / (selectedInvoice.amount || 1)) * 100)}%):</span>
                 </span>
-                <span className="text-slate-800 font-bold">₹{selectedInvoice.taxAmount.toFixed(2)}</span>
+                <span className="text-slate-800 dark:text-slate-100 font-bold">₹{selectedInvoice.taxAmount.toFixed(2)}</span>
               </div>
-              <div className="border-t border-slate-200 my-2"></div>
-              <div className="flex justify-between text-sm font-extrabold text-slate-800">
+              <div className="border-t border-slate-200 dark:border-slate-800 my-2"></div>
+              <div className="flex justify-between text-sm font-extrabold text-slate-800 dark:text-slate-100">
                 <span>Total Paid:</span>
                 <span className="text-primary font-black">₹{selectedInvoice.totalAmount.toFixed(2)}</span>
               </div>
@@ -837,6 +853,63 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
             <div className="bg-blue-50 border border-blue-100 p-3 rounded-2xl flex items-center space-x-2 text-[10px] font-bold text-blue-800">
               <Award className="h-4.5 w-4.5 text-blue-600 shrink-0" />
               <span>Thank you for choosing {branding.appName}. Keep tracking to live anti-gravity health!</span>
+            </div>
+          </div>
+        </div>
+      )}
+      {showTrialPopup && !activeSub && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 max-w-sm w-full border border-slate-100 dark:border-slate-800 shadow-2xl relative overflow-hidden transition-all duration-300">
+            {/* Background design elements */}
+            <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/10 rounded-full blur-2xl" />
+            <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl" />
+            
+            <button 
+              onClick={() => setShowTrialPopup(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="text-center pt-4">
+              <div className="inline-flex items-center justify-center p-4 bg-primary/10 text-primary rounded-[2rem] mb-4 shadow-soft">
+                <Sparkles className="h-8 w-8 text-primary" />
+              </div>
+              
+              <h3 className="text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-tight">
+                Unlock Free Premium Trial!
+              </h3>
+              
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 font-medium leading-relaxed">
+                Use code <span className="font-extrabold text-primary px-2 py-0.5 bg-primary/10 rounded-md">FREE100</span> to get full premium features for free. No credit card required, we won't charge you!
+              </p>
+
+              <div className="mt-6 space-y-2">
+                <button
+                  onClick={() => {
+                    setCouponCode('FREE100');
+                    setShowTrialPopup(false);
+                    // Automatically trigger the apply coupon behavior
+                    setTimeout(() => {
+                      const applyBtn = document.getElementById('apply-coupon-btn');
+                      if (applyBtn) {
+                        applyBtn.removeAttribute('disabled');
+                        applyBtn.click();
+                      }
+                    }, 200);
+                  }}
+                  className="w-full bg-primary hover:bg-primary-dark text-white font-extrabold py-3.5 px-4 rounded-2xl shadow-soft transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] text-xs"
+                >
+                  Apply Code Automatically
+                </button>
+                
+                <button
+                  onClick={() => setShowTrialPopup(false)}
+                  className="w-full bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold py-2.5 px-4 rounded-2xl transition-all duration-200 text-xs"
+                >
+                  I'll enter it manually
+                </button>
+              </div>
             </div>
           </div>
         </div>

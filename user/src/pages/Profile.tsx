@@ -37,12 +37,12 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
   const [mobile, setMobile] = useState(user?.mobileNumber || '');
-  const [age, setAge] = useState(user?.age || 30);
-  const [height, setHeight] = useState(user?.height || 170);
-  const [weight, setWeight] = useState(user?.weight || 70);
+  const [age, setAge] = useState<string>(user?.age?.toString() || '30');
+  const [height, setHeight] = useState<string>(user?.height?.toString() || '170');
+  const [weight, setWeight] = useState<string>(user?.weight?.toString() || '70');
   const [gender, setGender] = useState<'Male' | 'Female' | 'Other'>(user?.gender || 'Male');
   const [activityLevel, setActivityLevel] = useState(user?.activityLevel || 'Moderately active');
-  const [spikeThreshold, setSpikeThreshold] = useState(user?.spikeThreshold || 140);
+  const [spikeThreshold, setSpikeThreshold] = useState<string>(user?.spikeThreshold?.toString() || '140');
   const [currency, setCurrency] = useState<'INR' | 'USD'>((user?.currency as 'INR' | 'USD') || 'INR');
   const [addressLine1, setAddressLine1] = useState(user?.addressLine1 || '');
   const [addressCity, setAddressCity] = useState(user?.addressCity || '');
@@ -101,12 +101,12 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
       name,
       email,
       mobileNumber: mobile,
-      age,
-      height,
-      weight,
+      age: parseInt(age, 10) || 30,
+      height: parseFloat(height) || 170,
+      weight: parseFloat(weight) || 70,
       gender,
       activityLevel,
-      spikeThreshold,
+      spikeThreshold: parseInt(spikeThreshold, 10) || 140,
       currency,
       addressLine1,
       addressCity,
@@ -415,9 +415,10 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
               <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Age</label>
               <input
                 type="number"
+                step="any"
                 required
                 value={age}
-                onChange={(e) => setAge(parseInt(e.target.value, 10))}
+                onChange={(e) => setAge(e.target.value)}
                 className="w-full px-3.5 py-2 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 transition-all"
               />
             </div>
@@ -428,9 +429,10 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
               <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Height (cm)</label>
               <input
                 type="number"
+                step="any"
                 required
                 value={height}
-                onChange={(e) => setHeight(parseInt(e.target.value, 10))}
+                onChange={(e) => setHeight(e.target.value)}
                 className="w-full px-3.5 py-2 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 transition-all"
               />
             </div>
@@ -438,9 +440,10 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
               <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Weight (kg)</label>
               <input
                 type="number"
+                step="any"
                 required
                 value={weight}
-                onChange={(e) => setWeight(parseInt(e.target.value, 10))}
+                onChange={(e) => setWeight(e.target.value)}
                 className="w-full px-3.5 py-2 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 transition-all"
               />
             </div>
@@ -468,9 +471,10 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
             </label>
             <input
               type="number"
+              step="any"
               required
               value={spikeThreshold}
-              onChange={(e) => setSpikeThreshold(parseInt(e.target.value, 10))}
+              onChange={(e) => setSpikeThreshold(e.target.value)}
               className="w-full px-3.5 py-2 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 transition-all"
             />
             <p className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold mt-1 leading-relaxed">

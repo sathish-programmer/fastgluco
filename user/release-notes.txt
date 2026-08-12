@@ -1,0 +1,10 @@
+<en-US>
+- Added decimal input support for all logs and tracker modules.
+- UI improvements for dark theme (input fields, textareas, cards, and warning banners).
+- Core stability and performance updates.
+</en-US>
+<en-IN>
+- Added decimal input support for all logs and tracker modules.
+- UI improvements for dark theme (input fields, textareas, cards, and warning banners).
+- Core stability and performance updates.
+</en-IN>

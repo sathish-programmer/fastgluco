@@ -109,6 +109,11 @@ const MainAppContent: React.FC = () => {
     window.scrollTo(0, 0);
   }, [activeTab, isSubScreenActive, showCancerCGMDashboard]);
 
+  // Reset sub-screen active state when changing tabs
+  useEffect(() => {
+    setIsSubScreenActive(false);
+  }, [activeTab]);
+
   // Listen to Android hardware back button for stack-based navigation
   useEffect(() => {
     let active = true;

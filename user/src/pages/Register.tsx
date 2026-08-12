@@ -17,9 +17,9 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
 
   // Demographics state
   const [gender, setGender] = useState<'Male' | 'Female' | 'Other' | ''>('');
-  const [age, setAge] = useState<number | ''>('');
-  const [height, setHeight] = useState<number | ''>('');
-  const [weight, setWeight] = useState<number | ''>('');
+  const [age, setAge] = useState<string>('');
+  const [height, setHeight] = useState<string>('');
+  const [weight, setWeight] = useState<string>('');
 
   // Lifestyle state
   const [activityLevel, setActivityLevel] = useState<'Sedentary' | 'Lightly active' | 'Moderately active' | 'Very active' | ''>('');
@@ -188,11 +188,12 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
                   <label className="block text-xs font-semibold text-slate-500 mb-1">Age (Years)</label>
                   <input
                     type="number"
+                    step="any"
                     required
                     min="10"
                     max="100"
                     value={age}
-                    onChange={(e) => setAge(e.target.value === '' ? '' : parseInt(e.target.value, 10) || '')}
+                    onChange={(e) => setAge(e.target.value)}
                     className="w-full px-3 py-2.5 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-slate-700 text-sm font-medium"
                   />
                 </div>
@@ -203,11 +204,12 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
                   <label className="block text-xs font-semibold text-slate-500 mb-1">Height (cm)</label>
                   <input
                     type="number"
+                    step="any"
                     required
                     min="100"
                     max="250"
                     value={height}
-                    onChange={(e) => setHeight(e.target.value === '' ? '' : parseInt(e.target.value, 10) || '')}
+                    onChange={(e) => setHeight(e.target.value)}
                     className="w-full px-3 py-2.5 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-slate-700 text-sm font-medium"
                   />
                 </div>
@@ -215,11 +217,12 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
                   <label className="block text-xs font-semibold text-slate-500 mb-1">Weight (kg)</label>
                   <input
                     type="number"
+                    step="any"
                     required
                     min="30"
                     max="200"
                     value={weight}
-                    onChange={(e) => setWeight(e.target.value === '' ? '' : parseInt(e.target.value, 10) || '')}
+                    onChange={(e) => setWeight(e.target.value)}
                     className="w-full px-3 py-2.5 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-slate-700 text-sm font-medium"
                   />
                 </div>

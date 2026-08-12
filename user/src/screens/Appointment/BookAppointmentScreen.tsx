@@ -464,14 +464,14 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                             onClick={() => { if (!isHoliday) setDate(d); }}
                             disabled={isHoliday}
                             className={`flex-shrink-0 flex flex-col items-center justify-center p-3 rounded-xl border-2 min-w-[70px] transition-all ${
-                              isHoliday ? 'border-rose-100 bg-rose-50 opacity-60 cursor-not-allowed' :
-                              isSelected ? 'border-indigo-600 bg-indigo-600 text-white shadow-md' : 'border-slate-100 bg-white text-slate-600 hover:border-slate-200'
+                              isHoliday ? 'border-rose-100 dark:border-rose-950/30 bg-rose-50 dark:bg-rose-950/20 opacity-60 cursor-not-allowed' :
+                              isSelected ? 'border-indigo-600 bg-indigo-600 text-white shadow-md' : 'border-slate-100 dark:border-slate-850 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:border-slate-200 dark:hover:border-slate-700'
                             }`}
                           >
-                            <span className={`text-[10px] uppercase font-bold tracking-widest ${isHoliday ? 'text-rose-400' : isSelected ? 'text-indigo-200' : 'text-slate-400'}`}>
+                            <span className={`text-[10px] uppercase font-bold tracking-widest ${isHoliday ? 'text-rose-400' : isSelected ? 'text-indigo-200' : 'text-slate-400 dark:text-slate-500'}`}>
                               {dateObj.toLocaleDateString('en-US', { weekday: 'short' })}
                             </span>
-                            <span className={`text-xl font-black mt-1 ${isHoliday ? 'text-rose-700' : ''}`}>
+                            <span className={`text-xl font-black mt-1 ${isHoliday ? 'text-rose-700 dark:text-rose-400' : ''}`}>
                               {dateObj.getDate()}
                             </span>
                           </button>
@@ -484,10 +484,10 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                       <select
                         value={reason}
                         onChange={(e) => setReason(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-400 font-bold"
+                        className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-400 font-bold text-slate-800 dark:text-slate-100"
                       >
                         {reasons.map(r => (
-                          <option key={r} value={r}>{r}</option>
+                          <option key={r} value={r} className="dark:bg-slate-900 dark:text-slate-100">{r}</option>
                         ))}
                       </select>
                     </div>
@@ -496,7 +496,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                     <div className="space-y-3">
                       <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Select Consultation Time</label>
                       {availableSlots.length === 0 ? (
-                        <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 text-xs text-amber-600 font-bold">
+                        <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-xl p-3 text-xs text-amber-600 dark:text-amber-450 font-bold">
                           No slots available on this day. Please pick another date.
                         </div>
                       ) : (
@@ -525,10 +525,10 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                                 onClick={() => setSelectedSlot(slotTime)}
                                 className={`py-3 rounded-2xl border text-xs font-bold transition-all text-center flex items-center justify-center gap-1 shadow-sm ${
                                   !isAvailable 
-                                    ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed opacity-60' 
+                                    ? 'bg-slate-100 dark:bg-slate-950 border-slate-200 dark:border-slate-800/80 text-slate-400 dark:text-slate-650 cursor-not-allowed opacity-60' 
                                     : selectedSlot === slotTime 
-                                      ? 'bg-indigo-600 text-white border-indigo-600 ring-2 ring-indigo-100' 
-                                      : 'bg-slate-50 border-slate-200/60 text-slate-700 hover:bg-slate-100'
+                                      ? 'bg-indigo-600 text-white border-indigo-600 ring-2 ring-indigo-100 dark:ring-indigo-950/50' 
+                                      : 'bg-slate-50 dark:bg-slate-900 border-slate-200/60 dark:border-slate-800 text-slate-700 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-850'
                                 }`}
                               >
                                 <Clock className="w-3.5 h-3.5 opacity-65" /> {slotTime} {!isAvailable && (slotObj.isAvailable === false ? '(Booked)' : '(Past)')}
@@ -542,9 +542,9 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
 
                   {/* Notes to Doctor — shown after slot selected */}
                   {selectedSlot && (
-                    <div className="border border-indigo-100 bg-indigo-50/40 rounded-2xl p-4">
-                      <label className="block text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-                        📝 Notes to Doctor <span className="text-slate-300 font-normal normal-case">(optional)</span>
+                    <div className="border border-indigo-100 dark:border-slate-800 bg-indigo-50/40 dark:bg-slate-900/40 rounded-2xl p-4">
+                      <label className="block text-xs font-bold text-indigo-400 dark:text-indigo-300 uppercase tracking-wider mb-2 flex items-center gap-1">
+                        📝 Notes to Doctor <span className="text-slate-300 dark:text-slate-500 font-normal normal-case">(optional)</span>
                       </label>
                       <textarea
                         value={patientNotes}
@@ -552,9 +552,9 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                         placeholder="Share any symptoms, concerns or context the doctor should know before your visit..."
                         rows={3}
                         maxLength={500}
-                        className="w-full bg-white border border-indigo-100 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 resize-none leading-relaxed"
+                        className="w-full bg-white dark:bg-slate-950 border border-indigo-100 dark:border-slate-800 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-950/50 focus:border-indigo-400 text-slate-700 dark:text-slate-200 resize-none leading-relaxed"
                       />
-                      <p className="text-[10px] text-slate-300 text-right mt-1">{patientNotes.length}/500</p>
+                      <p className="text-[10px] text-slate-300 dark:text-slate-500 text-right mt-1">{patientNotes.length}/500</p>
                     </div>
                   )}
 

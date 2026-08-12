@@ -93,8 +93,8 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
   const [search, setSearch] = useState(defaultSearch || '');
   const [selectedCategory, setSelectedCategory] = useState<string>(type || 'All');
   const [selectedBrand, setSelectedBrand] = useState<string>('All');
-  const [minPrice, setMinPrice] = useState<number | ''>('');
-  const [maxPrice, setMaxPrice] = useState<number | ''>('');
+  const [minPrice, setMinPrice] = useState<string>('');
+  const [maxPrice, setMaxPrice] = useState<string>('');
   const [onlyDoctorRecommended, setOnlyDoctorRecommended] = useState(false);
   const [onlyAvailable, setOnlyAvailable] = useState(false);
   const [sortBy, setSortBy] = useState('newest');
@@ -359,22 +359,22 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
         </div>
 
         {/* Product Details Section */}
-        <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-[0_12px_40px_rgba(0,0,0,0.03)] p-6 md:p-10 flex flex-col md:flex-row gap-10">
+        <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-[0_12px_40px_rgba(0,0,0,0.03)] p-6 md:p-10 flex flex-col md:flex-row gap-10">
           {/* Left Column: Image & Basic details */}
           <div className="md:w-2/5 flex flex-col items-center">
-            <div className="w-full aspect-square bg-slate-50/70 border border-slate-100 rounded-[2rem] flex items-center justify-center overflow-hidden mb-6 relative shadow-inner">
+            <div className="w-full aspect-square bg-slate-50/70 dark:bg-slate-950/70 border border-slate-100 dark:border-slate-800 rounded-[2rem] flex items-center justify-center overflow-hidden mb-6 relative shadow-inner">
               <ProductImage src={selectedProduct.image} apiUrl={apiUrl} className="h-full w-full object-contain p-6" textClassName="text-8xl" />
             </div>
             
-            <div className="bg-slate-50/60 border border-slate-100 rounded-3xl p-5 w-full space-y-3.5 text-slate-700">
+            <div className="bg-slate-50/60 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800 rounded-3xl p-5 w-full space-y-3.5 text-slate-700 dark:text-slate-300">
               <div className="flex justify-between items-center text-xs">
                 <span className="font-bold text-slate-400 uppercase tracking-widest text-[9px]">Category</span>
-                <span className="font-black text-indigo-600 uppercase tracking-wide">{selectedProduct.category}</span>
+                <span className="font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-wide">{selectedProduct.category}</span>
               </div>
               {selectedProduct.brand && (
-                <div className="flex justify-between items-center text-xs border-t border-slate-100 pt-3">
+                <div className="flex justify-between items-center text-xs border-t border-slate-100 dark:border-slate-800 pt-3">
                   <span className="font-bold text-slate-400 uppercase tracking-widest text-[9px]">Brand</span>
-                  <span className="font-extrabold text-slate-700">{selectedProduct.brand}</span>
+                  <span className="font-extrabold text-slate-700 dark:text-slate-200">{selectedProduct.brand}</span>
                 </div>
               )}
               {selectedProduct.manufacturer && (
@@ -403,7 +403,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
                   )}
                 </div>
                 
-                <h1 className="text-2xl md:text-3xl font-sans font-black text-slate-850 tracking-tight leading-tight">{selectedProduct.name}</h1>
+                <h1 className="text-2xl md:text-3xl font-sans font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight">{selectedProduct.name}</h1>
                 {productReviews.length > 0 && (
                   <div className="flex items-center gap-1.5 mt-2">
                     <div className="flex items-center text-amber-400 text-sm">
@@ -430,11 +430,11 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
               </div>
 
               {/* Price & Variant Selection Box */}
-              <div className="bg-slate-50/80 border border-slate-100 p-6 rounded-[2rem] space-y-4">
+              <div className="bg-slate-50/80 dark:bg-slate-950/80 border border-slate-100 dark:border-slate-800 p-6 rounded-[2rem] space-y-4">
                 <div className="flex justify-between items-end">
                   <span className="text-xs font-bold text-slate-400 uppercase tracking-widest block pb-1">Fulfillment Price</span>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-black text-slate-900 leading-none">
+                    <span className="text-3xl font-black text-slate-900 dark:text-white leading-none">
                       {curr}
                       {selectedVariant 
                         ? selectedVariant.price.toFixed(2)
@@ -685,16 +685,18 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
             <div className="grid grid-cols-2 gap-2">
               <input 
                 type="number" 
+                step="any"
                 placeholder="Min" 
                 value={minPrice} 
-                onChange={(e) => setMinPrice(e.target.value ? Number(e.target.value) : '')}
+                onChange={(e) => setMinPrice(e.target.value)}
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-xs text-slate-700 dark:text-slate-200 font-bold focus:outline-none"
               />
               <input 
                 type="number" 
+                step="any"
                 placeholder="Max" 
                 value={maxPrice} 
-                onChange={(e) => setMaxPrice(e.target.value ? Number(e.target.value) : '')}
+                onChange={(e) => setMaxPrice(e.target.value)}
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-xs text-slate-700 dark:text-slate-200 font-bold focus:outline-none"
               />
             </div>

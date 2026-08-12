@@ -465,14 +465,14 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
             <button 
               onClick={() => handleSelectDental('sharpTooth', true)}
               disabled={loading}
-              className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${sharpTooth === true ? 'bg-primary text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'} disabled:opacity-50`}
+              className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${sharpTooth === true ? 'bg-primary text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-transparent dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-800'} disabled:opacity-50`}
             >
               Yes
             </button>
             <button 
               onClick={() => handleSelectDental('sharpTooth', false)}
               disabled={loading}
-              className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${sharpTooth === false ? 'bg-primary text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'} disabled:opacity-50`}
+              className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${sharpTooth === false ? 'bg-primary text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-transparent dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-800'} disabled:opacity-50`}
             >
               No
             </button>
@@ -506,14 +506,14 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
             <button 
               onClick={() => handleSelectDental('tobacco', true)}
               disabled={loading}
-              className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${tobacco === true ? 'bg-primary text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'} disabled:opacity-50`}
+              className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${tobacco === true ? 'bg-primary text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-transparent dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-800'} disabled:opacity-50`}
             >
               Yes
             </button>
             <button 
               onClick={() => handleSelectDental('tobacco', false)}
               disabled={loading}
-              className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${tobacco === false ? 'bg-primary text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'} disabled:opacity-50`}
+              className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${tobacco === false ? 'bg-primary text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-transparent dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-800'} disabled:opacity-50`}
             >
               No
             </button>
@@ -875,14 +875,14 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
             <button 
               onClick={() => handleSelectDental('illFittingDenture', true)}
               disabled={loading}
-              className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${illFittingDenture === true ? 'bg-primary text-white shadow-md' : 'bg-slate-100 text-slate-650 hover:bg-slate-200'} disabled:opacity-50`}
+              className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${illFittingDenture === true ? 'bg-primary text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-650 dark:text-slate-300 border border-transparent dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-800'} disabled:opacity-50`}
             >
               Yes
             </button>
             <button 
               onClick={() => handleSelectDental('illFittingDenture', false)}
               disabled={loading}
-              className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${illFittingDenture === false ? 'bg-primary text-white shadow-md' : 'bg-slate-100 text-slate-650 hover:bg-slate-200'} disabled:opacity-50`}
+              className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${illFittingDenture === false ? 'bg-primary text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-650 dark:text-slate-300 border border-transparent dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-800'} disabled:opacity-50`}
             >
               No
             </button>

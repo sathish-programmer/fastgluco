@@ -8,13 +8,15 @@ interface ObesityLogScreenProps {
 }
 
 export const ObesityLogScreen: React.FC<ObesityLogScreenProps> = ({ onBack, onBookAppointment }) => {
-  const [height, setHeight] = useState<number | ''>('');
-  const [weight, setWeight] = useState<number | ''>('');
+  const [height, setHeight] = useState<string>('');
+  const [weight, setWeight] = useState<string>('');
   const [difficultyLosing, setDifficultyLosing] = useState<boolean | null>(null);
 
   const calculateBMI = () => {
-    if (typeof height === 'number' && typeof weight === 'number' && height > 0) {
-      return (weight / Math.pow(height / 100, 2)).toFixed(1);
+    const h = parseFloat(height);
+    const w = parseFloat(weight);
+    if (!isNaN(h) && !isNaN(w) && h > 0) {
+      return (w / Math.pow(h / 100, 2)).toFixed(1);
     }
     return null;
   };
@@ -61,9 +63,10 @@ export const ObesityLogScreen: React.FC<ObesityLogScreenProps> = ({ onBack, onBo
             <label className="block text-xs font-semibold text-slate-500 mb-1">Height (cm)</label>
             <input
               type="number"
+              step="any"
               placeholder="e.g. 165"
               value={height}
-              onChange={(e) => setHeight(e.target.value ? parseInt(e.target.value) : '')}
+              onChange={(e) => setHeight(e.target.value)}
               className="w-full px-3 py-2.5 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-slate-700 text-sm font-medium"
             />
           </div>
@@ -71,9 +74,10 @@ export const ObesityLogScreen: React.FC<ObesityLogScreenProps> = ({ onBack, onBo
             <label className="block text-xs font-semibold text-slate-500 mb-1">Weight (kg)</label>
             <input
               type="number"
+              step="any"
               placeholder="e.g. 70"
               value={weight}
-              onChange={(e) => setWeight(e.target.value ? parseInt(e.target.value) : '')}
+              onChange={(e) => setWeight(e.target.value)}
               className="w-full px-3 py-2.5 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-slate-700 text-sm font-medium"
             />
           </div>

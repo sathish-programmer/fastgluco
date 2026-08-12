@@ -1270,6 +1270,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
                 </label>
                 <input
                   type="number"
+                  step="any"
                   required
                   placeholder="e.g. 105"
                   value={manualGlucose}
@@ -1384,6 +1385,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
                   </label>
                   <input
                     type="number"
+                    step="any"
                     required
                     min="1"
                     value={activityDuration}
@@ -1397,6 +1399,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
                   </label>
                   <input
                     type="number"
+                    step="any"
                     placeholder="e.g. 3000"
                     value={activitySteps}
                     onChange={(e) => setActivitySteps(e.target.value)}
@@ -1412,6 +1415,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
                   </label>
                   <input
                     type="number"
+                    step="any"
                     placeholder="e.g. 150"
                     value={activityCalories}
                     onChange={(e) => setActivityCalories(e.target.value)}

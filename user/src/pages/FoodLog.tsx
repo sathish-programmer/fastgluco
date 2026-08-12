@@ -114,13 +114,13 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
   const [activeTab, setActiveTab] = useState<'search' | 'manual' | 'scan'>('search');
   const [portionType, setPortionType] = useState<string>('100');
   const [customGrams, setCustomGrams] = useState<number>(100);
-  const [quantity, setQuantity] = useState<number>(1);
+  const [quantity, setQuantity] = useState<string>('1');
   const [unit, setUnit] = useState('serving');
 
   const handlePortionChange = (type: string, customVal?: number) => {
     setPortionType(type);
     const val = type === 'custom' ? (customVal ?? customGrams) : parseFloat(type);
-    setQuantity(val);
+    setQuantity(val.toString());
   };
 
   // Edit log modal state
@@ -131,7 +131,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
   const [editCategory, setEditCategory] = useState<string>('Custom');
   const [editDate, setEditDate] = useState('');
   const [editTime, setEditTime] = useState('');
-  const [editQuantity, setEditQuantity] = useState<number>(1);
+  const [editQuantity, setEditQuantity] = useState<string>('1');
   const [editUnit, setEditUnit] = useState('');
   const [editCalories, setEditCalories] = useState<number>(0);
   const [editCarbs, setEditCarbs] = useState<number>(0);
@@ -266,17 +266,17 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
     if (pType === 'count') {
       setPortionType('1');
       setCustomGrams(1);
-      setQuantity(1);
+      setQuantity('1');
       setUnit(food.servingUnit || 'piece');
     } else if (pType === 'volume') {
       setPortionType('100');
       setCustomGrams(100);
-      setQuantity(100);
+      setQuantity('100');
       setUnit('ml');
     } else {
       setPortionType('100');
       setCustomGrams(100);
-      setQuantity(100);
+      setQuantity('100');
       setUnit('g');
     }
 
@@ -295,7 +295,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
     setProtein(0);
     setFat(0);
     setFiber(0);
-    setQuantity(1);
+    setQuantity('1');
     setUnit('serving');
     setPortionType('100');
     setCustomGrams(100);
@@ -409,7 +409,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
 
       // Reset form
       handleClearSelected();
-      setQuantity(1);
+      setQuantity('1');
 
       // If user logged meal on a different date, switch view date to match
       if (logDate !== selectedViewDate) {
@@ -429,7 +429,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
     setEditName(log.name);
     setEditMealType(log.mealType);
     setEditCategory(log.category);
-    setEditQuantity(log.quantity);
+    setEditQuantity(log.quantity.toString());
     setEditUnit(log.unit);
 
     setEditBaseCalories(log.calories);
@@ -469,27 +469,32 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
 
   const handleEditCaloriesChange = (val: number) => {
     setEditCalories(val);
-    if (editQuantity > 0) setEditBaseCalories(val / editQuantity);
+    const qtyNum = parseFloat(editQuantity) || 0;
+    if (qtyNum > 0) setEditBaseCalories(val / qtyNum);
   };
 
   const handleEditCarbsChange = (val: number) => {
     setEditCarbs(val);
-    if (editQuantity > 0) setEditBaseCarbs(val / editQuantity);
+    const qtyNum = parseFloat(editQuantity) || 0;
+    if (qtyNum > 0) setEditBaseCarbs(val / qtyNum);
   };
 
   const handleEditProteinChange = (val: number) => {
     setEditProtein(val);
-    if (editQuantity > 0) setEditBaseProtein(val / editQuantity);
+    const qtyNum = parseFloat(editQuantity) || 0;
+    if (qtyNum > 0) setEditBaseProtein(val / qtyNum);
   };
 
   const handleEditFatChange = (val: number) => {
     setEditFat(val);
-    if (editQuantity > 0) setEditBaseFat(val / editQuantity);
+    const qtyNum = parseFloat(editQuantity) || 0;
+    if (qtyNum > 0) setEditBaseFat(val / qtyNum);
   };
 
   const handleEditFiberChange = (val: number) => {
     setEditFiber(val);
-    if (editQuantity > 0) setEditBaseFiber(val / editQuantity);
+    const qtyNum = parseFloat(editQuantity) || 0;
+    if (qtyNum > 0) setEditBaseFiber(val / qtyNum);
   };
 
   const handleEditSubmit = async (e: React.FormEvent) => {
@@ -902,7 +907,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                 onClick={() => {
                   setActiveTab('search');
                   setSelectedLibraryFood(null);
-                  setQuantity(100);
+                  setQuantity('100');
                   setUnit('g');
                   setCustomName('');
                 }}
@@ -915,7 +920,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                 onClick={() => {
                   setActiveTab('manual');
                   setSelectedLibraryFood(null);
-                  setQuantity(1);
+                  setQuantity('1');
                   setUnit('serving');
                   setCustomName('');
                 }}
@@ -1252,14 +1257,11 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                     <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Serving Qty</label>
                     <input
                       type="number"
-                      step="0.1"
+                      step="any"
                       min="0.1"
                       required
                       value={quantity}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setQuantity(val === '' ? '' as any : parseFloat(val));
-                      }}
+                      onChange={(e) => setQuantity(e.target.value)}
                       className="w-full px-3 py-2 rounded-2xl border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-bold text-slate-700 bg-white"
                     />
                   </div>
@@ -1500,14 +1502,11 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                     <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Serving Qty</label>
                     <input
                       type="number"
-                      step="0.1"
+                      step="any"
                       min="0.1"
                       required
                       value={editQuantity}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        handleEditQuantityChange(val === '' ? '' as any : parseFloat(val));
-                      }}
+                      onChange={(e) => handleEditQuantityChange(e.target.value)}
                       className="w-full px-3.5 py-2 rounded-2xl border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-bold text-slate-700 bg-white"
                     />
                   </div>

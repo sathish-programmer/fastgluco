@@ -299,12 +299,15 @@ const seed = async () => {
     const envKeyId = process.env.RAZORPAY_KEY_ID;
     const envKeySecret = process.env.RAZORPAY_KEY_SECRET;
     
+    const isValidKey = (key?: string) => !!key && !key.includes('PLEASE_UPDATE') && key.trim().length > 0;
+    const hasValidKeys = isValidKey(envKeyId) && isValidKey(envKeySecret);
+    
     await PaymentGatewayConfig.create({
       isSandbox: true,
-      enablePayments: !!(envKeyId && envKeySecret), // Enable real payments if keys are present in .env
+      enablePayments: hasValidKeys, // Enable real payments if valid keys are present in .env
       enableSubscriptions: true, // Subscriptions required globally
-      razorpayKeyId: envKeyId || undefined,
-      razorpayKeySecret: envKeySecret || undefined,
+      razorpayKeyId: hasValidKeys ? envKeyId : undefined,
+      razorpayKeySecret: hasValidKeys ? envKeySecret : undefined,
       glucoseAlertMinIntervalHours: 2,
       enableHydrationTracker: true,
       enableWorkoutTracker: true,

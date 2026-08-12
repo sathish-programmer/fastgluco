@@ -33,7 +33,7 @@ export class LibreSyncService {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'Product': 'llu.android',
-      'Version': '4.7.0',
+      'Version': '4.12.0',
       'Accept': 'application/json',
       'User-Agent': 'Mozilla/5.0 (Linux; Android 10; LLU) AppleWebKit/537.36'
     };

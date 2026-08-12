@@ -44,12 +44,12 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           let icon = <Info className="h-5 w-5 text-blue-400 shrink-0" />;
 
           if (toast.type === 'success') {
-            bgColor = 'bg-white/95 text-slate-800 shadow-xl';
-            borderColor = 'border-emerald-100';
+            bgColor = 'bg-white/95 dark:bg-slate-900/95 text-slate-800 dark:text-slate-100 shadow-xl';
+            borderColor = 'border-emerald-100 dark:border-emerald-900/30';
             icon = <CheckCircle className="h-5 w-5 text-emerald-500 shrink-0" />;
           } else if (toast.type === 'error') {
-            bgColor = 'bg-white/95 text-slate-800 shadow-xl';
-            borderColor = 'border-red-100';
+            bgColor = 'bg-white/95 dark:bg-slate-900/95 text-slate-800 dark:text-slate-100 shadow-xl';
+            borderColor = 'border-red-100 dark:border-red-900/30';
             icon = <AlertCircle className="h-5 w-5 text-red-500 shrink-0" />;
           }
 
