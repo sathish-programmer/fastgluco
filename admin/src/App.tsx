@@ -56,6 +56,7 @@ import {
 } from 'recharts';
 import { AdminShopProducts } from './components/AdminShopProducts';
 import { AdminCancerTests } from './components/AdminCancerTests';
+import { AdminIndianCancers } from './components/AdminIndianCancers';
 import { AdminExtDashboard } from './components/AdminExtDashboard';
 import { DoctorPortal } from './components/DoctorPortal';
 import { VendorPortal } from './components/VendorPortal';
@@ -2214,6 +2215,14 @@ const AdminPanelContent: React.FC = () => {
                     >
                       Partner Labs
                     </button>
+                    <button 
+                      onClick={() => { setActiveView('indian-cancers'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'indian-cancers' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Indian Cancers & Risks
+                    </button>
                   </div>
                 )}
               </div>
@@ -3748,6 +3757,10 @@ const AdminPanelContent: React.FC = () => {
         
         {activeView === 'partner-labs' && (
           <AdminLabs apiUrl={apiUrl} token={token} />
+        )}
+
+        {activeView === 'indian-cancers' && (
+          <AdminIndianCancers apiUrl={apiUrl} token={token} />
         )}
 
         {/* APPOINTMENTS CALENDAR VIEW */}

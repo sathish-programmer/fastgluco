@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Info, ShieldAlert, Award, ShoppingBag, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Info, ShieldAlert, Award, ShoppingBag, ExternalLink, Activity } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { HabitsService } from '../../services/habitsService';
 import { ConsultationBanner } from '../../components/ConsultationBanner';
@@ -289,108 +289,139 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
 
       {/* VIEW 2: AIR POLLUTION */}
       {currentView === 'air' && (
-        <div className="space-y-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 shadow-sm animate-in slide-in-from-right duration-250">
-          <div className="space-y-4">
-            {/* Q1 */}
-            <div>
-              <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-2">Question 1</p>
-              <p className="text-sm font-semibold text-slate-850 dark:text-slate-100 leading-relaxed mb-3">
-                Does your work or daily routine require you to stay outdoors for more than 2 hours on days with poor air quality (AQI &gt; 150)?
-              </p>
-              <div className="flex gap-3">
-                <button 
-                  onClick={() => setAirQ1(true)}
-                  className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all border ${airQ1 === true ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
-                >
-                  Yes (-1)
-                </button>
-                <button 
-                  onClick={() => setAirQ1(false)}
-                  className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all border ${airQ1 === false ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
-                >
-                  No (0)
-                </button>
-              </div>
-            </div>
-
-            {/* Q2 (unlocked after Q1 answered) */}
-            {airQ1 !== null ? (
-              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 animate-in fade-in duration-200">
-                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-2">Question 2</p>
+        <>
+          <div className="space-y-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 shadow-sm animate-in slide-in-from-right duration-250">
+            <div className="space-y-4">
+              {/* Q1 */}
+              <div>
+                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-2">Question 1</p>
                 <p className="text-sm font-semibold text-slate-850 dark:text-slate-100 leading-relaxed mb-3">
-                  Does your work involve exposure to asbestos, silica, or industrial fumes?
+                  Does your work or daily routine require you to stay outdoors for more than 2 hours on days with poor air quality (AQI &gt; 150)?
                 </p>
                 <div className="flex gap-3">
                   <button 
-                    onClick={() => setAirQ2(true)}
-                    className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all border ${airQ2 === true ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+                    onClick={() => setAirQ1(true)}
+                    className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all border ${airQ1 === true ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
                   >
                     Yes (-1)
                   </button>
                   <button 
-                    onClick={() => setAirQ2(false)}
-                    className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all border ${airQ2 === false ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+                    onClick={() => setAirQ1(false)}
+                    className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all border ${airQ1 === false ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
                   >
                     No (0)
                   </button>
                 </div>
               </div>
-            ) : (
-              <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl text-center text-xs text-slate-400 italic">
-                Answer Question 1 to unlock the next question.
+
+              {/* Q2 (unlocked after Q1 answered) */}
+              {airQ1 !== null ? (
+                <div className="pt-4 border-t border-slate-100 dark:border-slate-800 animate-in fade-in duration-200">
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-2">Question 2</p>
+                  <p className="text-sm font-semibold text-slate-850 dark:text-slate-100 leading-relaxed mb-3">
+                    Does your work involve exposure to asbestos, silica, or industrial fumes?
+                  </p>
+                  <div className="flex gap-3">
+                    <button 
+                      onClick={() => setAirQ2(true)}
+                      className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all border ${airQ2 === true ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+                    >
+                      Yes (-1)
+                    </button>
+                    <button 
+                      onClick={() => setAirQ2(false)}
+                      className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all border ${airQ2 === false ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+                    >
+                      No (0)
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl text-center text-xs text-slate-400 italic">
+                  Answer Question 1 to unlock the next question.
+                </div>
+              )}
+            </div>
+
+            {/* Referral banner if score is -2 */}
+            {airScore === -2 && onBookAppointment && (
+              <ConsultationBanner
+                sourceModule="Environmental"
+                reason="Pulmonologist Consultation"
+                triggerCondition="Severe air exposure risks"
+                riskLevel="High"
+                recommendedSpecialty="Pulmonologist"
+                title="Pulmonologist Consultation"
+                description="Your score flags high particulate & chemical inhalation risks. Consider speaking to a pulmonologist to check lung health."
+                colorTheme="rose"
+                onBookAppointment={onBookAppointment}
+              />
+            )}
+
+            {airQ1 !== null && airQ2 !== null && (
+              <div className="bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 rounded-2xl p-4 space-y-4 animate-in fade-in duration-300">
+                <p className="text-xs text-indigo-750 dark:text-indigo-400 font-semibold leading-relaxed">
+                  ℹ️ <strong>Recommendation:</strong> Reduce your exposure to air pollution where possible. Use an N95 mask and an air purifier when appropriate.
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <button 
+                    onClick={() => onNavigateToShop?.('N95 Mask')}
+                    className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-indigo-300 dark:hover:border-indigo-800 transition-all text-center group w-full"
+                  >
+                    <ShoppingBag className="h-5 w-5 text-indigo-500 mb-1 group-hover:scale-110 transition-transform" />
+                    <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200">Order N95 Masks</span>
+                    <span className="text-[9px] text-slate-400 mt-0.5 inline-flex items-center gap-0.5">Shop now <ExternalLink className="h-2 w-2" /></span>
+                  </button>
+                  <button 
+                    onClick={() => onNavigateToShop?.('Air Purifier')}
+                    className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-indigo-300 dark:hover:border-indigo-800 transition-all text-center group w-full"
+                  >
+                    <ShoppingBag className="h-5 w-5 text-indigo-500 mb-1 group-hover:scale-110 transition-transform" />
+                    <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200">Order Air Purifier</span>
+                    <span className="text-[9px] text-slate-400 mt-0.5 inline-flex items-center gap-0.5">Shop now <ExternalLink className="h-2 w-2" /></span>
+                  </button>
+                </div>
               </div>
             )}
+
+            <button 
+              onClick={() => setCurrentView('hub')}
+              disabled={airQ1 === null || airQ2 === null}
+              className={`w-full py-3.5 rounded-xl font-bold text-xs transition-all text-white ${airQ1 !== null && airQ2 !== null ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-200 cursor-not-allowed opacity-60'}`}
+            >
+              Done with Air Category
+            </button>
           </div>
 
-          {/* Referral banner if score is -2 */}
-          {airScore === -2 && onBookAppointment && (
-            <ConsultationBanner
-              sourceModule="Environmental"
-              reason="Pulmonologist Consultation"
-              triggerCondition="Severe air exposure risks"
-              riskLevel="High"
-              recommendedSpecialty="Pulmonologist"
-              title="Pulmonologist Consultation"
-              description="Your score flags high particulate & chemical inhalation risks. Consider speaking to a pulmonologist to check lung health."
-              colorTheme="rose"
-              onBookAppointment={onBookAppointment}
-            />
-          )}
-
-          {airQ1 !== null && airQ2 !== null && (
-            <div className="bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 rounded-2xl p-4 space-y-4 animate-in fade-in duration-300">
-              <p className="text-xs text-indigo-750 dark:text-indigo-400 font-semibold leading-relaxed">
-                ℹ️ <strong>Recommendation:</strong> Reduce your exposure to air pollution where possible. Use an N95 mask and an air purifier when appropriate.
-              </p>
-              <div className="grid grid-cols-2 gap-3">
-                <button 
-                  onClick={() => onNavigateToShop?.('N95 Mask')}
-                  className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-indigo-300 dark:hover:border-indigo-800 transition-all text-center group w-full"
-                >
-                  <ShoppingBag className="h-5 w-5 text-indigo-500 mb-1 group-hover:scale-110 transition-transform" />
-                  <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200">Order N95 Masks</span>
-                  <span className="text-[9px] text-slate-400 mt-0.5 inline-flex items-center gap-0.5">Shop now <ExternalLink className="h-2 w-2" /></span>
-                </button>
-                <button 
-                  onClick={() => onNavigateToShop?.('Air Purifier')}
-                  className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-indigo-300 dark:hover:border-indigo-800 transition-all text-center group w-full"
-                >
-                  <ShoppingBag className="h-5 w-5 text-indigo-500 mb-1 group-hover:scale-110 transition-transform" />
-                  <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200">Order Air Purifier</span>
-                  <span className="text-[9px] text-slate-400 mt-0.5 inline-flex items-center gap-0.5">Shop now <ExternalLink className="h-2 w-2" /></span>
-                </button>
+          {/* Real-time AQI tracker link card */}
+          <div className="mt-4 bg-gradient-to-br from-indigo-50/50 to-white dark:from-indigo-950/20 dark:to-slate-900 border border-indigo-100/70 dark:border-slate-800 rounded-3xl p-5 flex items-center justify-between shadow-[0_8px_30px_rgb(0,0,0,0.02)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all duration-300">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-md shadow-indigo-100 dark:shadow-none shrink-0">
+                <Activity className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="flex items-center">
+                  <span className="relative flex h-2 w-2 mr-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  <h4 className="text-[11px] font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">Live Air Quality Index (AQI)</h4>
+                </div>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium leading-normal mt-1">
+                  Know what you breathe. Check real-time air pollution levels in your city.
+                </p>
               </div>
             </div>
-          )}
-
-          <button 
-            onClick={() => setCurrentView('hub')}
-            disabled={airQ1 === null || airQ2 === null}
-            className={`w-full py-3.5 rounded-xl font-bold text-xs transition-all text-white ${airQ1 !== null && airQ2 !== null ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-200 cursor-not-allowed opacity-60'}`}
-          >
-            Done with Air Category
-          </button>
-        </div>
+            <a 
+              href="https://www.aqi.in/in" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-md shadow-indigo-100 dark:shadow-none active:scale-95 shrink-0 ml-3"
+            >
+              Track Live AQI <ExternalLink className="h-3 w-3" />
+            </a>
+          </div>
+        </>
       )}
 
       {/* VIEW 3: WATER POLLUTION */}

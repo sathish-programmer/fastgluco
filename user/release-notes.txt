@@ -1,10 +1,12 @@
 <en-US>
-- Added decimal input support for all logs and tracker modules.
-- UI improvements for dark theme (input fields, textareas, cards, and warning banners).
-- Core stability and performance updates.
+- Added webcam capture on web/desktop and fixed camera stability.
+- Added permissions to support photo uploads on Android.
+- Added a "Remove & Retake" option when editing logs.
+- Fixed minor layout styling and history listing bugs.
 </en-US>
 <en-IN>
-- Added decimal input support for all logs and tracker modules.
-- UI improvements for dark theme (input fields, textareas, cards, and warning banners).
-- Core stability and performance updates.
+- Added webcam capture on web/desktop and fixed camera stability.
+- Added permissions to support photo uploads on Android.
+- Added a "Remove & Retake" option when editing logs.
+- Fixed minor layout styling and history listing bugs.
 </en-IN>

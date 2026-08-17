@@ -34,6 +34,7 @@ import { AppointmentController } from '../controllers/appointmentController';
 import { VendorController } from '../controllers/vendorController';
 import * as AdminReviewController from '../controllers/adminReviewController';
 import { assignLabBookingDoctor } from '../controllers/labController';
+import { IndianCancerController } from '../controllers/indianCancerController';
 
 const router = Router();
 
@@ -83,6 +84,18 @@ const uploadImage = multer({
   storage, 
   fileFilter: imageFileFilter,
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+});
+
+const mediaUpload = multer({
+  storage,
+  limits: { fileSize: 100 * 1024 * 1024 } // 100MB limit for video files
+});
+
+router.post('/admin/upload-media', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), mediaUpload.single('file'), (req: any, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'No file uploaded' });
+  }
+  res.json({ url: `/uploads/${req.file.filename}` });
 });
 
 // ==========================================
@@ -325,6 +338,7 @@ router.post('/shop/reviews', authenticateToken, requireRole(['User']), ShopContr
 router.get('/shop/products/:id/reviews', authenticateToken, requireRole(['User']), ShopController.getProductReviews);
 router.get('/patient/reviews', authenticateToken, requireRole(['User']), ShopController.getPatientReviews);
 router.get('/screening/tests', authenticateToken, requireRole(['User']), ScreeningController.getScreeningTests);
+router.get('/cancer-screening/indian-cancers', authenticateToken, requireRole(['User']), IndianCancerController.getIndianCancers);
 router.get('/workflow-config/:type', authenticateToken, requireRole(['User']), ScreeningController.getWorkflowConfig);
 router.get('/patient/deaddiction-number', authenticateToken, requireRole(['User']), DoctorController.getDeaddictionNumber);
 
@@ -487,6 +501,18 @@ router.get('/admin/screening-tests', ScreeningController.getAdminScreeningTests)
 router.post('/admin/screening-tests', ScreeningController.createAdminScreeningTest);
 router.put('/admin/screening-tests/:id', ScreeningController.updateAdminScreeningTest);
 router.delete('/admin/screening-tests/:id', ScreeningController.deleteAdminScreeningTest);
+
+// Indian Cancers & Risks
+router.get('/admin/indian-cancers', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), IndianCancerController.getAdminIndianCancers);
+router.post('/admin/indian-cancers', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), IndianCancerController.createIndianCancer);
+router.put('/admin/indian-cancers/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), IndianCancerController.updateIndianCancer);
+router.delete('/admin/indian-cancers/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), IndianCancerController.deleteIndianCancer);
+
+// Cancer Videos
+router.get('/admin/cancer-videos', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), IndianCancerController.getAdminCancerVideos);
+router.post('/admin/cancer-videos', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), IndianCancerController.createCancerVideo);
+router.put('/admin/cancer-videos/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), IndianCancerController.updateCancerVideo);
+router.delete('/admin/cancer-videos/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), IndianCancerController.deleteCancerVideo);
 router.get('/admin/appointments', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), AdminController.getAppointments);
 router.get('/admin/global-search', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), AdminController.globalSearch);
 

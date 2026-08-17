@@ -41,6 +41,7 @@ import { MovementLogScreen } from '../screens/HabitScreens/MovementLogScreen';
 import { AlcoholLogScreen } from '../screens/HabitScreens/AlcoholLogScreen';
 import { ShopScreen } from '../screens/Shop/ShopScreen';
 import { CancerScreeningScreen } from '../screens/HabitScreens/CancerScreeningScreen';
+import { IndianCancersScreen } from '../screens/HabitScreens/IndianCancersScreen';
 import { ObesityLogScreen } from '../screens/HabitScreens/ObesityLogScreen';
 import { DentalLogScreen } from '../screens/HabitScreens/DentalLogScreen';
 import { GastritisLogScreen } from '../screens/HabitScreens/GastritisLogScreen';
@@ -451,6 +452,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
   if (activeScreen === 'AntioxidantsShop') return <ShopScreen type="Antioxidants" onBack={() => setActiveScreen('Antioxidants')} />;
   if (activeScreen === 'SaferProducts') return <ShopScreen type="SaferProducts" onBack={() => setActiveScreen(null)} />;
   if (activeScreen === 'CancerScreening') return <CancerScreeningScreen onBack={() => setActiveScreen(null)} />;
+  if (activeScreen === 'IndianCancers') return <IndianCancersScreen onBack={() => setActiveScreen(null)} />;
   if (activeScreen === 'Obesity') return <ObesityLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
   if (activeScreen === 'Dental') return <DentalLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
   if (activeScreen === 'Gastritis') return <GastritisLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} onNavigateToShop={(query) => { setShopQuery(query); setActiveScreen('GastritisShop'); }} />;
@@ -714,6 +716,23 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
               <h4 className="text-indigo-600 dark:text-indigo-400 font-sans font-bold text-lg leading-tight">Cancer Screening</h4>
               <p className="text-[9px] text-slate-500 dark:text-slate-400 leading-snug mt-1">
                 PSA · CEA · CA-125 · Pap · Mammogram · Whole-Body MRI · Genetic & liquid biopsy
+              </p>
+            </div>
+            <ArrowRight className="h-4 w-4 text-slate-300" />
+          </button>
+
+          {/* Indian Cancers & Risks Card */}
+          <button 
+            onClick={() => handleOpenHabit('IndianCancers')}
+            className="w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-rose-100 dark:border-rose-950/20 shadow-[0_8px_30px_rgba(244,63,94,0.04)] rounded-2xl p-4 flex items-center gap-4 text-left transition-all active:scale-95 hover:shadow-md mt-4"
+          >
+            <div className="h-10 w-10 rounded-xl bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center shrink-0">
+              <Activity className="h-5 w-5 text-rose-500" />
+            </div>
+            <div className="flex-1">
+              <h4 className="text-rose-600 dark:text-rose-400 font-sans font-bold text-lg leading-tight">Indian Cancers & Risks</h4>
+              <p className="text-[9px] text-slate-500 dark:text-slate-400 leading-snug mt-1">
+                Understand common cancers in India and their associated risk factors.
               </p>
             </div>
             <ArrowRight className="h-4 w-4 text-slate-300" />

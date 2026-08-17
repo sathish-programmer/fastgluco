@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Stethoscope, Camera, Calendar, History, Info, Sparkles, AlertCircle, Eye, Trash2, Edit2, Check } from 'lucide-react';
+import { Camera as CapacitorCamera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from 'recharts';
 import { ConsultationBanner } from '../../components/ConsultationBanner';
 import { useAuth } from '../../context/AuthContext';
@@ -35,6 +36,7 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const trackerRef = useRef<HTMLDivElement | null>(null);
   
   const [selectedHistoryItem, setSelectedHistoryItem] = useState<any | null>(null);
@@ -176,6 +178,99 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
     } catch (err) {
       console.error('Upload failed', err);
       alert('Error uploading photo. Please try again.');
+    } finally {
+      setUploading(false);
+      // Reset the file input values so onChange will trigger again even for the same file
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      if (cameraInputRef.current) cameraInputRef.current.value = '';
+    }
+  };
+
+  // Capacitor Camera Capture handler
+  const handleCapturePhoto = async () => {
+    try {
+      // Check and request camera permissions to prevent native crashes
+      const checkPerms = await CapacitorCamera.checkPermissions();
+      if (checkPerms.camera !== 'granted') {
+        const reqPerms = await CapacitorCamera.requestPermissions({ permissions: ['camera'] });
+        if (reqPerms.camera !== 'granted') {
+          alert('Camera permission is required to take photos.');
+          return;
+        }
+      }
+
+      const photo = await CapacitorCamera.getPhoto({
+        quality: 90,
+        allowEditing: false,
+        resultType: CameraResultType.Uri,
+        source: CameraSource.Camera
+      });
+
+      if (!photo.webPath) return;
+
+      setUploading(true);
+      const response = await fetch(photo.webPath);
+      const blob = await response.blob();
+      const file = new File([blob], `dental-photo-${Date.now()}.jpg`, { type: 'image/jpeg' });
+
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const uploadRes = await fetch(`${apiUrl}/habits/upload`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!uploadRes.ok) throw new Error('Failed to upload image');
+      const data = await uploadRes.json();
+      setImageUrl(data.imageUrl);
+
+      // Load image onto Canvas
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        const maxDim = 400;
+        let w = img.width;
+        let h = img.height;
+        if (w > maxDim || h > maxDim) {
+          if (w > h) {
+            h = (maxDim / w) * h;
+            w = maxDim;
+          } else {
+            w = (maxDim / h) * w;
+            h = maxDim;
+          }
+        }
+
+        canvas.width = w;
+        canvas.height = h;
+        setCanvasWidth(w);
+        setCanvasHeight(h);
+
+        ctx.drawImage(img, 0, 0, w, h);
+        
+        setEnamelPoint(null);
+        setStainPoint(null);
+        setEnamelColor(null);
+        setStainColor(null);
+        setCalculatedScore(null);
+        setSelectionMode('enamel');
+      };
+      const baseServerUrl = apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl;
+      img.src = data.imageUrl.startsWith('http') ? data.imageUrl : `${baseServerUrl}${data.imageUrl}`;
+    } catch (err: any) {
+      console.error('Capture/upload failed', err);
+      if (err.message !== 'User cancelled photos app' && !err.message?.includes('cancelled')) {
+        alert('Error capturing or uploading photo. Please try again.');
+      }
     } finally {
       setUploading(false);
     }
@@ -585,7 +680,7 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
                 )}
 
                 {/* Photo Capture / Analysis section */}
-                {(!latestReading || isDue || imageUrl) ? (
+                {(!latestReading || isDue || imageUrl || editingLog) ? (
                   <div className="space-y-4">
                     {editingLog && (
                       <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center justify-between">
@@ -614,23 +709,49 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
                     )}
                     <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">1. Add a photo</span>
                     
-                    <div className="flex gap-3">
-                      <input 
-                        type="file" 
-                        accept="image/*" 
-                        onChange={handleImageUpload} 
-                        ref={fileInputRef} 
-                        className="hidden" 
-                      />
+                    {imageUrl ? (
                       <button
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={uploading || trackerLoading}
-                        className="flex-1 py-2.5 bg-teal-850 hover:bg-teal-900 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 disabled:opacity-50"
-                        style={{ backgroundColor: '#1F4D4B' }}
+                        type="button"
+                        onClick={() => {
+                          setImageUrl('');
+                          setEnamelPoint(null);
+                          setStainPoint(null);
+                          setEnamelColor(null);
+                          setStainColor(null);
+                          setCalculatedScore(null);
+                        }}
+                        className="w-full py-2.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-900/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-900/30 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm"
                       >
-                        <Camera className="h-4 w-4" /> Take/Upload Photo
+                        <Trash2 className="h-4 w-4" /> Remove & Retake Photo
                       </button>
-                    </div>
+                    ) : (
+                      <div className="flex gap-3">
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          onChange={handleImageUpload} 
+                          ref={fileInputRef} 
+                          className="hidden" 
+                        />
+                        <button
+                          type="button"
+                          onClick={handleCapturePhoto}
+                          disabled={uploading || trackerLoading}
+                          className="flex-1 py-2.5 bg-teal-850 hover:bg-teal-900 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 disabled:opacity-50"
+                          style={{ backgroundColor: '#1F4D4B' }}
+                        >
+                          <Camera className="h-4 w-4" /> Take Photo
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={uploading || trackerLoading}
+                          className="flex-1 py-2.5 bg-slate-700 hover:bg-slate-800 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 disabled:opacity-50"
+                        >
+                          Upload Photo
+                        </button>
+                      </div>
+                    )}
 
                     {uploading && (
                       <div className="text-center py-4">
@@ -821,12 +942,15 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
                 )}
 
                 {/* History List */}
-                {history.length > 0 && (
-                  <div className="mt-8 pt-6 border-t border-slate-100">
-                    <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-4 flex items-center gap-1.5"><History className="h-3.5 w-3.5" /> Previous Readings (Tap to view details)</span>
-                    
-                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                      {history.map((log) => {
+                {(() => {
+                  const filteredHistory = history.filter((log) => !editingLog || log.id !== editingLog.id);
+                  if (filteredHistory.length === 0) return null;
+                  return (
+                    <div className="mt-8 pt-6 border-t border-slate-100">
+                      <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-4 flex items-center gap-1.5"><History className="h-3.5 w-3.5" /> Previous Readings (Tap to view details)</span>
+                      
+                      <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                        {filteredHistory.map((log) => {
                         const logDate = new Date(log.value.date);
                         const logScore = log.value.score;
                         const cat = getCategory(logScore);
@@ -852,9 +976,10 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
                           </div>
                         );
                       })}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* Disclaimer */}
                 <div className="mt-6 p-3 bg-amber-50/50 border border-amber-100 rounded-xl flex gap-2">

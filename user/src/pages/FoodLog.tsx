@@ -26,6 +26,7 @@ import {
   Loader2,
   ShieldCheck
 } from 'lucide-react';
+import { Camera as CapacitorCamera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { motion } from 'framer-motion';
 
 interface FoodLogProps {
@@ -587,6 +588,61 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
         }
       };
       img.src = url;
+    }
+  };
+
+  // Capacitor Camera Food Capture handler
+  const handleCaptureFoodPhoto = async () => {
+    try {
+      // Check and request camera permissions to prevent native crashes
+      const checkPerms = await CapacitorCamera.checkPermissions();
+      if (checkPerms.camera !== 'granted') {
+        const reqPerms = await CapacitorCamera.requestPermissions({ permissions: ['camera'] });
+        if (reqPerms.camera !== 'granted') {
+          showToast('Camera permission is required to take photos.', 'error');
+          return;
+        }
+      }
+
+      const photo = await CapacitorCamera.getPhoto({
+        quality: 90,
+        allowEditing: false,
+        resultType: CameraResultType.Uri,
+        source: CameraSource.Camera
+      });
+
+      if (!photo.webPath) return;
+
+      const response = await fetch(photo.webPath);
+      const blob = await response.blob();
+      const file = new File([blob], `food-photo-${Date.now()}.jpg`, { type: 'image/jpeg' });
+      const url = URL.createObjectURL(file);
+
+      setScanFile(file);
+      setScanPreviewUrl(url);
+      setScanResult(null);
+      setScanError(null);
+
+      // Auto-detect if image is very tall — offer crop before scanning
+      const img = new Image();
+      img.onload = () => {
+        setOriginalImageSize({ w: img.naturalWidth, h: img.naturalHeight });
+        if (img.naturalHeight > img.naturalWidth * 1.6) {
+          // Tall portrait image — default crop to center 60%
+          setCropStartY(0.15);
+          setCropEndY(0.85);
+          setShowCropModal(true);
+        } else {
+          setCropStartY(0);
+          setCropEndY(1);
+        }
+      };
+      img.src = url;
+    } catch (err: any) {
+      console.error('Food capture failed', err);
+      if (err.message !== 'User cancelled photos app' && !err.message?.includes('cancelled')) {
+        showToast('Error capturing photo. Please try again.', 'error');
+      }
     }
   };
 
@@ -1652,29 +1708,50 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
               </h3>
 
               {!scanPreviewUrl ? (
-                <div className="border-2 border-dashed border-slate-200 hover:border-primary/40 rounded-2xl p-6 text-center transition-all bg-slate-50/50">
-                  <input
-                    type="file"
-                    id="scanner-image-input"
-                    accept="image/*"
-                    onChange={handleScanFileChange}
-                    className="hidden"
-                    disabled={!hasAiConsent}
-                  />
-                  <label 
-                    htmlFor={hasAiConsent ? "scanner-image-input" : undefined} 
-                    className={`flex flex-col items-center ${hasAiConsent ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`}
-                    onClick={() => {
-                      if (!hasAiConsent) {
-                        showToast('Please check the AI consent box to continue.', 'error');
-                      }
-                    }}
-                  >
-                    <div className="h-12 w-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-3 border border-indigo-100">
-                      <Camera className="h-5 w-5" />
-                    </div>
-                    <span className="text-xs font-bold text-slate-700 block">Take Photo or Upload Image</span>
-                  </label>
+                 <div className="border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center bg-slate-50/50 space-y-4">
+                   <input
+                     type="file"
+                     id="scanner-image-input"
+                     accept="image/*"
+                     onChange={handleScanFileChange}
+                     className="hidden"
+                     disabled={!hasAiConsent}
+                   />
+                   <div className="flex flex-col items-center">
+                     <div className="h-12 w-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-3 border border-indigo-100">
+                       <Camera className="h-5 w-5" />
+                     </div>
+                     <span className="text-xs font-bold text-slate-700 block mb-4">Meal Scanning Options</span>
+                     
+                     <div className="flex gap-3 w-full max-w-xs">
+                       <button
+                         type="button"
+                         onClick={() => {
+                           if (!hasAiConsent) {
+                             showToast('Please check the AI consent box to continue.', 'error');
+                             return;
+                           }
+                           handleCaptureFoodPhoto();
+                         }}
+                         className={`flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-95 ${!hasAiConsent ? 'opacity-50 cursor-not-allowed' : ''}`}
+                       >
+                         <Camera className="h-3.5 w-3.5" /> Take Photo
+                       </button>
+                       <button
+                         type="button"
+                         onClick={() => {
+                           if (!hasAiConsent) {
+                             showToast('Please check the AI consent box to continue.', 'error');
+                             return;
+                           }
+                           document.getElementById('scanner-image-input')?.click();
+                         }}
+                         className={`flex-1 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-95 ${!hasAiConsent ? 'opacity-50 cursor-not-allowed' : ''}`}
+                       >
+                         Upload Image
+                       </button>
+                     </div>
+                   </div>
                   
                   <div className="mt-6 bg-slate-100 p-3 rounded-xl border border-slate-200 text-left flex items-start space-x-3">
                     <input 
