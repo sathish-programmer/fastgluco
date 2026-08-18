@@ -8,7 +8,6 @@ import {
   Mail,
   User,
   Phone,
-  ExternalLink,
   Stethoscope,
   ShoppingCart,
   BrainCircuit,
@@ -58,7 +57,9 @@ export default function App() {
   const [simExercise, setSimExercise] = useState<boolean>(true);
   const [simAntioxidants, setSimAntioxidants] = useState<boolean>(false);
   const [simJoy, setSimJoy] = useState<boolean>(true);
-  
+  const [simMode, setSimMode] = useState<'PREVENTION' | 'TREATMENT'>('PREVENTION');
+  const [showSimDisclaimer, setShowSimDisclaimer] = useState<boolean>(false);
+
   const [branding, setBranding] = useState({
     appName: 'Mito_Reboot',
     appTagline: 'The circadian fasting app',
@@ -190,21 +191,31 @@ export default function App() {
 
             {/* Download Buttons */}
             <div className="flex flex-wrap gap-4 pt-2">
-              <button className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-3 rounded-2xl flex items-center space-x-3 transition-all shadow-lg hover:translate-y-[-2px]">
+              <a
+                href="https://apps.apple.com/in/app/mito-reboot/id6783705985"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-3 rounded-2xl flex items-center space-x-3 transition-all shadow-lg hover:translate-y-[-2px]"
+              >
                 <Smartphone className="h-6 w-6 text-white" />
                 <div className="text-left">
                   <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Download on the</span>
                   <span className="text-sm font-bold block leading-none">App Store</span>
                 </div>
-              </button>
+              </a>
 
-              <button className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-3 rounded-2xl flex items-center space-x-3 transition-all shadow-lg hover:translate-y-[-2px]">
+              <a
+                href="https://play.google.com/store/apps/details?id=com.mitoreboot.app"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-3 rounded-2xl flex items-center space-x-3 transition-all shadow-lg hover:translate-y-[-2px]"
+              >
                 <Play className="h-6 w-6 fill-white text-white" />
                 <div className="text-left">
                   <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Get it on</span>
                   <span className="text-sm font-bold block leading-none">Google Play</span>
                 </div>
-              </button>
+              </a>
             </div>
           </div>
 
@@ -217,125 +228,186 @@ export default function App() {
               </div>
 
               {/* Simulated Screen */}
-              <div className="bg-slate-50 dark:bg-slate-950 rounded-[32px] overflow-hidden p-4 pt-6 text-left font-sans">
-                {/* Simulated Header */}
-                <div className="flex justify-between items-center mb-3">
-                  <div className="flex items-center gap-1.5">
-                    <div className="h-5 w-5 bg-primary rounded-md flex items-center justify-center">
-                      <span className="text-[10px] text-white font-bold">M</span>
+              <div className="bg-slate-50 dark:bg-slate-950 rounded-[32px] overflow-hidden p-4 pt-6 text-left font-sans relative min-h-[460px] flex flex-col justify-between">
+                <div>
+                  {/* Simulated Header */}
+                  <div className="flex justify-between items-center mb-3">
+                    <div className="flex items-center gap-1.5">
+                      <div className="h-5 w-5 bg-primary rounded-md flex items-center justify-center">
+                        <span className="text-[10px] text-white font-bold">M</span>
+                      </div>
+                      <span className="text-xs font-black text-slate-800 dark:text-slate-200">{branding.appName}</span>
                     </div>
-                    <span className="text-xs font-black text-slate-800 dark:text-slate-200">{branding.appName}</span>
+                    <span className="text-[8px] bg-blue-100 text-blue-700 font-bold px-1.5 py-0.5 rounded-full uppercase">Premium</span>
                   </div>
-                  <span className="text-[8px] bg-blue-100 text-blue-700 font-bold px-1.5 py-0.5 rounded-full uppercase">Premium</span>
+
+                  {/* Mode Switcher Toggle inside simulator */}
+                  <div className="bg-slate-100 dark:bg-slate-900 rounded-xl p-1 mb-3 flex text-[9px] font-bold">
+                    <button
+                      onClick={() => { setSimMode('PREVENTION'); setShowSimDisclaimer(false); }}
+                      className={`flex-1 py-1 rounded-lg text-center transition-all ${simMode === 'PREVENTION' ? 'bg-white dark:bg-slate-800 text-primary shadow-sm' : 'text-slate-400'}`}
+                    >
+                      Prevention
+                    </button>
+                    <button
+                      onClick={() => { setSimMode('TREATMENT'); }}
+                      className={`flex-1 py-1 rounded-lg text-center transition-all ${simMode === 'TREATMENT' ? 'bg-emerald-500 text-white shadow-sm' : 'text-slate-400'}`}
+                    >
+                      Treatment
+                    </button>
+                  </div>
+
+                  {/* Active Focus Header */}
+                  <div className={`rounded-xl p-2.5 text-[10px] font-bold mb-3 text-white flex justify-between items-center ${simMode === 'PREVENTION' ? 'bg-indigo-600' : 'bg-emerald-600'}`}>
+                    <span>Focus: {simMode === 'PREVENTION' ? 'Cancer Prevention' : 'Active Treatment'}</span>
+                    <span className="text-[8px] bg-white/20 px-1.5 py-0.5 rounded-md">Live</span>
+                  </div>
+
+                  {/* Simulated Tug of War Card */}
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl p-3 shadow-sm space-y-2">
+                    <div className="text-center">
+                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest block">Cellular Balance Score</span>
+                      <span className={`text-lg font-black block mt-0.5 ${(simFasting ? 1 : 0) + (simExercise ? 1 : 0) + (simAntioxidants ? 1 : 0) + (simJoy ? 1 : 0) - (simStress ? 1 : 0) - (simEnv ? 1 : 0) >= 0
+                          ? 'text-emerald-500'
+                          : 'text-rose-500'
+                        }`}>
+                        {((simFasting ? 1 : 0) + (simExercise ? 1 : 0) + (simAntioxidants ? 1 : 0) + (simJoy ? 1 : 0) - (simStress ? 1 : 0) - (simEnv ? 1 : 0) > 0 ? '+' : '')}
+                        {(simFasting ? 1 : 0) + (simExercise ? 1 : 0) + (simAntioxidants ? 1 : 0) + (simJoy ? 1 : 0) - (simStress ? 1 : 0) - (simEnv ? 1 : 0)}
+                      </span>
+                    </div>
+
+                    {/* Balance Bar */}
+                    <div>
+                      <div className="flex justify-between text-[7px] font-bold uppercase mb-1">
+                        <span className="text-rose-500">Damage ({(simStress ? 1 : 0) + (simEnv ? 1 : 0)})</span>
+                        <span className="text-emerald-500">Repair ({(simFasting ? 1 : 0) + (simExercise ? 1 : 0) + (simAntioxidants ? 1 : 0) + (simJoy ? 1 : 0)})</span>
+                      </div>
+                      <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex">
+                        <div
+                          className="bg-rose-500 transition-all duration-500"
+                          style={{ width: `${(((simStress ? 1 : 0) + (simEnv ? 1 : 0)) / (((simStress ? 1 : 0) + (simEnv ? 1 : 0)) + ((simFasting ? 1 : 0) + (simExercise ? 1 : 0) + (simAntioxidants ? 1 : 0) + (simJoy ? 1 : 0)) || 1)) * 100}%` }}
+                        ></div>
+                        <div
+                          className="bg-emerald-500 transition-all duration-500 flex-1"
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Click Hint */}
+                  <p className="text-[7px] text-center font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider my-2 animate-pulse">
+                    👉 Tap items to log habits!
+                  </p>
+
+                  {/* Simulated Columns */}
+                  <div className="grid grid-cols-2 gap-2 text-[9px]">
+                    {/* Damage Column */}
+                    <div className="space-y-1.5">
+                      <span className="text-[8px] font-bold text-rose-500 uppercase tracking-widest block pl-1">Damage</span>
+                      <button
+                        onClick={() => setSimStress(!simStress)}
+                        className={`w-full p-2 rounded-xl text-left border flex justify-between items-center transition-all ${simStress ? 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-400' : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 text-slate-400'
+                          }`}
+                      >
+                        <span className="font-bold">Stress</span>
+                        <span className="font-extrabold">{simStress ? '-1' : '•'}</span>
+                      </button>
+
+                      <button
+                        onClick={() => setSimEnv(!simEnv)}
+                        className={`w-full p-2 rounded-xl text-left border flex justify-between items-center transition-all ${simEnv ? 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-400' : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 text-slate-400'
+                          }`}
+                      >
+                        <span className="font-bold">Environment</span>
+                        <span className="font-extrabold">{simEnv ? '-1' : '•'}</span>
+                      </button>
+                    </div>
+
+                    {/* Repair Column */}
+                    <div className="space-y-1.5">
+                      <span className={`text-[8px] font-bold uppercase tracking-widest block pl-1 ${simMode === 'PREVENTION' ? 'text-emerald-500' : 'text-purple-500'}`}>Repair</span>
+
+                      <button
+                        onClick={() => {
+                          if (simMode === 'TREATMENT' && !simFasting) {
+                            setShowSimDisclaimer(true);
+                          } else {
+                            setSimFasting(!simFasting);
+                          }
+                        }}
+                        className={`w-full p-2 rounded-xl text-left border flex justify-between items-center transition-all ${simFasting ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900 text-emerald-700 dark:text-emerald-400' : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 text-slate-400'
+                          }`}
+                      >
+                        <span className="font-bold">Fasting</span>
+                        <span className="font-extrabold">{simFasting ? '+1' : '•'}</span>
+                      </button>
+
+                      {simMode === 'TREATMENT' ? (
+                        <button
+                          onClick={() => alert("Exploring wigs for treatment-related hair loss in Shop...")}
+                          className="w-full p-2 rounded-xl text-left border border-purple-200 dark:border-purple-900 bg-purple-50/40 dark:bg-purple-950/10 text-purple-700 dark:text-purple-400 flex justify-between items-center transition-all active:scale-95"
+                        >
+                          <span className="font-bold">Explore Wigs 🛍️</span>
+                          <span className="font-extrabold">Shop</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setSimExercise(!simExercise)}
+                          className={`w-full p-2 rounded-xl text-left border flex justify-between items-center transition-all ${simExercise ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900 text-emerald-700 dark:text-emerald-400' : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 text-slate-400'
+                            }`}
+                        >
+                          <span className="font-bold">Exercise</span>
+                          <span className="font-extrabold">{simExercise ? '+1' : '•'}</span>
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => setSimAntioxidants(!simAntioxidants)}
+                        className={`w-full p-2 rounded-xl text-left border flex justify-between items-center transition-all ${simAntioxidants ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900 text-emerald-700 dark:text-emerald-400' : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 text-slate-400'
+                          }`}
+                      >
+                        <span className="font-bold">Antioxidant</span>
+                        <span className="font-extrabold">{simAntioxidants ? '+1' : '•'}</span>
+                      </button>
+
+                      <button
+                        onClick={() => setSimJoy(!simJoy)}
+                        className={`w-full p-2 rounded-xl text-left border flex justify-between items-center transition-all ${simJoy ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900 text-emerald-700 dark:text-emerald-400' : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 text-slate-400'
+                          }`}
+                      >
+                        <span className="font-bold">Things I Love</span>
+                        <span className="font-extrabold">{simJoy ? '+1' : '•'}</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Simulated Tug of War Card */}
-                <div className="bg-white dark:bg-slate-900 border border-slate-200/60 rounded-2xl p-4 shadow-sm space-y-3">
-                  <div className="text-center">
-                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest block">Cellular Balance Score</span>
-                    <span className={`text-xl font-black block mt-0.5 ${
-                      (simFasting ? 1 : 0) + (simExercise ? 1 : 0) + (simAntioxidants ? 1 : 0) + (simJoy ? 1 : 0) - (simStress ? 1 : 0) - (simEnv ? 1 : 0) >= 0 
-                        ? 'text-emerald-500' 
-                        : 'text-rose-500'
-                    }`}>
-                      {((simFasting ? 1 : 0) + (simExercise ? 1 : 0) + (simAntioxidants ? 1 : 0) + (simJoy ? 1 : 0) - (simStress ? 1 : 0) - (simEnv ? 1 : 0) > 0 ? '+' : '')}
-                      {(simFasting ? 1 : 0) + (simExercise ? 1 : 0) + (simAntioxidants ? 1 : 0) + (simJoy ? 1 : 0) - (simStress ? 1 : 0) - (simEnv ? 1 : 0)}
-                    </span>
-                  </div>
-
-                  {/* Balance Bar */}
-                  <div>
-                    <div className="flex justify-between text-[8px] font-bold uppercase mb-1">
-                      <span className="text-rose-500">Damage ({(simStress ? 1 : 0) + (simEnv ? 1 : 0)})</span>
-                      <span className="text-emerald-500">Repair ({(simFasting ? 1 : 0) + (simExercise ? 1 : 0) + (simAntioxidants ? 1 : 0) + (simJoy ? 1 : 0)})</span>
-                    </div>
-                    <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden flex">
-                      <div 
-                        className="bg-rose-500 transition-all duration-500" 
-                        style={{ width: `${(((simStress ? 1 : 0) + (simEnv ? 1 : 0)) / (((simStress ? 1 : 0) + (simEnv ? 1 : 0)) + ((simFasting ? 1 : 0) + (simExercise ? 1 : 0) + (simAntioxidants ? 1 : 0) + (simJoy ? 1 : 0)) || 1)) * 100}%` }}
-                      ></div>
-                      <div 
-                        className="bg-emerald-500 transition-all duration-500 flex-1"
-                      ></div>
+                {/* Simulated Fasting Disclaimer Modal Popup */}
+                {showSimDisclaimer && (
+                  <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm z-30 flex items-center justify-center p-3">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-3 border border-slate-200 dark:border-slate-800 max-w-[260px] w-full text-center space-y-2.5 shadow-xl">
+                      <div className="h-6 w-6 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto text-xs font-bold">⚠️</div>
+                      <h4 className="text-[10px] font-black text-slate-800 dark:text-slate-200 uppercase leading-none">Medical Disclaimer</h4>
+                      <p className="text-[8px] text-slate-500 dark:text-slate-400 leading-tight">
+                        Intermittent fasting during active cancer treatment is experimental. Consult an oncologist and intimate your treating team first.
+                      </p>
+                      <div className="flex flex-col gap-1 text-[8px] font-bold">
+                        <button
+                          onClick={() => { setSimFasting(true); setShowSimDisclaimer(false); }}
+                          className="w-full py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-all"
+                        >
+                          I Understand & Accept
+                        </button>
+                        <button
+                          onClick={() => setShowSimDisclaimer(false)}
+                          className="w-full py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-350 rounded-lg transition-all"
+                        >
+                          Decline
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-
-                {/* Click Hint */}
-                <p className="text-[7px] text-center font-black text-indigo-600 uppercase tracking-wider my-3 animate-pulse">
-                  👉 Tap items below to log & see metrics change!
-                </p>
-
-                {/* Simulated Columns */}
-                <div className="grid grid-cols-2 gap-2">
-                  {/* Damage Column */}
-                  <div className="space-y-1.5">
-                    <span className="text-[8px] font-bold text-rose-500 uppercase tracking-widest block pl-1">Damage</span>
-                    <button 
-                      onClick={() => setSimStress(!simStress)}
-                      className={`w-full p-2 rounded-xl text-left border flex justify-between items-center transition-all ${
-                        simStress ? 'bg-rose-50/50 border-rose-200 text-rose-700' : 'bg-white border-slate-200/80 text-slate-400'
-                      }`}
-                    >
-                      <span className="text-[9px] font-bold">Stress</span>
-                      <span className="text-[8px] font-extrabold">{simStress ? '-1' : '•'}</span>
-                    </button>
-
-                    <button 
-                      onClick={() => setSimEnv(!simEnv)}
-                      className={`w-full p-2 rounded-xl text-left border flex justify-between items-center transition-all ${
-                        simEnv ? 'bg-rose-50/50 border-rose-200 text-rose-700' : 'bg-white border-slate-200/80 text-slate-400'
-                      }`}
-                    >
-                      <span className="text-[9px] font-bold">Environment</span>
-                      <span className="text-[8px] font-extrabold">{simEnv ? '-1' : '•'}</span>
-                    </button>
-                  </div>
-
-                  {/* Repair Column */}
-                  <div className="space-y-1.5">
-                    <span className="text-[8px] font-bold text-emerald-500 uppercase tracking-widest block pl-1">Repair</span>
-                    <button 
-                      onClick={() => setSimFasting(!simFasting)}
-                      className={`w-full p-2 rounded-xl text-left border flex justify-between items-center transition-all ${
-                        simFasting ? 'bg-emerald-50/50 border-emerald-200 text-emerald-700' : 'bg-white border-slate-200/80 text-slate-400'
-                      }`}
-                    >
-                      <span className="text-[9px] font-bold">Fasting</span>
-                      <span className="text-[8px] font-extrabold">{simFasting ? '+1' : '•'}</span>
-                    </button>
-
-                    <button 
-                      onClick={() => setSimExercise(!simExercise)}
-                      className={`w-full p-2 rounded-xl text-left border flex justify-between items-center transition-all ${
-                        simExercise ? 'bg-emerald-50/50 border-emerald-200 text-emerald-700' : 'bg-white border-slate-200/80 text-slate-400'
-                      }`}
-                    >
-                      <span className="text-[9px] font-bold">Exercise</span>
-                      <span className="text-[8px] font-extrabold">{simExercise ? '+1' : '•'}</span>
-                    </button>
-
-                    <button 
-                      onClick={() => setSimAntioxidants(!simAntioxidants)}
-                      className={`w-full p-2 rounded-xl text-left border flex justify-between items-center transition-all ${
-                        simAntioxidants ? 'bg-emerald-50/50 border-emerald-200 text-emerald-700' : 'bg-white border-slate-200/80 text-slate-400'
-                      }`}
-                    >
-                      <span className="text-[9px] font-bold">Antioxidant</span>
-                      <span className="text-[8px] font-extrabold">{simAntioxidants ? '+1' : '•'}</span>
-                    </button>
-
-                    <button 
-                      onClick={() => setSimJoy(!simJoy)}
-                      className={`w-full p-2 rounded-xl text-left border flex justify-between items-center transition-all ${
-                        simJoy ? 'bg-emerald-50/50 border-emerald-200 text-emerald-700' : 'bg-white border-slate-200/80 text-slate-400'
-                      }`}
-                    >
-                      <span className="text-[9px] font-bold">Things I Love</span>
-                      <span className="text-[8px] font-extrabold">{simJoy ? '+1' : '•'}</span>
-                    </button>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -415,6 +487,17 @@ export default function App() {
             <h3 className="text-base font-bold text-slate-800">Health Products Store</h3>
             <p className="text-xs text-slate-500 font-semibold leading-relaxed">
               Order continuous glucose patches, premium antioxidant supplements, and drinking water testing kits with live tracking and checkout.
+            </p>
+          </div>
+
+          {/* Card 7 (New - Cancer Care Journey) */}
+          <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100 shadow-soft space-y-4 hover:translate-y-[-4px] transition-all duration-300">
+            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl inline-block">
+              <Sparkles className="h-6 w-6 text-emerald-500" />
+            </div>
+            <h3 className="text-base font-bold text-slate-800">Active Cancer Treatment Focus</h3>
+            <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+              Switch focus mode to unlock specialized oncology support, hair loss wig recommendations, and safe-fasting experimental warnings.
             </p>
           </div>
         </div>
@@ -762,15 +845,6 @@ const Header: React.FC<{ activeTab: string; onTabChange: (tab: any) => void; bra
               Home
             </button>
           )}
-          <a
-            href={`${import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api$/, '') : (import.meta.env.DEV ? 'http://localhost:5001' : 'https://api.mitoreboot.in')}/health`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bg-primary hover:bg-primary-dark text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center space-x-1 transition-all"
-          >
-            <span>API Health</span>
-            <ExternalLink className="h-3.5 w-3.5" />
-          </a>
         </div>
       </div>
     </header>

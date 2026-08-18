@@ -349,7 +349,7 @@ const MainAppContent: React.FC = () => {
         />
       )}
       {/* Dynamic Header with safe area padding for mobile notches */}
-      {!isSubScreenActive && !showCancerCGMDashboard && activeTab !== 'Subscription' && activeTab !== 'Recommended Foods' && (
+      {!isSubScreenActive && activeTab !== 'Subscription' && activeTab !== 'Recommended Foods' && (
         <header className="sticky top-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 z-10 px-4 pt-[calc(env(safe-area-inset-top)+12px)] pb-3 max-w-5xl w-full mx-auto flex items-center justify-between transition-colors duration-300">
           <div className="flex items-center space-x-2">
             {branding.appLogoUrl ? (
