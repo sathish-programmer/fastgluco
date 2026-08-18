@@ -59,6 +59,7 @@ export default function App() {
   const [simJoy, setSimJoy] = useState<boolean>(true);
   const [simMode, setSimMode] = useState<'PREVENTION' | 'TREATMENT'>('PREVENTION');
   const [showSimDisclaimer, setShowSimDisclaimer] = useState<boolean>(false);
+  const [showSimWigsPopup, setShowSimWigsPopup] = useState<boolean>(false);
 
   const [branding, setBranding] = useState({
     appName: 'Mito_Reboot',
@@ -344,7 +345,7 @@ export default function App() {
 
                       {simMode === 'TREATMENT' ? (
                         <button
-                          onClick={() => alert("Exploring wigs for treatment-related hair loss in Shop...")}
+                          onClick={() => setShowSimWigsPopup(true)}
                           className="w-full p-2 rounded-xl text-left border border-purple-200 dark:border-purple-900 bg-purple-50/40 dark:bg-purple-950/10 text-purple-700 dark:text-purple-400 flex justify-between items-center transition-all active:scale-95"
                         >
                           <span className="font-bold">Explore Wigs 🛍️</span>
@@ -405,6 +406,25 @@ export default function App() {
                           Decline
                         </button>
                       </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Simulated Wigs Selection Popup */}
+                {showSimWigsPopup && (
+                  <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm z-30 flex items-center justify-center p-3">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 max-w-[260px] w-full text-center space-y-3 shadow-xl">
+                      <div className="h-8 w-8 bg-purple-100 dark:bg-purple-950/40 text-purple-650 rounded-full flex items-center justify-center mx-auto text-sm">🛍️</div>
+                      <h4 className="text-[10px] font-black text-slate-800 dark:text-slate-200 uppercase leading-none">Redirecting to Shop</h4>
+                      <p className="text-[8.5px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Entering shop section, pre-filtered for treatment-related hair loss and cooling cap products.
+                      </p>
+                      <button
+                        onClick={() => setShowSimWigsPopup(false)}
+                        className="w-full py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-[9px] font-bold transition-all shadow-sm"
+                      >
+                        Okay, Got it!
+                      </button>
                     </div>
                   </div>
                 )}

@@ -251,6 +251,7 @@ const AdminPanelContent: React.FC = () => {
   const [selectedStainReview, setSelectedStainReview] = useState<any | null>(null);
   const [stainFilter, setStainFilter] = useState<'all' | 'pending' | 'reviewed'>('all');
   const [activeDoctors, setActiveDoctors] = useState<any[]>([]);
+  const [labs, setLabs] = useState<any[]>([]);
   
   const [patients, setPatients] = useState<any[]>([]);
   const [patientsLoading, setPatientsLoading] = useState(false);
@@ -292,6 +293,8 @@ const AdminPanelContent: React.FC = () => {
 
   const navigateToView = (viewName: string) => {
     setActiveView(viewName);
+    setSelectedPatient(null);
+    setSelectedStainReview(null);
     window.history.pushState({ view: viewName, selectedPatientId: null, selectedStainReviewId: null }, '', `#${viewName}`);
   };
 
@@ -598,6 +601,7 @@ const AdminPanelContent: React.FC = () => {
         setStainReviews(await res.json());
       }
       fetchActiveDoctors();
+      fetchLabs();
     } catch (e) {
       console.error(e);
     } finally {
@@ -615,6 +619,19 @@ const AdminPanelContent: React.FC = () => {
       }
     } catch (e) {
       console.error('Error fetching active doctors:', e);
+    }
+  };
+
+  const fetchLabs = async () => {
+    try {
+      const res = await fetch(`${apiUrl}/labs/admin/labs`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setLabs(await res.json());
+      }
+    } catch (e) {
+      console.error('Error fetching labs:', e);
     }
   };
 
@@ -2834,11 +2851,7 @@ const AdminPanelContent: React.FC = () => {
                 {/* Back Link */}
                 <button
                   onClick={() => {
-                    if (window.history.state && window.history.state.view === 'patient-activity') {
-                      window.history.back();
-                    } else {
-                      setSelectedPatient(null);
-                    }
+                    setSelectedPatient(null);
                   }}
                   className="flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors"
                 >
@@ -2922,24 +2935,26 @@ const AdminPanelContent: React.FC = () => {
                             {item.type === 'TOBACCO_STAIN' && (
                               <div className="mt-3 flex items-start gap-4 p-3 bg-slate-50/50 rounded-xl border border-slate-200/50">
                                 {item.imageUrl && (
-                                  <div className="relative shrink-0">
+                                  <div 
+                                    className="relative shrink-0 cursor-pointer hover:opacity-90 active:scale-95 transition-all"
+                                    onClick={() => {
+                                      setActiveView('stain-reviews');
+                                      setSelectedStainReview({
+                                        _id: item.logId,
+                                        userId: selectedPatient,
+                                        value: {
+                                          imageUrl: item.imageUrl,
+                                          score: item.score,
+                                          category: item.category,
+                                          date: item.date
+                                        }
+                                      });
+                                    }}
+                                  >
                                     <img
-                                      src={item.imageUrl.startsWith('http') ? item.imageUrl : `${apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl}/api/admin/stain-image/${item.imageUrl.split('/').pop()}?token=${token}`}
+                                      src={`${apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl}/api/admin/stain-image/${item.imageUrl.split('/').pop()}?token=${token}`}
                                       alt="Tooth check"
-                                      className="h-16 w-16 object-cover rounded-lg border border-slate-200 cursor-pointer"
-                                      onClick={() => {
-                                        // Fake selectedStainReview to open the review panel
-                                        setSelectedStainReview({
-                                          _id: item.logId,
-                                          userId: selectedPatient,
-                                          value: {
-                                            imageUrl: item.imageUrl,
-                                            score: item.score,
-                                            category: item.category,
-                                            date: item.date
-                                          }
-                                        });
-                                      }}
+                                      className="h-16 w-16 object-cover rounded-lg border border-slate-200"
                                     />
                                     <span className="absolute bottom-1 right-1 bg-black/60 text-[8px] font-bold text-white px-1 rounded">View</span>
                                   </div>
@@ -2970,6 +2985,7 @@ const AdminPanelContent: React.FC = () => {
                                     ) : (
                                       <button
                                         onClick={() => {
+                                          setActiveView('stain-reviews');
                                           setSelectedStainReview({
                                             _id: item.logId,
                                             userId: selectedPatient,
@@ -3002,9 +3018,9 @@ const AdminPanelContent: React.FC = () => {
                             {item.type === 'LAB_REPORT' && (
                               <div className="mt-3 p-3 bg-slate-50/50 rounded-xl border border-slate-200/50 space-y-2">
                                 <div className="flex flex-wrap items-center gap-3">
-                                  <span className="text-[9px] font-bold text-slate-400">Assign Reviewing Doctor:</span>
+                                  <span className="text-[9px] font-bold text-slate-400">Assign Onboard Lab:</span>
                                   <select
-                                    value={item.assignedDoctor?._id || item.assignedDoctor || ''}
+                                    value={item.assignedLab?._id || item.assignedLab || ''}
                                     onChange={async (e) => {
                                       try {
                                         const res = await fetch(`${apiUrl}/admin/lab-bookings/${item.bookingId}/assign`, {
@@ -3013,13 +3029,10 @@ const AdminPanelContent: React.FC = () => {
                                             'Content-Type': 'application/json',
                                             'Authorization': `Bearer ${token}`
                                           },
-                                          body: JSON.stringify({ doctorId: e.target.value })
+                                          body: JSON.stringify({ laboratoryId: e.target.value })
                                         });
                                         if (res.ok) {
-                                          alert('Doctor assigned to lab report review!');
-                                          fetchPatients(); // reload patient
                                           if (selectedPatient) {
-                                            // reload timeline
                                             const resTimeline = await fetch(`${apiUrl}/admin/patients/${selectedPatient._id}/activity`, {
                                               headers: { 'Authorization': `Bearer ${token}` }
                                             });
@@ -3029,7 +3042,7 @@ const AdminPanelContent: React.FC = () => {
                                             }
                                           }
                                         } else {
-                                          alert('Failed to assign doctor.');
+                                          alert('Failed to assign lab.');
                                         }
                                       } catch (err) {
                                         console.error(err);
@@ -3038,9 +3051,9 @@ const AdminPanelContent: React.FC = () => {
                                     className="text-[10px] bg-white border border-slate-200 rounded p-0.5 font-semibold text-slate-700 focus:outline-none"
                                   >
                                     <option value="">-- Unassigned --</option>
-                                    {activeDoctors.map((doc: any) => (
-                                      <option key={doc._id} value={doc._id}>
-                                        Dr. {doc.name}
+                                    {labs.map((lab: any) => (
+                                      <option key={lab._id} value={lab._id}>
+                                        {lab.name}
                                       </option>
                                     ))}
                                   </select>
@@ -3198,16 +3211,12 @@ const AdminPanelContent: React.FC = () => {
         )}
 
         {/* TOBACCO STAIN DETAIL REVIEW PANEL */}
-        {selectedStainReview && (
+        {activeView === 'stain-reviews' && selectedStainReview && (
           <div className="space-y-6">
             {/* Back Button */}
             <button
               onClick={() => {
-                if (window.history.state && window.history.state.view === 'stain-reviews') {
-                  window.history.back();
-                } else {
-                  setSelectedStainReview(null);
-                }
+                setSelectedStainReview(null);
               }}
               className="flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors"
             >

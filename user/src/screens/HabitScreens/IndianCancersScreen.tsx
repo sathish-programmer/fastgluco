@@ -151,183 +151,180 @@ export const IndianCancersScreen: React.FC<IndianCancersScreenProps> = ({ onBack
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20 pt-4 px-4 transition-colors duration-300">
-      <div className="max-w-2xl mx-auto space-y-6">
-        
-        {/* Header */}
-        <div className="flex items-center gap-3">
-          <button onClick={onBack} className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 active:scale-95 transition-all">
-            <ArrowLeft className="h-5 w-5" />
-          </button>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20 pt-4 px-4 max-w-2xl mx-auto space-y-6 transition-colors duration-300">
+      
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <button onClick={onBack} className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 active:scale-95 transition-all">
+          <ArrowLeft className="h-5 w-5" />
+        </button>
+        <div>
+          <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100 font-sans">Indian Cancers & Risks</h1>
+          <p className="text-xs text-slate-500">Understand common cancers in India and their associated risk factors.</p>
+        </div>
+      </div>
+
+      {/* Tab Buttons */}
+      <div className="grid grid-cols-2 p-1.5 bg-slate-100 dark:bg-slate-900 rounded-2xl border border-slate-200/50 dark:border-slate-800">
+        <button
+          onClick={() => { setActiveTab('Men'); setActivePieIndex(0); }}
+          className={`py-2.5 rounded-xl text-xs font-bold transition-all ${
+            activeTab === 'Men' 
+              ? 'bg-white dark:bg-slate-800 text-teal-600 dark:text-teal-400 shadow-sm' 
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800'
+          }`}
+        >
+          Men
+        </button>
+        <button
+          onClick={() => { setActiveTab('Women'); setActivePieIndex(0); }}
+          className={`py-2.5 rounded-xl text-xs font-bold transition-all ${
+            activeTab === 'Women' 
+              ? 'bg-white dark:bg-slate-800 text-pink-600 dark:text-pink-400 shadow-sm' 
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800'
+          }`}
+        >
+          Women
+        </button>
+      </div>
+
+      {/* Donut Chart Card */}
+      {currentList.length > 0 && (
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/60 dark:border-slate-800 p-6 flex flex-col items-center shadow-sm">
+          <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Top Cancer Sites Share</h2>
+          
+          <div className="w-full h-56 relative flex items-center justify-center">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={currentList}
+                  dataKey="percentage"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={55}
+                  outerRadius={85}
+                  paddingAngle={2}
+                  stroke="transparent"
+                  onMouseEnter={(_, i) => setActivePieIndex(i)}
+                  activeIndex={activePieIndex}
+                >
+                  {currentList.map((_, i) => (
+                    <Cell
+                      key={i}
+                      fill={currentColors[i % currentColors.length]}
+                      className="cursor-pointer focus:outline-none"
+                      style={{
+                        filter: activePieIndex === i ? 'drop-shadow(0px 4px 8px rgba(0,0,0,0.15))' : 'none'
+                      }}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(v) => [`${v}%`]} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="absolute flex flex-col items-center justify-center text-center pointer-events-none">
+              <span className="text-3xl font-black font-mono text-slate-800 dark:text-slate-100">{selectedCancer?.percentage}%</span>
+              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider max-w-[120px] truncate">{selectedCancer?.name}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Detail and Risk Factors Card */}
+      {selectedCancer && (
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/60 dark:border-slate-800 p-6 space-y-4 shadow-sm">
           <div>
-            <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100 font-sans">Indian Cancers & Risks</h1>
-            <p className="text-xs text-slate-500">Understand common cancers in India and their associated risk factors.</p>
+            <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: currentAccent }}>Selected Site</span>
+            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">{selectedCancer.name}</h3>
+            <p className="text-xs text-slate-500 leading-relaxed mt-1">{selectedCancer.description}</p>
           </div>
-        </div>
 
-        {/* Tab Buttons */}
-        <div className="grid grid-cols-2 p-1.5 bg-slate-100 dark:bg-slate-900 rounded-2xl border border-slate-200/50 dark:border-slate-800">
-          <button
-            onClick={() => { setActiveTab('Men'); setActivePieIndex(0); }}
-            className={`py-2.5 rounded-xl text-xs font-bold transition-all ${
-              activeTab === 'Men' 
-                ? 'bg-white dark:bg-slate-800 text-teal-600 dark:text-teal-400 shadow-sm' 
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800'
-            }`}
-          >
-            Men
-          </button>
-          <button
-            onClick={() => { setActiveTab('Women'); setActivePieIndex(0); }}
-            className={`py-2.5 rounded-xl text-xs font-bold transition-all ${
-              activeTab === 'Women' 
-                ? 'bg-white dark:bg-slate-800 text-pink-600 dark:text-pink-400 shadow-sm' 
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800'
-            }`}
-          >
-            Women
-          </button>
-        </div>
+          <div>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Major Risk Factors</span>
+            <div className="flex flex-wrap gap-1.5">
+              {selectedCancer.riskFactors.map((factor, idx) => (
+                <span key={idx} className="text-xs font-semibold px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-full">
+                  {factor}
+                </span>
+              ))}
+            </div>
+          </div>
 
-        {/* Donut Chart Card */}
-        {currentList.length > 0 && (
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/60 dark:border-slate-800 p-6 flex flex-col items-center shadow-sm">
-            <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Top Cancer Sites Share</h2>
-            
-            <div className="w-full h-56 relative flex items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={currentList}
-                    dataKey="percentage"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={55}
-                    outerRadius={85}
-                    paddingAngle={2}
-                    stroke="transparent"
-                    onMouseEnter={(_, i) => setActivePieIndex(i)}
-                    activeIndex={activePieIndex}
+          {/* Video Card in User App if configured */}
+          {selectedCancer.videos && selectedCancer.videos.length > 0 && (
+            <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-3">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Watch Awareness Videos</span>
+              <div className="grid gap-3">
+                {selectedCancer.videos.map((video) => (
+                  <button
+                    key={video._id}
+                    onClick={() => setActiveVideo(video)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 hover:bg-slate-100/70 border border-slate-200/60 dark:border-slate-850 p-3 rounded-2xl flex items-center gap-3 text-left transition-all active:scale-[0.98]"
                   >
-                    {currentList.map((_, i) => (
-                      <Cell
-                        key={i}
-                        fill={currentColors[i % currentColors.length]}
-                        className="cursor-pointer focus:outline-none"
-                        style={{
-                          filter: activePieIndex === i ? 'drop-shadow(0px 4px 8px rgba(0,0,0,0.15))' : 'none'
-                        }}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(v) => [`${v}%`]} />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="absolute flex flex-col items-center justify-center text-center pointer-events-none">
-                <span className="text-3xl font-black font-mono text-slate-800 dark:text-slate-100">{selectedCancer?.percentage}%</span>
-                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider max-w-[120px] truncate">{selectedCancer?.name}</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Detail and Risk Factors Card */}
-        {selectedCancer && (
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/60 dark:border-slate-800 p-6 space-y-4 shadow-sm">
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: currentAccent }}>Selected Site</span>
-              <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">{selectedCancer.name}</h3>
-              <p className="text-xs text-slate-500 leading-relaxed mt-1">{selectedCancer.description}</p>
-            </div>
-
-            <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Major Risk Factors</span>
-              <div className="flex flex-wrap gap-1.5">
-                {selectedCancer.riskFactors.map((factor, idx) => (
-                  <span key={idx} className="text-xs font-semibold px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-full">
-                    {factor}
-                  </span>
+                    <div className="relative w-16 h-12 rounded-lg bg-slate-200 dark:bg-slate-800 overflow-hidden shrink-0 flex items-center justify-center">
+                      {resolveThumbnail(video.thumbnailUrl || '', video.videoUrl) && !imageErrors[video._id] ? (
+                        <img 
+                          src={resolveThumbnail(video.thumbnailUrl || '', video.videoUrl)} 
+                          alt="" 
+                          className="w-full h-full object-cover" 
+                          onError={() => setImageErrors(prev => ({ ...prev, [video._id]: true }))}
+                        />
+                      ) : (
+                        <Play className="h-5 w-5 text-slate-500 fill-slate-500" />
+                      )}
+                      <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
+                        <div className="h-6 w-6 rounded-full bg-white/90 flex items-center justify-center shadow">
+                          <Play className="h-3 w-3 text-slate-900 fill-slate-900 ml-0.5" />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{video.title}</h4>
+                      {video.description && (
+                        <p className="text-[10px] text-slate-400 truncate mt-0.5">{video.description}</p>
+                      )}
+                    </div>
+                  </button>
                 ))}
               </div>
             </div>
+          )}
+        </div>
+      )}
 
-            {/* Video Card in User App if configured */}
-            {selectedCancer.videos && selectedCancer.videos.length > 0 && (
-              <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-3">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Watch Awareness Videos</span>
-                <div className="grid gap-3">
-                  {selectedCancer.videos.map((video) => (
-                    <button
-                      key={video._id}
-                      onClick={() => setActiveVideo(video)}
-                      className="w-full bg-slate-50 dark:bg-slate-950 hover:bg-slate-100/70 border border-slate-200/60 dark:border-slate-850 p-3 rounded-2xl flex items-center gap-3 text-left transition-all active:scale-[0.98]"
-                    >
-                      <div className="relative w-16 h-12 rounded-lg bg-slate-200 dark:bg-slate-800 overflow-hidden shrink-0 flex items-center justify-center">
-                        {resolveThumbnail(video.thumbnailUrl || '', video.videoUrl) && !imageErrors[video._id] ? (
-                          <img 
-                            src={resolveThumbnail(video.thumbnailUrl || '', video.videoUrl)} 
-                            alt="" 
-                            className="w-full h-full object-cover" 
-                            onError={() => setImageErrors(prev => ({ ...prev, [video._id]: true }))}
-                          />
-                        ) : (
-                          <Play className="h-5 w-5 text-slate-500 fill-slate-500" />
-                        )}
-                        <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
-                          <div className="h-6 w-6 rounded-full bg-white/90 flex items-center justify-center shadow">
-                            <Play className="h-3 w-3 text-slate-900 fill-slate-900 ml-0.5" />
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{video.title}</h4>
-                        {video.description && (
-                          <p className="text-[10px] text-slate-400 truncate mt-0.5">{video.description}</p>
-                        )}
-                      </div>
-                    </button>
-                  ))}
-                </div>
+      {/* Legend for quickly switching */}
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/60 dark:border-slate-800 p-6 space-y-3 shadow-sm">
+        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Indian Cancer Site Distribution</span>
+        <div className="grid gap-2">
+          {currentList.map((c, i) => (
+            <button
+              key={c._id || c.name}
+              onClick={() => setActivePieIndex(i)}
+              className={`w-full flex items-center justify-between p-3 rounded-2xl transition-all border text-left ${
+                activePieIndex === i 
+                  ? 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 font-bold' 
+                  : 'border-transparent hover:bg-slate-50/50'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div className="h-3.5 w-3.5 rounded-full shrink-0" style={{ background: currentColors[i % currentColors.length] }}></div>
+                <span className="text-xs text-slate-700 dark:text-slate-350">{c.name}</span>
               </div>
-            )}
-          </div>
-        )}
-
-        {/* Legend for quickly switching */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/60 dark:border-slate-800 p-6 space-y-3 shadow-sm">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Indian Cancer Site Distribution</span>
-          <div className="grid gap-2">
-            {currentList.map((c, i) => (
-              <button
-                key={c._id || c.name}
-                onClick={() => setActivePieIndex(i)}
-                className={`w-full flex items-center justify-between p-3 rounded-2xl transition-all border text-left ${
-                  activePieIndex === i 
-                    ? 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 font-bold' 
-                    : 'border-transparent hover:bg-slate-50/50'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="h-3.5 w-3.5 rounded-full shrink-0" style={{ background: currentColors[i % currentColors.length] }}></div>
-                  <span className="text-xs text-slate-700 dark:text-slate-350">{c.name}</span>
-                </div>
-                <span className="text-xs font-bold font-mono" style={{ color: activePieIndex === i ? currentAccent : undefined }}>{c.percentage}%</span>
-              </button>
-            ))}
-          </div>
+              <span className="text-xs font-bold font-mono" style={{ color: activePieIndex === i ? currentAccent : undefined }}>{c.percentage}%</span>
+            </button>
+          ))}
         </div>
+      </div>
 
-        {/* Attribution & Disclaimer */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/60 dark:border-slate-800 p-5 shadow-sm">
-          <p className="text-[10.5px] text-slate-500 dark:text-slate-450 leading-relaxed">
-            <strong className="text-slate-700 dark:text-slate-300">Data Attribution:</strong> New case estimates based on IARC / GLOBOCAN 2024 India Fact Sheet.
-          </p>
-          <p className="text-[10.5px] text-slate-500 dark:text-slate-450 leading-relaxed mt-2">
-            <strong className="text-slate-750 dark:text-slate-300">Disclaimer:</strong> Tobacco use (smoked and chewed) is the single largest preventable driver of cancer in India, contributing heavily to oral, lung, and oesophageal cancers. Cervical cancer is highly preventable through HPV vaccination and regular screening. Percentages reflect the share of new cases within each sex, not absolute risk.
-          </p>
-        </div>
-
+      {/* Attribution & Disclaimer */}
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/60 dark:border-slate-800 p-5 shadow-sm">
+        <p className="text-[10.5px] text-slate-500 dark:text-slate-450 leading-relaxed">
+          <strong className="text-slate-700 dark:text-slate-300">Data Attribution:</strong> New case estimates based on IARC / GLOBOCAN 2024 India Fact Sheet.
+        </p>
+        <p className="text-[10.5px] text-slate-500 dark:text-slate-450 leading-relaxed mt-2">
+          <strong className="text-slate-750 dark:text-slate-300">Disclaimer:</strong> Tobacco use (smoked and chewed) is the single largest preventable driver of cancer in India, contributing heavily to oral, lung, and oesophageal cancers. Cervical cancer is highly preventable through HPV vaccination and regular screening. Percentages reflect the share of new cases within each sex, not absolute risk.
+        </p>
       </div>
 
       {/* Video Modal Player */}

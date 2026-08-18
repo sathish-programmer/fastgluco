@@ -605,7 +605,7 @@ router.post('/patient/appointments/verify-payment', authenticateToken, requireRo
 router.post('/patient/appointments/:appointmentId/cancel-payment', authenticateToken, requireRole(['User']), AppointmentController.cancelAppointmentPayment);
 
 // Consultation Recommendation Endpoints
-router.get('/admin/consultations/analytics', authenticateToken, requireRole(['SuperAdmin']), ConsultationController.getAnalytics);
+router.get('/admin/consultations/analytics', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ConsultationController.getAnalytics);
 router.post('/patient/consultations/log', authenticateToken, requireRole(['User']), ConsultationController.logRecommendation);
 router.get('/patient/consultations/:id', authenticateToken, requireRole(['User']), ConsultationController.getRecommendation);
 router.put('/patient/consultations/:id/status', authenticateToken, requireRole(['User']), ConsultationController.updateStatus);

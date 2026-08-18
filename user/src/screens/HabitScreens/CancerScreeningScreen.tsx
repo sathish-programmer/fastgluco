@@ -236,7 +236,6 @@ export const CancerScreeningScreen: React.FC<CancerScreeningScreenProps> = ({ on
   if (activeView === 'TRACKING' && activeBookingId) {
     return <BookingTrackingScreen bookingId={activeBookingId} onBack={() => setActiveView('TEST_LIST')} onViewReport={(id) => { setActiveBookingId(id); setActiveView('REPORT'); }} />;
   }
-
   if (activeView === 'REPORT' && activeBookingId) {
     return <ReportViewerScreen bookingId={activeBookingId} onBack={() => setActiveView('TRACKING')} />;
   }
@@ -244,8 +243,7 @@ export const CancerScreeningScreen: React.FC<CancerScreeningScreenProps> = ({ on
   const activeGroup = GROUPS.find((g) => g.id === activeTab) || GROUPS[0];
 
   return (
-    <div className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 transition-colors duration-300">
-      <div className="max-w-3xl mx-auto space-y-6">
+    <div className="pb-24 pt-6 px-4 max-w-3xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 space-y-6 transition-colors duration-300">
         <div className="flex items-center gap-4">
           <button 
             onClick={onBack}
@@ -398,7 +396,6 @@ export const CancerScreeningScreen: React.FC<CancerScreeningScreenProps> = ({ on
             </div>
           </div>
         )}
-      </div>
     </div>
   );
 };

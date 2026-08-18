@@ -478,20 +478,25 @@ export const assignLabBookingDoctor = async (req: Request, res: Response) => {
   try {
     const adminId = (req as any).user?.id;
     const { bookingId } = req.params;
-    const { doctorId } = req.body;
+    const { laboratoryId, doctorId } = req.body;
 
     const booking = await LabBooking.findById(bookingId);
     if (!booking) {
       return res.status(404).json({ error: 'Lab booking not found' });
     }
 
-    booking.assignedDoctorId = doctorId ? new mongoose.Types.ObjectId(doctorId) : undefined;
+    if (laboratoryId !== undefined) {
+      booking.laboratoryId = laboratoryId ? new mongoose.Types.ObjectId(laboratoryId) : booking.laboratoryId;
+    }
+    if (doctorId !== undefined) {
+      booking.assignedDoctorId = doctorId ? new mongoose.Types.ObjectId(doctorId) : undefined;
+    }
     await booking.save();
 
-    res.json({ message: 'Doctor assigned successfully to lab report', booking });
+    res.json({ message: 'Lab booking updated successfully', booking });
   } catch (error) {
-    console.error('Error assigning doctor to lab booking:', error);
-    res.status(500).json({ error: 'Failed to assign doctor to lab booking' });
+    console.error('Error updating lab booking:', error);
+    res.status(500).json({ error: 'Failed to update lab booking' });
   }
 };
 
