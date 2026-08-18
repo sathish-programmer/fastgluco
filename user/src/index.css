@@ -337,3 +337,21 @@
 .dark .bg-white.border-2.border-slate-200:hover {
   /* background-color: #1e293b !important; */
 }
+
+/* Hide sub-page internal headers when wrapped in the unified layout */
+.sub-page-body > div > div:first-child {
+  display: none !important;
+}
+
+/* For Shop screens, adjust their sticky header to clear safe area top notch */
+.sub-page-safe-wrapper.is-shop .sticky.top-0 {
+  padding-top: calc(env(safe-area-inset-top, 0px) + 12px) !important;
+}
+.sub-page-safe-wrapper.is-shop > .sub-page-body > div {
+  padding-top: 0px !important;
+}
+
+/* Reduce spacing between main app header and tab content area */
+main.flex-1 > div {
+  padding-top: 8px !important;
+}

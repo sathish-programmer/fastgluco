@@ -27,7 +27,8 @@ import {
   Dna,
   Globe,
   BrainCircuit,
-  ShoppingBag
+  ShoppingBag,
+  ArrowLeft
 } from 'lucide-react';
 import { useConsultation } from '../context/ConsultationContext';
 import { StressLogScreen } from '../screens/HabitScreens/StressLogScreen';
@@ -434,18 +435,18 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
     onNavigateToTab('Book Appointment');
   };
 
-  if (activeScreen === 'Stress') return <StressLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} onNavigateToIntimacy={() => setActiveScreen('Intimacy')} />;
-  if (activeScreen === 'Smoking') return <SmokingLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
-  if (activeScreen === 'Substances') return <SubstancesLogScreen onBack={() => setActiveScreen(null)} />;
-  if (activeScreen === 'Intimacy') return <IntimacyCheckScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
-  if (activeScreen === 'Environmental') return <EnvironmentalExposuresLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} onNavigateToShop={(query) => { setShopQuery(query); setActiveScreen('EnvironmentalShop'); }} />;
-  if (activeScreen === 'EnvironmentalShop') {
-    if (shopQuery === 'SaferProducts') {
-      return <ShopScreen type="SaferProducts" onBack={() => setActiveScreen('Environmental')} />;
-    }
-    return <ShopScreen type="All" defaultSearch={shopQuery} onBack={() => setActiveScreen('Environmental')} />;
-  }
   const renderActiveScreen = () => {
+    if (activeScreen === 'Stress') return <StressLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} onNavigateToIntimacy={() => setActiveScreen('Intimacy')} />;
+    if (activeScreen === 'Smoking') return <SmokingLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
+    if (activeScreen === 'Substances') return <SubstancesLogScreen onBack={() => setActiveScreen(null)} />;
+    if (activeScreen === 'Intimacy') return <IntimacyCheckScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
+    if (activeScreen === 'Environmental') return <EnvironmentalExposuresLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} onNavigateToShop={(query) => { setShopQuery(query); setActiveScreen('EnvironmentalShop'); }} />;
+    if (activeScreen === 'EnvironmentalShop') {
+      if (shopQuery === 'SaferProducts') {
+        return <ShopScreen type="SaferProducts" onBack={() => setActiveScreen('Environmental')} />;
+      }
+      return <ShopScreen type="All" defaultSearch={shopQuery} onBack={() => setActiveScreen('Environmental')} />;
+    }
     if (activeScreen === 'Sleep') return <SleepLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
     if (activeScreen === 'Movement') return <MovementLogScreen onBack={() => setActiveScreen(null)} />;
     if (activeScreen === 'Alcohol') return <AlcoholLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
@@ -469,9 +470,55 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
 
   const activeScreenComponent = renderActiveScreen();
   if (activeScreenComponent) {
+    const isShopScreen = activeScreen === 'AntioxidantsShop' || activeScreen === 'SaferProducts' || activeScreen === 'GastritisShop' || activeScreen === 'GeneticShop' || activeScreen === 'WigShop' || activeScreen === 'EnvironmentalShop';
+    
+    const getScreenTitle = (screen: string | null) => {
+      switch (screen) {
+        case 'Stress': return 'Stress';
+        case 'Smoking': return 'Smoking';
+        case 'Substances': return 'Substances';
+        case 'Intimacy': return 'Intimacy';
+        case 'Environmental': return 'Environment';
+        case 'Sleep': return 'Sleep Debt';
+        case 'Movement': return 'Movement';
+        case 'Alcohol': return 'Alcohol';
+        case 'Fasting': return 'Intermittent Fasting';
+        case 'Stillness': return 'Stillness';
+        case 'Joy': return 'Things You Love';
+        case 'Antioxidants': return 'Antioxidants';
+        case 'CancerScreening': return 'Cancer Screening';
+        case 'IndianCancers': return 'Indian Cancers & Risks';
+        case 'Obesity': return 'Obesity';
+        case 'Dental': return 'Dental Health';
+        case 'Gastritis': return 'Gastritis';
+        case 'Genetic': return 'Genetic Link';
+        default: return '';
+      }
+    };
+
     return (
-      <div className="pt-[env(safe-area-inset-top,24px)] bg-slate-50 dark:bg-slate-950 min-h-screen">
-        {activeScreenComponent}
+      <div className={`sub-page-safe-wrapper min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col ${isShopScreen ? 'is-shop' : ''}`}>
+        {!isShopScreen && (
+          <header className="sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 z-50 px-4 pt-[calc(env(safe-area-inset-top)+12px)] pb-3 w-full flex items-center gap-4 transition-colors duration-300">
+            <button
+              onClick={() => setActiveScreen(null)}
+              className="h-10 w-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+            <div>
+              <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase block">
+                {activeScreen === 'IndianCancers' ? 'Cancer Awareness' : 'Track Habit'}
+              </span>
+              <h2 className="text-xl font-sans font-bold text-slate-850 dark:text-slate-100 leading-none mt-0.5">
+                {getScreenTitle(activeScreen)}
+              </h2>
+            </div>
+          </header>
+        )}
+        <div className="sub-page-body flex-1">
+          {activeScreenComponent}
+        </div>
       </div>
     );
   }
