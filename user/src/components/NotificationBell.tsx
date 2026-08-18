@@ -224,24 +224,24 @@ export const NotificationBell: React.FC = () => {
       </button>
 
       {showDropdown && (
-        <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl border border-slate-100 shadow-xl z-50 overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-            <span className="text-xs font-black text-slate-800">Notifications</span>
+        <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xl z-50 overflow-hidden">
+          <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-950/50">
+            <span className="text-xs font-black text-slate-800 dark:text-slate-200">Notifications</span>
             <div className="flex items-center space-x-2">
               {unreadCount > 0 && (
                 <button
                   onClick={handleMarkAllAsRead}
-                  className="text-[10px] font-bold text-primary hover:underline focus:outline-none"
+                  className="text-[10px] font-bold text-primary dark:text-indigo-400 hover:underline focus:outline-none"
                 >
                   Mark all as read
                 </button>
               )}
               {notifications.length > 0 && (
                 <>
-                  {unreadCount > 0 && <span className="text-slate-300 text-[10px]">|</span>}
+                  {unreadCount > 0 && <span className="text-slate-300 dark:text-slate-700 text-[10px]">|</span>}
                   <button
                     onClick={handleClearAll}
-                    className="text-[10px] font-bold text-rose-600 hover:underline focus:outline-none"
+                    className="text-[10px] font-bold text-rose-600 dark:text-rose-400 hover:underline focus:outline-none"
                   >
                     Clear all
                   </button>
@@ -250,31 +250,31 @@ export const NotificationBell: React.FC = () => {
             </div>
           </div>
 
-          <div className="max-h-80 overflow-y-auto divide-y divide-slate-50">
+          <div className="max-h-80 overflow-y-auto divide-y divide-slate-50 dark:divide-slate-800/50">
             {loading ? (
-              <div className="p-4 flex items-center justify-center text-slate-400 text-xs">
+              <div className="p-4 flex items-center justify-center text-slate-400 dark:text-slate-500 text-xs">
                 <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
                 <span>Loading...</span>
               </div>
             ) : notifications.length === 0 ? (
-              <div className="p-6 text-center text-slate-400 text-xs">
+              <div className="p-6 text-center text-slate-400 dark:text-slate-500 text-xs">
                 No notifications yet.
               </div>
             ) : (
               notifications.map((n) => (
                 <div
                   key={n._id}
-                  className={`p-3.5 hover:bg-slate-50/50 transition-colors text-xs relative group ${!n.isRead ? 'bg-blue-50/30' : ''}`}
+                  className={`p-3.5 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors text-xs relative group ${!n.isRead ? 'bg-blue-50/30 dark:bg-indigo-950/10' : ''}`}
                 >
                   <div className="flex justify-between items-start space-x-2">
                     <div className="pr-4 flex-1">
-                      <p className={`font-bold text-slate-800 ${!n.isRead ? 'text-primary' : ''}`}>
+                      <p className={`font-bold text-slate-800 dark:text-slate-200 ${!n.isRead ? 'text-primary dark:text-indigo-450' : ''}`}>
                         {n.title}
                       </p>
-                      <p className="text-slate-500 mt-0.5 font-medium leading-relaxed">
+                      <p className="text-slate-500 dark:text-slate-400 mt-0.5 font-medium leading-relaxed">
                         {n.body}
                       </p>
-                      <span className="text-[9px] text-slate-400 block mt-1.5">
+                      <span className="text-[9px] text-slate-400 dark:text-slate-500 block mt-1.5">
                         {formatNotificationTime(n.createdAt)}
                       </span>
                     </div>
@@ -282,7 +282,7 @@ export const NotificationBell: React.FC = () => {
                       {!n.isRead && (
                         <button
                           onClick={(e) => handleMarkAsRead(n._id, e)}
-                          className="p-1 hover:bg-slate-200/60 rounded-full text-slate-400 hover:text-slate-600 transition-all"
+                          className="p-1 hover:bg-slate-200/60 dark:hover:bg-slate-850 rounded-full text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-350 transition-all"
                           title="Mark as read"
                         >
                           <Check className="h-3.5 w-3.5" />
@@ -290,7 +290,7 @@ export const NotificationBell: React.FC = () => {
                       )}
                       <button
                         onClick={(e) => handleDelete(n._id, e)}
-                        className="p-1 hover:bg-rose-100 rounded-full text-slate-400 hover:text-rose-600 transition-all"
+                        className="p-1 hover:bg-rose-100 dark:hover:bg-rose-950/30 rounded-full text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-450 transition-all"
                         title="Delete notification"
                       >
                         <Trash2 className="h-3.5 w-3.5" />

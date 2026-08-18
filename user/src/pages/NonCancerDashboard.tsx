@@ -26,7 +26,8 @@ import {
   Flame,
   Dna,
   Globe,
-  BrainCircuit
+  BrainCircuit,
+  ShoppingBag
 } from 'lucide-react';
 import { useConsultation } from '../context/ConsultationContext';
 import { StressLogScreen } from '../screens/HabitScreens/StressLogScreen';
@@ -81,6 +82,8 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
   const [showStressedModal, setShowStressedModal] = useState<boolean>(false);
   const [showCaregiverModal, setShowCaregiverModal] = useState<boolean>(false);
   const [showTugOfWar, setShowTugOfWar] = useState<boolean>(true);
+  const [showFastingDisclaimer, setShowFastingDisclaimer] = useState<boolean>(false);
+  const [fastingStep, setFastingStep] = useState<number>(1);
   const [habits, setHabits] = useState<HabitLog[]>([]);
   const { apiUrl, token, user, activeMode } = useAuth();
   const [showRecommendation, setShowRecommendation] = useState<boolean>(false);
@@ -442,28 +445,46 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
     }
     return <ShopScreen type="All" defaultSearch={shopQuery} onBack={() => setActiveScreen('Environmental')} />;
   }
-  if (activeScreen === 'Sleep') return <SleepLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
-  if (activeScreen === 'Movement') return <MovementLogScreen onBack={() => setActiveScreen(null)} />;
-  if (activeScreen === 'Alcohol') return <AlcoholLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
-  if (activeScreen === 'Fasting') return <FastingLogScreen onBack={() => setActiveScreen(null)} />;
-  if (activeScreen === 'Stillness') return <StillnessLogScreen onBack={() => setActiveScreen(null)} />;
-  if (activeScreen === 'Joy') return <JoyLogScreen onBack={() => setActiveScreen(null)} />;
-  if (activeScreen === 'Antioxidants') return <AntioxidantLogScreen onBack={() => setActiveScreen(null)} onViewShop={() => setActiveScreen('AntioxidantsShop')} onNavigateToDiagnostics={() => setActiveScreen('CancerScreening')} />;
-  if (activeScreen === 'AntioxidantsShop') return <ShopScreen type="Antioxidants" onBack={() => setActiveScreen('Antioxidants')} />;
-  if (activeScreen === 'SaferProducts') return <ShopScreen type="SaferProducts" onBack={() => setActiveScreen(null)} />;
-  if (activeScreen === 'CancerScreening') return <CancerScreeningScreen onBack={() => setActiveScreen(null)} />;
-  if (activeScreen === 'IndianCancers') return <IndianCancersScreen onBack={() => setActiveScreen(null)} />;
-  if (activeScreen === 'Obesity') return <ObesityLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
-  if (activeScreen === 'Dental') return <DentalLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
-  if (activeScreen === 'Gastritis') return <GastritisLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} onNavigateToShop={(query) => { setShopQuery(query); setActiveScreen('GastritisShop'); }} />;
-  if (activeScreen === 'GastritisShop') return <ShopScreen type="All" defaultSearch={shopQuery} onBack={() => setActiveScreen('Gastritis')} />;
-  if (activeScreen === 'Genetic') return <GeneticLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} onNavigateToShop={(query) => { setShopQuery(query); setActiveScreen('GeneticShop'); }} />;
-  if (activeScreen === 'GeneticShop') return <ShopScreen type="All" defaultSearch={shopQuery} onBack={() => setActiveScreen('Genetic')} />;
+  const renderActiveScreen = () => {
+    if (activeScreen === 'Sleep') return <SleepLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
+    if (activeScreen === 'Movement') return <MovementLogScreen onBack={() => setActiveScreen(null)} />;
+    if (activeScreen === 'Alcohol') return <AlcoholLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
+    if (activeScreen === 'Fasting') return <FastingLogScreen onBack={() => setActiveScreen(null)} />;
+    if (activeScreen === 'Stillness') return <StillnessLogScreen onBack={() => setActiveScreen(null)} />;
+    if (activeScreen === 'Joy') return <JoyLogScreen onBack={() => setActiveScreen(null)} />;
+    if (activeScreen === 'Antioxidants') return <AntioxidantLogScreen onBack={() => setActiveScreen(null)} onViewShop={() => setActiveScreen('AntioxidantsShop')} onNavigateToDiagnostics={() => setActiveScreen('CancerScreening')} />;
+    if (activeScreen === 'AntioxidantsShop') return <ShopScreen type="Antioxidants" onBack={() => setActiveScreen('Antioxidants')} />;
+    if (activeScreen === 'SaferProducts') return <ShopScreen type="SaferProducts" onBack={() => setActiveScreen(null)} />;
+    if (activeScreen === 'CancerScreening') return <CancerScreeningScreen onBack={() => setActiveScreen(null)} />;
+    if (activeScreen === 'IndianCancers') return <IndianCancersScreen onBack={() => setActiveScreen(null)} />;
+    if (activeScreen === 'Obesity') return <ObesityLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
+    if (activeScreen === 'Dental') return <DentalLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
+    if (activeScreen === 'Gastritis') return <GastritisLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} onNavigateToShop={(query) => { setShopQuery(query); setActiveScreen('GastritisShop'); }} />;
+    if (activeScreen === 'GastritisShop') return <ShopScreen type="All" defaultSearch={shopQuery} onBack={() => setActiveScreen('Gastritis')} />;
+    if (activeScreen === 'Genetic') return <GeneticLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} onNavigateToShop={(query) => { setShopQuery(query); setActiveScreen('GeneticShop'); }} />;
+    if (activeScreen === 'GeneticShop') return <ShopScreen type="All" defaultSearch={shopQuery} onBack={() => setActiveScreen('Genetic')} />;
+    if (activeScreen === 'WigShop') return <ShopScreen type="All" defaultSearch="wig" onBack={() => setActiveScreen(null)} />;
+    return null;
+  };
+
+  const activeScreenComponent = renderActiveScreen();
+  if (activeScreenComponent) {
+    return (
+      <div className="pt-[env(safe-area-inset-top,24px)] bg-slate-50 dark:bg-slate-950 min-h-screen">
+        {activeScreenComponent}
+      </div>
+    );
+  }
   
   const isCancerPatient = activeMode === 'TREATMENT';
 
   const handleOpenHabit = (screenName: string) => {
     if (isCancerPatient) {
+      if (screenName === 'Fasting') {
+        setShowFastingDisclaimer(true);
+        setFastingStep(1);
+        return;
+      }
       if (screenName !== 'Joy') {
         setShowTugOfWar(false);
         return;
@@ -681,6 +702,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
                 <HabitItem icon={<Palette className="h-4 w-4 text-indigo-400" />} label="THINGS YOU LOVE" onClick={() => handleOpenHabit('Joy')} score={getJoyScore()} />
                 <HabitItem icon={<BrainCircuit className="h-4 w-4 text-rose-500" />} label="ARE YOU STRESSED/WORRIED?" onClick={() => setShowStressedModal(true)} />
                 <HabitItem icon={<User className="h-4 w-4 text-teal-500" />} label="CAREGIVER STRESS" onClick={() => setShowCaregiverModal(true)} />
+                <HabitItem icon={<ShoppingBag className="h-4 w-4 text-pink-500" />} label="Explore wigs for hairloss" onClick={() => setActiveScreen('WigShop')} />
               </>
             ) : (
               <>
@@ -707,13 +729,13 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
           {/* Cancer Screening Card */}
           <button 
             onClick={() => handleOpenHabit('CancerScreening')}
-            className="w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-indigo-100 dark:border-indigo-900/30 shadow-[0_8px_30px_rgba(99,102,241,0.04)] rounded-2xl p-4 flex items-center gap-4 text-left transition-all active:scale-95 hover:shadow-md"
+            className="w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-emerald-100 dark:border-emerald-950/20 shadow-[0_8px_30px_rgba(16,185,129,0.04)] rounded-2xl p-4 flex items-center gap-4 text-left transition-all active:scale-95 hover:shadow-md"
           >
-            <div className="h-10 w-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center shrink-0">
-              <Microscope className="h-5 w-5 text-indigo-500" />
+            <div className="h-10 w-10 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center shrink-0">
+              <Microscope className="h-5 w-5 text-emerald-500" />
             </div>
             <div className="flex-1">
-              <h4 className="text-indigo-600 dark:text-indigo-400 font-sans font-bold text-lg leading-tight">Cancer Screening</h4>
+              <h4 className="text-emerald-600 dark:text-emerald-400 font-sans font-bold text-lg leading-tight">Cancer Screening</h4>
               <p className="text-[9px] text-slate-500 dark:text-slate-400 leading-snug mt-1">
                 PSA · CEA · CA-125 · Pap · Mammogram · Whole-Body MRI · Genetic & liquid biopsy
               </p>
@@ -724,13 +746,13 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
           {/* Indian Cancers & Risks Card */}
           <button 
             onClick={() => handleOpenHabit('IndianCancers')}
-            className="w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-rose-100 dark:border-rose-950/20 shadow-[0_8px_30px_rgba(244,63,94,0.04)] rounded-2xl p-4 flex items-center gap-4 text-left transition-all active:scale-95 hover:shadow-md mt-4"
+            className="w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-purple-100 dark:border-purple-900/30 shadow-[0_8px_30px_rgba(168,85,247,0.04)] rounded-2xl p-4 flex items-center gap-4 text-left transition-all active:scale-95 hover:shadow-md mt-4"
           >
-            <div className="h-10 w-10 rounded-xl bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center shrink-0">
-              <Activity className="h-5 w-5 text-rose-500" />
+            <div className="h-10 w-10 rounded-xl bg-purple-50 dark:bg-purple-500/10 flex items-center justify-center shrink-0">
+              <Activity className="h-5 w-5 text-purple-500" />
             </div>
             <div className="flex-1">
-              <h4 className="text-rose-600 dark:text-rose-400 font-sans font-bold text-lg leading-tight">Indian Cancers & Risks</h4>
+              <h4 className="text-purple-600 dark:text-purple-400 font-sans font-bold text-lg leading-tight">Indian Cancers & Risks</h4>
               <p className="text-[9px] text-slate-500 dark:text-slate-400 leading-snug mt-1">
                 Understand common cancers in India and their associated risk factors.
               </p>
@@ -867,6 +889,77 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
           </div>
         </div>
       )}
+      {showFastingDisclaimer && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-xl animate-in fade-in zoom-in-95 duration-200">
+            {fastingStep === 1 ? (
+              <>
+                <div className="h-12 w-12 rounded-full bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center mx-auto text-2xl text-amber-500">
+                  ⚠️
+                </div>
+                <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">Medical Disclaimer</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Intermittent fasting during cancer treatment is experimental. Please consult an expert and intimate your treating medical team.
+                </p>
+                <button
+                  onClick={() => setFastingStep(2)}
+                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs uppercase shadow-sm transition-all"
+                >
+                  Next
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="h-12 w-12 rounded-full bg-indigo-50 dark:bg-indigo-950/30 flex items-center justify-center mx-auto text-2xl text-indigo-500">
+                  🩺
+                </div>
+                <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">Consult Our Expert</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                  We highly recommend consulting our medical expert before initiating any fasting regimen during active cancer treatment.
+                </p>
+                
+                {/* Expert Profile Card */}
+                <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-150 dark:border-slate-800 rounded-2xl p-3 text-left flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center font-bold text-indigo-700 dark:text-indigo-300">
+                    MR
+                  </div>
+                  <div>
+                    <h5 className="text-xs font-bold text-slate-850 dark:text-slate-200">MitoReboot Medical Team</h5>
+                    <p className="text-[10px] text-slate-400">Oncology & Metabolic Nutrition Experts</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2 pt-2">
+                  <button
+                    onClick={() => {
+                      setShowFastingDisclaimer(false);
+                      handleBookAppt('Fasting Consultation with Medical Team');
+                    }}
+                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs uppercase shadow-sm transition-all"
+                  >
+                    Consult Expert
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowFastingDisclaimer(false);
+                      setShowTugOfWar(false);
+                    }}
+                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs uppercase shadow-sm transition-all"
+                  >
+                    Start Fasting
+                  </button>
+                  <button
+                    onClick={() => setShowFastingDisclaimer(false)}
+                    className="w-full py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-350 font-bold rounded-xl text-xs transition-all"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -874,11 +967,11 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
 const HabitItem = ({ icon, label, onClick, score }: { icon: React.ReactNode, label: string, onClick: () => void, score?: number | null }) => (
   <button 
     onClick={onClick}
-    className="flex items-center justify-between w-full p-2.5 bg-slate-50/50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all"
+    className="flex items-center justify-between w-full p-2.5 bg-slate-50/50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all text-left"
   >
-    <div className="flex items-center gap-2.5">
-      {icon}
-      <span className="text-xs font-semibold text-slate-600">{label}</span>
+    <div className="flex items-start gap-2.5 text-left flex-1 min-w-0">
+      <div className="shrink-0 mt-0.5">{icon}</div>
+      <span className="text-xs font-semibold text-slate-600 dark:text-slate-350 text-left leading-tight flex-1">{label}</span>
     </div>
     {score !== undefined && score !== null ? (
       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg ${

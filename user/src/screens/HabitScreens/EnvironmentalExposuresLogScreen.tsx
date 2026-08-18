@@ -394,12 +394,12 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
           </div>
 
           {/* Real-time AQI tracker link card */}
-          <div className="mt-4 bg-gradient-to-br from-indigo-50/50 to-white dark:from-indigo-950/20 dark:to-slate-900 border border-indigo-100/70 dark:border-slate-800 rounded-3xl p-5 flex items-center justify-between shadow-[0_8px_30px_rgb(0,0,0,0.02)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all duration-300">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-md shadow-indigo-100 dark:shadow-none shrink-0">
+          <div className="mt-4 bg-gradient-to-br from-indigo-50/50 to-white dark:from-indigo-950/20 dark:to-slate-900 border border-indigo-100/70 dark:border-slate-800 rounded-3xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-[0_8px_30px_rgb(0,0,0,0.02)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all duration-300">
+            <div className="flex items-start gap-3">
+              <div className="h-10 w-10 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-md shadow-indigo-100 dark:shadow-none shrink-0 mt-0.5 sm:mt-0">
                 <Activity className="h-5 w-5" />
               </div>
-              <div>
+              <div className="flex-1">
                 <div className="flex items-center">
                   <span className="relative flex h-2 w-2 mr-2">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -416,7 +416,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
               href="https://www.aqi.in/in" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-md shadow-indigo-100 dark:shadow-none active:scale-95 shrink-0 ml-3"
+              className="w-full sm:w-auto text-center justify-center px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-md shadow-indigo-100 dark:shadow-none active:scale-95 shrink-0"
             >
               Track Live AQI <ExternalLink className="h-3 w-3" />
             </a>

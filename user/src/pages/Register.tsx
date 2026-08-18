@@ -321,14 +321,14 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
                   : branding.cancerPreventionDisclaimer
               }}
             ></div>
-            <div className="flex space-x-3">
+            <div className="flex flex-col sm:flex-row gap-2">
               <button
                 type="button"
                 onClick={() => {
                   setDisclaimerAccepted(false);
                   setShowDisclaimer(false);
                 }}
-                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold"
+                className="w-full sm:flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold order-2 sm:order-1"
               >
                 Decline
               </button>
@@ -338,7 +338,7 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
                   setDisclaimerAccepted(true);
                   setShowDisclaimer(false);
                 }}
-                className="flex-1 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl text-xs font-semibold shadow-soft"
+                className="w-full sm:flex-1 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl text-xs font-semibold shadow-soft order-1 sm:order-2"
               >
                 I Understand & Accept
               </button>
