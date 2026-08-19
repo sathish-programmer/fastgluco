@@ -11,7 +11,6 @@ import {
   Sparkles,
   Save,
   CreditCard,
-  RefreshCw,
   Globe,
   Activity,
   Heart,
@@ -178,6 +177,14 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
       setIsSyncing(false);
     }
   };
+  void handleTriggerSync;
+  void setLibreEmail;
+  void setLibrePassword;
+  void setLibreRegion;
+  void setLibreActive;
+  void isSyncing;
+  void showGuide;
+  void setShowGuide;
 
   if (subView === 'education') {
     return (

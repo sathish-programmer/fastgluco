@@ -52,6 +52,14 @@ import { AntioxidantLogScreen } from '../screens/HabitScreens/AntioxidantLogScre
 import { EnvironmentalExposuresLogScreen } from '../screens/HabitScreens/EnvironmentalExposuresLogScreen';
 import { ModeSwitcher } from '../components/ModeSwitcher';
 import { Dashboard } from './Dashboard';
+import { TodaysFocusCard } from '../components/TodaysFocusCard';
+// import { ContinueWhereLeftOff } from '../components/ContinueWhereLeftOff';
+// import { MitoProgressCard } from '../components/MitoProgressCard';
+import { ExploreFeaturesGrid } from '../components/ExploreFeaturesGrid';
+import { ContextualShopCard } from '../components/ContextualShopCard';
+import { WhatsNewModal } from '../components/WhatsNewModal';
+import { AskMitoDrawer } from '../components/AskMitoDrawer';
+import { Sparkles, MessageSquare } from 'lucide-react';
 
 interface NonCancerDashboardProps {
   onNavigateToTab: (tab: string) => void;
@@ -92,6 +100,8 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
 
   const [upcomingAppt, setUpcomingAppt] = useState<any | null>(null);
   const [isApptDismissed, setIsApptDismissed] = useState<boolean>(false);
+  const [showWhatsNew, setShowWhatsNew] = useState<boolean>(false);
+  const [showAskMito, setShowAskMito] = useState<boolean>(false);
 
   useEffect(() => {
     setShowTugOfWar(true);
@@ -552,22 +562,109 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
 
 
 
+  const handleActionKey = (key: string, params?: any) => {
+    if (params?.search) {
+      setShopQuery(params.search);
+      if (params.search.toLowerCase() === 'wig') return setActiveScreen('WigShop');
+      return setActiveScreen('EnvironmentalShop');
+    }
+    if (key === 'environmental_exposures' || key === 'ENVIRONMENT') return setActiveScreen('Environmental');
+    if (key === 'antioxidants') return setActiveScreen('Antioxidants');
+    if (key === 'genetics' || key === 'GENETICS') return setActiveScreen('Genetic');
+    if (key === 'fasting') return setActiveScreen('Fasting');
+    if (key === 'stress') return setActiveScreen('Stress');
+    if (key === 'cancer_screening') return setActiveScreen('CancerScreening');
+    if (key === 'Book Appointment') return onNavigateToTab('Book Appointment');
+    if (key === 'Reports') return onNavigateToTab('Reports');
+    if (key === 'Food Log') return onNavigateToTab('Food Log');
+    if (key === 'Educational') return onNavigateToTab('Educational');
+    if (key === 'shop_all' || key === 'RECOMMENDED_PRODUCTS') return setActiveScreen('SaferProducts');
+    if (key === 'shop_wigs' || key === 'WIGS') return setActiveScreen('WigShop');
+    if (key === 'WATER') {
+      setShopQuery('Water filter');
+      return setActiveScreen('EnvironmentalShop');
+    }
+  };
+
   return (
     <div className="pb-24 pt-4 px-3.5 max-w-5xl mx-auto bg-gradient-to-b from-slate-50/90 to-slate-100/80 dark:from-slate-900/90 dark:to-slate-950/80 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-200 transition-colors duration-300">
-      {/* Header section */}
-      <div className="text-center mb-6 mt-2">
-        <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">
-          Every day, your cells choose a side
-        </span>
-        <h2 className="text-xl md:text-2xl font-sans text-slate-800 dark:text-slate-100 mt-2 tracking-tight leading-snug px-4">
-          A quiet <span className="text-amber-500 italic">tug-of-war</span> runs inside every cell you own.
-        </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 max-w-[280px] mx-auto leading-relaxed">
-          Damage pulls one way. Repair pulls the other. The habits you log here decide which side wins today.
-        </p>
+      
+      {/* Feature Discovery & Ask Mito Modals */}
+      <WhatsNewModal
+        isOpen={showWhatsNew}
+        onClose={() => setShowWhatsNew(false)}
+        onExploreFeature={(key) => handleActionKey(key)}
+      />
+      <AskMitoDrawer
+        isOpen={showAskMito}
+        onClose={() => setShowAskMito(false)}
+        onNavigateToTab={onNavigateToTab}
+      />
+
+      {/* Top Greeting & Action Bar */}
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
+            Welcome back
+          </span>
+          <h2 className="text-lg font-black text-slate-900 dark:text-slate-100 tracking-tight leading-tight">
+            Hello, {user?.name || 'Friend'} 👋
+          </h2>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => setShowAskMito(true)}
+            className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary dark:text-primary-light rounded-2xl text-xs font-extrabold transition-all flex items-center space-x-1.5 border border-primary/20"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            <span>Ask Mito</span>
+          </button>
+
+          <button
+            onClick={() => setShowWhatsNew(true)}
+            className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-2xl transition-all"
+            title="What’s New"
+          >
+            <MessageSquare className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       <ModeSwitcher />
+
+      {/* PRIMARY DASHBOARD SECTION: Today's Focus */}
+      <div className="mb-4">
+        <TodaysFocusCard
+          activeMode={activeMode as any}
+          habits={habits}
+          hasCGMData={false}
+          upcomingAppt={upcomingAppt}
+          onTakeAction={(actionKey) => handleActionKey(actionKey)}
+        />
+      </div>
+
+      {/* SECONDARY DASHBOARD SECTION: Continue Where You Left Off (Hidden for future implementation) */}
+      {/* 
+      <ContinueWhereLeftOff
+        activeMode={activeMode as any}
+        habits={habits}
+        upcomingAppt={upcomingAppt}
+        hasCGMData={false}
+        onContinue={(actionKey) => handleActionKey(actionKey)}
+      />
+      */}
+
+      {/* TERTIARY DASHBOARD SECTION: Mito Progress Score (Hidden for future implementation) */}
+      {/* 
+      <MitoProgressCard
+        activeMode={activeMode as any}
+        habits={habits}
+        hasCGMData={false}
+        upcomingAppt={upcomingAppt}
+        onTakeImprovementAction={(actionKey) => handleActionKey(actionKey)}
+      />
+      */}
 
       {/* Continuous Health Monitoring Danger recommendation */}
       {showRecommendation && (
@@ -703,7 +800,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
         </div>
       )}
 
-      <div className={`${isCancerPatient ? 'max-w-md mx-auto w-full' : 'grid grid-cols-2 gap-3'} mb-8`}>
+      <div className={`${isCancerPatient ? 'w-full mb-4' : 'grid grid-cols-2 gap-3 mb-8'}`}>
         {/* Damage Column */}
         {!isCancerPatient && (
           <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-rose-100 dark:border-rose-900/30 shadow-[0_8px_30px_rgba(225,29,72,0.03)] rounded-2xl p-1.5 flex flex-col transition-colors duration-300">
@@ -730,7 +827,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
         )}
 
         {/* Repair Column */}
-        <div className={`bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-emerald-100 dark:border-emerald-900/30 shadow-[0_8px_30px_rgba(16,185,129,0.03)] rounded-2xl p-1.5 flex flex-col transition-colors duration-300 ${isCancerPatient ? 'w-full' : ''}`}>
+        <div className={`bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs rounded-3xl p-3 flex flex-col transition-colors duration-300 ${isCancerPatient ? 'w-full' : ''}`}>
           {!isCancerPatient && (
             <div className="px-2 pt-3 pb-4">
               <h3 className="text-emerald-500 font-sans text-lg font-bold flex items-center gap-1.5 mb-0.5">
@@ -740,7 +837,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
             </div>
           )}
           
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1.5">
             {isCancerPatient ? (
               <>
                 <HabitItem icon={<Timer className="h-4 w-4 text-sky-500" />} label="INTERMITTENT FASTING" onClick={() => handleOpenHabit('Fasting')} score={getFastingScore()} />
@@ -809,9 +906,9 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
         </>
       )}
       {isCancerPatient && (
-        <div className="max-w-md mx-auto w-full flex flex-col gap-4 mt-6">
+        <div className="w-full flex flex-col gap-4 mb-4">
           {/* Cellular Defense Card */}
-          <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-emerald-100 dark:border-emerald-950/20 shadow-[0_8px_30px_rgba(16,185,129,0.04)] rounded-3xl p-5 flex items-center gap-5 transition-all duration-300">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs rounded-3xl p-5 md:p-6 flex items-center gap-5 transition-all duration-300">
             <div className="relative w-20 h-20 shrink-0 flex items-center justify-center">
               {/* Background circular track */}
               <div className="absolute inset-0 rounded-full border-4 border-slate-100 dark:border-slate-800"></div>
@@ -855,7 +952,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
               if (onGoToCGMDashboard) onGoToCGMDashboard();
               else setShowTugOfWar(false);
             }}
-            className="w-full bg-gradient-to-br from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white rounded-3xl p-5 text-left transition-all duration-300 shadow-[0_8px_30px_rgba(99,102,241,0.12)] hover:shadow-lg active:scale-[0.98] group flex items-center justify-between gap-4"
+            className="w-full bg-gradient-to-br from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white rounded-3xl p-5 md:p-6 text-left transition-all duration-300 shadow-sm hover:shadow-md active:scale-[0.98] group flex items-center justify-between gap-4"
           >
             <div className="flex-1">
               <span className="text-[9px] font-extrabold bg-white/20 text-white uppercase tracking-widest px-2.5 py-0.5 rounded-full inline-block mb-2.5">
@@ -874,6 +971,24 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
           </button>
         </div>
       )}
+
+      {/* FEATURE DISCOVERY & CONTEXTUAL SHOP SECTIONS */}
+      <ExploreFeaturesGrid
+        activeMode={activeMode as any}
+        onSelectFeature={(key, params) => handleActionKey(key, params)}
+      />
+
+      <ContextualShopCard
+        activeMode={activeMode as any}
+        onOpenShop={(query) => {
+          setShopQuery(query);
+          if (query.toLowerCase() === 'wig') {
+            setActiveScreen('WigShop');
+          } else {
+            setActiveScreen('EnvironmentalShop');
+          }
+        }}
+      />
 
       {showStressedModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">

@@ -27,18 +27,21 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
   const [showAirModal, setShowAirModal] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Restore from localStorage or load latest habit log
+  const hasLoadedRef = React.useRef(false);
+
+  // Restore from localStorage or load latest habit log once
   useEffect(() => {
-    if (user?.id) {
+    if (user?.id && !hasLoadedRef.current) {
+      hasLoadedRef.current = true;
       loadHistory();
     }
   }, [user]);
 
   useEffect(() => {
-    if (airQ1 !== null && airQ2 !== null) {
+    if (airQ1 !== null && airQ2 !== null && currentView === 'air') {
       setShowAirModal(true);
     }
-  }, [airQ1, airQ2]);
+  }, [airQ1, airQ2, currentView]);
 
   const loadHistory = async () => {
     if (!user?.id) return;
@@ -48,12 +51,12 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
       // Prefill with today's/latest answers if available
       if (logs.length > 0) {
         const latest = logs[0].value;
-        if (latest.answers) {
-          setAirQ1(latest.answers.airQ1);
-          setAirQ2(latest.answers.airQ2);
-          setWaterQ1(latest.answers.waterQ1);
-          setPesticidesQ1(latest.answers.pesticidesQ1);
-          setMicroplasticsQ1(latest.answers.microplasticsQ1);
+        if (latest && latest.answers) {
+          setAirQ1(latest.answers.airQ1 ?? null);
+          setAirQ2(latest.answers.airQ2 ?? null);
+          setWaterQ1(latest.answers.waterQ1 ?? null);
+          setPesticidesQ1(latest.answers.pesticidesQ1 ?? null);
+          setMicroplasticsQ1(latest.answers.microplasticsQ1 ?? null);
         }
       }
     } catch (err) {
@@ -104,6 +107,27 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
   };
 
   const overallScore = getOverallScore();
+
+  // Auto-save to DB whenever answers change
+  const isInitialMount = React.useRef(true);
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    if (hasAnyAnswer && user?.id && token) {
+      HabitsService.logHabit(apiUrl, token, 'Environmental', {
+        score: overallScore,
+        answers: {
+          airQ1,
+          airQ2,
+          waterQ1,
+          pesticidesQ1,
+          microplasticsQ1
+        }
+      }).catch(err => console.error('Environmental habit auto-save error', err));
+    }
+  }, [airQ1, airQ2, waterQ1, pesticidesQ1, microplasticsQ1, overallScore, hasAnyAnswer, apiUrl, token, user?.id]);
 
   const handleSaveLogs = async () => {
     if (!user?.id) return;
@@ -231,7 +255,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">01 · Outdoor Air & Fumes</span>
                 <span className="font-bold text-slate-800 dark:text-slate-200 text-sm block">Air Pollution</span>
               </div>
-              {getStatusBadge(airScore, airQ1 !== null && airQ2 !== null)}
+              {getStatusBadge(airScore, airQ1 !== null || airQ2 !== null)}
             </button>
 
             {/* Water Pollution */}

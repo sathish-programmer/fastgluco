@@ -34,7 +34,7 @@ import {
 } from 'lucide-react';
 import { GlobalAICoachPopup } from './components/GlobalAICoachPopup';
 import { NotificationBell } from './components/NotificationBell';
-import { OnboardingTour } from './components/OnboardingTour';
+import { WelcomeOnboardingModal } from './components/WelcomeOnboardingModal';
 
 import { DeleteAccount } from './pages/DeleteAccount';
 
@@ -76,12 +76,12 @@ const MainAppContent: React.FC = () => {
     }
   }, []);
 
-  // Reset tab to Home and trigger onboarding tour for new users upon successful authentication
+  // Reset tab to Home and trigger onboarding modal for new users upon successful authentication
   useEffect(() => {
     if (isAuthenticated) {
       _setActiveTab('Home');
       setNavigationHistory(['Home']);
-      const completed = localStorage.getItem('fastgluco_onboarding_completed');
+      const completed = localStorage.getItem('mito_welcome_onboarding_completed') || localStorage.getItem('fastgluco_onboarding_completed');
       if (!completed) {
         setShowOnboarding(true);
       }
@@ -340,14 +340,14 @@ const MainAppContent: React.FC = () => {
 
   return (
     <div className="bg-slate-50 dark:bg-slate-950 h-full flex flex-col justify-between relative transition-colors duration-300">
-      {showOnboarding && (
-        <OnboardingTour
-          onComplete={() => {
-            localStorage.setItem('fastgluco_onboarding_completed', 'true');
-            setShowOnboarding(false);
-          }}
-        />
-      )}
+      <WelcomeOnboardingModal
+        isOpen={showOnboarding}
+        onClose={() => {
+          localStorage.setItem('mito_welcome_onboarding_completed', 'true');
+          localStorage.setItem('fastgluco_onboarding_completed', 'true');
+          setShowOnboarding(false);
+        }}
+      />
       {/* Dynamic Header with safe area padding for mobile notches */}
       {!isSubScreenActive && activeTab !== 'Subscription' && activeTab !== 'Recommended Foods' && (
         <header className="sticky top-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 z-10 px-4 pt-[calc(env(safe-area-inset-top)+12px)] pb-3 max-w-5xl w-full mx-auto flex items-center justify-between transition-colors duration-300">
