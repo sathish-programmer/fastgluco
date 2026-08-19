@@ -138,7 +138,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
     <div className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100">
       
       {/* HEADER */}
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex items-center gap-4 mb-6 sub-page-internal-header">
         <button 
           onClick={currentView === 'hub' ? onBack : () => setCurrentView('hub')}
           className="h-10 w-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all"

@@ -24,7 +24,7 @@ import { Educational } from './Educational'; // import the sub-view
 import { Subscription } from './Subscription';
 import { Capacitor } from '@capacitor/core';
 
-export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = () => {
+export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({ onNavigateToTab }) => {
   const { user, token, apiUrl, logout, updateProfile, isLoading, error, branding, setActiveMode } = useAuth();
   const { showToast } = useToast();
   const { setTheme, isDark } = useTheme();
@@ -231,6 +231,59 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
             </span>
           </div>
         )}
+      </motion.div>
+
+      {/* Live CGM Tracking Feature Card (Coming Soon) */}
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15, duration: 0.4 }}
+        className="mb-6"
+      >
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-900 via-slate-900 to-slate-950 p-5 border border-indigo-500/20 text-white shadow-xl">
+          {/* Background Glow */}
+          <div className="absolute -top-12 -right-12 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl pointer-events-none" />
+          <div className="absolute -bottom-10 -left-10 w-28 h-28 bg-purple-500/20 rounded-full blur-2xl pointer-events-none" />
+
+          <div className="flex items-start justify-between mb-3 relative z-10">
+            <div className="flex items-center space-x-2.5">
+              <div className="p-2.5 bg-indigo-500/20 border border-indigo-400/30 rounded-2xl backdrop-blur-md text-indigo-300">
+                <Activity className="h-5 w-5 animate-pulse" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold tracking-tight text-white flex items-center gap-2">
+                  Live CGM Tracking
+                </h4>
+                <p className="text-[10px] font-medium text-indigo-200/80">Abbott Libre & Sugarfit Direct API</p>
+              </div>
+            </div>
+            <span className="px-2.5 py-1 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 text-[9px] font-black uppercase tracking-wider rounded-full shadow-md">
+              Coming Soon
+            </span>
+          </div>
+
+          <p className="text-xs text-slate-300 leading-relaxed mb-4 relative z-10">
+            Direct live continuous sensor syncing will be launching soon. In the meantime, you can seamlessly upload your CGM reports (CSV/PDF) to track glucose curves and meal spikes!
+          </p>
+
+          <div className="p-3 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 flex items-center justify-between relative z-10">
+            <div className="flex items-center space-x-2.5">
+              <Sparkles className="h-4 w-4 text-amber-400 shrink-0" />
+              <span className="text-[11px] font-semibold text-slate-200">Use Manual Report Upload</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (onNavigateToTab) {
+                  onNavigateToTab('Reports');
+                }
+              }}
+              className="px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 shrink-0"
+            >
+              Upload CSV/PDF
+            </button>
+          </div>
+        </div>
       </motion.div>
 
       {user?.pendingProfileEdits && (
@@ -569,117 +622,6 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ()
                 Dark
               </button>
             </div>
-          </div>
-
-          <div className="pt-4 mt-2 border-t border-slate-100 dark:border-slate-800 space-y-4">
-            <h4 className="text-[10px] font-bold text-slate-450 dark:text-slate-400 uppercase tracking-wider flex items-center space-x-1.5">
-              <Activity className="h-4 w-4 text-primary dark:text-primary-light" />
-              <span>Abbott LibreLinkUp Sync</span>
-            </h4>
-
-            <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-655 dark:text-slate-300 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={libreActive}
-                onChange={(e) => setLibreActive(e.target.checked)}
-                className="h-4 w-4 text-primary rounded border-slate-200/80 dark:border-slate-700 focus:ring-primary/20"
-              />
-              <span>Enable Automatic LibreLinkUp Syncing</span>
-            </label>
-            <p className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold leading-relaxed">
-              When enabled, our app will automatically fetch your real-time glucose measurements from Abbott cloud servers every 10 minutes.
-            </p>
-
-            {libreActive && (
-              <div className="border border-slate-200/80 dark:border-slate-800 rounded-2xl overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.01)]">
-                <button
-                  type="button"
-                  onClick={() => setShowGuide(!showGuide)}
-                  className="w-full bg-slate-50/50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 px-4 py-2.5 text-left text-[10px] font-bold text-slate-605 dark:text-slate-300 flex items-center justify-between transition-all"
-                >
-                  <span>💡 How to connect your CGM sensor</span>
-                  <span className="text-slate-400 dark:text-slate-500">{showGuide ? 'Hide instructions ▲' : 'Show instructions ▼'}</span>
-                </button>
-                {showGuide && (
-                  <div className="bg-white dark:bg-slate-900 p-3.5 border-t border-slate-100 dark:border-slate-800 space-y-2 text-[10px] text-slate-655 dark:text-slate-300 font-semibold leading-relaxed">
-                    <ol className="list-decimal pl-4 space-y-1.5">
-                      <li>Open the official <strong>FreeStyle Libre</strong> mobile app on your phone.</li>
-                      <li>Open the side menu and go to <strong>Connected Apps</strong> → <strong>LibreLinkUp</strong>.</li>
-                      <li>Tap <strong>Add Connection</strong> and invite a secondary email address that you own (must be different from your main LibreView email).</li>
-                      <li>Check your secondary email inbox, download the <strong>LibreLinkUp mobile app</strong>, sign up with that email, and accept the caregiver invitation.</li>
-                      <li>Enter that secondary email, caregiver password, and select your region in the fields below.</li>
-                    </ol>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {libreActive && (
-              <div className="space-y-3 pt-2">
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">LibreLinkUp Caregiver Email</label>
-                  <input
-                    type="email"
-                    required={libreActive}
-                    value={libreEmail}
-                    onChange={(e) => setLibreEmail(e.target.value)}
-                    placeholder="caregiver@email.com"
-                    className="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 transition-all placeholder:text-slate-400/50"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">LibreLinkUp Caregiver Password</label>
-                  <input
-                    type="password"
-                    required={libreActive}
-                    value={librePassword}
-                    onChange={(e) => setLibrePassword(e.target.value)}
-                    placeholder="••••••••••••"
-                    className="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 transition-all placeholder:text-slate-400/50"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center space-x-1">
-                    <Globe className="h-3.5 w-3.5 text-primary" />
-                    <span>Abbott Cloud Region</span>
-                  </label>
-                  <select
-                    value={libreRegion}
-                    onChange={(e) => setLibreRegion(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 cursor-pointer transition-all"
-                  >
-                    <option value="ap">Asia Pacific / India (AP)</option>
-                    <option value="us">United States (US)</option>
-                    <option value="eu">Europe (EU)</option>
-                    <option value="de">Germany (DE)</option>
-                    <option value="fr">France (FR)</option>
-                    <option value="jp">Japan (JP)</option>
-                    <option value="au">Australia (AU)</option>
-                  </select>
-                </div>
-
-                {user?.libreActive && (
-                  <div className="pt-2">
-                    <button
-                      type="button"
-                      onClick={handleTriggerSync}
-                      disabled={isSyncing}
-                      className="w-full py-2.5 px-4 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-2xl flex items-center justify-center space-x-2 transition-all border border-slate-200/80 dark:border-slate-700 shadow-sm"
-                    >
-                      <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
-                      <span>{isSyncing ? 'Syncing readings...' : 'Sync Now'}</span>
-                    </button>
-                    {user?.libreLastSyncAt && (
-                      <p className="text-[9px] text-slate-400 dark:text-slate-500 font-bold text-center mt-1.5">
-                        Last synced: {new Date(user.libreLastSyncAt).toLocaleString()}
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
           <button

@@ -6,7 +6,8 @@ import {
   Smile,
   Frown,
   CreditCard,
-  AlertTriangle
+  AlertTriangle,
+  Calendar
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -34,17 +35,25 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
 
   const [range, setRange] = useState<string>('day');
+  const [customFrom, setCustomFrom] = useState<string>('');
+  const [customTo, setCustomTo] = useState<string>('');
+
+  const getTodayStr = () => new Date().toISOString().split('T')[0];
 
   useEffect(() => {
     fetchAnalysisData();
-  }, [token, range]);
+  }, [token, range, customFrom, customTo]);
 
   const fetchAnalysisData = async () => {
     if (!token) return;
     setLoading(true);
     try {
+      let queryParam = `range=${range}`;
+      if (range === 'custom' && customFrom && customTo) {
+        queryParam = `startDate=${customFrom}&endDate=${customTo}`;
+      }
       // 1. Fetch Food Spike Correlations
-      const spikeRes = await fetch(`${apiUrl}/glucose/analysis?range=${range}`, {
+      const spikeRes = await fetch(`${apiUrl}/glucose/analysis?${queryParam}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (spikeRes.status === 402 || spikeRes.status === 403) {
@@ -58,7 +67,7 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
       }
 
       // 2. Fetch Top Foods Aggregates
-      const topRes = await fetch(`${apiUrl}/glucose/top-foods?range=${range}`, {
+      const topRes = await fetch(`${apiUrl}/glucose/top-foods?${queryParam}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (topRes.status === 402 || topRes.status === 403) {
@@ -183,26 +192,74 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
       ) : (
         <div className="space-y-6">
           <div>
-            <div className="flex bg-slate-200/50 dark:bg-slate-800/50 rounded-xl p-1 mb-6">
-              <button
-                onClick={() => setRange('day')}
-                className={`flex-1 px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${range === 'day' ? 'bg-white dark:bg-slate-900 shadow-sm text-primary dark:text-primary-light scale-[1.02]' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
-              >
-                Today
-              </button>
-              <button
-                onClick={() => setRange('week')}
-                className={`flex-1 px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${range === 'week' ? 'bg-white dark:bg-slate-900 shadow-sm text-primary dark:text-primary-light scale-[1.02]' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
-              >
-                7 Days
-              </button>
-              <button
-                onClick={() => setRange('month')}
-                className={`flex-1 px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${range === 'month' ? 'bg-white dark:bg-slate-900 shadow-sm text-primary dark:text-primary-light scale-[1.02]' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
-              >
-                30 Days
-              </button>
+            {/* Modern Filter Tabs */}
+            <div className="flex bg-slate-200/60 dark:bg-slate-900/90 border border-slate-200/50 dark:border-slate-800 rounded-2xl p-1.5 mb-4 backdrop-blur-md shadow-inner">
+              {[
+                { id: 'day', label: 'Today' },
+                { id: 'week', label: '7 Days' },
+                { id: 'month', label: '30 Days' },
+                { id: 'custom', label: 'Custom' }
+              ].map(({ id, label }) => {
+                const isActive = range === id;
+                return (
+                  <button
+                    key={id}
+                    onClick={() => {
+                      setRange(id);
+                      if (id !== 'custom') {
+                        setCustomFrom('');
+                        setCustomTo('');
+                      }
+                    }}
+                    className={`flex-1 py-2 text-xs font-black tracking-wide rounded-xl transition-all duration-200 ${
+                      isActive
+                        ? 'bg-white dark:bg-blue-600 text-slate-900 dark:text-white shadow-md shadow-blue-500/10 dark:shadow-blue-900/40 scale-[1.02]'
+                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
             </div>
+
+            {/* Custom date range picker with modern sleek card */}
+            {range === 'custom' && (
+              <motion.div 
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex flex-col sm:flex-row items-center gap-3 mb-6 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3.5 shadow-sm"
+              >
+                <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500 text-xs font-bold shrink-0">
+                  <Calendar className="h-4 w-4 text-blue-500" />
+                  <span>Date Range:</span>
+                </div>
+                <div className="flex items-center gap-2 w-full">
+                  <div className="flex-1 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 flex items-center justify-between">
+                    <span className="text-[10px] font-black text-slate-400 uppercase mr-2">From</span>
+                    <input
+                      type="date"
+                      value={customFrom}
+                      max={customTo || getTodayStr()}
+                      onChange={(e) => setCustomFrom(e.target.value)}
+                      className="text-xs font-bold text-slate-700 dark:text-slate-100 bg-transparent focus:outline-none cursor-pointer w-full"
+                    />
+                  </div>
+                  <span className="text-slate-400 font-bold dark:text-slate-600">-</span>
+                  <div className="flex-1 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 flex items-center justify-between">
+                    <span className="text-[10px] font-black text-slate-400 uppercase mr-2">To</span>
+                    <input
+                      type="date"
+                      value={customTo}
+                      min={customFrom}
+                      max={getTodayStr()}
+                      onChange={(e) => setCustomTo(e.target.value)}
+                      className="text-xs font-bold text-slate-700 dark:text-slate-100 bg-transparent focus:outline-none cursor-pointer w-full"
+                    />
+                  </div>
+                </div>
+              </motion.div>
+            )}
 
             <motion.div 
               initial={{ opacity: 0, y: 20 }}

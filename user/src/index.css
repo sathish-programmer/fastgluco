@@ -339,7 +339,8 @@
 }
 
 /* Hide sub-page internal headers when wrapped in the unified layout */
-.sub-page-body > div > div:first-child {
+/* Only hides elements explicitly marked with sub-page-internal-header class */
+.sub-page-body .sub-page-internal-header {
   display: none !important;
 }
 

@@ -12,7 +12,8 @@ import {
   CreditCard,
   DownloadCloud,
   Lock,
-  Trash2
+  Trash2,
+  Calendar
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -36,6 +37,9 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [exportRange, setExportRange] = useState<string>('week');
+  const [exportCustomFrom, setExportCustomFrom] = useState<string>('');
+  const [exportCustomTo, setExportCustomTo] = useState<string>('');
+  const getTodayStr = () => new Date().toISOString().split('T')[0];
 
   useEffect(() => {
     fetchHistory();
@@ -184,8 +188,12 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
     try {
       showToast('Generating report PDF. Please wait...', 'info');
       const safeAppName = branding.appName.replace(/[^a-z0-9]/gi, '_');
+      let rangeParam = exportRange;
+      if (exportRange === 'custom' && exportCustomFrom && exportCustomTo) {
+        rangeParam = `custom&startDate=${exportCustomFrom}&endDate=${exportCustomTo}`;
+      }
       const filename = `${safeAppName}_Health_Report-${exportRange}-${new Date().toISOString().split('T')[0]}.pdf`;
-      const downloadUrl = `${apiUrl}/reports/user-pdf?range=${exportRange}&token=${encodeURIComponent(token)}&filename=${encodeURIComponent(filename)}`;
+      const downloadUrl = `${apiUrl}/reports/user-pdf?range=${rangeParam}&token=${encodeURIComponent(token)}&filename=${encodeURIComponent(filename)}`;
       
       if (Capacitor.isNativePlatform()) {
         // Trigger system external browser to handle download on native iOS/Android devices
@@ -238,7 +246,7 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="pb-24 pt-4 px-4 max-w-5xl mx-auto bg-slate-50/70 dark:bg-slate-950/70 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100"
+      className="pb-36 pt-4 px-4 max-w-5xl mx-auto bg-slate-50/70 dark:bg-slate-950/70 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100"
     >
       <motion.div 
         initial={{ opacity: 0, y: -10 }}
@@ -354,27 +362,61 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
         <p className="text-xs text-slate-400 font-semibold mb-4">
           Generate a beautiful, comprehensive PDF report with your matched food and glucose trends.
         </p>
-        <div className="flex items-center space-x-3">
-          <div className="flex-1">
-            <select
-              value={exportRange}
-              onChange={(e) => setExportRange(e.target.value)}
-              className="w-full text-xs font-bold text-slate-750 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-2xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all"
+        {/* Quick range pills */}
+        <div className="flex flex-wrap gap-2 mb-3">
+          {[
+            { label: 'Today', value: 'day' },
+            { label: 'Last 7 Days', value: 'week' },
+            { label: 'Last 30 Days', value: 'month' },
+            { label: 'All Time', value: 'all' },
+            { label: 'Custom', value: 'custom' },
+          ].map(({ label, value }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => { setExportRange(value); if (value !== 'custom') { setExportCustomFrom(''); setExportCustomTo(''); } }}
+              className={`px-3 py-1.5 rounded-xl text-[10px] font-bold border transition-all ${
+                exportRange === value
+                  ? 'bg-primary text-white border-primary shadow-sm'
+                  : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-primary hover:text-primary'
+              }`}
             >
-              <option value="day">Today</option>
-              <option value="week">Last 7 Days</option>
-              <option value="month">Last 30 Days</option>
-              <option value="all">All Time</option>
-            </select>
-          </div>
-          <button
-            onClick={handleDownloadUserReport}
-            className="bg-primary hover:bg-primary/95 dark:bg-primary-dark text-white text-xs font-bold px-5 py-2.5 rounded-2xl shadow-soft transition-all flex items-center justify-center shrink-0"
-          >
-            <FileText className="h-3.5 w-3.5 mr-1.5" />
-            Download PDF
-          </button>
+              {label}
+            </button>
+          ))}
         </div>
+
+        {/* Custom date range */}
+        {exportRange === 'custom' && (
+          <div className="flex items-center gap-2 mb-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2.5">
+            <Calendar className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">From</span>
+            <input
+              type="date"
+              value={exportCustomFrom}
+              max={exportCustomTo || getTodayStr()}
+              onChange={(e) => setExportCustomFrom(e.target.value)}
+              className="text-xs font-bold text-slate-600 dark:text-slate-300 bg-transparent focus:outline-none border-none cursor-pointer flex-1"
+            />
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">To</span>
+            <input
+              type="date"
+              value={exportCustomTo}
+              min={exportCustomFrom}
+              max={getTodayStr()}
+              onChange={(e) => setExportCustomTo(e.target.value)}
+              className="text-xs font-bold text-slate-600 dark:text-slate-300 bg-transparent focus:outline-none border-none cursor-pointer flex-1"
+            />
+          </div>
+        )}
+
+        <button
+          onClick={handleDownloadUserReport}
+          className="w-full bg-primary hover:bg-primary/95 dark:bg-primary-dark text-white text-xs font-bold px-5 py-2.5 rounded-2xl shadow-soft transition-all flex items-center justify-center gap-1.5"
+        >
+          <FileText className="h-3.5 w-3.5" />
+          Download PDF
+        </button>
       </motion.div>
 
       {/* Upload History list */}

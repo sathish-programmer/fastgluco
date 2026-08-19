@@ -625,7 +625,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="pb-6 pt-2 px-0 max-w-5xl mx-auto font-sans antialiased text-slate-800 dark:text-slate-100"
+      className="pb-36 pt-2 px-0 max-w-5xl mx-auto font-sans antialiased text-slate-800 dark:text-slate-100"
     >
       {/* Welcome Header */}
       <motion.div 
@@ -848,12 +848,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
             const isStable = displayGlucose && displayGlucose <= spikeThreshold && displayGlucose >= 70;
             const isSpikeWarning = displayGlucose && displayGlucose > spikeThreshold && displayGlucose <= spikeThreshold + 40;
 
-            let cardStyle = 'bg-white/90 border-white/80 shadow-[0_8px_30px_rgba(0,0,0,0.015)]';
+            let cardStyle = 'bg-white/90 dark:bg-slate-900/90 border-white/80 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,0,0,0.015)]';
             if (displayGlucose) {
-              if (isLow) cardStyle = 'bg-gradient-to-br from-sky-50/40 to-white/90 border-sky-200/50 shadow-[0_8px_30px_rgba(56,189,248,0.02)]';
-              else if (isStable) cardStyle = 'bg-gradient-to-br from-emerald-50/40 to-white/90 border-emerald-200/50 shadow-[0_8px_30px_rgba(16,185,129,0.02)]';
-              else if (isSpikeWarning) cardStyle = 'bg-gradient-to-br from-amber-50/40 to-white/90 border-amber-200/50 shadow-[0_8px_30px_rgba(245,158,11,0.02)]';
-              else cardStyle = 'bg-gradient-to-br from-rose-50/40 to-white/90 border-rose-200/50 shadow-[0_8px_30px_rgba(239,68,68,0.03)]';
+              if (isLow) cardStyle = 'bg-gradient-to-br from-sky-50/40 dark:from-sky-900/20 to-white/90 dark:to-slate-900/90 border-sky-200/50 dark:border-sky-800/50 shadow-[0_8px_30px_rgba(56,189,248,0.02)]';
+              else if (isStable) cardStyle = 'bg-gradient-to-br from-emerald-50/40 dark:from-emerald-900/20 to-white/90 dark:to-slate-900/90 border-emerald-200/50 dark:border-emerald-800/50 shadow-[0_8px_30px_rgba(16,185,129,0.02)]';
+              else if (isSpikeWarning) cardStyle = 'bg-gradient-to-br from-amber-50/40 dark:from-amber-900/20 to-white/90 dark:to-slate-900/90 border-amber-200/50 dark:border-amber-800/50 shadow-[0_8px_30px_rgba(245,158,11,0.02)]';
+              else cardStyle = 'bg-gradient-to-br from-rose-50/40 dark:from-rose-900/20 to-white/90 dark:to-slate-900/90 border-rose-200/50 dark:border-rose-800/50 shadow-[0_8px_30px_rgba(239,68,68,0.03)]';
             }
 
             return (
@@ -866,11 +866,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
                 </div>
 
                 <div className="my-2.5 flex items-baseline space-x-0.5">
-                  <span className="text-xl font-black text-slate-800 tracking-tight leading-none">{displayGlucose || '--'}</span>
+                  <span className="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none">{displayGlucose || '--'}</span>
                   <span className="text-[9px] font-bold text-slate-400 uppercase">mg/dL</span>
                 </div>
 
-                <div className="pt-1.5 border-t border-slate-50 flex justify-between items-center">
+                <div className="pt-1.5 border-t border-slate-50 dark:border-slate-800 flex justify-between items-center">
                   <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Status</span>
                   {(() => {
                     if (!displayGlucose) return <span className="text-[8px] font-bold text-slate-405 uppercase">No Data</span>;
@@ -905,14 +905,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
           })()}
 
           {/* In Range */}
-          <motion.div className="bg-white/90 backdrop-blur-xl p-4 rounded-3xl border border-white/80 shadow-[0_8px_30px_rgba(0,0,0,0.015)] flex flex-col justify-between transition-all hover:scale-[1.01]">
+          <motion.div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-4 rounded-3xl border border-white/80 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,0,0,0.015)] flex flex-col justify-between transition-all hover:scale-[1.01]">
             <div className="flex justify-between items-center text-slate-400">
               <span className="text-[10px] font-bold uppercase tracking-wider">In Range</span>
               <TrendingUp className="h-3.5 w-3.5 text-secondary" />
             </div>
 
             <div className="my-2.5 flex items-baseline space-x-0.5">
-              <span className="text-xl font-black text-slate-800 tracking-tight leading-none">{timeInRange}%</span>
+              <span className="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none">{timeInRange}%</span>
               <span className="text-[9px] font-bold text-slate-400 uppercase">Time</span>
             </div>
 
@@ -939,7 +939,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setIsChartExpanded(true)}
-                className="p-1.5 bg-slate-100/80 hover:bg-slate-200/80 text-slate-500 rounded-xl transition-all active:scale-90"
+                className="p-1.5 bg-slate-100/80 dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-xl transition-all active:scale-90"
                 title="Full Screen View"
               >
                 <Maximize2 className="h-4 w-4" />
@@ -961,19 +961,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
             <div className="flex bg-slate-200/50 dark:bg-slate-800/50 rounded-xl p-1 w-full sm:w-auto">
               <button
                 onClick={() => setDateRange('day')}
-                className={`flex-1 sm:flex-none px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest rounded-lg transition-all ${dateRange === 'day' ? 'bg-white shadow-sm text-primary scale-[1.02]' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`flex-1 sm:flex-none px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest rounded-lg transition-all ${dateRange === 'day' ? 'bg-white dark:bg-slate-900 shadow-sm text-primary scale-[1.02]' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
               >
                 Day
               </button>
               <button
                 onClick={() => setDateRange('week')}
-                className={`flex-1 sm:flex-none px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest rounded-lg transition-all ${dateRange === 'week' ? 'bg-white shadow-sm text-primary scale-[1.02]' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`flex-1 sm:flex-none px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest rounded-lg transition-all ${dateRange === 'week' ? 'bg-white dark:bg-slate-900 shadow-sm text-primary scale-[1.02]' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
               >
                 Week
               </button>
               <button
                 onClick={() => setDateRange('month')}
-                className={`flex-1 sm:flex-none px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest rounded-lg transition-all ${dateRange === 'month' ? 'bg-white shadow-sm text-primary scale-[1.02]' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`flex-1 sm:flex-none px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest rounded-lg transition-all ${dateRange === 'month' ? 'bg-white dark:bg-slate-900 shadow-sm text-primary scale-[1.02]' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
               >
                 Month
               </button>
@@ -993,9 +993,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
         </div>
 
         {glucoseReadings.length === 0 ? (
-          <div className="h-64 w-full flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200/80 p-6">
+          <div className="h-64 w-full flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 dark:bg-slate-800/30 rounded-2xl border border-dashed border-slate-200/80 dark:border-slate-700 p-6">
             <Activity className="h-8 w-8 mb-2.5 opacity-40 text-primary" />
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-600">No Data Available</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">No Data Available</p>
             <p className="text-[10px] text-slate-400 mt-1 text-center max-w-[200px]">Upload a CGM CSV report to view continuous glucose insights.</p>
           </div>
         ) : (
@@ -1188,7 +1188,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
       <div className={`grid grid-cols-2 sm:${enableWorkout ? 'grid-cols-4' : 'grid-cols-3'} gap-2.5 mb-6`}>
         <button
           onClick={() => onNavigateToTab('Food Log')}
-          className="bg-white hover:bg-slate-55 text-slate-800 border border-slate-200/60 text-xs font-extrabold py-4 px-3 rounded-2xl shadow-sm hover:shadow active:scale-95 transition-all duration-200 flex flex-col items-center space-y-1.5"
+          className="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200/60 dark:border-slate-700 text-xs font-extrabold py-4 px-3 rounded-2xl shadow-sm hover:shadow active:scale-95 transition-all duration-200 flex flex-col items-center space-y-1.5"
         >
           <div className="p-2 bg-primary-light rounded-xl text-primary">
             <Plus className="h-4 w-4" />
@@ -1198,7 +1198,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
 
         <button
           onClick={() => setShowGlucoseModal(true)}
-          className="bg-white hover:bg-slate-55 text-slate-800 border border-slate-200/60 text-xs font-extrabold py-4 px-3 rounded-2xl shadow-sm hover:shadow active:scale-95 transition-all duration-200 flex flex-col items-center space-y-1.5"
+          className="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200/60 dark:border-slate-700 text-xs font-extrabold py-4 px-3 rounded-2xl shadow-sm hover:shadow active:scale-95 transition-all duration-200 flex flex-col items-center space-y-1.5"
         >
           <div className="p-2 bg-rose-50 rounded-xl text-rose-500">
             <Activity className="h-4 w-4" />
@@ -1209,7 +1209,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
         {enableWorkout && (
           <button
             onClick={() => setShowActivityModal(true)}
-            className="bg-white hover:bg-slate-55 text-slate-800 border border-slate-200/60 text-xs font-extrabold py-4 px-3 rounded-2xl shadow-sm hover:shadow active:scale-95 transition-all duration-200 flex flex-col items-center space-y-1.5"
+            className="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200/60 dark:border-slate-700 text-xs font-extrabold py-4 px-3 rounded-2xl shadow-sm hover:shadow active:scale-95 transition-all duration-200 flex flex-col items-center space-y-1.5"
           >
             <div className="p-2 bg-amber-50 rounded-xl text-amber-550">
               <span className="text-base leading-none">🏃</span>
@@ -1220,9 +1220,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
 
         <button
           onClick={() => onNavigateToTab('Reports')}
-          className="bg-white hover:bg-slate-55 text-slate-800 border border-slate-200/60 text-xs font-extrabold py-4 px-3 rounded-2xl shadow-sm hover:shadow active:scale-95 transition-all duration-200 flex flex-col items-center space-y-1.5"
+          className="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200/60 dark:border-slate-700 text-xs font-extrabold py-4 px-3 rounded-2xl shadow-sm hover:shadow active:scale-95 transition-all duration-200 flex flex-col items-center space-y-1.5"
         >
-          <div className="p-2 bg-slate-100 rounded-xl text-slate-500">
+          <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-slate-500 dark:text-slate-400">
             <FileUp className="h-4 w-4" />
           </div>
           <span>CGM CSV</span>
@@ -1231,7 +1231,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
 
       <div
         onClick={() => onNavigateToTab('Reports')}
-        className="bg-gradient-to-br from-white to-slate-50/80 hover:to-slate-100/40 p-5 rounded-3xl border border-white/80 shadow-[0_8px_30px_rgba(0,0,0,0.015)] flex items-center justify-between cursor-pointer transition-all duration-300 hover:scale-[1.01] hover:shadow-[0_12px_35px_rgba(0,0,0,0.035)] group"
+        className="bg-gradient-to-br from-white dark:from-slate-900 to-slate-50/80 dark:to-slate-800/80 hover:to-slate-100/40 dark:hover:to-slate-700/40 p-5 rounded-3xl border border-white/80 dark:border-slate-700 shadow-[0_8px_30px_rgba(0,0,0,0.015)] flex items-center justify-between cursor-pointer transition-all duration-300 hover:scale-[1.01] hover:shadow-[0_12px_35px_rgba(0,0,0,0.035)] group"
       >
         <div className="flex items-center space-x-4">
           <div className="p-3.5 bg-gradient-to-br from-primary-light to-blue-100 text-primary rounded-2xl relative shadow-inner group-hover:scale-105 transition-transform duration-300">
@@ -1242,7 +1242,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
             </span>
           </div>
           <div>
-            <h4 className="text-sm font-extrabold text-slate-800">Uploaded Reports</h4>
+            <h4 className="text-sm font-extrabold text-slate-800 dark:text-slate-100">Uploaded Reports</h4>
             <p className="text-xs text-slate-400 font-semibold mt-0.5">CGM history & sync details</p>
           </div>
         </div>
@@ -1257,7 +1257,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
 
       {showGlucoseModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-fadeIn">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-sm border border-slate-150 shadow-2xl animate-scaleIn text-slate-800">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 w-full max-w-sm border border-slate-150 dark:border-slate-800 shadow-2xl animate-scaleIn text-slate-800 dark:text-slate-100">
             <h3 className="text-lg font-black text-slate-900 mb-1">Log Glucose Reading</h3>
             <p className="text-xs text-slate-400 font-semibold mb-5">
               Enter a manual blood glucose reading from your glucometer.
@@ -1275,7 +1275,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
                   placeholder="e.g. 105"
                   value={manualGlucose}
                   onChange={(e) => setManualGlucose(e.target.value)}
-                  className="w-full text-sm font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  className="w-full text-sm font-semibold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 />
               </div>
 
@@ -1287,7 +1287,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
                   type="datetime-local"
                   value={manualTimestamp}
                   onChange={(e) => setManualTimestamp(e.target.value)}
-                  className="w-full text-sm font-semibold text-slate-700 bg-slate-55 border border-slate-200 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  className="w-full text-sm font-semibold text-slate-700 dark:text-slate-200 bg-slate-55 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 />
                 <span className="text-[10px] text-slate-455 font-semibold mt-1.5 block">
                   Leave empty to use current time
@@ -1298,7 +1298,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
                 <button
                   type="button"
                   onClick={() => setShowGlucoseModal(false)}
-                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-655 text-xs font-extrabold py-3.5 rounded-2xl transition-all"
+                  className="flex-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-655 dark:text-slate-300 text-xs font-extrabold py-3.5 rounded-2xl transition-all"
                 >
                   Cancel
                 </button>

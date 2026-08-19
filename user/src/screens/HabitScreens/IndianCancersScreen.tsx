@@ -154,7 +154,7 @@ export const IndianCancersScreen: React.FC<IndianCancersScreenProps> = ({ onBack
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20 pt-4 px-4 max-w-2xl mx-auto space-y-6 transition-colors duration-300">
       
       {/* Header */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 sub-page-internal-header">
         <button onClick={onBack} className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 active:scale-95 transition-all">
           <ArrowLeft className="h-5 w-5" />
         </button>

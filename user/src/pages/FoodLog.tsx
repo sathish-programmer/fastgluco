@@ -980,7 +980,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                   setUnit('serving');
                   setCustomName('');
                 }}
-                className={`flex-1 py-2 text-center text-xs font-bold rounded-xl transition-all ${activeTab === 'manual' ? 'bg-white text-slate-800 shadow-soft' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`flex-1 py-2 text-center text-xs font-bold rounded-xl transition-all ${activeTab === 'manual' ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-soft' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
               >
                 ✍️ Manual
               </button>
@@ -997,7 +997,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search library (idli, roti, grilled chicken...)"
-                    className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-semibold bg-slate-50/30 transition-all"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-semibold bg-slate-50/30 dark:bg-slate-800/60 dark:text-slate-100 dark:placeholder-slate-500 transition-all"
                   />
 
                   {libraryFoods.length > 0 && (
@@ -1055,18 +1055,18 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                 </div>
 
                 {selectedLibraryFood ? (
-                  <div className="space-y-3.5 bg-slate-50/30 p-4 rounded-2xl border border-slate-100/70">
-                    <div className="flex items-center justify-between p-3 bg-white border border-slate-150 rounded-xl">
+                  <div className="space-y-3.5 bg-slate-50/30 dark:bg-slate-800/30 p-4 rounded-2xl border border-slate-100/70 dark:border-slate-700/50">
+                    <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 border border-slate-150 dark:border-slate-700 rounded-xl">
                       <div>
-                        <span className={`text-[9px] font-bold uppercase tracking-wider block ${isExternalFood ? 'text-blue-600' : 'text-primary'}`}>
+                        <span className={`text-[9px] font-bold uppercase tracking-wider block ${isExternalFood ? 'text-blue-600 dark:text-blue-400' : 'text-primary'}`}>
                           {isExternalFood ? '🌐 FatSecret Verified' : 'Local Database'}
                         </span>
-                        <span className="text-sm font-bold text-slate-800">{selectedLibraryFood.name}</span>
+                        <span className="text-sm font-bold text-slate-800 dark:text-slate-100">{selectedLibraryFood.name}</span>
                       </div>
                       <button
                         type="button"
                         onClick={handleClearSelected}
-                        className="text-xs font-bold text-rose-500 hover:text-rose-600 transition-all bg-white shadow-sm px-2.5 py-1 rounded-lg border border-rose-100"
+                        className="text-xs font-bold text-rose-500 hover:text-rose-600 transition-all bg-white dark:bg-slate-900 shadow-sm px-2.5 py-1 rounded-lg border border-rose-100 dark:border-rose-900/30"
                       >
                         Clear
                       </button>
@@ -1080,7 +1080,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                           required
                           value={logDate}
                           onChange={(e) => setLogDate(e.target.value)}
-                          className="w-full px-3 py-2 rounded-2xl border border-slate-200/80 focus:outline-none text-xs font-bold text-slate-600 bg-white cursor-pointer"
+                          className="w-full px-3 py-2 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none text-xs font-bold text-slate-600 dark:text-slate-200 bg-white dark:bg-slate-800 cursor-pointer"
                         />
                       </div>
                       <div>
@@ -1090,7 +1090,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                           required
                           value={logTime}
                           onChange={(e) => setLogTime(e.target.value)}
-                          className="w-full px-3 py-2 rounded-2xl border border-slate-200/80 focus:outline-none text-xs font-bold text-slate-600 bg-white cursor-pointer"
+                          className="w-full px-3 py-2 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none text-xs font-bold text-slate-600 dark:text-slate-200 bg-white dark:bg-slate-800 cursor-pointer"
                         />
                       </div>
                     </div>
@@ -1101,7 +1101,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                         <select
                           value={mealType}
                           onChange={(e: any) => setMealType(e.target.value)}
-                          className="w-full px-3 py-2 rounded-2xl border border-slate-200/80 focus:outline-none text-xs font-bold text-slate-600 bg-white cursor-pointer"
+                          className="w-full px-3 py-2 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none text-xs font-bold text-slate-600 dark:text-slate-200 bg-white dark:bg-slate-800 cursor-pointer"
                         >
                           <option value="Breakfast">Breakfast</option>
                           <option value="Lunch">Lunch</option>
@@ -1131,7 +1131,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                       }
 
                       return (
-                        <div className="space-y-2 pt-2 border-t border-slate-200/60">
+                        <div className="space-y-2 pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
                           <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Select Portion Size</span>
                           <div className="grid grid-cols-4 gap-2">
                             {options.map((type) => (
@@ -1141,7 +1141,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                                 onClick={() => handlePortionChange(type)}
                                 className={`py-2 text-xs font-bold rounded-xl border transition-all ${portionType === type
                                   ? 'bg-primary/10 border-primary text-primary'
-                                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
                                   }`}
                               >
                                 {type === 'custom' ? 'Custom' : `${type}${suffix}`}
@@ -1177,15 +1177,15 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                     </button>
                   </div>
                 ) : (
-                  <div className="text-center py-8 border border-dashed border-slate-200 rounded-3xl bg-slate-50/50">
-                    <span className="text-xs font-semibold text-slate-400 block">Search and select a food template from the library above to get started...</span>
+                  <div className="text-center py-8 border border-dashed border-slate-200 dark:border-slate-700 rounded-3xl bg-transparent dark:bg-transparent">
+                    <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 block">Search and select a food template from the library above to get started...</span>
                   </div>
                 )}
               </div>
             )}
 
             {activeTab === 'manual' && (
-              <div className="space-y-3.5 bg-slate-50/30 p-4 rounded-2xl border border-slate-100/70">
+              <div className="space-y-3.5 bg-slate-50/30 dark:bg-slate-800/30 p-4 rounded-2xl border border-slate-100/70 dark:border-slate-700/50">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Meal Name</label>
                   <input
@@ -1194,7 +1194,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                     value={customName}
                     onChange={(e) => setCustomName(e.target.value)}
                     placeholder="Rice and Dal, boiled egg..."
-                    className="w-full px-3.5 py-2 rounded-2xl border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-semibold bg-white"
+                    className="w-full px-3.5 py-2 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-semibold bg-white dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500"
                   />
                 </div>
 
@@ -1206,7 +1206,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                       required
                       value={logDate}
                       onChange={(e) => setLogDate(e.target.value)}
-                      className="w-full px-3 py-2 rounded-2xl border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-xs font-bold text-slate-600 bg-white cursor-pointer"
+                      className="w-full px-3 py-2 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-xs font-bold text-slate-600 dark:text-slate-200 bg-white dark:bg-slate-800 cursor-pointer"
                     />
                   </div>
                   <div>
@@ -1216,7 +1216,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                       required
                       value={logTime}
                       onChange={(e) => setLogTime(e.target.value)}
-                      className="w-full px-3 py-2 rounded-2xl border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-xs font-bold text-slate-600 bg-white cursor-pointer"
+                      className="w-full px-3 py-2 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-xs font-bold text-slate-600 dark:text-slate-200 bg-white dark:bg-slate-800 cursor-pointer"
                     />
                   </div>
                 </div>
@@ -1227,7 +1227,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                     <select
                       value={mealType}
                       onChange={(e: any) => setMealType(e.target.value)}
-                      className="w-full px-3 py-2 rounded-2xl border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-xs font-bold text-slate-600 bg-white cursor-pointer"
+                      className="w-full px-3 py-2 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-xs font-bold text-slate-600 dark:text-slate-200 bg-white dark:bg-slate-800 cursor-pointer"
                     >
                       <option value="Breakfast">Breakfast</option>
                       <option value="Lunch">Lunch</option>
@@ -1241,7 +1241,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                     <select
                       value={category}
                       onChange={(e: any) => setCategory(e.target.value)}
-                      className="w-full px-3 py-2 rounded-2xl border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-xs font-bold text-slate-600 bg-white cursor-pointer"
+                      className="w-full px-3 py-2 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-xs font-bold text-slate-600 dark:text-slate-200 bg-white dark:bg-slate-800 cursor-pointer"
                     >
                       <option value="South Indian">South Indian</option>
                       <option value="North Indian">North Indian</option>
@@ -1257,10 +1257,10 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                   </div>
                 </div>
 
-                <div className="pt-3 border-t border-slate-200/60">
+                <div className="pt-3 border-t border-slate-200/60 dark:border-slate-700/60">
                   <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Nutritional Breakdown</span>
                   <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
-                    <div className="p-2 rounded-xl text-center border bg-white border-slate-200/80 focus-within:border-primary/40">
+                    <div className="p-2 rounded-xl text-center border bg-white dark:bg-slate-800 border-slate-200/80 dark:border-slate-700 focus-within:border-primary/40">
                       <span className="text-[8px] font-bold text-slate-400 block uppercase">Calories</span>
                       <input
                         type="number"
@@ -1269,7 +1269,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                         className="w-full text-center font-bold text-slate-700 text-xs mt-0.5 bg-transparent focus:outline-none"
                       />
                     </div>
-                    <div className="p-2 rounded-xl text-center border bg-white border-slate-200/80 focus-within:border-primary/40">
+                    <div className="p-2 rounded-xl text-center border bg-white dark:bg-slate-800 border-slate-200/80 dark:border-slate-700 focus-within:border-primary/40">
                       <span className="text-[8px] font-bold text-slate-400 block uppercase">Carbs</span>
                       <input
                         type="number"
@@ -1278,7 +1278,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                         className="w-full text-center font-bold text-slate-700 text-xs mt-0.5 bg-transparent focus:outline-none"
                       />
                     </div>
-                    <div className="p-2 rounded-xl text-center border bg-white border-slate-200/80 focus-within:border-primary/40">
+                    <div className="p-2 rounded-xl text-center border bg-white dark:bg-slate-800 border-slate-200/80 dark:border-slate-700 focus-within:border-primary/40">
                       <span className="text-[8px] font-bold text-slate-400 block uppercase">Protein</span>
                       <input
                         type="number"
@@ -1287,7 +1287,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                         className="w-full text-center font-bold text-slate-700 text-xs mt-0.5 bg-transparent focus:outline-none"
                       />
                     </div>
-                    <div className="p-2 rounded-xl text-center border bg-white border-slate-200/80 focus-within:border-primary/40">
+                    <div className="p-2 rounded-xl text-center border bg-white dark:bg-slate-800 border-slate-200/80 dark:border-slate-700 focus-within:border-primary/40">
                       <span className="text-[8px] font-bold text-slate-400 block uppercase">Fat</span>
                       <input
                         type="number"
@@ -1296,7 +1296,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                         className="w-full text-center font-bold text-slate-700 text-xs mt-0.5 bg-transparent focus:outline-none"
                       />
                     </div>
-                    <div className="p-2 rounded-xl text-center border bg-white border-slate-200/80 focus-within:border-primary/40">
+                    <div className="p-2 rounded-xl text-center border bg-white dark:bg-slate-800 border-slate-200/80 dark:border-slate-700 focus-within:border-primary/40">
                       <span className="text-[8px] font-bold text-slate-400 block uppercase">Fiber</span>
                       <input
                         type="number"
@@ -1318,7 +1318,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                       required
                       value={quantity}
                       onChange={(e) => setQuantity(e.target.value)}
-                      className="w-full px-3 py-2 rounded-2xl border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-bold text-slate-700 bg-white"
+                      className="w-full px-3 py-2 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800"
                     />
                   </div>
                   <div>
@@ -1328,7 +1328,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                       required
                       value={unit}
                       onChange={(e) => setUnit(e.target.value)}
-                      className="w-full px-3 py-2 rounded-2xl border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-semibold bg-white"
+                      className="w-full px-3 py-2 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-semibold bg-white dark:bg-slate-800 dark:text-slate-100"
                     />
                   </div>
                 </div>
@@ -1351,22 +1351,55 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5, duration: 0.4 }}
         >
-          <div className="flex items-center justify-between mb-4 mt-8">
-            <h3 className="text-sm font-extrabold text-slate-800 dark:text-slate-200 flex items-center">
-              <span className="hidden sm:inline">Meal Log History</span>
-              <span className="sm:hidden">History</span>
-            </h3>
-            <div className="flex items-center space-x-2 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl px-3 py-1.5 shrink-0 shadow-sm">
-              <Calendar className="h-3.5 w-3.5 text-slate-400" />
-              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">View Date:</span>
-              <input
-                type="date"
-                value={selectedViewDate}
-                onChange={(e) => setSelectedViewDate(e.target.value)}
-                className="text-xs font-bold text-slate-600 dark:text-slate-300 bg-transparent focus:outline-none border-none cursor-pointer"
-              />
+          <div className="mb-4 mt-8">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-extrabold text-slate-800 dark:text-slate-200">Meal Log History</h3>
+              <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl px-2.5 py-1.5 shadow-sm">
+                <Calendar className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                <input
+                  type="date"
+                  value={selectedViewDate}
+                  onChange={(e) => setSelectedViewDate(e.target.value)}
+                  className="text-xs font-bold text-slate-600 dark:text-slate-300 bg-transparent focus:outline-none border-none cursor-pointer"
+                />
+              </div>
             </div>
-          </div>         </motion.div>
+            {/* Quick filters */}
+            <div className="flex gap-2">
+              {(() => {
+                const todayStr = getTodayLocalDateStr();
+                const yesterdayObj = new Date(); yesterdayObj.setDate(yesterdayObj.getDate() - 1);
+                const yesterdayStr = yesterdayObj.toISOString().split('T')[0];
+                const weekAgoObj = new Date(); weekAgoObj.setDate(weekAgoObj.getDate() - 7);
+                const weekAgoStr = weekAgoObj.toISOString().split('T')[0];
+
+                const filters = [
+                  { label: 'Today', date: todayStr },
+                  { label: 'Yesterday', date: yesterdayStr },
+                  { label: '7 Days Ago', date: weekAgoStr },
+                ];
+
+                return filters.map(({ label, date }) => {
+                  const isActive = selectedViewDate === date;
+                  return (
+                    <button
+                      key={label}
+                      type="button"
+                      onClick={() => setSelectedViewDate(date)}
+                      className={`px-3.5 py-1.5 rounded-xl text-[11px] font-extrabold border transition-all duration-200 active:scale-95 ${
+                        isActive
+                          ? 'bg-primary dark:bg-blue-600 text-white border-primary dark:border-blue-500 shadow-md shadow-primary/20 dark:shadow-blue-900/40'
+                          : 'bg-white dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-primary/50 hover:text-primary dark:hover:text-slate-200'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                });
+              })()}
+            </div>
+          </div>
+        </motion.div>
 
           {logs.length > 0 && (
             <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-[0_12px_24px_rgba(0,0,0,0.02)] rounded-3xl p-4 mb-4">
@@ -1414,7 +1447,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 tracking-tight leading-tight">{log.name}</h4>
-                        <span className="text-[9px] text-slate-400 font-extrabold bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
+                        <span className="text-[9px] text-slate-400 font-extrabold bg-slate-50 dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-100 dark:border-slate-700">
                           {new Date(log.loggedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
@@ -1422,20 +1455,20 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                         {log.mealType} • {log.quantity} {log.unit}
                       </span>
                       <div className="flex items-center space-x-2 mt-2 flex-wrap gap-y-1">
-                        <span className="inline-flex items-center text-[10px] text-orange-600 font-bold bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-full">
+                        <span className="inline-flex items-center text-[10px] text-orange-600 dark:text-orange-400 font-bold bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-2 py-0.5 rounded-full">
                           <Flame className="h-2.5 w-2.5 mr-0.5 fill-orange-100" />
                           {Math.round(log.calories * log.quantity)} kcal
                         </span>
-                        <span className="inline-flex items-center text-[10px] text-blue-600 font-bold bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-full">
+                        <span className="inline-flex items-center text-[10px] text-blue-600 dark:text-blue-400 font-bold bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-2 py-0.5 rounded-full">
                           <Scale className="h-2.5 w-2.5 mr-0.5" />
                           {Math.round(log.carbs * log.quantity)}g carbs
                         </span>
-                        <span className="inline-flex items-center text-[10px] text-indigo-600 font-bold bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-full">
+                        <span className="inline-flex items-center text-[10px] text-indigo-600 dark:text-indigo-400 font-bold bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-2 py-0.5 rounded-full">
                           <ShoppingBag className="h-2.5 w-2.5 mr-0.5" />
                           {Math.round(log.protein * log.quantity)}g pro
                         </span>
                         {log.fiber > 0 && (
-                          <span className="inline-flex items-center text-[10px] text-emerald-600 font-bold bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-full">
+                          <span className="inline-flex items-center text-[10px] text-emerald-600 dark:text-emerald-400 font-bold bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-2 py-0.5 rounded-full">
                             <Wheat className="h-2.5 w-2.5 mr-0.5" />
                             {Math.round(log.fiber * log.quantity)}g fib
                           </span>
@@ -1447,14 +1480,14 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                   <div className="flex items-center space-x-1 shrink-0">
                     <button
                       onClick={() => handleOpenEditModal(log)}
-                      className="p-2 hover:bg-slate-50 text-slate-400 hover:text-primary rounded-xl transition-all"
+                      className="p-2 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-400 hover:text-primary rounded-xl transition-all"
                       title="Edit Log"
                     >
                       <Pencil className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => handleDeleteLog(log._id)}
-                      className="p-2 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-xl transition-all"
+                      className="p-2 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-slate-400 hover:text-rose-600 rounded-xl transition-all"
                       title="Delete Log"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -1468,16 +1501,16 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
 
         {isEditModalOpen && editingLog && (
           <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-            <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl border border-slate-100 overflow-hidden transform transition-all animate-in zoom-in-95 duration-200">
-              <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-md shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden transform transition-all animate-in zoom-in-95 duration-200">
+              <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
                 <div>
-                  <h3 className="text-sm font-bold text-slate-800">Edit Food Log</h3>
-                  <p className="text-xs text-slate-450 font-medium mt-0.5">Modify meal entry details</p>
+                  <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">Edit Food Log</h3>
+                  <p className="text-xs text-slate-450 dark:text-slate-400 font-medium mt-0.5">Modify meal entry details</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => { setIsEditModalOpen(false); setEditingLog(null); }}
-                  className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-all"
+                  className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -1692,23 +1725,23 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-3xl p-5 max-w-md w-full border border-slate-100 shadow-2xl relative my-8"
+              className="bg-white dark:bg-slate-900 rounded-3xl p-5 max-w-md w-full border border-slate-100 dark:border-slate-800 shadow-2xl relative my-8"
             >
               <button
                 type="button"
                 onClick={() => setIsScannerOpen(false)}
-                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
               >
                 <X className="h-5 w-5" />
               </button>
 
-              <h3 className="text-sm font-extrabold text-slate-800 flex items-center space-x-1.5 mb-4 border-b border-slate-100 pb-3">
+              <h3 className="text-sm font-extrabold text-slate-800 dark:text-slate-100 flex items-center space-x-1.5 mb-4 border-b border-slate-100 dark:border-slate-800 pb-3">
                 <Sparkles className="h-4 w-4 text-indigo-500 fill-indigo-500 animate-pulse" />
                 <span>Food Scanner</span>
               </h3>
 
               {!scanPreviewUrl ? (
-                 <div className="border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center bg-slate-50/50 space-y-4">
+                 <div className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl p-6 text-center bg-slate-50/50 dark:bg-slate-800/40 space-y-4">
                    <input
                      type="file"
                      id="scanner-image-input"
@@ -1718,10 +1751,10 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                      disabled={!hasAiConsent}
                    />
                    <div className="flex flex-col items-center">
-                     <div className="h-12 w-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-3 border border-indigo-100">
+                     <div className="h-12 w-12 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-2xl flex items-center justify-center mb-3 border border-indigo-100 dark:border-indigo-800/50">
                        <Camera className="h-5 w-5" />
                      </div>
-                     <span className="text-xs font-bold text-slate-700 block mb-4">Meal Scanning Options</span>
+                     <span className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-4">Meal Scanning Options</span>
                      
                      <div className="flex gap-3 w-full max-w-xs">
                        <button
@@ -1753,16 +1786,16 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                      </div>
                    </div>
                   
-                  <div className="mt-6 bg-slate-100 p-3 rounded-xl border border-slate-200 text-left flex items-start space-x-3">
+                  <div className="mt-6 bg-slate-100 dark:bg-slate-800/80 p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-left flex items-start space-x-3">
                     <input 
                       type="checkbox" 
                       id="ai-consent"
                       checked={hasAiConsent}
                       onChange={(e) => setHasAiConsent(e.target.checked)}
-                      className="mt-1 h-4 w-4 text-primary border-slate-300 rounded focus:ring-primary"
+                      className="mt-1 h-4 w-4 text-primary border-slate-300 dark:border-slate-600 rounded focus:ring-primary"
                     />
-                    <label htmlFor="ai-consent" className="text-[10px] text-slate-500 font-medium leading-relaxed cursor-pointer">
-                      <strong>Privacy Consent:</strong> I agree to securely share this meal image with a third-party AI provider (Google Gemini) solely for estimating nutritional content. Images are analyzed transiently and are never stored or used to personally identify you.
+                    <label htmlFor="ai-consent" className="text-[10px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed cursor-pointer">
+                      <strong className="text-slate-700 dark:text-slate-300">Privacy Consent:</strong> I agree to securely share this meal image with a third-party AI provider (Google Gemini) solely for estimating nutritional content. Images are analyzed transiently and are never stored or used to personally identify you.
                     </label>
                   </div>
                 </div>

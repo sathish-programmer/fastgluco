@@ -399,7 +399,7 @@ const MainAppContent: React.FC = () => {
         {activeTab === 'Food Log' && <FoodLog features={planFeatures} onNavigateToTab={setActiveTab} />}
         {activeTab === 'Recommended Foods' && <RecommendedFoodsScreen onBack={() => setActiveTab('Food Log')} />}
         {activeTab === 'Analysis' && <Analysis features={planFeatures} />}
-        {activeTab === 'Profile' && <Profile />}
+        {activeTab === 'Profile' && <Profile onNavigateToTab={setActiveTab} />}
         {activeTab === 'Subscription' && (
           <Subscription 
             onBack={() => setActiveTab('Dashboard')} 
