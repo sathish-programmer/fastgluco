@@ -45,6 +45,17 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
     fetchHistory();
   }, [token]);
 
+  // Auto-poll history if any report is currently processing in background
+  useEffect(() => {
+    const hasProcessing = history.some((r: any) => r.status === 'Processing');
+    if (hasProcessing) {
+      const interval = setInterval(() => {
+        fetchHistory();
+      }, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [history]);
+
   const fetchHistory = async () => {
     if (!token) return;
     try {
@@ -68,7 +79,6 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       setFile(e.target.files[0]);
-      setMessage(null);
     }
   };
 
@@ -100,8 +110,13 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
       const data = await response.json();
 
       if (response.ok) {
-        showToast(`Report uploaded: Loaded ${data.readingsCount} readings.`, 'success');
-        setMessage({ text: `Success: Loaded ${data.readingsCount} readings.`, isError: false });
+        const hasCount = data.readingsCount !== undefined && data.readingsCount !== null;
+        const msgText = hasCount
+          ? `Report uploaded: Loaded ${data.readingsCount} readings.`
+          : `Report uploaded successfully! Processing PDF in background...`;
+        
+        showToast(msgText, 'success');
+        setMessage({ text: msgText, isError: false });
         setFile(null);
         // Clear input element
         const fileInput = document.getElementById('report-input') as HTMLInputElement;
