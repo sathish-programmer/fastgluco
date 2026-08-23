@@ -1049,7 +1049,12 @@ export class AdminController {
   public static async getLegalDocument(req: Request, res: Response) {
     try {
       const { type } = req.params;
-      const doc = await LegalDocument.findOne({ type });
+      let doc = await LegalDocument.findOne({
+        type: { $regex: new RegExp(`^${type.replace(/[\s_-]/g, '')}$`, 'i') }
+      });
+      if (!doc && type.toLowerCase().includes('terms')) {
+        doc = await LegalDocument.findOne({ type: 'TermsOfService' });
+      }
       if (!doc) return res.status(404).json({ message: 'Legal document not found.' });
       return res.status(200).json(doc);
     } catch (err: any) {
@@ -1061,14 +1066,17 @@ export class AdminController {
     try {
       const { type } = req.params;
       const { content } = req.body;
-      let doc = await LegalDocument.findOne({ type });
+      const docType = type.toLowerCase().includes('terms') ? 'TermsOfService' : type;
+      let doc = await LegalDocument.findOne({
+        type: { $regex: new RegExp(`^${docType.replace(/[\s_-]/g, '')}$`, 'i') }
+      });
       if (!doc) {
-        doc = new LegalDocument({ type, content });
+        doc = new LegalDocument({ type: docType, content });
       } else {
         doc.content = content;
       }
       await doc.save();
-      return res.status(200).json({ message: 'Legal document updated successfully.', doc });
+      return res.status(200).json(doc);
     } catch (err: any) {
       return res.status(500).json({ message: err.message || 'Error updating legal doc' });
     }

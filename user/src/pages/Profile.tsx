@@ -16,7 +16,8 @@ import {
   Heart,
   Trash2,
   Moon,
-  Sun
+  Sun,
+  ShieldCheck
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Educational } from './Educational'; // import the sub-view
@@ -640,6 +641,37 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
             <span>Update</span>
           </button>
         </form>
+      </motion.div>
+
+      {/* Legal & Agreements Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.45, duration: 0.4 }}
+        className="mb-4 bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-soft space-y-3"
+      >
+        <h4 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center space-x-1.5">
+          <ShieldCheck className="h-4 w-4 text-primary dark:text-primary-light" />
+          <span>Legal & Agreement</span>
+        </h4>
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={() => onNavigateToTab?.('Terms of Service')}
+            className="w-full flex items-center justify-between p-3 rounded-2xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 transition-all border border-slate-200/60 dark:border-slate-700/60 text-left"
+          >
+            <div className="flex items-center space-x-2.5">
+              <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
+              <span>Master Disclaimer, Privacy Notice & Terms of Use</span>
+            </div>
+            <ChevronRight className="h-4 w-4 text-slate-400 shrink-0" />
+          </button>
+          {user?.termsAccepted && (
+            <p className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 px-1 flex items-center space-x-1">
+              <span>✓ Accepted on {user.termsAcceptedAt ? new Date(user.termsAcceptedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'File'} (v{user.acceptedTermsVersion || '1.0'})</span>
+            </p>
+          )}
+        </div>
       </motion.div>
 
       {/* Logout button */}
