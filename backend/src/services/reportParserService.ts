@@ -273,6 +273,9 @@ export class ReportParserService {
           const generatedDateRegex = /(?:Generated:\s*)?(\d{1,2}[-/]\d{1,2}[-/]\d{4})/i;
           const generatedMatch = text.match(generatedDateRegex);
 
+          // 3rd Priority: Extract date from file name as fallback when OCR binary is missing on Linux
+          const fileNameDateMatch = path.basename(filePath).match(/([A-Za-z]{3})\s+(\d{1,2}),?\s+(\d{4})/i);
+
           if (explicitMatch && explicitMatch[1] && explicitMatch[2]) {
             startDate = ReportParserService.parseDateResilient(explicitMatch[1]);
             endDate = ReportParserService.parseDateResilient(explicitMatch[2]);
@@ -280,6 +283,14 @@ export class ReportParserService {
             const parsedGen = ReportParserService.parseDateResilient(generatedMatch[1]);
             if (!isNaN(parsedGen.getTime())) {
               endDate = parsedGen;
+              endDate.setHours(23, 59, 59, 999);
+              startDate = new Date(endDate.getTime() - 13 * 24 * 60 * 60 * 1000);
+              startDate.setHours(0, 0, 0, 0);
+            }
+          } else if (fileNameDateMatch) {
+            const parsedEnd = new Date(`${fileNameDateMatch[2]} ${fileNameDateMatch[1]} ${fileNameDateMatch[3]}`);
+            if (!isNaN(parsedEnd.getTime())) {
+              endDate = parsedEnd;
               endDate.setHours(23, 59, 59, 999);
               startDate = new Date(endDate.getTime() - 13 * 24 * 60 * 60 * 1000);
               startDate.setHours(0, 0, 0, 0);
