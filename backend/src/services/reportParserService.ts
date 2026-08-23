@@ -20,14 +20,14 @@ export class ReportParserService {
       return standardDate;
     }
 
-    // Match DD/MM/YYYY HH:MM:SS or DD-MM-YYYY HH:MM
-    const match = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/);
+    // Match DD/MM/YYYY (with optional HH:MM:SS) or DD-MM-YYYY
+    const match = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?$/);
     if (match) {
       const day = parseInt(match[1], 10);
       const month = parseInt(match[2], 10) - 1; // 0-indexed month
       const year = parseInt(match[3], 10);
-      const hour = parseInt(match[4], 10);
-      const minute = parseInt(match[5], 10);
+      const hour = match[4] ? parseInt(match[4], 10) : 0;
+      const minute = match[5] ? parseInt(match[5], 10) : 0;
       const second = match[6] ? parseInt(match[6], 10) : 0;
       
       const parsed = new Date(year, month, day, hour, minute, second);
@@ -209,28 +209,27 @@ export class ReportParserService {
                 .forEach(f => { try { fs.unlinkSync(`/tmp/${f}`); } catch (_) {} });
             } catch (_) {}
 
-            // Render ONLY the summary pages (last 3 pages) to PNG using pdftoppm
-            let numPages = 1;
+            // Render PDF to PNG using pdftoppm or sips
             try {
-              const pdfData = await pdfParse(dataBuffer);
-              numPages = pdfData.numpages || 1;
-            } catch (_) {}
-            const firstPage = Math.max(1, numPages - 2);
-
-            try {
-              execSync(`pdftoppm -f ${firstPage} -l ${numPages} -png -r 150 "${filePath}" /tmp/pdf_ocr_page 2>/dev/null || sips -s format png "${filePath}" --out "${tmpPng}" 2>/dev/null`, { timeout: 10000 });
+              execSync(`pdftoppm -png -r 150 "${filePath}" /tmp/pdf_ocr_page 2>/dev/null || sips -s format png "${filePath}" --out "${tmpPng}" 2>/dev/null`, { timeout: 10000 });
             } catch (_) {}
 
-            const possiblePngs = fs.readdirSync('/tmp')
+            const allPngs = fs.readdirSync('/tmp')
               .filter(f => f.startsWith('pdf_ocr_page-') && f.endsWith('.png'))
               .map(f => `/tmp/${f}`);
-            if (fs.existsSync(tmpPng)) possiblePngs.push(tmpPng);
+            if (fs.existsSync(tmpPng)) allPngs.push(tmpPng);
+
+            // Prioritize scanning: check last page first (where LibreView summary lives), then Page 1 & 2 (where header/short report info lives)
+            const possiblePngs: string[] = [];
+            if (allPngs.length > 0) {
+              const last = allPngs[allPngs.length - 1];
+              possiblePngs.push(last);
+              allPngs.forEach(p => { if (!possiblePngs.includes(p)) possiblePngs.push(p); });
+            }
 
             const Tesseract = require('tesseract.js');
 
             if (possiblePngs.length > 0) {
-              // Process in reverse order (Page 13, 12, 11 contain LibreView summary snapshot & average glucose)
-              possiblePngs.reverse();
               for (const pngFile of possiblePngs) {
                 try {
                   const ocrResult = await Tesseract.recognize(pngFile, 'eng', { logger: () => {} });
@@ -238,7 +237,7 @@ export class ReportParserService {
                     text += '\n' + ocrResult.data.text;
                     // Early exit if we have found both average glucose and date range
                     const currentAvg = text.match(/Average\s+Glucose\s*(\d{2,3})/i) || text.match(/(\d{2,3})\s*mg\/dL/i);
-                    const currentRange = text.match(/(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})\s*[-–—]\s*(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})/i);
+                    const currentRange = text.match(/(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}|\d{1,2}[-/]\d{1,2}[-/]\d{4})\s*[-–—]\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}|\d{1,2}[-/]\d{1,2}[-/]\d{4})/i);
                     if (currentAvg && currentRange) {
                       try { fs.unlinkSync(pngFile); } catch (_) {}
                       break;
@@ -267,7 +266,7 @@ export class ReportParserService {
 
             avgMatch = text.match(/Average\s+Glucose\s*(\d{2,3})/i) ||
                        text.match(/(\d{2,3})\s*mg\/dL/i);
-            dateRangeMatch = text.match(/(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})\s*[-–—]\s*(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})/i) ||
+            dateRangeMatch = text.match(/(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})\s*[-–—]\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})/i) ||
                              text.match(/Generated:\s*(\d{2}\/\d{2}\/\d{4})/i);
           } catch (ocrErr) {
             console.warn('Scanned PDF OCR notice:', ocrErr);
@@ -286,8 +285,8 @@ export class ReportParserService {
           let endDate = new Date();
 
           // 1st Priority: Extract Date Range directly inside the PDF document text/OCR
-          // e.g. "Selected dates: 26 Mar 2025 - 8 Apr 2025", "26 Mar 2025 – 8 Apr 2025", "26/03/2025 - 08/04/2025"
-          const explicitRangeRegex = /(?:Selected\s+dates:\s*)?(\d{1,2}\s+[A-Za-z]{3}\s+\d{4}|\d{1,2}[-/]\d{1,2}[-/]\d{4})\s*[-–—]\s*(\d{1,2}\s+[A-Za-z]{3}\s+\d{4}|\d{1,2}[-/]\d{1,2}[-/]\d{4})/i;
+          // e.g. "Selected dates: 26 March 2025 - 8 April 2025", "26 Mar 2025 – 8 Apr 2025", "26/03/2025 - 08/04/2025"
+          const explicitRangeRegex = /(?:Selected\s+dates:\s*)?(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}|\d{1,2}[-/]\d{1,2}[-/]\d{4})\s*[-–—]\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}|\d{1,2}[-/]\d{1,2}[-/]\d{4})/i;
           const explicitMatch = text.match(explicitRangeRegex);
 
           // 2nd Priority: Look for "Generated: 09/04/2025" or "09/04/2025" inside PDF document
