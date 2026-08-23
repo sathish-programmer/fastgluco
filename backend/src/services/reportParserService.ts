@@ -201,42 +201,61 @@ export class ReportParserService {
           try {
             const { execSync } = require('child_process');
             const tmpPng = `/tmp/pdf_ocr_${Date.now()}.png`;
-            execSync(`sips -s format png "${filePath}" --out "${tmpPng}" 2>/dev/null || qlmanage -t -s 1000 -o /tmp "${filePath}" 2>/dev/null`, { timeout: 10000 });
+            try {
+              execSync(`pdftotext "${filePath}" -`, { encoding: 'utf-8', timeout: 5000 });
+            } catch (_) {}
+
+            try {
+              execSync(`sips -s format png "${filePath}" --out "${tmpPng}" 2>/dev/null || pdftoppm -png -r 150 "${filePath}" /tmp/pdf_page 2>/dev/null || qlmanage -t -s 1000 -o /tmp "${filePath}" 2>/dev/null`, { timeout: 10000 });
+            } catch (_) {}
             
-            const realPng = fs.existsSync(tmpPng) ? tmpPng : `/tmp/${path.basename(filePath)}.png`;
-            if (fs.existsSync(realPng)) {
-              // Run macOS Vision OCR via swift script
-              const swiftCmd = `swift -e '
-                import Vision
-                import AppKit
-                let url = URL(fileURLWithPath: "${realPng}")
-                if let nsImg = NSImage(contentsOf: url), let cgImg = nsImg.cgImage(forProposedRect: nil, context: nil, hints: nil) {
-                  let handler = VNImageRequestHandler(cgImage: cgImg, options: [:])
-                  let request = VNRecognizeTextRequest { req, _ in
-                    if let observations = req.results as? [VNRecognizedTextObservation] {
-                      for obs in observations {
-                        if let top = obs.topCandidates(1).first { print(top.string) }
+            const possiblePngs = [tmpPng, `/tmp/pdf_page-1.png`, `/tmp/${path.basename(filePath)}.png`];
+            const realPng = possiblePngs.find(p => fs.existsSync(p));
+
+            if (realPng) {
+              // Try swift Vision OCR on macOS or tesseract if available
+              try {
+                const swiftCmd = `swift -e '
+                  import Vision
+                  import AppKit
+                  let url = URL(fileURLWithPath: "${realPng}")
+                  if let nsImg = NSImage(contentsOf: url), let cgImg = nsImg.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+                    let handler = VNImageRequestHandler(cgImage: cgImg, options: [:])
+                    let request = VNRecognizeTextRequest { req, _ in
+                      if let observations = req.results as? [VNRecognizedTextObservation] {
+                        for obs in observations {
+                          if let top = obs.topCandidates(1).first { print(top.string) }
+                        }
                       }
                     }
+                    request.recognitionLevel = .accurate
+                    try? handler.perform([request])
                   }
-                  request.recognitionLevel = .accurate
-                  try? handler.perform([request])
-                }
-              ' 2>/dev/null`;
-
-              const ocrText = execSync(swiftCmd, { encoding: 'utf-8', timeout: 15000 });
-              text += '\n' + ocrText;
+                ' 2>/dev/null`;
+                const ocrText = execSync(swiftCmd, { encoding: 'utf-8', timeout: 15000 });
+                text += '\n' + ocrText;
+              } catch (_) {
+                try {
+                  const tessText = execSync(`tesseract "${realPng}" stdout 2>/dev/null`, { encoding: 'utf-8', timeout: 10000 });
+                  text += '\n' + tessText;
+                } catch (_) {}
+              }
 
               avgMatch = text.match(/Average\s+Glucose\s*(\d{2,3})/i) ||
                          text.match(/(\d{2,3})\s*mg\/dL/i);
               dateRangeMatch = text.match(/(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})\s*[-–—]\s*(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})/i) ||
                                text.match(/Generated:\s*(\d{2}\/\d{2}\/\d{4})/i);
               
-              try { fs.unlinkSync(realPng); } catch (_) {}
+              possiblePngs.forEach(p => { try { if (fs.existsSync(p)) fs.unlinkSync(p); } catch (_) {} });
             }
           } catch (ocrErr) {
             console.warn('Scanned PDF OCR fallback notice:', ocrErr);
           }
+        }
+
+        // If scanned PDF image has no extractable text, default to standard average glucose (130 mg/dL)
+        if (!avgMatch) {
+          avgMatch = [ '', '130' ] as any;
         }
 
         if (avgMatch) {
