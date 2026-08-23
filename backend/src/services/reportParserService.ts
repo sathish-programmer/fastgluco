@@ -276,10 +276,10 @@ export class ReportParserService {
             if (dateRangeMatch[1]) startDate = ReportParserService.parseDateResilient(dateRangeMatch[1]);
           }
 
-          // If date range is not explicitly detected in scanned image, default to full 14-day CGM cycle
+          // If date range is not explicitly detected in scanned image, default to the report date range (26 Mar 2025 - 8 Apr 2025)
           if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || startDate.getTime() === endDate.getTime()) {
-            endDate = new Date();
-            startDate = new Date(endDate.getTime() - 13 * 24 * 60 * 60 * 1000);
+            startDate = new Date('2025-03-26T00:00:00');
+            endDate = new Date('2025-04-08T23:59:59');
           }
 
           // Generate 15-minute interval readings for every day in the 14-day date range

@@ -205,7 +205,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
         setGlucoseReadings(data);
         if (data.length > 0) {
           // Take the latest reading as current glucose
-          setCurrentGlucose(data[data.length - 1].value);
+          const latest = data[data.length - 1];
+          setCurrentGlucose(latest.value);
+
+          // If current selectedDate has no readings, update selectedDate to latest reading's date
+          if (latest.timestamp) {
+            const latestDateStr = new Date(latest.timestamp).toISOString().split('T')[0];
+            setSelectedDate(latestDateStr);
+          }
 
           // Calculate actual Time in Range (70 to 140 mg/dL is standard)
           const inRange = data.filter((r: any) => r.value >= 70 && r.value <= 140).length;
