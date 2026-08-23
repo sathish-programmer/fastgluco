@@ -39,8 +39,6 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
   const [customTo, setCustomTo] = useState<string>('');
   const [showAnalysisRangeModal, setShowAnalysisRangeModal] = useState<boolean>(false);
 
-  const getTodayStr = () => new Date().toISOString().split('T')[0];
-
   useEffect(() => {
     fetchAnalysisData();
   }, [token, range, customFrom, customTo]);

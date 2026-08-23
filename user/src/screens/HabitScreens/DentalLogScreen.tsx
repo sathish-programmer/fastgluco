@@ -4,6 +4,7 @@ import { Camera as CapacitorCamera, CameraResultType, CameraSource } from '@capa
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from 'recharts';
 import { ConsultationBanner } from '../../components/ConsultationBanner';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 import { HabitsService } from '../../services/habitsService';
 
 interface DentalLogScreenProps {
@@ -13,6 +14,7 @@ interface DentalLogScreenProps {
 
 export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBookAppointment }) => {
   const { user, token, apiUrl } = useAuth();
+  const { showToast } = useToast();
   
   // Dental Consultation state
   const [sharpTooth, setSharpTooth] = useState<boolean | null>(null);

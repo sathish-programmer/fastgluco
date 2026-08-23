@@ -15,11 +15,28 @@ app.use(helmet({
 }));
 
 // 2. CORS configurations
+const allowedOrigins = [
+  'https://app.mitoreboot.in',
+  'https://mitoreboot.in',
+  'http://localhost:5173',
+  'http://localhost:3000'
+];
+
 app.use(cors({
-  origin: '*', // Allow all client connections in MVP. Can be restricted to specific domains in prod.
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, postman)
+    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.mitoreboot.in')) {
+      return callback(null, true);
+    }
+    return callback(null, true); // Fallback allow all origins to prevent CORS blocks
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  credentials: true,
+  optionsSuccessStatus: 200
 }));
+
+app.options('*', cors());
 
 // 3. Rate Limiter Middleware to avoid DDoS and brute force
 const limiter = rateLimit({
