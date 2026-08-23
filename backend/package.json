@@ -4,7 +4,7 @@
   "description": "Production-ready REST APIs for Circadian Fasting & Metabolic Health Platform (Mito_Reboot)",
   "main": "dist/server.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc --skipLibCheck",
     "start": "node dist/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "seed": "ts-node src/seed.ts",
