@@ -46,7 +46,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<'day' | 'week' | 'month' | 'custom'>('day');
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [hasAutoJumpedDate, setHasAutoJumpedDate] = useState<boolean>(false);
   const [customStartDate, setCustomStartDate] = useState<string>('');
   const [customEndDate, setCustomEndDate] = useState<string>('');
   const [showRangeModal, setShowRangeModal] = useState<boolean>(false);
@@ -217,23 +216,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
           setCurrentGlucose(null);
           setTimeInRange(0);
 
-          // If no readings on currently selected date, auto-fetch user's latest available reading date
-          if (dateRange === 'day' && !hasAutoJumpedDate) {
-            setHasAutoJumpedDate(true);
-            fetch(`${apiUrl}/glucose?limit=1`, {
-              headers: { 'Authorization': `Bearer ${token}` }
-            })
-              .then(res => res.ok ? res.json() : [])
-              .then(latestReadings => {
-                if (latestReadings && latestReadings.length > 0 && latestReadings[0].timestamp) {
-                  const latestDateStr = new Date(latestReadings[0].timestamp).toISOString().split('T')[0];
-                  if (latestDateStr !== selectedDate) {
-                    setSelectedDate(latestDateStr);
-                  }
+          // If current selected date has 0 readings, query the database for the user's latest glucose reading date and auto-jump selectedDate to it
+          fetch(`${apiUrl}/glucose?limit=1`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          })
+            .then(res => res.ok ? res.json() : [])
+            .then(latestReadings => {
+              if (latestReadings && latestReadings.length > 0 && latestReadings[0].timestamp) {
+                const latestDateStr = new Date(latestReadings[0].timestamp).toISOString().split('T')[0];
+                if (latestDateStr && latestDateStr !== selectedDate) {
+                  setSelectedDate(latestDateStr);
                 }
-              })
-              .catch(err => console.error('Error auto-detecting latest reading date:', err));
-          }
+              }
+            })
+            .catch(err => console.error('Error auto-detecting latest reading date:', err));
         }
       }
 

@@ -266,9 +266,10 @@ export class ReportParserService {
 
           // Extract Date Range dynamically (e.g., "26 Mar 2024 - 8 Apr 2024", "15 Jan 2023 - 28 Jan 2023", etc.)
           const dateRangeRegex = /(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})\s*[-–—]\s*(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})/;
-          const yearRegex = /\b(202[0-9])\b/;
           const rangeMatch = text.match(dateRangeRegex);
-          const fileYearMatch = filePath.match(/Apr\s+\d{1,2},?\s+(202[0-9])/i) || text.match(yearRegex) || path.basename(filePath).match(/(202[0-9])/);
+
+          // Extract date from filename e.g., "DocScanner Apr 9, 2025" or "DocScanner Apr 9 2025"
+          const fileNameDateMatch = path.basename(filePath).match(/([A-Za-z]{3})\s+(\d{1,2}),?\s+(\d{4})/i);
 
           if (rangeMatch) {
             startDate = new Date(`${rangeMatch[1]} ${rangeMatch[2]} ${rangeMatch[3]}`);
@@ -276,14 +277,13 @@ export class ReportParserService {
           } else if (dateRangeMatch && dateRangeMatch[1] && dateRangeMatch[2]) {
             startDate = ReportParserService.parseDateResilient(dateRangeMatch[1]);
             endDate = ReportParserService.parseDateResilient(dateRangeMatch[2]);
-          }
-
-          // Dynamic year adjustment: If filename or document contains explicit year (e.g. 2024/2025), preserve exact year
-          if (fileYearMatch && fileYearMatch[1]) {
-            const detectedYear = parseInt(fileYearMatch[1], 10);
-            if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
-              startDate.setFullYear(detectedYear);
-              endDate.setFullYear(detectedYear);
+          } else if (fileNameDateMatch) {
+            const parsedEnd = new Date(`${fileNameDateMatch[2]} ${fileNameDateMatch[1]} ${fileNameDateMatch[3]}`);
+            if (!isNaN(parsedEnd.getTime())) {
+              endDate = parsedEnd;
+              endDate.setHours(23, 59, 59, 999);
+              startDate = new Date(endDate.getTime() - 13 * 24 * 60 * 60 * 1000);
+              startDate.setHours(0, 0, 0, 0);
             }
           }
 
@@ -291,9 +291,6 @@ export class ReportParserService {
           if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || startDate.getTime() === endDate.getTime()) {
             const fileStat = fs.existsSync(filePath) ? fs.statSync(filePath) : null;
             endDate = fileStat ? new Date(fileStat.mtime) : new Date();
-            if (fileYearMatch && fileYearMatch[1]) {
-              endDate.setFullYear(parseInt(fileYearMatch[1], 10));
-            }
             endDate.setHours(23, 59, 59, 999);
             startDate = new Date(endDate.getTime() - 13 * 24 * 60 * 60 * 1000);
             startDate.setHours(0, 0, 0, 0);
