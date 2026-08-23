@@ -196,60 +196,53 @@ export class ReportParserService {
         let dateRangeMatch = text.match(/(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})\s*[-–—]\s*(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})/i) ||
                                text.match(/Generated:\s*(\d{2}\/\d{2}\/\d{4})/i);
 
-        // Fallback OCR for scanned image PDFs (e.g. DocScanner / CamScanner PDF files)
+        // Convert PDF to PNG image buffers for OCR
         if (!avgMatch) {
           try {
             const { execSync } = require('child_process');
             const tmpPng = `/tmp/pdf_ocr_${Date.now()}.png`;
+
+            // Render PDF to PNG using pdftoppm, sips, or pdf2image
             try {
-              execSync(`pdftotext "${filePath}" -`, { encoding: 'utf-8', timeout: 5000 });
+              execSync(`pdftoppm -png -r 150 "${filePath}" /tmp/pdf_ocr_page 2>/dev/null || sips -s format png "${filePath}" --out "${tmpPng}" 2>/dev/null`, { timeout: 10000 });
             } catch (_) {}
 
-            try {
-              execSync(`sips -s format png "${filePath}" --out "${tmpPng}" 2>/dev/null || pdftoppm -png -r 150 "${filePath}" /tmp/pdf_page 2>/dev/null || qlmanage -t -s 1000 -o /tmp "${filePath}" 2>/dev/null`, { timeout: 10000 });
-            } catch (_) {}
-            
-            const possiblePngs = [tmpPng, `/tmp/pdf_page-1.png`, `/tmp/${path.basename(filePath)}.png`];
-            const realPng = possiblePngs.find(p => fs.existsSync(p));
+            const possiblePngs = [
+              `/tmp/pdf_ocr_page-1.png`,
+              `/tmp/pdf_ocr_page-01.png`,
+              tmpPng
+            ].filter(p => fs.existsSync(p));
 
-            if (realPng) {
-              // Try swift Vision OCR on macOS or tesseract if available
-              try {
-                const swiftCmd = `swift -e '
-                  import Vision
-                  import AppKit
-                  let url = URL(fileURLWithPath: "${realPng}")
-                  if let nsImg = NSImage(contentsOf: url), let cgImg = nsImg.cgImage(forProposedRect: nil, context: nil, hints: nil) {
-                    let handler = VNImageRequestHandler(cgImage: cgImg, options: [:])
-                    let request = VNRecognizeTextRequest { req, _ in
-                      if let observations = req.results as? [VNRecognizedTextObservation] {
-                        for obs in observations {
-                          if let top = obs.topCandidates(1).first { print(top.string) }
-                        }
-                      }
-                    }
-                    request.recognitionLevel = .accurate
-                    try? handler.perform([request])
-                  }
-                ' 2>/dev/null`;
-                const ocrText = execSync(swiftCmd, { encoding: 'utf-8', timeout: 15000 });
-                text += '\n' + ocrText;
-              } catch (_) {
-                try {
-                  const tessText = execSync(`tesseract "${realPng}" stdout 2>/dev/null`, { encoding: 'utf-8', timeout: 10000 });
-                  text += '\n' + tessText;
-                } catch (_) {}
+            const Tesseract = require('tesseract.js');
+
+            if (possiblePngs.length > 0) {
+              for (const pngFile of possiblePngs) {
+                const ocrResult = await Tesseract.recognize(pngFile, 'eng', { logger: () => {} });
+                if (ocrResult?.data?.text) {
+                  text += '\n' + ocrResult.data.text;
+                }
+                try { fs.unlinkSync(pngFile); } catch (_) {}
               }
-
-              avgMatch = text.match(/Average\s+Glucose\s*(\d{2,3})/i) ||
-                         text.match(/(\d{2,3})\s*mg\/dL/i);
-              dateRangeMatch = text.match(/(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})\s*[-–—]\s*(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})/i) ||
-                               text.match(/Generated:\s*(\d{2}\/\d{2}\/\d{4})/i);
-              
-              possiblePngs.forEach(p => { try { if (fs.existsSync(p)) fs.unlinkSync(p); } catch (_) {} });
+            } else {
+              // Try pdf2image fallback if CLI conversion tools were not installed
+              try {
+                const pdf2img = require('pdf2image');
+                const images = await pdf2img.convert(filePath, { density: 150, format: 'png', outputType: 'buffer' });
+                if (images && images.length > 0) {
+                  for (const imgBuf of images) {
+                    const ocrResult = await Tesseract.recognize(imgBuf, 'eng', { logger: () => {} });
+                    if (ocrResult?.data?.text) text += '\n' + ocrResult.data.text;
+                  }
+                }
+              } catch (_) {}
             }
+
+            avgMatch = text.match(/Average\s+Glucose\s*(\d{2,3})/i) ||
+                       text.match(/(\d{2,3})\s*mg\/dL/i);
+            dateRangeMatch = text.match(/(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})\s*[-–—]\s*(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})/i) ||
+                             text.match(/Generated:\s*(\d{2}\/\d{2}\/\d{4})/i);
           } catch (ocrErr) {
-            console.warn('Scanned PDF OCR fallback notice:', ocrErr);
+            console.warn('Scanned PDF OCR notice:', ocrErr);
           }
         }
 

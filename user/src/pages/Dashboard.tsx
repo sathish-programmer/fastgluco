@@ -45,7 +45,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
   const [timeInRange, setTimeInRange] = useState<number>(85);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<'day' | 'week' | 'month' | 'custom'>('day');
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState<string>('');
   const [customStartDate, setCustomStartDate] = useState<string>('');
   const [customEndDate, setCustomEndDate] = useState<string>('');
   const [showRangeModal, setShowRangeModal] = useState<boolean>(false);
@@ -180,9 +180,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
     if (!token) return;
     try {
       // 1. Fetch Glucose Readings
-      let start = new Date(selectedDate);
+      const queryDateStr = selectedDate || new Date().toISOString().split('T')[0];
+      let start = new Date(queryDateStr);
       start.setHours(0, 0, 0, 0);
-      let end = new Date(selectedDate);
+      let end = new Date(queryDateStr);
       end.setHours(23, 59, 59, 999);
       
       if (dateRange === 'week') {
