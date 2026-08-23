@@ -219,29 +219,21 @@ export class ReportParserService {
               .map(f => `/tmp/${f}`);
             if (fs.existsSync(tmpPng)) allPngs.push(tmpPng);
 
-            // Prioritize scanning: check last page first (where LibreView summary lives), then Page 1 & 2 (where header/short report info lives)
-            const possiblePngs: string[] = [];
-            if (allPngs.length > 0) {
-              const last = allPngs[allPngs.length - 1];
-              possiblePngs.push(last);
-              allPngs.forEach(p => { if (!possiblePngs.includes(p)) possiblePngs.push(p); });
-            }
+            // Sort all pages in strict numerical order (Page 1, Page 2, Page 3 ... Page N)
+            allPngs.sort((a, b) => {
+              const numA = parseInt(a.match(/page-(\d+)/)?.[1] || '0', 10);
+              const numB = parseInt(b.match(/page-(\d+)/)?.[1] || '0', 10);
+              return numA - numB;
+            });
 
             const Tesseract = require('tesseract.js');
 
-            if (possiblePngs.length > 0) {
-              for (const pngFile of possiblePngs) {
+            if (allPngs.length > 0) {
+              for (const pngFile of allPngs) {
                 try {
                   const ocrResult = await Tesseract.recognize(pngFile, 'eng', { logger: () => {} });
                   if (ocrResult?.data?.text) {
                     text += '\n' + ocrResult.data.text;
-                    // Early exit if we have found both average glucose and date range
-                    const currentAvg = text.match(/Average\s+Glucose\s*(\d{2,3})/i) || text.match(/(\d{2,3})\s*mg\/dL/i);
-                    const currentRange = text.match(/(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}|\d{1,2}[-/]\d{1,2}[-/]\d{4})\s*[-–—]\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}|\d{1,2}[-/]\d{1,2}[-/]\d{4})/i);
-                    if (currentAvg && currentRange) {
-                      try { fs.unlinkSync(pngFile); } catch (_) {}
-                      break;
-                    }
                   }
                   try { fs.unlinkSync(pngFile); } catch (_) {}
                 } catch (_) {}
