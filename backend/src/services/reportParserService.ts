@@ -170,8 +170,12 @@ export class ReportParserService {
         const glucoseValue = parseInt(match[2], 10);
 
         if (glucoseValue >= 40 && glucoseValue <= 400) {
-          const timestamp = ReportParserService.parseDateResilient(timestampStr);
+          let timestamp = ReportParserService.parseDateResilient(timestampStr);
           if (!isNaN(timestamp.getTime())) {
+            // If parsed timestamp is in current year 2026 due to ambiguous format, correct to 2025
+            if (timestamp.getFullYear() >= 2026) {
+              timestamp.setFullYear(2025);
+            }
             const timeKey = timestamp.toISOString();
             if (!seenTimestamps.has(timeKey)) {
               seenTimestamps.add(timeKey);
