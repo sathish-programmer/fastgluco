@@ -3,10 +3,20 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { LegalDocument } from './models/LegalDocument';
 
-const envPath = process.env.NODE_ENV === 'production' 
-  ? path.join(__dirname, '../.env.production') 
-  : path.join(__dirname, '../.env');
-dotenv.config({ path: envPath });
+import fs from 'fs';
+
+// Load default .env first
+dotenv.config();
+
+// If .env.production exists in backend directory, load it
+const prodEnv = path.join(__dirname, '../.env.production');
+const defaultEnv = path.join(__dirname, '../.env');
+
+if (process.env.NODE_ENV === 'production' && fs.existsSync(prodEnv)) {
+  dotenv.config({ path: prodEnv, override: true });
+} else if (fs.existsSync(defaultEnv)) {
+  dotenv.config({ path: defaultEnv });
+}
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/fastgluco';
 
@@ -445,8 +455,9 @@ export const OFFICIAL_TERMS_HTML = `
 
 async function run() {
   try {
-    console.log('Connecting to MongoDB at:', MONGODB_URI);
-    await mongoose.connect(MONGODB_URI);
+    const maskedUri = MONGODB_URI.replace(/:([^@]+)@/, ':****@');
+    console.log('Connecting to MongoDB at:', maskedUri);
+    await mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 5000 });
     console.log('Connected to DB.');
 
     // Delete any old terms of service data completely
