@@ -1,12 +1,6 @@
 <en-US>
-- Added webcam capture on web/desktop and fixed camera stability.
-- Added permissions to support photo uploads on Android.
-- Added a "Remove & Retake" option when editing logs.
-- Fixed minor layout styling and history listing bugs.
+Fix UI bugs
 </en-US>
 <en-IN>
-- Added webcam capture on web/desktop and fixed camera stability.
-- Added permissions to support photo uploads on Android.
-- Added a "Remove & Retake" option when editing logs.
-- Fixed minor layout styling and history listing bugs.
+Fix UI bugs
 </en-IN>

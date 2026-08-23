@@ -5,7 +5,6 @@ import {
   ArrowRight, 
   Wind, 
   FileText, 
-  Utensils, 
   Calendar, 
   Activity, 
   ShieldCheck, 
@@ -39,9 +38,9 @@ export const TodaysFocusCard: React.FC<TodaysFocusCardProps> = ({
   upcomingAppt,
   onTakeAction
 }) => {
-  // Logic to determine the ONE best action dynamically
-  const determineBestAction = (): FocusAction => {
-    const loggedKeys = new Set(habits.map(h => (h.type || h.habitType)));
+  // Logic to determine the ONE best unfulfilled priority action dynamically
+  const determineBestAction = (): FocusAction | null => {
+    const loggedKeysEver = new Set(habits.map(h => (h.type || h.habitType)));
     const todayStr = new Date().toDateString();
     const loggedToday = new Set(
       habits.filter(h => new Date(h.timestamp).toDateString() === todayStr).map(h => (h.type || h.habitType))
@@ -61,10 +60,9 @@ export const TodaysFocusCard: React.FC<TodaysFocusCardProps> = ({
       };
     }
 
-    // 2. Mode Specific Rules
+    // 2. Mode Specific Unfulfilled Priorities
     if (activeMode === 'TREATMENT') {
-      // Patient Mode Priorities
-      if (!hasCGMData && !loggedKeys.has('cgm') && !loggedKeys.has('CGM')) {
+      if (!hasCGMData && !loggedKeysEver.has('cgm') && !loggedKeysEver.has('CGM')) {
         return {
           id: 'cgm_upload',
           title: 'Review or Upload Your CGM Glucose Export',
@@ -76,7 +74,7 @@ export const TodaysFocusCard: React.FC<TodaysFocusCardProps> = ({
           actionKey: 'Reports'
         };
       }
-      if (!loggedToday.has('Stress') && !loggedToday.has('stress') && !loggedToday.has('Joy') && !loggedToday.has('joy')) {
+      if (!loggedToday.has('Stress') && !loggedToday.has('stress')) {
         return {
           id: 'caregiver_stress',
           title: 'Log Today’s Symptom & Caregiver Stress Assessment',
@@ -88,21 +86,22 @@ export const TodaysFocusCard: React.FC<TodaysFocusCardProps> = ({
           actionKey: 'stress'
         };
       }
-      return {
-        id: 'treatment_log_meal',
-        title: 'Log Today’s Glycemic Meal Impact',
-        reason: 'Tracking food response ensures proper nutritional fortification between treatments.',
-        category: 'Nutrition',
-        icon: <Utensils className="h-6 w-6 text-emerald-500" />,
-        gradient: 'from-emerald-500/10 via-teal-500/5 to-transparent',
-        badgeBg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
-        actionKey: 'Food Log'
-      };
+      if (!loggedToday.has('Fasting') && !loggedToday.has('fasting')) {
+        return {
+          id: 'treatment_fasting',
+          title: 'Log Today’s Intermittent Fasting Window',
+          reason: 'Aligning therapeutic fasting windows supports mitochondrial resilience during treatment.',
+          category: 'Metabolic Health',
+          icon: <Activity className="h-6 w-6 text-amber-500" />,
+          gradient: 'from-amber-500/10 via-orange-500/5 to-transparent',
+          badgeBg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+          actionKey: 'fasting'
+        };
+      }
     }
 
     if (activeMode === 'SECONDARY_PREVENTION') {
-      // Secondary Prevention / Recovery Priorities
-      if (!loggedKeys.has('Environmental') && !loggedKeys.has('environmental_exposures')) {
+      if (!loggedKeysEver.has('Environmental') && !loggedKeysEver.has('environmental_exposures')) {
         return {
           id: 'secondary_env',
           title: 'Complete Environmental Recurrence Risk Audit',
@@ -114,7 +113,7 @@ export const TodaysFocusCard: React.FC<TodaysFocusCardProps> = ({
           actionKey: 'environmental_exposures'
         };
       }
-      if (!loggedKeys.has('Antioxidants') && !loggedKeys.has('antioxidants')) {
+      if (!loggedToday.has('Antioxidants') && !loggedToday.has('antioxidants')) {
         return {
           id: 'secondary_antioxidant',
           title: 'Check Bioactive Antioxidant Protective Intake',
@@ -126,20 +125,10 @@ export const TodaysFocusCard: React.FC<TodaysFocusCardProps> = ({
           actionKey: 'antioxidants'
         };
       }
-      return {
-        id: 'secondary_followup',
-        title: 'Review Recurrence Prevention Checklist',
-        reason: 'Regular surveillance and habit tracking reinforce post-treatment remission.',
-        category: 'Follow-up',
-        icon: <Activity className="h-6 w-6 text-indigo-500" />,
-        gradient: 'from-indigo-500/10 via-purple-500/5 to-transparent',
-        badgeBg: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20',
-        actionKey: 'Educational'
-      };
     }
 
-    // Default Prevention Priorities
-    if (!loggedKeys.has('Environmental') && !loggedKeys.has('environmental_exposures')) {
+    // 3. Unlogged Daily Priorities for All Users
+    if (!loggedKeysEver.has('Environmental') && !loggedKeysEver.has('environmental_exposures')) {
       return {
         id: 'prev_env',
         title: 'Complete Your Environmental Exposure Assessment',
@@ -152,7 +141,59 @@ export const TodaysFocusCard: React.FC<TodaysFocusCardProps> = ({
       };
     }
 
-    if (!loggedKeys.has('Genetic') && !loggedKeys.has('genetics')) {
+    if (!loggedToday.has('Fasting') && !loggedToday.has('fasting')) {
+      return {
+        id: 'prev_fasting',
+        title: 'Log Today’s Fasting Window',
+        reason: 'Circadian metabolic fasting promotes cellular autophagy and mitochondrial renewal.',
+        category: 'Circadian Health',
+        icon: <Activity className="h-6 w-6 text-amber-500" />,
+        gradient: 'from-amber-500/10 via-orange-500/5 to-transparent',
+        badgeBg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+        actionKey: 'fasting'
+      };
+    }
+
+    if (!loggedToday.has('Sleep') && !loggedToday.has('sleep')) {
+      return {
+        id: 'prev_sleep',
+        title: 'Log Today’s Sleep Quality & Duration',
+        reason: 'Consistent rest prevents sleep debt accumulation and supports systemic repair.',
+        category: 'Rest & Recovery',
+        icon: <Activity className="h-6 w-6 text-indigo-500" />,
+        gradient: 'from-indigo-500/10 via-purple-500/5 to-transparent',
+        badgeBg: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20',
+        actionKey: 'Sleep'
+      };
+    }
+
+    if (!loggedToday.has('Stress') && !loggedToday.has('stress')) {
+      return {
+        id: 'prev_stress',
+        title: 'Log Today’s Stress Level',
+        reason: 'Managing acute stress prevents cortisol elevation and cellular inflammatory load.',
+        category: 'Mental Balance',
+        icon: <Heart className="h-6 w-6 text-rose-500" />,
+        gradient: 'from-rose-500/10 via-pink-500/5 to-transparent',
+        badgeBg: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
+        actionKey: 'Stress'
+      };
+    }
+
+    if (!loggedToday.has('Movement') && !loggedToday.has('movement')) {
+      return {
+        id: 'prev_movement',
+        title: 'Log Today’s Exercise & Movement',
+        reason: 'Physical activity enhances insulin sensitivity and cardiovascular resilience.',
+        category: 'Physical Activity',
+        icon: <Activity className="h-6 w-6 text-emerald-500" />,
+        gradient: 'from-emerald-500/10 via-teal-500/5 to-transparent',
+        badgeBg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+        actionKey: 'Movement'
+      };
+    }
+
+    if (!loggedKeysEver.has('Genetic') && !loggedKeysEver.has('genetics')) {
       return {
         id: 'prev_genetics',
         title: 'Log Family Health & Genetic Tendencies',
@@ -165,25 +206,19 @@ export const TodaysFocusCard: React.FC<TodaysFocusCardProps> = ({
       };
     }
 
-    return {
-      id: 'prev_lifestyle',
-      title: 'Review Daily Circadian Fasting & Sleep Alignment',
-      reason: 'Aligning eating windows with circadian biology enhances mitochondrial resilience.',
-      category: 'Lifestyle',
-      icon: <Activity className="h-6 w-6 text-amber-500" />,
-      gradient: 'from-amber-500/10 via-orange-500/5 to-transparent',
-      badgeBg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
-      actionKey: 'fasting'
-    };
+    // Hide card completely when all key daily priorities have been logged today!
+    return null;
   };
 
   const action = determineBestAction();
+
+  if (!action) return null;
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`w-full rounded-3xl p-5 bg-gradient-to-r ${action.gradient} bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm relative overflow-hidden`}
+      className={`w-full rounded-3xl p-5 bg-gradient-to-r ${action.gradient} bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm relative overflow-hidden my-4`}
     >
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center space-x-2">

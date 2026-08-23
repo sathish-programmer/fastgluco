@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Check, X, Info, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import { ArrowLeft, Check, X, Info, ChevronDown, ChevronUp, Trash2, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { HabitsService, type HabitLog } from '../../services/habitsService';
 
@@ -330,21 +330,19 @@ export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({ onBa
           <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-widest uppercase block mb-3">Want to check your actual levels?</span>
           <button
             onClick={onNavigateToDiagnostics}
-            className="w-full relative overflow-hidden rounded-3xl p-5 flex items-center justify-between gap-4 text-left shadow-md bg-white border border-slate-200"
+            className="w-full relative overflow-hidden rounded-3xl p-5 flex items-center justify-between gap-4 text-left shadow-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 transition-colors hover:shadow-lg active:scale-[0.99]"
           >
             <div className="flex items-center gap-4 relative z-10">
-              <div className="h-12 w-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-2xl shrink-0 border border-indigo-100">
+              <div className="h-12 w-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center text-2xl shrink-0 border border-indigo-100 dark:border-indigo-800/40">
                 🧪
               </div>
               <div>
-                <p className="text-sm font-extrabold text-slate-800">Check Vitamin Levels</p>
-                <p className="text-xs text-slate-400 mt-0.5 font-medium">Book a lab test with our partner diagnostics vendors</p>
+                <p className="text-sm font-extrabold text-slate-800 dark:text-slate-100">Check Vitamin Levels</p>
+                <p className="text-xs text-slate-400 dark:text-slate-400 mt-0.5 font-medium">Book a lab test with our partner diagnostics vendors</p>
               </div>
             </div>
-            <div className="relative z-10 h-9 w-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0">
-              <svg className="h-4 w-4 text-indigo-650" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
+            <div className="relative z-10 h-9 w-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-100 dark:border-indigo-800/50 flex items-center justify-center shrink-0">
+              <ChevronRight className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
             </div>
           </button>
         </div>

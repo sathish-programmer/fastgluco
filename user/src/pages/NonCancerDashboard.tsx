@@ -57,9 +57,8 @@ import { TodaysFocusCard } from '../components/TodaysFocusCard';
 // import { MitoProgressCard } from '../components/MitoProgressCard';
 import { ExploreFeaturesGrid } from '../components/ExploreFeaturesGrid';
 import { ContextualShopCard } from '../components/ContextualShopCard';
-import { WhatsNewModal } from '../components/WhatsNewModal';
 import { AskMitoDrawer } from '../components/AskMitoDrawer';
-import { Sparkles, MessageSquare } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 
 interface NonCancerDashboardProps {
   onNavigateToTab: (tab: string) => void;
@@ -100,7 +99,6 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
 
   const [upcomingAppt, setUpcomingAppt] = useState<any | null>(null);
   const [isApptDismissed, setIsApptDismissed] = useState<boolean>(false);
-  const [showWhatsNew, setShowWhatsNew] = useState<boolean>(false);
   const [showAskMito, setShowAskMito] = useState<boolean>(false);
 
   useEffect(() => {
@@ -200,8 +198,26 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
     setShowRecommendation(false);
   };
 
-  const todayStr = new Date().toDateString();
-  const todaysHabits = habits.filter(h => new Date(h.timestamp).toDateString() === todayStr);
+  const [timePeriod, setTimePeriod] = useState<'today' | 'weekly' | 'monthly'>('today');
+  const [forcesView, setForcesView] = useState<'all' | 'damage' | 'repair'>('all');
+
+  const getFilteredPeriodHabits = (allHabits: HabitLog[], period: 'today' | 'weekly' | 'monthly') => {
+    const now = new Date();
+    if (period === 'today') {
+      const todayStr = now.toDateString();
+      return allHabits.filter(h => new Date(h.timestamp).toDateString() === todayStr);
+    }
+    if (period === 'weekly') {
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      return allHabits.filter(h => new Date(h.timestamp).getTime() >= sevenDaysAgo.getTime());
+    }
+    // monthly
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    return allHabits.filter(h => new Date(h.timestamp).getTime() >= thirtyDaysAgo.getTime());
+  };
+
+  const periodHabits = getFilteredPeriodHabits(habits, timePeriod);
+  const todaysHabits = getFilteredPeriodHabits(habits, 'today');
 
   const getCancerLoggedGuidelines = () => {
     let fastingLogged = false;
@@ -211,9 +227,9 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
 
     todaysHabits.forEach(h => {
       if (h.type === 'Fasting') fastingLogged = true;
-      if (h.type === 'Movement' && h.value.minutes >= 20) movementLogged = true;
-      if (h.type === 'Stillness' && h.value.sat === true) stillnessLogged = true;
-      if (h.type === 'Joy' && h.value.done !== false) joyLogged = true;
+      if (h.type === 'Movement' && h.value?.minutes >= 20) movementLogged = true;
+      if (h.type === 'Stillness' && h.value?.sat === true) stillnessLogged = true;
+      if (h.type === 'Joy' && h.value?.done !== false) joyLogged = true;
     });
 
     return {
@@ -229,39 +245,44 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
 
   const calculateDamageCount = () => {
     let count = 0;
-    todaysHabits.forEach(h => {
-      if (h.type === 'Stress' && (h.value.faceId === 'stressed' || h.value.faceId === 'maxed')) count += 1;
-      if (h.type === 'Sleep' && h.value.hours < 6) count += 1;
-      if (h.type === 'Smoking' && h.value.count > 0) count += 1;
-      if (h.type === 'Alcohol' && h.value.drinks > 0) count += 1;
-      if (h.type === 'Substances' && h.value.used === true) count += 1;
-      if (h.type === 'Intimacy' && h.value.happy === false) count += 1;
-      if (h.type === 'Dental' && (h.value.sharpTooth === true || h.value.tobacco === true || h.value.illFittingDenture === true)) count += 1;
-      if (h.type === 'Gastritis' && h.value.gastritis === true) count += 1;
-      if (h.type === 'Genetic' && h.value.geneticLink === true) count += 1;
-      if (h.type === 'Environmental' && h.value.score < 0) count += 1;
+    periodHabits.forEach(h => {
+      if (h.type === 'Stress' && (h.value?.faceId === 'tense' || h.value?.faceId === 'stressed' || h.value?.faceId === 'maxed')) count += 1;
+      if (h.type === 'Sleep' && (h.value?.hours < 6 || h.value?.quality === 'poor')) count += 1;
+      if (h.type === 'Smoking' && h.value?.count > 0) count += 1;
+      if (h.type === 'Alcohol' && h.value?.drinks > 0) count += 1;
+      if (h.type === 'Substances' && h.value?.used === true) count += 1;
+      if (h.type === 'Intimacy' && h.value?.happy === false) count += 1;
+      if (h.type === 'Dental' && (h.value?.sharpTooth === true || h.value?.tobacco === true || h.value?.illFittingDenture === true)) count += 1;
+      if (h.type === 'Gastritis' && h.value?.gastritis === true) count += 1;
+      if (h.type === 'Genetic' && h.value?.geneticLink === true) count += 1;
+      if (h.type === 'Environmental' && h.value?.score < 0) count += 1;
     });
     return count;
   };
 
   const calculateRepairCount = () => {
     let count = 0;
-    todaysHabits.forEach(h => {
+    periodHabits.forEach(h => {
+      if (h.type === 'Stress' && h.value?.faceId === 'calm') count += 1;
+      if (h.type === 'Sleep' && (h.value?.hours >= 6 && h.value?.quality !== 'poor')) count += 1;
+      if (h.type === 'Smoking' && h.value?.count === 0) count += 1;
+      if (h.type === 'Alcohol' && h.value?.drinks === 0) count += 1;
+      if (h.type === 'Substances' && h.value?.used === false) count += 1;
       if (h.type === 'Fasting') count += 1;
       if (h.type === 'Antioxidants') count += 1;
-      if (h.type === 'Movement' && h.value.minutes >= 20) count += 1;
-      if (h.type === 'Stillness' && h.value.sat === true) count += 1;
-      if (h.type === 'Joy' && h.value.done !== false) count += 1;
+      if (h.type === 'Movement' && h.value?.minutes >= 20) count += 1;
+      if (h.type === 'Stillness' && h.value?.sat === true) count += 1;
+      if (h.type === 'Joy' && h.value?.done !== false) count += 1;
       if (h.type === 'SaferProducts') count += 1;
       if (h.type === 'CancerScreening') count += 1;
-      if (h.type === 'Intimacy' && h.value.happy === true) count += 1;
+      if (h.type === 'Intimacy' && h.value?.happy === true) count += 1;
     });
     return count;
   };
 
   const damageCount = calculateDamageCount();
   const repairCount = calculateRepairCount();
-  const totalLogs = damageCount + repairCount;
+  const totalLogs = periodHabits.length;
 
   // Calculate Streak
   let streak = 0;
@@ -276,14 +297,12 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
   let currentCheckDate = new Date(today);
   
   if (sortedDates.length > 0) {
-    // If they haven't logged today, check if they logged yesterday
     if (sortedDates[0].getTime() !== today.getTime()) {
       const yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
       if (sortedDates[0].getTime() === yesterday.getTime()) {
         currentCheckDate = new Date(yesterday);
       } else {
-        // No log today and no log yesterday = 0 streak
         streak = 0;
       }
     }
@@ -301,72 +320,79 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
   }
 
   const getDentalScore = () => {
-    const dentalLogs = habits.filter(h => h.type === 'Dental').sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-    if (dentalLogs.length === 0) return null;
-    const value = dentalLogs[0].value;
-    if (value.sharpTooth === true || value.tobacco === true || value.illFittingDenture === true) {
-      return -1;
-    }
+    const logs = periodHabits.filter(h => h.type === 'Dental');
+    if (logs.length === 0) return null;
+    const damageLogs = logs.filter(l => l.value?.sharpTooth === true || l.value?.tobacco === true || l.value?.illFittingDenture === true).length;
+    const repairLogs = logs.filter(l => l.value?.sharpTooth === false && l.value?.tobacco === false && l.value?.illFittingDenture === false).length;
+    if (damageLogs > 0) return -damageLogs;
+    if (repairLogs > 0) return repairLogs;
     return 0;
   };
 
   const getGastritisScore = () => {
-    const gastritisLogs = habits.filter(h => h.type === 'Gastritis').sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-    if (gastritisLogs.length === 0) return null;
-    const value = gastritisLogs[0].value;
-    if (value.gastritis === true) {
-      return -1;
-    }
+    const logs = periodHabits.filter(h => h.type === 'Gastritis');
+    if (logs.length === 0) return null;
+    const damageLogs = logs.filter(l => l.value?.gastritis === true).length;
+    const repairLogs = logs.filter(l => l.value?.gastritis === false).length;
+    if (damageLogs > 0) return -damageLogs;
+    if (repairLogs > 0) return repairLogs;
     return 0;
   };
 
   const getGeneticScore = () => {
-    const geneticLogs = habits.filter(h => h.type === 'Genetic').sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-    if (geneticLogs.length === 0) return null;
-    const value = geneticLogs[0].value;
-    if (value.geneticLink === true) {
-      return -1;
-    }
-    return 0;
+    const logs = periodHabits.filter(h => h.type === 'Genetic');
+    if (logs.length === 0) return null;
+    const damageLogs = logs.filter(l => l.value?.geneticLink === true).length;
+    return damageLogs > 0 ? -damageLogs : 0;
   };
 
   const getStressScore = () => {
-    const logs = habits.filter(h => h.type === 'Stress').sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    const logs = periodHabits.filter(h => h.type === 'Stress');
     if (logs.length === 0) return null;
-    const value = logs[0].value;
-    if (value.faceId === 'stressed' || value.faceId === 'maxed') return -1;
+    const damageLogs = logs.filter(l => l.value?.faceId === 'tense' || l.value?.faceId === 'stressed' || l.value?.faceId === 'maxed').length;
+    const repairLogs = logs.filter(l => l.value?.faceId === 'calm').length;
+    if (damageLogs > 0) return -damageLogs;
+    if (repairLogs > 0) return repairLogs;
     return 0;
   };
 
   const getSleepScore = () => {
-    const logs = habits.filter(h => h.type === 'Sleep').sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    const logs = periodHabits.filter(h => h.type === 'Sleep');
     if (logs.length === 0) return null;
-    const value = logs[0].value;
-    if (value.hours < 6) return -1;
+    const damageLogs = logs.filter(l => l.value?.hours < 6 || l.value?.quality === 'poor').length;
+    const repairLogs = logs.filter(l => l.value?.hours >= 6 && l.value?.quality !== 'poor').length;
+    if (damageLogs > 0) return -damageLogs;
+    if (repairLogs > 0) return repairLogs;
     return 0;
   };
 
   const getSmokingScore = () => {
-    const logs = habits.filter(h => h.type === 'Smoking').sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    const logs = periodHabits.filter(h => h.type === 'Smoking');
     if (logs.length === 0) return null;
-    const value = logs[0].value;
-    if (value.count > 0) return -1;
+    const damageLogs = logs.filter(l => l.value?.count > 0).length;
+    const repairLogs = logs.filter(l => l.value?.count === 0).length;
+    if (damageLogs > 0) return -damageLogs;
+    if (repairLogs > 0) return repairLogs;
     return 0;
   };
 
   const getAlcoholScore = () => {
-    const logs = habits.filter(h => h.type === 'Alcohol').sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    const logs = periodHabits.filter(h => h.type === 'Alcohol');
     if (logs.length === 0) return null;
-    const value = logs[0].value;
-    if (value.drinks > 0) return -1;
+    const damageLogs = logs.filter(l => l.value?.drinks > 0).length;
+    const repairLogs = logs.filter(l => l.value?.drinks === 0).length;
+    if (damageLogs > 0) return -damageLogs;
+    if (repairLogs > 0) return repairLogs;
     return 0;
   };
 
   const getSubstancesScore = () => {
-    const logs = habits.filter(h => h.type === 'Substances').sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    const logs = periodHabits.filter(h => h.type === 'Substances');
     if (logs.length === 0) return null;
-    const value = logs[0].value;
-    if (value.used === true) return -1;
+    const damageLogs = logs.filter(l => l.value?.used === true).length;
+    const repairLogs = logs.filter(l => l.value?.used === false).length;
+    if (damageLogs > 0) return -damageLogs;
+    if (repairLogs > 0) return repairLogs;
     return 0;
   };
 
@@ -378,62 +404,66 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
   };
 
   const getFastingScore = () => {
-    const logs = habits.filter(h => h.type === 'Fasting').sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    const logs = periodHabits.filter(h => h.type === 'Fasting');
     if (logs.length === 0) return null;
-    const value = logs[0].value;
-    return value.hours >= 12 ? 1 : 0;
+    const repairLogs = logs.filter(l => l.value?.hours >= 12).length;
+    return repairLogs > 0 ? repairLogs : 0;
   };
 
   const getAntioxidantsScore = () => {
-    const logs = habits.filter(h => h.type === 'Antioxidants').sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    const logs = periodHabits.filter(h => h.type === 'Antioxidants');
     if (logs.length === 0) return null;
-    const value = logs[0].value;
-    return value.consumed === true ? 1 : 0;
+    const repairLogs = logs.filter(l => l.value?.consumed === true).length;
+    return repairLogs > 0 ? repairLogs : 0;
   };
 
   const getMovementScore = () => {
-    const logs = habits.filter(h => h.type === 'Movement').sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    const logs = periodHabits.filter(h => h.type === 'Movement');
     if (logs.length === 0) return null;
-    const value = logs[0].value;
-    return value.minutes >= 20 ? 1 : 0;
+    const repairLogs = logs.filter(l => l.value?.minutes >= 20).length;
+    return repairLogs > 0 ? repairLogs : 0;
   };
 
   const getStillnessScore = () => {
-    const logs = habits.filter(h => h.type === 'Stillness').sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    const logs = periodHabits.filter(h => h.type === 'Stillness');
     if (logs.length === 0) return null;
-    const value = logs[0].value;
-    return value.sat === true ? 1 : 0;
+    const repairLogs = logs.filter(l => l.value?.sat === true).length;
+    return repairLogs > 0 ? repairLogs : 0;
   };
 
   const getJoyScore = () => {
-    const logs = habits.filter(h => h.type === 'Joy').sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    const logs = periodHabits.filter(h => h.type === 'Joy');
     if (logs.length === 0) return null;
-    const value = logs[0].value;
-    return value.done !== false ? 1 : 0;
+    const repairLogs = logs.filter(l => l.value?.done !== false).length;
+    return repairLogs > 0 ? repairLogs : 0;
   };
 
   const getSaferProductsScore = () => {
-    const logs = habits.filter(h => h.type === 'SaferProducts').sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    const logs = periodHabits.filter(h => h.type === 'SaferProducts');
     if (logs.length === 0) return null;
-    return 1;
+    return logs.length;
   };
 
   const getEnvironmentalScore = () => {
-    const logs = habits.filter(h => h.type === 'Environmental').sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    const logs = periodHabits.filter(h => h.type === 'Environmental');
     if (logs.length === 0) return null;
-    return logs[0].value.score;
+    const negLogs = logs.filter(l => l.value?.score < 0).length;
+    return negLogs > 0 ? -negLogs : 0;
   };
 
   // Calculate percentages for the tug-of-war bar
   const damagePct = totalLogs === 0 ? 50 : (damageCount / totalLogs) * 100;
   const repairPct = totalLogs === 0 ? 50 : (repairCount / totalLogs) * 100;
 
+  const neutralCount = Math.max(0, totalLogs - damageCount - repairCount);
+
   // Pie chart data
   const chartData = totalLogs === 0 
     ? [{ name: 'Empty', value: 1, color: '#f1f5f9' }] // slate-100
     : [
-        { name: 'Damage', value: damageCount, color: '#f43f5e' }, // rose-500
-        { name: 'Repair', value: repairCount, color: '#10b981' }  // emerald-500
+        ...(damageCount > 0 ? [{ name: 'Damage', value: damageCount, color: '#f43f5e' }] : []),
+        ...(repairCount > 0 ? [{ name: 'Repair', value: repairCount, color: '#10b981' }] : []),
+        ...(neutralCount > 0 ? [{ name: 'Neutral', value: neutralCount, color: '#94a3b8' }] : [])
       ];
 
   const { setPendingRecommendationId } = useConsultation();
@@ -520,7 +550,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
               <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase block">
                 {activeScreen === 'IndianCancers' ? 'Cancer Awareness' : 'Track Habit'}
               </span>
-              <h2 className="text-xl font-sans font-bold text-slate-850 dark:text-slate-100 leading-none mt-0.5">
+              <h2 className="text-xl font-sans font-bold text-slate-800 dark:text-slate-100 leading-none mt-0.5">
                 {getScreenTitle(activeScreen)}
               </h2>
             </div>
@@ -563,24 +593,30 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
 
 
   const handleActionKey = (key: string, params?: any) => {
+    if (!key) return;
+    const lowerKey = key.toLowerCase();
+
     if (params?.search) {
       setShopQuery(params.search);
       if (params.search.toLowerCase() === 'wig') return setActiveScreen('WigShop');
       return setActiveScreen('EnvironmentalShop');
     }
-    if (key === 'environmental_exposures' || key === 'ENVIRONMENT') return setActiveScreen('Environmental');
-    if (key === 'antioxidants') return setActiveScreen('Antioxidants');
-    if (key === 'genetics' || key === 'GENETICS') return setActiveScreen('Genetic');
-    if (key === 'fasting') return setActiveScreen('Fasting');
-    if (key === 'stress') return setActiveScreen('Stress');
-    if (key === 'cancer_screening') return setActiveScreen('CancerScreening');
-    if (key === 'Book Appointment') return onNavigateToTab('Book Appointment');
-    if (key === 'Reports') return onNavigateToTab('Reports');
-    if (key === 'Food Log') return onNavigateToTab('Food Log');
-    if (key === 'Educational') return onNavigateToTab('Educational');
-    if (key === 'shop_all' || key === 'RECOMMENDED_PRODUCTS') return setActiveScreen('SaferProducts');
-    if (key === 'shop_wigs' || key === 'WIGS') return setActiveScreen('WigShop');
-    if (key === 'WATER') {
+
+    if (lowerKey === 'environmental_exposures' || lowerKey === 'environment' || lowerKey === 'environmental') return setActiveScreen('Environmental');
+    if (lowerKey === 'antioxidants') return setActiveScreen('Antioxidants');
+    if (lowerKey === 'genetics' || lowerKey === 'genetic') return setActiveScreen('Genetic');
+    if (lowerKey === 'fasting') return setActiveScreen('Fasting');
+    if (lowerKey === 'stress') return setActiveScreen('Stress');
+    if (lowerKey === 'sleep') return setActiveScreen('Sleep');
+    if (lowerKey === 'movement' || lowerKey === 'exercise') return setActiveScreen('Movement');
+    if (lowerKey === 'cancer_screening' || lowerKey === 'cancerscreening') return setActiveScreen('CancerScreening');
+    if (key === 'Book Appointment' || lowerKey === 'book appointment') return onNavigateToTab('Book Appointment');
+    if (key === 'Reports' || lowerKey === 'reports') return onNavigateToTab('Reports');
+    if (key === 'Food Log' || lowerKey === 'food log') return onNavigateToTab('Food Log');
+    if (key === 'Educational' || lowerKey === 'educational') return onNavigateToTab('Educational');
+    if (lowerKey === 'shop_all' || lowerKey === 'recommended_products') return setActiveScreen('SaferProducts');
+    if (lowerKey === 'shop_wigs' || lowerKey === 'wigs') return setActiveScreen('WigShop');
+    if (lowerKey === 'water') {
       setShopQuery('Water filter');
       return setActiveScreen('EnvironmentalShop');
     }
@@ -590,11 +626,6 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
     <div className="pb-24 pt-4 px-3.5 max-w-5xl mx-auto bg-gradient-to-b from-slate-50/90 to-slate-100/80 dark:from-slate-900/90 dark:to-slate-950/80 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-200 transition-colors duration-300">
       
       {/* Feature Discovery & Ask Mito Modals */}
-      <WhatsNewModal
-        isOpen={showWhatsNew}
-        onClose={() => setShowWhatsNew(false)}
-        onExploreFeature={(key) => handleActionKey(key)}
-      />
       <AskMitoDrawer
         isOpen={showAskMito}
         onClose={() => setShowAskMito(false)}
@@ -619,14 +650,6 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
           >
             <Sparkles className="h-3.5 w-3.5" />
             <span>Ask Mito</span>
-          </button>
-
-          <button
-            onClick={() => setShowWhatsNew(true)}
-            className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-2xl transition-all"
-            title="What’s New"
-          >
-            <MessageSquare className="h-4 w-4" />
           </button>
         </div>
       </div>
@@ -723,29 +746,62 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
         </div>
       )}
       {!isCancerPatient && (
-        <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-white/80 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,0,0,0.015)] rounded-3xl p-5 mb-6 transition-colors duration-300">
-          <div className="flex justify-between items-center mb-4">
-            <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Cellular Balance</span>
-            <span className="text-[10px] font-bold text-amber-500 tracking-widest uppercase flex items-center gap-1 bg-amber-50 dark:bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-100/50 dark:border-amber-500/20">
-              <span className="w-1.5 h-1.5 rounded-full border border-amber-500"></span>
-              {streak > 0 ? `${streak} day streak 🔥` : 'no streak yet'}
-            </span>
+        <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-white/80 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,0,0,0.015)] rounded-3xl p-4 sm:p-5 mb-5 transition-colors duration-300">
+          <div className="flex items-center justify-between mb-4 gap-1.5">
+            <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider uppercase shrink-0">Cellular Balance</span>
+
+            {/* History Selector Tabs */}
+            <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60 shrink-0">
+              <button
+                type="button"
+                onClick={() => setTimePeriod('today')}
+                className={`px-2 py-0.5 rounded-lg font-bold text-[9px] uppercase tracking-wider transition-all ${
+                  timePeriod === 'today'
+                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-2xs'
+                    : 'text-slate-500 dark:text-slate-400'
+                }`}
+              >
+                Today
+              </button>
+              <button
+                type="button"
+                onClick={() => setTimePeriod('weekly')}
+                className={`px-2 py-0.5 rounded-lg font-bold text-[9px] uppercase tracking-wider transition-all ${
+                  timePeriod === 'weekly'
+                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-2xs'
+                    : 'text-slate-500 dark:text-slate-400'
+                }`}
+              >
+                Weekly
+              </button>
+              <button
+                type="button"
+                onClick={() => setTimePeriod('monthly')}
+                className={`px-2 py-0.5 rounded-lg font-bold text-[9px] uppercase tracking-wider transition-all ${
+                  timePeriod === 'monthly'
+                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-2xs'
+                    : 'text-slate-500 dark:text-slate-400'
+                }`}
+              >
+                Monthly
+              </button>
+            </div>
           </div>
           
-          <div className="flex items-center gap-5 mb-8">
+          <div className="flex items-center gap-4 mb-5">
             {/* Dynamic Half-Circle Chart */}
-            <div className="relative w-24 h-24 shrink-0">
+            <div className="relative w-20 h-20 shrink-0">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={chartData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={30}
-                    outerRadius={40}
+                    innerRadius={26}
+                    outerRadius={36}
                     startAngle={180}
                     endAngle={-180}
-                    paddingAngle={5}
+                    paddingAngle={4}
                     dataKey="value"
                     stroke="none"
                   >
@@ -756,15 +812,29 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-xl font-black text-slate-800 dark:text-slate-100 leading-none">{totalLogs}</span>
-                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Logs</span>
+                <span className="text-lg font-black text-slate-800 dark:text-slate-100 leading-none">{totalLogs}</span>
+                <span className="text-[7.5px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Logs</span>
               </div>
             </div>
             
-            <div>
-              <h3 className="text-lg font-sans text-slate-800 dark:text-slate-100 font-bold">Start logging</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                Log a habit on either side and your balance comes to life.
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                <h3 className="text-base font-sans text-slate-800 dark:text-slate-100 font-bold leading-tight">
+                  {timePeriod === 'today' ? 'Daily Overview' : timePeriod === 'weekly' ? '7-Day Summary' : '30-Day History'}
+                </h3>
+                {timePeriod === 'today' && (
+                  <span className="text-[9px] font-extrabold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 rounded-full border border-amber-200/80 dark:border-amber-800/60 shrink-0 shadow-2xs flex items-center gap-1">
+                    <span>🔥</span>
+                    <span>{streak > 0 ? `${streak} DAY STREAK` : '0 DAY STREAK'}</span>
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                {timePeriod === 'today'
+                  ? 'Log habits today to update your daily balance.'
+                  : timePeriod === 'weekly'
+                  ? 'Accumulated balance for the last 7 days.'
+                  : 'Accumulated balance for the last 30 days.'}
               </p>
             </div>
           </div>
@@ -775,17 +845,17 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
             <div className="h-full bg-emerald-500 transition-all duration-700 ease-out" style={{ width: `${repairPct}%` }}></div>
             {/* Center puck */}
             <div 
-              className="absolute top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full shadow-md flex items-center justify-center transition-all duration-700 ease-out"
+              className="absolute top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-5 h-5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full shadow-md flex items-center justify-center transition-all duration-700 ease-out"
               style={{ left: `${damagePct}%` }}
             >
-              <Activity className="h-3 w-3 text-slate-400" />
+              <Activity className="h-2.5 w-2.5 text-slate-400" />
             </div>
           </div>
-          <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest px-1">
-            <span className="text-rose-500 flex items-center gap-1"><Skull className="h-3 w-3" /> Damage</span>
-            <span className="text-emerald-500 flex items-center gap-1">Repair <Leaf className="h-3 w-3" /></span>
+          <div className="flex justify-between items-center text-[9px] font-bold uppercase tracking-widest px-1">
+            <span className="text-rose-500 flex items-center gap-1"><Skull className="h-2.5 w-2.5" /> Damage</span>
+            <span className="text-emerald-500 flex items-center gap-1">Repair <Leaf className="h-2.5 w-2.5" /></span>
           </div>
-          <div className="flex justify-between items-center text-[9px] text-slate-400 mt-1 px-1">
+          <div className="flex justify-between items-center text-[8.5px] text-slate-400 mt-0.5 px-1">
             <span>{damageCount} active</span>
             <span>{repairCount} active</span>
           </div>
@@ -793,73 +863,125 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
       )}
 
       {!isCancerPatient && (
-        <div className="flex items-center gap-3 mb-4">
-          <span className="text-xs text-slate-400 font-mono font-bold">01</span>
-          <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Track the two forces</span>
-          <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800"></div>
+        <div className="flex items-center justify-between gap-2 mb-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-400 font-mono font-bold">01</span>
+            <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">
+              Track the two forces ({timePeriod === 'today' ? 'Today' : timePeriod === 'weekly' ? 'This Week' : 'This Month'})
+            </span>
+          </div>
+
+          {/* Force Filter Segmented Tabs */}
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+            <button
+              type="button"
+              onClick={() => setForcesView('all')}
+              className={`px-2.5 py-1 rounded-lg font-extrabold text-[10px] uppercase tracking-wider transition-all ${
+                forcesView === 'all'
+                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+              }`}
+            >
+              All
+            </button>
+            <button
+              type="button"
+              onClick={() => setForcesView('damage')}
+              className={`px-2.5 py-1 rounded-lg font-extrabold text-[10px] uppercase tracking-wider transition-all ${
+                forcesView === 'damage'
+                  ? 'bg-rose-500 text-white shadow-xs'
+                  : 'text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40'
+              }`}
+            >
+              Damage ({damageCount})
+            </button>
+            <button
+              type="button"
+              onClick={() => setForcesView('repair')}
+              className={`px-2.5 py-1 rounded-lg font-extrabold text-[10px] uppercase tracking-wider transition-all ${
+                forcesView === 'repair'
+                  ? 'bg-emerald-500 text-white shadow-xs'
+                  : 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
+              }`}
+            >
+              Repair ({repairCount})
+            </button>
+          </div>
         </div>
       )}
 
-      <div className={`${isCancerPatient ? 'w-full mb-4' : 'grid grid-cols-2 gap-3 mb-8'}`}>
-        {/* Damage Column */}
-        {!isCancerPatient && (
-          <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-rose-100 dark:border-rose-900/30 shadow-[0_8px_30px_rgba(225,29,72,0.03)] rounded-2xl p-1.5 flex flex-col transition-colors duration-300">
-            <div className="px-2 pt-3 pb-4">
-              <h3 className="text-rose-500 font-sans text-lg font-bold flex items-center gap-1.5 mb-0.5">
-                <Skull className="h-5 w-5" /> Damage
-              </h3>
-              <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest">Reduce the load</p>
+      <div className={`${isCancerPatient ? 'w-full mb-4' : 'grid grid-cols-2 gap-2.5 sm:gap-3.5 mb-8 items-start'}`}>
+        {/* Damage Column (Left) */}
+        {!isCancerPatient && (forcesView === 'all' || forcesView === 'damage') && (
+          <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-rose-100 dark:border-rose-900/30 shadow-[0_8px_30px_rgba(225,29,72,0.03)] rounded-3xl p-2.5 sm:p-3 flex flex-col h-fit self-start transition-colors duration-300">
+            <div className="px-1.5 pt-1.5 pb-2.5 flex items-center justify-between">
+              <div>
+                <h3 className="text-rose-500 font-sans text-sm sm:text-base font-bold flex items-center gap-1 mb-0.5">
+                  <Skull className="h-4 w-4" /> Damage
+                </h3>
+                <p className="text-[7.5px] sm:text-[8px] text-slate-400 font-bold uppercase tracking-widest">Reduce the load</p>
+              </div>
+              <span className="text-[8.5px] sm:text-[9px] font-extrabold text-rose-500 bg-rose-50 dark:bg-rose-950/40 px-1.5 sm:px-2 py-0.5 rounded-full border border-rose-200/50 dark:border-rose-900/40 shrink-0">
+                {damageCount} active
+              </span>
             </div>
             
-            <div className="flex flex-col gap-1">
-              <HabitItem icon={<Frown className="h-4 w-4 text-amber-500" />} label="Stress" onClick={() => handleOpenHabit('Stress')} score={getStressScore()} />
-              <HabitItem icon={<Moon className="h-4 w-4 text-indigo-400" />} label="Sleep debt" onClick={() => handleOpenHabit('Sleep')} score={getSleepScore()} />
-              <HabitItem icon={<Cigarette className="h-4 w-4 text-slate-400" />} label="Smoking" onClick={() => handleOpenHabit('Smoking')} score={getSmokingScore()} />
-              <HabitItem icon={<Wine className="h-4 w-4 text-rose-600" />} label="Alcohol" onClick={() => handleOpenHabit('Alcohol')} score={getAlcoholScore()} />
-              <HabitItem icon={<Pill className="h-4 w-4 text-amber-500" />} label="Substances" onClick={() => handleOpenHabit('Substances')} score={getSubstancesScore()} />
-              <HabitItem icon={<Globe className="h-4 w-4 text-cyan-500" />} label="Environment" onClick={() => handleOpenHabit('Environmental')} score={getEnvironmentalScore()} />
-              <HabitItem icon={<Scale className="h-4 w-4 text-rose-500" />} label="Obesity" onClick={() => handleOpenHabit('Obesity')} score={getObesityScore()} />
-              <HabitItem icon={<Stethoscope className="h-4 w-4 text-slate-500" />} label="Dental health" onClick={() => handleOpenHabit('Dental')} score={getDentalScore()} />
-              <HabitItem icon={<Flame className="h-4 w-4 text-orange-500" />} label="Gastritis" onClick={() => handleOpenHabit('Gastritis')} score={getGastritisScore()} />
-              <HabitItem icon={<Dna className="h-4 w-4 text-purple-500" />} label="Genetic risk" onClick={() => handleOpenHabit('Genetic')} score={getGeneticScore()} />
+            <div className="flex flex-col gap-1 sm:gap-1.5">
+              <HabitItem icon={<Frown className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-500" />} label="Stress" onClick={() => handleOpenHabit('Stress')} score={getStressScore()} />
+              <HabitItem icon={<Moon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-indigo-400" />} label="Sleep debt" onClick={() => handleOpenHabit('Sleep')} score={getSleepScore()} />
+              <HabitItem icon={<Cigarette className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-400" />} label="Smoking" onClick={() => handleOpenHabit('Smoking')} score={getSmokingScore()} />
+              <HabitItem icon={<Wine className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-rose-600" />} label="Alcohol" onClick={() => handleOpenHabit('Alcohol')} score={getAlcoholScore()} />
+              <HabitItem icon={<Pill className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-500" />} label="Substances" onClick={() => handleOpenHabit('Substances')} score={getSubstancesScore()} />
+              <HabitItem icon={<Globe className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-cyan-500" />} label="Environment" onClick={() => handleOpenHabit('Environmental')} score={getEnvironmentalScore()} />
+              <HabitItem icon={<Scale className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-rose-500" />} label="Obesity" onClick={() => handleOpenHabit('Obesity')} score={getObesityScore()} />
+              <HabitItem icon={<Stethoscope className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-500" />} label="Dental health" onClick={() => handleOpenHabit('Dental')} score={getDentalScore()} />
+              <HabitItem icon={<Flame className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />} label="Gastritis" onClick={() => handleOpenHabit('Gastritis')} score={getGastritisScore()} />
+              <HabitItem icon={<Dna className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-purple-500" />} label="Genetic risk" onClick={() => handleOpenHabit('Genetic')} score={getGeneticScore()} />
             </div>
           </div>
         )}
 
-        {/* Repair Column */}
-        <div className={`bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs rounded-3xl p-3 flex flex-col transition-colors duration-300 ${isCancerPatient ? 'w-full' : ''}`}>
-          {!isCancerPatient && (
-            <div className="px-2 pt-3 pb-4">
-              <h3 className="text-emerald-500 font-sans text-lg font-bold flex items-center gap-1.5 mb-0.5">
-                <Leaf className="h-5 w-5" /> Repair
-              </h3>
-              <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest">Build the defence</p>
-            </div>
-          )}
-          
-          <div className="flex flex-col gap-1.5">
-            {isCancerPatient ? (
-              <>
-                <HabitItem icon={<Timer className="h-4 w-4 text-sky-500" />} label="INTERMITTENT FASTING" onClick={() => handleOpenHabit('Fasting')} score={getFastingScore()} />
-                <HabitItem icon={<User className="h-4 w-4 text-amber-500" />} label="MOVEMENT" onClick={() => handleOpenHabit('Movement')} score={getMovementScore()} />
-                <HabitItem icon={<User className="h-4 w-4 text-amber-600" />} label="Stillness" onClick={() => handleOpenHabit('Stillness')} score={getStillnessScore()} />
-                <HabitItem icon={<Palette className="h-4 w-4 text-indigo-400" />} label="THINGS YOU LOVE" onClick={() => handleOpenHabit('Joy')} score={getJoyScore()} />
-                <HabitItem icon={<BrainCircuit className="h-4 w-4 text-rose-500" />} label="ARE YOU STRESSED/WORRIED?" onClick={() => setShowStressedModal(true)} />
-                <HabitItem icon={<User className="h-4 w-4 text-teal-500" />} label="CAREGIVER STRESS" onClick={() => setShowCaregiverModal(true)} />
-                <HabitItem icon={<ShoppingBag className="h-4 w-4 text-pink-500" />} label="Explore wigs for hairloss" onClick={() => setActiveScreen('WigShop')} />
-              </>
-            ) : (
-              <>
-                <HabitItem icon={<Timer className="h-4 w-4 text-sky-500" />} label="Fasting" onClick={() => handleOpenHabit('Fasting')} score={getFastingScore()} />
-                <HabitItem icon={<Cherry className="h-4 w-4 text-rose-400" />} label="Antioxidants" onClick={() => handleOpenHabit('Antioxidants')} score={getAntioxidantsScore()} />
-                <HabitItem icon={<User className="h-4 w-4 text-amber-500" />} label="Exercise" onClick={() => handleOpenHabit('Movement')} score={getMovementScore()} />
-                <HabitItem icon={<User className="h-4 w-4 text-amber-600" />} label="Stillness" onClick={() => handleOpenHabit('Stillness')} score={getStillnessScore()} />
-                <HabitItem icon={<Palette className="h-4 w-4 text-indigo-400" />} label="Things you love" onClick={() => handleOpenHabit('Joy')} score={getJoyScore()} />
-                <HabitItem icon={<ShieldCheck className="h-4 w-4 text-emerald-500" />} label="Safer products" onClick={() => handleOpenHabit('SaferProducts')} score={getSaferProductsScore()} />
-              </>
+        {/* Repair Column (Right) */}
+        {(forcesView === 'all' || forcesView === 'repair') && (
+          <div className={`bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs rounded-3xl p-2.5 sm:p-3 flex flex-col h-fit self-start transition-colors duration-300 ${isCancerPatient ? 'w-full' : ''}`}>
+            {!isCancerPatient && (
+              <div className="px-1.5 pt-1.5 pb-2.5 flex items-center justify-between">
+                <div>
+                  <h3 className="text-emerald-500 font-sans text-sm sm:text-base font-bold flex items-center gap-1 mb-0.5">
+                    <Leaf className="h-4 w-4" /> Repair
+                  </h3>
+                  <p className="text-[7.5px] sm:text-[8px] text-slate-400 font-bold uppercase tracking-widest">Build the defence</p>
+                </div>
+                <span className="text-[8.5px] sm:text-[9px] font-extrabold text-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 sm:px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-900/40 shrink-0">
+                  {repairCount} active
+                </span>
+              </div>
             )}
+            
+            <div className="flex flex-col gap-1 sm:gap-1.5">
+              {isCancerPatient ? (
+                <>
+                  <HabitItem icon={<Timer className="h-4 w-4 text-sky-500" />} label="INTERMITTENT FASTING" onClick={() => handleOpenHabit('Fasting')} score={getFastingScore()} />
+                  <HabitItem icon={<User className="h-4 w-4 text-amber-500" />} label="MOVEMENT" onClick={() => handleOpenHabit('Movement')} score={getMovementScore()} />
+                  <HabitItem icon={<User className="h-4 w-4 text-amber-600" />} label="Stillness" onClick={() => handleOpenHabit('Stillness')} score={getStillnessScore()} />
+                  <HabitItem icon={<Palette className="h-4 w-4 text-indigo-400" />} label="THINGS YOU LOVE" onClick={() => handleOpenHabit('Joy')} score={getJoyScore()} />
+                  <HabitItem icon={<BrainCircuit className="h-4 w-4 text-rose-500" />} label="ARE YOU STRESSED/WORRIED?" onClick={() => setShowStressedModal(true)} />
+                  <HabitItem icon={<User className="h-4 w-4 text-teal-500" />} label="CAREGIVER STRESS" onClick={() => setShowCaregiverModal(true)} />
+                  <HabitItem icon={<ShoppingBag className="h-4 w-4 text-pink-500" />} label="Explore wigs for hairloss" onClick={() => setActiveScreen('WigShop')} />
+                </>
+              ) : (
+                <>
+                  <HabitItem icon={<Timer className="h-4 w-4 text-sky-500" />} label="Fasting" onClick={() => handleOpenHabit('Fasting')} score={getFastingScore()} />
+                  <HabitItem icon={<Cherry className="h-4 w-4 text-rose-400" />} label="Antioxidants" onClick={() => handleOpenHabit('Antioxidants')} score={getAntioxidantsScore()} />
+                  <HabitItem icon={<User className="h-4 w-4 text-amber-500" />} label="Exercise" onClick={() => handleOpenHabit('Movement')} score={getMovementScore()} />
+                  <HabitItem icon={<User className="h-4 w-4 text-amber-600" />} label="Stillness" onClick={() => handleOpenHabit('Stillness')} score={getStillnessScore()} />
+                  <HabitItem icon={<Palette className="h-4 w-4 text-indigo-400" />} label="Things you love" onClick={() => handleOpenHabit('Joy')} score={getJoyScore()} />
+                  <HabitItem icon={<ShieldCheck className="h-4 w-4 text-emerald-500" />} label="Safer products" onClick={() => handleOpenHabit('SaferProducts')} score={getSaferProductsScore()} />
+                </>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {!isCancerPatient && (
@@ -1086,7 +1208,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
                     MR
                   </div>
                   <div>
-                    <h5 className="text-xs font-bold text-slate-850 dark:text-slate-200">MitoReboot Medical Team</h5>
+                    <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200">MitoReboot Medical Team</h5>
                     <p className="text-[10px] text-slate-400">Oncology & Metabolic Nutrition Experts</p>
                   </div>
                 </div>
@@ -1126,25 +1248,36 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
   );
 };
 
-const HabitItem = ({ icon, label, onClick, score }: { icon: React.ReactNode, label: string, onClick: () => void, score?: number | null }) => (
-  <button 
-    onClick={onClick}
-    className="flex items-center justify-between w-full p-2.5 bg-slate-50/50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all text-left"
-  >
-    <div className="flex items-start gap-2.5 text-left flex-1 min-w-0">
-      <div className="shrink-0 mt-0.5">{icon}</div>
-      <span className="text-xs font-semibold text-slate-600 dark:text-slate-350 text-left leading-tight flex-1">{label}</span>
-    </div>
-    {score !== undefined && score !== null ? (
-      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg ${
-        score === -1 
-          ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400' 
-          : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400'
-      }`}>
-        {score > 0 ? `+${score}` : score}
-      </span>
-    ) : (
-      <div className="w-1.5 h-1.5 rounded-full bg-slate-200"></div>
-    )}
-  </button>
-);
+const HabitItem = ({ icon, label, onClick, score }: { icon: React.ReactNode, label: string, onClick: () => void, score?: number | null }) => {
+  const isNegative = score !== undefined && score !== null && score < 0;
+  const isPositive = score !== undefined && score !== null && score > 0;
+  
+  return (
+    <button 
+      onClick={onClick}
+      className="group flex items-center justify-between w-full px-2.5 py-2 bg-white/80 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800/90 border border-slate-200/60 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-600 rounded-xl transition-all duration-200 shadow-2xs hover:shadow-xs active:scale-[0.99] text-left"
+    >
+      <div className="flex items-center gap-2 text-left flex-1 min-w-0">
+        <div className="p-1.5 rounded-lg bg-slate-100/90 dark:bg-slate-900/80 group-hover:scale-105 transition-transform shrink-0">
+          {icon}
+        </div>
+        <span className="text-[11px] sm:text-xs font-semibold text-slate-700 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white transition-colors truncate">
+          {label}
+        </span>
+      </div>
+      {score !== undefined && score !== null ? (
+        <span className={`text-[9px] sm:text-[10px] font-extrabold px-2 py-0.5 rounded-lg transition-all shadow-2xs shrink-0 ml-1.5 ${
+          isNegative
+            ? 'bg-rose-50 text-rose-600 border border-rose-200/60 dark:bg-rose-950/60 dark:text-rose-400 dark:border-rose-800/50' 
+            : isPositive
+              ? 'bg-emerald-50 text-emerald-600 border border-emerald-200/60 dark:bg-emerald-950/60 dark:text-emerald-400 dark:border-emerald-800/50'
+              : 'bg-slate-100 text-slate-600 border border-slate-200/60 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700/60'
+        }`}>
+          {score > 0 ? `+${score}` : score}
+        </span>
+      ) : (
+        <div className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600 group-hover:bg-slate-400 dark:group-hover:bg-slate-500 transition-colors shrink-0 ml-1.5"></div>
+      )}
+    </button>
+  );
+};

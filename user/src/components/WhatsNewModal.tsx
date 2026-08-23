@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, X, ChevronRight, Wind, Droplets, Dna, ShoppingBag, Heart } from 'lucide-react';
 
-export const LATEST_RELEASE_VERSION = 'v4.2.0';
+export const LATEST_RELEASE_VERSION = 'v4.5.0';
 
 interface WhatsNewModalProps {
   isOpen: boolean;

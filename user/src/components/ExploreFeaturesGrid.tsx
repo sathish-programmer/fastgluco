@@ -77,27 +77,28 @@ export const ExploreFeaturesGrid: React.FC<ExploreFeaturesGridProps> = ({
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-2.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
         {visibleFeatures.map((f, i) => (
           <button
             key={i}
             onClick={() => onSelectFeature(f.key, f.params)}
-            className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between text-left hover:border-slate-300 dark:hover:border-slate-700 transition-all group min-h-[90px]"
+            className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:shadow-xs flex items-center justify-between text-left hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-200 group active:scale-[0.98]"
           >
-            <div className="flex items-center justify-between w-full mb-1">
-              <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shrink-0">
+            <div className="flex items-center space-x-2.5 min-w-0 flex-1">
+              <div className="p-2 bg-slate-50 dark:bg-slate-800/90 rounded-xl border border-slate-100 dark:border-slate-700/80 shrink-0 group-hover:scale-105 transition-transform">
                 {f.icon}
               </div>
-              <ChevronRight className="h-3.5 w-3.5 text-slate-400 group-hover:text-primary transition-colors" />
+              <div className="min-w-0 flex-1">
+                <h5 className="text-xs font-extrabold text-slate-900 dark:text-slate-100 leading-tight group-hover:text-primary transition-colors truncate">
+                  {f.label}
+                </h5>
+                <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 leading-tight mt-0.5 truncate">
+                  {f.desc}
+                </p>
+              </div>
             </div>
-
-            <div>
-              <h5 className="text-xs font-extrabold text-slate-900 dark:text-slate-100 leading-snug group-hover:text-primary transition-colors">
-                {f.label}
-              </h5>
-              <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 leading-tight mt-0.5 line-clamp-1">
-                {f.desc}
-              </p>
+            <div className="p-1.5 bg-slate-50 dark:bg-slate-800 group-hover:bg-primary/10 group-hover:text-primary text-slate-400 rounded-xl transition-all shrink-0 ml-1.5">
+              <ChevronRight className="h-3.5 w-3.5" />
             </div>
           </button>
         ))}

@@ -74,45 +74,30 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
 
   // Dynamically calculate glucose stability hours below spikeThreshold (defaults to 90)
   const calculateStabilityHours = () => {
+    let maxHours = 24;
+    let targetHours = 17;
+    let unitText = 'hours / 24h';
+    let targetText = `Target: Stay below ${spikeThreshold} mg/dL for 17 hrs a day`;
+
+    if (dateRange === 'week') {
+      maxHours = 168; // 7 days * 24h
+      targetHours = 119; // 7 * 17h
+      unitText = 'hours / 7 days';
+      targetText = `Target: Stay below ${spikeThreshold} mg/dL for 119 hrs / week`;
+    } else if (dateRange === 'month') {
+      maxHours = 720; // 30 days * 24h
+      targetHours = 510; // 30 * 17h
+      unitText = 'hours / 30 days';
+      targetText = `Target: Stay below ${spikeThreshold} mg/dL for 510 hrs / month`;
+    }
+
     if (glucoseReadings.length === 0) {
-      // Determine timezone based on currency preference (INR = India, USD = USA)
-      const isINR = user?.currency === 'INR';
-      const timezone = isINR ? 'Asia/Kolkata' : 'America/New_York';
-
-      let elapsedHours = 14.5;
-      try {
-        const now = new Date();
-        const formatter = new Intl.DateTimeFormat('en-US', {
-          timeZone: timezone,
-          hour: 'numeric',
-          minute: 'numeric',
-          hour12: false
-        });
-        const parts = formatter.formatToParts(now);
-        const hourVal = parts.find(p => p.type === 'hour')?.value;
-        const minVal = parts.find(p => p.type === 'minute')?.value;
-        if (hourVal) {
-          const h = parseInt(hourVal, 10) % 24;
-          const m = minVal ? parseInt(minVal, 10) : 0;
-          elapsedHours = parseFloat((h + m / 60).toFixed(1));
-        }
-      } catch (e) {
-        console.error('Error calculating timezone hours:', e);
-      }
-
-      const percentage = Math.round((elapsedHours / 24) * 100);
-      let status = 'Need Attention';
-      if (elapsedHours >= 17) {
-        status = 'Goal Achieved';
-      } else if (elapsedHours >= 12) {
-        status = 'On Track';
-      }
-
       return {
-        hours: elapsedHours,
-        percentage,
-        status,
-        label: `Stay below ${spikeThreshold} mg/dL for 17 hrs a day`,
+        hours: 0,
+        percentage: 0,
+        status: 'No Data',
+        unitText,
+        label: targetText,
         hasData: false
       };
     }
@@ -121,12 +106,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
     const belowCount = glucoseReadings.filter(r => r.value < spikeThreshold).length;
     const totalCount = glucoseReadings.length;
     const percentage = Math.round((belowCount / totalCount) * 100);
-    const hours = parseFloat(((belowCount / totalCount) * 24).toFixed(1));
+    const hours = parseFloat(((belowCount / totalCount) * maxHours).toFixed(1));
 
     let status = 'Need Attention';
-    if (hours >= 17) {
+    if (hours >= targetHours) {
       status = 'Goal Achieved';
-    } else if (hours >= 12) {
+    } else if (hours >= targetHours * 0.7) {
       status = 'On Track';
     }
 
@@ -134,7 +119,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
       hours,
       percentage,
       status,
-      label: `Stay below ${spikeThreshold} mg/dL for 17 hrs a day`,
+      unitText,
+      label: targetText,
       hasData: true
     };
   };
@@ -766,6 +752,48 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
         className="flex flex-col gap-3.5 mb-6"
       >
 
+        {/* History Selector Header for Stability Score */}
+        <div className="flex items-center justify-between px-1 mb-0.5 flex-wrap gap-2">
+          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+            Stability & Metabolic Track
+          </span>
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+            <button
+              type="button"
+              onClick={() => setDateRange('day')}
+              className={`px-3 py-1 rounded-lg font-extrabold text-[10px] uppercase tracking-wider transition-all ${
+                dateRange === 'day'
+                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+              }`}
+            >
+              Daily
+            </button>
+            <button
+              type="button"
+              onClick={() => setDateRange('week')}
+              className={`px-3 py-1 rounded-lg font-extrabold text-[10px] uppercase tracking-wider transition-all ${
+                dateRange === 'week'
+                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+              }`}
+            >
+              Weekly
+            </button>
+            <button
+              type="button"
+              onClick={() => setDateRange('month')}
+              className={`px-3 py-1 rounded-lg font-extrabold text-[10px] uppercase tracking-wider transition-all ${
+                dateRange === 'month'
+                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+              }`}
+            >
+              Monthly
+            </button>
+          </div>
+        </div>
+
         {/* Stability Card (Full-width, premium layout) */}
         <motion.div 
           whileHover={{ scale: 1.02 }}
@@ -787,7 +815,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
                 </linearGradient>
               </defs>
               <path
-                className="text-slate-100/80"
+                className="text-slate-100/80 dark:text-slate-800"
                 strokeWidth="3.2"
                 stroke="currentColor"
                 fill="none"
@@ -797,10 +825,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
               />
               <path
                 className="transition-all duration-700 ease-out"
-                strokeDasharray={`${Math.min((stability.hours / 24) * 100, 100)}, 100`}
+                strokeDasharray={`${Math.min(stability.percentage, 100)}, 100`}
                 strokeWidth="3.4"
                 strokeLinecap="round"
-                stroke={`url(#${stability.hours >= 17 ? 'stabilityGrad' : stability.hours >= 12 ? 'stabilityGrad' : 'warningGrad'})`}
+                stroke={`url(#${stability.status === 'Goal Achieved' || stability.status === 'On Track' ? 'stabilityGrad' : 'warningGrad'})`}
                 fill="none"
                 d="M18 2.0845
                   a 15.9155 15.9155 0 0 1 0 31.831
@@ -808,33 +836,37 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-base font-black text-slate-800 leading-none">{Math.round(stability.percentage)}%</span>
-              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Stable</span>
+              <span className="text-base font-black text-slate-800 dark:text-slate-100 leading-none">{Math.round(stability.percentage)}%</span>
+              <span className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">Stable</span>
             </div>
           </div>
 
           {/* Details */}
           <div className="flex flex-col justify-between flex-grow text-left py-0.5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Stability Score</span>
-              <span className={`inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full border shadow-sm ${stability.status === 'Goal Achieved'
-                  ? 'bg-emerald-50 text-emerald-600 border-emerald-100/50'
-                  : stability.status === 'On Track'
-                    ? 'bg-amber-50 text-amber-600 border-amber-100/50'
-                    : 'bg-rose-50 text-rose-500 border-rose-100/50'
+              <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Stability Score</span>
+              <span className={`inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full border shadow-sm ${
+                  stability.status === 'Goal Achieved'
+                    ? 'bg-emerald-50 text-emerald-600 border-emerald-100/50 dark:bg-emerald-950/30 dark:text-emerald-400'
+                    : stability.status === 'On Track'
+                      ? 'bg-amber-50 text-amber-600 border-amber-100/50 dark:bg-amber-950/30 dark:text-amber-400'
+                      : stability.status === 'No Data'
+                        ? 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400'
+                        : 'bg-rose-50 text-rose-500 border-rose-100/50 dark:bg-rose-950/30 dark:text-rose-400'
                 }`}>
                 {stability.status === 'Goal Achieved' && <Check className="h-2.5 w-2.5 text-emerald-500 stroke-[3.5]" />}
                 {stability.status === 'On Track' && <Activity className="h-2.5 w-2.5 text-amber-500" />}
-                {stability.status !== 'Goal Achieved' && stability.status !== 'On Track' && <AlertTriangle className="h-2.5 w-2.5 text-rose-500" />}
-                <span>{stability.status === 'Goal Achieved' ? 'Goal Met' : stability.status === 'On Track' ? 'On Track' : 'Attention'}</span>
+                {stability.status === 'No Data' && <Activity className="h-2.5 w-2.5 text-slate-400" />}
+                {stability.status !== 'Goal Achieved' && stability.status !== 'On Track' && stability.status !== 'No Data' && <AlertTriangle className="h-2.5 w-2.5 text-rose-500" />}
+                <span>{stability.status === 'Goal Achieved' ? 'Goal Met' : stability.status === 'On Track' ? 'On Track' : stability.status === 'No Data' ? 'No Data' : 'Attention'}</span>
               </span>
             </div>
             <div className="mt-1 flex items-baseline space-x-1">
-              <span className="text-2xl font-black text-slate-800">{stability.hours}</span>
-              <span className="text-xs font-bold text-slate-400">hours / 24h</span>
+              <span className="text-2xl font-black text-slate-800 dark:text-slate-100">{stability.hours}</span>
+              <span className="text-xs font-bold text-slate-400 dark:text-slate-500">{stability.unitText}</span>
             </div>
-            <p className="text-[9px] font-semibold text-slate-400 mt-1 border-t border-slate-100 pt-1">
-              Target: Stay below {spikeThreshold} mg/dL for 17 hrs a day
+            <p className="text-[9px] font-semibold text-slate-400 dark:text-slate-500 mt-1 border-t border-slate-100 dark:border-slate-800 pt-1">
+              {stability.label}
             </p>
           </div>
         </motion.div>
