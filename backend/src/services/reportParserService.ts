@@ -170,12 +170,8 @@ export class ReportParserService {
         const glucoseValue = parseInt(match[2], 10);
 
         if (glucoseValue >= 40 && glucoseValue <= 400) {
-          let timestamp = ReportParserService.parseDateResilient(timestampStr);
+          const timestamp = ReportParserService.parseDateResilient(timestampStr);
           if (!isNaN(timestamp.getTime())) {
-            // If parsed timestamp is in current year 2026 due to ambiguous format, correct to 2025
-            if (timestamp.getFullYear() >= 2026) {
-              timestamp.setFullYear(2025);
-            }
             const timeKey = timestamp.toISOString();
             if (!seenTimestamps.has(timeKey)) {
               seenTimestamps.add(timeKey);
@@ -268,9 +264,11 @@ export class ReportParserService {
           let startDate = new Date();
           let endDate = new Date();
 
-          // Extract Date Range e.g., "26 Mar 2025 - 8 Apr 2025"
+          // Extract Date Range dynamically (e.g., "26 Mar 2024 - 8 Apr 2024", "15 Jan 2023 - 28 Jan 2023", etc.)
           const dateRangeRegex = /(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})\s*[-–—]\s*(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})/;
+          const yearRegex = /\b(202[0-9])\b/;
           const rangeMatch = text.match(dateRangeRegex);
+          const fileYearMatch = filePath.match(/Apr\s+\d{1,2},?\s+(202[0-9])/i) || text.match(yearRegex) || path.basename(filePath).match(/(202[0-9])/);
 
           if (rangeMatch) {
             startDate = new Date(`${rangeMatch[1]} ${rangeMatch[2]} ${rangeMatch[3]}`);
@@ -280,10 +278,25 @@ export class ReportParserService {
             endDate = ReportParserService.parseDateResilient(dateRangeMatch[2]);
           }
 
-          // If date range is missing or parsed to current year 2026 without explicit date matching, force default to 26 Mar 2025 - 8 Apr 2025
-          if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || startDate.getTime() === endDate.getTime() || startDate.getFullYear() >= 2026) {
-            startDate = new Date('2025-03-26T00:00:00.000Z');
-            endDate = new Date('2025-04-08T23:59:59.999Z');
+          // Dynamic year adjustment: If filename or document contains explicit year (e.g. 2024/2025), preserve exact year
+          if (fileYearMatch && fileYearMatch[1]) {
+            const detectedYear = parseInt(fileYearMatch[1], 10);
+            if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+              startDate.setFullYear(detectedYear);
+              endDate.setFullYear(detectedYear);
+            }
+          }
+
+          // Fallback: If date range is unparseable, calculate 14-day cycle up to document/file creation date
+          if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || startDate.getTime() === endDate.getTime()) {
+            const fileStat = fs.existsSync(filePath) ? fs.statSync(filePath) : null;
+            endDate = fileStat ? new Date(fileStat.mtime) : new Date();
+            if (fileYearMatch && fileYearMatch[1]) {
+              endDate.setFullYear(parseInt(fileYearMatch[1], 10));
+            }
+            endDate.setHours(23, 59, 59, 999);
+            startDate = new Date(endDate.getTime() - 13 * 24 * 60 * 60 * 1000);
+            startDate.setHours(0, 0, 0, 0);
           }
 
           // Generate 15-minute interval readings for every day in the 14-day date range

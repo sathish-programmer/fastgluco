@@ -46,6 +46,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<'day' | 'week' | 'month' | 'custom'>('day');
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [hasAutoJumpedDate, setHasAutoJumpedDate] = useState<boolean>(false);
   const [customStartDate, setCustomStartDate] = useState<string>('');
   const [customEndDate, setCustomEndDate] = useState<string>('');
   const [showRangeModal, setShowRangeModal] = useState<boolean>(false);
@@ -217,7 +218,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
           setTimeInRange(0);
 
           // If no readings on currently selected date, auto-fetch user's latest available reading date
-          if (dateRange === 'day' && selectedDate === new Date().toISOString().split('T')[0]) {
+          if (dateRange === 'day' && !hasAutoJumpedDate) {
+            setHasAutoJumpedDate(true);
             fetch(`${apiUrl}/glucose?limit=1`, {
               headers: { 'Authorization': `Bearer ${token}` }
             })
