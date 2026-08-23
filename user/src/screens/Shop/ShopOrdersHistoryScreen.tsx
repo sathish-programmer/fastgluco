@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 import { ArrowLeft, Package, Truck, Download, Calendar, Star, Beaker, FileText, HelpCircle } from 'lucide-react';
 import { ProductImage } from './ShopScreen';
 import { Capacitor } from '@capacitor/core';
@@ -11,6 +12,7 @@ interface ShopOrdersHistoryScreenProps {
 
 export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = ({ onBack, onRateOrder }) => {
   const { apiUrl, token } = useAuth();
+  const { showToast } = useToast();
   const [orders, setOrders] = useState<any[]>([]);
   const [labBookings, setLabBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -135,21 +137,21 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
             window.open(downloadUrl, '_blank');
           }
         } else {
-          alert('Report file not found. It might be available for physical pickup.');
+          showToast('Report file not found. It might be available for physical pickup.', 'error');
         }
       } else {
-        alert('Failed to fetch report.');
+        showToast('Failed to fetch report.', 'error');
       }
     } catch (e) {
       console.error(e);
-      alert('An error occurred while fetching the report.');
+      showToast('An error occurred while fetching the report.', 'error');
     }
   };
 
   const handleSupportSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!supportForm.name || !supportForm.email || !supportForm.question) {
-      alert('Please fill in all required fields.');
+      showToast('Please fill in all required fields.', 'error');
       return;
     }
     setSubmittingSupport(true);
@@ -163,14 +165,14 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
         body: JSON.stringify(supportForm)
       });
       if (res.ok) {
-        alert('Support ticket submitted successfully!');
+        showToast('Support ticket submitted successfully!', 'success');
         setShowSupportModal(false);
       } else {
-        alert('Failed to submit support ticket.');
+        showToast('Failed to submit support ticket.', 'error');
       }
     } catch (e) {
       console.error(e);
-      alert('An error occurred.');
+      showToast('An error occurred while submitting support ticket.', 'error');
     } finally {
       setSubmittingSupport(false);
     }

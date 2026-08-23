@@ -59,7 +59,14 @@ const MainAppContent: React.FC = () => {
   const [resetToken, setResetToken] = useState<string | null>(null);
   const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
   const [rateOrderId, setRateOrderId] = useState<string | null>(null);
-  const [showCancerCGMDashboard, setShowCancerCGMDashboard] = useState<boolean>(false);
+  const [showCancerCGMDashboard, setShowCancerCGMDashboardState] = useState<boolean>(() => {
+    return localStorage.getItem('mito_show_cgm_dashboard') === 'true';
+  });
+
+  const setShowCancerCGMDashboard = (show: boolean) => {
+    localStorage.setItem('mito_show_cgm_dashboard', show ? 'true' : 'false');
+    setShowCancerCGMDashboardState(show);
+  };
   const [showHelpModal, setShowHelpModal] = useState<boolean>(false);
 
   useEffect(() => {

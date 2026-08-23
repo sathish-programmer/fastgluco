@@ -28,15 +28,27 @@ export class ReportController {
       const ext = path.extname(file.originalname).toLowerCase();
       const fileType = ext === '.pdf' ? 'pdf' : 'csv';
 
-      // Create a database log
-      const report = new CGMReport({
-        userId,
-        fileName: file.originalname,
-        fileUrl: `/uploads/${file.filename}`, // relative link for dev storage
-        fileType,
-        status: 'Processing',
-        parsedReadingsCount: 0
-      });
+      // Check if a report with the same filename already exists for this user
+      let report = await CGMReport.findOne({ userId, fileName: file.originalname });
+
+      if (report) {
+        // Overwrite existing report record
+        report.fileUrl = `/uploads/${file.filename}`;
+        report.fileType = fileType;
+        report.status = 'Processing';
+        report.parsedReadingsCount = 0;
+        report.errorMessage = undefined;
+      } else {
+        // Create new database log
+        report = new CGMReport({
+          userId,
+          fileName: file.originalname,
+          fileUrl: `/uploads/${file.filename}`, // relative link for dev storage
+          fileType,
+          status: 'Processing',
+          parsedReadingsCount: 0
+        });
+      }
 
       await report.save();
 
@@ -91,7 +103,7 @@ export class ReportController {
   public static async getHistory(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
-      const history = await CGMReport.find({ userId }).sort({ createdAt: -1 });
+      const history = await CGMReport.find({ userId }).sort({ updatedAt: -1, createdAt: -1 });
       return res.status(200).json(history);
     } catch (error: any) {
       return res.status(500).json({ message: error.message || 'Error fetching report history.' });
@@ -492,17 +504,19 @@ export class ReportController {
           const macroStr = `${Math.round(f.carbs)}g / ${Math.round(f.protein)}g / ${Math.round(f.fat)}g`;
           doc.text(macroStr, 310, y + 10);
 
-          if (f.glucoseAnalysis) {
-            const gluStr = `${f.glucoseAnalysis.beforeGlucose} -> ${f.glucoseAnalysis.peakGlucose} (${f.glucoseAnalysis.difference > 0 ? '+' : ''}${f.glucoseAnalysis.difference})`;
+          if (f.glucoseAnalysis && typeof f.glucoseAnalysis.beforeGlucose === 'number' && typeof f.glucoseAnalysis.peakGlucose === 'number') {
+            const diff = f.glucoseAnalysis.difference ?? (f.glucoseAnalysis.peakGlucose - f.glucoseAnalysis.beforeGlucose);
+            const gluStr = `${f.glucoseAnalysis.beforeGlucose} -> ${f.glucoseAnalysis.peakGlucose} (${diff > 0 ? '+' : ''}${diff})`;
             doc.text(gluStr, 410, y + 10);
 
             // Status indicator coloring
             let statusColor = '#64748B';
-            if (f.glucoseAnalysis.status === 'Safe') statusColor = '#10B981';
-            else if (f.glucoseAnalysis.status === 'Moderate') statusColor = '#F59E0B';
-            else if (f.glucoseAnalysis.status === 'Avoid') statusColor = '#EF4444';
+            const statusText = f.glucoseAnalysis.status || 'Safe';
+            if (statusText === 'Safe') statusColor = '#10B981';
+            else if (statusText === 'Moderate') statusColor = '#F59E0B';
+            else if (statusText === 'Avoid') statusColor = '#EF4444';
 
-            doc.fillColor(statusColor).font('Helvetica-Bold').text(f.glucoseAnalysis.status, 490, y + 10);
+            doc.fillColor(statusColor).font('Helvetica-Bold').text(statusText, 490, y + 10);
           } else {
             doc.fillColor('#94A3B8').text('No Readings Matched', 410, y + 10);
             doc.text('-', 490, y + 10);

@@ -37,6 +37,7 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
   const [range, setRange] = useState<string>('day');
   const [customFrom, setCustomFrom] = useState<string>('');
   const [customTo, setCustomTo] = useState<string>('');
+  const [showAnalysisRangeModal, setShowAnalysisRangeModal] = useState<boolean>(false);
 
   const getTodayStr = () => new Date().toISOString().split('T')[0];
 
@@ -198,22 +199,24 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
                 { id: 'day', label: 'Today' },
                 { id: 'week', label: '7 Days' },
                 { id: 'month', label: '30 Days' },
-                { id: 'custom', label: 'Custom' }
+                { id: 'custom', label: 'Custom Range' }
               ].map(({ id, label }) => {
                 const isActive = range === id;
                 return (
                   <button
                     key={id}
                     onClick={() => {
-                      setRange(id);
-                      if (id !== 'custom') {
+                      if (id === 'custom') {
+                        setShowAnalysisRangeModal(true);
+                      } else {
+                        setRange(id);
                         setCustomFrom('');
                         setCustomTo('');
                       }
                     }}
                     className={`flex-1 py-2 text-xs font-black tracking-wide rounded-xl transition-all duration-200 ${
                       isActive
-                        ? 'bg-white dark:bg-blue-600 text-slate-900 dark:text-white shadow-md shadow-blue-500/10 dark:shadow-blue-900/40 scale-[1.02]'
+                        ? 'bg-primary text-white shadow-md shadow-blue-500/20 scale-[1.02]'
                         : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                     }`}
                   >
@@ -223,42 +226,20 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
               })}
             </div>
 
-            {/* Custom date range picker with modern sleek card */}
-            {range === 'custom' && (
-              <motion.div 
-                initial={{ opacity: 0, y: -6 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col sm:flex-row items-center gap-3 mb-6 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3.5 shadow-sm"
-              >
-                <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500 text-xs font-bold shrink-0">
-                  <Calendar className="h-4 w-4 text-blue-500" />
-                  <span>Date Range:</span>
+            {/* Custom Range Active Badge */}
+            {range === 'custom' && customFrom && customTo && (
+              <div className="flex items-center justify-between bg-primary/10 border border-primary/20 rounded-2xl p-3 mb-5">
+                <div className="flex items-center gap-2 text-primary font-bold text-xs">
+                  <Calendar className="h-4 w-4" />
+                  <span>Filtered Range: <strong>{new Date(customFrom).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })} – {new Date(customTo).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}</strong></span>
                 </div>
-                <div className="flex items-center gap-2 w-full">
-                  <div className="flex-1 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 flex items-center justify-between">
-                    <span className="text-[10px] font-black text-slate-400 uppercase mr-2">From</span>
-                    <input
-                      type="date"
-                      value={customFrom}
-                      max={customTo || getTodayStr()}
-                      onChange={(e) => setCustomFrom(e.target.value)}
-                      className="text-xs font-bold text-slate-700 dark:text-slate-100 bg-transparent focus:outline-none cursor-pointer w-full"
-                    />
-                  </div>
-                  <span className="text-slate-400 font-bold dark:text-slate-600">-</span>
-                  <div className="flex-1 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 flex items-center justify-between">
-                    <span className="text-[10px] font-black text-slate-400 uppercase mr-2">To</span>
-                    <input
-                      type="date"
-                      value={customTo}
-                      min={customFrom}
-                      max={getTodayStr()}
-                      onChange={(e) => setCustomTo(e.target.value)}
-                      className="text-xs font-bold text-slate-700 dark:text-slate-100 bg-transparent focus:outline-none cursor-pointer w-full"
-                    />
-                  </div>
-                </div>
-              </motion.div>
+                <button
+                  onClick={() => setShowAnalysisRangeModal(true)}
+                  className="text-xs font-extrabold text-primary underline hover:text-primary-dark"
+                >
+                  Change
+                </button>
+              </div>
             )}
 
             <motion.div 
@@ -425,6 +406,70 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
               )}
             </div>
           </motion.div>
+        </div>
+      )}
+
+      {showAnalysisRangeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 w-full max-w-sm border border-slate-150 dark:border-slate-800 shadow-2xl animate-scaleIn text-slate-800 dark:text-slate-100">
+            <div className="flex items-center space-x-3 mb-2">
+              <div className="p-2.5 bg-primary/10 rounded-2xl text-primary">
+                <Calendar className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-slate-900 dark:text-slate-100">Select Food Analysis Range</h3>
+                <p className="text-xs text-slate-400 font-semibold">Choose dates to analyze top safe/avoid foods and meal spikes.</p>
+              </div>
+            </div>
+
+            <div className="space-y-4 my-5">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                  Start Date (From)
+                </label>
+                <input
+                  type="date"
+                  value={customFrom || '2025-03-26'}
+                  onChange={(e) => setCustomFrom(e.target.value)}
+                  className="w-full text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                  End Date (To)
+                </label>
+                <input
+                  type="date"
+                  value={customTo || '2025-04-08'}
+                  onChange={(e) => setCustomTo(e.target.value)}
+                  className="w-full text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                />
+              </div>
+            </div>
+
+            <div className="flex space-x-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowAnalysisRangeModal(false)}
+                className="flex-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-extrabold py-3.5 rounded-2xl transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!customFrom) setCustomFrom('2025-03-26');
+                  if (!customTo) setCustomTo('2025-04-08');
+                  setRange('custom');
+                  setShowAnalysisRangeModal(false);
+                }}
+                className="flex-1 bg-primary hover:bg-primary-dark text-white text-xs font-extrabold py-3.5 rounded-2xl transition-all shadow-md shadow-primary/20"
+              >
+                Apply Range
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </motion.div>

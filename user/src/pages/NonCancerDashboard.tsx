@@ -86,23 +86,32 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
     };
   }, [activeScreen]);
 
+  const { apiUrl, token, user, activeMode } = useAuth();
+
+  const [habits, setHabits] = useState<HabitLog[]>([]);
   const [shopQuery, setShopQuery] = useState<string>('');
   const [showStressedModal, setShowStressedModal] = useState<boolean>(false);
   const [showCaregiverModal, setShowCaregiverModal] = useState<boolean>(false);
-  const [showTugOfWar, setShowTugOfWar] = useState<boolean>(true);
-  const [showFastingDisclaimer, setShowFastingDisclaimer] = useState<boolean>(false);
-  const [fastingStep, setFastingStep] = useState<number>(1);
-  const [habits, setHabits] = useState<HabitLog[]>([]);
-  const { apiUrl, token, user, activeMode } = useAuth();
   const [showRecommendation, setShowRecommendation] = useState<boolean>(false);
   const [recommendationReason, setRecommendationReason] = useState<string>('');
-
   const [upcomingAppt, setUpcomingAppt] = useState<any | null>(null);
   const [isApptDismissed, setIsApptDismissed] = useState<boolean>(false);
   const [showAskMito, setShowAskMito] = useState<boolean>(false);
+  const [showFastingDisclaimer, setShowFastingDisclaimer] = useState<boolean>(false);
+  const [fastingStep, setFastingStep] = useState<number>(1);
+
+  const [showTugOfWar, setShowTugOfWarState] = useState<boolean>(() => {
+    return localStorage.getItem('mito_show_cgm_dashboard') !== 'true';
+  });
+
+  const setShowTugOfWar = (show: boolean) => {
+    localStorage.setItem('mito_show_cgm_dashboard', (!show) ? 'true' : 'false');
+    setShowTugOfWarState(show);
+  };
 
   useEffect(() => {
-    setShowTugOfWar(true);
+    const savedShowCGM = localStorage.getItem('mito_show_cgm_dashboard') === 'true';
+    setShowTugOfWarState(!savedShowCGM);
   }, [activeMode]);
 
   useEffect(() => {

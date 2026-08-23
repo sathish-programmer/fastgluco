@@ -44,8 +44,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
   const [offlineMealsCount, setOfflineMealsCount] = useState<number>(0);
   const [timeInRange, setTimeInRange] = useState<number>(85);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
-  const [dateRange, setDateRange] = useState<'day' | 'week' | 'month'>('day');
+  const [dateRange, setDateRange] = useState<'day' | 'week' | 'month' | 'custom'>('day');
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [customStartDate, setCustomStartDate] = useState<string>('');
+  const [customEndDate, setCustomEndDate] = useState<string>('');
+  const [showRangeModal, setShowRangeModal] = useState<boolean>(false);
   const [exporting, setExporting] = useState(false);
   const [healthInsight, setHealthInsight] = useState<string>('Walking for 10-15 minutes after major meals helps clear circulating glucose, reducing the severity of peak spikes. Try swapping white rice for millets.');
   const [rangeFoodLogs, setRangeFoodLogs] = useState<any[]>([]);
@@ -138,7 +141,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
 
   useEffect(() => {
     if (chartScrollRef.current) {
-      chartScrollRef.current.scrollLeft = chartScrollRef.current.scrollWidth;
+      chartScrollRef.current.scrollLeft = 0;
     }
   }, [glucoseReadings, dateRange]);
 
@@ -171,24 +174,29 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
     fetchDashboardData();
     // Count offline queued items
     setOfflineMealsCount(SyncService.getOfflineQueue().length);
-  }, [token, dateRange, selectedDate]);
+  }, [token, dateRange, selectedDate, customStartDate, customEndDate]);
 
   const fetchDashboardData = async () => {
     if (!token) return;
     try {
-      // 1. Fetch Glucose Readings (range = day|week|month)
-      let glucoseUrl = `${apiUrl}/glucose?range=${dateRange}`;
-      const start = new Date(selectedDate);
+      // 1. Fetch Glucose Readings
+      let start = new Date(selectedDate);
       start.setHours(0, 0, 0, 0);
-      const end = new Date(selectedDate);
+      let end = new Date(selectedDate);
       end.setHours(23, 59, 59, 999);
       
       if (dateRange === 'week') {
         start.setDate(start.getDate() - 7);
       } else if (dateRange === 'month') {
         start.setMonth(start.getMonth() - 1);
+      } else if (dateRange === 'custom') {
+        start = new Date(customStartDate);
+        start.setHours(0, 0, 0, 0);
+        end = new Date(customEndDate);
+        end.setHours(23, 59, 59, 999);
       }
-      glucoseUrl = `${apiUrl}/glucose?startDate=${start.toISOString()}&endDate=${end.toISOString()}`;
+
+      const glucoseUrl = `${apiUrl}/glucose?startDate=${start.toISOString()}&endDate=${end.toISOString()}`;
       const glucoseRes = await fetch(glucoseUrl, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -962,13 +970,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, duration: 0.5 }}
-        className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-5 rounded-3xl border border-white/80 dark:border-slate-800 shadow-soft hover:shadow-md transition-all duration-300 mb-6"
+        className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-3.5 sm:p-4 rounded-3xl border border-white/80 dark:border-slate-800 shadow-soft hover:shadow-md transition-all duration-300 mb-5"
       >
-        <div className="mb-5 flex flex-col gap-3">
+        <div className="mb-3 flex flex-col gap-2">
           {/* Header Row: Title & Action Buttons */}
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center px-1">
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Glucose Profile</h3>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setIsChartExpanded(true)}
                 className="p-1.5 bg-slate-100/80 dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-xl transition-all active:scale-90"
@@ -988,60 +996,82 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
             </div>
           </div>
 
-          {/* Controls Row: Date Picker & Range Segmented Control */}
-          <div className="flex items-center justify-between bg-slate-50/80 dark:bg-slate-950/50 p-1.5 rounded-2xl border border-slate-100/50 dark:border-slate-800/50">
-            <div className="flex bg-slate-200/50 dark:bg-slate-800/50 rounded-xl p-1 w-full sm:w-auto">
-              <button
-                onClick={() => setDateRange('day')}
-                className={`flex-1 sm:flex-none px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest rounded-lg transition-all ${dateRange === 'day' ? 'bg-white dark:bg-slate-900 shadow-sm text-primary scale-[1.02]' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
-              >
-                Day
-              </button>
-              <button
-                onClick={() => setDateRange('week')}
-                className={`flex-1 sm:flex-none px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest rounded-lg transition-all ${dateRange === 'week' ? 'bg-white dark:bg-slate-900 shadow-sm text-primary scale-[1.02]' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
-              >
-                Week
-              </button>
-              <button
-                onClick={() => setDateRange('month')}
-                className={`flex-1 sm:flex-none px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest rounded-lg transition-all ${dateRange === 'month' ? 'bg-white dark:bg-slate-900 shadow-sm text-primary scale-[1.02]' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
-              >
-                Month
-              </button>
+          {/* Controls Row: Date Range Selector & Selected Date Badge */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between bg-slate-100/80 dark:bg-slate-950/70 p-1 rounded-2xl border border-slate-200/50 dark:border-slate-800">
+              <div className="grid grid-cols-4 w-full bg-white/90 dark:bg-slate-900/90 rounded-xl p-0.5 shadow-xs border border-slate-200/40 dark:border-slate-800 text-center">
+                <button
+                  onClick={() => setDateRange('day')}
+                  className={`py-1 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${dateRange === 'day' ? 'bg-primary text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}
+                >
+                  Day
+                </button>
+                <button
+                  onClick={() => setDateRange('week')}
+                  className={`py-1 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${dateRange === 'week' ? 'bg-primary text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}
+                >
+                  Week
+                </button>
+                <button
+                  onClick={() => setDateRange('month')}
+                  className={`py-1 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${dateRange === 'month' ? 'bg-primary text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}
+                >
+                  Month
+                </button>
+                <button
+                  onClick={() => setShowRangeModal(true)}
+                  className={`py-1 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-1 ${dateRange === 'custom' ? 'bg-primary text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}
+                >
+                  <Calendar className="h-3 w-3" />
+                  <span>Custom</span>
+                </button>
+              </div>
             </div>
 
-            <div className="flex items-center space-x-2 bg-white dark:bg-slate-900 rounded-xl px-2.5 py-1.5 shadow-sm border border-slate-100/50 dark:border-slate-800 ml-2 shrink-0">
-              <Calendar className="h-3.5 w-3.5 text-slate-400" />
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                max={new Date().toISOString().split('T')[0]}
-                className="text-xs font-bold text-slate-600 bg-transparent focus:outline-none border-none cursor-pointer p-0 w-[85px]"
-              />
+            {/* Active Date / Custom Range Pill */}
+            <div className="flex items-center justify-between px-1">
+              <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-slate-400">Selected Range</span>
+              {dateRange === 'custom' && customStartDate && customEndDate ? (
+                <button
+                  onClick={() => setShowRangeModal(true)}
+                  className="flex items-center gap-1.5 bg-primary/10 text-primary dark:text-primary-light border border-primary/20 rounded-xl px-2.5 py-1 text-xs font-extrabold shadow-2xs hover:bg-primary/20 transition-all cursor-pointer"
+                >
+                  <Calendar className="h-3.5 w-3.5" />
+                  <span>{new Date(customStartDate).toLocaleDateString([], { month: 'short', day: 'numeric' })} – {new Date(customEndDate).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
+                </button>
+              ) : (
+                <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl px-2.5 py-1 border border-slate-200/60 dark:border-slate-700/60">
+                  <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="text-xs font-extrabold text-slate-700 dark:text-slate-200 bg-transparent focus:outline-none border-none cursor-pointer p-0 w-[95px]"
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>
 
         {glucoseReadings.length === 0 ? (
-          <div className="h-64 w-full flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 dark:bg-slate-800/30 rounded-2xl border border-dashed border-slate-200/80 dark:border-slate-700 p-6">
-            <Activity className="h-8 w-8 mb-2.5 opacity-40 text-primary" />
+          <div className="h-48 w-full flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 dark:bg-slate-800/30 rounded-2xl border border-dashed border-slate-200/80 dark:border-slate-700 p-4">
+            <Activity className="h-7 w-7 mb-2 opacity-40 text-primary" />
             <p className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">No Data Available</p>
-            <p className="text-[10px] text-slate-400 mt-1 text-center max-w-[200px]">Upload a CGM CSV report to view continuous glucose insights.</p>
+            <p className="text-[10px] text-slate-400 mt-0.5 text-center max-w-[200px]">Upload a CGM CSV report to view continuous glucose insights.</p>
           </div>
         ) : (
-          <div ref={chartScrollRef} className="h-64 w-full overflow-x-auto no-scrollbar scroll-smooth">
-            <div style={{ width: dateRange === 'day' ? '100%' : dateRange === 'week' ? '180%' : '300%', minWidth: '100%' }} className="h-full">
+          <div ref={chartScrollRef} className="h-60 w-full overflow-x-auto no-scrollbar scroll-smooth -mx-2">
+            <div style={{ width: dateRange === 'day' ? '100%' : dateRange === 'week' ? '180%' : dateRange === 'custom' ? `${Math.max(100, Math.min(500, glucoseReadings.length * 15))}%` : '300%', minWidth: '100%' }} className="h-full">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={formatChartData()} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                <AreaChart data={formatChartData()} margin={{ top: 6, right: 12, left: -36, bottom: -5 }}>
                   <defs>
                     <linearGradient id="glucoseGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.25} />
-                      <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.00} />
+                      <stop offset="5%" stopColor="#2563EB" stopOpacity={0.35} />
+                      <stop offset="95%" stopColor="#2563EB" stopOpacity={0.01} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" opacity={0.6} />
                   <XAxis
                     dataKey={glucoseReadings[0]?.timestamp ? 'timestamp' : 'timeLabel'}
                     tickFormatter={(value) => {
@@ -1053,30 +1083,30 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
                         return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
                       }
                     }}
-                    tick={{ fontSize: 9, fill: '#94A3B8', fontWeight: 600 }}
+                    tick={{ fontSize: 9, fill: '#64748B', fontWeight: 700 }}
                     axisLine={false}
                     tickLine={false}
-                    minTickGap={40}
+                    minTickGap={30}
                   />
                   <YAxis
                     domain={[40, 180]}
-                    tick={{ fontSize: 9, fill: '#94A3B8', fontWeight: 600 }}
+                    tick={{ fontSize: 9, fill: '#64748B', fontWeight: 700 }}
                     axisLine={false}
                     tickLine={false}
                   />
                   <Tooltip content={<CustomTooltip />} />
                   <ReferenceLine
                     y={spikeThreshold}
-                    stroke="#14B8A6"
-                    strokeDasharray="4 4"
+                    stroke="#0D9488"
+                    strokeDasharray="3 3"
                     strokeWidth={1.5}
-                    label={{ value: `Spike limit: ${spikeThreshold}`, fill: '#14B8A6', fontSize: 8, position: 'insideTopLeft', fontWeight: 'bold' }}
+                    label={{ value: `Spike Limit: ${spikeThreshold}`, fill: '#0D9488', fontSize: 8, position: 'insideTopLeft', fontWeight: '800' }}
                   />
 
                   <Area
                     type="monotone"
                     dataKey="value"
-                    stroke="#3B82F6"
+                    stroke="#2563EB"
                     strokeWidth={2.5}
                     dot={<CustomDot />}
                     fillOpacity={1}
@@ -1376,6 +1406,70 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
                 className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-extrabold py-3.5 rounded-2xl transition-all"
               >
                 Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRangeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 w-full max-w-sm border border-slate-150 dark:border-slate-800 shadow-2xl animate-scaleIn text-slate-800 dark:text-slate-100">
+            <div className="flex items-center space-x-3 mb-2">
+              <div className="p-2.5 bg-primary/10 rounded-2xl text-primary">
+                <Calendar className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-slate-900 dark:text-slate-100">Select Date Range</h3>
+                <p className="text-xs text-slate-400 font-semibold">Choose start and end dates to filter your glucose readings.</p>
+              </div>
+            </div>
+
+            <div className="space-y-4 my-5">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                  Start Date (From)
+                </label>
+                <input
+                  type="date"
+                  value={customStartDate || '2025-03-26'}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  className="w-full text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                  End Date (To)
+                </label>
+                <input
+                  type="date"
+                  value={customEndDate || '2025-04-08'}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  className="w-full text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                />
+              </div>
+            </div>
+
+            <div className="flex space-x-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowRangeModal(false)}
+                className="flex-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-extrabold py-3.5 rounded-2xl transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!customStartDate) setCustomStartDate('2025-03-26');
+                  if (!customEndDate) setCustomEndDate('2025-04-08');
+                  setDateRange('custom');
+                  setShowRangeModal(false);
+                }}
+                className="flex-1 bg-primary hover:bg-primary-dark text-white text-xs font-extrabold py-3.5 rounded-2xl transition-all shadow-md shadow-primary/20"
+              >
+                Apply Range
               </button>
             </div>
           </div>

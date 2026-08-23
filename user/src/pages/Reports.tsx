@@ -142,9 +142,13 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
     }
   };
 
-  const handleDeleteReport = async (reportId: string) => {
-    if (!token || !window.confirm('Delete this report? This cannot be undone.')) return;
+  const [reportToDelete, setReportToDelete] = useState<{ id: string; name: string } | null>(null);
+
+  const confirmDeleteReport = async () => {
+    if (!token || !reportToDelete) return;
+    const reportId = reportToDelete.id;
     setDeletingId(reportId);
+    setReportToDelete(null);
     try {
       const response = await fetch(`${apiUrl}/reports/${reportId}`, {
         method: 'DELETE',
@@ -295,14 +299,14 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
             </div>
           </div>
         )}
-        <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Upload CSV Data</h3>
+        <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Upload CSV / PDF Data</h3>
         
         <form onSubmit={handleUploadSubmit} className="space-y-4">
           <div className="relative group cursor-pointer border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50/50 dark:bg-slate-800/50 p-6 transition-all hover:bg-slate-100/50 dark:hover:bg-slate-800 hover:border-primary/50 text-center flex flex-col items-center justify-center">
             <input
               id="report-input"
               type="file"
-              accept=".csv"
+              accept=".csv,.pdf"
               onChange={handleFileChange}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
               disabled={uploading}
@@ -316,7 +320,7 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
               ) : (
                 <>
                   <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Choose file or drag here</span>
-                  <span className="text-[10px] text-slate-400 font-semibold mt-1">Supports CSV exports</span>
+                  <span className="text-[10px] text-slate-400 font-semibold mt-1">Supports CSV & PDF exports</span>
                 </>
               )}
             </div>
@@ -451,7 +455,7 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
                       {report.fileName}
                     </h4>
                     <span className="text-[9px] font-semibold text-slate-400 dark:text-slate-500 block mt-0.5">
-                      {new Date(report.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                      {new Date(report.updatedAt || report.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                     </span>
                     <div className="flex items-center space-x-1.5 mt-1.5">
                       {report.status === 'Processed' && (
@@ -495,7 +499,7 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
                     <RefreshCw className={`h-4 w-4 ${reprocessingId === report._id ? 'animate-spin' : ''}`} />
                   </button>
                   <button
-                    onClick={() => handleDeleteReport(report._id)}
+                    onClick={() => setReportToDelete({ id: report._id, name: report.fileName })}
                     disabled={deletingId === report._id}
                     className="p-2 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 disabled:opacity-50 shrink-0"
                     title="Delete Report"
@@ -510,6 +514,37 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
           )}
         </div>
       </motion.div>
+
+      {/* Modern Premium Delete Confirmation Modal */}
+      {reportToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 w-full max-w-sm border border-slate-150 dark:border-slate-800 shadow-2xl animate-scaleIn text-slate-800 dark:text-slate-100 text-center">
+            <div className="mx-auto w-12 h-12 bg-rose-50 dark:bg-rose-950/30 text-rose-500 rounded-2xl flex items-center justify-center mb-3">
+              <Trash2 className="h-6 w-6" />
+            </div>
+            <h3 className="text-base font-black text-slate-900 dark:text-slate-100 mb-1">Delete Report?</h3>
+            <p className="text-xs text-slate-400 font-semibold leading-relaxed mb-5">
+              Are you sure you want to delete <strong className="text-slate-700 dark:text-slate-200">{reportToDelete.name}</strong>? This action cannot be undone.
+            </p>
+            <div className="flex space-x-3">
+              <button
+                type="button"
+                onClick={() => setReportToDelete(null)}
+                className="flex-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-extrabold py-3 rounded-2xl transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteReport}
+                className="flex-1 bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold py-3 rounded-2xl transition-all shadow-md shadow-rose-600/20"
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 };

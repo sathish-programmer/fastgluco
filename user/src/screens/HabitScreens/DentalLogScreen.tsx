@@ -177,7 +177,7 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
       img.src = data.imageUrl.startsWith('http') ? data.imageUrl : `${baseServerUrl}${data.imageUrl}`;
     } catch (err) {
       console.error('Upload failed', err);
-      alert('Error uploading photo. Please try again.');
+      showToast('Error uploading photo. Please try again.', 'error');
     } finally {
       setUploading(false);
       // Reset the file input values so onChange will trigger again even for the same file
@@ -194,7 +194,7 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
       if (checkPerms.camera !== 'granted') {
         const reqPerms = await CapacitorCamera.requestPermissions({ permissions: ['camera'] });
         if (reqPerms.camera !== 'granted') {
-          alert('Camera permission is required to take photos.');
+          showToast('Camera permission is required to take photos.', 'error');
           return;
         }
       }
@@ -269,7 +269,7 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
     } catch (err: any) {
       console.error('Capture/upload failed', err);
       if (err.message !== 'User cancelled photos app' && !err.message?.includes('cancelled')) {
-        alert('Error capturing or uploading photo. Please try again.');
+        showToast('Error capturing or uploading photo. Please try again.', 'error');
       }
     } finally {
       setUploading(false);
@@ -455,22 +455,27 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
       await loadHistory();
     } catch (err) {
       console.error('Failed to save reading', err);
-      alert('Failed to save reading. Please try again.');
+      showToast('Failed to save reading. Please try again.', 'error');
     } finally {
       setTrackerLoading(false);
     }
   };
 
+  const [dentalReadingToDelete, setDentalReadingToDelete] = useState<string | null>(null);
+
   // Delete tracker reading
-  const handleDeleteReading = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this reading? This action cannot be undone.')) return;
+  const confirmDeleteReading = async () => {
+    if (!dentalReadingToDelete) return;
+    const id = dentalReadingToDelete;
+    setDentalReadingToDelete(null);
     try {
       await HabitsService.deleteHabit(apiUrl, token, id);
       setSelectedHistoryItem(null);
+      showToast('Reading deleted successfully.', 'success');
       await loadHistory();
     } catch (err) {
       console.error('Failed to delete reading', err);
-      alert('Failed to delete reading. Please try again.');
+      showToast('Failed to delete reading. Please try again.', 'error');
     }
   };
 
@@ -1120,7 +1125,7 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
             <div className="flex gap-2.5 mt-4">
               <button
                 type="button"
-                onClick={() => handleDeleteReading(selectedHistoryItem.id)}
+                onClick={() => setDentalReadingToDelete(selectedHistoryItem.id)}
                 className="flex-1 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-xl font-bold text-[10px] transition-all flex items-center justify-center gap-1"
               >
                 <Trash2 className="h-3 w-3" /> Delete
@@ -1139,6 +1144,37 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
                 style={{ backgroundColor: '#1F4D4B' }}
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modern Delete Confirmation Modal */}
+      {dentalReadingToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-md animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 w-full max-w-sm border border-slate-150 dark:border-slate-800 shadow-2xl animate-scaleIn text-slate-800 dark:text-slate-100 text-center">
+            <div className="mx-auto w-12 h-12 bg-rose-50 dark:bg-rose-950/30 text-rose-500 rounded-2xl flex items-center justify-center mb-3">
+              <Trash2 className="h-6 w-6" />
+            </div>
+            <h3 className="text-base font-black text-slate-900 dark:text-slate-100 mb-1">Delete Reading?</h3>
+            <p className="text-xs text-slate-400 font-semibold leading-relaxed mb-5">
+              Are you sure you want to delete this stain reading? This action cannot be undone.
+            </p>
+            <div className="flex space-x-3">
+              <button
+                type="button"
+                onClick={() => setDentalReadingToDelete(null)}
+                className="flex-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-extrabold py-3 rounded-2xl transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteReading}
+                className="flex-1 bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold py-3 rounded-2xl transition-all shadow-md shadow-rose-600/20"
+              >
+                Yes, Delete
               </button>
             </div>
           </div>

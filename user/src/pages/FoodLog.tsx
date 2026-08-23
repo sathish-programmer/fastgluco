@@ -164,6 +164,10 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
 
   // Date states
   const [selectedViewDate, setSelectedViewDate] = useState<string>(getTodayLocalDateStr());
+  const [isCustomRange, setIsCustomRange] = useState<boolean>(false);
+  const [foodRangeStart, setFoodRangeStart] = useState<string>('');
+  const [foodRangeEnd, setFoodRangeEnd] = useState<string>('');
+  const [showFoodRangeModal, setShowFoodRangeModal] = useState<boolean>(false);
   const [logDate, setLogDate] = useState<string>(getTodayLocalDateStr());
   const [logTime, setLogTime] = useState<string>(getCurrentLocalTimeStr());
 
@@ -181,7 +185,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
 
   useEffect(() => {
     fetchLogs();
-  }, [token, selectedViewDate]);
+  }, [token, selectedViewDate, isCustomRange, foodRangeStart, foodRangeEnd]);
 
   useEffect(() => {
     const delaySearch = setTimeout(() => {
@@ -194,10 +198,19 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
   const fetchLogs = async () => {
     if (!token) return;
     try {
-      // Parse date components explicitly to avoid UTC-vs-local timezone issues
-      const [year, month, day] = selectedViewDate.split('-').map(Number);
-      const start = new Date(year, month - 1, day, 0, 0, 0, 0);
-      const end = new Date(year, month - 1, day, 23, 59, 59, 999);
+      let start: Date;
+      let end: Date;
+
+      if (isCustomRange && foodRangeStart && foodRangeEnd) {
+        const [sY, sM, sD] = foodRangeStart.split('-').map(Number);
+        const [eY, eM, eD] = foodRangeEnd.split('-').map(Number);
+        start = new Date(sY, sM - 1, sD, 0, 0, 0, 0);
+        end = new Date(eY, eM - 1, eD, 23, 59, 59, 999);
+      } else {
+        const [year, month, day] = selectedViewDate.split('-').map(Number);
+        start = new Date(year, month - 1, day, 0, 0, 0, 0);
+        end = new Date(year, month - 1, day, 23, 59, 59, 999);
+      }
 
       const response = await fetch(`${apiUrl}/food-logs?startDate=${start.toISOString()}&endDate=${end.toISOString()}`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -1365,7 +1378,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
               </div>
             </div>
             {/* Quick filters */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               {(() => {
                 const todayStr = getTodayLocalDateStr();
                 const yesterdayObj = new Date(); yesterdayObj.setDate(yesterdayObj.getDate() - 1);
@@ -1374,25 +1387,34 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                 const weekAgoStr = weekAgoObj.toISOString().split('T')[0];
 
                 const filters = [
-                  { label: 'Today', date: todayStr },
-                  { label: 'Yesterday', date: yesterdayStr },
-                  { label: '7 Days Ago', date: weekAgoStr },
+                  { label: 'Today', date: todayStr, custom: false },
+                  { label: 'Yesterday', date: yesterdayStr, custom: false },
+                  { label: '7 Days Ago', date: weekAgoStr, custom: false },
+                  { label: 'Custom Range', date: '', custom: true }
                 ];
 
-                return filters.map(({ label, date }) => {
-                  const isActive = selectedViewDate === date;
+                return filters.map(({ label, date, custom }) => {
+                  const isActive = custom ? isCustomRange : (!isCustomRange && selectedViewDate === date);
                   return (
                     <button
                       key={label}
                       type="button"
-                      onClick={() => setSelectedViewDate(date)}
-                      className={`px-3.5 py-1.5 rounded-xl text-[11px] font-extrabold border transition-all duration-200 active:scale-95 ${
+                      onClick={() => {
+                        if (custom) {
+                          setShowFoodRangeModal(true);
+                        } else {
+                          setIsCustomRange(false);
+                          setSelectedViewDate(date);
+                        }
+                      }}
+                      className={`px-3.5 py-1.5 rounded-xl text-[11px] font-extrabold border transition-all duration-200 active:scale-95 flex items-center gap-1 ${
                         isActive
                           ? 'bg-primary dark:bg-blue-600 text-white border-primary dark:border-blue-500 shadow-md shadow-primary/20 dark:shadow-blue-900/40'
                           : 'bg-white dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-primary/50 hover:text-primary dark:hover:text-slate-200'
                       }`}
                     >
-                      {label}
+                      {custom && <Calendar className="h-3 w-3 inline" />}
+                      <span>{label}</span>
                     </button>
                   );
                 });
@@ -1447,8 +1469,8 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 tracking-tight leading-tight">{log.name}</h4>
-                        <span className="text-[9px] text-slate-400 font-extrabold bg-slate-50 dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-100 dark:border-slate-700">
-                          {new Date(log.loggedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        <span className="text-[9px] text-slate-500 dark:text-slate-300 font-extrabold bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
+                          {new Date(log.loggedAt).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })} • {new Date(log.loggedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
                       <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mt-0.5">
@@ -2240,6 +2262,70 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* FOOD LOG CUSTOM DATE RANGE MODAL */}
+      {showFoodRangeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 w-full max-w-sm border border-slate-150 dark:border-slate-800 shadow-2xl animate-scaleIn text-slate-800 dark:text-slate-100">
+            <div className="flex items-center space-x-3 mb-2">
+              <div className="p-2.5 bg-primary/10 rounded-2xl text-primary">
+                <Calendar className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-slate-900 dark:text-slate-100">Filter Meal History Range</h3>
+                <p className="text-xs text-slate-400 font-semibold">Select start and end dates to view past logged meals.</p>
+              </div>
+            </div>
+
+            <div className="space-y-4 my-5">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                  Start Date (From)
+                </label>
+                <input
+                  type="date"
+                  value={foodRangeStart || '2025-03-26'}
+                  onChange={(e) => setFoodRangeStart(e.target.value)}
+                  className="w-full text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                  End Date (To)
+                </label>
+                <input
+                  type="date"
+                  value={foodRangeEnd || '2025-04-08'}
+                  onChange={(e) => setFoodRangeEnd(e.target.value)}
+                  className="w-full text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                />
+              </div>
+            </div>
+
+            <div className="flex space-x-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowFoodRangeModal(false)}
+                className="flex-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-extrabold py-3.5 rounded-2xl transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!foodRangeStart) setFoodRangeStart('2025-03-26');
+                  if (!foodRangeEnd) setFoodRangeEnd('2025-04-08');
+                  setIsCustomRange(true);
+                  setShowFoodRangeModal(false);
+                }}
+                className="flex-1 bg-primary hover:bg-primary-dark text-white text-xs font-extrabold py-3.5 rounded-2xl transition-all shadow-md shadow-primary/20"
+              >
+                Apply Filter
+              </button>
             </div>
           </div>
         </div>

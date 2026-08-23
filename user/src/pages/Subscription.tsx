@@ -177,11 +177,10 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
     fetchData();
   }, [apiUrl, token]);
 
-  const handleCancelAutoRenew = async () => {
-    if (!window.confirm('Are you sure you want to turn off auto-renewal? Your premium access will continue until the end of your billing cycle.')) {
-      return;
-    }
+  const [showCancelConfirmModal, setShowCancelConfirmModal] = useState<boolean>(false);
 
+  const confirmCancelAutoRenew = async () => {
+    setShowCancelConfirmModal(false);
     setActionLoading(true);
     setError(null);
     setSuccessMsg(null);
@@ -542,7 +541,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
             ) : (
               <div className="pt-2">
                 <button
-                  onClick={handleCancelAutoRenew}
+                  onClick={() => setShowCancelConfirmModal(true)}
                   disabled={actionLoading}
                   className="w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold py-2.5 rounded-xl transition-all"
                 >
@@ -559,6 +558,37 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
           <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
             Choose a premium tier to upload CGM reports, calculate insights, and receive spike alerts.
           </p>
+        </div>
+      )}
+
+      {/* Modern Cancel Auto-Renewal Modal */}
+      {showCancelConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-md animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 w-full max-w-sm border border-slate-150 dark:border-slate-800 shadow-2xl animate-scaleIn text-slate-800 dark:text-slate-100 text-center">
+            <div className="mx-auto w-12 h-12 bg-amber-50 dark:bg-amber-950/30 text-amber-500 rounded-2xl flex items-center justify-center mb-3">
+              <AlertTriangle className="h-6 w-6" />
+            </div>
+            <h3 className="text-base font-black text-slate-900 dark:text-slate-100 mb-1">Disable Auto-Renewal?</h3>
+            <p className="text-xs text-slate-400 font-semibold leading-relaxed mb-5">
+              Your premium access will remain fully active until the end of your current billing cycle.
+            </p>
+            <div className="flex space-x-3">
+              <button
+                type="button"
+                onClick={() => setShowCancelConfirmModal(false)}
+                className="flex-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-extrabold py-3 rounded-2xl transition-all"
+              >
+                Keep Active
+              </button>
+              <button
+                type="button"
+                onClick={confirmCancelAutoRenew}
+                className="flex-1 bg-amber-500 hover:bg-amber-600 text-white text-xs font-extrabold py-3 rounded-2xl transition-all shadow-md shadow-amber-500/20"
+              >
+                Turn Off
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
