@@ -264,23 +264,22 @@ export class ReportParserService {
           let startDate = new Date();
           let endDate = new Date();
 
-          // Extract Date Range dynamically (e.g., "26 Mar 2024 - 8 Apr 2024", "15 Jan 2023 - 28 Jan 2023", etc.)
-          const dateRangeRegex = /(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})\s*[-–—]\s*(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})/;
-          const rangeMatch = text.match(dateRangeRegex);
+          // 1st Priority: Extract Date Range directly inside the PDF document text/OCR
+          // e.g. "Selected dates: 26 Mar 2025 - 8 Apr 2025", "26 Mar 2025 – 8 Apr 2025", "26/03/2025 - 08/04/2025"
+          const explicitRangeRegex = /(?:Selected\s+dates:\s*)?(\d{1,2}\s+[A-Za-z]{3}\s+\d{4}|\d{1,2}[-/]\d{1,2}[-/]\d{4})\s*[-–—]\s*(\d{1,2}\s+[A-Za-z]{3}\s+\d{4}|\d{1,2}[-/]\d{1,2}[-/]\d{4})/i;
+          const explicitMatch = text.match(explicitRangeRegex);
 
-          // Extract date from filename e.g., "DocScanner Apr 9, 2025" or "DocScanner Apr 9 2025"
-          const fileNameDateMatch = path.basename(filePath).match(/([A-Za-z]{3})\s+(\d{1,2}),?\s+(\d{4})/i);
+          // 2nd Priority: Look for "Generated: 09/04/2025" or "09/04/2025" inside PDF document
+          const generatedDateRegex = /(?:Generated:\s*)?(\d{1,2}[-/]\d{1,2}[-/]\d{4})/i;
+          const generatedMatch = text.match(generatedDateRegex);
 
-          if (rangeMatch) {
-            startDate = new Date(`${rangeMatch[1]} ${rangeMatch[2]} ${rangeMatch[3]}`);
-            endDate = new Date(`${rangeMatch[4]} ${rangeMatch[5]} ${rangeMatch[6]}`);
-          } else if (dateRangeMatch && dateRangeMatch[1] && dateRangeMatch[2]) {
-            startDate = ReportParserService.parseDateResilient(dateRangeMatch[1]);
-            endDate = ReportParserService.parseDateResilient(dateRangeMatch[2]);
-          } else if (fileNameDateMatch) {
-            const parsedEnd = new Date(`${fileNameDateMatch[2]} ${fileNameDateMatch[1]} ${fileNameDateMatch[3]}`);
-            if (!isNaN(parsedEnd.getTime())) {
-              endDate = parsedEnd;
+          if (explicitMatch && explicitMatch[1] && explicitMatch[2]) {
+            startDate = ReportParserService.parseDateResilient(explicitMatch[1]);
+            endDate = ReportParserService.parseDateResilient(explicitMatch[2]);
+          } else if (generatedMatch && generatedMatch[1]) {
+            const parsedGen = ReportParserService.parseDateResilient(generatedMatch[1]);
+            if (!isNaN(parsedGen.getTime())) {
+              endDate = parsedGen;
               endDate.setHours(23, 59, 59, 999);
               startDate = new Date(endDate.getTime() - 13 * 24 * 60 * 60 * 1000);
               startDate.setHours(0, 0, 0, 0);
