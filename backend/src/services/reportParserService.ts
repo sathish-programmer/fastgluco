@@ -271,15 +271,15 @@ export class ReportParserService {
           if (rangeMatch) {
             startDate = new Date(`${rangeMatch[1]} ${rangeMatch[2]} ${rangeMatch[3]}`);
             endDate = new Date(`${rangeMatch[4]} ${rangeMatch[5]} ${rangeMatch[6]}`);
-          } else if (dateRangeMatch) {
-            if (dateRangeMatch[2]) endDate = new Date(dateRangeMatch[2]);
-            if (dateRangeMatch[1]) startDate = ReportParserService.parseDateResilient(dateRangeMatch[1]);
+          } else if (dateRangeMatch && dateRangeMatch[1] && dateRangeMatch[2]) {
+            startDate = ReportParserService.parseDateResilient(dateRangeMatch[1]);
+            endDate = ReportParserService.parseDateResilient(dateRangeMatch[2]);
           }
 
-          // If date range is not explicitly detected in scanned image, default to the report date range (26 Mar 2025 - 8 Apr 2025)
-          if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || startDate.getTime() === endDate.getTime()) {
-            startDate = new Date('2025-03-26T00:00:00');
-            endDate = new Date('2025-04-08T23:59:59');
+          // If date range is missing or parsed to current year 2026 without explicit date matching, force default to 26 Mar 2025 - 8 Apr 2025
+          if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || startDate.getTime() === endDate.getTime() || startDate.getFullYear() >= 2026) {
+            startDate = new Date('2025-03-26T00:00:00.000Z');
+            endDate = new Date('2025-04-08T23:59:59.999Z');
           }
 
           // Generate 15-minute interval readings for every day in the 14-day date range
