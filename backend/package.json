@@ -29,8 +29,10 @@
     "node-cron": "^4.2.1",
     "nodemailer": "^8.0.11",
     "pdf-parse": "^1.1.1",
+    "pdf2image": "^1.2.3",
     "pdfkit": "^0.19.1",
-    "razorpay": "^2.9.6"
+    "razorpay": "^2.9.6",
+    "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

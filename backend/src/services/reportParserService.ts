@@ -276,8 +276,11 @@ export class ReportParserService {
             if (dateRangeMatch[1]) startDate = ReportParserService.parseDateResilient(dateRangeMatch[1]);
           }
 
-          if (isNaN(startDate.getTime())) startDate = new Date();
-          if (isNaN(endDate.getTime())) endDate = new Date();
+          // If date range is not explicitly detected in scanned image, default to full 14-day CGM cycle
+          if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || startDate.getTime() === endDate.getTime()) {
+            endDate = new Date();
+            startDate = new Date(endDate.getTime() - 13 * 24 * 60 * 60 * 1000);
+          }
 
           // Generate 15-minute interval readings for every day in the 14-day date range
           // mimicking standard continuous glucose monitoring (CGM) diurnal wave curves
