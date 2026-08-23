@@ -208,12 +208,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
           const latest = data[data.length - 1];
           setCurrentGlucose(latest.value);
 
-          // If current selectedDate has no readings, update selectedDate to latest reading's date
-          if (latest.timestamp) {
-            const latestDateStr = new Date(latest.timestamp).toISOString().split('T')[0];
-            setSelectedDate(latestDateStr);
-          }
-
           // Calculate actual Time in Range (70 to 140 mg/dL is standard)
           const inRange = data.filter((r: any) => r.value >= 70 && r.value <= 140).length;
           setTimeInRange(Math.round((inRange / data.length) * 100));
@@ -221,6 +215,23 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
           setGlucoseReadings([]);
           setCurrentGlucose(null);
           setTimeInRange(0);
+
+          // If no readings on currently selected date, auto-fetch user's latest available reading date
+          if (dateRange === 'day' && selectedDate === new Date().toISOString().split('T')[0]) {
+            fetch(`${apiUrl}/glucose?limit=1`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            })
+              .then(res => res.ok ? res.json() : [])
+              .then(latestReadings => {
+                if (latestReadings && latestReadings.length > 0 && latestReadings[0].timestamp) {
+                  const latestDateStr = new Date(latestReadings[0].timestamp).toISOString().split('T')[0];
+                  if (latestDateStr !== selectedDate) {
+                    setSelectedDate(latestDateStr);
+                  }
+                }
+              })
+              .catch(err => console.error('Error auto-detecting latest reading date:', err));
+          }
         }
       }
 
