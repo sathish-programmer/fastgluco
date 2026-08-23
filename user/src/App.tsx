@@ -35,6 +35,7 @@ import {
 import { GlobalAICoachPopup } from './components/GlobalAICoachPopup';
 import { NotificationBell } from './components/NotificationBell';
 import { WelcomeOnboardingModal } from './components/WelcomeOnboardingModal';
+import { TermsAndConditionsAcceptancePage, CURRENT_TERMS_VERSION } from './components/TermsAndConditionsAcceptancePage';
 
 import { DeleteAccount } from './pages/DeleteAccount';
 
@@ -323,6 +324,11 @@ const MainAppContent: React.FC = () => {
 
   if (isAuthenticated && !user?.name) {
     return <Register onNavigateToLogin={logout} />;
+  }
+
+  const hasAcceptedTerms = user?.termsAccepted === true && user?.acceptedTermsVersion === CURRENT_TERMS_VERSION;
+  if (isAuthenticated && !hasAcceptedTerms) {
+    return <TermsAndConditionsAcceptancePage />;
   }
 
   if (isSubscribed === false && branding.enableSubscriptions !== false) {

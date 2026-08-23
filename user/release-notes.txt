@@ -1,6 +1,14 @@
 <en-US>
-Fix UI bugs
+- Redesigned modular health dashboard with interactive focus cards.
+- Added webcam meal scanner support & retake options.
+- Improved dark mode theme, sticky headers, and UI responsiveness.
+- Enhanced lab diagnostic tracking and stain review flow.
+- General UI bug fixes and performance optimizations.
 </en-US>
 <en-IN>
-Fix UI bugs
+- Redesigned modular health dashboard with interactive focus cards.
+- Added webcam meal scanner support & retake options.
+- Improved dark mode theme, sticky headers, and UI responsiveness.
+- Enhanced lab diagnostic tracking and stain review flow.
+- General UI bug fixes and performance optimizations.
 </en-IN>

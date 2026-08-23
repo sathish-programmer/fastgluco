@@ -8,6 +8,7 @@ import admin from '../config/firebaseAdmin';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_12345!';
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'fallback_refresh_secret_key_67890!';
+export const CURRENT_TERMS_VERSION = '1.0';
 
 import { PaymentGatewayConfig } from '../models/PaymentGatewayConfig';
 
@@ -295,7 +296,10 @@ export class AuthController {
           spikeThreshold: user.spikeThreshold,
           dailyCalorieTarget: user.dailyCalorieTarget,
           cancerJourney: user.cancerJourney,
-          cancerDisclaimerAccepted: user.cancerDisclaimerAccepted
+          cancerDisclaimerAccepted: user.cancerDisclaimerAccepted,
+          termsAccepted: user.termsAccepted || false,
+          termsAcceptedAt: user.termsAcceptedAt,
+          acceptedTermsVersion: user.acceptedTermsVersion || null
         }
       });
     } catch (error: any) {
@@ -370,7 +374,10 @@ export class AuthController {
           spikeThreshold: user.spikeThreshold,
           dailyCalorieTarget: user.dailyCalorieTarget,
           cancerJourney: user.cancerJourney,
-          cancerDisclaimerAccepted: user.cancerDisclaimerAccepted
+          cancerDisclaimerAccepted: user.cancerDisclaimerAccepted,
+          termsAccepted: user.termsAccepted || false,
+          termsAcceptedAt: user.termsAcceptedAt,
+          acceptedTermsVersion: user.acceptedTermsVersion || null
         }
       });
     } catch (error: any) {
@@ -378,6 +385,72 @@ export class AuthController {
         return res.status(400).json({ message: 'This email address is already in use by another account.' });
       }
       return res.status(500).json({ message: error.message || 'An error occurred during onboarding.' });
+    }
+  }
+
+  /**
+   * POST /users/accept-terms
+   * Authenticated user accepts Terms & Conditions
+   */
+  public static async acceptTerms(req: Request, res: Response) {
+    try {
+      const authReq = req as any;
+      const userId = authReq.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized. User ID not found in token.' });
+      }
+
+      const { termsVersion } = req.body;
+      if (!termsVersion) {
+        return res.status(400).json({ message: 'termsVersion is required.' });
+      }
+
+      if (termsVersion !== CURRENT_TERMS_VERSION) {
+        return res.status(400).json({
+          message: `Submitted terms version (${termsVersion}) does not match current required version (${CURRENT_TERMS_VERSION}).`
+        });
+      }
+
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found.' });
+      }
+
+      const now = new Date();
+      user.termsAccepted = true;
+      user.termsAcceptedAt = now;
+      user.acceptedTermsVersion = CURRENT_TERMS_VERSION;
+
+      await user.save();
+
+      return res.status(200).json({
+        success: true,
+        message: 'Terms & Conditions accepted successfully.',
+        termsAccepted: true,
+        termsAcceptedAt: user.termsAcceptedAt,
+        acceptedTermsVersion: user.acceptedTermsVersion,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          mobileNumber: user.mobileNumber,
+          gender: user.gender,
+          age: user.age,
+          height: user.height,
+          weight: user.weight,
+          activityLevel: user.activityLevel,
+          goal: user.goal,
+          spikeThreshold: user.spikeThreshold,
+          dailyCalorieTarget: user.dailyCalorieTarget,
+          cancerJourney: user.cancerJourney,
+          cancerDisclaimerAccepted: user.cancerDisclaimerAccepted,
+          termsAccepted: user.termsAccepted,
+          termsAcceptedAt: user.termsAcceptedAt,
+          acceptedTermsVersion: user.acceptedTermsVersion
+        }
+      });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message || 'An error occurred while saving terms acceptance.' });
     }
   }
 

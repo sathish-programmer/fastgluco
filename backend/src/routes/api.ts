@@ -258,6 +258,7 @@ router.get('/subscriptions/invoices/:id/download', SubscriptionController.downlo
 // 2. PATIENT PROTECTED ENDPOINTS (JWT required)
 // ==========================================
 router.use('/users', authenticateToken, requireRole(['User']));
+router.post('/users/accept-terms', AuthController.acceptTerms);
 router.get('/users/profile', ProfileController.getProfile);
 router.put('/users/profile', ProfileController.updateProfile);
 router.delete('/users/profile', ProfileController.deleteOwnAccount);

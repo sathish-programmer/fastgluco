@@ -22,6 +22,9 @@ export interface UserProfile {
   cancerJourney?: 'PREVENTION' | 'TREATMENT' | 'SECONDARY_PREVENTION';
   cancerDisclaimerAccepted?: boolean;
   cancerDisclaimerAcceptedAt?: string;
+  termsAccepted?: boolean;
+  termsAcceptedAt?: string;
+  acceptedTermsVersion?: string;
   pendingProfileEdits?: Partial<UserProfile>;
   addressLine1?: string;
   addressCity?: string;
@@ -54,6 +57,7 @@ interface AuthContextType {
   logout: () => void;
   updateProfile: (profileUpdates: Partial<UserProfile>) => Promise<boolean>;
   requestProfileUpdate: (profileUpdates: Partial<UserProfile>) => Promise<boolean>;
+  acceptTerms: (termsVersion: string) => Promise<boolean>;
   clearError: () => void;
   apiUrl: string;
   branding: AppBranding;
@@ -302,6 +306,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const acceptTerms = async (termsVersion: string): Promise<boolean> => {
+    if (!token) {
+      setError('Authentication token missing.');
+      return false;
+    }
+    setError(null);
+    try {
+      const response = await fetch(`${apiUrl}/users/accept-terms`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ termsVersion })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to accept terms & conditions.');
+      }
+
+      if (data.user) {
+        setUser({ ...data.user, id: data.user._id || data.user.id });
+      } else if (user) {
+        setUser({
+          ...user,
+          termsAccepted: true,
+          termsAcceptedAt: data.termsAcceptedAt || new Date().toISOString(),
+          acceptedTermsVersion: termsVersion
+        });
+      }
+      return true;
+    } catch (err: any) {
+      setError(err.message || 'Failed to accept terms & conditions.');
+      return false;
+    }
+  };
+
   const clearError = () => setError(null);
 
   const isAuthenticated = !!token;
@@ -319,6 +361,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logout,
         updateProfile,
         requestProfileUpdate,
+        acceptTerms,
         clearError,
         apiUrl,
         branding,

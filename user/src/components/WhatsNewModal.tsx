@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, X, ChevronRight, Wind, Droplets, Dna, ShoppingBag, Heart } from 'lucide-react';
+import { Sparkles, X, ChevronRight, Wind, Droplets, Dna, ShoppingBag, Heart, LayoutDashboard, Camera } from 'lucide-react';
 
 export const LATEST_RELEASE_VERSION = 'v4.5.0';
 
@@ -18,6 +18,22 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
   if (!isOpen) return null;
 
   const features = [
+    {
+      key: 'DASHBOARD',
+      icon: <LayoutDashboard className="h-6 w-6 text-indigo-500" />,
+      bg: 'bg-indigo-500/10 border-indigo-500/20',
+      title: '📊 Modular Dashboard & Focus Cards',
+      description: 'Interactive health focus cards, damage vs. repair metrics, and streamlined action modals.',
+      actionLabel: 'View Dashboard'
+    },
+    {
+      key: 'CAMERA',
+      icon: <Camera className="h-6 w-6 text-amber-500" />,
+      bg: 'bg-amber-500/10 border-amber-500/20',
+      title: '📷 Webcam & Smart Meal Scanner',
+      description: 'Webcam photo capture, improved camera stability, and image retake controls for meal logs.',
+      actionLabel: 'Scan Meal'
+    },
     {
       key: 'ENVIRONMENT',
       icon: <Wind className="h-6 w-6 text-sky-500" />,

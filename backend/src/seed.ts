@@ -19,6 +19,7 @@ import { Coupon } from './models/Coupon';
 import { FAQ } from './models/FAQ';
 import { LegalDocument } from './models/LegalDocument';
 import { seedFoodLibrary } from './seedFoodLibrary';
+import { OFFICIAL_TERMS_HTML } from './updateTermsDoc';
 
 // Removed Open Food Facts API fetching in favor of comprehensive local seed data.
 
@@ -456,6 +457,14 @@ By continuing to use this application, you confirm that you have read, understoo
       `
     });
     console.log('Seeded general public disclaimer document.');
+
+    // 8. Seed TermsOfService LegalDocument
+    await LegalDocument.findOneAndUpdate(
+      { type: 'TermsOfService' },
+      { type: 'TermsOfService', content: OFFICIAL_TERMS_HTML },
+      { upsert: true, new: true }
+    );
+    console.log('Seeded TermsOfService legal document.');
 
     console.log('Seeding process completed successfully!');
     process.exit(0);

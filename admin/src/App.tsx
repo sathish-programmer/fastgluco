@@ -503,7 +503,7 @@ const AdminPanelContent: React.FC = () => {
       if (activeView === 'tickets') fetchTickets();
       if (activeView === 'plans') fetchPlans();
       if (activeView === 'coupons') fetchCoupons();
-      if (activeView === 'legal') fetchLegalDocuments();
+      if (activeView === 'legal' || activeView === 'app-user-terms') fetchLegalDocuments();
       if (activeView === 'healthInsights') fetchHealthInsights();
       if (activeView === 'founders') fetchFounders();
       if (activeView === 'payments') {
@@ -2482,6 +2482,14 @@ const AdminPanelContent: React.FC = () => {
                       }`}
                     >
                       Legal Docs
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('app-user-terms'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'app-user-terms' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      App User Terms
                     </button>
                   </div>
                 )}
@@ -6879,6 +6887,41 @@ const AdminPanelContent: React.FC = () => {
                   value={termsOfService}
                   onChange={setTermsOfService}
                   placeholder="Enter Terms of Service content..."
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* VIEW: APP USER TERMS & CONDITIONS */}
+        {activeView === 'app-user-terms' && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-bold text-slate-800">App User Terms & Conditions</h2>
+              <p className="text-xs text-slate-400 font-semibold mt-0.5">Manage the Master Disclaimer, Privacy Notice & Terms of Use presented to application users during mandatory onboarding.</p>
+            </div>
+
+            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-soft space-y-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800">Master Disclaimer, Privacy Notice & Terms Content</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">Changes saved here will immediately reflect on the user mobile and web Terms Acceptance page.</p>
+                </div>
+                <button
+                  onClick={() => handleSaveLegal('TermsOfService', termsOfService)}
+                  disabled={legalSaving}
+                  className="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded-xl text-xs flex items-center space-x-1.5 shadow-soft transition-all"
+                >
+                  <Save className="h-4 w-4" />
+                  <span>{legalSaving ? 'Saving...' : 'Save App User Terms'}</span>
+                </button>
+              </div>
+              <div className="bg-white [&_.ql-container]:rounded-b-2xl [&_.ql-toolbar]:rounded-t-2xl [&_.ql-editor]:min-h-[350px]">
+                <ReactQuill
+                  theme="snow"
+                  value={termsOfService}
+                  onChange={setTermsOfService}
+                  placeholder="Enter complete Master Disclaimer, Privacy Notice & Terms of Use..."
                 />
               </div>
             </div>

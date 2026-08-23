@@ -29,6 +29,9 @@ export interface IUser extends Document {
   cancerJourney?: 'PREVENTION' | 'TREATMENT' | 'SECONDARY_PREVENTION';
   cancerDisclaimerAccepted?: boolean;
   cancerDisclaimerAcceptedAt?: Date;
+  termsAccepted?: boolean;
+  termsAcceptedAt?: Date;
+  acceptedTermsVersion?: string;
   pendingProfileEdits?: any;
   addressLine1?: string;
   addressCity?: string;
@@ -74,6 +77,9 @@ const userSchema = new Schema<IUser>(
     cancerJourney: { type: String, enum: ['PREVENTION', 'TREATMENT', 'SECONDARY_PREVENTION'], default: 'PREVENTION' },
     cancerDisclaimerAccepted: { type: Boolean, default: false },
     cancerDisclaimerAcceptedAt: { type: Date },
+    termsAccepted: { type: Boolean, default: false },
+    termsAcceptedAt: { type: Date, default: null },
+    acceptedTermsVersion: { type: String, default: null },
     pendingProfileEdits: { type: Schema.Types.Mixed, default: null },
     addressLine1: { type: String, default: '' },
     addressCity: { type: String, default: '' },
