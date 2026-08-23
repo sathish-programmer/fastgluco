@@ -52,46 +52,53 @@ export class ReportController {
 
       await report.save();
 
-      // Process file synchronously or background. We'll do it synchronously here for quick client updates.
       const filePath = file.path;
-      let parseResult;
 
       if (fileType === 'csv') {
-        parseResult = await ReportParserService.parseCSV(filePath, userId!, report.id);
-      } else {
-        parseResult = await ReportParserService.parsePDF(filePath, userId!, report.id);
-      }
-
-      if (parseResult.errorMessage && parseResult.readingsCount === 0) {
-        report.status = 'Failed';
-        report.errorMessage = parseResult.errorMessage;
+        const parseResult = await ReportParserService.parseCSV(filePath, userId!, report.id);
+        if (parseResult.errorMessage && parseResult.readingsCount === 0) {
+          report.status = 'Failed';
+          report.errorMessage = parseResult.errorMessage;
+          await report.save();
+          return res.status(422).json({ message: 'Report upload failed during processing.', error: parseResult.errorMessage, report });
+        }
+        report.status = 'Processed';
+        report.parsedReadingsCount = parseResult.readingsCount;
+        if (parseResult.errorMessage) report.errorMessage = parseResult.errorMessage;
         await report.save();
-        return res.status(422).json({
-          message: 'Report upload failed during processing.',
-          error: parseResult.errorMessage,
+
+        try { await GlucoseService.analyzeAllUserFoodLogs(userId!); } catch (_) {}
+        return res.status(200).json({ message: 'Report uploaded and parsed successfully.', readingsCount: parseResult.readingsCount, report });
+      } else {
+        // Return HTTP 200 OK immediately so Nginx/Cloudflare never returns a 504 Gateway Time-out
+        res.status(200).json({
+          message: 'Report uploaded successfully. PDF parsing is running in the background.',
           report
         });
-      }
 
-      report.status = 'Processed';
-      report.parsedReadingsCount = parseResult.readingsCount;
-      if (parseResult.errorMessage) {
-        report.errorMessage = parseResult.errorMessage; // warning indicators if any
+        // Run PDF OCR parsing asynchronously across all pages in the background
+        setImmediate(async () => {
+          try {
+            const parseResult = await ReportParserService.parsePDF(filePath, userId!, report.id);
+            const bgReport = await CGMReport.findById(report.id);
+            if (bgReport) {
+              if (parseResult.errorMessage && parseResult.readingsCount === 0) {
+                bgReport.status = 'Failed';
+                bgReport.errorMessage = parseResult.errorMessage;
+              } else {
+                bgReport.status = 'Processed';
+                bgReport.parsedReadingsCount = parseResult.readingsCount;
+                if (parseResult.errorMessage) bgReport.errorMessage = parseResult.errorMessage;
+              }
+              await bgReport.save();
+            }
+            await GlucoseService.analyzeAllUserFoodLogs(userId!);
+          } catch (bgErr) {
+            console.error('Background PDF parsing error:', bgErr);
+          }
+        });
+        return;
       }
-      await report.save();
-
-      // Automatically run meal spike matching for all logs since new CGM readings are populated
-      try {
-        await GlucoseService.analyzeAllUserFoodLogs(userId!);
-      } catch (syncErr) {
-        console.error('Post-upload meal synchronization warning:', syncErr);
-      }
-
-      return res.status(200).json({
-        message: 'Report uploaded and parsed successfully.',
-        readingsCount: parseResult.readingsCount,
-        report
-      });
     } catch (error: any) {
       return res.status(500).json({ message: error.message || 'Error processing report upload.' });
     }
