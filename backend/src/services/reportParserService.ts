@@ -202,9 +202,23 @@ export class ReportParserService {
             const { execSync } = require('child_process');
             const tmpPng = `/tmp/pdf_ocr_${Date.now()}.png`;
 
-            // Render PDF to PNG using pdftoppm, sips, or pdf2image
+            // Clean up any old leftover OCR files in /tmp first
             try {
-              execSync(`pdftoppm -png -r 150 "${filePath}" /tmp/pdf_ocr_page 2>/dev/null || sips -s format png "${filePath}" --out "${tmpPng}" 2>/dev/null`, { timeout: 10000 });
+              fs.readdirSync('/tmp')
+                .filter(f => f.startsWith('pdf_ocr_page-') && f.endsWith('.png'))
+                .forEach(f => { try { fs.unlinkSync(`/tmp/${f}`); } catch (_) {} });
+            } catch (_) {}
+
+            // Render ONLY the summary pages (last 3 pages) to PNG using pdftoppm
+            let numPages = 1;
+            try {
+              const pdfData = await pdfParse(dataBuffer);
+              numPages = pdfData.numpages || 1;
+            } catch (_) {}
+            const firstPage = Math.max(1, numPages - 2);
+
+            try {
+              execSync(`pdftoppm -f ${firstPage} -l ${numPages} -png -r 150 "${filePath}" /tmp/pdf_ocr_page 2>/dev/null || sips -s format png "${filePath}" --out "${tmpPng}" 2>/dev/null`, { timeout: 10000 });
             } catch (_) {}
 
             const possiblePngs = fs.readdirSync('/tmp')
@@ -215,13 +229,28 @@ export class ReportParserService {
             const Tesseract = require('tesseract.js');
 
             if (possiblePngs.length > 0) {
+              // Process in reverse order (Page 13, 12, 11 contain LibreView summary snapshot & average glucose)
+              possiblePngs.reverse();
               for (const pngFile of possiblePngs) {
-                const ocrResult = await Tesseract.recognize(pngFile, 'eng', { logger: () => {} });
-                if (ocrResult?.data?.text) {
-                  text += '\n' + ocrResult.data.text;
-                }
-                try { fs.unlinkSync(pngFile); } catch (_) {}
+                try {
+                  const ocrResult = await Tesseract.recognize(pngFile, 'eng', { logger: () => {} });
+                  if (ocrResult?.data?.text) {
+                    text += '\n' + ocrResult.data.text;
+                    // Early exit if we have found both average glucose and date range
+                    const currentAvg = text.match(/Average\s+Glucose\s*(\d{2,3})/i) || text.match(/(\d{2,3})\s*mg\/dL/i);
+                    const currentRange = text.match(/(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})\s*[-–—]\s*(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})/i);
+                    if (currentAvg && currentRange) {
+                      try { fs.unlinkSync(pngFile); } catch (_) {}
+                      break;
+                    }
+                  }
+                  try { fs.unlinkSync(pngFile); } catch (_) {}
+                } catch (_) {}
               }
+              // Clean up any remaining temp pngs
+              fs.readdirSync('/tmp')
+                .filter(f => f.startsWith('pdf_ocr_page-') && f.endsWith('.png'))
+                .forEach(f => { try { fs.unlinkSync(`/tmp/${f}`); } catch (_) {} });
             } else {
               // Try pdf2image fallback if CLI conversion tools were not installed
               try {
