@@ -164,6 +164,9 @@ export class ReportController {
       report.errorMessage = undefined;
       await report.save();
 
+      // Clear previous readings associated with this report ID before re-parsing
+      await GlucoseReading.deleteMany({ reportId: id });
+
       let parseResult;
       if (report.fileType === 'csv') {
         parseResult = await ReportParserService.parseCSV(filePath, userId!, report.id);
@@ -208,6 +211,9 @@ export class ReportController {
         return res.status(404).json({ message: 'Report not found.' });
       }
 
+      // Delete all glucose readings associated with this report
+      await GlucoseReading.deleteMany({ reportId: id });
+
       // Delete associated file from disk if it exists
       try {
         const rootDir = process.cwd();
@@ -219,7 +225,7 @@ export class ReportController {
       } catch (_) { /* ignore file deletion errors */ }
 
       await CGMReport.deleteOne({ _id: id });
-      return res.status(200).json({ message: 'Report deleted successfully.' });
+      return res.status(200).json({ message: 'Report and associated readings deleted successfully.' });
     } catch (error: any) {
       return res.status(500).json({ message: error.message || 'Error deleting report.' });
     }
