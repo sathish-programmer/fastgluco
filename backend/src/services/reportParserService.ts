@@ -207,11 +207,10 @@ export class ReportParserService {
               execSync(`pdftoppm -png -r 150 "${filePath}" /tmp/pdf_ocr_page 2>/dev/null || sips -s format png "${filePath}" --out "${tmpPng}" 2>/dev/null`, { timeout: 10000 });
             } catch (_) {}
 
-            const possiblePngs = [
-              `/tmp/pdf_ocr_page-1.png`,
-              `/tmp/pdf_ocr_page-01.png`,
-              tmpPng
-            ].filter(p => fs.existsSync(p));
+            const possiblePngs = fs.readdirSync('/tmp')
+              .filter(f => f.startsWith('pdf_ocr_page-') && f.endsWith('.png'))
+              .map(f => `/tmp/${f}`);
+            if (fs.existsSync(tmpPng)) possiblePngs.push(tmpPng);
 
             const Tesseract = require('tesseract.js');
 
