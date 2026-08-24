@@ -88,6 +88,9 @@ export class ReportController {
               } else {
                 bgReport.status = 'Processed';
                 bgReport.parsedReadingsCount = parseResult.readingsCount;
+                if (parseResult.pdfSummaryAverageGlucose) bgReport.pdfSummaryAverageGlucose = parseResult.pdfSummaryAverageGlucose;
+                if (parseResult.pdfSummaryTimeInRange) bgReport.pdfSummaryTimeInRange = parseResult.pdfSummaryTimeInRange;
+                if (parseResult.pdfSummaryDateRange) bgReport.pdfSummaryDateRange = parseResult.pdfSummaryDateRange;
                 if (parseResult.errorMessage) bgReport.errorMessage = parseResult.errorMessage;
               }
               await bgReport.save();

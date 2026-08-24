@@ -7,6 +7,10 @@ export interface ICGMReport extends Document {
   fileType: 'csv' | 'pdf';
   status: 'Uploaded' | 'Processing' | 'Processed' | 'Failed';
   parsedReadingsCount: number;
+  pdfSummaryAverageGlucose?: number;
+  pdfSummaryTimeInRange?: number;
+  pdfSummaryGmi?: number;
+  pdfSummaryDateRange?: { startDate?: Date; endDate?: Date };
   errorMessage?: string;
   isDeleted: boolean;
   createdAt: Date;
@@ -25,6 +29,13 @@ const cgmReportSchema = new Schema<ICGMReport>(
       default: 'Uploaded' 
     },
     parsedReadingsCount: { type: Number, default: 0 },
+    pdfSummaryAverageGlucose: { type: Number },
+    pdfSummaryTimeInRange: { type: Number },
+    pdfSummaryGmi: { type: Number },
+    pdfSummaryDateRange: {
+      startDate: { type: Date },
+      endDate: { type: Date }
+    },
     errorMessage: { type: String },
     isDeleted: { type: Boolean, default: false }
   },

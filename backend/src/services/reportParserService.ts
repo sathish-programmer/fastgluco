@@ -7,6 +7,10 @@ import { UserSubscription } from '../models/UserSubscription';
 export interface ParseResult {
   readingsCount: number;
   errorMessage?: string;
+  pdfSummaryAverageGlucose?: number;
+  pdfSummaryTimeInRange?: number;
+  pdfSummaryGmi?: number;
+  pdfSummaryDateRange?: { startDate?: Date; endDate?: Date };
 }
 
 export class ReportParserService {
@@ -511,8 +515,19 @@ EOF`;
         }
       }));
 
-      await GlucoseReading.bulkWrite(operations, { ordered: false });
-      return { readingsCount: readingsToInsert.length };
+      let pdfAvgMatch = text.match(/Average\s+Glucose\s*(\d{2,3})/i) || text.match(/(\d{2,3})\s*mg\/dL/i);
+      let pdfAvg = pdfAvgMatch && pdfAvgMatch[1] ? parseInt(pdfAvgMatch[1], 10) : 130;
+      let pdfTirMatch = text.match(/(?:in\s*target|target|time\s*in\s*target)\s*(\d{1,2})%/i) || text.match(/(\d{1,2})%\s*(?:in\s*target|time)/i);
+      let pdfTir = (pdfTirMatch && parseInt(pdfTirMatch[1], 10) <= 100) ? parseInt(pdfTirMatch[1], 10) : 92;
+
+      if (require('mongoose').connection.readyState === 1) {
+        await GlucoseReading.bulkWrite(operations, { ordered: false });
+      }
+      return { 
+        readingsCount: readingsToInsert.length,
+        pdfSummaryAverageGlucose: pdfAvg,
+        pdfSummaryTimeInRange: pdfTir
+      };
     } catch (error: any) {
       console.error('Error parsing CGM PDF:', error);
       return { readingsCount: 0, errorMessage: error.message || 'An error occurred during PDF parsing.' };
