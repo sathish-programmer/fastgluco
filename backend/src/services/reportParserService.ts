@@ -513,7 +513,14 @@ EOF`;
                       timestampSource: 'Estimated_From_Daily_Chart_Sequence',
                       rawOcrIndex: i,
                       totalDayOcrCount: totalNums,
-                      extractionMethod: 'LibreView_PDF_OCR_Daily_Log'
+                      extractionMethod: 'LibreView_PDF_OCR_Daily_Log',
+                      classification: 'Patient_Glucose_Reading',
+                      boundingBox: {
+                        x: parseFloat((0.240 + (i / totalNums) * 0.610).toFixed(3)),
+                        y: 0.550,
+                        width: 0.025,
+                        height: 0.009
+                      }
                     }
                   });
                 }
