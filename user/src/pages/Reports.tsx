@@ -91,6 +91,11 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
       if (response.ok) {
         const data = await response.json();
         setHistory(data);
+        if (Array.isArray(data) && data.length > 0) {
+          localStorage.setItem('mito_has_cgm_reports', 'true');
+        } else {
+          localStorage.removeItem('mito_has_cgm_reports');
+        }
         setShowUpgradePrompt(false);
       }
     } catch (err) {

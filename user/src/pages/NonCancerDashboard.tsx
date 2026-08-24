@@ -100,6 +100,10 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
   const [showFastingDisclaimer, setShowFastingDisclaimer] = useState<boolean>(false);
   const [fastingStep, setFastingStep] = useState<number>(1);
 
+  const [hasCGMData, setHasCGMData] = useState<boolean>(() => {
+    return localStorage.getItem('mito_has_cgm_reports') === 'true';
+  });
+
   const [showTugOfWar, setShowTugOfWarState] = useState<boolean>(() => {
     return localStorage.getItem('mito_show_cgm_dashboard') !== 'true';
   });
@@ -122,6 +126,27 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
         checkHealthDanger(logs);
       } catch (err) {
         console.error('Failed to load habits', err);
+      }
+
+      // Fetch CGM reports to check if user has uploaded reports
+      if (token) {
+        try {
+          const reportsRes = await fetch(`${apiUrl}/reports`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (reportsRes.ok) {
+            const reports = await reportsRes.json();
+            const hasUploaded = Array.isArray(reports) && reports.length > 0;
+            setHasCGMData(hasUploaded);
+            if (hasUploaded) {
+              localStorage.setItem('mito_has_cgm_reports', 'true');
+            } else {
+              localStorage.removeItem('mito_has_cgm_reports');
+            }
+          }
+        } catch (e) {
+          console.error('Failed to load CGM reports for focus card', e);
+        }
       }
 
       // Fetch upcoming confirmed appointments
@@ -670,7 +695,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
         <TodaysFocusCard
           activeMode={activeMode as any}
           habits={habits}
-          hasCGMData={false}
+          hasCGMData={hasCGMData}
           upcomingAppt={upcomingAppt}
           onTakeAction={(actionKey) => handleActionKey(actionKey)}
         />
