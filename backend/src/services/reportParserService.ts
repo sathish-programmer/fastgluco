@@ -180,7 +180,12 @@ export class ReportParserService {
                 reportId,
                 value: glucoseValue,
                 timestamp,
-                source: 'CGM'
+                source: 'CGM',
+                isTimestampEstimated: false,
+                isExtractedValue: true,
+                metadata: {
+                  timestampSource: 'Exact_Extracted_Timestamp'
+                }
               });
             }
           }
@@ -468,7 +473,15 @@ EOF`;
                     reportId,
                     value: extractedNums[i],
                     timestamp: readingTime,
-                    source: 'CGM'
+                    source: 'CGM',
+                    isTimestampEstimated: true,
+                    isExtractedValue: true,
+                    metadata: {
+                      timestampSource: 'Estimated_From_Daily_Chart_Sequence',
+                      rawOcrIndex: i,
+                      totalDayOcrCount: totalNums,
+                      extractionMethod: 'LibreView_PDF_OCR_Daily_Log'
+                    }
                   });
                 }
               }

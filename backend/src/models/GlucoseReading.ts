@@ -6,6 +6,9 @@ export interface IGlucoseReading extends Document {
   value: number; // blood glucose level in mg/dL
   timestamp: Date;
   source: 'CGM' | 'Manual';
+  isTimestampEstimated?: boolean;
+  isExtractedValue?: boolean;
+  metadata?: Record<string, any>;
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -18,6 +21,9 @@ const glucoseReadingSchema = new Schema<IGlucoseReading>(
     value: { type: Number, required: true },
     timestamp: { type: Date, required: true, index: true },
     source: { type: String, enum: ['CGM', 'Manual'], default: 'CGM', required: true },
+    isTimestampEstimated: { type: Boolean, default: false },
+    isExtractedValue: { type: Boolean, default: true },
+    metadata: { type: Schema.Types.Mixed, default: {} },
     isDeleted: { type: Boolean, default: false }
   },
   {
