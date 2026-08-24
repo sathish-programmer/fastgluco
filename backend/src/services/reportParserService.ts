@@ -498,7 +498,7 @@ EOF`;
         };
       }
 
-      if (reportId) {
+      if (reportId && require('mongoose').connection.readyState === 1 && require('mongoose').Types.ObjectId.isValid(reportId)) {
         // Clear any previous records from old uploads/parsing attempts for this report
         await GlucoseReading.deleteMany({ reportId });
       }
