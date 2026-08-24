@@ -328,16 +328,28 @@ EOF`;
 
           // 1st Priority: Extract Date Range directly inside the PDF document text/OCR
           // e.g. "Selected dates: 26 March 2025 - 8 April 2025", "26 Mar 2025 – 8 Apr 2025", "26/03/2025 - 08/04/2025"
-          const allRanges = [...text.matchAll(/(?:Selected\s+dates:\s*)?(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}|\d{1,2}[-/]\d{1,2}[-/]\d{4})\s*[-–—]\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}|\d{1,2}[-/]\d{1,2}[-/]\d{4})/gi)];
-          
-          if (allRanges.length > 0) {
-            for (const rMatch of allRanges) {
-              const pStart = ReportParserService.parseDateResilient(rMatch[1]);
-              const pEnd = ReportParserService.parseDateResilient(rMatch[2]);
-              if (!isNaN(pStart.getTime()) && !isNaN(pEnd.getTime())) {
-                if (!startDate || pStart < startDate) {
-                  startDate = pStart;
-                  endDate = pEnd;
+          const selectedMatch = text.match(/Selected\s+dates:\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}|\d{1,2}[-/]\d{1,2}[-/]\d{4})\s*[-–—]\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}|\d{1,2}[-/]\d{1,2}[-/]\d{4})/i);
+          if (selectedMatch) {
+            const pStart = ReportParserService.parseDateResilient(selectedMatch[1]);
+            const pEnd = ReportParserService.parseDateResilient(selectedMatch[2]);
+            if (!isNaN(pStart.getTime()) && !isNaN(pEnd.getTime())) {
+              startDate = pStart;
+              endDate = pEnd;
+            }
+          }
+
+          if (!startDate || !endDate) {
+            const allRanges = [...text.matchAll(/(?:Selected\s+dates:\s*)?(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}|\d{1,2}[-/]\d{1,2}[-/]\d{4})\s*[-–—]\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}|\d{1,2}[-/]\d{1,2}[-/]\d{4})/gi)];
+            
+            if (allRanges.length > 0) {
+              for (const rMatch of allRanges) {
+                const pStart = ReportParserService.parseDateResilient(rMatch[1]);
+                const pEnd = ReportParserService.parseDateResilient(rMatch[2]);
+                if (!isNaN(pStart.getTime()) && !isNaN(pEnd.getTime())) {
+                  if (!startDate || pStart < startDate) {
+                    startDate = pStart;
+                    endDate = pEnd;
+                  }
                 }
               }
             }
@@ -413,12 +425,16 @@ EOF`;
 
               let parsedDayDate = ReportParserService.parseDateResilient(`${dayNum} ${monthStr} ${reportYear}`);
               if (!isNaN(parsedDayDate.getTime())) {
+                const pKey = formatDateKey(parsedDayDate);
+                const startKey = formatDateKey(startDate);
+                const endKey = formatDateKey(endDate);
+
                 // Strictly ignore any date outside the report date range (e.g. 20 March if report starts on 26 March)
-                if (startDate && (parsedDayDate < startDate || parsedDayDate > endDate)) {
+                if (pKey < startKey || pKey > endKey) {
                   continue;
                 }
 
-                const dateKey = formatDateKey(parsedDayDate);
+                const dateKey = pKey;
                 const nums: number[] = [];
 
                 for (let k = l; k < Math.min(l + 25, textLines.length); k++) {
@@ -440,7 +456,9 @@ EOF`;
                     });
                   }
                 }
-                if (nums.length >= 5) {
+
+                const nonAxisNums = nums.filter(v => v !== 350 && v !== 250 && v !== 180 && v !== 70 && v !== 0);
+                if (nums.length >= 5 && nonAxisNums.length > 0 && dateKey >= startKey && dateKey <= endKey) {
                   // If multiple blocks exist for the same day, keep the longer sequence
                   if (!extractedDayData[dateKey] || nums.length > extractedDayData[dateKey].length) {
                     extractedDayData[dateKey] = nums;
@@ -469,8 +487,7 @@ EOF`;
                 const hourFraction = (i / totalNums) * 24;
                 const hour = Math.floor(hourFraction);
                 const min = Math.floor((hourFraction - hour) * 4) * 15;
-                const readingTime = new Date(currDate);
-                readingTime.setHours(hour, min, 0, 0);
+                const readingTime = new Date(Date.UTC(currDate.getFullYear(), currDate.getMonth(), currDate.getDate(), hour, min, 0, 0));
 
                 const timeKey = readingTime.toISOString();
                 if (!seenTimestamps.has(timeKey)) {
