@@ -445,8 +445,17 @@ EOF`;
                   if (/\b(?:350|250|180|70)\b.*\b(?:350|250|180|70)\b/i.test(rawLine)) continue;
                   if (/^\s*(?:mg\/dL|350|250|180|70|0|\s+)+$/i.test(rawLine)) continue;
 
-                  const lineMatches = rawLine.match(/\b([4-9]\d|[1-3]\d{2}|400)\b/g);
-                  if (lineMatches) {
+                  let lineMatches = rawLine.match(/\b([4-9]\d|[1-3]\d{2}|400)\b/g);
+                  if (lineMatches && lineMatches.length > 0) {
+                    // Strip leading Y-axis scale ceiling numbers (350/250) if present at line start
+                    while (lineMatches.length > 0 && (lineMatches[0] === '350' || lineMatches[0] === '250')) {
+                      lineMatches.shift();
+                    }
+                    // Strip trailing Y-axis scale ceiling numbers (350/250) if present at line end
+                    while (lineMatches.length > 0 && (lineMatches[lineMatches.length - 1] === '350' || lineMatches[lineMatches.length - 1] === '250')) {
+                      lineMatches.pop();
+                    }
+
                     lineMatches.forEach(m => {
                       const v = parseInt(m, 10);
                       // Preserve all genuine glucose readings between 40 and 400 mg/dL
