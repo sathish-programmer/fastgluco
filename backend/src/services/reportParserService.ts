@@ -324,25 +324,31 @@ export class ReportParserService {
           const textLines = text.split(/\r?\n/);
           const extractedDayData: { [dateStr: string]: number[] } = {};
 
+          const formatDateKey = (d: Date) => {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+          };
+
           for (let l = 0; l < textLines.length; l++) {
             const line = textLines[l].trim();
             if (!line) continue;
             // Match "WED 26 Mar", "26 Mar", "26 March", "THU 27 Mar", etc.
-            const headerMatch = /^(?:MON|TUE|WED|THU|FRI|SAT|SUN)?\s*(\d{1,2})\s+([A-Za-z]{3,9})$/i.exec(line) ||
-                                /(?:MON|TUE|WED|THU|FRI|SAT|SUN)\s+(\d{1,2})\s+([A-Za-z]{3,9})/i.exec(line);
+            const headerMatch = /(?:MON|TUE|WED|THU|FRI|SAT|SUN)?\s*(\d{1,2})\s+([A-Za-z]{3,9})/i.exec(line);
             if (headerMatch) {
               const dayNum = parseInt(headerMatch[1], 10);
               const monthStr = headerMatch[2];
               // Ignore month names that match general UI terms
-              if (['day', 'days', 'page', 'pages', 'min', 'max', 'avg'].includes(monthStr.toLowerCase())) continue;
+              if (['day', 'days', 'page', 'pages', 'min', 'max', 'avg', 'target', 'time'].includes(monthStr.toLowerCase())) continue;
 
               const parsedDayDate = ReportParserService.parseDateResilient(`${dayNum} ${monthStr} ${reportYear}`);
               if (!isNaN(parsedDayDate.getTime())) {
-                const dateKey = parsedDayDate.toISOString().split('T')[0];
+                const dateKey = formatDateKey(parsedDayDate);
                 const nums: number[] = [];
 
-                for (let k = l; k < Math.min(l + 15, textLines.length); k++) {
-                  if (k > l && /^(?:MON|TUE|WED|THU|FRI|SAT|SUN)?\s*\d{1,2}\s+[A-Za-z]{3,9}$/i.test(textLines[k].trim())) break;
+                for (let k = l; k < Math.min(l + 25, textLines.length); k++) {
+                  if (k > l && /(?:MON|TUE|WED|THU|FRI|SAT|SUN)\s+\d{1,2}\s+[A-Za-z]{3,9}/i.test(textLines[k].trim())) break;
                   const lineMatches = textLines[k].match(/\b([4-9]\d|[1-3]\d{2}|400)\b/g);
                   if (lineMatches) {
                     lineMatches.forEach(m => {
@@ -355,7 +361,10 @@ export class ReportParserService {
                   }
                 }
                 if (nums.length >= 5) {
-                  extractedDayData[dateKey] = nums;
+                  // If multiple blocks exist for the same day, keep the longer sequence
+                  if (!extractedDayData[dateKey] || nums.length > extractedDayData[dateKey].length) {
+                    extractedDayData[dateKey] = nums;
+                  }
                 }
               }
             }
@@ -370,7 +379,7 @@ export class ReportParserService {
 
           while (currDate.getTime() <= endTs) {
             dayIndex++;
-            const dateKey = currDate.toISOString().split('T')[0];
+            const dateKey = formatDateKey(currDate);
             const extractedNums = extractedDayData[dateKey];
 
             if (extractedNums && extractedNums.length > 0) {
