@@ -498,6 +498,11 @@ EOF`;
         };
       }
 
+      if (reportId) {
+        // Clear any previous records from old uploads/parsing attempts for this report
+        await GlucoseReading.deleteMany({ reportId });
+      }
+
       const operations = readingsToInsert.map(reading => ({
         updateOne: {
           filter: { userId: reading.userId, timestamp: reading.timestamp },

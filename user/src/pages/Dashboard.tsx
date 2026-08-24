@@ -921,7 +921,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
                 </div>
 
                 <div className="pt-1.5 border-t border-slate-50 dark:border-slate-800 flex justify-between items-center">
-                  <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Status</span>
+                  <span className="text-[7.5px] font-bold text-slate-400 uppercase tracking-wider">Calculated from Extracted Readings</span>
                   {(() => {
                     if (!displayGlucose) return <span className="text-[8px] font-bold text-slate-405 uppercase">No Data</span>;
                     if (isLow) return (
@@ -967,7 +967,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
             </div>
 
             <div className="pt-1.5 border-t border-slate-50 dark:border-slate-800 flex justify-between items-center">
-              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Target</span>
+              <span className="text-[7.5px] font-bold text-slate-400 uppercase tracking-wider">Calculated from Extracted Readings</span>
               <span className="text-[8px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">70-140</span>
             </div>
           </motion.div>
