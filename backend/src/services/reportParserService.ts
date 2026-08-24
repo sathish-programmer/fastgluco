@@ -187,8 +187,10 @@ export class ReportParserService {
         }
       }
 
-      // 2. If no time series data points found, inspect text & metadata for LibreView summary stats
-      if (readingsToInsert.length === 0) {
+      // 2. If full time series data points (< 50) not found, inspect text & metadata for LibreView Daily Log & summary stats
+      if (readingsToInsert.length < 50) {
+        readingsToInsert.length = 0; // Clear stray header text matches
+        seenTimestamps.clear();
         // Look for Average Glucose pattern e.g., "Average Glucose 130 mg/dL" or "130 mg/dL"
         let avgMatch = text.match(/Average\s+Glucose\s*(\d{2,3})/i) ||
                        text.match(/(\d{2,3})\s*mg\/dL/i);
@@ -209,10 +211,49 @@ export class ReportParserService {
                 .forEach(f => { try { fs.unlinkSync(`/tmp/${f}`); } catch (_) {} });
             } catch (_) {}
 
-            // Render PDF to PNG using pdftoppm or sips
+            // Render PDF to PNG using pdftoppm or sips or Swift Quartz Vision (macOS native)
             try {
-              execSync(`pdftoppm -png -r 150 "${filePath}" /tmp/pdf_ocr_page 2>/dev/null || sips -s format png "${filePath}" --out "${tmpPng}" 2>/dev/null`, { timeout: 10000 });
-            } catch (_) {}
+              const swiftCmd = `swift - "${filePath}" << 'EOF'
+import Foundation
+import Quartz
+import Vision
+import CoreGraphics
+let pdfURL = URL(fileURLWithPath: CommandLine.arguments[1])
+guard let doc = PDFDocument(url: pdfURL) else { exit(0) }
+for i in 0..<doc.pageCount {
+    guard let page = doc.page(at: i), let pageRef = page.pageRef else { continue }
+    let pageRect = page.bounds(for: .mediaBox)
+    let width = Int(pageRect.width * 2)
+    let height = Int(pageRect.height * 2)
+    let colorSpace = CGColorSpaceCreateDeviceRGB()
+    guard let context = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width * 4, space: colorSpace, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { continue }
+    context.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
+    context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+    context.scaleBy(x: 2.0, y: 2.0)
+    context.drawPDFPage(pageRef)
+    if let cgImage = context.makeImage() {
+        let requestHandler = VNImageRequestHandler(cgImage: cgImage, options: [:])
+        let request = VNRecognizeTextRequest { (req, err) in
+            if let obs = req.results as? [VNRecognizedTextObservation] {
+                for ob in obs {
+                    if let c = ob.topCandidates(1).first { print(c.string) }
+                }
+            }
+        }
+        request.recognitionLevel = .accurate
+        try? requestHandler.perform([request])
+    }
+}
+EOF`;
+              const swiftText = execSync(swiftCmd, { timeout: 30000 }).toString('utf-8');
+              if (swiftText && swiftText.length > 50) {
+                text += '\n' + swiftText;
+              }
+            } catch (_) {
+              try {
+                execSync(`pdftoppm -png -r 150 "${filePath}" /tmp/pdf_ocr_page 2>/dev/null || sips -s format png "${filePath}" --out "${tmpPng}" 2>/dev/null`, { timeout: 10000 });
+              } catch (_) {}
+            }
 
             const allPngs = fs.readdirSync('/tmp')
               .filter(f => f.startsWith('pdf_ocr_page-') && f.endsWith('.png'))
@@ -273,13 +314,30 @@ export class ReportParserService {
         if (avgMatch) {
           const avgValue = parseInt(avgMatch[1], 10);
           
-          let startDate = new Date();
-          let endDate = new Date();
+          let startDate: Date | null = null;
+          let endDate: Date | null = null;
 
           // 1st Priority: Extract Date Range directly inside the PDF document text/OCR
           // e.g. "Selected dates: 26 March 2025 - 8 April 2025", "26 Mar 2025 – 8 Apr 2025", "26/03/2025 - 08/04/2025"
-          const explicitRangeRegex = /(?:Selected\s+dates:\s*)?(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}|\d{1,2}[-/]\d{1,2}[-/]\d{4})\s*[-–—]\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}|\d{1,2}[-/]\d{1,2}[-/]\d{4})/i;
-          const explicitMatch = text.match(explicitRangeRegex);
+          const allRanges = [...text.matchAll(/(?:Selected\s+dates:\s*)?(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}|\d{1,2}[-/]\d{1,2}[-/]\d{4})\s*[-–—]\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}|\d{1,2}[-/]\d{1,2}[-/]\d{4})/gi)];
+          
+          if (allRanges.length > 0) {
+            for (const rMatch of allRanges) {
+              const pStart = ReportParserService.parseDateResilient(rMatch[1]);
+              const pEnd = ReportParserService.parseDateResilient(rMatch[2]);
+              if (!isNaN(pStart.getTime()) && !isNaN(pEnd.getTime())) {
+                if (!startDate || pStart < startDate) {
+                  startDate = pStart;
+                  endDate = pEnd;
+                }
+              }
+            }
+          }
+
+          if (!startDate || !endDate) {
+            startDate = new Date();
+            endDate = new Date();
+          }
 
           // 2nd Priority: Look for "Generated: 09/04/2025" or "09/04/2025" inside PDF document
           const generatedDateRegex = /(?:Generated:\s*)?(\d{1,2}[-/]\d{1,2}[-/]\d{4})/i;
@@ -288,29 +346,28 @@ export class ReportParserService {
           // 3rd Priority: Extract date from file name as fallback when OCR binary is missing on Linux
           const fileNameDateMatch = path.basename(filePath).match(/([A-Za-z]{3})\s+(\d{1,2}),?\s+(\d{4})/i);
 
-          if (explicitMatch && explicitMatch[1] && explicitMatch[2]) {
-            startDate = ReportParserService.parseDateResilient(explicitMatch[1]);
-            endDate = ReportParserService.parseDateResilient(explicitMatch[2]);
-          } else if (generatedMatch && generatedMatch[1]) {
-            const parsedGen = ReportParserService.parseDateResilient(generatedMatch[1]);
-            if (!isNaN(parsedGen.getTime())) {
-              endDate = parsedGen;
-              endDate.setHours(23, 59, 59, 999);
-              startDate = new Date(endDate.getTime() - 13 * 24 * 60 * 60 * 1000);
-              startDate.setHours(0, 0, 0, 0);
-            }
-          } else if (fileNameDateMatch) {
-            const parsedEnd = new Date(`${fileNameDateMatch[2]} ${fileNameDateMatch[1]} ${fileNameDateMatch[3]}`);
-            if (!isNaN(parsedEnd.getTime())) {
-              endDate = parsedEnd;
-              endDate.setHours(23, 59, 59, 999);
-              startDate = new Date(endDate.getTime() - 13 * 24 * 60 * 60 * 1000);
-              startDate.setHours(0, 0, 0, 0);
+          if (!startDate || !endDate) {
+            if (generatedMatch && generatedMatch[1]) {
+              const parsedGen = ReportParserService.parseDateResilient(generatedMatch[1]);
+              if (!isNaN(parsedGen.getTime())) {
+                endDate = parsedGen;
+                endDate.setHours(23, 59, 59, 999);
+                startDate = new Date(endDate.getTime() - 13 * 24 * 60 * 60 * 1000);
+                startDate.setHours(0, 0, 0, 0);
+              }
+            } else if (fileNameDateMatch) {
+              const parsedEnd = new Date(`${fileNameDateMatch[2]} ${fileNameDateMatch[1]} ${fileNameDateMatch[3]}`);
+              if (!isNaN(parsedEnd.getTime())) {
+                endDate = parsedEnd;
+                endDate.setHours(23, 59, 59, 999);
+                startDate = new Date(endDate.getTime() - 13 * 24 * 60 * 60 * 1000);
+                startDate.setHours(0, 0, 0, 0);
+              }
             }
           }
 
           // Fallback: If date range is unparseable, calculate 14-day cycle up to document/file creation date
-          if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || startDate.getTime() === endDate.getTime()) {
+          if (!startDate || !endDate || startDate.getTime() === endDate.getTime()) {
             const fileStat = fs.existsSync(filePath) ? fs.statSync(filePath) : null;
             endDate = fileStat ? new Date(fileStat.mtime) : new Date();
             endDate.setHours(23, 59, 59, 999);
@@ -320,7 +377,7 @@ export class ReportParserService {
 
           // 1st Priority: Extract exact real glucose numbers from LibreView "Daily Log" pages (Pages 4-11)
           // e.g. "WED 26 Mar", "26 March", "THU 27 Mar" followed by "148 147 151 191 135 132 117 132 220 209..."
-          const reportYear = startDate.getFullYear() || new Date().getFullYear();
+          const reportYear = startDate ? startDate.getFullYear() : new Date().getFullYear();
           const textLines = text.split(/\r?\n/);
           const extractedDayData: { [dateStr: string]: number[] } = {};
 
@@ -334,7 +391,10 @@ export class ReportParserService {
           for (let l = 0; l < textLines.length; l++) {
             const line = textLines[l].trim();
             if (!line) continue;
-            // Match "WED 26 Mar", "26 Mar", "26 March", "THU 27 Mar", etc.
+            // Ignore report title header lines (e.g. "26 March 2025 - 8 April 2025 (14 Days)")
+            if (/[-–—]|days|selected|generated|average|summary|page/i.test(line)) continue;
+
+            // Match actual Daily Log headers e.g. "WED 26 Mar", "THU 27 Mar", "26 Mar"
             const headerMatch = /(?:MON|TUE|WED|THU|FRI|SAT|SUN)?\s*(\d{1,2})\s+([A-Za-z]{3,9})/i.exec(line);
             if (headerMatch) {
               const dayNum = parseInt(headerMatch[1], 10);
@@ -342,8 +402,16 @@ export class ReportParserService {
               // Ignore month names that match general UI terms
               if (['day', 'days', 'page', 'pages', 'min', 'max', 'avg', 'target', 'time'].includes(monthStr.toLowerCase())) continue;
 
-              const parsedDayDate = ReportParserService.parseDateResilient(`${dayNum} ${monthStr} ${reportYear}`);
+              let parsedDayDate = ReportParserService.parseDateResilient(`${dayNum} ${monthStr} ${reportYear}`);
               if (!isNaN(parsedDayDate.getTime())) {
+                // Snap OCR digit misreads (e.g. 20 Mar -> 26 Mar if report date range starts on 26 Mar)
+                if (parsedDayDate < startDate) {
+                  const diffDays = Math.round((startDate.getTime() - parsedDayDate.getTime()) / (1000 * 3600 * 24));
+                  if (diffDays <= 7) {
+                    parsedDayDate = new Date(startDate);
+                  }
+                }
+
                 const dateKey = formatDateKey(parsedDayDate);
                 const nums: number[] = [];
 
@@ -402,38 +470,6 @@ export class ReportParserService {
                     timestamp: readingTime,
                     source: 'CGM'
                   });
-                }
-              }
-            } else {
-              // Fallback: Diurnal wave variation around Average Glucose if exact daily log numbers were not in OCR
-              const dayShift = Math.sin(dayIndex * 12.9898) * 10;
-              const mealShift = Math.cos(dayIndex * 78.233) * 14;
-
-              for (let hour = 0; hour < 24; hour++) {
-                for (let min = 0; min < 60; min += 15) {
-                  const readingTime = new Date(currDate);
-                  readingTime.setHours(hour, min, 0, 0);
-
-                  let variation = Math.sin((hour - 3) * (Math.PI / 12)) * 12 + dayShift;
-                  if ((hour >= 7 && hour <= 10) || (hour >= 18 && hour <= 21)) {
-                    variation += 18 + mealShift + Math.sin(min * (Math.PI / 30)) * 8;
-                  } else if (hour >= 2 && hour <= 5) {
-                    variation -= 8 + (dayShift * 0.3);
-                  }
-
-                  const value = Math.max(70, Math.min(220, Math.round(avgValue + variation)));
-                  const timeKey = readingTime.toISOString();
-
-                  if (!seenTimestamps.has(timeKey)) {
-                    seenTimestamps.add(timeKey);
-                    readingsToInsert.push({
-                      userId,
-                      reportId,
-                      value,
-                      timestamp: readingTime,
-                      source: 'CGM'
-                    });
-                  }
                 }
               }
             }
