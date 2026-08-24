@@ -48,13 +48,35 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
   // Auto-poll history if any report is currently processing in background
   useEffect(() => {
     const hasProcessing = history.some((r: any) => r.status === 'Processing');
-    if (hasProcessing) {
-      const interval = setInterval(() => {
-        fetchHistory();
+    if (hasProcessing && token) {
+      const interval = setInterval(async () => {
+        try {
+          const res = await fetch(`${apiUrl}/reports`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const newHistory = await res.json();
+            // Check if any report completed processing in this poll cycle
+            history.forEach(oldReport => {
+              if (oldReport.status === 'Processing') {
+                const updated = newHistory.find((n: any) => n._id === oldReport._id);
+                if (updated && updated.status === 'Processed') {
+                  const countText = updated.parsedReadingsCount !== undefined ? `${updated.parsedReadingsCount} readings` : 'readings';
+                  showToast(`🎉 Report "${updated.fileName}" processed successfully! Loaded ${countText}.`, 'success');
+                  setMessage({ text: `Success: Loaded ${countText} from "${updated.fileName}".`, isError: false });
+                } else if (updated && updated.status === 'Failed') {
+                  showToast(`Report processing failed: ${updated.errorMessage || 'Parsing error'}`, 'error');
+                  setMessage({ text: `Failed: ${updated.errorMessage || 'Parsing error'}`, isError: true });
+                }
+              }
+            });
+            setHistory(newHistory);
+          }
+        } catch (_) {}
       }, 3000);
       return () => clearInterval(interval);
     }
-  }, [history]);
+  }, [history, token]);
 
   const fetchHistory = async () => {
     if (!token) return;
