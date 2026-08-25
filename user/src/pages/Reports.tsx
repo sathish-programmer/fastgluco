@@ -62,9 +62,26 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
               if (oldReport.status === 'Processing') {
                 const updated = newHistory.find((n: any) => n._id === oldReport._id);
                 if (updated && updated.status === 'Processed') {
-                  const countText = updated.parsedReadingsCount !== undefined ? `${updated.parsedReadingsCount} readings` : 'readings';
-                  showToast(`🎉 Report "${updated.fileName}" processed successfully! Loaded ${countText}.`, 'success');
-                  setMessage({ text: `Success: Loaded ${countText} from "${updated.fileName}".`, isError: false });
+                  const count = updated.parsedReadingsCount || 0;
+                  const hasSummary = !!(
+                    updated.pdfSummaryAverageGlucose != null ||
+                    updated.pdfSummaryTimeInRange != null ||
+                    updated.glucoseVariability != null ||
+                    (updated.dailySummaries && updated.dailySummaries.length > 0) ||
+                    (updated.hourlyPatternSummaries && updated.hourlyPatternSummaries.length > 0)
+                  );
+
+                  let msgText = '';
+                  if (count > 0) {
+                    msgText = `Successfully loaded ${count} glucose readings from "${updated.fileName}".`;
+                  } else if (hasSummary) {
+                    msgText = `Successfully imported LibreView AGP pattern & summary metrics from "${updated.fileName}".`;
+                  } else {
+                    msgText = `Successfully processed "${updated.fileName}".`;
+                  }
+
+                  showToast(msgText, 'success');
+                  setMessage({ text: msgText, isError: false });
                 } else if (updated && updated.status === 'Failed') {
                   showToast(`Report processing failed: ${updated.errorMessage || 'Parsing error'}`, 'error');
                   setMessage({ text: `Failed: ${updated.errorMessage || 'Parsing error'}`, isError: true });
@@ -141,9 +158,9 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
         const pointReadingsCount = data.readingsCount || 0;
         const reportObj = data.report || {};
         const hasSummaryData = !!(
-          reportObj.pdfSummaryAverageGlucose ||
-          reportObj.pdfSummaryTimeInRange ||
-          reportObj.glucoseVariability ||
+          reportObj.pdfSummaryAverageGlucose != null ||
+          reportObj.pdfSummaryTimeInRange != null ||
+          reportObj.glucoseVariability != null ||
           (reportObj.dailySummaries && reportObj.dailySummaries.length > 0) ||
           (reportObj.hourlyPatternSummaries && reportObj.hourlyPatternSummaries.length > 0)
         );
@@ -152,7 +169,7 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
         if (pointReadingsCount > 0) {
           msgText = `Successfully loaded ${pointReadingsCount} glucose readings from "${file.name}".`;
         } else if (hasSummaryData) {
-          msgText = `Successfully processed "${file.name}". No individual point readings were available, but LibreView summary and pattern data were extracted.`;
+          msgText = `Successfully imported LibreView AGP pattern & summary metrics from "${file.name}".`;
         } else {
           msgText = `Successfully processed "${file.name}".`;
         }
@@ -532,7 +549,11 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
                           ) : (
                             <span className="text-[9px] font-bold text-blue-600 dark:text-blue-400 flex items-center bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-800 px-2.5 py-0.5 rounded-full">
                               <CheckCircle2 className="h-3 w-3 mr-1 shrink-0 text-blue-500 dark:text-blue-400" />
-                              Summary Data Available
+                              {report.hourlyPatternSummaries && report.hourlyPatternSummaries.length > 0
+                                ? `${report.hourlyPatternSummaries.length} median points`
+                                : report.dailySummaries && report.dailySummaries.length > 0
+                                  ? `${report.dailySummaries.length} daily summaries`
+                                  : 'AGP Summary Data'}
                             </span>
                           )}
                           {report.detectedReportType && (
