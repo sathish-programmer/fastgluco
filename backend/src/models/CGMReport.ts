@@ -7,10 +7,40 @@ export interface ICGMReport extends Document {
   fileType: 'csv' | 'pdf';
   status: 'Uploaded' | 'Processing' | 'Processed' | 'Failed';
   parsedReadingsCount: number;
+  detectedReportType?: string;
+  detectionConfidence?: number;
   pdfSummaryAverageGlucose?: number;
   pdfSummaryTimeInRange?: number;
   pdfSummaryGmi?: number;
-  pdfSummaryDateRange?: { startDate?: Date; endDate?: Date };
+  glucoseVariability?: number;
+  pdfSummaryDateRange?: {
+    startDate?: Date;
+    endDate?: Date;
+    startDateString?: string;
+    endDateString?: string;
+  };
+  calculatedAverageGlucose?: number;
+  hourlyPatternSummaries?: Array<{
+    hourLabel: string;
+    medianGlucose: number;
+    valueSource: 'DIRECT_PDF_EXTRACTION';
+    classification: 'HOURLY_MEDIAN_SUMMARY';
+    timestampSource: 'NOT_AVAILABLE';
+  }>;
+  dailySummaries?: Array<{
+    date: Date;
+    dateString?: string;
+    maxGlucose?: number;
+    minGlucose?: number;
+    averageGlucose?: number;
+    valueSource?: 'DIRECT_PDF_EXTRACTION' | 'CALCULATED_FROM_EXTRACTED_DATA';
+    classification?: 'DAILY_SUMMARY';
+  }>;
+  provenanceMetadata?: {
+    valueSource?: 'DIRECT_PDF_EXTRACTION' | 'CALCULATED_FROM_EXTRACTED_DATA';
+    timestampSource?: 'EXTRACTED' | 'ESTIMATED' | 'NOT_AVAILABLE';
+    classification?: 'POINT_READING' | 'DAILY_SUMMARY' | 'WEEKLY_SUMMARY' | 'AGP_METRIC';
+  };
   errorMessage?: string;
   isDeleted: boolean;
   createdAt: Date;
@@ -29,12 +59,43 @@ const cgmReportSchema = new Schema<ICGMReport>(
       default: 'Uploaded' 
     },
     parsedReadingsCount: { type: Number, default: 0 },
+    detectedReportType: { type: String },
+    detectionConfidence: { type: Number },
     pdfSummaryAverageGlucose: { type: Number },
+    calculatedAverageGlucose: { type: Number },
     pdfSummaryTimeInRange: { type: Number },
     pdfSummaryGmi: { type: Number },
+    glucoseVariability: { type: Number },
     pdfSummaryDateRange: {
       startDate: { type: Date },
-      endDate: { type: Date }
+      endDate: { type: Date },
+      startDateString: { type: String },
+      endDateString: { type: String }
+    },
+    hourlyPatternSummaries: [
+      {
+        hourLabel: { type: String },
+        medianGlucose: { type: Number },
+        valueSource: { type: String, default: 'DIRECT_PDF_EXTRACTION' },
+        classification: { type: String, default: 'HOURLY_MEDIAN_SUMMARY' },
+        timestampSource: { type: String, default: 'NOT_AVAILABLE' }
+      }
+    ],
+    dailySummaries: [
+      {
+        date: { type: Date },
+        dateString: { type: String },
+        maxGlucose: { type: Number },
+        minGlucose: { type: Number },
+        averageGlucose: { type: Number },
+        valueSource: { type: String, default: 'DIRECT_PDF_EXTRACTION' },
+        classification: { type: String, default: 'DAILY_SUMMARY' }
+      }
+    ],
+    provenanceMetadata: {
+      valueSource: { type: String, enum: ['DIRECT_PDF_EXTRACTION', 'CALCULATED_FROM_EXTRACTED_DATA'] },
+      timestampSource: { type: String, enum: ['EXTRACTED', 'ESTIMATED', 'NOT_AVAILABLE'] },
+      classification: { type: String, enum: ['POINT_READING', 'DAILY_SUMMARY', 'WEEKLY_SUMMARY', 'AGP_METRIC'] }
     },
     errorMessage: { type: String },
     isDeleted: { type: Boolean, default: false }

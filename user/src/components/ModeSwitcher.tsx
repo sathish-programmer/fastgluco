@@ -71,27 +71,33 @@ export const ModeSwitcher: React.FC = () => {
   };
 
   return (
-    <div className="w-full mb-6">
-      {/* Compact Active Mode Selector Card */}
+    <div className="w-full mb-3">
+      {/* Compact Active Mode Selector Card (Modern glassmorphism UI) */}
       <button
         onClick={() => setIsOpen(true)}
-        className={`w-full text-left rounded-3xl p-4 bg-gradient-to-r ${currentDetails.gradient} ${currentDetails.activeShadow} text-white flex items-center justify-between transition-all duration-300 transform active:scale-[0.98] border border-white/10`}
+        className={`w-full text-left rounded-2xl px-3.5 py-2.5 bg-gradient-to-r ${currentDetails.gradient} ${currentDetails.activeShadow} text-white flex items-center justify-between transition-all duration-300 transform active:scale-[0.98] border border-white/20 dark:border-white/10 relative overflow-hidden shadow-md group`}
       >
-        <div className="flex items-center gap-3.5 min-w-0">
-          <div className="p-2.5 bg-white/15 rounded-2xl flex items-center justify-center shrink-0">
-            <ActiveIcon className="h-5 w-5 text-white" />
+        {/* Subtle background glow element */}
+        <div className="absolute -top-10 -right-10 w-24 h-24 bg-white/10 rounded-full blur-lg pointer-events-none group-hover:scale-125 transition-all duration-500" />
+        
+        <div className="flex items-center gap-2.5 min-w-0 relative z-10">
+          <div className="p-2 bg-white/20 dark:bg-white/15 backdrop-blur-md rounded-xl flex items-center justify-center shrink-0 border border-white/25 shadow-inner">
+            <ActiveIcon className="h-4 w-4 text-white drop-shadow-xs" />
           </div>
           <div className="min-w-0">
-            <span className="text-[9px] font-black text-white/70 uppercase tracking-widest block">Active Focus</span>
-            <h4 className="font-sans font-black text-sm tracking-tight leading-none text-white mt-0.5">
+            <div className="flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-white/90 animate-pulse"></span>
+              <span className="text-[8.5px] font-black text-white/80 uppercase tracking-widest block">Active Focus</span>
+            </div>
+            <h4 className="font-sans font-black text-xs md:text-sm tracking-tight leading-tight text-white drop-shadow-xs truncate">
               {currentDetails.title}
             </h4>
           </div>
         </div>
         
-        <div className="flex items-center gap-1.5 bg-white/20 hover:bg-white/35 px-3.5 py-1.5 rounded-full transition-all shrink-0">
-          <span className="text-[10px] font-bold tracking-wide">Change</span>
-          <ChevronRight className="h-3.5 w-3.5" />
+        <div className="flex items-center gap-0.5 bg-white/20 hover:bg-white/30 backdrop-blur-md px-2.5 py-1 rounded-full transition-all shrink-0 border border-white/25 shadow-xs relative z-10">
+          <span className="text-[10px] font-extrabold tracking-wide text-white">Change</span>
+          <ChevronRight className="h-3 w-3 text-white/90" />
         </div>
       </button>
 

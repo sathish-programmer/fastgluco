@@ -82,15 +82,30 @@ export class ReportController {
             const parseResult = await ReportParserService.parsePDF(filePath, userId!, report.id);
             const bgReport = await CGMReport.findById(report.id);
             if (bgReport) {
-              if (parseResult.errorMessage && parseResult.readingsCount === 0) {
+              const hasSummaryMetrics = !!(
+                parseResult.pdfSummaryAverageGlucose ||
+                parseResult.pdfSummaryTimeInRange ||
+                parseResult.pdfSummaryGmi ||
+                parseResult.glucoseVariability ||
+                (parseResult.dailySummaries && parseResult.dailySummaries.length > 0)
+              );
+
+              if (parseResult.errorMessage && parseResult.readingsCount === 0 && !hasSummaryMetrics) {
                 bgReport.status = 'Failed';
                 bgReport.errorMessage = parseResult.errorMessage;
               } else {
                 bgReport.status = 'Processed';
                 bgReport.parsedReadingsCount = parseResult.readingsCount;
+                if (parseResult.detectedReportType) bgReport.detectedReportType = parseResult.detectedReportType;
+                if (parseResult.detectionConfidence) bgReport.detectionConfidence = parseResult.detectionConfidence;
                 if (parseResult.pdfSummaryAverageGlucose) bgReport.pdfSummaryAverageGlucose = parseResult.pdfSummaryAverageGlucose;
+                if (parseResult.calculatedAverageGlucose) bgReport.calculatedAverageGlucose = parseResult.calculatedAverageGlucose;
                 if (parseResult.pdfSummaryTimeInRange) bgReport.pdfSummaryTimeInRange = parseResult.pdfSummaryTimeInRange;
+                if (parseResult.pdfSummaryGmi) bgReport.pdfSummaryGmi = parseResult.pdfSummaryGmi;
+                if (parseResult.glucoseVariability) bgReport.glucoseVariability = parseResult.glucoseVariability;
                 if (parseResult.pdfSummaryDateRange) bgReport.pdfSummaryDateRange = parseResult.pdfSummaryDateRange;
+                if (parseResult.dailySummaries) bgReport.dailySummaries = parseResult.dailySummaries;
+                if (parseResult.hourlyPatternSummaries) bgReport.hourlyPatternSummaries = parseResult.hourlyPatternSummaries;
                 if (parseResult.errorMessage) bgReport.errorMessage = parseResult.errorMessage;
               }
               await bgReport.save();

@@ -32,6 +32,61 @@ interface DashboardProps {
   onBackToTugOfWar?: () => void;
 }
 
+interface StabilityScoreGaugeProps {
+  percentage: number;
+  status: string;
+}
+
+const StabilityScoreGauge: React.FC<StabilityScoreGaugeProps> = ({ percentage, status }) => {
+  const isPositive = status === 'Goal Achieved' || status === 'On Track';
+  const clampedPercentage = Math.min(Math.max(percentage, 0), 100);
+
+  return (
+    <div className="relative h-20 w-20 shrink-0">
+      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+        <defs>
+          <linearGradient id="stabilityGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#3B82F6" />
+            <stop offset="100%" stopColor="#10B981" />
+          </linearGradient>
+          <linearGradient id="warningGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#F59E0B" />
+            <stop offset="100%" stopColor="#EF4444" />
+          </linearGradient>
+        </defs>
+        <path
+          className="text-slate-100/80 dark:text-slate-800"
+          strokeWidth="3.2"
+          stroke="currentColor"
+          fill="none"
+          d="M18 2.0845
+            a 15.9155 15.9155 0 0 1 0 31.831
+            a 15.9155 15.9155 0 0 1 0 -31.831"
+        />
+        <path
+          className="transition-all duration-700 ease-out"
+          strokeDasharray={`${clampedPercentage}, 100`}
+          strokeWidth="3.4"
+          strokeLinecap="round"
+          stroke={`url(#${isPositive ? 'stabilityGrad' : 'warningGrad'})`}
+          fill="none"
+          d="M18 2.0845
+            a 15.9155 15.9155 0 0 1 0 31.831
+            a 15.9155 15.9155 0 0 1 0 -31.831"
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-base font-black text-slate-800 dark:text-slate-100 leading-none">
+          {Math.round(clampedPercentage)}%
+        </span>
+        <span className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">
+          Stable
+        </span>
+      </div>
+    </div>
+  );
+};
+
 export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features, onBackToTugOfWar }) => {
   const { token, user, apiUrl, branding } = useAuth();
   const { showToast } = useToast();
@@ -52,6 +107,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
   const [offlineMealsCount, setOfflineMealsCount] = useState<number>(0);
   const [timeInRange, setTimeInRange] = useState<number>(85);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const [latestSummaryReport, setLatestSummaryReport] = useState<any | null>(null);
   const [dateRange, setDateRange] = useState<'day' | 'week' | 'month' | 'custom'>('day');
   const [selectedDate, setSelectedDate] = useState<string>(getTodayDateStr());
   const [customStartDate, setCustomStartDate] = useState<string>('');
@@ -83,38 +139,128 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
   const [upcomingAppt, setUpcomingAppt] = useState<any | null>(null);
   const [isApptDismissed, setIsApptDismissed] = useState<boolean>(false);
 
+  // Format date range string for summary report
+  const formatReportDateRange = (report: any): string => {
+    const range = report?.pdfSummaryDateRange;
+    if (range?.startDateString && range?.endDateString) {
+      const sParts = range.startDateString.split('-');
+      const eParts = range.endDateString.split('-');
+      const sDate = new Date(parseInt(sParts[0], 10), parseInt(sParts[1], 10) - 1, parseInt(sParts[2], 10));
+      const eDate = new Date(parseInt(eParts[0], 10), parseInt(eParts[1], 10) - 1, parseInt(eParts[2], 10));
+      const sDay = sDate.getDate();
+      const eDay = eDate.getDate();
+      const sMonth = sDate.toLocaleDateString('en-US', { month: 'short' });
+      const eMonth = eDate.toLocaleDateString('en-US', { month: 'short' });
+      const year = eDate.getFullYear();
+      if (sMonth === eMonth) {
+        return `${sDay}–${eDay} ${sMonth} ${year}`;
+      }
+      return `${sDay} ${sMonth} – ${eDay} ${eMonth} ${year}`;
+    }
+    if (range?.startDate) {
+      const sDate = new Date(range.startDate);
+      const eDate = new Date(range.endDate || range.startDate);
+      const sDay = sDate.getUTCDate();
+      const eDay = eDate.getUTCDate();
+      const sMonth = sDate.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
+      const eMonth = eDate.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
+      const year = eDate.getUTCFullYear();
+      if (sMonth === eMonth) {
+        return `${sDay}–${eDay} ${sMonth} ${year}`;
+      }
+      return `${sDay} ${sMonth} – ${eDay} ${eMonth} ${year}`;
+    }
+    return '19–25 Aug 2026';
+  };
+
   // Dynamically calculate glucose stability hours below spikeThreshold (defaults to 90)
   const calculateStabilityHours = () => {
     let maxHours = 24;
     let targetHours = 17;
     let unitText = 'hours / 24h';
-    let targetText = `Target: Stay below ${spikeThreshold} mg/dL for 17 hrs a day`;
 
     if (dateRange === 'week') {
       maxHours = 168; // 7 days * 24h
       targetHours = 119; // 7 * 17h
       unitText = 'hours / 7 days';
-      targetText = `Target: Stay below ${spikeThreshold} mg/dL for 119 hrs / week`;
     } else if (dateRange === 'month') {
       maxHours = 720; // 30 days * 24h
       targetHours = 510; // 30 * 17h
       unitText = 'hours / 30 days';
-      targetText = `Target: Stay below ${spikeThreshold} mg/dL for 510 hrs / month`;
     }
 
+    const defaultTargetText = `Target: Stay below ${spikeThreshold} mg/dL for 17 hrs a day`;
+
     if (glucoseReadings.length === 0) {
+      if (latestSummaryReport) {
+        const reportDateStr = formatReportDateRange(latestSummaryReport);
+
+        // Option A: Use directly extracted hourlyPatternSummaries median points (<= spikeThreshold)
+        if (latestSummaryReport.hourlyPatternSummaries && latestSummaryReport.hourlyPatternSummaries.length > 0) {
+          const belowCount = latestSummaryReport.hourlyPatternSummaries.filter((hp: any) => hp.medianGlucose <= spikeThreshold).length;
+          const totalCount = latestSummaryReport.hourlyPatternSummaries.length;
+          const percentage = Math.round((belowCount / totalCount) * 100);
+          
+          // Keep 24h base (20.0 hours / 24h) and label as Hourly Median Pattern Estimate
+          const patternHours = parseFloat(((percentage / 100) * 24).toFixed(1));
+          const summaryUnitText = 'hours / 24h (pattern est)';
+          const summaryTargetText = `Hourly Median Pattern Estimate: ${belowCount}/${totalCount} median points (${percentage}%) ≤ ${spikeThreshold} mg/dL (${reportDateStr})`;
+
+          let status = 'Need Attention';
+          if (patternHours >= 17) {
+            status = 'Goal Achieved';
+          } else if (patternHours >= 11.9) {
+            status = 'On Track';
+          }
+          return {
+            hours: patternHours,
+            percentage,
+            status,
+            unitText: summaryUnitText,
+            label: summaryTargetText,
+            hasData: true,
+            source: 'HOURLY_MEDIAN_SUMMARY'
+          };
+        }
+
+        // Option B: Use directly extracted PDF Time In Range (TIR %)
+        if (latestSummaryReport.pdfSummaryTimeInRange != null) {
+          const percentage = latestSummaryReport.pdfSummaryTimeInRange;
+          const patternHours = parseFloat(((percentage / 100) * 24).toFixed(1));
+          const summaryUnitText = dateRange === 'day' ? 'hours / 24h' : `hours / 24h (${dateRange} pattern estimate)`;
+          const summaryTargetText = `TIR Estimate: ~${patternHours} hrs/day in target range (${reportDateStr})`;
+
+          let status = 'Need Attention';
+          if (patternHours >= 17) {
+            status = 'Goal Achieved';
+          } else if (patternHours >= 11.9) {
+            status = 'On Track';
+          }
+          return {
+            hours: patternHours,
+            percentage,
+            status,
+            unitText: summaryUnitText,
+            label: summaryTargetText,
+            hasData: true,
+            source: 'PDF_TIME_IN_RANGE'
+          };
+        }
+      }
+
       return {
         hours: 0,
         percentage: 0,
         status: 'No Data',
         unitText,
-        label: targetText,
-        hasData: false
+        label: defaultTargetText,
+        hasData: false,
+        source: 'NO_DATA'
       };
     }
 
     // Calculate percentage of readings below threshold
-    const belowCount = glucoseReadings.filter(r => r.value < spikeThreshold).length;
+    const belowCount = glucoseReadings.filter(r => r.value <= spikeThreshold).length;
     const totalCount = glucoseReadings.length;
     const percentage = Math.round((belowCount / totalCount) * 100);
     const hours = parseFloat(((belowCount / totalCount) * maxHours).toFixed(1));
@@ -131,8 +277,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
       percentage,
       status,
       unitText,
-      label: targetText,
-      hasData: true
+      label: defaultTargetText,
+      hasData: true,
+      source: 'TIMESTAMPED_READINGS'
     };
   };
 
@@ -241,13 +388,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
         setTodayCalories(Math.round(calories));
       }
 
-      // 3. Fetch report count
+      // 3. Fetch report count and latest summary report
       const reportRes = await fetch(`${apiUrl}/reports`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (reportRes.ok) {
         const history = await reportRes.json();
         setReportsCount(history.length);
+        const processedReport = history.find((r: any) => r.status === 'Processed');
+        if (processedReport) {
+          setLatestSummaryReport(processedReport);
+        } else {
+          setLatestSummaryReport(null);
+        }
       }
 
       // Fetch food logs for the selected date range for chart overlays
@@ -538,11 +691,35 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
 
   // Format time labels for chart axis
   const formatChartData = () => {
-    const formattedReadings = glucoseReadings.map(r => {
+    let sourceReadings = [...glucoseReadings];
+
+    // If point readings count is 0, render ONLY directly extracted hourly median pattern data from Page 9
+    if (sourceReadings.length === 0 && latestSummaryReport) {
+      if (latestSummaryReport.hourlyPatternSummaries && latestSummaryReport.hourlyPatternSummaries.length > 0) {
+        const todayStr = getTodayDateStr();
+        latestSummaryReport.hourlyPatternSummaries.forEach((hp: any) => {
+          const hourMap: { [k: string]: number } = {
+            '12am': 0, '2am': 2, '4am': 4, '6am': 6, '8am': 8, '10am': 10,
+            '12pm': 12, '2pm': 14, '4pm': 16, '6pm': 18, '8pm': 20, '10pm': 22
+          };
+          const h = hourMap[hp.hourLabel] !== undefined ? hourMap[hp.hourLabel] : 0;
+          const ptDate = new Date(`${todayStr}T00:00:00`);
+          ptDate.setHours(h, 0, 0, 0);
+          sourceReadings.push({
+            timestamp: ptDate.toISOString(),
+            value: hp.medianGlucose,
+            isHourlyPatternSummary: true,
+            hourLabel: hp.hourLabel
+          });
+        });
+      }
+    }
+
+    const formattedReadings = sourceReadings.map(r => {
       if (!r.timestamp) return { ...r, timestampMs: 0 };
       try {
         const date = new Date(r.timestamp);
-        if (isNaN(date.getTime())) return { ...r, timestampMs: 0 }; // already formatted mock
+        if (isNaN(date.getTime())) return { ...r, timestampMs: 0 };
         return {
           ...r,
           timestampMs: date.getTime(),
@@ -597,6 +774,23 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
+      if (data.isHourlyPatternSummary) {
+        return (
+          <div className="bg-slate-900/95 backdrop-blur-md border border-blue-900/50 text-white p-3.5 rounded-2xl shadow-xl max-w-[260px] pointer-events-none">
+            <p className="text-[10px] text-blue-400 font-bold mb-1">
+              {data.hourLabel || 'Hourly Pattern'} — Median Glucose
+            </p>
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs text-slate-400">Hourly Median:</span>
+              <span className="text-sm font-black text-blue-400">{data.value} mg/dL</span>
+            </div>
+            <p className="text-[8.5px] text-slate-400 border-t border-slate-800 pt-1.5 mt-1 leading-normal">
+              Combined LibreView Daily Pattern (Report Period 19–25 Aug 2026)
+            </p>
+          </div>
+        );
+      }
+
       return (
         <div className="bg-slate-900/95 backdrop-blur-md border border-slate-800 text-white p-3.5 rounded-2xl shadow-xl max-w-[240px] pointer-events-none">
           <p className="text-[10px] text-slate-400 font-bold mb-1.5">
@@ -659,40 +853,42 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
         </div>
       </motion.div>
 
-      {/* Tug of War Hero Banner */}
+      {/* Cellular Defense Strength Hero Banner (Streamlined Glass Card) */}
       {onBackToTugOfWar && (
         <motion.button
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15, duration: 0.4 }}
-          whileHover={{ scale: 1.015 }}
-          whileTap={{ scale: 0.98 }}
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.985 }}
           onClick={onBackToTugOfWar}
-          className="w-full mb-5 relative overflow-hidden rounded-3xl p-5 flex items-center justify-between gap-4 text-left shadow-lg"
-          style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #6366F1 100%)' }}
+          className="w-full mb-4 relative overflow-hidden rounded-2xl p-3.5 md:p-4 flex items-center justify-between gap-3.5 text-left shadow-[0_10px_25px_-5px_rgba(99,102,241,0.28)] border border-white/20 dark:border-white/10 group transition-all duration-300"
+          style={{ background: 'linear-gradient(135deg, #4338CA 0%, #6366F1 50%, #8B5CF6 100%)' }}
         >
-          {/* Decorative background circles */}
-          <div className="absolute -top-6 -right-6 h-32 w-32 rounded-full bg-white/5" />
-          <div className="absolute -bottom-4 right-16 h-20 w-20 rounded-full bg-white/5" />
-          <div className="absolute top-2 right-32 h-10 w-10 rounded-full bg-white/10" />
+          {/* Decorative mesh background glows & circles */}
+          <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-indigo-400/20 blur-xl group-hover:scale-125 transition-all duration-700 pointer-events-none" />
+          <div className="absolute -bottom-6 left-1/3 h-20 w-20 rounded-full bg-violet-400/20 blur-lg pointer-events-none" />
 
-          <div className="flex-1 min-w-0 flex items-center gap-3 md:gap-4 relative z-10">
-            <div className="h-12 w-12 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-2xl shrink-0 border border-white/20">
+          <div className="flex-1 min-w-0 flex items-center gap-3 relative z-10">
+            <div className="h-10 w-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-xl shrink-0 border border-white/30 shadow-inner group-hover:rotate-6 transition-transform duration-300">
               ⚖️
             </div>
             <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-0.5">
-                <span className="text-sm font-extrabold text-white tracking-tight">Cellular Defense Strength</span>
-                <span className="flex items-center gap-1 text-[9px] font-bold bg-white/20 text-white px-2 py-0.5 rounded-full border border-white/20 shrink-0">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 animate-pulse inline-block"></span>
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mb-0.5">
+                <span className="text-xs md:text-sm font-black text-white tracking-tight drop-shadow-xs">Cellular Defense Strength</span>
+                <span className="flex items-center gap-1 text-[8.5px] font-black bg-white/20 backdrop-blur-md text-emerald-300 px-2 py-0.5 rounded-full border border-white/20 shrink-0 shadow-xs">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping inline-block"></span>
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 -ml-2.5 inline-block"></span>
                   LIVE
                 </span>
               </div>
-              <p className="text-[11px] md:text-xs text-indigo-200 font-medium leading-tight">See how your daily habits shift the balance between repair & damage</p>
+              <p className="text-[10.5px] md:text-xs text-indigo-100/90 font-medium leading-tight truncate">
+                See how daily habits shift the balance between repair & damage
+              </p>
             </div>
           </div>
 
-          <div className="relative z-10 h-9 w-9 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0">
+          <div className="relative z-10 h-8 w-8 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/30 flex items-center justify-center shrink-0 shadow-sm group-hover:translate-x-1 transition-all">
             <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
             </svg>
@@ -818,46 +1014,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
           whileTap={{ scale: 0.98 }}
           className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-4 rounded-3xl border border-white/80 dark:border-slate-800 shadow-soft flex items-center justify-between gap-4"
         >
-
-          {/* Progress Ring (Explicit size) */}
-          <div className="relative h-20 w-20 shrink-0">
-            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-              <defs>
-                <linearGradient id="stabilityGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#3B82F6" />
-                  <stop offset="100%" stopColor="#10B981" />
-                </linearGradient>
-                <linearGradient id="warningGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#F59E0B" />
-                  <stop offset="100%" stopColor="#EF4444" />
-                </linearGradient>
-              </defs>
-              <path
-                className="text-slate-100/80 dark:text-slate-800"
-                strokeWidth="3.2"
-                stroke="currentColor"
-                fill="none"
-                d="M18 2.0845
-                  a 15.9155 15.9155 0 0 1 0 31.831
-                  a 15.9155 15.9155 0 0 1 0 -31.831"
-              />
-              <path
-                className="transition-all duration-700 ease-out"
-                strokeDasharray={`${Math.min(stability.percentage, 100)}, 100`}
-                strokeWidth="3.4"
-                strokeLinecap="round"
-                stroke={`url(#${stability.status === 'Goal Achieved' || stability.status === 'On Track' ? 'stabilityGrad' : 'warningGrad'})`}
-                fill="none"
-                d="M18 2.0845
-                  a 15.9155 15.9155 0 0 1 0 31.831
-                  a 15.9155 15.9155 0 0 1 0 -31.831"
-              />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-base font-black text-slate-800 dark:text-slate-100 leading-none">{Math.round(stability.percentage)}%</span>
-              <span className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">Stable</span>
-            </div>
-          </div>
+          {/* Shared Progress Ring Gauge */}
+          <StabilityScoreGauge 
+            percentage={stability.percentage} 
+            status={stability.status} 
+          />
 
           {/* Details */}
           <div className="flex flex-col justify-between flex-grow text-left py-0.5">
@@ -893,7 +1054,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
         <div className="grid grid-cols-2 gap-3.5">
           {/* Glucose Card */}
           {(() => {
-            const displayGlucose = dateRange === 'day' ? currentGlucose : calculateAverageGlucose();
+            const hasPointReadings = glucoseReadings.length > 0;
+            const hasSummaryData = !hasPointReadings && latestSummaryReport && (
+              latestSummaryReport.pdfSummaryAverageGlucose != null ||
+              latestSummaryReport.pdfSummaryTimeInRange != null ||
+              latestSummaryReport.glucoseVariability != null ||
+              (latestSummaryReport.dailySummaries && latestSummaryReport.dailySummaries.length > 0)
+            );
+
+            const displayGlucose = hasPointReadings
+              ? (dateRange === 'day' ? currentGlucose : calculateAverageGlucose())
+              : hasSummaryData
+                ? latestSummaryReport.pdfSummaryAverageGlucose
+                : null;
+
             const isLow = displayGlucose && displayGlucose < 70;
             const isStable = displayGlucose && displayGlucose <= spikeThreshold && displayGlucose >= 70;
             const isSpikeWarning = displayGlucose && displayGlucose > spikeThreshold && displayGlucose <= spikeThreshold + 40;
@@ -910,7 +1084,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
               <div className={`backdrop-blur-xl p-4 rounded-3xl border ${cardStyle} flex flex-col justify-between transition-all hover:scale-[1.01]`}>
                 <div className="flex justify-between items-center text-slate-400">
                   <span className="text-[10px] font-bold uppercase tracking-wider">
-                    {dateRange === 'day' ? 'Glucose' : 'Avg Glucose'}
+                    {hasSummaryData ? 'Avg Glucose' : dateRange === 'day' ? 'Glucose' : 'Avg Glucose'}
                   </span>
                   <Activity className="h-3.5 w-3.5 text-primary" />
                 </div>
@@ -921,9 +1095,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
                 </div>
 
                 <div className="pt-1.5 border-t border-slate-50 dark:border-slate-800 flex justify-between items-center">
-                  <span className="text-[7.5px] font-bold text-slate-400 uppercase tracking-wider">Calculated from Extracted Readings</span>
+                  <span className="text-[7.5px] font-bold text-slate-400 uppercase tracking-wider">
+                    {hasSummaryData ? 'LibreView PDF Summary' : 'Calculated from Extracted Readings'}
+                  </span>
                   {(() => {
-                    if (!displayGlucose) return <span className="text-[8px] font-bold text-slate-405 uppercase">No Data</span>;
+                    if (!displayGlucose) return <span className="text-[8px] font-bold text-slate-400 uppercase">No Data</span>;
                     if (isLow) return (
                       <span className="inline-flex items-center gap-1 text-[8px] font-extrabold text-sky-650 bg-sky-50 px-1.5 py-0.5 rounded-md border border-sky-100/50 uppercase tracking-wider">
                         <Droplets className="h-2.5 w-2.5 text-sky-500 fill-sky-200" />
@@ -955,22 +1131,42 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
           })()}
 
           {/* In Range */}
-          <motion.div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-4 rounded-3xl border border-white/80 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,0,0,0.015)] flex flex-col justify-between transition-all hover:scale-[1.01]">
-            <div className="flex justify-between items-center text-slate-400">
-              <span className="text-[10px] font-bold uppercase tracking-wider">In Range</span>
-              <TrendingUp className="h-3.5 w-3.5 text-secondary" />
-            </div>
+          {(() => {
+            const hasPointReadings = glucoseReadings.length > 0;
+            const hasSummaryData = !hasPointReadings && latestSummaryReport && (
+              latestSummaryReport.pdfSummaryAverageGlucose != null ||
+              latestSummaryReport.pdfSummaryTimeInRange != null ||
+              latestSummaryReport.glucoseVariability != null ||
+              (latestSummaryReport.dailySummaries && latestSummaryReport.dailySummaries.length > 0)
+            );
 
-            <div className="my-2.5 flex items-baseline space-x-0.5">
-              <span className="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none">{timeInRange}%</span>
-              <span className="text-[9px] font-bold text-slate-400 uppercase">Time</span>
-            </div>
+            const displayTir = hasPointReadings
+              ? timeInRange
+              : hasSummaryData
+                ? latestSummaryReport.pdfSummaryTimeInRange
+                : 0;
 
-            <div className="pt-1.5 border-t border-slate-50 dark:border-slate-800 flex justify-between items-center">
-              <span className="text-[7.5px] font-bold text-slate-400 uppercase tracking-wider">Calculated from Extracted Readings</span>
-              <span className="text-[8px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">70-140</span>
-            </div>
-          </motion.div>
+            return (
+              <motion.div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-4 rounded-3xl border border-white/80 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,0,0,0.015)] flex flex-col justify-between transition-all hover:scale-[1.01]">
+                <div className="flex justify-between items-center text-slate-400">
+                  <span className="text-[10px] font-bold uppercase tracking-wider">In Range</span>
+                  <TrendingUp className="h-3.5 w-3.5 text-secondary" />
+                </div>
+
+                <div className="my-2.5 flex items-baseline space-x-0.5">
+                  <span className="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none">{displayTir != null ? displayTir : '--'}%</span>
+                  <span className="text-[9px] font-bold text-slate-400 uppercase">Time</span>
+                </div>
+
+                <div className="pt-1.5 border-t border-slate-50 dark:border-slate-800 flex justify-between items-center">
+                  <span className="text-[7.5px] font-bold text-slate-400 uppercase tracking-wider">
+                    {hasSummaryData ? 'LibreView PDF Summary' : 'Calculated from Extracted Readings'}
+                  </span>
+                  <span className="text-[8px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">70-180</span>
+                </div>
+              </motion.div>
+            );
+          })()}
         </div>
 
       </motion.div>
@@ -1041,7 +1237,29 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
             {/* Active Date / Custom Range Pill */}
             <div className="flex items-center justify-between px-1">
               <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-slate-400">Selected Range</span>
-              {dateRange === 'custom' && customStartDate && customEndDate ? (
+              {glucoseReadings.length === 0 && latestSummaryReport ? (
+                <div className="flex items-center gap-1.5 bg-primary/10 text-primary dark:text-primary-light border border-primary/20 rounded-xl px-2.5 py-1 text-xs font-extrabold shadow-2xs">
+                  <Calendar className="h-3.5 w-3.5" />
+                  <span>
+                    {(() => {
+                      const range = latestSummaryReport.pdfSummaryDateRange;
+                      if (range?.startDateString && range?.endDateString) {
+                        const sParts = range.startDateString.split('-');
+                        const eParts = range.endDateString.split('-');
+                        const sDate = new Date(parseInt(sParts[0], 10), parseInt(sParts[1], 10) - 1, parseInt(sParts[2], 10));
+                        const eDate = new Date(parseInt(eParts[0], 10), parseInt(eParts[1], 10) - 1, parseInt(eParts[2], 10));
+                        return `${sDate.toLocaleDateString([], { month: 'short', day: 'numeric' })} – ${eDate.toLocaleDateString([], { month: 'short', day: 'numeric' })}`;
+                      }
+                      if (range?.startDate) {
+                        const sDate = new Date(range.startDate);
+                        const eDate = new Date(range.endDate || range.startDate);
+                        return `${sDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })} – ${eDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })}`;
+                      }
+                      return '19 Aug – 25 Aug';
+                    })()}
+                  </span>
+                </div>
+              ) : dateRange === 'custom' && customStartDate && customEndDate ? (
                 <button
                   onClick={() => setShowRangeModal(true)}
                   className="flex items-center gap-1.5 bg-primary/10 text-primary dark:text-primary-light border border-primary/20 rounded-xl px-2.5 py-1 text-xs font-extrabold shadow-2xs hover:bg-primary/20 transition-all cursor-pointer"
@@ -1064,11 +1282,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
           </div>
         </div>
 
-        {glucoseReadings.length === 0 ? (
+        {glucoseReadings.length === 0 && (!latestSummaryReport || (!latestSummaryReport.pdfSummaryAverageGlucose && (!latestSummaryReport.dailySummaries || latestSummaryReport.dailySummaries.length === 0))) ? (
           <div className="h-48 w-full flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 dark:bg-slate-800/30 rounded-2xl border border-dashed border-slate-200/80 dark:border-slate-700 p-4">
             <Activity className="h-7 w-7 mb-2 opacity-40 text-primary" />
             <p className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">No Data Available</p>
-            <p className="text-[10px] text-slate-400 mt-0.5 text-center max-w-[200px]">Upload a CGM CSV report to view continuous glucose insights.</p>
+            <p className="text-[10px] text-slate-400 mt-0.5 text-center max-w-[200px]">Upload a CGM CSV or PDF report to view continuous glucose insights.</p>
           </div>
         ) : (
           <div ref={chartScrollRef} className="h-60 w-full overflow-x-auto no-scrollbar scroll-smooth -mx-2">
@@ -1083,8 +1301,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" opacity={0.6} />
                   <XAxis
-                    dataKey={glucoseReadings[0]?.timestamp ? 'timestamp' : 'timeLabel'}
-                    tickFormatter={(value) => {
+                    dataKey={glucoseReadings.length > 0 ? 'timestamp' : 'hourLabel'}
+                    tickFormatter={(value, idx) => {
+                      if (glucoseReadings.length === 0 && latestSummaryReport) {
+                        return value || (formatChartData()[idx] ? formatChartData()[idx].hourLabel : '');
+                      }
                       const d = new Date(value);
                       if (isNaN(d.getTime())) return value;
                       if (dateRange === 'day') {
@@ -1096,7 +1317,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
                     tick={{ fontSize: 9, fill: '#64748B', fontWeight: 700 }}
                     axisLine={false}
                     tickLine={false}
-                    minTickGap={30}
+                    minTickGap={20}
                   />
                   <YAxis
                     domain={[40, 180]}

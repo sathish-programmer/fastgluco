@@ -7,6 +7,7 @@ import {
   RefreshCw, 
   CheckCircle2, 
   XCircle, 
+  AlertCircle,
   Loader2, 
   FileText,
   CreditCard,
@@ -137,10 +138,24 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
       const data = await response.json();
 
       if (response.ok) {
-        const hasCount = data.readingsCount !== undefined && data.readingsCount !== null;
-        const msgText = hasCount
-          ? `Report uploaded: Loaded ${data.readingsCount} readings.`
-          : `Report uploaded successfully! Processing PDF in background...`;
+        const pointReadingsCount = data.readingsCount || 0;
+        const reportObj = data.report || {};
+        const hasSummaryData = !!(
+          reportObj.pdfSummaryAverageGlucose ||
+          reportObj.pdfSummaryTimeInRange ||
+          reportObj.glucoseVariability ||
+          (reportObj.dailySummaries && reportObj.dailySummaries.length > 0) ||
+          (reportObj.hourlyPatternSummaries && reportObj.hourlyPatternSummaries.length > 0)
+        );
+
+        let msgText = '';
+        if (pointReadingsCount > 0) {
+          msgText = `Successfully loaded ${pointReadingsCount} glucose readings from "${file.name}".`;
+        } else if (hasSummaryData) {
+          msgText = `Successfully processed "${file.name}". No individual point readings were available, but LibreView summary and pattern data were extracted.`;
+        } else {
+          msgText = `Successfully processed "${file.name}".`;
+        }
         
         showToast(msgText, 'success');
         setMessage({ text: msgText, isError: false });
@@ -369,10 +384,17 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
           </div>
 
           {message && (
-            <div className={`p-3 text-xs font-semibold rounded-xl border ${
-              message.isError ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-100 dark:border-red-800/50' : 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-100 dark:border-green-800/50'
+            <div className={`p-4 text-xs font-semibold rounded-2xl border flex items-start gap-3 shadow-xs transition-all ${
+              message.isError 
+                ? 'bg-rose-50/90 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200/80 dark:border-rose-800/50' 
+                : 'bg-emerald-50/90 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200/80 dark:border-emerald-800/50'
             }`}>
-              {message.text}
+              <div className={`p-1.5 rounded-xl shrink-0 ${message.isError ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'}`}>
+                {message.isError ? <AlertCircle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+              </div>
+              <div className="flex-1 pt-0.5 leading-relaxed">
+                {message.text}
+              </div>
             </div>
           )}
 
@@ -501,10 +523,24 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
                     </span>
                     <div className="flex items-center space-x-1.5 mt-1.5">
                       {report.status === 'Processed' && (
-                        <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-2.5 py-0.5 rounded-full">
-                          <CheckCircle2 className="h-3 w-3 mr-1 shrink-0 text-emerald-500 dark:text-emerald-400" />
-                          {report.parsedReadingsCount} readings
-                        </span>
+                        <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                          {report.parsedReadingsCount > 0 ? (
+                            <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-2.5 py-0.5 rounded-full">
+                              <CheckCircle2 className="h-3 w-3 mr-1 shrink-0 text-emerald-500 dark:text-emerald-400" />
+                              {report.parsedReadingsCount} readings
+                            </span>
+                          ) : (
+                            <span className="text-[9px] font-bold text-blue-600 dark:text-blue-400 flex items-center bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-800 px-2.5 py-0.5 rounded-full">
+                              <CheckCircle2 className="h-3 w-3 mr-1 shrink-0 text-blue-500 dark:text-blue-400" />
+                              Summary Data Available
+                            </span>
+                          )}
+                          {report.detectedReportType && (
+                            <span className="text-[8px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
+                              {report.detectedReportType === 'LIBRE_WEBSITE_AGP_DAILY_LOG' ? 'LibreView PDF' : 'Scanned Daily Log'}
+                            </span>
+                          )}
+                        </div>
                       )}
                       {report.status === 'Processing' && (
                         <span className="text-[9px] font-bold text-primary dark:text-primary-light flex items-center bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-2.5 py-0.5 rounded-full">

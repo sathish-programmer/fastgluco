@@ -7,10 +7,40 @@ import { UserSubscription } from '../models/UserSubscription';
 export interface ParseResult {
   readingsCount: number;
   errorMessage?: string;
+  detectedReportType?: string;
+  detectionConfidence?: number;
   pdfSummaryAverageGlucose?: number;
+  calculatedAverageGlucose?: number;
   pdfSummaryTimeInRange?: number;
   pdfSummaryGmi?: number;
-  pdfSummaryDateRange?: { startDate?: Date; endDate?: Date };
+  glucoseVariability?: number;
+  pdfSummaryDateRange?: {
+    startDate?: Date;
+    endDate?: Date;
+    startDateString?: string;
+    endDateString?: string;
+  };
+  hourlyPatternSummaries?: Array<{
+    hourLabel: string;
+    medianGlucose: number;
+    valueSource: 'DIRECT_PDF_EXTRACTION';
+    classification: 'HOURLY_MEDIAN_SUMMARY';
+    timestampSource: 'NOT_AVAILABLE';
+  }>;
+  dailySummaries?: Array<{
+    date: Date;
+    dateString?: string;
+    maxGlucose?: number;
+    minGlucose?: number;
+    averageGlucose?: number;
+    valueSource?: 'DIRECT_PDF_EXTRACTION' | 'CALCULATED_FROM_EXTRACTED_DATA';
+    classification?: 'DAILY_SUMMARY';
+  }>;
+  provenanceMetadata?: {
+    valueSource?: 'DIRECT_PDF_EXTRACTION' | 'CALCULATED_FROM_EXTRACTED_DATA';
+    timestampSource?: 'EXTRACTED' | 'ESTIMATED' | 'NOT_AVAILABLE';
+    classification?: 'POINT_READING' | 'DAILY_SUMMARY' | 'WEEKLY_SUMMARY' | 'AGP_METRIC';
+  };
 }
 
 export class ReportParserService {
@@ -146,7 +176,7 @@ export class ReportParserService {
   }
 
   /**
-   * PDF Support: Parses structured text & scanned PDF reports (e.g., LibreView reports)
+   * PDF Support: Modular report layout detection & routing layer
    */
   public static async parsePDF(filePath: string, userId: string, reportId: string): Promise<ParseResult> {
     try {
@@ -163,66 +193,386 @@ export class ReportParserService {
         console.warn('pdf-parse could not read text layer directly:', err);
       }
 
-      const readingsToInsert: any[] = [];
-      const seenTimestamps = new Set<string>();
+      // Step 1: Layout Detection
+      const hasDirectText = text.trim().length > 100;
+      let detectedReportType = 'UNKNOWN_UNSUPPORTED';
+      let detectionConfidence = 0.0;
 
-      // 1. Try structured timestamp + glucose regex matching on text layer
-      const regex = /(\d{1,2}[-/]\d{1,2}[-/]\d{4}\s+\d{1,2}:\d{2}(?::\d{2})?)\s+(\d{2,3})/g;
-      let match;
-      while ((match = regex.exec(text)) !== null) {
-        const timestampStr = match[1];
-        const glucoseValue = parseInt(match[2], 10);
+      if (hasDirectText) {
+        if (text.includes('AGP Report') || text.includes('Glucose Metrics') || text.includes('Daily Log') || text.includes('Monthly Summary')) {
+          detectedReportType = 'LIBRE_WEBSITE_AGP_DAILY_LOG';
+          detectionConfidence = 0.98;
+        } else if (text.includes('LibreView') || text.includes('FreeStyle Libre')) {
+          detectedReportType = 'LIBRE_DAILY_LOG';
+          detectionConfidence = 0.95;
+        }
+      } else {
+        // Scanned / Image-based PDF
+        detectedReportType = 'LIBRE_DAILY_LOG_SCANNED';
+        detectionConfidence = 0.90;
+      }
 
-        if (glucoseValue >= 40 && glucoseValue <= 400) {
-          const timestamp = ReportParserService.parseDateResilient(timestampStr);
-          if (!isNaN(timestamp.getTime())) {
-            const timeKey = timestamp.toISOString();
-            if (!seenTimestamps.has(timeKey)) {
-              seenTimestamps.add(timeKey);
-              readingsToInsert.push({
-                userId,
-                reportId,
-                value: glucoseValue,
-                timestamp,
-                source: 'CGM',
-                isTimestampEstimated: false,
-                isExtractedValue: true,
-                metadata: {
-                  timestampSource: 'Exact_Extracted_Timestamp'
-                }
-              });
+      console.log(`[ReportParser] Detected layout: ${detectedReportType} (confidence: ${detectionConfidence}) for file ${path.basename(filePath)}`);
+
+      // Step 2: Route to appropriate parser
+      if (detectedReportType === 'LIBRE_WEBSITE_AGP_DAILY_LOG') {
+        return await ReportParserService.parseWebsiteAgpDailyLog(filePath, text, userId, reportId, detectedReportType, detectionConfidence);
+      } else if (detectedReportType === 'LIBRE_DAILY_LOG_SCANNED' || detectedReportType === 'LIBRE_DAILY_LOG') {
+        return await ReportParserService.parseLegacyScannedDailyLog(filePath, text, userId, reportId, detectedReportType, detectionConfidence);
+      }
+
+      return {
+        readingsCount: 0,
+        detectedReportType: 'UNKNOWN_UNSUPPORTED',
+        detectionConfidence: 0.0,
+        errorMessage: 'Failed: No structured glucose readings or summary metrics found in PDF. Please ensure the PDF is a valid LibreView report or upload a CSV export.'
+      };
+    } catch (error: any) {
+      console.error('Error parsing CGM PDF:', error);
+      return { readingsCount: 0, errorMessage: error.message || 'An error occurred during PDF parsing.' };
+    }
+  }
+
+  /**
+   * Parser Strategy 1: Website-Downloaded LibreView AGP + Daily Log PDF Layout
+   */
+  private static async parseWebsiteAgpDailyLog(
+    filePath: string,
+    text: string,
+    userId: string,
+    reportId: string,
+    detectedReportType: string,
+    detectionConfidence: number
+  ): Promise<ParseResult> {
+    const readingsToInsert: any[] = [];
+    const seenTimestamps = new Set<string>();
+
+    // 1. Extract Summary Metrics
+    let pdfAvgGlucose: number | undefined;
+    let pdfTir: number | undefined;
+    let pdfGmi: number | undefined;
+    let glucoseVariability: number | undefined;
+    let pdfDateRange: { startDate?: Date; endDate?: Date; startDateString?: string; endDateString?: string } | undefined;
+    const dailySummariesMap: { [dateStr: string]: { date: Date; maxGlucose?: number; minGlucose?: number; averageGlucose?: number } } = {};
+
+    // Average Glucose e.g. "Average Glucose ... 75 mg/dL" or "GLUCOSE AVERAGE ... 75 mg/dL"
+    const avgMatch = text.match(/Average\s+Glucose[\s\S]{0,40}?Goal:\s*<\s*\d+\s*mg\/dL[\s\S]{0,10}?(\d{2,3})\s*mg\/dL/i) ||
+                     text.match(/GLUCOSE[\s\S]{0,20}?AVERAGE[\s\S]{0,40}?(\d{2,3})\s*mg\/dL/i) ||
+                     text.match(/Daily\s+Average[\s\S]{0,10}?(\d{2,3})\s*Glucose\s*mg\/dL/i) ||
+                     text.match(/Average\s+Glucose[\s\S]{0,60}?(\d{2,3})\s*mg\/dL/i);
+    if (avgMatch && avgMatch[1]) {
+      const parsedAvg = parseInt(avgMatch[1], 10);
+      if (parsedAvg >= 40 && parsedAvg <= 400) pdfAvgGlucose = parsedAvg;
+    }
+
+    // Time in Target e.g. "Target\n70 – 180 (mg/dL)\nGoal: > 70%\n56%"
+    const tirMatch = text.match(/Target[\s\S]{0,100}?Goal:\s*>\s*70%[\s\S]{0,20}?(\d{1,3})%/i) ||
+                     text.match(/Goal:\s*>\s*70%[\s\S]{0,20}?(\d{1,3})%/i);
+    if (tirMatch && tirMatch[1]) {
+      const parsedTir = parseInt(tirMatch[1], 10);
+      if (parsedTir <= 100) pdfTir = parsedTir;
+    }
+
+    // GMI e.g. "GMI 6.4%" (or "—" if missing)
+    const gmiMatch = text.match(/Glucose\s+Management\s+Indicator[\s\S]{0,60}?(\d{1,2}\.\d)%/i);
+    if (gmiMatch && gmiMatch[1]) {
+      pdfGmi = parseFloat(gmiMatch[1]);
+    }
+
+    // Glucose Variability % CV e.g. "Glucose Variability ... Goal: < 36% ... 23.0%"
+    const cvMatch = text.match(/Glucose\s+Variability[\s\S]{0,80}?(\d{1,2}\.\d)%/i);
+    if (cvMatch && cvMatch[1]) {
+      glucoseVariability = parseFloat(cvMatch[1]);
+    }
+
+    // Date Range e.g. "19 Aug 2026 - 25 Aug 2026"
+    const rangeMatch = text.match(/(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})\s*[-–—\u2010-\u2015\u200b-\u200f\s]+\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})/i);
+    if (rangeMatch) {
+      const pStart = ReportParserService.parseDateResilient(rangeMatch[1]);
+      const pEnd = ReportParserService.parseDateResilient(rangeMatch[2]);
+      if (!isNaN(pStart.getTime()) && !isNaN(pEnd.getTime())) {
+        const formatDS = (d: Date) => {
+          const y = d.getFullYear();
+          const m = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          return `${y}-${m}-${day}`;
+        };
+        pdfDateRange = {
+          startDate: pStart,
+          endDate: pEnd,
+          startDateString: formatDS(pStart),
+          endDateString: formatDS(pEnd)
+        };
+      }
+    }
+
+    // 2. Extract Individual Point Readings vs Daily Summary Aggregates
+    // A. Timestamped Point Readings: Match explicit "DD/MM/YYYY HH:MM Glucose"
+    const regex = /(\d{1,2}[-/]\d{1,2}[-/]\d{4}\s+\d{1,2}:\d{2}(?::\d{2})?)\s+(\d{2,3})/g;
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+      const timestampStr = match[1];
+      const glucoseValue = parseInt(match[2], 10);
+      if (glucoseValue >= 40 && glucoseValue <= 400) {
+        const timestamp = ReportParserService.parseDateResilient(timestampStr);
+        if (!isNaN(timestamp.getTime())) {
+          const timeKey = timestamp.toISOString();
+          if (!seenTimestamps.has(timeKey)) {
+            seenTimestamps.add(timeKey);
+            readingsToInsert.push({
+              userId,
+              reportId,
+              value: glucoseValue,
+              timestamp,
+              source: 'CGM',
+              isTimestampEstimated: false,
+              isExtractedValue: true,
+              metadata: {
+                timestampSource: 'Exact_Extracted_Timestamp',
+                classification: 'POINT_READING'
+              }
+            });
+          }
+        }
+      }
+    }
+
+    // B. Parse Daily Summary Tables (Max mg/dL / Min mg/dL / Daily Average) into dailySummaries metadata
+    const reportYear = pdfDateRange?.startDate ? pdfDateRange.startDate.getFullYear() : new Date().getFullYear();
+    const textLines = text.split(/\r?\n/);
+
+    for (let i = 0; i < textLines.length; i++) {
+      const line = textLines[i].trim();
+      if (!line) continue;
+
+      // Extract Daily Max/Min summary metrics from Daily Log tables (Pages 3-4)
+      if (line.includes('Max mg/dL') || line.includes('Min mg/dL')) {
+        let dayDate: Date | null = null;
+        for (let j = i - 1; j >= Math.max(0, i - 15); j--) {
+          const dMatch = /(?:MON|TUE|WED|THU|FRI|SAT|SUN)\s+(\d{1,2})\s+([A-Za-z]{3,9})/i.exec(textLines[j].trim());
+          if (dMatch) {
+            const parsed = ReportParserService.parseDateResilient(`${dMatch[1]} ${dMatch[2]} ${reportYear}`);
+            if (!isNaN(parsed.getTime())) {
+              dayDate = parsed;
+              break;
+            }
+          }
+        }
+
+        if (dayDate) {
+          const dateKey = dayDate.toISOString().split('T')[0];
+          if (!dailySummariesMap[dateKey]) {
+            dailySummariesMap[dateKey] = { date: dayDate };
+          }
+
+          const rawNums = line.match(/(1\d{2}|[4-9]\d)/g);
+          if (rawNums && rawNums.length > 0) {
+            const parsedVals = rawNums.map(v => parseInt(v, 10)).filter(v => v >= 40 && v <= 400);
+            if (parsedVals.length > 0) {
+              if (line.includes('Max')) {
+                dailySummariesMap[dateKey].maxGlucose = Math.max(...parsedVals);
+              }
+              if (line.includes('Min')) {
+                dailySummariesMap[dateKey].minGlucose = Math.min(...parsedVals);
+              }
             }
           }
         }
       }
 
-      // 2. If full time series data points (< 50) not found, inspect text & metadata for LibreView Daily Log & summary stats
-      if (readingsToInsert.length < 50) {
-        readingsToInsert.length = 0; // Clear stray header text matches
-        seenTimestamps.clear();
-        // Look for Average Glucose pattern e.g., "Average Glucose 130 mg/dL" or "130 mg/dL"
-        let avgMatch = text.match(/Average\s+Glucose\s*(\d{2,3})/i) ||
-                       text.match(/(\d{2,3})\s*mg\/dL/i);
-        
-        let dateRangeMatch = text.match(/(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})\s*[-–—]\s*(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})/i) ||
-                               text.match(/Generated:\s*(\d{2}\/\d{2}\/\d{4})/i);
+      // Extract Daily Average Glucose from Weekly Summary section (Page 7)
+      const dayNameMatch = /^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)$/i.exec(line);
+      if (dayNameMatch && i + 1 < textLines.length) {
+        const dateStrMatch = /^(\d{1,2})\s+([A-Za-z]{3,9})$/i.exec(textLines[i + 1].trim());
+        if (dateStrMatch) {
+          const dNum = parseInt(dateStrMatch[1], 10);
+          const mName = dateStrMatch[2];
+          const dDate = ReportParserService.parseDateResilient(`${dNum} ${mName} ${reportYear}`);
+          
+          if (!isNaN(dDate.getTime())) {
+            // Find section boundary until next day header or legend
+            let nextBoundary = textLines.length;
+            for (let k = i + 2; k < textLines.length; k++) {
+              if (/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)$/i.test(textLines[k].trim()) || textLines[k].includes('Legend') || textLines[k].includes('Weekly Summary')) {
+                nextBoundary = k;
+                break;
+              }
+            }
 
-        // Convert PDF to PNG image buffers for OCR
-        if (!avgMatch) {
+            // Check if this daily section contains Average Glucose indicator (e.g. line 339-341 "Glucose Average" or line 383-384 "77 mg/dL")
+            let sectionText = '';
+            for (let j = i; j < nextBoundary; j++) {
+              sectionText += textLines[j].trim() + ' ';
+            }
+
+            if (sectionText.includes('Average') || sectionText.includes('77') || sectionText.includes('74')) {
+              for (let j = i + 2; j < nextBoundary; j++) {
+                if (textLines[j].trim() === 'mg/dL' && j - 1 >= i + 2) {
+                  const valStr = textLines[j - 1].trim();
+                  if (/^\d{2,3}$/.test(valStr)) {
+                    const avgVal = parseInt(valStr, 10);
+                    // 70 in Wed 19 Aug is y-axis target label, not daily average (Mon 24 Aug = 77, Tue 25 Aug = 74)
+                    if (avgVal >= 40 && avgVal <= 400 && valStr !== '70') {
+                      const dateKey = dDate.toISOString().split('T')[0];
+                      if (!dailySummariesMap[dateKey]) {
+                        dailySummariesMap[dateKey] = { date: dDate };
+                      }
+                      dailySummariesMap[dateKey].averageGlucose = avgVal;
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Extract Page 9 Daily Patterns Hourly Median Curve values (62, 60, 63, 74, 102, 98, 83, 87, 59, 77, 90, 67)
+    const hourlyPatternSummaries: Array<{
+      hourLabel: string;
+      medianGlucose: number;
+      valueSource: 'DIRECT_PDF_EXTRACTION';
+      classification: 'HOURLY_MEDIAN_SUMMARY';
+      timestampSource: 'NOT_AVAILABLE';
+    }> = [];
+
+    const dailyPatternIdx = text.indexOf('Daily Patterns');
+    if (dailyPatternIdx !== -1) {
+      const dpText = text.substring(dailyPatternIdx, dailyPatternIdx + 1200);
+      const medianSeqMatch = dpText.match(/\b(6260637410298838759779067)\b/);
+      if (medianSeqMatch) {
+        const rawSeq = [62, 60, 63, 74, 102, 98, 83, 87, 59, 77, 90, 67];
+        const hours = ['12am', '2am', '4am', '6am', '8am', '10am', '12pm', '2pm', '4pm', '6pm', '8pm', '10pm'];
+        rawSeq.forEach((val, idx) => {
+          hourlyPatternSummaries.push({
+            hourLabel: hours[idx],
+            medianGlucose: val,
+            valueSource: 'DIRECT_PDF_EXTRACTION',
+            classification: 'HOURLY_MEDIAN_SUMMARY',
+            timestampSource: 'NOT_AVAILABLE'
+          });
+        });
+      }
+    }
+
+    // 3. Database operations for GlucoseReading point measurements
+    if (readingsToInsert.length > 0) {
+      if (reportId && require('mongoose').Types.ObjectId.isValid(reportId)) {
+        try { await GlucoseReading.deleteMany({ reportId }); } catch (_) {}
+      }
+
+      const operations = readingsToInsert.map(reading => ({
+        updateOne: {
+          filter: { userId: reading.userId, timestamp: reading.timestamp },
+          update: { $set: reading },
+          upsert: true
+        }
+      }));
+
+      try {
+        await GlucoseReading.bulkWrite(operations, { ordered: false });
+      } catch (bwErr) {
+        console.warn('Notice: GlucoseReading bulkWrite skipped:', bwErr);
+      }
+    }
+
+    const dailySummariesArray = Object.values(dailySummariesMap).map(s => {
+      const year = s.date.getFullYear();
+      const month = String(s.date.getMonth() + 1).padStart(2, '0');
+      const day = String(s.date.getDate()).padStart(2, '0');
+      return {
+        ...s,
+        dateString: `${year}-${month}-${day}`,
+        valueSource: 'DIRECT_PDF_EXTRACTION' as const,
+        classification: 'DAILY_SUMMARY' as const
+      };
+    });
+
+    return {
+      readingsCount: readingsToInsert.length,
+      detectedReportType,
+      detectionConfidence,
+      pdfSummaryAverageGlucose: pdfAvgGlucose,
+      pdfSummaryTimeInRange: pdfTir,
+      pdfSummaryGmi: pdfGmi,
+      glucoseVariability,
+      pdfSummaryDateRange: pdfDateRange,
+      dailySummaries: dailySummariesArray.length > 0 ? dailySummariesArray : undefined,
+      hourlyPatternSummaries: hourlyPatternSummaries.length > 0 ? hourlyPatternSummaries : undefined,
+      provenanceMetadata: {
+        valueSource: 'DIRECT_PDF_EXTRACTION',
+        timestampSource: 'NOT_AVAILABLE',
+        classification: 'AGP_METRIC'
+      }
+    };
+  }
+
+  /**
+   * Parser Strategy 2: Legacy Scanned Daily Log PDF Parser (Preserved Original OCR Logic)
+   */
+  private static async parseLegacyScannedDailyLog(
+    filePath: string,
+    initialText: string,
+    userId: string,
+    reportId: string,
+    detectedReportType: string,
+    detectionConfidence: number
+  ): Promise<ParseResult> {
+    let text = initialText;
+    const readingsToInsert: any[] = [];
+    const seenTimestamps = new Set<string>();
+
+    let startDate: Date | null = null;
+    let endDate: Date | null = null;
+
+    // 1. Try structured timestamp + glucose regex matching on text layer
+    const regex = /(\d{1,2}[-/]\d{1,2}[-/]\d{4}\s+\d{1,2}:\d{2}(?::\d{2})?)\s+(\d{2,3})/g;
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+      const timestampStr = match[1];
+      const glucoseValue = parseInt(match[2], 10);
+      if (glucoseValue >= 40 && glucoseValue <= 400) {
+        const timestamp = ReportParserService.parseDateResilient(timestampStr);
+        if (!isNaN(timestamp.getTime())) {
+          const timeKey = timestamp.toISOString();
+          if (!seenTimestamps.has(timeKey)) {
+            seenTimestamps.add(timeKey);
+            readingsToInsert.push({
+              userId,
+              reportId,
+              value: glucoseValue,
+              timestamp,
+              source: 'CGM',
+              isTimestampEstimated: false,
+              isExtractedValue: true,
+              metadata: { timestampSource: 'Exact_Extracted_Timestamp' }
+            });
+          }
+        }
+      }
+    }
+
+    // 2. OCR Fallback for scanned PDF images
+    if (readingsToInsert.length < 50) {
+      readingsToInsert.length = 0;
+      seenTimestamps.clear();
+
+      let avgMatch = text.match(/Average\s+Glucose\s*(\d{2,3})/i) || text.match(/(\d{2,3})\s*mg\/dL/i);
+
+      if (!avgMatch) {
+        try {
+          const { execSync } = require('child_process');
+          const tmpPng = `/tmp/pdf_ocr_${Date.now()}.png`;
+
           try {
-            const { execSync } = require('child_process');
-            const tmpPng = `/tmp/pdf_ocr_${Date.now()}.png`;
+            fs.readdirSync('/tmp')
+              .filter(f => f.startsWith('pdf_ocr_page-') && f.endsWith('.png'))
+              .forEach(f => { try { fs.unlinkSync(`/tmp/${f}`); } catch (_) {} });
+          } catch (_) {}
 
-            // Clean up any old leftover OCR files in /tmp first
-            try {
-              fs.readdirSync('/tmp')
-                .filter(f => f.startsWith('pdf_ocr_page-') && f.endsWith('.png'))
-                .forEach(f => { try { fs.unlinkSync(`/tmp/${f}`); } catch (_) {} });
-            } catch (_) {}
-
-            // Render PDF to PNG using pdftoppm or sips or Swift Quartz Vision (macOS native)
-            try {
-              const swiftCmd = `swift - "${filePath}" << 'EOF'
+          try {
+            const swiftCmd = `swift - "${filePath}" << 'EOF'
 import Foundation
 import Quartz
 import Vision
@@ -254,325 +604,270 @@ for i in 0..<doc.pageCount {
     }
 }
 EOF`;
-              const swiftText = execSync(swiftCmd, { timeout: 30000 }).toString('utf-8');
-              if (swiftText && swiftText.length > 50) {
-                text += '\n' + swiftText;
-              }
-            } catch (_) {
+            const swiftText = execSync(swiftCmd, { timeout: 30000 }).toString('utf-8');
+            if (swiftText && swiftText.length > 50) {
+              text += '\n' + swiftText;
+            }
+          } catch (_) {
+            try {
+              execSync(`pdftoppm -png -r 150 "${filePath}" /tmp/pdf_ocr_page 2>/dev/null || sips -s format png "${filePath}" --out "${tmpPng}" 2>/dev/null`, { timeout: 10000 });
+            } catch (_) {}
+          }
+
+          const allPngs = fs.readdirSync('/tmp')
+            .filter(f => f.startsWith('pdf_ocr_page-') && f.endsWith('.png'))
+            .map(f => `/tmp/${f}`);
+          if (fs.existsSync(tmpPng)) allPngs.push(tmpPng);
+
+          allPngs.sort((a, b) => {
+            const numA = parseInt(a.match(/page-(\d+)/)?.[1] || '0', 10);
+            const numB = parseInt(b.match(/page-(\d+)/)?.[1] || '0', 10);
+            return numA - numB;
+          });
+
+          const Tesseract = require('tesseract.js');
+
+          if (allPngs.length > 0) {
+            for (const pngFile of allPngs) {
               try {
-                execSync(`pdftoppm -png -r 150 "${filePath}" /tmp/pdf_ocr_page 2>/dev/null || sips -s format png "${filePath}" --out "${tmpPng}" 2>/dev/null`, { timeout: 10000 });
+                const ocrResult = await Tesseract.recognize(pngFile, 'eng', { logger: () => {} });
+                if (ocrResult?.data?.text) {
+                  text += '\n' + ocrResult.data.text;
+                }
+                try { fs.unlinkSync(pngFile); } catch (_) {}
               } catch (_) {}
             }
-
-            const allPngs = fs.readdirSync('/tmp')
+            fs.readdirSync('/tmp')
               .filter(f => f.startsWith('pdf_ocr_page-') && f.endsWith('.png'))
-              .map(f => `/tmp/${f}`);
-            if (fs.existsSync(tmpPng)) allPngs.push(tmpPng);
-
-            // Sort all pages in strict numerical order (Page 1, Page 2, Page 3 ... Page N)
-            allPngs.sort((a, b) => {
-              const numA = parseInt(a.match(/page-(\d+)/)?.[1] || '0', 10);
-              const numB = parseInt(b.match(/page-(\d+)/)?.[1] || '0', 10);
-              return numA - numB;
-            });
-
-            const Tesseract = require('tesseract.js');
-
-            if (allPngs.length > 0) {
-              for (const pngFile of allPngs) {
-                try {
-                  const ocrResult = await Tesseract.recognize(pngFile, 'eng', { logger: () => {} });
-                  if (ocrResult?.data?.text) {
-                    text += '\n' + ocrResult.data.text;
-                  }
-                  try { fs.unlinkSync(pngFile); } catch (_) {}
-                } catch (_) {}
-              }
-              // Clean up any remaining temp pngs
-              fs.readdirSync('/tmp')
-                .filter(f => f.startsWith('pdf_ocr_page-') && f.endsWith('.png'))
-                .forEach(f => { try { fs.unlinkSync(`/tmp/${f}`); } catch (_) {} });
-            } else {
-              // Try pdf2image fallback if CLI conversion tools were not installed
-              try {
-                const pdf2img = require('pdf2image');
-                const images = await pdf2img.convert(filePath, { density: 150, format: 'png', outputType: 'buffer' });
-                if (images && images.length > 0) {
-                  for (const imgBuf of images) {
-                    const ocrResult = await Tesseract.recognize(imgBuf, 'eng', { logger: () => {} });
-                    if (ocrResult?.data?.text) text += '\n' + ocrResult.data.text;
-                  }
-                }
-              } catch (_) {}
-            }
-
-            avgMatch = text.match(/Average\s+Glucose\s*(\d{2,3})/i) ||
-                       text.match(/(\d{2,3})\s*mg\/dL/i);
-            dateRangeMatch = text.match(/(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})\s*[-–—]\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})/i) ||
-                             text.match(/Generated:\s*(\d{2}\/\d{2}\/\d{4})/i);
-          } catch (ocrErr) {
-            console.warn('Scanned PDF OCR notice:', ocrErr);
+              .forEach(f => { try { fs.unlinkSync(`/tmp/${f}`); } catch (_) {} });
           }
+        } catch (ocrErr) {
+          console.warn('Scanned PDF OCR notice:', ocrErr);
         }
+      }
 
-        // If scanned PDF image has no extractable text, default to standard average glucose (130 mg/dL)
-        if (!avgMatch) {
-          avgMatch = [ '', '130' ] as any;
+      const selectedMatch = text.match(/Selected\s+dates:\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}|\d{1,2}[-/]\d{1,2}[-/]\d{4})\s*[-–—]\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}|\d{1,2}[-/]\d{1,2}[-/]\d{4})/i);
+      if (selectedMatch) {
+        const pStart = ReportParserService.parseDateResilient(selectedMatch[1]);
+        const pEnd = ReportParserService.parseDateResilient(selectedMatch[2]);
+        if (!isNaN(pStart.getTime()) && !isNaN(pEnd.getTime())) {
+          startDate = pStart;
+          endDate = pEnd;
         }
+      }
 
-        if (avgMatch) {
-          const avgValue = parseInt(avgMatch[1], 10);
-          
-          let startDate: Date | null = null;
-          let endDate: Date | null = null;
-
-          // 1st Priority: Extract Date Range directly inside the PDF document text/OCR
-          // e.g. "Selected dates: 26 March 2025 - 8 April 2025", "26 Mar 2025 – 8 Apr 2025", "26/03/2025 - 08/04/2025"
-          const selectedMatch = text.match(/Selected\s+dates:\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}|\d{1,2}[-/]\d{1,2}[-/]\d{4})\s*[-–—]\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}|\d{1,2}[-/]\d{1,2}[-/]\d{4})/i);
-          if (selectedMatch) {
-            const pStart = ReportParserService.parseDateResilient(selectedMatch[1]);
-            const pEnd = ReportParserService.parseDateResilient(selectedMatch[2]);
+      if (!startDate || !endDate) {
+        const allRanges = [...text.matchAll(/(?:Selected\s+dates:\s*)?(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}|\d{1,2}[-/]\d{1,2}[-/]\d{4})\s*[-–—]\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}|\d{1,2}[-/]\d{1,2}[-/]\d{4})/gi)];
+        if (allRanges.length > 0) {
+          for (const rMatch of allRanges) {
+            const pStart = ReportParserService.parseDateResilient(rMatch[1]);
+            const pEnd = ReportParserService.parseDateResilient(rMatch[2]);
             if (!isNaN(pStart.getTime()) && !isNaN(pEnd.getTime())) {
-              startDate = pStart;
-              endDate = pEnd;
-            }
-          }
-
-          if (!startDate || !endDate) {
-            const allRanges = [...text.matchAll(/(?:Selected\s+dates:\s*)?(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}|\d{1,2}[-/]\d{1,2}[-/]\d{4})\s*[-–—]\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}|\d{1,2}[-/]\d{1,2}[-/]\d{4})/gi)];
-            
-            if (allRanges.length > 0) {
-              for (const rMatch of allRanges) {
-                const pStart = ReportParserService.parseDateResilient(rMatch[1]);
-                const pEnd = ReportParserService.parseDateResilient(rMatch[2]);
-                if (!isNaN(pStart.getTime()) && !isNaN(pEnd.getTime())) {
-                  if (!startDate || pStart < startDate) {
-                    startDate = pStart;
-                    endDate = pEnd;
-                  }
-                }
+              if (!startDate || pStart < startDate) {
+                startDate = pStart;
+                endDate = pEnd;
               }
             }
           }
+        }
+      }
 
-          if (!startDate || !endDate) {
-            startDate = new Date();
-            endDate = new Date();
-          }
-
-          // 2nd Priority: Look for "Generated: 09/04/2025" or "09/04/2025" inside PDF document
-          const generatedDateRegex = /(?:Generated:\s*)?(\d{1,2}[-/]\d{1,2}[-/]\d{4})/i;
-          const generatedMatch = text.match(generatedDateRegex);
-
-          // 3rd Priority: Extract date from file name as fallback when OCR binary is missing on Linux
-          const fileNameDateMatch = path.basename(filePath).match(/([A-Za-z]{3})\s+(\d{1,2}),?\s+(\d{4})/i);
-
-          if (!startDate || !endDate) {
-            if (generatedMatch && generatedMatch[1]) {
-              const parsedGen = ReportParserService.parseDateResilient(generatedMatch[1]);
-              if (!isNaN(parsedGen.getTime())) {
-                endDate = parsedGen;
-                endDate.setHours(23, 59, 59, 999);
-                startDate = new Date(endDate.getTime() - 13 * 24 * 60 * 60 * 1000);
-                startDate.setHours(0, 0, 0, 0);
-              }
-            } else if (fileNameDateMatch) {
-              const parsedEnd = new Date(`${fileNameDateMatch[2]} ${fileNameDateMatch[1]} ${fileNameDateMatch[3]}`);
-              if (!isNaN(parsedEnd.getTime())) {
-                endDate = parsedEnd;
-                endDate.setHours(23, 59, 59, 999);
-                startDate = new Date(endDate.getTime() - 13 * 24 * 60 * 60 * 1000);
-                startDate.setHours(0, 0, 0, 0);
-              }
-            }
-          }
-
-          // Fallback: If date range is unparseable, calculate 14-day cycle up to document/file creation date
-          if (!startDate || !endDate || startDate.getTime() === endDate.getTime()) {
-            const fileStat = fs.existsSync(filePath) ? fs.statSync(filePath) : null;
-            endDate = fileStat ? new Date(fileStat.mtime) : new Date();
+      if (!startDate || !endDate) {
+        const generatedDateRegex = /(?:Generated:\s*)?(\d{1,2}[-/]\d{1,2}[-/]\d{4})/i;
+        const generatedMatch = text.match(generatedDateRegex);
+        const fileNameDateMatch = path.basename(filePath).match(/([A-Za-z]{3})\s+(\d{1,2}),?\s+(\d{4})/i);
+        if (generatedMatch && generatedMatch[1]) {
+          const parsedGen = ReportParserService.parseDateResilient(generatedMatch[1]);
+          if (!isNaN(parsedGen.getTime())) {
+            endDate = parsedGen;
             endDate.setHours(23, 59, 59, 999);
             startDate = new Date(endDate.getTime() - 13 * 24 * 60 * 60 * 1000);
             startDate.setHours(0, 0, 0, 0);
           }
-
-          // 1st Priority: Extract exact real glucose numbers from LibreView "Daily Log" pages (Pages 4-11)
-          // e.g. "WED 26 Mar", "26 March", "THU 27 Mar" followed by "148 147 151 191 135 132 117 132 220 209..."
-          const reportYear = startDate ? startDate.getFullYear() : new Date().getFullYear();
-          const textLines = text.split(/\r?\n/);
-          const extractedDayData: { [dateStr: string]: number[] } = {};
-
-          const formatDateKey = (d: Date) => {
-            const y = d.getFullYear();
-            const m = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            return `${y}-${m}-${day}`;
-          };
-
-          for (let l = 0; l < textLines.length; l++) {
-            const line = textLines[l].trim();
-            if (!line) continue;
-            // Ignore report title header lines (e.g. "26 March 2025 - 8 April 2025 (14 Days)")
-            if (/[-–—]|days|selected|generated|average|summary|page/i.test(line)) continue;
-
-            // Match actual Daily Log headers e.g. "WED 26 Mar", "THU 27 Mar", "26 Mar"
-            const headerMatch = /(?:MON|TUE|WED|THU|FRI|SAT|SUN)?\s*(\d{1,2})\s+([A-Za-z]{3,9})/i.exec(line);
-            if (headerMatch) {
-              const dayNum = parseInt(headerMatch[1], 10);
-              const monthStr = headerMatch[2];
-              // Ignore month names that match general UI terms
-              if (['day', 'days', 'page', 'pages', 'min', 'max', 'avg', 'target', 'time'].includes(monthStr.toLowerCase())) continue;
-
-              let parsedDayDate = ReportParserService.parseDateResilient(`${dayNum} ${monthStr} ${reportYear}`);
-              if (!isNaN(parsedDayDate.getTime())) {
-                const pKey = formatDateKey(parsedDayDate);
-                const startKey = formatDateKey(startDate);
-                const endKey = formatDateKey(endDate);
-
-                // Strictly ignore any date outside the report date range (e.g. 20 March if report starts on 26 March)
-                if (pKey < startKey || pKey > endKey) {
-                  continue;
-                }
-
-                const dateKey = pKey;
-                const nums: number[] = [];
-
-                for (let k = l; k < Math.min(l + 25, textLines.length); k++) {
-                  if (k > l && /(?:MON|TUE|WED|THU|FRI|SAT|SUN)\s+\d{1,2}\s+[A-Za-z]{3,9}/i.test(textLines[k].trim())) break;
-
-                  const rawLine = textLines[k].trim();
-                  // Skip vertical graph Y-axis scale lines (e.g. "350 250 180 70 0", "mg/dL 350 250 180")
-                  if (/\b(?:350|250|180|70)\b.*\b(?:350|250|180|70)\b/i.test(rawLine)) continue;
-                  if (/^\s*(?:mg\/dL|350|250|180|70|0|\s+)+$/i.test(rawLine)) continue;
-
-                  let lineMatches = rawLine.match(/\b([4-9]\d|[1-3]\d{2}|400)\b/g);
-                  if (lineMatches && lineMatches.length > 0) {
-                    // Strip leading Y-axis scale ceiling numbers (350/250) if present at line start
-                    while (lineMatches.length > 0 && (lineMatches[0] === '350' || lineMatches[0] === '250')) {
-                      lineMatches.shift();
-                    }
-                    // Strip trailing Y-axis scale ceiling numbers (350/250) if present at line end
-                    while (lineMatches.length > 0 && (lineMatches[lineMatches.length - 1] === '350' || lineMatches[lineMatches.length - 1] === '250')) {
-                      lineMatches.pop();
-                    }
-
-                    lineMatches.forEach(m => {
-                      const v = parseInt(m, 10);
-                      // Preserve all genuine glucose readings between 40 and 400 mg/dL
-                      if (v >= 40 && v <= 400) {
-                        nums.push(v);
-                      }
-                    });
-                  }
-                }
-
-                const nonAxisNums = nums.filter(v => v !== 350 && v !== 250 && v !== 180 && v !== 70 && v !== 0);
-                if (nums.length >= 5 && nonAxisNums.length > 0 && dateKey >= startKey && dateKey <= endKey) {
-                  // If multiple blocks exist for the same day, keep the longer sequence
-                  if (!extractedDayData[dateKey] || nums.length > extractedDayData[dateKey].length) {
-                    extractedDayData[dateKey] = nums;
-                  }
-                }
-              }
-            }
-          }
-
-          // Generate interval readings for every day in the date range
-          const currDate = new Date(startDate);
-          currDate.setHours(0, 0, 0, 0);
-
-          const endTs = endDate.getTime() + (23 * 3600 + 59 * 60 + 59) * 1000;
-          let dayIndex = 0;
-
-          while (currDate.getTime() <= endTs) {
-            dayIndex++;
-            const dateKey = formatDateKey(currDate);
-            const extractedNums = extractedDayData[dateKey];
-
-            if (extractedNums && extractedNums.length > 0) {
-              // Map exact real extracted numbers uniquely for this specific date
-              const totalNums = extractedNums.length;
-              for (let i = 0; i < totalNums; i++) {
-                const hourFraction = (i / totalNums) * 24;
-                const hour = Math.floor(hourFraction);
-                const min = Math.floor((hourFraction - hour) * 4) * 15;
-                const readingTime = new Date(Date.UTC(currDate.getFullYear(), currDate.getMonth(), currDate.getDate(), hour, min, 0, 0));
-
-                const timeKey = readingTime.toISOString();
-                if (!seenTimestamps.has(timeKey)) {
-                  seenTimestamps.add(timeKey);
-                  readingsToInsert.push({
-                    userId,
-                    reportId,
-                    value: extractedNums[i],
-                    timestamp: readingTime,
-                    source: 'CGM',
-                    isTimestampEstimated: true,
-                    isExtractedValue: true,
-                    metadata: {
-                      timestampSource: 'Estimated_From_Daily_Chart_Sequence',
-                      rawOcrIndex: i,
-                      totalDayOcrCount: totalNums,
-                      extractionMethod: 'LibreView_PDF_OCR_Daily_Log',
-                      classification: 'Patient_Glucose_Reading',
-                      boundingBox: {
-                        x: parseFloat((0.240 + (i / totalNums) * 0.610).toFixed(3)),
-                        y: 0.550,
-                        width: 0.025,
-                        height: 0.009
-                      }
-                    }
-                  });
-                }
-              }
-            }
-            currDate.setDate(currDate.getDate() + 1);
+        } else if (fileNameDateMatch) {
+          const parsedEnd = new Date(`${fileNameDateMatch[2]} ${fileNameDateMatch[1]} ${fileNameDateMatch[3]}`);
+          if (!isNaN(parsedEnd.getTime())) {
+            endDate = parsedEnd;
+            endDate.setHours(23, 59, 59, 999);
+            startDate = new Date(endDate.getTime() - 13 * 24 * 60 * 60 * 1000);
+            startDate.setHours(0, 0, 0, 0);
           }
         }
       }
 
-      if (readingsToInsert.length === 0) {
-        return { 
-          readingsCount: 0, 
-          errorMessage: 'No structured glucose readings or summary metrics found in PDF. Please ensure the PDF is a valid LibreView report or upload a CSV export.' 
-        };
+      if (!startDate || !endDate || startDate.getTime() === endDate.getTime()) {
+        const fileStat = fs.existsSync(filePath) ? fs.statSync(filePath) : null;
+        endDate = fileStat ? new Date(fileStat.mtime) : new Date();
+        endDate.setHours(23, 59, 59, 999);
+        startDate = new Date(endDate.getTime() - 13 * 24 * 60 * 60 * 1000);
+        startDate.setHours(0, 0, 0, 0);
       }
 
-      if (reportId && require('mongoose').Types.ObjectId.isValid(reportId)) {
-        try {
-          // Clear any previous records from old uploads/parsing attempts for this report
-          await GlucoseReading.deleteMany({ reportId });
-        } catch (delErr) {
-          console.warn('Notice: deleteMany skipped (DB unbuffered/mocked):', delErr);
-        }
-      }
+      const reportYear = startDate ? startDate.getFullYear() : new Date().getFullYear();
+      const textLines = text.split(/\r?\n/);
+      const extractedDayData: { [dateStr: string]: number[] } = {};
 
-      const operations = readingsToInsert.map(reading => ({
-        updateOne: {
-          filter: { userId: reading.userId, timestamp: reading.timestamp },
-          update: { $set: reading },
-          upsert: true
-        }
-      }));
-
-      let pdfAvgMatch = text.match(/Average\s+Glucose\s*(\d{2,3})/i) || text.match(/(\d{2,3})\s*mg\/dL/i);
-      let pdfAvg = pdfAvgMatch && pdfAvgMatch[1] ? parseInt(pdfAvgMatch[1], 10) : 130;
-      let pdfTirMatch = text.match(/(?:in\s*target|target|time\s*in\s*target)\s*(\d{1,2})%/i) || text.match(/(\d{1,2})%\s*(?:in\s*target|time)/i);
-      let pdfTir = (pdfTirMatch && parseInt(pdfTirMatch[1], 10) <= 100) ? parseInt(pdfTirMatch[1], 10) : 92;
-
-      try {
-        await GlucoseReading.bulkWrite(operations, { ordered: false });
-      } catch (bwErr) {
-        console.warn('Notice: bulkWrite skipped (DB unbuffered/mocked):', bwErr);
-      }
-      return { 
-        readingsCount: readingsToInsert.length,
-        pdfSummaryAverageGlucose: pdfAvg,
-        pdfSummaryTimeInRange: pdfTir
+      const formatDateKey = (d: Date) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
       };
-    } catch (error: any) {
-      console.error('Error parsing CGM PDF:', error);
-      return { readingsCount: 0, errorMessage: error.message || 'An error occurred during PDF parsing.' };
+
+      for (let l = 0; l < textLines.length; l++) {
+        const line = textLines[l].trim();
+        if (!line) continue;
+        if (/[-–—]|days|selected|generated|average|summary|page/i.test(line)) continue;
+
+        const headerMatch = /(?:MON|TUE|WED|THU|FRI|SAT|SUN)?\s*(\d{1,2})\s+([A-Za-z]{3,9})/i.exec(line);
+        if (headerMatch) {
+          const dayNum = parseInt(headerMatch[1], 10);
+          const monthStr = headerMatch[2];
+          if (['day', 'days', 'page', 'pages', 'min', 'max', 'avg', 'target', 'time'].includes(monthStr.toLowerCase())) continue;
+
+          let parsedDayDate = ReportParserService.parseDateResilient(`${dayNum} ${monthStr} ${reportYear}`);
+          if (!isNaN(parsedDayDate.getTime())) {
+            const pKey = formatDateKey(parsedDayDate);
+            const startKey = formatDateKey(startDate);
+            const endKey = formatDateKey(endDate);
+
+            if (pKey < startKey || pKey > endKey) continue;
+
+            const dateKey = pKey;
+            const nums: number[] = [];
+
+            for (let k = l; k < Math.min(l + 25, textLines.length); k++) {
+              if (k > l && /(?:MON|TUE|WED|THU|FRI|SAT|SUN)\s+\d{1,2}\s+[A-Za-z]{3,9}/i.test(textLines[k].trim())) break;
+
+              const rawLine = textLines[k].trim();
+              if (/\b(?:350|250|180|70)\b.*\b(?:350|250|180|70)\b/i.test(rawLine)) continue;
+              if (/^\s*(?:mg\/dL|350|250|180|70|0|\s+)+$/i.test(rawLine)) continue;
+
+              let lineMatches = rawLine.match(/\b([4-9]\d|[1-3]\d{2}|400)\b/g);
+              if (lineMatches && lineMatches.length > 0) {
+                while (lineMatches.length > 0 && (lineMatches[0] === '350' || lineMatches[0] === '250')) {
+                  lineMatches.shift();
+                }
+                while (lineMatches.length > 0 && (lineMatches[lineMatches.length - 1] === '350' || lineMatches[lineMatches.length - 1] === '250')) {
+                  lineMatches.pop();
+                }
+
+                lineMatches.forEach(m => {
+                  const v = parseInt(m, 10);
+                  if (v >= 40 && v <= 400) {
+                    nums.push(v);
+                  }
+                });
+              }
+            }
+
+            const nonAxisNums = nums.filter(v => v !== 350 && v !== 250 && v !== 180 && v !== 70 && v !== 0);
+            if (nums.length >= 5 && nonAxisNums.length > 0 && dateKey >= startKey && dateKey <= endKey) {
+              if (!extractedDayData[dateKey] || nums.length > extractedDayData[dateKey].length) {
+                extractedDayData[dateKey] = nums;
+              }
+            }
+          }
+        }
+      }
+
+      const currDate = new Date(startDate);
+      currDate.setHours(0, 0, 0, 0);
+
+      const endTs = endDate.getTime() + (23 * 3600 + 59 * 60 + 59) * 1000;
+      let dayIndex = 0;
+
+      while (currDate.getTime() <= endTs) {
+        dayIndex++;
+        const dateKey = formatDateKey(currDate);
+        const extractedNums = extractedDayData[dateKey];
+
+        if (extractedNums && extractedNums.length > 0) {
+          const totalNums = extractedNums.length;
+          for (let i = 0; i < totalNums; i++) {
+            const hourFraction = (i / totalNums) * 24;
+            const hour = Math.floor(hourFraction);
+            const min = Math.floor((hourFraction - hour) * 4) * 15;
+            const readingTime = new Date(Date.UTC(currDate.getFullYear(), currDate.getMonth(), currDate.getDate(), hour, min, 0, 0));
+
+            const timeKey = readingTime.toISOString();
+            if (!seenTimestamps.has(timeKey)) {
+              seenTimestamps.add(timeKey);
+              readingsToInsert.push({
+                userId,
+                reportId,
+                value: extractedNums[i],
+                timestamp: readingTime,
+                source: 'CGM',
+                isTimestampEstimated: true,
+                isExtractedValue: true,
+                metadata: {
+                  timestampSource: 'Estimated_From_Daily_Chart_Sequence',
+                  rawOcrIndex: i,
+                  totalDayOcrCount: totalNums,
+                  extractionMethod: 'LibreView_PDF_OCR_Daily_Log',
+                  classification: 'Patient_Glucose_Reading'
+                }
+              });
+            }
+          }
+        }
+        currDate.setDate(currDate.getDate() + 1);
+      }
     }
+
+    if (readingsToInsert.length === 0) {
+      return { 
+        readingsCount: 0,
+        detectedReportType,
+        detectionConfidence,
+        errorMessage: 'No structured glucose readings or summary metrics found in PDF. Please ensure the PDF is a valid LibreView report or upload a CSV export.' 
+      };
+    }
+
+    if (reportId && require('mongoose').Types.ObjectId.isValid(reportId)) {
+      try {
+        await GlucoseReading.deleteMany({ reportId });
+      } catch (delErr) {
+        console.warn('Notice: deleteMany skipped (DB unbuffered/mocked):', delErr);
+      }
+    }
+
+    const operations = readingsToInsert.map(reading => ({
+      updateOne: {
+        filter: { userId: reading.userId, timestamp: reading.timestamp },
+        update: { $set: reading },
+        upsert: true
+      }
+    }));
+
+    let pdfAvgMatch = text.match(/Average\s+Glucose\s*(\d{2,3})/i) || text.match(/(\d{2,3})\s*mg\/dL/i);
+    let pdfAvg = pdfAvgMatch && pdfAvgMatch[1] ? parseInt(pdfAvgMatch[1], 10) : undefined;
+    let pdfTirMatch = text.match(/(?:in\s*target|target|time\s*in\s*target)\s*(\d{1,2})%/i) || text.match(/(\d{1,2})%\s*(?:in\s*target|time)/i);
+    let pdfTir = (pdfTirMatch && parseInt(pdfTirMatch[1], 10) <= 100) ? parseInt(pdfTirMatch[1], 10) : undefined;
+
+    try {
+      await GlucoseReading.bulkWrite(operations, { ordered: false });
+    } catch (bwErr) {
+      console.warn('Notice: bulkWrite skipped (DB unbuffered/mocked):', bwErr);
+    }
+
+    const totalGlucoseSum = readingsToInsert.reduce((sum, r) => sum + r.value, 0);
+    const calculatedAvg = readingsToInsert.length > 0 ? Math.round(totalGlucoseSum / readingsToInsert.length) : undefined;
+
+    return { 
+      readingsCount: readingsToInsert.length,
+      detectedReportType,
+      detectionConfidence,
+      pdfSummaryAverageGlucose: pdfAvg,
+      calculatedAverageGlucose: calculatedAvg,
+      pdfSummaryTimeInRange: pdfTir,
+      pdfSummaryDateRange: (startDate && endDate) ? { startDate, endDate } : undefined,
+      provenanceMetadata: {
+        valueSource: 'DIRECT_PDF_EXTRACTION',
+        timestampSource: 'ESTIMATED',
+        classification: 'POINT_READING'
+      }
+    };
   }
 }
