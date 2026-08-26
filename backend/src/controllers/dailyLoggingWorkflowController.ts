@@ -9,7 +9,7 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
   {
     stepId: 'stress',
     title: 'Metabolic Stress Check',
-    questionPrompt: 'How was your stress level today? Chronic stress increases cancer risk by elevating cortisol and suppressing immune response.',
+    questionPrompt: 'How was your stress level today? Managing stress lowers cortisol, supporting immune balance and overall longevity.',
     inputType: 'OPTIONS',
     options: ['No Stress (Calm)', 'Mild Stress', 'Moderate Stress', 'High Stress'],
     order: 1,
@@ -28,8 +28,8 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
     stepId: 'fasting',
     title: 'Circadian Fasting Window',
     questionPrompt: 'Did you complete your circadian fasting window today? (e.g., 16:8 intermittent fasting)',
-    inputType: 'YES_NO',
-    options: ['Yes (Completed)', 'Partial (Short Window)', 'No (Skipped)'],
+    inputType: 'OPTIONS',
+    options: ['Yes (16+ hrs)', 'Yes (12-16 hrs)', 'Partial (<12 hrs)', 'No (Skipped)'],
     order: 3,
     isEnabled: true
   },
@@ -38,44 +38,116 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
     title: 'Movement & Exercise',
     questionPrompt: 'Did you complete any physical movement or exercise today?',
     inputType: 'OPTIONS',
-    options: ['30+ min Walk / Run', 'Yoga / Stretching', 'Strength Training', 'Light Activity', 'No Movement Today'],
+    options: ['30+ min Walk / Run', 'Yoga / Stretching (20+ min)', 'Strength Training', 'Light Activity (<20 min)', 'No Movement Today'],
     order: 4,
     isEnabled: true
   },
   {
-    stepId: 'smoking',
-    title: 'Alcohol & Smoking Exposure',
-    questionPrompt: 'Did you consume alcohol or smoke today? Both are known carcinogens.',
+    stepId: 'stillness',
+    title: 'Stillness & Meditation',
+    questionPrompt: 'Did you practice stillness, quiet meditation, or deep breathing for at least 10 minutes today?',
     inputType: 'YES_NO',
-    options: ['No (Clean Day)', 'Alcohol Only', 'Smoking Only', 'Both'],
+    options: ['Yes (10+ min)', 'Not Today'],
     order: 5,
     isEnabled: true
   },
   {
-    stepId: 'damage_habits',
-    title: 'Damage Habits Check',
-    questionPrompt: 'Did you have high-glycemic foods, processed snacks, late-night meals, or environmental chemical exposures today?',
-    inputType: 'OPTIONS',
-    options: ['None (Clean Day)', 'High-GI Foods', 'Processed / Junk Food', 'Late-night Eating', 'Chemical Exposure'],
+    stepId: 'joy',
+    title: 'Things You Love',
+    questionPrompt: 'Did you spend time doing something you love today (hobbies, music, family, art, gratitude)?',
+    inputType: 'YES_NO',
+    options: ['Yes (Done)', 'Not Today'],
     order: 6,
     isEnabled: true
   },
   {
-    stepId: 'repair_habits',
-    title: 'Cellular Repair Habits',
-    questionPrompt: 'Did you consume antioxidants (berries, greens, turmeric) or complete a repair habit today?',
-    inputType: 'OPTIONS',
-    options: ['Antioxidant-rich Meal', 'Hydration Goal Met (2L+)', 'Sunlight / Vitamin D', 'Meditation / Deep Breathing', 'None Today'],
+    stepId: 'smoking',
+    title: 'Smoking Exposure',
+    questionPrompt: 'Did you smoke or get exposed to tobacco smoke today?',
+    inputType: 'YES_NO',
+    options: ['No (Clean Day)', 'Yes (Smoke / Exposed)'],
     order: 7,
     isEnabled: true
   },
   {
-    stepId: 'joy_stillness',
-    title: 'Joy & Stillness',
-    questionPrompt: 'Did you spend time on something you love or practice stillness / mindfulness today?',
-    inputType: 'YES_NO',
-    options: ['Yes (Practiced)', 'Not Today'],
+    stepId: 'alcohol',
+    title: 'Alcohol Intake Check',
+    questionPrompt: 'Did you consume any alcoholic beverages today?',
+    inputType: 'OPTIONS',
+    options: ['No Alcohol (Clean Day)', '1-2 Drinks', '3+ Drinks (Heavy)'],
     order: 8,
+    isEnabled: true
+  },
+  {
+    stepId: 'antioxidants',
+    title: 'Antioxidants & Repair Foods',
+    questionPrompt: 'Did you consume antioxidant-rich foods (berries, greens, amla, turmeric) or repair supplements today?',
+    inputType: 'YES_NO',
+    options: ['Yes (Consumed)', 'Not Today'],
+    order: 9,
+    isEnabled: true
+  },
+  {
+    stepId: 'env_air',
+    title: 'Air Pollution Exposure',
+    questionPrompt: 'Did you commute in heavy traffic (>30 min) or experience indoor smoke/incense/mosquito coil exposure today?',
+    inputType: 'YES_NO',
+    options: ['No (Clean Air)', 'Yes (Smog / Smoke Exposure)'],
+    order: 10,
+    isEnabled: true
+  },
+  {
+    stepId: 'env_water',
+    title: 'Water Carcinogens Check',
+    questionPrompt: 'Do you use safe filtered drinking water (RO / carbon filtered, free of heavy metals, chlorine byproducts, and PFAS)?',
+    inputType: 'YES_NO',
+    options: ['Yes (Safe Filtered)', 'No / Unfiltered Tap'],
+    order: 11,
+    isEnabled: true
+  },
+  {
+    stepId: 'env_pesticides',
+    title: 'Pesticides Exposure',
+    questionPrompt: 'Did you consume unwashed non-organic high-pesticide produce (Dirty Dozen) or use chemical bug sprays today?',
+    inputType: 'YES_NO',
+    options: ['No (Clean / Organic)', 'Yes (Pesticide Exposure)'],
+    order: 12,
+    isEnabled: true
+  },
+  {
+    stepId: 'env_microplastics',
+    title: 'Microplastics Exposure',
+    questionPrompt: 'Did you drink from heated plastic bottles, microwave food in plastic containers, or drink hot beverages from paper/plastic cups today?',
+    inputType: 'YES_NO',
+    options: ['No (Plastic-Free)', 'Yes (Plastic / Hot Cup Exposure)'],
+    order: 13,
+    isEnabled: true
+  },
+  {
+    stepId: 'gut_health',
+    title: 'Gut & Oral Health Check',
+    questionPrompt: 'Did you experience acidity/gastritis or oral/dental discomfort today?',
+    inputType: 'OPTIONS',
+    options: ['No Issues (Healthy)', 'Gastritis / Acidity', 'Dental Discomfort', 'Both'],
+    order: 14,
+    isEnabled: true
+  },
+  {
+    stepId: 'genetics',
+    title: 'Family History of Cancer',
+    questionPrompt: 'Do you have anybody in your family with cancer, or a self-diagnosis of cancer?',
+    inputType: 'YES_NO',
+    options: ['No Family History', 'Yes (Family History of Cancer)'],
+    order: 15,
+    isEnabled: true
+  },
+  {
+    stepId: 'substances',
+    title: 'Chemical & Industrial Substances',
+    questionPrompt: 'Were you exposed to harmful industrial chemicals, asbestos, or hazardous substances today?',
+    inputType: 'YES_NO',
+    options: ['No (Clean Day)', 'Yes (Chemical Exposure)'],
+    order: 16,
     isEnabled: true
   },
   {
@@ -83,18 +155,14 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
     title: 'Lab / CGM Report Upload',
     questionPrompt: 'Do you have a new CGM report, HbA1c, or cancer screening result to upload today? Tap below to upload.',
     inputType: 'FILE',
-    options: ['Skip for Now'],
-    order: 9,
+    options: ['Skip for Now', 'Upload Report (PDF / CSV)'],
+    order: 17,
     isEnabled: true
   }
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CANCER TREATMENT (Mode: TREATMENT / CANCER_PATIENT)
-// Mirrors EXACTLY the manual items in the Cancer Treatment dashboard:
-// Intermittent Fasting, Movement, Stillness, Things You Love,
-// Are You Stressed/Worried, Caregiver Stress, Sleep, Report Upload
-// stepIds match the habit types saved by the manual screens
 // ─────────────────────────────────────────────────────────────────────────────
 const DEFAULT_TREATMENT_STEPS: IWorkflowStep[] = [
   {
@@ -117,8 +185,8 @@ const DEFAULT_TREATMENT_STEPS: IWorkflowStep[] = [
   },
   {
     stepId: 'stillness',
-    title: 'Stillness',
-    questionPrompt: 'Did you practice stillness or deep breathing meditation today?',
+    title: 'Stillness & Meditation',
+    questionPrompt: 'Did you practice stillness, quiet meditation, or deep breathing for at least 10 minutes today?',
     inputType: 'YES_NO',
     options: ['Yes (Practiced)', 'Not Today'],
     order: 3,
@@ -164,7 +232,6 @@ const DEFAULT_TREATMENT_STEPS: IWorkflowStep[] = [
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SECONDARY PREVENTION (Mode: SECONDARY_PREVENTION)
-// For cancer survivors — tracks long-term recovery & recurrence prevention
 // ─────────────────────────────────────────────────────────────────────────────
 const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
   {
@@ -189,7 +256,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     stepId: 'fasting',
     title: 'Metabolic Fasting Window',
     questionPrompt: 'Did you complete your metabolic fasting window today? Fasting helps suppress recurrence risk.',
-    inputType: 'YES_NO',
+    inputType: 'OPTIONS',
     options: ['Yes (16+ hours)', 'Yes (12-16 hours)', 'Partial (Under 12h)', 'No (Skipped)'],
     order: 3,
     isEnabled: true
@@ -204,12 +271,21 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     isEnabled: true
   },
   {
-    stepId: 'damage_habits',
-    title: 'Risk Habit Avoidance',
-    questionPrompt: 'Did you avoid known recurrence-risk factors today (alcohol, smoking, processed foods, chemical exposure)?',
-    inputType: 'OPTIONS',
-    options: ['Clean Day (All Avoided)', 'Occasional Alcohol', 'Processed Foods', 'Missed Sunscreen / Chemical Exposure', 'Multiple Risk Factors'],
+    stepId: 'stillness',
+    title: 'Stillness & Meditation',
+    questionPrompt: 'Did you practice stillness, meditation, or deep breathing today?',
+    inputType: 'YES_NO',
+    options: ['Yes (Practiced)', 'Not Today'],
     order: 5,
+    isEnabled: true
+  },
+  {
+    stepId: 'joy',
+    title: 'Joy & Gratitude',
+    questionPrompt: 'Did you practice gratitude or engage in activities that bring you joy today?',
+    inputType: 'YES_NO',
+    options: ['Yes (Done)', 'Not Today'],
+    order: 6,
     isEnabled: true
   },
   {
@@ -218,7 +294,52 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you include anti-cancer repair foods today (cruciferous vegetables, berries, turmeric, omega-3s)?',
     inputType: 'OPTIONS',
     options: ['Yes (Anti-cancer Meal)', 'Partial (1-2 items)', 'Hydration Goal Met', 'Supplements Taken', 'No Specific Nutrition'],
-    order: 6,
+    order: 7,
+    isEnabled: true
+  },
+  {
+    stepId: 'env_air',
+    title: 'Air Pollution Exposure',
+    questionPrompt: 'Did you commute in heavy traffic (>30 min) or experience indoor smoke/incense/mosquito coil exposure today?',
+    inputType: 'YES_NO',
+    options: ['No (Clean Air)', 'Yes (Smog / Smoke Exposure)'],
+    order: 8,
+    isEnabled: true
+  },
+  {
+    stepId: 'env_water',
+    title: 'Water Carcinogens Check',
+    questionPrompt: 'Do you use safe filtered drinking water (RO / carbon filtered, free of heavy metals, chlorine byproducts, and PFAS)?',
+    inputType: 'YES_NO',
+    options: ['Yes (Safe Filtered)', 'No / Unfiltered Tap'],
+    order: 9,
+    isEnabled: true
+  },
+  {
+    stepId: 'env_pesticides',
+    title: 'Pesticides Exposure',
+    questionPrompt: 'Did you consume unwashed non-organic high-pesticide produce (Dirty Dozen) or use chemical bug sprays today?',
+    inputType: 'YES_NO',
+    options: ['No (Clean / Organic)', 'Yes (Pesticide Exposure)'],
+    order: 10,
+    isEnabled: true
+  },
+  {
+    stepId: 'env_microplastics',
+    title: 'Microplastics Exposure',
+    questionPrompt: 'Did you drink from heated plastic bottles, microwave food in plastic containers, or drink hot beverages from paper/plastic cups today?',
+    inputType: 'YES_NO',
+    options: ['No (Plastic-Free)', 'Yes (Plastic / Hot Cup Exposure)'],
+    order: 11,
+    isEnabled: true
+  },
+  {
+    stepId: 'genetics',
+    title: 'Family History of Cancer',
+    questionPrompt: 'Do you have anybody in your family with cancer, or a self-diagnosis of cancer?',
+    inputType: 'YES_NO',
+    options: ['No Family History', 'Yes (Family History of Cancer)'],
+    order: 12,
     isEnabled: true
   },
   {
@@ -227,16 +348,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you have any follow-up appointment, imaging, or blood work today? Are your next screenings scheduled?',
     inputType: 'OPTIONS',
     options: ['Appointment Today (Done)', 'Upcoming Scheduled', 'Need to Schedule', 'No Follow-up Required'],
-    order: 7,
-    isEnabled: true
-  },
-  {
-    stepId: 'joy_stillness',
-    title: 'Joy, Gratitude & Stillness',
-    questionPrompt: 'Did you practice gratitude, mindfulness, or engage in activities that bring you joy today?',
-    inputType: 'YES_NO',
-    options: ['Yes (Practiced)', 'Brief Moment of Peace', 'Not Today'],
-    order: 8,
+    order: 13,
     isEnabled: true
   },
   {
@@ -245,7 +357,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Do you have new follow-up labs, imaging reports (PET/CT/MRI), or tumor markers to upload? I will process and update your dashboard.',
     inputType: 'FILE',
     options: ['Skip for Now'],
-    order: 9,
+    order: 14,
     isEnabled: true
   }
 ];

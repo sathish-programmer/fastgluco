@@ -167,7 +167,7 @@ export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBo
           </span>
           {smokeFreeDays > 0 && (
             <span className="text-[10px] font-extrabold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800/40">
-              🎉 {smokeFreeDays} Smoke-Free Days
+              {smokeFreeDays} Smoke-Free Days
             </span>
           )}
         </div>

@@ -32,6 +32,7 @@ import {
   Bot
 } from 'lucide-react';
 import { DailyLoggingChatbotModal } from '../components/DailyLoggingChatbotModal';
+import { AiDailyCheckinFloatingNudge } from '../components/AiDailyCheckinFloatingNudge';
 import { AiBannerQuickNudge } from '../components/AiBannerQuickNudge';
 import { useConsultation } from '../context/ConsultationContext';
 import { StressLogScreen } from '../screens/HabitScreens/StressLogScreen';
@@ -102,11 +103,9 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
   const [isApptDismissed, setIsApptDismissed] = useState<boolean>(false);
   const [showAskMito, setShowAskMito] = useState<boolean>(false);
   const [showChatbotModal, setShowChatbotModal] = useState<boolean>(false);
+  const [pendingHabitsCount, setPendingHabitsCount] = useState<number>(0);
   const [pendingManualAction, setPendingManualAction] = useState<{ key: string; params?: any } | null>(null);
   const [showAiNudgeModal, setShowAiNudgeModal] = useState<boolean>(false);
-  const [showFabTooltip, setShowFabTooltip] = useState<boolean>(
-    () => !localStorage.getItem('ai_checkin_tooltip_seen')
-  );
   const [showFastingDisclaimer, setShowFastingDisclaimer] = useState<boolean>(false);
   const [fastingStep, setFastingStep] = useState<number>(1);
 
@@ -133,6 +132,62 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
       const logs = await HabitsService.getRecentHabits(apiUrl, token, 'all', 30);
       setHabits(logs);
       checkHealthDanger(logs);
+
+      // Calculate pending habits count for today
+      const todayStr = new Date().toDateString();
+      const todayLogs = logs.filter((h: any) =>
+        new Date(h.timestamp || h.createdAt).toDateString() === todayStr
+      );
+      const envHabit = todayLogs.find((h: any) => (h.type || '').toUpperCase() === 'ENVIRONMENTAL');
+      const envAnswers = envHabit?.value?.answers || {};
+
+      let wfMode = 'STANDARD';
+      if (activeMode === 'TREATMENT') wfMode = 'CANCER_PATIENT';
+      else if (activeMode === 'SECONDARY_PREVENTION') wfMode = 'SECONDARY_PREVENTION';
+
+      const [wfRes, reportsRes] = await Promise.all([
+        fetch(`${apiUrl}/daily-logging-workflows/active?mode=${wfMode}`, { headers: { 'Authorization': `Bearer ${token}` } }).catch(() => null),
+        fetch(`${apiUrl}/reports`, { headers: { 'Authorization': `Bearer ${token}` } }).catch(() => null)
+      ]);
+
+      let activeSteps: string[] = [];
+      if (wfRes && wfRes.ok) {
+        const wfData = await wfRes.json();
+        activeSteps = (wfData?.steps || []).filter((s: any) => s.isEnabled).map((s: any) => s.stepId || s.id || s.title);
+      }
+      if (activeSteps.length === 0) {
+        activeSteps = activeMode === 'TREATMENT'
+          ? ['stillness', 'joy', 'stress', 'sleep', 'report_upload']
+          : ['sleep', 'movement', 'fasting', 'stillness', 'stress'];
+      }
+
+      let reportsLoggedToday = false;
+      if (reportsRes && reportsRes.ok) {
+        const rData = await reportsRes.json();
+        reportsLoggedToday = (rData || []).some((r: any) => new Date(r.createdAt || r.uploadedAt).toDateString() === todayStr);
+      }
+
+      const checkStepCompleted = (stepId: string): boolean => {
+        const s = (stepId || '').toLowerCase();
+        if (s === 'stress' || s === 'caregiver_stress') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'STRESS');
+        if (s === 'sleep') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'SLEEP');
+        if (s === 'fasting') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'FASTING');
+        if (s === 'movement') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'MOVEMENT');
+        if (s === 'stillness') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'STILLNESS');
+        if (s === 'joy') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'JOY');
+        if (s === 'smoking') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'SMOKING');
+        if (s === 'alcohol') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'ALCOHOL');
+        if (s === 'antioxidants') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'ANTIOXIDANTS');
+        if (s === 'report_upload' || s.includes('report')) return reportsLoggedToday || todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('REPORT'));
+        if (s === 'env_air') return envAnswers.airQ1 !== undefined && envAnswers.airQ1 !== null;
+        if (s === 'env_water') return envAnswers.waterQ1 !== undefined && envAnswers.waterQ1 !== null;
+        if (s === 'env_pesticides') return envAnswers.pesticidesQ1 !== undefined && envAnswers.pesticidesQ1 !== null;
+        if (s === 'env_microplastics') return envAnswers.microplasticsQ1 !== undefined && envAnswers.microplasticsQ1 !== null;
+        return false;
+      };
+
+      const pendingCount = activeSteps.filter(s => !checkStepCompleted(s)).length;
+      setPendingHabitsCount(pendingCount);
     } catch (err) {
       console.error('Failed to load habits', err);
     }
@@ -170,7 +225,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
           const confirmedFuture = data
             .filter((a: any) => a.status === 'confirmed')
             .sort((a: any, b: any) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime())[0];
-          
+
           if (confirmedFuture) {
             const dismissedId = localStorage.getItem(`dismissed_appt_${confirmedFuture._id}`);
             setIsApptDismissed(!!dismissedId);
@@ -188,14 +243,6 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
       fetchHabitsAndAppointments();
     }
   }, [activeScreen, apiUrl, token]);
-
-  useEffect(() => {
-    const hasAutoOpened = sessionStorage.getItem('mito_ai_checkin_auto_opened');
-    if (!hasAutoOpened) {
-      setShowChatbotModal(true);
-      sessionStorage.setItem('mito_ai_checkin_auto_opened', 'true');
-    }
-  }, []);
 
   const checkHealthDanger = (logs: HabitLog[]) => {
     // Group logs by type and date
@@ -371,7 +418,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
   today.setHours(0, 0, 0, 0);
 
   let currentCheckDate = new Date(today);
-  
+
   if (sortedDates.length > 0) {
     if (sortedDates[0].getTime() !== today.getTime()) {
       const yesterday = new Date(today);
@@ -542,13 +589,13 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
   const neutralCount = Math.max(0, totalLogs - damageCount - repairCount);
 
   // Pie chart data
-  const chartData = totalLogs === 0 
+  const chartData = totalLogs === 0
     ? [{ name: 'Empty', value: 1, color: '#f1f5f9' }] // slate-100
     : [
-        ...(damageCount > 0 ? [{ name: 'Damage', value: damageCount, color: '#f43f5e' }] : []),
-        ...(repairCount > 0 ? [{ name: 'Repair', value: repairCount, color: '#10b981' }] : []),
-        ...(neutralCount > 0 ? [{ name: 'Neutral', value: neutralCount, color: '#94a3b8' }] : [])
-      ];
+      ...(damageCount > 0 ? [{ name: 'Damage', value: damageCount, color: '#f43f5e' }] : []),
+      ...(repairCount > 0 ? [{ name: 'Repair', value: repairCount, color: '#10b981' }] : []),
+      ...(neutralCount > 0 ? [{ name: 'Neutral', value: neutralCount, color: '#94a3b8' }] : [])
+    ];
 
   const { setPendingRecommendationId } = useConsultation();
 
@@ -595,7 +642,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
   const activeScreenComponent = renderActiveScreen();
   if (activeScreenComponent) {
     const isShopScreen = activeScreen === 'AntioxidantsShop' || activeScreen === 'SaferProducts' || activeScreen === 'GastritisShop' || activeScreen === 'GeneticShop' || activeScreen === 'WigShop' || activeScreen === 'EnvironmentalShop';
-    
+
     const getScreenTitle = (screen: string | null) => {
       switch (screen) {
         case 'Stress': return 'Stress';
@@ -662,7 +709,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
       </div>
     );
   }
-  
+
   const isCancerPatient = activeMode === 'TREATMENT';
 
   const handleOpenHabit = (screenName: string) => {
@@ -684,7 +731,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
   if (activeMode === 'TREATMENT' && !showTugOfWar) {
     return (
       <div className="pb-36 pt-4 px-0 max-w-5xl mx-auto bg-gradient-to-b from-slate-50/90 to-slate-100/80 dark:from-slate-950/90 dark:to-slate-900/80 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-200 transition-colors duration-300">
-        <ModeSwitcher />
+        {/* <ModeSwitcher /> */}
         <Dashboard onNavigateToTab={onNavigateToTab} onBackToTugOfWar={() => setShowTugOfWar(true)} />
       </div>
     );
@@ -738,7 +785,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
 
   return (
     <div className="pb-24 pt-4 px-3.5 sm:px-4 max-w-5xl mx-auto bg-gradient-to-b from-slate-50/90 to-slate-100/80 dark:from-slate-900/90 dark:to-slate-950/80 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-200 transition-colors duration-300">
-      
+
       {/* Feature Discovery & Ask Mito Modals */}
       <AskMitoDrawer
         isOpen={showAskMito}
@@ -753,7 +800,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
             Welcome back
           </span>
           <h2 className="text-lg font-black text-slate-900 dark:text-slate-100 tracking-tight leading-tight">
-            Hello, {user?.name || 'Friend'} 👋
+            Hello, {user?.name || 'Friend'}
           </h2>
         </div>
 
@@ -812,7 +859,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
               Based on your recent health records for {recommendationReason}, we recommend consulting a doctor. Would you like to book an appointment?
             </p>
           </div>
-          <button 
+          <button
             onClick={() => onNavigateToTab('Book Appointment')}
             className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all shadow-sm shrink-0"
           >
@@ -869,39 +916,36 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
               <button
                 type="button"
                 onClick={() => setTimePeriod('today')}
-                className={`px-2 py-0.5 rounded-lg font-bold text-[9px] uppercase tracking-wider transition-all ${
-                  timePeriod === 'today'
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-2xs'
-                    : 'text-slate-500 dark:text-slate-400'
-                }`}
+                className={`px-2 py-0.5 rounded-lg font-bold text-[9px] uppercase tracking-wider transition-all ${timePeriod === 'today'
+                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400'
+                  }`}
               >
                 Today
               </button>
               <button
                 type="button"
                 onClick={() => setTimePeriod('weekly')}
-                className={`px-2 py-0.5 rounded-lg font-bold text-[9px] uppercase tracking-wider transition-all ${
-                  timePeriod === 'weekly'
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-2xs'
-                    : 'text-slate-500 dark:text-slate-400'
-                }`}
+                className={`px-2 py-0.5 rounded-lg font-bold text-[9px] uppercase tracking-wider transition-all ${timePeriod === 'weekly'
+                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400'
+                  }`}
               >
                 Weekly
               </button>
               <button
                 type="button"
                 onClick={() => setTimePeriod('monthly')}
-                className={`px-2 py-0.5 rounded-lg font-bold text-[9px] uppercase tracking-wider transition-all ${
-                  timePeriod === 'monthly'
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-2xs'
-                    : 'text-slate-500 dark:text-slate-400'
-                }`}
+                className={`px-2 py-0.5 rounded-lg font-bold text-[9px] uppercase tracking-wider transition-all ${timePeriod === 'monthly'
+                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400'
+                  }`}
               >
                 Monthly
               </button>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-4 mb-5">
             {/* Dynamic Half-Circle Chart */}
             <div className="relative w-20 h-20 shrink-0">
@@ -930,7 +974,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
                 <span className="text-[7.5px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Logs</span>
               </div>
             </div>
-            
+
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5 flex-wrap mb-1">
                 <h3 className="text-base font-sans text-slate-800 dark:text-slate-100 font-bold leading-tight">
@@ -947,8 +991,8 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
                 {timePeriod === 'today'
                   ? 'Log habits today to update your daily balance.'
                   : timePeriod === 'weekly'
-                  ? 'Accumulated balance for the last 7 days.'
-                  : 'Accumulated balance for the last 30 days.'}
+                    ? 'Accumulated balance for the last 7 days.'
+                    : 'Accumulated balance for the last 30 days.'}
               </p>
             </div>
           </div>
@@ -958,7 +1002,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
             <div className="h-full bg-rose-500 transition-all duration-700 ease-out" style={{ width: `${damagePct}%` }}></div>
             <div className="h-full bg-emerald-500 transition-all duration-700 ease-out" style={{ width: `${repairPct}%` }}></div>
             {/* Center puck */}
-            <div 
+            <div
               className="absolute top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-5 h-5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full shadow-md flex items-center justify-center transition-all duration-700 ease-out"
               style={{ left: `${damagePct}%` }}
             >
@@ -990,33 +1034,30 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
             <button
               type="button"
               onClick={() => setForcesView('all')}
-              className={`px-2.5 py-1 rounded-lg font-extrabold text-[10px] uppercase tracking-wider transition-all ${
-                forcesView === 'all'
-                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-              }`}
+              className={`px-2.5 py-1 rounded-lg font-extrabold text-[10px] uppercase tracking-wider transition-all ${forcesView === 'all'
+                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                }`}
             >
               All
             </button>
             <button
               type="button"
               onClick={() => setForcesView('damage')}
-              className={`px-2.5 py-1 rounded-lg font-extrabold text-[10px] uppercase tracking-wider transition-all ${
-                forcesView === 'damage'
-                  ? 'bg-rose-500 text-white shadow-xs'
-                  : 'text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40'
-              }`}
+              className={`px-2.5 py-1 rounded-lg font-extrabold text-[10px] uppercase tracking-wider transition-all ${forcesView === 'damage'
+                ? 'bg-rose-500 text-white shadow-xs'
+                : 'text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40'
+                }`}
             >
               Damage ({damageCount})
             </button>
             <button
               type="button"
               onClick={() => setForcesView('repair')}
-              className={`px-2.5 py-1 rounded-lg font-extrabold text-[10px] uppercase tracking-wider transition-all ${
-                forcesView === 'repair'
-                  ? 'bg-emerald-500 text-white shadow-xs'
-                  : 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
-              }`}
+              className={`px-2.5 py-1 rounded-lg font-extrabold text-[10px] uppercase tracking-wider transition-all ${forcesView === 'repair'
+                ? 'bg-emerald-500 text-white shadow-xs'
+                : 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
+                }`}
             >
               Repair ({repairCount})
             </button>
@@ -1039,7 +1080,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
                 {damageCount} active
               </span>
             </div>
-            
+
             <div className="flex flex-col gap-1 sm:gap-1.5">
               <HabitItem icon={<Frown className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-500" />} label="Stress" onClick={() => handleOpenHabit('Stress')} score={getStressScore()} />
               <HabitItem icon={<Moon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-indigo-400" />} label="Sleep debt" onClick={() => handleOpenHabit('Sleep')} score={getSleepScore()} />
@@ -1071,7 +1112,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
                 </span>
               </div>
             )}
-            
+
             <div className="flex flex-col gap-1 sm:gap-1.5">
               {isCancerPatient ? (
                 <>
@@ -1107,7 +1148,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
           </div>
 
           {/* Cancer Screening Card */}
-          <button 
+          <button
             onClick={() => handleOpenHabit('CancerScreening')}
             className="w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-emerald-100 dark:border-emerald-950/20 shadow-[0_8px_30px_rgba(16,185,129,0.04)] rounded-2xl p-4 flex items-center gap-4 text-left transition-all active:scale-95 hover:shadow-md"
           >
@@ -1124,7 +1165,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
           </button>
 
           {/* Indian Cancers & Risks Card */}
-          <button 
+          <button
             onClick={() => handleOpenHabit('IndianCancers')}
             className="w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-purple-100 dark:border-purple-900/30 shadow-[0_8px_30px_rgba(168,85,247,0.04)] rounded-2xl p-4 flex items-center gap-4 text-left transition-all active:scale-95 hover:shadow-md mt-4"
           >
@@ -1182,27 +1223,28 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
             </div>
           </div>
 
-          {/* Metabolic & CGM Redirection Card */}
+          {/* Metabolic & CGM Redirection Card (Clean Medical Health Card) */}
           <button
+            type="button"
             onClick={() => {
               if (onGoToCGMDashboard) onGoToCGMDashboard();
               else setShowTugOfWar(false);
             }}
-            className="w-full bg-gradient-to-br from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white rounded-3xl p-5 md:p-6 text-left transition-all duration-300 shadow-sm hover:shadow-md active:scale-[0.98] group flex items-center justify-between gap-4"
+            className="w-full bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 md:p-6 text-left transition-all duration-200 shadow-xs hover:border-blue-300 dark:hover:border-blue-700 active:scale-[0.99] group flex items-center justify-between gap-4 cursor-pointer"
           >
             <div className="flex-1">
-              <span className="text-[9px] font-extrabold bg-white/20 text-white uppercase tracking-widest px-2.5 py-0.5 rounded-full inline-block mb-2.5">
+              <span className="text-[9px] font-black bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 uppercase tracking-widest px-2.5 py-0.5 rounded-full inline-block mb-2 border border-blue-200/60 dark:border-blue-800/60">
                 Glucose & Food
               </span>
-              <h4 className="font-sans font-black text-white text-base leading-tight group-hover:translate-x-1 transition-transform">
+              <h4 className="font-sans font-black text-slate-900 dark:text-slate-100 text-base leading-tight">
                 Continuous Glucose & Insights 📊
               </h4>
-              <p className="text-[11px] text-indigo-100/90 mt-1 leading-relaxed">
+              <p className="text-[11.5px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                 Upload your CGM report, view metabolic stability graphs, log meals, and coordinate doctor consults.
               </p>
             </div>
-            <div className="h-10 w-10 bg-white/10 rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-              <ArrowRight className="h-5 w-5 text-white" />
+            <div className="h-10 w-10 bg-slate-100 group-hover:bg-slate-200 dark:bg-slate-800 dark:group-hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-2xl flex items-center justify-center shrink-0 transition-transform">
+              <ArrowRight className="h-4 w-4" />
             </div>
           </button>
         </div>
@@ -1226,64 +1268,26 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
         }}
       />
 
-      {/* ── Floating AI Check-in FAB with feature-discovery tooltip ── */}
-      <div className="fixed bottom-20 right-5 z-40 flex flex-col items-end gap-2">
-
-        {/* Tooltip bubble — only on first visit, appears after 1.5s */}
-        {showFabTooltip && (
-          <div className="animate-in fade-in slide-in-from-right-2 duration-400" style={{ animationDelay: '1.5s', animationFillMode: 'both' }}>
-            <div className="relative bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xl rounded-2xl rounded-br-sm px-4 py-3 max-w-[195px]">
-              {/* Dismiss × */}
-              <button
-                onClick={() => { localStorage.setItem('ai_checkin_tooltip_seen', '1'); setShowFabTooltip(false); }}
-                className="absolute -top-2 -right-2 h-5 w-5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-full flex items-center justify-center shadow-sm transition-all"
-              >
-                <span className="text-[9px] text-slate-500 dark:text-slate-400 leading-none font-bold">✕</span>
-              </button>
-              {/* Content */}
-              <div className="flex items-center gap-1.5 mb-1">
-                <span className="text-base">🤖</span>
-                <p className="text-[10px] font-black text-slate-800 dark:text-slate-100 leading-tight">AI Daily Check-in</p>
-              </div>
-              <p className="text-[9px] text-slate-500 dark:text-slate-400 leading-snug mb-2">Log all your habits in under 60 seconds — just answer a few quick questions!</p>
-              <button
-                onClick={() => {
-                  localStorage.setItem('ai_checkin_tooltip_seen', '1');
-                  setShowFabTooltip(false);
-                  setShowChatbotModal(true);
-                }}
-                className="w-full py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[9px] font-black rounded-xl hover:opacity-90 transition-all"
-              >
-                Try it now →
-              </button>
-              {/* Speech-bubble tail */}
-              <div className="absolute -bottom-2 right-6 w-3 h-3 bg-white dark:bg-slate-800 border-r border-b border-slate-200 dark:border-slate-700 rotate-45" />
-            </div>
-          </div>
-        )}
-
-        {/* FAB with pulsing rings on first visit */}
-        <div className="relative">
-          {showFabTooltip && (
-            <>
-              <span className="absolute inset-0 rounded-full bg-blue-500/35 animate-ping" />
-              <span className="absolute inset-0 rounded-full bg-indigo-400/20 animate-pulse" />
-            </>
-          )}
-          <button
-            onClick={() => {
-              localStorage.setItem('ai_checkin_tooltip_seen', '1');
-              setShowFabTooltip(false);
-              setShowChatbotModal(true);
-            }}
-            className="relative bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white p-3.5 rounded-full shadow-2xl flex items-center gap-2 border-2 border-white/80 active:scale-95 transition-all cursor-pointer"
-            title="Open AI Daily Check-in Assistant"
-          >
-            <Bot className="h-6 w-6 text-white" />
-            <span className="text-xs font-black tracking-wide pr-1 hidden sm:inline">AI Check-in</span>
-          </button>
-        </div>
+      {/* ── Floating AI Check-in FAB Trigger Button ── */}
+      <div className="fixed bottom-20 right-5 z-40">
+        <button
+          onClick={() => setShowChatbotModal(true)}
+          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white p-3.5 rounded-full shadow-2xl flex items-center gap-2 border-2 border-white/80 active:scale-95 transition-all cursor-pointer"
+          title="Open AI Daily Check-in Assistant"
+        >
+          <Bot className="h-6 w-6 text-white" />
+          <span className="text-xs font-black tracking-wide pr-1 hidden sm:inline">AI Check-in</span>
+        </button>
       </div>
+
+      {/* AI Daily Check-in Modern Floating Pop-up Nudge (Only if habits are pending on home) */}
+      {activeScreen === null && (
+        <AiDailyCheckinFloatingNudge
+          pendingHabitsCount={pendingHabitsCount}
+          onOpenCheckin={() => setShowChatbotModal(true)}
+          userMode={activeMode}
+        />
+      )}
 
       {/* AI Daily Logging Chatbot Modal */}
       <DailyLoggingChatbotModal
@@ -1398,7 +1402,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
                 <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                   We highly recommend consulting our medical expert before initiating any fasting regimen during active cancer treatment.
                 </p>
-                
+
                 {/* Expert Profile Card */}
                 <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-150 dark:border-slate-800 rounded-2xl p-3 text-left flex items-center gap-3">
                   <div className="h-10 w-10 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center font-bold text-indigo-700 dark:text-indigo-300">
@@ -1448,9 +1452,9 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
 const HabitItem = ({ icon, label, onClick, score }: { icon: React.ReactNode, label: string, onClick: () => void, score?: number | null }) => {
   const isNegative = score !== undefined && score !== null && score < 0;
   const isPositive = score !== undefined && score !== null && score > 0;
-  
+
   return (
-    <button 
+    <button
       onClick={onClick}
       className="group flex items-center justify-between w-full px-3 py-2.5 sm:py-3 bg-white/80 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800/90 border border-slate-200/60 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-600 rounded-2xl transition-all duration-200 shadow-2xs hover:shadow-xs active:scale-[0.99] text-left"
     >
@@ -1463,13 +1467,12 @@ const HabitItem = ({ icon, label, onClick, score }: { icon: React.ReactNode, lab
         </span>
       </div>
       {score !== undefined && score !== null ? (
-        <span className={`text-[10px] sm:text-xs font-extrabold px-2.5 py-1 rounded-xl transition-all shadow-2xs shrink-0 ml-1.5 ${
-          isNegative
-            ? 'bg-rose-50 text-rose-600 border border-rose-200/60 dark:bg-rose-950/60 dark:text-rose-400 dark:border-rose-800/50' 
-            : isPositive
-              ? 'bg-emerald-50 text-emerald-600 border border-emerald-200/60 dark:bg-emerald-950/60 dark:text-emerald-400 dark:border-emerald-800/50'
-              : 'bg-slate-100 text-slate-700 border border-slate-200/60 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700/60'
-        }`}>
+        <span className={`text-[10px] sm:text-xs font-extrabold px-2.5 py-1 rounded-xl transition-all shadow-2xs shrink-0 ml-1.5 ${isNegative
+          ? 'bg-rose-50 text-rose-600 border border-rose-200/60 dark:bg-rose-950/60 dark:text-rose-400 dark:border-rose-800/50'
+          : isPositive
+            ? 'bg-emerald-50 text-emerald-600 border border-emerald-200/60 dark:bg-emerald-950/60 dark:text-emerald-400 dark:border-emerald-800/50'
+            : 'bg-slate-100 text-slate-700 border border-slate-200/60 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700/60'
+          }`}>
           {score > 0 ? `+${score}` : score}
         </span>
       ) : (

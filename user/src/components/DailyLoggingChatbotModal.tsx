@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   X, Mic, Send, Bot, CheckCircle2,
-  Upload, RefreshCw, ArrowRight, Pencil, Check
+  Upload, RefreshCw, ArrowRight, Pencil, Check,
+  Volume2, VolumeX, Sparkles, Flame, Trophy, Bell, Clock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -33,6 +34,8 @@ interface ChatMessage {
   inputType?: 'YES_NO' | 'OPTIONS' | 'NUMBER' | 'TEXT' | 'FILE';
   options?: string[];
   stepId?: string;
+  isMultiHabitSummary?: boolean;
+  multiHabitsList?: { name: string; value: string }[];
 }
 
 interface DailyLoggingChatbotModalProps {
@@ -62,6 +65,9 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
   const [isListening, setIsListening] = useState<boolean>(false);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
+  const [loggedHabits, setLoggedHabits] = useState<any[]>([]);
+  const [isVoiceMuted, setIsVoiceMuted] = useState<boolean>(() => localStorage.getItem('mito_ai_voice_muted') === 'true');
+  const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
 
   // Edit state
   const [editInputText, setEditInputText] = useState<string>('');
@@ -75,17 +81,145 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
   const activeStepIndexRef = useRef(activeStepIndex);
   const workflowRef = useRef(workflow);
   const messagesRef = useRef(messages);
+  const isVoiceMutedRef = useRef(isVoiceMuted);
 
   useEffect(() => { activeStepIndexRef.current = activeStepIndex; }, [activeStepIndex]);
   useEffect(() => { workflowRef.current = workflow; }, [workflow]);
   useEffect(() => { messagesRef.current = messages; }, [messages]);
+  useEffect(() => { isVoiceMutedRef.current = isVoiceMuted; }, [isVoiceMuted]);
 
-  // Focus edit input when editing starts
+  const [showReminderSettings, setShowReminderSettings] = useState<boolean>(false);
+  const [reminderTime, setReminderTime] = useState<string>(() => localStorage.getItem('mito_checkin_reminder_time') || '20:30');
+  const [customTimeInput, setCustomTimeInput] = useState<string>(() => localStorage.getItem('mito_checkin_reminder_time') || '20:30');
+  const [reminderSaved, setReminderSaved] = useState<boolean>(false);
+
+  const handleSaveReminder = (time: string) => {
+    setReminderTime(time);
+    setCustomTimeInput(time);
+    localStorage.setItem('mito_checkin_reminder_time', time);
+    setReminderSaved(true);
+    setTimeout(() => {
+      setReminderSaved(false);
+      setShowReminderSettings(false);
+    }, 1200);
+
+    if ('Notification' in window && Notification.permission !== 'granted') {
+      Notification.requestPermission();
+    }
+  };
+
+  const formatDisplayTime = (timeStr: string) => {
+    if (!timeStr) return '8:30 PM';
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    if (isNaN(hours) || isNaN(minutes)) return timeStr;
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const h12 = hours % 12 || 12;
+    const mStr = minutes < 10 ? `0${minutes}` : `${minutes}`;
+    return `${h12}:${mStr} ${period}`;
+  };
+
   useEffect(() => {
     if (editingMessageId) {
       setTimeout(() => editInputRef.current?.focus(), 100);
     }
   }, [editingMessageId]);
+
+  // Text-To-Speech (Speech Synthesis) to read question aloud reliably
+  const speakQuestion = (text: string, onDone?: () => void) => {
+    // Immediately stop mic so it doesn't record speaker audio
+    stopListening();
+
+    if (!window.speechSynthesis || isVoiceMutedRef.current) {
+      if (onDone) {
+        setTimeout(onDone, 300);
+      }
+      return;
+    }
+    try {
+      window.speechSynthesis.cancel();
+      if (window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+      }
+      const clean = text.replace(/[*_#•]/g, '').trim();
+      if (!clean) {
+        if (onDone) onDone();
+        return;
+      }
+
+      const utterance = new SpeechSynthesisUtterance(clean);
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      utterance.lang = 'en-US';
+
+      // Pick best English voice if available
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.length > 0) {
+        const preferredVoice = voices.find(v => 
+          v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Siri') || v.name.includes('Alex'))
+        ) || voices.find(v => v.lang.startsWith('en'));
+        if (preferredVoice) utterance.voice = preferredVoice;
+      }
+
+      let doneFired = false;
+      const handleFinish = () => {
+        if (doneFired) return;
+        doneFired = true;
+        setIsSpeaking(false);
+        if (onDone) {
+          // Delay mic by 400ms after speech ends so device speaker audio has fully cleared
+          setTimeout(onDone, 400);
+        }
+      };
+
+      utterance.onend = handleFinish;
+      utterance.onerror = handleFinish;
+
+      utterance.onstart = () => {
+        setIsSpeaking(true);
+        window.speechSynthesis.resume();
+      };
+
+      // Chrome SpeechSynthesis freeze recovery
+      const resumeInterval = setInterval(() => {
+        if (!window.speechSynthesis.speaking) {
+          setIsSpeaking(false);
+          clearInterval(resumeInterval);
+        } else {
+          window.speechSynthesis.resume();
+        }
+      }, 2500);
+
+      window.speechSynthesis.speak(utterance);
+    } catch (e) {
+      console.warn('TTS error:', e);
+      setIsSpeaking(false);
+      if (onDone) onDone();
+    }
+  };
+
+  const toggleVoiceMute = () => {
+    const next = !isVoiceMuted;
+    setIsVoiceMuted(next);
+    isVoiceMutedRef.current = next; // Immediately update ref for instant response
+    localStorage.setItem('mito_ai_voice_muted', String(next));
+
+    if (next) {
+      setIsSpeaking(false);
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    } else {
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.resume();
+      }
+      // When unmuting, immediately speak current active step question or last message
+      const currentStep = workflowRef.current?.steps[activeStepIndexRef.current];
+      const lastBotMsg = [...(messagesRef.current || [])].reverse().find(m => m.sender === 'bot');
+      const textToSpeak = currentStep?.questionPrompt || lastBotMsg?.text || 'All daily check-ins completed. Your data is synced.';
+      speakQuestion(textToSpeak);
+    }
+  };
 
   const requestMicPermission = async () => {
     try {
@@ -127,6 +261,11 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
   };
 
   const startListening = async () => {
+    // If device speaker is actively talking, do NOT open mic yet!
+    if (window.speechSynthesis && (window.speechSynthesis.speaking || window.speechSynthesis.pending)) {
+      return;
+    }
+
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       alert('Voice recognition is not supported in this browser. Try Chrome or Safari.');
@@ -236,6 +375,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       let todayReports: any[] = [];
       if (reportsRes && reportsRes.ok) todayReports = await reportsRes.json();
       setWorkflow(wfData ? { ...wfData, steps: activeSteps } : null);
+      setLoggedHabits(todayHabits);
 
       if (activeSteps.length > 0) {
         const todayStr = new Date().toDateString();
@@ -245,6 +385,11 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
         );
         const isLogged = (stepId: string): boolean => {
           const s = stepId.toLowerCase();
+
+          // Direct match by stepId in saved logs
+          if (todaysHabits.some(h => h.value?.stepId === stepId || h.value?.stepId === s)) {
+            return true;
+          }
 
           // ── Cancer Treatment steps (match exact types saved by manual screens) ──
           // Fasting screen → saves type: 'Fasting'
@@ -273,10 +418,9 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
           if (s === 'sleep') return todaysHabits.some(h =>
             h.type === 'Sleep' || h.type?.toUpperCase() === 'SLEEP'
           );
-          // Smoking/Alcohol screen → saves type: 'Smoking' or 'Alcohol'
+          // Smoking screen → saves type: 'Smoking'
           if (s === 'smoking') return todaysHabits.some(h =>
-            h.type === 'Smoking' || h.type === 'Alcohol' ||
-            h.type?.toUpperCase().includes('SMOKING') || h.type?.toUpperCase().includes('ALCOHOL')
+            h.type === 'Smoking' || h.type?.toUpperCase().includes('SMOKING')
           );
           // Alcohol check
           if (s === 'alcohol') return todaysHabits.some(h =>
@@ -286,15 +430,37 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
           if (s === 'antioxidants') return todaysHabits.some(h =>
             h.type === 'Antioxidants' || h.type?.toUpperCase().includes('ANTIOXIDANT')
           );
+          // Environmental 4-question checks
+          if (s.startsWith('env_') || s === 'environmental') {
+            const envHabits = todaysHabits.filter(h => h.type === 'Environmental' || h.type?.toUpperCase() === 'ENVIRONMENTAL' || h.value?.stepId?.startsWith('env_'));
+            if (envHabits.length === 0) return false;
+
+            if (s === 'env_air') {
+              return envHabits.some(h => h.value?.stepId === 'env_air' || h.value?.answers?.airQ1 !== undefined || (h.value?.option && (h.value.option.toLowerCase().includes('air') || h.value.option.toLowerCase().includes('smog') || h.value.option.toLowerCase().includes('clean'))));
+            }
+            if (s === 'env_water') {
+              return envHabits.some(h => h.value?.stepId === 'env_water' || h.value?.answers?.waterQ1 !== undefined || (h.value?.option && (h.value.option.toLowerCase().includes('water') || h.value.option.toLowerCase().includes('tap') || h.value.option.toLowerCase().includes('filter'))));
+            }
+            if (s === 'env_pesticides') {
+              return envHabits.some(h => h.value?.stepId === 'env_pesticides' || h.value?.answers?.pesticidesQ1 !== undefined || (h.value?.option && (h.value.option.toLowerCase().includes('pesticide') || h.value.option.toLowerCase().includes('organic'))));
+            }
+            if (s === 'env_microplastics') {
+              return envHabits.some(h => h.value?.stepId === 'env_microplastics' || h.value?.answers?.microplasticsQ1 !== undefined || (h.value?.option && (h.value.option.toLowerCase().includes('plastic'))));
+            }
+            return true;
+          }
           // Gut & Dental check
           if (s === 'gut_health') return todaysHabits.some(h =>
             h.type === 'Gastritis' || h.type === 'Dental' ||
             h.type?.toUpperCase().includes('GASTRIC') || h.type?.toUpperCase().includes('DENTAL')
           );
-          // Genetics & Substances check
-          if (s === 'genetics_substances') return todaysHabits.some(h =>
-            h.type === 'Genetic' || h.type === 'Substances' ||
-            h.type?.toUpperCase().includes('GENETIC') || h.type?.toUpperCase().includes('SUBSTANCE')
+          // Genetics / Family History of Cancer
+          if (s === 'genetics' || s === 'genetics_substances') return todaysHabits.some(h =>
+            h.type === 'Genetic' || h.type?.toUpperCase().includes('GENETIC')
+          );
+          // Substances check
+          if (s === 'substances') return todaysHabits.some(h =>
+            h.type === 'Substances' || h.type?.toUpperCase().includes('SUBSTANCE')
           );
           // Damage Habits → saves type: 'DAMAGE_HABIT'
           if (s === 'damage_habits') return todaysHabits.some(h =>
@@ -333,6 +499,9 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
             if (s === 'stillness') return t === 'stillness';
             if (s === 'joy') return t === 'joy';
             if (s === 'antioxidants') return t === 'antioxidants';
+            if (s.startsWith('env_')) return t === 'environmental';
+            if (s === 'genetics') return t === 'genetic';
+            if (s === 'substances') return t === 'substances';
             if (s === 'damage_habits') return t.includes('damage') || t === 'smoking' || t === 'alcohol';
             if (s === 'repair_habits') return t.includes('repair') || t === 'antioxidants';
             if (s === 'joy_stillness') return t === 'joy' || t === 'stillness';
@@ -416,9 +585,14 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
 
           initialMessages.push({ id: `step_${firstUnloggedIndex}`, sender: 'bot', text: questionText, timestamp: ts, inputType: nextStep.inputType, options: questionOptions, stepId: nextStep.stepId });
           setMessages(initialMessages);
+          speakQuestion(questionText, () => {
+            if (nextStep.inputType !== 'FILE') {
+              startListening();
+            }
+          });
         } else {
           setIsCompleted(true);
-          initialMessages.push({ id: 'all_done', sender: 'bot', text: `🎉 All daily check-ins done! Your data is synced.`, timestamp: ts });
+          initialMessages.push({ id: 'all_done', sender: 'bot', text: 'All daily check-ins completed. Your data is synced.', timestamp: ts });
           setMessages(initialMessages);
         }
       }
@@ -432,13 +606,11 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
   useEffect(() => {
     if (isOpen) {
       setIsCompleted(false);
-      fetchWorkflow().then(() => {
-        // Auto-start mic 800ms after modal opens so user can speak their first answer
-        setTimeout(() => startListening(), 800);
-      });
+      fetchWorkflow();
     } else {
-      // Stop mic when modal closes
-      if (recognitionRef.current) { try { recognitionRef.current.abort(); } catch {} }
+      // Stop mic and speech when modal closes
+      stopListening();
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
       setIsListening(false);
     }
   }, [isOpen]);
@@ -498,6 +670,42 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       } else if (stepId === 'antioxidants') {
         habitType = 'Antioxidants';
         habitValue = { consumed: isYes, option: valueStr };
+      } else if (stepId.startsWith('env_')) {
+        habitType = 'Environmental';
+        // Look up any existing Environmental habit from today to preserve other answers
+        const todayStr = new Date().toDateString();
+        const existingEnv = loggedHabits.find(h => 
+          (h.type === 'Environmental' || h.type?.toUpperCase() === 'ENVIRONMENTAL') &&
+          new Date(h.timestamp || h.createdAt).toDateString() === todayStr
+        );
+        const prevAnswers = existingEnv?.value?.answers || {};
+        const updatedAnswers = { ...prevAnswers };
+
+        if (stepId === 'env_air') {
+          const isClean = lowerVal.includes('no') || lowerVal.includes('clean');
+          updatedAnswers.airQ1 = !isClean;
+          updatedAnswers.airQ2 = !isClean;
+        } else if (stepId === 'env_water') {
+          updatedAnswers.waterQ1 = lowerVal.includes('yes') || lowerVal.includes('safe') || lowerVal.includes('filtered');
+        } else if (stepId === 'env_pesticides') {
+          const isClean = lowerVal.includes('no') || lowerVal.includes('clean') || lowerVal.includes('organic');
+          updatedAnswers.pesticidesQ1 = !isClean;
+        } else if (stepId === 'env_microplastics') {
+          const isClean = lowerVal.includes('no') || lowerVal.includes('plastic-free') || lowerVal.includes('avoid');
+          updatedAnswers.microplasticsQ1 = !isClean;
+        }
+
+        let calcScore = 0;
+        if (updatedAnswers.airQ1 === true || updatedAnswers.airQ2 === true) calcScore -= 1;
+        if (updatedAnswers.waterQ1 === false) calcScore -= 1;
+        if (updatedAnswers.pesticidesQ1 === true) calcScore -= 1;
+        if (updatedAnswers.microplasticsQ1 === true) calcScore -= 1;
+
+        habitValue = {
+          score: calcScore,
+          answers: updatedAnswers,
+          option: valueStr
+        };
       } else if (stepId === 'gut_health') {
         habitType = 'Gastritis';
         habitValue = { gastritis: lowerVal.includes('gastritis') || lowerVal.includes('both'), option: valueStr };
@@ -508,6 +716,12 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
             body: JSON.stringify({ type: 'Dental', value: { sharpTooth: true, tobaccoStain: false, option: valueStr }, source: 'chatbot', timestamp: new Date().toISOString() })
           }).catch(() => {});
         }
+      } else if (stepId === 'genetics') {
+        habitType = 'Genetic';
+        habitValue = { geneticLink: isYes, option: valueStr };
+      } else if (stepId === 'substances') {
+        habitType = 'Substances';
+        habitValue = { used: isYes, option: valueStr };
       } else if (stepId === 'genetics_substances') {
         habitType = 'Genetic';
         habitValue = { geneticLink: lowerVal.includes('family') || lowerVal.includes('both'), option: valueStr };
@@ -518,7 +732,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
             body: JSON.stringify({ type: 'Substances', value: { used: true, option: valueStr }, source: 'chatbot', timestamp: new Date().toISOString() })
           }).catch(() => {});
         }
-      // ── Individual cancer treatment steps matching manual screen types ──
+      // ── Individual cancer treatment / prevention steps matching manual screen types ──
       } else if (stepId === 'joy') {
         // Joy / Things You Love screen saves type: 'Joy', value: { done: true/false }
         habitType = 'Joy';
@@ -533,9 +747,10 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
         habitValue = { done: isYes };
       }
 
-      // Ensure option & notes are attached for clear summary rendering next time
+      // Ensure option & notes & stepId are attached for clear summary rendering next time
       habitValue = {
         ...habitValue,
+        stepId,
         option: valueStr,
         notes: valueStr
       };
@@ -545,6 +760,17 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ type: habitType, value: habitValue, source: 'chatbot', timestamp: new Date().toISOString() })
       });
+
+      // Update in-memory state so subsequent checks in the same session immediately know it is logged
+      setLoggedHabits(prev => [
+        {
+          type: habitType,
+          value: habitValue,
+          source: 'chatbot',
+          timestamp: new Date().toISOString()
+        },
+        ...prev
+      ]);
     } catch (e) { console.error('Error saving habit:', e); }
   };
 
@@ -574,6 +800,10 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
           }
         ];
       });
+      speakQuestion(targetStep.questionPrompt);
+      if (targetStep.inputType !== 'FILE') {
+        setTimeout(() => startListening(), 800);
+      }
     }
   };
 
@@ -582,31 +812,174 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
     setMessages(prev => prev.filter(m => !m.id.startsWith('relog_')));
   };
 
+  const parseMultiHabitsFromText = (input: string): { stepId: string; valueStr: string; name: string }[] => {
+    const text = input.toLowerCase();
+    const detected: { stepId: string; valueStr: string; name: string }[] = [];
+
+    // Sleep
+    const sleepMatch = text.match(/(\d+(\.\d+)?)\s*(hours|hrs|hr)?\s*(of\s*)?sleep/) || text.match(/slept\s*(for\s*)?(\d+(\.\d+)?)/);
+    if (sleepMatch) {
+      const hrs = sleepMatch[1] || sleepMatch[2];
+      detected.push({ stepId: 'sleep', valueStr: `${hrs} hrs`, name: `Sleep (${hrs} hrs)` });
+    }
+
+    // Movement / Walking
+    const walkMatch = text.match(/(\d+)\s*(mins?|minutes?)\s*(walk|run|workout|exercise|jog)/) || text.match(/walk(ed)?\s*(for\s*)?(\d+)?/);
+    if (walkMatch || text.includes('yoga') || text.includes('exercise') || text.includes('workout') || text.includes('gym')) {
+      const mins = walkMatch?.[1] || walkMatch?.[3] || '30';
+      detected.push({ stepId: 'movement', valueStr: `${mins}+ min Walk`, name: `Movement (${mins} mins)` });
+    }
+
+    // Fasting
+    if (text.includes('16:8') || text.includes('16 hours') || text.includes('fasted') || text.includes('fasting done') || text.includes('completed fast')) {
+      detected.push({ stepId: 'fasting', valueStr: 'Yes (16+ hrs)', name: 'Intermittent Fasting' });
+    } else if (text.includes('skipped fast') || text.includes('no fast')) {
+      detected.push({ stepId: 'fasting', valueStr: 'No (Skipped)', name: 'Fasting (Skipped)' });
+    }
+
+    // Stillness / Meditation
+    if (text.includes('stillness') || text.includes('meditation') || text.includes('meditated') || text.includes('deep breathing')) {
+      detected.push({ stepId: 'stillness', valueStr: 'Yes (10+ min)', name: 'Stillness & Meditation' });
+    }
+
+    // Joy / Things you love
+    if (text.includes('things i love') || text.includes('hobbies') || text.includes('played music') || text.includes('spent time with family') || text.includes('did things i love')) {
+      detected.push({ stepId: 'joy', valueStr: 'Yes (Done)', name: 'Things You Love' });
+    }
+
+    // Stress
+    if (text.includes('no stress') || text.includes('calm') || text.includes('relaxed') || text.includes('peaceful') || text.includes('felt good')) {
+      detected.push({ stepId: 'stress', valueStr: 'No Stress (Calm)', name: 'Stress (Calm / No Stress)' });
+    } else if (text.includes('high stress') || text.includes('very stressed') || text.includes('anxious')) {
+      detected.push({ stepId: 'stress', valueStr: 'High Stress', name: 'Stress (High Stress)' });
+    } else if (text.includes('mild stress') || text.includes('little stress')) {
+      detected.push({ stepId: 'stress', valueStr: 'Mild Stress', name: 'Stress (Mild)' });
+    }
+
+    // Smoking
+    if (text.includes('no smoke') || text.includes('no smoking') || text.includes('didnt smoke') || text.includes('clean day')) {
+      detected.push({ stepId: 'smoking', valueStr: 'No (Clean Day)', name: 'Smoking (Clean Day)' });
+    } else if (text.includes('smoked') || text.includes('cigarettes')) {
+      detected.push({ stepId: 'smoking', valueStr: 'Yes (Smoke / Exposed)', name: 'Smoking (Exposed)' });
+    }
+
+    // Alcohol
+    if (text.includes('no alcohol') || text.includes('no drink') || text.includes('no beer') || text.includes('no wine') || text.includes('sober')) {
+      detected.push({ stepId: 'alcohol', valueStr: 'No Alcohol (Clean Day)', name: 'Alcohol (Clean Day)' });
+    } else if (text.includes('had alcohol') || text.includes('1 drink') || text.includes('2 drinks') || text.includes('had a beer')) {
+      detected.push({ stepId: 'alcohol', valueStr: '1-2 Drinks', name: 'Alcohol (1-2 Drinks)' });
+    }
+
+    // Antioxidants
+    if (text.includes('antioxidant') || text.includes('berries') || text.includes('turmeric') || text.includes('green tea') || text.includes('amla')) {
+      detected.push({ stepId: 'antioxidants', valueStr: 'Yes (Consumed)', name: 'Antioxidants & Repair Foods' });
+    }
+
+    // Environment
+    if (text.includes('clean air') || text.includes('no traffic') || text.includes('no pollution')) {
+      detected.push({ stepId: 'env_air', valueStr: 'No (Clean Air)', name: 'Air Pollution (Clean)' });
+    }
+    if (text.includes('filtered water') || text.includes('ro water') || text.includes('safe water') || text.includes('clean drinking water')) {
+      detected.push({ stepId: 'env_water', valueStr: 'Yes (Safe Filtered)', name: 'Water Filter (Safe RO)' });
+    }
+    if (text.includes('no plastic') || text.includes('plastic free') || text.includes('avoided plastic')) {
+      detected.push({ stepId: 'env_microplastics', valueStr: 'No (Plastic-Free)', name: 'Microplastics (Clean)' });
+    }
+
+    return detected;
+  };
+
   const advanceToNextStep = (userAnswer: string, _isFromVoice = false) => {
     const currentWf = workflowRef.current;
     const currentIndex = activeStepIndexRef.current;
     const currentMsgs = messagesRef.current;
     if (!currentWf?.steps) return;
-    const currentStep = currentWf.steps[currentIndex];
     const ts = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    // Check for multi-habit NLP recognition
+    const detectedMulti = parseMultiHabitsFromText(userAnswer);
+
+    if (detectedMulti.length >= 2) {
+      // Process all detected habits in parallel
+      detectedMulti.forEach(item => {
+        saveHabitToBackend(item.stepId, item.valueStr);
+      });
+
+      const userMsg: ChatMessage = { id: `user_${Date.now()}`, sender: 'user', text: userAnswer, timestamp: ts };
+      const summaryMsg: ChatMessage = {
+        id: `multi_${Date.now()}`,
+        sender: 'bot',
+        text: `✨ Smart Natural Language: Logged ${detectedMulti.length} habits in one shot!`,
+        isMultiHabitSummary: true,
+        multiHabitsList: detectedMulti.map(d => ({ name: d.name, value: d.valueStr })),
+        timestamp: ts
+      };
+
+      const updatedMsgs = [...currentMsgs, userMsg, summaryMsg];
+      const loggedSet = new Set(detectedMulti.map(d => d.stepId));
+
+      // Find first step that wasn't in the multi-habit detection and wasn't already logged
+      const nextUnloggedIndex = currentWf.steps.findIndex((s, idx) => 
+        idx > currentIndex && !loggedSet.has(s.stepId)
+      );
+
+      if (nextUnloggedIndex !== -1) {
+        const nextStep = currentWf.steps[nextUnloggedIndex];
+        setActiveStepIndex(nextUnloggedIndex);
+        updatedMsgs.push({
+          id: `bot_${Date.now()}`,
+          sender: 'bot',
+          text: nextStep.questionPrompt,
+          timestamp: ts,
+          inputType: nextStep.inputType,
+          options: nextStep.options,
+          stepId: nextStep.stepId
+        });
+        setMessages(updatedMsgs);
+        speakQuestion(nextStep.questionPrompt, () => {
+          if (nextStep.inputType !== 'FILE') {
+            startListening();
+          }
+        });
+      } else {
+        setIsCompleted(true);
+        const finishMsg = 'All daily check-ins logged. Your cellular defense dashboard is updated.';
+        updatedMsgs.push({
+          id: 'bot_finish',
+          sender: 'bot',
+          text: finishMsg,
+          timestamp: ts
+        });
+        setMessages(updatedMsgs);
+        speakQuestion(finishMsg);
+        if (onRefreshDashboard) onRefreshDashboard();
+      }
+      return;
+    }
+
+    const currentStep = currentWf.steps[currentIndex];
     const userMsg: ChatMessage = { id: `user_${Date.now()}`, sender: 'user', text: userAnswer, timestamp: ts, stepId: currentStep?.stepId };
     if (currentStep) saveHabitToBackend(currentStep.stepId, userAnswer);
     setEditingStepId(null);
     const nextIndex = currentIndex + 1;
     const updatedMsgs = [...currentMsgs, userMsg];
+
     if (nextIndex < currentWf.steps.length) {
       const nextStep = currentWf.steps[nextIndex];
       setActiveStepIndex(nextIndex);
       updatedMsgs.push({ id: `bot_${Date.now()}`, sender: 'bot', text: nextStep.questionPrompt, timestamp: ts, inputType: nextStep.inputType, options: nextStep.options, stepId: nextStep.stepId });
       setMessages(updatedMsgs);
-      // Auto-start mic after every bot question (skip for file upload steps)
-      if (nextStep.inputType !== 'FILE') {
-        setTimeout(() => startListening(), 700);
-      }
+      speakQuestion(nextStep.questionPrompt, () => {
+        if (nextStep.inputType !== 'FILE') {
+          startListening();
+        }
+      });
     } else {
       setIsCompleted(true);
-      updatedMsgs.push({ id: 'bot_finish', sender: 'bot', text: `🎉 All check-ins logged! Your dashboard is updated.`, timestamp: ts });
+      const finishMsg = 'All check-ins logged. Your cellular defense dashboard is updated.';
+      updatedMsgs.push({ id: 'bot_finish', sender: 'bot', text: finishMsg, timestamp: ts });
       setMessages(updatedMsgs);
+      speakQuestion(finishMsg);
       if (onRefreshDashboard) onRefreshDashboard();
     }
   };
@@ -671,20 +1044,141 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-black text-sm text-white tracking-tight">AI Assistant</span>
-                    <span className="flex items-center gap-1 text-[9px] font-black bg-emerald-400/25 text-emerald-200 px-2 py-0.5 rounded-full border border-emerald-400/30">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      ONLINE
-                    </span>
+                    {isSpeaking ? (
+                      <span className="flex items-center gap-1.5 text-[9px] font-black bg-amber-400/30 text-amber-200 px-2 py-0.5 rounded-full border border-amber-300/40">
+                        <span className="flex items-center gap-0.5">
+                          <span className="h-2 w-0.5 bg-amber-300 rounded-full animate-bounce" />
+                          <span className="h-3 w-0.5 bg-amber-300 rounded-full animate-bounce [animation-delay:150ms]" />
+                          <span className="h-2 w-0.5 bg-amber-300 rounded-full animate-bounce [animation-delay:300ms]" />
+                        </span>
+                        SPEAKING
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 text-[9px] font-black bg-emerald-400/25 text-emerald-200 px-2 py-0.5 rounded-full border border-emerald-400/30">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        ONLINE
+                      </span>
+                    )}
                   </div>
                   <p className="text-[10px] font-medium text-blue-100/80 mt-0.5">
                     {userMode === 'TREATMENT' ? 'Oncology Care & Recovery Check-in' : userMode === 'SECONDARY_PREVENTION' ? 'Survivor Recovery Daily Check-in' : 'Cancer Prevention Daily Check-in'}
                   </p>
                 </div>
               </div>
-              <button onClick={onClose} className="h-8 w-8 rounded-full bg-white/15 hover:bg-white/25 border border-white/20 flex items-center justify-center transition-all cursor-pointer">
-                <X className="h-4 w-4 text-white" />
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setShowReminderSettings(prev => !prev)}
+                  className={`h-8 w-8 rounded-full border flex items-center justify-center transition-all cursor-pointer ${
+                    showReminderSettings ? 'bg-white text-blue-600 border-white shadow-xs' : 'bg-white/15 hover:bg-white/25 border-white/20 text-white'
+                  }`}
+                  title="Daily AI Check-in Reminder Time"
+                >
+                  <Bell className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={toggleVoiceMute}
+                  className={`h-8 px-2.5 rounded-full border flex items-center gap-1.5 transition-all cursor-pointer ${
+                    isSpeaking
+                      ? 'bg-amber-400 text-slate-900 border-amber-300 shadow-md shadow-amber-400/30 font-black animate-pulse'
+                      : isVoiceMuted
+                        ? 'bg-white/10 hover:bg-white/20 border-white/20 text-rose-300'
+                        : 'bg-white/15 hover:bg-white/25 border-white/20 text-white'
+                  }`}
+                  title={isSpeaking ? 'Stop Speaking' : isVoiceMuted ? 'Muted (Tap to Listen)' : 'AI Voice Active (Tap to Mute)'}
+                >
+                  {isSpeaking ? (
+                    <>
+                      <Volume2 className="h-3.5 w-3.5" />
+                      <span className="text-[9px] font-black uppercase tracking-wider">Stop</span>
+                    </>
+                  ) : isVoiceMuted ? (
+                    <>
+                      <VolumeX className="h-3.5 w-3.5" />
+                      <span className="text-[9px] font-bold uppercase tracking-wider opacity-80">Muted</span>
+                    </>
+                  ) : (
+                    <>
+                      <Volume2 className="h-3.5 w-3.5" />
+                      <span className="text-[9px] font-bold uppercase tracking-wider opacity-80">Voice</span>
+                    </>
+                  )}
+                </button>
+                <button onClick={onClose} className="h-8 w-8 rounded-full bg-white/15 hover:bg-white/25 border border-white/20 flex items-center justify-center transition-all cursor-pointer">
+                  <X className="h-4 w-4 text-white" />
+                </button>
+              </div>
             </div>
+
+            {/* Reminder Setting Overlay Dropdown inside Modal */}
+            {showReminderSettings && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="bg-white/15 backdrop-blur-md rounded-2xl p-3.5 border border-white/25 mb-3 text-white"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-black text-white flex items-center gap-1.5">
+                    <Clock className="h-4 w-4 text-blue-200" />
+                    Daily AI Check-in Reminder Time
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowReminderSettings(false)}
+                    className="text-white/70 hover:text-white text-xs font-bold"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <p className="text-[10.5px] text-blue-100/90 mb-2.5 font-medium">
+                  Select a quick time or pick any custom reminder time:
+                </p>
+
+                {/* Quick Presets */}
+                <div className="grid grid-cols-4 gap-1.5 mb-2.5">
+                  {['20:00', '20:30', '21:00', '21:30'].map(t => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => handleSaveReminder(t)}
+                      className={`py-1.5 rounded-xl text-[10px] font-bold border transition-all cursor-pointer ${
+                        reminderTime === t
+                          ? 'bg-white text-blue-700 border-white shadow-xs font-black'
+                          : 'bg-white/10 text-white border-white/20 hover:bg-white/20'
+                      }`}
+                    >
+                      {formatDisplayTime(t)}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Custom Time Picker */}
+                <div className="flex items-center gap-2 bg-white/20 p-2 rounded-xl border border-white/25">
+                  <span className="text-[10px] font-black text-white/80 uppercase tracking-wider shrink-0">Custom Time:</span>
+                  <input
+                    type="time"
+                    value={customTimeInput}
+                    onChange={(e) => setCustomTimeInput(e.target.value)}
+                    className="flex-1 text-xs font-black text-white bg-transparent border-none focus:outline-none cursor-pointer"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleSaveReminder(customTimeInput)}
+                    className="px-3 py-1 bg-white hover:bg-blue-50 text-blue-700 text-[10.5px] font-black rounded-lg shadow-xs transition-all cursor-pointer shrink-0"
+                  >
+                    Set Time
+                  </button>
+                </div>
+
+                {reminderSaved && (
+                  <p className="text-[11px] font-bold text-emerald-300 mt-2 flex items-center gap-1">
+                    <Check className="h-3.5 w-3.5" /> Reminder scheduled for {formatDisplayTime(reminderTime)}!
+                  </p>
+                )}
+              </motion.div>
+            )}
 
             {/* Progress bar */}
             {workflow && !isCompleted && (
@@ -775,6 +1269,24 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                           </div>
                         )}
 
+                        {/* ── Multi-Habit NLP Summary Card ── */}
+                        {msg.isMultiHabitSummary && msg.multiHabitsList && (
+                          <div className="bg-gradient-to-br from-indigo-50/90 to-blue-50/90 dark:from-indigo-950/40 dark:to-blue-950/40 border border-indigo-200 dark:border-indigo-800/60 rounded-2xl p-3.5 shadow-sm my-2 max-w-[95%]">
+                            <div className="flex items-center gap-1.5 text-xs font-black text-indigo-700 dark:text-indigo-300 mb-2">
+                              <Sparkles className="h-4 w-4 text-indigo-600 animate-pulse" />
+                              <span>Auto-Detected {msg.multiHabitsList.length} Habits:</span>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                              {msg.multiHabitsList.map((h, i) => (
+                                <div key={i} className="flex items-center gap-2 bg-white dark:bg-slate-900/80 px-2.5 py-1.5 rounded-xl border border-indigo-100 dark:border-indigo-900/40 text-[11px] font-bold text-slate-800 dark:text-slate-200">
+                                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                                  <span className="truncate">{h.name}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
                         {/* ── User bubble ── */}
                         {msg.sender === 'user' && (
                           <div className="flex flex-col items-end gap-1.5 max-w-[90%]">
@@ -853,6 +1365,51 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                     )}
                   </motion.div>
                 ))}
+
+                {/* ── Celebratory Post-Check-in Health Impact Card ── */}
+                {isCompleted && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    className="bg-gradient-to-br from-emerald-50 via-teal-50 to-blue-50 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-slate-900 border border-emerald-200/80 dark:border-emerald-800/60 rounded-3xl p-5 shadow-lg my-4 text-center"
+                  >
+                    <div className="inline-flex items-center justify-center h-14 w-14 rounded-3xl bg-gradient-to-tr from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/30 mx-auto mb-3">
+                      <Trophy className="h-7 w-7 animate-bounce" />
+                    </div>
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 text-[10px] font-black uppercase tracking-wider mb-1.5">
+                      <Sparkles className="h-3 w-3 fill-current" />
+                      Daily Cellular Defense Updated
+                    </div>
+                    <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
+                      All Daily Habits Logged
+                    </h3>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 max-w-sm mx-auto leading-relaxed">
+                      Your circadian fasting, cellular repair, and risk prevention logs are synced to your live metabolic health dashboard.
+                    </p>
+
+                    <div className="grid grid-cols-2 gap-2.5 my-4 text-left">
+                      <div className="bg-white/80 dark:bg-slate-900/80 p-3 rounded-2xl border border-emerald-100 dark:border-emerald-900/40">
+                        <span className="text-[10px] font-extrabold uppercase text-emerald-600 dark:text-emerald-400 block mb-0.5">Cellular Defense</span>
+                        <span className="text-base sm:text-lg font-black text-slate-900 dark:text-slate-100">+8 Balance</span>
+                      </div>
+                      <div className="bg-white/80 dark:bg-slate-900/80 p-3 rounded-2xl border border-teal-100 dark:border-teal-900/40">
+                        <span className="text-[10px] font-extrabold uppercase text-teal-600 dark:text-teal-400 block mb-0.5">Logging Streak</span>
+                        <span className="text-base sm:text-lg font-black text-slate-900 dark:text-slate-100 flex items-center gap-1">
+                          <Flame className="h-4 w-4 text-amber-500 fill-amber-500" /> Active
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={onClose}
+                      className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-xs sm:text-sm rounded-2xl shadow-md hover:shadow-lg transition-all active:scale-98 cursor-pointer flex items-center justify-center gap-2"
+                    >
+                      <span>View Cellular Dashboard</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </motion.div>
+                )}
+
                 <div ref={messagesEndRef} />
               </>
             )}

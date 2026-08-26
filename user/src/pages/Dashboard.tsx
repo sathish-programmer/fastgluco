@@ -28,6 +28,7 @@ import {
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, ReferenceArea, CartesianGrid } from 'recharts';
 import { motion } from 'framer-motion';
 import { DailyLoggingChatbotModal } from '../components/DailyLoggingChatbotModal';
+import { AiDailyCheckinFloatingNudge } from '../components/AiDailyCheckinFloatingNudge';
 
 interface DashboardProps {
   onNavigateToTab: (tab: string) => void;
@@ -137,6 +138,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
   const [upcomingAppt, setUpcomingAppt] = useState<any | null>(null);
   const [isApptDismissed, setIsApptDismissed] = useState<boolean>(false);
   const [showChatbotModal, setShowChatbotModal] = useState<boolean>(false);
+  const [pendingHabitsCount, setPendingHabitsCount] = useState<number>(0);
 
   const handleDateStep = (direction: 'prev' | 'next') => {
     const parts = selectedDate.split('-');
@@ -386,14 +388,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
     setOfflineMealsCount(SyncService.getOfflineQueue().length);
   }, [token, dateRange, selectedDate, customStartDate, customEndDate]);
 
-  useEffect(() => {
-    const hasAutoOpened = sessionStorage.getItem('mito_ai_checkin_auto_opened');
-    if (!hasAutoOpened) {
-      setShowChatbotModal(true);
-      sessionStorage.setItem('mito_ai_checkin_auto_opened', 'true');
-    }
-  }, []);
-
   const fetchDashboardData = async () => {
     if (!token) return;
     try {
@@ -555,6 +549,72 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
         }
       } catch (apptErr) {
         console.error('Error fetching upcoming appointments:', apptErr);
+      }
+
+      // 8. Fetch Today's Habit Logs to determine pending check-in count
+      try {
+        const habitsRes = await fetch(`${apiUrl}/habits?type=all&days=1`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (habitsRes.ok) {
+          const habitsData = await habitsRes.json();
+          const todayStr = new Date().toDateString();
+          const todayLogs = habitsData.filter((h: any) => 
+            new Date(h.timestamp || h.createdAt).toDateString() === todayStr
+          );
+          const envHabit = todayLogs.find((h: any) => (h.type || '').toUpperCase() === 'ENVIRONMENTAL');
+          const envAnswers = envHabit?.value?.answers || {};
+
+          let wfMode = 'STANDARD';
+          if (activeMode === 'TREATMENT') wfMode = 'CANCER_PATIENT';
+          else if (activeMode === 'SECONDARY_PREVENTION') wfMode = 'SECONDARY_PREVENTION';
+
+          const [wfRes, reportsRes] = await Promise.all([
+            fetch(`${apiUrl}/daily-logging-workflows/active?mode=${wfMode}`, { headers: { 'Authorization': `Bearer ${token}` } }).catch(() => null),
+            fetch(`${apiUrl}/reports`, { headers: { 'Authorization': `Bearer ${token}` } }).catch(() => null)
+          ]);
+
+          let activeSteps: string[] = [];
+          if (wfRes && wfRes.ok) {
+            const wfData = await wfRes.json();
+            activeSteps = (wfData?.steps || []).filter((s: any) => s.isEnabled).map((s: any) => s.stepId || s.id || s.title);
+          }
+          if (activeSteps.length === 0) {
+            activeSteps = activeMode === 'TREATMENT' 
+              ? ['stillness', 'joy', 'stress', 'sleep', 'report_upload']
+              : ['sleep', 'movement', 'fasting', 'stillness', 'stress'];
+          }
+
+          let reportsLoggedToday = false;
+          if (reportsRes && reportsRes.ok) {
+            const rData = await reportsRes.json();
+            reportsLoggedToday = (rData || []).some((r: any) => new Date(r.createdAt || r.uploadedAt).toDateString() === todayStr);
+          }
+
+          const checkStepCompleted = (stepId: string): boolean => {
+            const s = (stepId || '').toLowerCase();
+            if (s === 'stress' || s === 'caregiver_stress') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'STRESS');
+            if (s === 'sleep') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'SLEEP');
+            if (s === 'fasting') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'FASTING');
+            if (s === 'movement') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'MOVEMENT');
+            if (s === 'stillness') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'STILLNESS');
+            if (s === 'joy') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'JOY');
+            if (s === 'smoking') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'SMOKING');
+            if (s === 'alcohol') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'ALCOHOL');
+            if (s === 'antioxidants') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'ANTIOXIDANTS');
+            if (s === 'report_upload' || s.includes('report')) return reportsLoggedToday || todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('REPORT'));
+            if (s === 'env_air') return envAnswers.airQ1 !== undefined && envAnswers.airQ1 !== null;
+            if (s === 'env_water') return envAnswers.waterQ1 !== undefined && envAnswers.waterQ1 !== null;
+            if (s === 'env_pesticides') return envAnswers.pesticidesQ1 !== undefined && envAnswers.pesticidesQ1 !== null;
+            if (s === 'env_microplastics') return envAnswers.microplasticsQ1 !== undefined && envAnswers.microplasticsQ1 !== null;
+            return false;
+          };
+
+          const pendingCount = activeSteps.filter(s => !checkStepCompleted(s)).length;
+          setPendingHabitsCount(pendingCount);
+        }
+      } catch (habitErr) {
+        console.error('Error fetching today habits count:', habitErr);
       }
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
@@ -995,43 +1055,37 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
         </div>
       </motion.div>
 
-      {/* Cellular Defense Strength Hero Banner (Streamlined Glass Card) */}
+      {/* Cellular Defense Strength Hero Banner (Clean Medical Health Card) */}
       {onBackToTugOfWar && (
         <motion.button
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15, duration: 0.4 }}
-          whileHover={{ scale: 1.01 }}
-          whileTap={{ scale: 0.985 }}
+          whileHover={{ scale: 1.005 }}
+          whileTap={{ scale: 0.99 }}
           onClick={onBackToTugOfWar}
-          className="w-full mb-4 relative overflow-hidden rounded-2xl p-3.5 md:p-4 flex items-center justify-between gap-3.5 text-left shadow-[0_10px_25px_-5px_rgba(99,102,241,0.28)] border border-white/20 dark:border-white/10 group transition-all duration-300"
-          style={{ background: 'linear-gradient(135deg, #4338CA 0%, #6366F1 50%, #8B5CF6 100%)' }}
+          className="w-full mb-4 rounded-2xl p-3.5 md:p-4 flex items-center justify-between gap-3.5 text-left bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-200 cursor-pointer group"
         >
-          {/* Decorative mesh background glows & circles */}
-          <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-indigo-400/20 blur-xl group-hover:scale-125 transition-all duration-700 pointer-events-none" />
-          <div className="absolute -bottom-6 left-1/3 h-20 w-20 rounded-full bg-violet-400/20 blur-lg pointer-events-none" />
-
-          <div className="flex-1 min-w-0 flex items-center gap-3 relative z-10">
-            <div className="h-10 w-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-xl shrink-0 border border-white/30 shadow-inner group-hover:rotate-6 transition-transform duration-300">
+          <div className="flex-1 min-w-0 flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-900/40 flex items-center justify-center text-xl shrink-0 text-blue-600">
               ⚖️
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mb-0.5">
-                <span className="text-xs md:text-sm font-black text-white tracking-tight drop-shadow-xs">Cellular Defense Strength</span>
-                <span className="flex items-center gap-1 text-[8.5px] font-black bg-white/20 backdrop-blur-md text-emerald-300 px-2 py-0.5 rounded-full border border-white/20 shrink-0 shadow-xs">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping inline-block"></span>
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 -ml-2.5 inline-block"></span>
+                <span className="text-xs md:text-sm font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">Cellular Defense Strength</span>
+                <span className="flex items-center gap-1 text-[8.5px] font-black bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800/60 shrink-0">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                   LIVE
                 </span>
               </div>
-              <p className="text-[10.5px] md:text-xs text-indigo-100/90 font-medium leading-tight truncate">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium leading-tight truncate">
                 See how daily habits shift the balance between repair & damage
               </p>
             </div>
           </div>
 
-          <div className="relative z-10 h-8 w-8 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/30 flex items-center justify-center shrink-0 shadow-sm group-hover:translate-x-1 transition-all">
-            <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <div className="h-8 w-8 rounded-xl bg-slate-100 group-hover:bg-slate-200 dark:bg-slate-800 dark:group-hover:bg-slate-700 text-slate-500 group-hover:text-slate-800 dark:text-slate-400 dark:group-hover:text-slate-200 flex items-center justify-center shrink-0 transition-all">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
             </svg>
           </div>
@@ -2202,6 +2256,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
         <Bot className="h-6 w-6 text-white" />
         <span className="text-xs font-black tracking-wide pr-1 hidden sm:inline">AI Check-in</span>
       </button>
+
+      {/* AI Daily Check-in Modern Floating Pop-up Nudge (Only if habits are pending) */}
+      <AiDailyCheckinFloatingNudge
+        pendingHabitsCount={pendingHabitsCount}
+        onOpenCheckin={() => setShowChatbotModal(true)}
+        userMode={activeMode}
+      />
 
       {/* AI Daily Logging Chatbot Modal */}
       <DailyLoggingChatbotModal

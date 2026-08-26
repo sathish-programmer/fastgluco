@@ -14,7 +14,9 @@ import {
   DownloadCloud,
   Lock,
   Trash2,
-  Calendar
+  Calendar,
+  Sparkles,
+  ArrowRight
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -433,6 +435,39 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
       </motion.div>
 
 
+      {/* ── 1-Page Doctor & Clinical Consultation PDF Export ── */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.25, duration: 0.4 }}
+        className="bg-gradient-to-br from-blue-50 to-indigo-50/60 dark:from-slate-900 dark:to-indigo-950/30 p-5 rounded-3xl border border-blue-200/80 dark:border-indigo-900/50 shadow-sm mb-6"
+      >
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[10px] font-black uppercase tracking-wider text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/50 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+            <Sparkles className="h-3 w-3 fill-current" />
+            Clinical Export
+          </span>
+          <span className="text-[10px] font-bold text-slate-400">1-Page PDF</span>
+        </div>
+        <h3 className="text-sm font-black text-slate-900 dark:text-slate-100 tracking-tight mb-1">
+          Doctor & Dietician Consultation Summary
+        </h3>
+        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mb-4 leading-relaxed">
+          One-click clinical overview combining 14-day Time-in-Range (TIR), average blood glucose, and daily habit defense adherence.
+        </p>
+        <button
+          onClick={() => {
+            setExportRange('week');
+            handleDownloadUserReport();
+          }}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-black py-3 px-4 rounded-2xl shadow-md shadow-blue-600/20 transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer"
+        >
+          <FileText className="h-4 w-4" />
+          <span>Export 1-Page Doctor Summary PDF</span>
+          <ArrowRight className="h-3.5 w-3.5" />
+        </button>
+      </motion.div>
+
       {/* Export Custom PDF Report Card */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
@@ -442,10 +477,10 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
       >
         <h3 className="text-[10px] font-bold text-slate-450 dark:text-slate-400 uppercase tracking-wider mb-2 flex items-center space-x-1.5">
           <DownloadCloud className="h-4 w-4 text-primary dark:text-primary-light" />
-          <span>Export Health Summary PDF</span>
+          <span>Export Custom Health Summary PDF</span>
         </h3>
         <p className="text-xs text-slate-400 font-semibold mb-4">
-          Generate a beautiful, comprehensive PDF report with your matched food and glucose trends.
+          Generate a comprehensive PDF report with your matched food and glucose trends over custom date ranges.
         </p>
         {/* Quick range pills */}
         <div className="flex flex-wrap gap-2 mb-3">

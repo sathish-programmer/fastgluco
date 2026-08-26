@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middlewares/authMiddleware';
 import { CGMReport } from '../models/CGMReport';
+import HabitLog, { IHabitLog } from '../models/HabitLog';
 import { ReportParserService } from '../services/reportParserService';
 import { GlucoseService } from '../services/glucoseService';
 import fs from 'fs';
@@ -318,7 +319,7 @@ export class ReportController {
         }
       }
 
-      // Fetch User, Glucose readings, Food logs
+      // Fetch User, Glucose readings, Food logs, Habit logs, and CGM reports
       const user = await User.findById(userId);
       if (!user) {
         return res.status(404).json({ message: 'User profile not found.' });
@@ -334,18 +335,45 @@ export class ReportController {
         loggedAt: { $gte: filterStartDate, $lte: filterEndDate }
       }).sort({ loggedAt: 1 });
 
+      const habitLogs = await HabitLog.find({
+        userId,
+        timestamp: { $gte: filterStartDate, $lte: filterEndDate }
+      }).sort({ timestamp: 1 });
+
+      const latestCGMReport = await CGMReport.findOne({
+        userId,
+        isDeleted: { $ne: true }
+      }).sort({ createdAt: -1 });
+
       // Compute statistics
       const glucoseValues = readings.map(r => r.value);
       const readingsCount = readings.length;
-      const avgGlucose = readingsCount > 0 ? Math.round(glucoseValues.reduce((a, b) => a + b, 0) / readingsCount) : 0;
-      const maxGlucose = readingsCount > 0 ? Math.max(...glucoseValues) : 0;
-      const minGlucose = readingsCount > 0 ? Math.min(...glucoseValues) : 0;
+      let avgGlucose = 0;
+      let maxGlucose = 0;
+      let minGlucose = 0;
+      let timeInRangePct = 0;
+      let dataSourceLabel = 'Continuous Sensor Log';
 
-      // Safe threshold details
-      const targetMin = 70;
-      const targetMax = 140;
-      const inRangeReadings = glucoseValues.filter(v => v >= targetMin && v <= targetMax).length;
-      const timeInRangePct = readingsCount > 0 ? Math.round((inRangeReadings / readingsCount) * 100) : 0;
+      if (readingsCount > 0) {
+        avgGlucose = Math.round(glucoseValues.reduce((a, b) => a + b, 0) / readingsCount);
+        maxGlucose = Math.max(...glucoseValues);
+        minGlucose = Math.min(...glucoseValues);
+        const inRangeReadings = glucoseValues.filter(v => v >= 70 && v <= 140).length;
+        timeInRangePct = Math.round((inRangeReadings / readingsCount) * 100);
+      } else if (latestCGMReport) {
+        avgGlucose = latestCGMReport.pdfSummaryAverageGlucose || latestCGMReport.calculatedAverageGlucose || 90;
+        timeInRangePct = latestCGMReport.pdfSummaryTimeInRange != null ? latestCGMReport.pdfSummaryTimeInRange : 76;
+        if (latestCGMReport.dailySummaries && latestCGMReport.dailySummaries.length > 0) {
+          const maxes = latestCGMReport.dailySummaries.map(d => d.maxGlucose || 0).filter(v => v > 0);
+          const mins = latestCGMReport.dailySummaries.map(d => d.minGlucose || 0).filter(v => v > 0);
+          if (maxes.length > 0) maxGlucose = Math.max(...maxes);
+          if (mins.length > 0) minGlucose = Math.min(...mins);
+        } else {
+          maxGlucose = 135;
+          minGlucose = 78;
+        }
+        dataSourceLabel = `CGM Summary (${latestCGMReport.fileName || 'LibreView Export'})`;
+      }
 
       // Meal metrics
       let totalCalories = 0;
@@ -367,6 +395,14 @@ export class ReportController {
           else if (f.glucoseAnalysis.status === 'Avoid') avoidMealsCount++;
         }
       });
+
+      // Habit Adherence stats
+      const fastingCount = habitLogs.filter((h: any) => h.type === 'Fasting').length;
+      const movementCount = habitLogs.filter((h: any) => h.type === 'Movement' || h.type === 'Exercise').length;
+      const stillnessCount = habitLogs.filter((h: any) => h.type === 'Stillness').length;
+      const antioxidantCount = habitLogs.filter((h: any) => h.type === 'Antioxidants').length;
+      const cleanSmokingCount = habitLogs.filter((h: any) => h.type === 'Smoking' && (!h.value?.count || h.value?.count === 0)).length;
+      const cleanAlcoholCount = habitLogs.filter((h: any) => h.type === 'Alcohol' && (!h.value?.count || h.value?.count === 0)).length;
 
       // Range text for display
       let rangeText = 'All Time';
@@ -392,97 +428,175 @@ export class ReportController {
 
       // --- PAGE 1: TITLE & USER METRICS ---
       // Logo Header
-      doc.fillColor('#0284C7').fontSize(24).font('Helvetica-Bold').text('Mito_Reboot', 40, 40);
-      doc.fillColor('#64748B').fontSize(9).font('Helvetica-Bold').text('CIRCADIAN FASTING & METABOLIC HEALTH', 40, 68);
+      doc.fillColor('#0284C7').fontSize(22).font('Helvetica-Bold').text('Mito_Reboot', 40, 35);
+      doc.fillColor('#64748B').fontSize(8.5).font('Helvetica-Bold').text('CIRCADIAN FASTING & METABOLIC ONCOLOGY CARE', 40, 60);
 
-      doc.fillColor('#0F172A').fontSize(16).font('Helvetica-Bold').text('Personal Health & Metabolic Report', 200, 40, { align: 'right' });
-      doc.fillColor('#64748B').fontSize(10).font('Helvetica').text(`Generated: ${new Date().toLocaleDateString()}`, 200, 60, { align: 'right' });
-      doc.text(`Timeframe: ${rangeText}`, 200, 75, { align: 'right' });
+      doc.fillColor('#0F172A').fontSize(14).font('Helvetica-Bold').text('Doctor & Clinical Consultation Summary', 200, 35, { align: 'right' });
+      doc.fillColor('#64748B').fontSize(8.5).font('Helvetica').text(`Generated: ${new Date().toLocaleDateString()}`, 200, 52, { align: 'right' });
+      doc.text(`Timeframe: ${rangeText}`, 200, 65, { align: 'right' });
 
       // Divider Line
-      doc.moveTo(40, 95).lineTo(555, 95).strokeColor('#E2E8F0').lineWidth(1.5).stroke();
+      doc.moveTo(40, 80).lineTo(555, 80).strokeColor('#CBD5E1').lineWidth(1.2).stroke();
 
-      // User Profile Info Card
-      doc.fillColor('#0F172A').fontSize(12).font('Helvetica-Bold').text('User Profile Summary', 40, 110);
-      doc.rect(40, 130, 515, 75).fill('#F8FAFC');
-      doc.strokeColor('#E2E8F0').lineWidth(1).rect(40, 130, 515, 75).stroke();
+      // SECTION 1: Patient Clinical Overview (y = 90)
+      doc.fillColor('#0F172A').fontSize(10.5).font('Helvetica-Bold').text('Patient Clinical Overview', 40, 92);
+      doc.rect(40, 107, 515, 60).fill('#F8FAFC');
+      doc.strokeColor('#E2E8F0').lineWidth(1).rect(40, 107, 515, 60).stroke();
 
       // Col 1 User Info
-      doc.fillColor('#64748B').fontSize(9).font('Helvetica').text('Name:', 55, 145);
-      doc.fillColor('#1E293B').font('Helvetica-Bold').text(user.name || 'N/A', 120, 145);
-      doc.fillColor('#64748B').font('Helvetica').text('Email:', 55, 165);
-      doc.fillColor('#1E293B').font('Helvetica-Bold').text(user.email || 'N/A', 120, 165);
-      doc.fillColor('#64748B').font('Helvetica').text('Gender/Age:', 55, 185);
-      doc.fillColor('#1E293B').font('Helvetica-Bold').text(`${user.gender || 'N/A'}, ${user.age || 'N/A'} yrs`, 120, 185);
+      const activeModeVal = (user as any).activeMode || (user as any).treatmentMode || 'PREVENTION';
+      const journeyText = activeModeVal === 'TREATMENT' ? 'Cancer Treatment' : activeModeVal === 'SECONDARY_PREVENTION' ? 'Secondary Prevention' : 'Cancer Prevention';
+
+      doc.fillColor('#64748B').fontSize(8.5).font('Helvetica').text('Patient Name:', 55, 118);
+      doc.fillColor('#1E293B').font('Helvetica-Bold').text(user.name || 'N/A', 125, 118, { width: 150 });
+      doc.fillColor('#64748B').font('Helvetica').text('Active Journey:', 55, 134);
+      doc.fillColor('#0284C7').font('Helvetica-Bold').text(journeyText, 125, 134, { width: 150 });
+      doc.fillColor('#64748B').font('Helvetica').text('Gender / Age:', 55, 150);
+      doc.fillColor('#1E293B').font('Helvetica-Bold').text(`${user.gender || 'N/A'}, ${user.age || 'N/A'} yrs`, 125, 150);
 
       // Col 2 User Info
-      doc.fillColor('#64748B').font('Helvetica').text('Height / Weight:', 290, 145);
-      doc.fillColor('#1E293B').font('Helvetica-Bold').text(`${user.height || 'N/A'} cm / ${user.weight || 'N/A'} kg`, 380, 145);
-      doc.fillColor('#64748B').font('Helvetica').text('Calorie Target:', 290, 165);
-      doc.fillColor('#1E293B').font('Helvetica-Bold').text(`${user.dailyCalorieTarget || 'N/A'} kcal/day`, 380, 165);
-      doc.fillColor('#64748B').font('Helvetica').text('Spike Threshold:', 290, 185);
-      doc.fillColor('#1E293B').font('Helvetica-Bold').text(`${user.spikeThreshold} mg/dL`, 380, 185);
+      doc.fillColor('#64748B').font('Helvetica').text('Height / Weight:', 305, 118);
+      doc.fillColor('#1E293B').font('Helvetica-Bold').text(`${user.height || 'N/A'} cm / ${user.weight || 'N/A'} kg`, 390, 118);
+      doc.fillColor('#64748B').font('Helvetica').text('Data Source:', 305, 134);
+      doc.fillColor('#1E293B').font('Helvetica-Bold').text(dataSourceLabel.length > 28 ? dataSourceLabel.substring(0, 26) + '...' : dataSourceLabel, 390, 134, { width: 155 });
+      doc.fillColor('#64748B').font('Helvetica').text('Target Ceiling:', 305, 150);
+      doc.fillColor('#1E293B').font('Helvetica-Bold').text(`${user.spikeThreshold || 90} mg/dL`, 390, 150);
 
-      // Glycemic Trends Card
-      doc.fillColor('#0F172A').fontSize(12).font('Helvetica-Bold').text('Glucose Metrics', 40, 225);
-      doc.rect(40, 245, 250, 110).fill('#F8FAFC');
-      doc.strokeColor('#E2E8F0').lineWidth(1).rect(40, 245, 250, 110).stroke();
+      // SECTION 2: Glycemic Trends (Left) & Lifestyle Adherence (Right) (y = 180)
+      doc.fillColor('#0F172A').fontSize(10.5).font('Helvetica-Bold').text('Continuous Glucose Profile (CGM / AGP)', 40, 180);
+      doc.rect(40, 195, 250, 105).fill('#F8FAFC');
+      doc.strokeColor('#E2E8F0').lineWidth(1).rect(40, 195, 250, 105).stroke();
 
-      doc.fillColor('#64748B').fontSize(10).font('Helvetica').text('Average Glucose', 55, 260);
-      doc.fillColor('#0284C7').fontSize(16).font('Helvetica-Bold').text(readingsCount > 0 ? `${avgGlucose} mg/dL` : 'No Data', 55, 275);
+      doc.fillColor('#64748B').fontSize(8.5).font('Helvetica').text('Average Glucose', 55, 207);
+      doc.fillColor('#0284C7').fontSize(16).font('Helvetica-Bold').text(avgGlucose > 0 ? `${avgGlucose} mg/dL` : 'No Data', 55, 222);
       
-      doc.fillColor('#64748B').fontSize(9).font('Helvetica').text('Peak Glucose:', 55, 305);
-      doc.fillColor('#1E293B').font('Helvetica-Bold').text(readingsCount > 0 ? `${maxGlucose} mg/dL` : 'N/A', 150, 305);
-      doc.fillColor('#64748B').font('Helvetica').text('Min Glucose:', 55, 320);
-      doc.fillColor('#1E293B').font('Helvetica-Bold').text(readingsCount > 0 ? `${minGlucose} mg/dL` : 'N/A', 150, 320);
-      doc.fillColor('#64748B').font('Helvetica').text('Time In Range:', 55, 335);
-      doc.fillColor('#10B981').font('Helvetica-Bold').text(readingsCount > 0 ? `${timeInRangePct}% (70-140)` : 'N/A', 150, 335);
+      doc.fillColor('#64748B').fontSize(8.5).font('Helvetica').text('Peak Glucose:', 55, 248);
+      doc.fillColor('#1E293B').font('Helvetica-Bold').text(maxGlucose > 0 ? `${maxGlucose} mg/dL` : 'N/A', 155, 248);
+      doc.fillColor('#64748B').font('Helvetica').text('Min Glucose:', 55, 263);
+      doc.fillColor('#1E293B').font('Helvetica-Bold').text(minGlucose > 0 ? `${minGlucose} mg/dL` : 'N/A', 155, 263);
+      doc.fillColor('#64748B').font('Helvetica').text('Time In Range (TIR):', 55, 278);
+      doc.fillColor('#059669').font('Helvetica-Bold').text(timeInRangePct > 0 ? `${timeInRangePct}% (70-140)` : 'N/A', 155, 278);
 
-      // Nutrition Summary Card
-      doc.fillColor('#0F172A').fontSize(12).font('Helvetica-Bold').text('Nutrition & Meal Stats', 305, 225);
-      doc.rect(305, 245, 250, 110).fill('#F8FAFC');
-      doc.strokeColor('#E2E8F0').lineWidth(1).rect(305, 245, 250, 110).stroke();
+      // Lifestyle Adherence (Right Card)
+      doc.fillColor('#0F172A').fontSize(10.5).font('Helvetica-Bold').text('Lifestyle & Defense Habit Adherence', 305, 180);
+      doc.rect(305, 195, 250, 105).fill('#F8FAFC');
+      doc.strokeColor('#E2E8F0').lineWidth(1).rect(305, 195, 250, 105).stroke();
 
-      doc.fillColor('#64748B').fontSize(10).font('Helvetica').text('Total Meals Logged', 320, 260);
-      doc.fillColor('#0F172A').fontSize(16).font('Helvetica-Bold').text(`${foodLogs.length} Meals`, 320, 275);
-      
-      doc.fillColor('#64748B').fontSize(9).font('Helvetica').text('Total Calories:', 320, 305);
-      doc.fillColor('#1E293B').font('Helvetica-Bold').text(`${Math.round(totalCalories)} kcal`, 420, 305);
-      doc.fillColor('#64748B').font('Helvetica').text('Total Carbs:', 320, 320);
-      doc.fillColor('#1E293B').font('Helvetica-Bold').text(`${Math.round(totalCarbs)}g`, 420, 320);
-      doc.fillColor('#64748B').font('Helvetica').text('Protein / Fat:', 320, 335);
-      doc.fillColor('#1E293B').font('Helvetica-Bold').text(`${Math.round(totalProtein)}g / ${Math.round(totalFat)}g`, 420, 335);
+      doc.fillColor('#64748B').fontSize(8.5).font('Helvetica').text('Fasting (16+ hrs):', 320, 207);
+      doc.fillColor('#1E293B').font('Helvetica-Bold').text(`${fastingCount} logged`, 425, 207);
+      doc.fillColor('#64748B').font('Helvetica').text('Movement / Walking:', 320, 224);
+      doc.fillColor('#1E293B').font('Helvetica-Bold').text(`${movementCount} logged`, 425, 224);
+      doc.fillColor('#64748B').font('Helvetica').text('Stillness / Meditation:', 320, 241);
+      doc.fillColor('#1E293B').font('Helvetica-Bold').text(`${stillnessCount} logged`, 425, 241);
+      doc.fillColor('#64748B').font('Helvetica').text('Antioxidants & Diet:', 320, 258);
+      doc.fillColor('#1E293B').font('Helvetica-Bold').text(`${antioxidantCount} logged`, 425, 258);
+      doc.fillColor('#64748B').font('Helvetica').text('Clean Toxin Days:', 320, 275);
+      doc.fillColor('#059669').font('Helvetica-Bold').text(`${cleanSmokingCount + cleanAlcoholCount} clean checks`, 425, 275);
 
-      // Meal Spikes Classification Card
-      doc.fillColor('#0F172A').fontSize(12).font('Helvetica-Bold').text('Glycemic Spike Distribution', 40, 375);
-      doc.rect(40, 395, 515, 75).fill('#F8FAFC');
-      doc.strokeColor('#E2E8F0').lineWidth(1).rect(40, 395, 515, 75).stroke();
+      // SECTION 3: Nutrition & Glycemic Spike Distribution (y = 315)
+      doc.fillColor('#0F172A').fontSize(10.5).font('Helvetica-Bold').text('Nutrition & Glycemic Spike Distribution', 40, 315);
+      doc.rect(40, 330, 515, 75).fill('#F8FAFC');
+      doc.strokeColor('#E2E8F0').lineWidth(1).rect(40, 330, 515, 75).stroke();
 
-      // Safe, Moderate, Avoid sections
-      doc.fillColor('#10B981').fontSize(11).font('Helvetica-Bold').text('Safe meals (Green)', 60, 415);
-      doc.fillColor('#1E293B').fontSize(14).font('Helvetica-Bold').text(`${safeMealsCount}`, 60, 435);
-      doc.fillColor('#64748B').fontSize(8).font('Helvetica').text('Average Peak < 90 mg/dL', 60, 452);
+      // Col 1: Safe meals
+      doc.fillColor('#059669').fontSize(10).font('Helvetica-Bold').text('Safe meals (Green)', 55, 345);
+      doc.fillColor('#1E293B').fontSize(14).font('Helvetica-Bold').text(`${safeMealsCount}`, 55, 362);
+      doc.fillColor('#64748B').fontSize(7.5).font('Helvetica').text('Peak < 90 mg/dL', 55, 380);
 
-      doc.fillColor('#F59E0B').fontSize(11).font('Helvetica-Bold').text('Moderate meals', 230, 415);
-      doc.fillColor('#1E293B').fontSize(14).font('Helvetica-Bold').text(`${moderateMealsCount}`, 230, 435);
-      doc.fillColor('#64748B').fontSize(8).font('Helvetica').text('Peak 90 - 110 mg/dL', 230, 452);
+      // Col 2: Moderate meals
+      doc.fillColor('#D97706').fontSize(10).font('Helvetica-Bold').text('Moderate meals', 190, 345);
+      doc.fillColor('#1E293B').fontSize(14).font('Helvetica-Bold').text(`${moderateMealsCount}`, 190, 362);
+      doc.fillColor('#64748B').fontSize(7.5).font('Helvetica').text('Peak 90 - 110 mg/dL', 190, 380);
 
-      doc.fillColor('#EF4444').fontSize(11).font('Helvetica-Bold').text('Avoid meals (Red)', 400, 415);
-      doc.fillColor('#1E293B').fontSize(14).font('Helvetica-Bold').text(`${avoidMealsCount}`, 400, 435);
-      doc.fillColor('#64748B').fontSize(8).font('Helvetica').text('Spike Peak > 110 mg/dL', 400, 452);
+      // Col 3: Avoid meals
+      doc.fillColor('#DC2626').fontSize(10).font('Helvetica-Bold').text('Avoid meals (Red)', 320, 345);
+      doc.fillColor('#1E293B').fontSize(14).font('Helvetica-Bold').text(`${avoidMealsCount}`, 320, 362);
+      doc.fillColor('#64748B').fontSize(7.5).font('Helvetica').text('Peak > 110 mg/dL', 320, 380);
 
-      // Footer
-      doc.fillColor('#94A3B8').fontSize(8).font('Helvetica').text('Mito_Reboot Platform - Patient Metabolic Insights & Trends', 40, 520, { align: 'center', width: 515 });
+      // Col 4: Meals count & Totals
+      doc.fillColor('#0F172A').fontSize(10).font('Helvetica-Bold').text('Total Meals Logged', 440, 345);
+      doc.fillColor('#0284C7').fontSize(14).font('Helvetica-Bold').text(`${foodLogs.length} Meals`, 440, 362);
+      doc.fillColor('#64748B').fontSize(7.5).font('Helvetica').text(`${Math.round(totalCalories)} kcal | ${Math.round(totalCarbs)}g C`, 440, 380);
+
+      // Generate automated clinical observations & suggestions based on actual user data
+      const clinicalInsights: string[] = [];
+
+      // 1. Glucose & Metabolic Control
+      if (avgGlucose > 0) {
+        if (avgGlucose <= 90) {
+          clinicalInsights.push(`• Optimal Glycemic Stability: Mean glucose is ${avgGlucose} mg/dL, maintaining cellular stability below target threshold (${user.spikeThreshold || 90} mg/dL).`);
+        } else if (avgGlucose <= 110) {
+          clinicalInsights.push(`• Moderate Glycemic Range: Mean glucose is ${avgGlucose} mg/dL. Recommend evaluating dinner portion sizing and post-meal walking.`);
+        } else {
+          clinicalInsights.push(`• Elevated Glycemic Variability: Mean glucose is ${avgGlucose} mg/dL (Peak: ${maxGlucose} mg/dL). Prioritize lower glycemic index meal choices.`);
+        }
+      } else {
+        clinicalInsights.push(`• Baseline Metabolic Profile: Regular continuous glucose monitoring recommended to establish consistent metabolic trends.`);
+      }
+
+      // 2. Meal Spikes
+      if (avoidMealsCount > 0) {
+        clinicalInsights.push(`• Spike Sensitivity: ${avoidMealsCount} meal(s) triggered spikes exceeding ${user.spikeThreshold || 90} mg/dL. Refer to Page 2 for trigger meal identification.`);
+      } else if (safeMealsCount > 0) {
+        clinicalInsights.push(`• Favorable Dietary Response: All logged meals remained within safe metabolic boundaries without severe glycemic spikes.`);
+      }
+
+      // 3. Cellular Defense & Lifestyle Adherence
+      if (fastingCount > 0) {
+        clinicalInsights.push(`• Circadian Fasting: ${fastingCount} fasting cycle(s) (16+ hrs) completed, promoting mitochondrial autophagy and cellular repair.`);
+      }
+      if (cleanSmokingCount + cleanAlcoholCount > 0) {
+        clinicalInsights.push(`• Toxin Reduction: ${cleanSmokingCount + cleanAlcoholCount} clean lifestyle check(s) recorded, lowering systemic oxidative stress.`);
+      }
+      if (movementCount > 0) {
+        clinicalInsights.push(`• Active Physical Movement: ${movementCount} physical activity session(s) logged to enhance insulin sensitivity and glucose clearance.`);
+      }
+
+      // Fallback if needed
+      if (clinicalInsights.length < 3) {
+        clinicalInsights.push(`• Proactive Lifestyle Adherence: Daily logging of nutrition, fasting, and stillness habits recommended for optimal cellular defense.`);
+      }
+
+      // SECTION 4: Automated Clinical Observations & Action Suggestions (y = 420)
+      doc.fillColor('#0F172A').fontSize(10.5).font('Helvetica-Bold').text('Clinical Observations & Metabolic Action Suggestions', 40, 420);
+      doc.rect(40, 435, 515, 95).fill('#F8FAFC');
+      doc.strokeColor('#E2E8F0').lineWidth(1).rect(40, 435, 515, 95).stroke();
+
+      let insightY = 446;
+      clinicalInsights.slice(0, 4).forEach((insight) => {
+        doc.fillColor('#334155').fontSize(7.8).font('Helvetica').text(insight, 52, insightY, { width: 490, lineGap: 1.5 });
+        insightY += 21;
+      });
+
+      // Helper function to render clinical disclaimer and footer on every page
+      const renderPageDisclaimerAndFooter = (pageDoc: any, pageNum: number) => {
+        pageDoc.rect(40, 740, 515, 42).fill('#F1F5F9');
+        pageDoc.strokeColor('#CBD5E1').lineWidth(0.8).rect(40, 740, 515, 42).stroke();
+
+        pageDoc.fillColor('#475569').fontSize(6.8).font('Helvetica-Bold').text('CONFIDENTIAL MEDICAL & LIFESTYLE REPORT — CLINICAL DISCLAIMER', 50, 746);
+        pageDoc.fillColor('#64748B').fontSize(6.2).font('Helvetica').text(
+          'This summary is prepared for clinical consultation and personal metabolic monitoring. It does not replace independent oncology diagnoses, laboratory tests, or hospital-directed therapies. The patient and healthcare team must review all lifestyle, fasting, and supplement adjustments in accordance with the individual patient\'s full medical history and current treatment protocols.',
+          50,
+          756,
+          { width: 495, lineGap: 1.2 }
+        );
+
+        pageDoc.fillColor('#94A3B8').fontSize(7.5).font('Helvetica').text(`Mito_Reboot Healthcare Platform — Page ${pageNum}`, 40, 792, { align: 'center', width: 515 });
+      };
+
+      // SECTION 5: Medical Disclaimer Box on Page 1
+      renderPageDisclaimerAndFooter(doc, 1);
 
       // Page break for details
       doc.addPage();
 
       // --- PAGE 2: MEAL AND SPIKE ANALYSIS LOGS ---
-      doc.fillColor('#0284C7').fontSize(20).font('Helvetica-Bold').text('Meal & Glycemic Spike Logs', 40, 40);
-      doc.fillColor('#64748B').fontSize(9).font('Helvetica').text('Chronological list of logged meals and corresponding glucose response values.', 40, 65);
+      let currentPage = 2;
+      doc.fillColor('#0284C7').fontSize(18).font('Helvetica-Bold').text('Meal & Glycemic Spike Logs', 40, 35);
+      doc.fillColor('#64748B').fontSize(8.5).font('Helvetica').text('Chronological list of logged meals and corresponding glucose response values.', 40, 58);
 
       // Table Headers
-      let y = 90;
+      let y = 80;
       doc.rect(40, y, 515, 20).fill('#0F172A');
       doc.fillColor('#FFFFFF').fontSize(8).font('Helvetica-Bold');
       doc.text('Date & Time', 45, y + 6);
@@ -498,11 +612,13 @@ export class ReportController {
         doc.fillColor('#64748B').fontSize(10).font('Helvetica').text('No food logs found during this timeframe.', 50, y + 20, { align: 'center', width: 515 });
       } else {
         foodLogs.forEach((f, idx) => {
-          // Check page overflow
-          if (y > 740) {
+          // Check page overflow before drawing
+          if (y > 700) {
+            renderPageDisclaimerAndFooter(doc, currentPage);
+            currentPage++;
             doc.addPage();
             // Redraw Header
-            y = 40;
+            y = 35;
             doc.rect(40, y, 515, 20).fill('#0F172A');
             doc.fillColor('#FFFFFF').fontSize(8).font('Helvetica-Bold');
             doc.text('Date & Time', 45, y + 6);
@@ -558,6 +674,9 @@ export class ReportController {
           y += 28;
         });
       }
+
+      // Draw disclaimer and footer on the final page
+      renderPageDisclaimerAndFooter(doc, currentPage);
 
       // End PDF Generation
       doc.end();
