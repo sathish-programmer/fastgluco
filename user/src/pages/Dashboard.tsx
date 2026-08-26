@@ -13,6 +13,7 @@ import {
   Maximize2,
   Minimize2,
   RotateCw,
+  ChevronLeft,
   ChevronRight,
   Check,
   Droplets,
@@ -24,7 +25,7 @@ import {
   Bot,
   X
 } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, CartesianGrid } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, ReferenceArea, CartesianGrid } from 'recharts';
 import { motion } from 'framer-motion';
 import { DailyLoggingChatbotModal } from '../components/DailyLoggingChatbotModal';
 
@@ -44,37 +45,30 @@ const StabilityScoreGauge: React.FC<StabilityScoreGaugeProps> = ({ percentage, s
   const clampedPercentage = Math.min(Math.max(percentage, 0), 100);
 
   return (
-    <div className="relative h-20 w-20 shrink-0">
-      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-        <defs>
-          <linearGradient id="stabilityGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#3B82F6" />
-            <stop offset="100%" stopColor="#10B981" />
-          </linearGradient>
-          <linearGradient id="warningGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#F59E0B" />
-            <stop offset="100%" stopColor="#EF4444" />
-          </linearGradient>
-        </defs>
-        <path
-          className="text-slate-100/80 dark:text-slate-800"
-          strokeWidth="3.2"
+    <div className="relative flex items-center justify-center">
+      <svg className="w-20 h-20 transform -rotate-90">
+        <circle
+          cx="40"
+          cy="40"
+          r="34"
           stroke="currentColor"
-          fill="none"
-          d="M18 2.0845
-            a 15.9155 15.9155 0 0 1 0 31.831
-            a 15.9155 15.9155 0 0 1 0 -31.831"
+          strokeWidth="6"
+          fill="transparent"
+          className="text-slate-100 dark:text-slate-800"
         />
-        <path
-          className="transition-all duration-700 ease-out"
-          strokeDasharray={`${clampedPercentage}, 100`}
-          strokeWidth="3.4"
+        <circle
+          cx="40"
+          cy="40"
+          r="34"
+          stroke="currentColor"
+          strokeWidth="6"
+          fill="transparent"
+          strokeDasharray={213.6}
+          strokeDashoffset={213.6 - (213.6 * clampedPercentage) / 100}
           strokeLinecap="round"
-          stroke={`url(#${isPositive ? 'stabilityGrad' : 'warningGrad'})`}
-          fill="none"
-          d="M18 2.0845
-            a 15.9155 15.9155 0 0 1 0 31.831
-            a 15.9155 15.9155 0 0 1 0 -31.831"
+          className={`transition-all duration-1000 ease-out ${
+            isPositive ? 'text-primary' : 'text-amber-500'
+          }`}
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -110,11 +104,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
   const [timeInRange, setTimeInRange] = useState<number>(85);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [latestSummaryReport, setLatestSummaryReport] = useState<any | null>(null);
+  const [reportsHistory, setReportsHistory] = useState<any[]>([]);
   const [dateRange, setDateRange] = useState<'day' | 'week' | 'month' | 'custom'>('day');
   const [selectedDate, setSelectedDate] = useState<string>(getTodayDateStr());
   const [customStartDate, setCustomStartDate] = useState<string>('');
   const [customEndDate, setCustomEndDate] = useState<string>('');
   const [showRangeModal, setShowRangeModal] = useState<boolean>(false);
+  const [chartFitMode, setChartFitMode] = useState<'fit' | 'scroll'>('fit');
   const [exporting, setExporting] = useState(false);
   const [healthInsight, setHealthInsight] = useState<string>('Walking for 10-15 minutes after major meals helps clear circulating glucose, reducing the severity of peak spikes. Try swapping white rice for millets.');
   const [rangeFoodLogs, setRangeFoodLogs] = useState<any[]>([]);
@@ -142,147 +138,203 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
   const [isApptDismissed, setIsApptDismissed] = useState<boolean>(false);
   const [showChatbotModal, setShowChatbotModal] = useState<boolean>(false);
 
-  // Format date range string for summary report
-  const formatReportDateRange = (report: any): string => {
-    const range = report?.pdfSummaryDateRange;
-    if (range?.startDateString && range?.endDateString) {
-      const sParts = range.startDateString.split('-');
-      const eParts = range.endDateString.split('-');
-      const sDate = new Date(parseInt(sParts[0], 10), parseInt(sParts[1], 10) - 1, parseInt(sParts[2], 10));
-      const eDate = new Date(parseInt(eParts[0], 10), parseInt(eParts[1], 10) - 1, parseInt(eParts[2], 10));
-      const sDay = sDate.getDate();
-      const eDay = eDate.getDate();
-      const sMonth = sDate.toLocaleDateString('en-US', { month: 'short' });
-      const eMonth = eDate.toLocaleDateString('en-US', { month: 'short' });
-      const year = eDate.getFullYear();
-      if (sMonth === eMonth) {
-        return `${sDay}–${eDay} ${sMonth} ${year}`;
-      }
-      return `${sDay} ${sMonth} – ${eDay} ${eMonth} ${year}`;
+  const handleDateStep = (direction: 'prev' | 'next') => {
+    const parts = selectedDate.split('-');
+    const cur = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    if (dateRange === 'day') {
+      cur.setDate(cur.getDate() + (direction === 'next' ? 1 : -1));
+    } else if (dateRange === 'week') {
+      cur.setDate(cur.getDate() + (direction === 'next' ? 7 : -7));
+    } else if (dateRange === 'month') {
+      cur.setDate(cur.getDate() + (direction === 'next' ? 30 : -30));
     }
-    if (range?.startDate) {
-      const sDate = new Date(range.startDate);
-      const eDate = new Date(range.endDate || range.startDate);
-      const sDay = sDate.getUTCDate();
-      const eDay = eDate.getUTCDate();
-      const sMonth = sDate.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
-      const eMonth = eDate.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
-      const year = eDate.getUTCFullYear();
-      if (sMonth === eMonth) {
-        return `${sDay}–${eDay} ${sMonth} ${year}`;
-      }
-      return `${sDay} ${sMonth} – ${eDay} ${eMonth} ${year}`;
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    if (cur > today) {
+      setSelectedDate(getTodayDateStr());
+    } else {
+      const y = cur.getFullYear();
+      const m = String(cur.getMonth() + 1).padStart(2, '0');
+      const d = String(cur.getDate()).padStart(2, '0');
+      setSelectedDate(`${y}-${m}-${d}`);
     }
-    return '19–25 Aug 2026';
+  };
+
+  const isAtCurrentDate = () => {
+    const todayStr = getTodayDateStr();
+    return selectedDate >= todayStr;
+  };
+
+  // Find the exact uploaded report that covers the active selected date range
+  const getActiveReportForPeriod = (reports: any[]) => {
+    if (!reports || reports.length === 0) return null;
+    const processedReports = reports.filter(r => r.status === 'Processed');
+    if (processedReports.length === 0) return null;
+
+    let qStart = selectedDate || getTodayDateStr();
+    let qEnd = selectedDate || getTodayDateStr();
+
+    if (dateRange === 'week') {
+      const endD = new Date(selectedDate || new Date());
+      const startD = new Date(endD);
+      startD.setDate(startD.getDate() - 6);
+      qStart = startD.toISOString().split('T')[0];
+      qEnd = endD.toISOString().split('T')[0];
+    } else if (dateRange === 'month') {
+      const endD = new Date(selectedDate || new Date());
+      const startD = new Date(endD);
+      startD.setDate(startD.getDate() - 29);
+      qStart = startD.toISOString().split('T')[0];
+      qEnd = endD.toISOString().split('T')[0];
+    } else if (dateRange === 'custom') {
+      if (customStartDate && customEndDate) {
+        qStart = new Date(customStartDate).toISOString().split('T')[0];
+        qEnd = new Date(customEndDate).toISOString().split('T')[0];
+      }
+    }
+
+    // 1. Check for report whose endDateString matches qEnd exactly
+    const exactEndMatch = processedReports.find(r => {
+      const e = r.pdfSummaryDateRange?.endDateString || (r.pdfSummaryDateRange?.endDate ? new Date(r.pdfSummaryDateRange.endDate).toISOString().split('T')[0] : '');
+      return e === qEnd;
+    });
+    if (exactEndMatch) return exactEndMatch;
+
+    // 2. Check for report that overlaps with [qStart, qEnd]
+    const overlapping = processedReports.find(r => {
+      const s = r.pdfSummaryDateRange?.startDateString || (r.pdfSummaryDateRange?.startDate ? new Date(r.pdfSummaryDateRange.startDate).toISOString().split('T')[0] : '');
+      const e = r.pdfSummaryDateRange?.endDateString || (r.pdfSummaryDateRange?.endDate ? new Date(r.pdfSummaryDateRange.endDate).toISOString().split('T')[0] : '');
+      if (!s || !e) return false;
+      return qStart <= e && qEnd >= s;
+    });
+    if (overlapping) return overlapping;
+
+    return processedReports[0];
+  };
+
+  useEffect(() => {
+    if (reportsHistory.length > 0) {
+      const activeReport = getActiveReportForPeriod(reportsHistory);
+      setLatestSummaryReport(activeReport);
+    }
+  }, [reportsHistory, dateRange, selectedDate, customStartDate, customEndDate]);
+
+  // Helper to check if a specific date or active date range overlaps with the latest uploaded report
+  const isPeriodOverlappingReport = (report: any): boolean => {
+    if (!report) return false;
+    const range = report.pdfSummaryDateRange;
+    if (!range) return false;
+    let s = range.startDateString;
+    let e = range.endDateString;
+    if (!s && range.startDate) {
+      s = new Date(range.startDate).toISOString().split('T')[0];
+      e = new Date(range.endDate || range.startDate).toISOString().split('T')[0];
+    }
+    if (!s || !e) return false;
+
+    if (dateRange === 'day') {
+      const qDate = selectedDate || new Date().toISOString().split('T')[0];
+      return qDate >= s && qDate <= e;
+    }
+    if (dateRange === 'week') {
+      const endD = new Date(selectedDate || new Date());
+      const startD = new Date(endD);
+      startD.setDate(startD.getDate() - 6);
+      const sQ = startD.toISOString().split('T')[0];
+      const eQ = endD.toISOString().split('T')[0];
+      return sQ <= e && eQ >= s;
+    }
+    if (dateRange === 'month') {
+      const endD = new Date(selectedDate || new Date());
+      const startD = new Date(endD);
+      startD.setDate(startD.getDate() - 29);
+      const sQ = startD.toISOString().split('T')[0];
+      const eQ = endD.toISOString().split('T')[0];
+      return sQ <= e && eQ >= s;
+    }
+    if (dateRange === 'custom') {
+      if (!customStartDate || !customEndDate) return false;
+      const sQ = new Date(customStartDate).toISOString().split('T')[0];
+      const eQ = new Date(customEndDate).toISOString().split('T')[0];
+      return sQ <= e && eQ >= s;
+    }
+    return false;
+  };
+
+  const hasActiveReportData = (report: any): boolean => {
+    if (!report) return false;
+    return isPeriodOverlappingReport(report) && !!(
+      report.pdfSummaryAverageGlucose != null ||
+      report.pdfSummaryTimeInRange != null ||
+      report.glucoseVariability != null ||
+      (report.dailySummaries && report.dailySummaries.length > 0) ||
+      (report.hourlyPatternSummaries && report.hourlyPatternSummaries.length > 0)
+    );
   };
 
   // Dynamically calculate glucose stability hours below spikeThreshold (defaults to 90)
   const calculateStabilityHours = () => {
-    let maxHours = 24;
-    let targetHours = 17;
-    let unitText = 'hours / 24h';
-
-    if (dateRange === 'week') {
-      maxHours = 168; // 7 days * 24h
-      targetHours = 119; // 7 * 17h
-      unitText = 'hours / 7 days';
-    } else if (dateRange === 'month') {
-      maxHours = 720; // 30 days * 24h
-      targetHours = 510; // 30 * 17h
-      unitText = 'hours / 30 days';
-    }
-
+    const targetHoursPerDay = 17;
+    const unitText = dateRange === 'day' ? 'hours / 24h' : 'hours / day (avg)';
     const defaultTargetText = `Target: Stay below ${spikeThreshold} mg/dL for 17 hrs a day`;
 
-    if (glucoseReadings.length === 0) {
-      if (latestSummaryReport) {
-        const reportDateStr = formatReportDateRange(latestSummaryReport);
+    // 1. If we have readings in database for the queried period (Day, Week, Month, or Custom)
+    if (glucoseReadings.length > 0) {
+      const belowCount = glucoseReadings.filter(r => r.value <= spikeThreshold).length;
+      const totalCount = glucoseReadings.length;
+      const percentage = Math.round((belowCount / totalCount) * 100);
+      const hoursPerDay = parseFloat(((belowCount / totalCount) * 24).toFixed(1));
 
-        // Option A: Use directly extracted hourlyPatternSummaries median points (<= spikeThreshold)
-        if (latestSummaryReport.hourlyPatternSummaries && latestSummaryReport.hourlyPatternSummaries.length > 0) {
-          const belowCount = latestSummaryReport.hourlyPatternSummaries.filter((hp: any) => hp.medianGlucose <= spikeThreshold).length;
-          const totalCount = latestSummaryReport.hourlyPatternSummaries.length;
-          const percentage = Math.round((belowCount / totalCount) * 100);
-          
-          // Keep 24h base (20.0 hours / 24h) and label as Hourly Median Pattern Estimate
-          const patternHours = parseFloat(((percentage / 100) * 24).toFixed(1));
-          const summaryUnitText = 'hours / 24h (pattern est)';
-          const summaryTargetText = `Hourly Median Pattern Estimate: ${belowCount}/${totalCount} median points (${percentage}%) ≤ ${spikeThreshold} mg/dL (${reportDateStr})`;
-
-          let status = 'Need Attention';
-          if (patternHours >= 17) {
-            status = 'Goal Achieved';
-          } else if (patternHours >= 11.9) {
-            status = 'On Track';
-          }
-          return {
-            hours: patternHours,
-            percentage,
-            status,
-            unitText: summaryUnitText,
-            label: summaryTargetText,
-            hasData: true,
-            source: 'HOURLY_MEDIAN_SUMMARY'
-          };
-        }
-
-        // Option B: Use directly extracted PDF Time In Range (TIR %)
-        if (latestSummaryReport.pdfSummaryTimeInRange != null) {
-          const percentage = latestSummaryReport.pdfSummaryTimeInRange;
-          const patternHours = parseFloat(((percentage / 100) * 24).toFixed(1));
-          const summaryUnitText = dateRange === 'day' ? 'hours / 24h' : `hours / 24h (${dateRange} pattern estimate)`;
-          const summaryTargetText = `TIR Estimate: ~${patternHours} hrs/day in target range (${reportDateStr})`;
-
-          let status = 'Need Attention';
-          if (patternHours >= 17) {
-            status = 'Goal Achieved';
-          } else if (patternHours >= 11.9) {
-            status = 'On Track';
-          }
-          return {
-            hours: patternHours,
-            percentage,
-            status,
-            unitText: summaryUnitText,
-            label: summaryTargetText,
-            hasData: true,
-            source: 'PDF_TIME_IN_RANGE'
-          };
-        }
+      let status = 'Need Attention';
+      if (hoursPerDay >= targetHoursPerDay) {
+        status = 'Goal Achieved';
+      } else if (hoursPerDay >= targetHoursPerDay * 0.7) {
+        status = 'On Track';
       }
 
       return {
-        hours: 0,
-        percentage: 0,
-        status: 'No Data',
+        hours: hoursPerDay,
+        percentage,
+        status,
         unitText,
         label: defaultTargetText,
-        hasData: false,
-        source: 'NO_DATA'
+        hasData: true,
+        source: 'TIMESTAMPED_READINGS'
       };
     }
 
-    // Calculate percentage of readings below threshold
-    const belowCount = glucoseReadings.filter(r => r.value <= spikeThreshold).length;
-    const totalCount = glucoseReadings.length;
-    const percentage = Math.round((belowCount / totalCount) * 100);
-    const hours = parseFloat(((belowCount / totalCount) * maxHours).toFixed(1));
+    // 2. If no point readings, but the queried period overlaps with an uploaded summary report
+    if (hasActiveReportData(latestSummaryReport)) {
+      const tir = latestSummaryReport.pdfSummaryTimeInRange != null ? latestSummaryReport.pdfSummaryTimeInRange : 76;
+      const hoursPerDay = parseFloat(((tir / 100) * 24).toFixed(1));
+      let status = 'Need Attention';
+      if (hoursPerDay >= targetHoursPerDay) {
+        status = 'Goal Achieved';
+      } else if (hoursPerDay >= targetHoursPerDay * 0.7) {
+        status = 'On Track';
+      }
 
-    let status = 'Need Attention';
-    if (hours >= targetHours) {
-      status = 'Goal Achieved';
-    } else if (hours >= targetHours * 0.7) {
-      status = 'On Track';
+      return {
+        hours: hoursPerDay,
+        percentage: tir,
+        status,
+        unitText,
+        label: defaultTargetText,
+        hasData: true,
+        source: 'PDF_AGP_SUMMARY'
+      };
     }
 
+    // 3. Otherwise, No Data
+    const periodLabel = dateRange === 'day' ? (selectedDate === getTodayDateStr() ? 'today' : `this date (${selectedDate})`) : dateRange === 'week' ? 'this week' : 'this month';
     return {
-      hours,
-      percentage,
-      status,
+      hours: '--',
+      percentage: 0,
+      status: 'No Data',
       unitText,
-      label: defaultTargetText,
-      hasData: true,
-      source: 'TIMESTAMPED_READINGS'
+      label: `No glucose logged for ${periodLabel}. Upload a CGM report or log a reading to track stability.`,
+      hasData: false,
+      source: 'NO_DATA'
     };
   };
 
@@ -312,7 +364,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
   useEffect(() => {
     if (glucoseReadings.length > 0) {
       const stability = calculateStabilityHours();
-      if (stability.hasData && stability.hours < 14 && !dieticianModalDismissed) {
+      if (stability.hasData && typeof stability.hours === 'number' && stability.hours < 14 && !dieticianModalDismissed) {
         setShowDieticianModal(true);
       }
     }
@@ -406,12 +458,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
       if (reportRes.ok) {
         const history = await reportRes.json();
         setReportsCount(history.length);
-        const processedReport = history.find((r: any) => r.status === 'Processed');
-        if (processedReport) {
-          setLatestSummaryReport(processedReport);
-        } else {
-          setLatestSummaryReport(null);
-        }
+        setReportsHistory(history);
+        const matchingReport = getActiveReportForPeriod(history);
+        setLatestSummaryReport(matchingReport);
       }
 
       // Fetch food logs for the selected date range for chart overlays
@@ -704,25 +753,78 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
   const formatChartData = () => {
     let sourceReadings = [...glucoseReadings];
 
-    // If point readings count is 0, render ONLY directly extracted hourly median pattern data from Page 9
-    if (sourceReadings.length === 0 && latestSummaryReport) {
-      if (latestSummaryReport.hourlyPatternSummaries && latestSummaryReport.hourlyPatternSummaries.length > 0) {
-        const todayStr = getTodayDateStr();
-        latestSummaryReport.hourlyPatternSummaries.forEach((hp: any) => {
+    // If point readings count is 0, but queried date or period overlaps with report data, render the AGP curve
+    if (sourceReadings.length === 0 && hasActiveReportData(latestSummaryReport)) {
+      const repAvg = latestSummaryReport.pdfSummaryAverageGlucose || 90;
+      const hourlyPatterns = latestSummaryReport.hourlyPatternSummaries || [];
+
+      if (dateRange === 'day') {
+        const refDateStr = selectedDate || getTodayDateStr();
+        const ds = latestSummaryReport.dailySummaries?.find((s: any) => s.dateString === refDateStr || s.date?.toString().startsWith(refDateStr));
+        const dayAvg = ds?.averageGlucose || repAvg;
+        const scaleFactor = dayAvg / repAvg;
+
+        hourlyPatterns.forEach((hp: any) => {
           const hourMap: { [k: string]: number } = {
             '12am': 0, '2am': 2, '4am': 4, '6am': 6, '8am': 8, '10am': 10,
             '12pm': 12, '2pm': 14, '4pm': 16, '6pm': 18, '8pm': 20, '10pm': 22
           };
           const h = hourMap[hp.hourLabel] !== undefined ? hourMap[hp.hourLabel] : 0;
-          const ptDate = new Date(`${todayStr}T00:00:00`);
+          const ptDate = new Date(`${refDateStr}T00:00:00`);
           ptDate.setHours(h, 0, 0, 0);
+
           sourceReadings.push({
             timestamp: ptDate.toISOString(),
-            value: hp.medianGlucose,
+            value: Math.round(hp.medianGlucose * scaleFactor),
             isHourlyPatternSummary: true,
-            hourLabel: hp.hourLabel
+            hourLabel: hp.hourLabel,
+            timeLabel: hp.hourLabel
           });
         });
+      } else {
+        // Multi-day timeline for Week, Month, or Custom
+        let startD = new Date(selectedDate);
+        let endD = new Date(selectedDate);
+
+        if (dateRange === 'week') {
+          startD.setDate(startD.getDate() - 6);
+        } else if (dateRange === 'month') {
+          startD.setDate(startD.getDate() - 29);
+        } else if (dateRange === 'custom' && customStartDate && customEndDate) {
+          startD = new Date(customStartDate);
+          endD = new Date(customEndDate);
+        }
+
+        const cur = new Date(startD);
+        cur.setHours(0, 0, 0, 0);
+        endD.setHours(23, 59, 59, 999);
+
+        while (cur <= endD) {
+          const dKey = cur.toISOString().split('T')[0];
+          const ds = latestSummaryReport.dailySummaries?.find((s: any) => s.dateString === dKey || s.date?.toString().startsWith(dKey));
+          const dayAvg = ds?.averageGlucose || repAvg;
+          const scaleFactor = dayAvg / repAvg;
+          const dateLabel = cur.toLocaleDateString([], { day: 'numeric', month: 'short' });
+
+          // Plot 12 2-hourly pattern points per day across the full 24h cycle
+          const dayHourOffsets = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22];
+          dayHourOffsets.forEach((h, hIdx) => {
+            const hourIdx = hIdx % (hourlyPatterns.length || 12);
+            const baseMedian = hourlyPatterns[hourIdx]?.medianGlucose || repAvg;
+            const ptDate = new Date(cur);
+            ptDate.setHours(h, 0, 0, 0);
+
+            sourceReadings.push({
+              timestamp: ptDate.toISOString(),
+              value: Math.round(baseMedian * scaleFactor),
+              isHourlyPatternSummary: false,
+              timeLabel: dateLabel,
+              hourLabel: `${dateLabel} ${hourlyPatterns[hourIdx]?.hourLabel || `${h}:00`}`
+            });
+          });
+
+          cur.setDate(cur.getDate() + 1);
+        }
       }
     }
 
@@ -734,7 +836,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
         return {
           ...r,
           timestampMs: date.getTime(),
-          timeLabel: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          timeLabel: r.timeLabel || (dateRange === 'day' ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : date.toLocaleDateString([], { month: 'short', day: 'numeric' })),
           displayLabel: date.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }),
           meal: null as any
         };
@@ -743,11 +845,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
       }
     });
 
-    // Match food logs that occurred close to the glucose reading (within 15 minutes)
+    // Match food logs that occurred close to the glucose reading (up to 75 mins on summary charts)
     rangeFoodLogs.forEach(food => {
       const foodTime = new Date(food.loggedAt).getTime();
       let closestPoint: any = null;
-      let minDiff = 15 * 60 * 1000; // 15 mins
+      let minDiff = 75 * 60 * 1000; // 75 mins window for AGP 2-hour points
 
       formattedReadings.forEach(pt => {
         if (pt.timestampMs) {
@@ -760,7 +862,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
       });
 
       if (closestPoint) {
-        closestPoint.meal = food;
+        closestPoint.meal = {
+          name: food.name,
+          mealType: food.mealType,
+          calories: Math.round((food.calories || 0) * (food.quantity || 1)),
+          carbs: Math.round((food.carbs || 0) * (food.quantity || 1)),
+          protein: Math.round((food.protein || 0) * (food.quantity || 1)),
+          fat: Math.round((food.fat || 0) * (food.quantity || 1)),
+          quantity: food.quantity || 1,
+          photoUrl: food.photoUrl
+        };
       }
     });
 
@@ -785,41 +896,60 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
-      if (data.isHourlyPatternSummary) {
-        return (
-          <div className="bg-slate-900/95 backdrop-blur-md border border-blue-900/50 text-white p-3.5 rounded-2xl shadow-xl max-w-[260px] pointer-events-none">
-            <p className="text-[10px] text-blue-400 font-bold mb-1">
-              {data.hourLabel || 'Hourly Pattern'} — Median Glucose
-            </p>
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-xs text-slate-400">Hourly Median:</span>
-              <span className="text-sm font-black text-blue-400">{data.value} mg/dL</span>
-            </div>
-            <p className="text-[8.5px] text-slate-400 border-t border-slate-800 pt-1.5 mt-1 leading-normal">
-              Combined LibreView Daily Pattern (Report Period 19–25 Aug 2026)
-            </p>
-          </div>
-        );
+      const val = data.value;
+      const isStable = val <= spikeThreshold && val >= 70;
+      const isLow = val < 70;
+
+      // Format clean date & time (e.g., "26 Aug 2026 • 10:00 AM" or "27 Mar 2025 • 01:30 AM")
+      const dateObj = data.timestamp ? new Date(data.timestamp) : (label ? new Date(label) : null);
+      let dateString = '';
+      if (dateObj && !isNaN(dateObj.getTime())) {
+        dateString = `${dateObj.toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' })} • ${dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      } else if (data.hourLabel) {
+        dateString = `${data.hourLabel} • Glucose Reading`;
+      } else {
+        dateString = 'Glucose Reading';
       }
 
       return (
-        <div className="bg-slate-900/95 backdrop-blur-md border border-slate-800 text-white p-3.5 rounded-2xl shadow-xl max-w-[240px] pointer-events-none">
-          <p className="text-[10px] text-slate-400 font-bold mb-1.5">
-            {new Date(data.timestamp || label).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
-          </p>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-slate-400">Glucose:</span>
-            <span className="text-sm font-black text-blue-400">{data.value} mg/dL</span>
+        <div className="bg-slate-900/95 backdrop-blur-xl border border-slate-700/60 text-white p-3 rounded-2xl shadow-2xl min-w-[210px] max-w-[260px] pointer-events-none">
+          {/* Header: Date/Time + Status Badge */}
+          <div className="flex items-center justify-between gap-2 mb-2 pb-1.5 border-b border-slate-800">
+            <span className="text-[10px] font-bold text-slate-300 truncate">{dateString}</span>
+            <span className={`text-[8.5px] font-extrabold uppercase px-2 py-0.5 rounded-md ${
+              isLow ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30' :
+              isStable ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+              'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+            }`}>
+              {isLow ? 'Low' : isStable ? 'Stable' : 'Spike'}
+            </span>
           </div>
+
+          {/* Reading Line */}
+          <div className="flex items-baseline justify-between mb-1">
+            <span className="text-xs font-semibold text-slate-400">Glucose Level:</span>
+            <div className="flex items-baseline gap-1">
+              <span className="text-lg font-black text-white tracking-tight">{val}</span>
+              <span className="text-[10px] font-bold text-slate-400">mg/dL</span>
+            </div>
+          </div>
+
+          {/* Target Reference Info */}
+          <div className="flex items-center justify-between text-[8.5px] text-slate-400 pt-1 border-t border-slate-800/80">
+            <span>Target: 70–{spikeThreshold} mg/dL</span>
+            <span className="text-slate-500 font-medium">LibreView CGM</span>
+          </div>
+
+          {/* Meal details if logged */}
           {data.meal && (
-            <div className="pt-2 border-t border-slate-800 mt-1.5">
-              <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block mb-1">Logged Meal</span>
-              <p className="text-xs font-bold text-rose-400 truncate mb-2" title={data.meal.name}>🍴 {data.meal.name}</p>
-              <div className="grid grid-cols-2 gap-2 text-[9px] text-slate-300 bg-slate-950/40 p-2 rounded-xl border border-slate-900">
-                <div>Calories: <span className="font-bold text-white block mt-0.5">{Math.round(data.meal.calories * data.meal.quantity)} kcal</span></div>
-                <div>Carbs: <span className="font-bold text-white block mt-0.5">{Math.round(data.meal.carbs * data.meal.quantity)}g</span></div>
-                <div>Protein: <span className="font-bold text-white block mt-0.5">{Math.round(data.meal.protein * data.meal.quantity)}g</span></div>
-                <div>Fat: <span className="font-bold text-white block mt-0.5">{Math.round(data.meal.fat * data.meal.quantity)}g</span></div>
+            <div className="pt-2 border-t border-slate-800 mt-2">
+              <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Logged Meal</span>
+              <p className="text-xs font-bold text-rose-400 truncate mb-1.5" title={data.meal.name}>🍴 {data.meal.name}</p>
+              <div className="grid grid-cols-2 gap-1.5 text-[9px] text-slate-300 bg-slate-950/60 p-2 rounded-xl border border-slate-800">
+                <div>Calories: <span className="font-bold text-white">{data.meal.calories ?? 0} kcal</span></div>
+                <div>Carbs: <span className="font-bold text-white">{data.meal.carbs ?? 0}g</span></div>
+                <div>Protein: <span className="font-bold text-white">{data.meal.protein ?? 0}g</span></div>
+                <div>Fat: <span className="font-bold text-white">{data.meal.fat ?? 0}g</span></div>
               </div>
             </div>
           )}
@@ -980,48 +1110,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
         className="flex flex-col gap-3.5 mb-6"
       >
 
-        {/* History Selector Header for Stability Score */}
-        <div className="flex items-center justify-between px-1 mb-0.5 flex-wrap gap-2">
-          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-            Stability & Metabolic Track
-          </span>
-          <div className="flex items-center bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
-            <button
-              type="button"
-              onClick={() => setDateRange('day')}
-              className={`px-3 py-1 rounded-lg font-extrabold text-[10px] uppercase tracking-wider transition-all ${
-                dateRange === 'day'
-                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-              }`}
-            >
-              Daily
-            </button>
-            <button
-              type="button"
-              onClick={() => setDateRange('week')}
-              className={`px-3 py-1 rounded-lg font-extrabold text-[10px] uppercase tracking-wider transition-all ${
-                dateRange === 'week'
-                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-              }`}
-            >
-              Weekly
-            </button>
-            <button
-              type="button"
-              onClick={() => setDateRange('month')}
-              className={`px-3 py-1 rounded-lg font-extrabold text-[10px] uppercase tracking-wider transition-all ${
-                dateRange === 'month'
-                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-              }`}
-            >
-              Monthly
-            </button>
-          </div>
-        </div>
-
         {/* Stability Card (Full-width, premium layout) */}
         <motion.div 
           whileHover={{ scale: 1.02 }}
@@ -1068,19 +1156,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
         <div className="grid grid-cols-2 gap-3.5">
           {/* Glucose Card */}
           {(() => {
-            const hasPointReadings = glucoseReadings.length > 0;
-            const hasSummaryData = !hasPointReadings && latestSummaryReport && (
-              latestSummaryReport.pdfSummaryAverageGlucose != null ||
-              latestSummaryReport.pdfSummaryTimeInRange != null ||
-              latestSummaryReport.glucoseVariability != null ||
-              (latestSummaryReport.dailySummaries && latestSummaryReport.dailySummaries.length > 0)
-            );
+            let displayGlucose: number | null = null;
+            let cardLabel = 'Avg Glucose';
+            let cardSubtitle = 'Status';
 
-            const displayGlucose = hasPointReadings
-              ? (dateRange === 'day' ? currentGlucose : calculateAverageGlucose())
-              : hasSummaryData
-                ? latestSummaryReport.pdfSummaryAverageGlucose
-                : null;
+            if (hasActiveReportData(latestSummaryReport)) {
+              displayGlucose = latestSummaryReport.pdfSummaryAverageGlucose || 90;
+              cardLabel = 'Avg Glucose';
+              cardSubtitle = 'LibreView PDF Summary';
+            } else if (glucoseReadings.length > 0) {
+              displayGlucose = dateRange === 'day' ? (currentGlucose || calculateAverageGlucose()) : calculateAverageGlucose();
+              cardLabel = dateRange === 'day' ? 'Daily Reading' : dateRange === 'week' ? '7-Day Avg' : dateRange === 'month' ? '30-Day Avg' : 'Avg Glucose';
+              cardSubtitle = dateRange === 'day' ? `${selectedDate} Reading` : 'Calculated from Readings';
+            }
 
             const isLow = displayGlucose && displayGlucose < 70;
             const isStable = displayGlucose && displayGlucose <= spikeThreshold && displayGlucose >= 70;
@@ -1098,7 +1186,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
               <div className={`backdrop-blur-xl p-4 rounded-3xl border ${cardStyle} flex flex-col justify-between transition-all hover:scale-[1.01]`}>
                 <div className="flex justify-between items-center text-slate-400">
                   <span className="text-[10px] font-bold uppercase tracking-wider">
-                    {hasSummaryData ? 'Avg Glucose' : dateRange === 'day' ? 'Glucose' : 'Avg Glucose'}
+                    {cardLabel}
                   </span>
                   <Activity className="h-3.5 w-3.5 text-primary" />
                 </div>
@@ -1110,7 +1198,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
 
                 <div className="pt-1.5 border-t border-slate-50 dark:border-slate-800 flex justify-between items-center">
                   <span className="text-[7.5px] font-bold text-slate-400 uppercase tracking-wider">
-                    {hasSummaryData ? 'LibreView PDF Summary' : 'Calculated from Extracted Readings'}
+                    {cardSubtitle}
                   </span>
                   {(() => {
                     if (!displayGlucose) return <span className="text-[8px] font-bold text-slate-400 uppercase">No Data</span>;
@@ -1146,19 +1234,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
 
           {/* In Range */}
           {(() => {
-            const hasPointReadings = glucoseReadings.length > 0;
-            const hasSummaryData = !hasPointReadings && latestSummaryReport && (
-              latestSummaryReport.pdfSummaryAverageGlucose != null ||
-              latestSummaryReport.pdfSummaryTimeInRange != null ||
-              latestSummaryReport.glucoseVariability != null ||
-              (latestSummaryReport.dailySummaries && latestSummaryReport.dailySummaries.length > 0)
-            );
+            let displayTir: number | null = null;
+            let inRangeSubtitle = 'Status';
 
-            const displayTir = hasPointReadings
-              ? timeInRange
-              : hasSummaryData
-                ? latestSummaryReport.pdfSummaryTimeInRange
-                : 0;
+            if (hasActiveReportData(latestSummaryReport)) {
+              displayTir = latestSummaryReport.pdfSummaryTimeInRange || 76;
+              inRangeSubtitle = 'LibreView PDF Summary';
+            } else if (glucoseReadings.length > 0) {
+              const inRangeCount = glucoseReadings.filter(r => r.value >= 70 && r.value <= 180).length;
+              displayTir = timeInRange != null ? timeInRange : Math.round((inRangeCount / glucoseReadings.length) * 100);
+              inRangeSubtitle = dateRange === 'day' ? `${selectedDate} In Range` : 'Calculated from Readings';
+            }
 
             return (
               <motion.div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-4 rounded-3xl border border-white/80 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,0,0,0.015)] flex flex-col justify-between transition-all hover:scale-[1.01]">
@@ -1174,7 +1260,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
 
                 <div className="pt-1.5 border-t border-slate-50 dark:border-slate-800 flex justify-between items-center">
                   <span className="text-[7.5px] font-bold text-slate-400 uppercase tracking-wider">
-                    {hasSummaryData ? 'LibreView PDF Summary' : 'Calculated from Extracted Readings'}
+                    {inRangeSubtitle}
                   </span>
                   <span className="text-[8px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">70-180</span>
                 </div>
@@ -1192,176 +1278,302 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
         transition={{ delay: 0.3, duration: 0.5 }}
         className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-3.5 sm:p-4 rounded-3xl border border-white/80 dark:border-slate-800 shadow-soft hover:shadow-md transition-all duration-300 mb-5"
       >
-        <div className="mb-3 flex flex-col gap-2">
-          {/* Header Row: Title & Action Buttons */}
-          <div className="flex justify-between items-center px-1">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Glucose Profile</h3>
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => setIsChartExpanded(true)}
-                className="p-1.5 bg-slate-100/80 dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-xl transition-all active:scale-90"
-                title="Full Screen View"
-              >
-                <Maximize2 className="h-4 w-4" />
-              </button>
-              {features?.exportReports && (
-                <button
-                  onClick={handleExportCSV}
-                  disabled={exporting}
-                  className="text-xs font-bold bg-primary hover:bg-primary-dark text-white px-3 py-1.5 rounded-xl transition-all shadow-md shadow-primary/10"
-                >
-                  {exporting ? '...' : 'Export'}
-                </button>
-              )}
-            </div>
-          </div>
+        {(() => {
+          const chartData = formatChartData();
+          const chartValues = chartData.map(d => d.value).filter(v => typeof v === 'number' && !isNaN(v));
+          const chartMin = chartValues.length > 0 ? Math.min(...chartValues) : null;
+          const chartMax = chartValues.length > 0 ? Math.max(...chartValues) : null;
+          const chartAvg = chartValues.length > 0 ? Math.round(chartValues.reduce((a, b) => a + b, 0) / chartValues.length) : null;
+          const inTargetCount = chartValues.filter(v => v >= 70 && v <= spikeThreshold).length;
+          const chartTirPct = chartValues.length > 0 ? Math.round((inTargetCount / chartValues.length) * 100) : null;
+          const hasData = chartValues.length > 0 || hasActiveReportData(latestSummaryReport);
 
-          {/* Controls Row: Date Range Selector & Selected Date Badge */}
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between bg-slate-100/80 dark:bg-slate-950/70 p-1 rounded-2xl border border-slate-200/50 dark:border-slate-800">
-              <div className="grid grid-cols-4 w-full bg-white/90 dark:bg-slate-900/90 rounded-xl p-0.5 shadow-xs border border-slate-200/40 dark:border-slate-800 text-center">
-                <button
-                  onClick={() => setDateRange('day')}
-                  className={`py-1 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${dateRange === 'day' ? 'bg-primary text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}
-                >
-                  Day
-                </button>
-                <button
-                  onClick={() => setDateRange('week')}
-                  className={`py-1 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${dateRange === 'week' ? 'bg-primary text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}
-                >
-                  Week
-                </button>
-                <button
-                  onClick={() => setDateRange('month')}
-                  className={`py-1 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${dateRange === 'month' ? 'bg-primary text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}
-                >
-                  Month
-                </button>
-                <button
-                  onClick={() => setShowRangeModal(true)}
-                  className={`py-1 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-1 ${dateRange === 'custom' ? 'bg-primary text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}
-                >
-                  <Calendar className="h-3 w-3" />
-                  <span>Custom</span>
-                </button>
+          return (
+            <>
+              <div className="mb-3.5 flex flex-col gap-2.5">
+                {/* Row 1: Title & Integrated Date Stepper Capsule */}
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-xs shadow-emerald-500/80"></span>
+                    </div>
+                    <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-100">
+                      Glucose Curve
+                    </h3>
+                  </div>
+
+                  {/* Sleek Date Stepper Capsule */}
+                  <div className="flex items-center gap-1 bg-slate-100/90 dark:bg-slate-800/90 px-1.5 py-1 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-2xs">
+                    <button
+                      onClick={() => handleDateStep('prev')}
+                      className="p-1 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 transition-all active:scale-95 cursor-pointer"
+                      title="Previous"
+                    >
+                      <ChevronLeft className="h-3.5 w-3.5" />
+                    </button>
+
+                    <div className="flex items-center gap-1.5 px-1.5 text-[11px] font-black text-slate-800 dark:text-slate-100">
+                      <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
+                      {dateRange === 'week' ? (
+                        <span>
+                          {(() => {
+                            const endD = new Date(selectedDate);
+                            const startD = new Date(selectedDate);
+                            startD.setDate(startD.getDate() - 6);
+                            return `${startD.toLocaleDateString([], { month: 'short', day: 'numeric' })} – ${endD.toLocaleDateString([], { month: 'short', day: 'numeric' })}`;
+                          })()}
+                        </span>
+                      ) : dateRange === 'month' ? (
+                        <span>
+                          {(() => {
+                            const endD = new Date(selectedDate);
+                            const startD = new Date(selectedDate);
+                            startD.setDate(startD.getDate() - 29);
+                            return `${startD.toLocaleDateString([], { month: 'short', day: 'numeric' })} – ${endD.toLocaleDateString([], { month: 'short', day: 'numeric' })}`;
+                          })()}
+                        </span>
+                      ) : dateRange === 'custom' && customStartDate && customEndDate ? (
+                        <button onClick={() => setShowRangeModal(true)} className="hover:underline cursor-pointer">
+                          {new Date(customStartDate).toLocaleDateString([], { month: 'short', day: 'numeric' })} – {new Date(customEndDate).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                        </button>
+                      ) : (
+                        <input
+                          type="date"
+                          value={selectedDate}
+                          onChange={(e) => setSelectedDate(e.target.value)}
+                          className="bg-transparent focus:outline-none border-none cursor-pointer p-0 w-[95px] text-[11px] font-black text-slate-800 dark:text-slate-100"
+                        />
+                      )}
+                    </div>
+
+                    <button
+                      onClick={() => handleDateStep('next')}
+                      disabled={isAtCurrentDate()}
+                      className={`p-1 rounded-lg transition-all ${
+                        isAtCurrentDate()
+                          ? 'opacity-30 cursor-not-allowed text-slate-400'
+                          : 'text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 active:scale-95 cursor-pointer'
+                      }`}
+                      title="Next"
+                    >
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Row 2: Segmented Period Switcher & View Actions */}
+                <div className="flex items-center justify-between gap-2">
+                  {/* Period Switcher Tabs */}
+                  <div className="flex-1 grid grid-cols-4 bg-slate-100/90 dark:bg-slate-800/80 p-1 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 text-center shadow-2xs">
+                    {(['day', 'week', 'month', 'custom'] as const).map((mode) => (
+                      <button
+                        key={mode}
+                        onClick={() => mode === 'custom' ? setShowRangeModal(true) : setDateRange(mode)}
+                        className={`py-1 text-[9.5px] font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
+                          dateRange === mode
+                            ? 'bg-primary text-white shadow-xs'
+                            : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'
+                        }`}
+                      >
+                        {mode === 'custom' ? 'Custom' : mode}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      onClick={() => setChartFitMode(prev => prev === 'fit' ? 'scroll' : 'fit')}
+                      className={`px-2.5 py-1.5 text-[9.5px] font-black uppercase tracking-wider rounded-xl transition-all flex items-center gap-1 border cursor-pointer ${
+                        chartFitMode === 'fit'
+                          ? 'bg-primary/10 text-primary border-primary/20 dark:text-primary-light'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200/80 dark:border-slate-700'
+                      }`}
+                      title={chartFitMode === 'fit' ? 'Fit to Screen' : 'Detailed Zoom'}
+                    >
+                      {chartFitMode === 'fit' ? (
+                        <>
+                          <Minimize2 className="h-3 w-3" />
+                          <span>Fit</span>
+                        </>
+                      ) : (
+                        <>
+                          <Maximize2 className="h-3 w-3" />
+                          <span>Zoom</span>
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      onClick={() => setIsChartExpanded(true)}
+                      className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl transition-all border border-slate-200/80 dark:border-slate-700 active:scale-95 cursor-pointer shadow-2xs"
+                      title="Expand Full View"
+                    >
+                      <Maximize2 className="h-3.5 w-3.5" />
+                    </button>
+
+                    {features?.exportReports && (
+                      <button
+                        onClick={handleExportCSV}
+                        disabled={exporting}
+                        className="text-[9px] font-black uppercase tracking-wider bg-primary hover:bg-primary-dark text-white px-2.5 py-1.5 rounded-xl transition-all shadow-xs cursor-pointer"
+                      >
+                        {exporting ? '...' : 'CSV'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Modern Ultra-Compact Live Metrics Ribbon */}
+                {hasData && (
+                  <div className="bg-gradient-to-r from-slate-50/90 via-white/80 to-slate-50/90 dark:from-slate-800/80 dark:via-slate-900/90 dark:to-slate-800/80 backdrop-blur-md rounded-2xl border border-slate-200/80 dark:border-slate-700/70 px-3 py-1.5 shadow-2xs">
+                    <div className="grid grid-cols-4 divide-x divide-slate-200/80 dark:divide-slate-700/70 text-left items-center">
+                      
+                      {/* 1. AVG */}
+                      <div className="px-1.5 sm:px-2 flex flex-col items-start text-left">
+                        <span className="text-[8px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                          Avg
+                        </span>
+                        <div className="flex items-baseline gap-0.5 mt-0.5">
+                          <span className="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-100 tracking-tight">
+                            {hasActiveReportData(latestSummaryReport) && latestSummaryReport.pdfSummaryAverageGlucose != null
+                              ? latestSummaryReport.pdfSummaryAverageGlucose
+                              : (chartAvg || '--')}
+                          </span>
+                          <span className="text-[7px] font-bold text-slate-400">mg/dL</span>
+                        </div>
+                      </div>
+
+                      {/* 2. LOWEST */}
+                      <div className="px-1.5 sm:px-2 flex flex-col items-start text-left">
+                        <span className="text-[8px] font-black uppercase tracking-wider text-sky-500 dark:text-sky-400">
+                          Min
+                        </span>
+                        <div className="flex items-baseline gap-0.5 mt-0.5">
+                          <span className="text-xs sm:text-sm font-black text-sky-600 dark:text-sky-400 tracking-tight">
+                            {chartMin || '--'}
+                          </span>
+                          <span className="text-[7px] font-bold text-slate-400">mg/dL</span>
+                        </div>
+                      </div>
+
+                      {/* 3. PEAK */}
+                      <div className="px-1.5 sm:px-2 flex flex-col items-start text-left">
+                        <span className="text-[8px] font-black uppercase tracking-wider text-rose-500 dark:text-rose-400">
+                          Peak
+                        </span>
+                        <div className="flex items-baseline gap-0.5 mt-0.5">
+                          <span className={`text-xs sm:text-sm font-black tracking-tight ${(chartMax || 0) > spikeThreshold ? 'text-rose-600 dark:text-rose-400' : 'text-slate-800 dark:text-slate-100'}`}>
+                            {chartMax || '--'}
+                          </span>
+                          <span className="text-[7px] font-bold text-slate-400">mg/dL</span>
+                        </div>
+                      </div>
+
+                      {/* 4. IN TARGET */}
+                      <div className="px-1.5 sm:px-2 flex flex-col items-start text-left">
+                        <span className="text-[8px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                          In Target
+                        </span>
+                        <div className="flex items-baseline gap-0.5 mt-0.5">
+                          <span className="text-xs sm:text-sm font-black text-emerald-600 dark:text-emerald-400 tracking-tight">
+                            {hasActiveReportData(latestSummaryReport) && latestSummaryReport.pdfSummaryTimeInRange != null
+                              ? latestSummaryReport.pdfSummaryTimeInRange
+                              : (chartTirPct ?? '--')}%
+                          </span>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
 
-            {/* Active Date / Custom Range Pill */}
-            <div className="flex items-center justify-between px-1">
-              <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-slate-400">Selected Range</span>
-              {glucoseReadings.length === 0 && latestSummaryReport ? (
-                <div className="flex items-center gap-1.5 bg-primary/10 text-primary dark:text-primary-light border border-primary/20 rounded-xl px-2.5 py-1 text-xs font-extrabold shadow-2xs">
-                  <Calendar className="h-3.5 w-3.5" />
-                  <span>
-                    {(() => {
-                      const range = latestSummaryReport.pdfSummaryDateRange;
-                      if (range?.startDateString && range?.endDateString) {
-                        const sParts = range.startDateString.split('-');
-                        const eParts = range.endDateString.split('-');
-                        const sDate = new Date(parseInt(sParts[0], 10), parseInt(sParts[1], 10) - 1, parseInt(sParts[2], 10));
-                        const eDate = new Date(parseInt(eParts[0], 10), parseInt(eParts[1], 10) - 1, parseInt(eParts[2], 10));
-                        return `${sDate.toLocaleDateString([], { month: 'short', day: 'numeric' })} – ${eDate.toLocaleDateString([], { month: 'short', day: 'numeric' })}`;
-                      }
-                      if (range?.startDate) {
-                        const sDate = new Date(range.startDate);
-                        const eDate = new Date(range.endDate || range.startDate);
-                        return `${sDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })} – ${eDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })}`;
-                      }
-                      return '19 Aug – 25 Aug';
-                    })()}
-                  </span>
+              {!hasData ? (
+                <div className="h-48 w-full flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 dark:bg-slate-800/30 rounded-2xl border border-dashed border-slate-200/80 dark:border-slate-700 p-4">
+                  <Activity className="h-7 w-7 mb-2 opacity-40 text-primary" />
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                    No Data Available for {dateRange === 'day' ? (selectedDate === getTodayDateStr() ? 'Today' : `Selected Date (${selectedDate})`) : dateRange === 'week' ? 'This Week' : 'This Month'}
+                  </p>
+                  <p className="text-[10px] text-slate-400 mt-0.5 text-center max-w-[220px] mb-3">Upload a CGM CSV or PDF report to view continuous glucose insights.</p>
+                  <button
+                    onClick={() => onNavigateToTab('Reports')}
+                    className="px-3.5 py-1.5 bg-primary hover:bg-primary-dark text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <FileUp className="h-3.5 w-3.5" />
+                    <span>Upload CGM Report</span>
+                  </button>
                 </div>
-              ) : dateRange === 'custom' && customStartDate && customEndDate ? (
-                <button
-                  onClick={() => setShowRangeModal(true)}
-                  className="flex items-center gap-1.5 bg-primary/10 text-primary dark:text-primary-light border border-primary/20 rounded-xl px-2.5 py-1 text-xs font-extrabold shadow-2xs hover:bg-primary/20 transition-all cursor-pointer"
-                >
-                  <Calendar className="h-3.5 w-3.5" />
-                  <span>{new Date(customStartDate).toLocaleDateString([], { month: 'short', day: 'numeric' })} – {new Date(customEndDate).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
-                </button>
               ) : (
-                <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl px-2.5 py-1 border border-slate-200/60 dark:border-slate-700/60">
-                  <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
-                  <input
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                    className="text-xs font-extrabold text-slate-700 dark:text-slate-200 bg-transparent focus:outline-none border-none cursor-pointer p-0 w-[95px]"
-                  />
+                <div ref={chartScrollRef} className="h-64 w-full overflow-x-auto no-scrollbar scroll-smooth">
+                  <div
+                    style={{
+                      width: chartFitMode === 'fit'
+                        ? '100%'
+                        : (dateRange === 'day' ? '180%' : dateRange === 'week' ? '220%' : dateRange === 'custom' ? `${Math.max(160, Math.min(500, glucoseReadings.length * 18))}%` : '300%'),
+                      minWidth: '100%'
+                    }}
+                    className="h-full"
+                  >
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -34, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="glucoseGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#2563EB" stopOpacity={0.32} />
+                            <stop offset="95%" stopColor="#2563EB" stopOpacity={0.01} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" opacity={0.5} />
+
+                        {/* Shaded In-Target Zone (70 to Spike Threshold) */}
+                        <ReferenceArea
+                          y1={70}
+                          y2={spikeThreshold}
+                          fill="#10B981"
+                          fillOpacity={0.05}
+                        />
+
+                        <XAxis
+                          dataKey="timeLabel"
+                          tickFormatter={(value) => value}
+                          tick={{ fontSize: 9, fill: '#64748B', fontWeight: 700 }}
+                          axisLine={false}
+                          tickLine={false}
+                          minTickGap={chartFitMode === 'fit' ? 25 : 12}
+                        />
+                        <YAxis
+                          domain={[40, 180]}
+                          tick={{ fontSize: 9, fill: '#64748B', fontWeight: 700 }}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <Tooltip content={<CustomTooltip />} />
+
+                        <ReferenceLine
+                          y={spikeThreshold}
+                          stroke="#0D9488"
+                          strokeDasharray="3 3"
+                          strokeWidth={1.5}
+                          label={{ value: `Spike Limit: ${spikeThreshold}`, fill: '#0D9488', fontSize: 8, position: 'insideTopLeft', fontWeight: '800' }}
+                        />
+
+                        <Area
+                          type="monotone"
+                          dataKey="value"
+                          stroke="#2563EB"
+                          strokeWidth={2.5}
+                          dot={<CustomDot />}
+                          fillOpacity={1}
+                          fill="url(#glucoseGradient)"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
               )}
-            </div>
-          </div>
-        </div>
-
-        {glucoseReadings.length === 0 && (!latestSummaryReport || (!latestSummaryReport.pdfSummaryAverageGlucose && (!latestSummaryReport.dailySummaries || latestSummaryReport.dailySummaries.length === 0))) ? (
-          <div className="h-48 w-full flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 dark:bg-slate-800/30 rounded-2xl border border-dashed border-slate-200/80 dark:border-slate-700 p-4">
-            <Activity className="h-7 w-7 mb-2 opacity-40 text-primary" />
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">No Data Available</p>
-            <p className="text-[10px] text-slate-400 mt-0.5 text-center max-w-[200px]">Upload a CGM CSV or PDF report to view continuous glucose insights.</p>
-          </div>
-        ) : (
-          <div ref={chartScrollRef} className="h-60 w-full overflow-x-auto no-scrollbar scroll-smooth -mx-2">
-            <div style={{ width: dateRange === 'day' ? '100%' : dateRange === 'week' ? '180%' : dateRange === 'custom' ? `${Math.max(100, Math.min(500, glucoseReadings.length * 15))}%` : '300%', minWidth: '100%' }} className="h-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={formatChartData()} margin={{ top: 6, right: 12, left: -36, bottom: -5 }}>
-                  <defs>
-                    <linearGradient id="glucoseGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#2563EB" stopOpacity={0.35} />
-                      <stop offset="95%" stopColor="#2563EB" stopOpacity={0.01} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" opacity={0.6} />
-                  <XAxis
-                    dataKey={glucoseReadings.length > 0 ? 'timestamp' : 'hourLabel'}
-                    tickFormatter={(value, idx) => {
-                      if (glucoseReadings.length === 0 && latestSummaryReport) {
-                        return value || (formatChartData()[idx] ? formatChartData()[idx].hourLabel : '');
-                      }
-                      const d = new Date(value);
-                      if (isNaN(d.getTime())) return value;
-                      if (dateRange === 'day') {
-                        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                      } else {
-                        return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
-                      }
-                    }}
-                    tick={{ fontSize: 9, fill: '#64748B', fontWeight: 700 }}
-                    axisLine={false}
-                    tickLine={false}
-                    minTickGap={20}
-                  />
-                  <YAxis
-                    domain={[40, 180]}
-                    tick={{ fontSize: 9, fill: '#64748B', fontWeight: 700 }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <ReferenceLine
-                    y={spikeThreshold}
-                    stroke="#0D9488"
-                    strokeDasharray="3 3"
-                    strokeWidth={1.5}
-                    label={{ value: `Spike Limit: ${spikeThreshold}`, fill: '#0D9488', fontSize: 8, position: 'insideTopLeft', fontWeight: '800' }}
-                  />
-
-                  <Area
-                    type="monotone"
-                    dataKey="value"
-                    stroke="#2563EB"
-                    strokeWidth={2.5}
-                    dot={<CustomDot />}
-                    fillOpacity={1}
-                    fill="url(#glucoseGradient)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        )}
+            </>
+          );
+        })()}
       </motion.div>
 
       {/* Stacked Daily Trackers (All displayed together as important cards) */}
@@ -1671,29 +1883,42 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
             </div>
 
             <div className="space-y-4 my-5">
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                  Start Date (From)
-                </label>
-                <input
-                  type="date"
-                  value={customStartDate || '2025-03-26'}
-                  onChange={(e) => setCustomStartDate(e.target.value)}
-                  className="w-full text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                />
-              </div>
+              {(() => {
+                const defaultStart = latestSummaryReport?.pdfSummaryDateRange?.startDateString || (() => {
+                  const d = new Date();
+                  d.setDate(d.getDate() - 7);
+                  return d.toISOString().split('T')[0];
+                })();
+                const defaultEnd = latestSummaryReport?.pdfSummaryDateRange?.endDateString || getTodayDateStr();
 
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                  End Date (To)
-                </label>
-                <input
-                  type="date"
-                  value={customEndDate || '2025-04-08'}
-                  onChange={(e) => setCustomEndDate(e.target.value)}
-                  className="w-full text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                />
-              </div>
+                return (
+                  <>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                        Start Date (From)
+                      </label>
+                      <input
+                        type="date"
+                        value={customStartDate || defaultStart}
+                        onChange={(e) => setCustomStartDate(e.target.value)}
+                        className="w-full text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                        End Date (To)
+                      </label>
+                      <input
+                        type="date"
+                        value={customEndDate || defaultEnd}
+                        onChange={(e) => setCustomEndDate(e.target.value)}
+                        className="w-full text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                      />
+                    </div>
+                  </>
+                );
+              })()}
             </div>
 
             <div className="flex space-x-3 pt-2">
@@ -1707,8 +1932,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
               <button
                 type="button"
                 onClick={() => {
-                  if (!customStartDate) setCustomStartDate('2025-03-26');
-                  if (!customEndDate) setCustomEndDate('2025-04-08');
+                  const defaultStart = latestSummaryReport?.pdfSummaryDateRange?.startDateString || (() => {
+                    const d = new Date();
+                    d.setDate(d.getDate() - 7);
+                    return d.toISOString().split('T')[0];
+                  })();
+                  const defaultEnd = latestSummaryReport?.pdfSummaryDateRange?.endDateString || getTodayDateStr();
+
+                  if (!customStartDate) setCustomStartDate(defaultStart);
+                  if (!customEndDate) setCustomEndDate(defaultEnd);
                   setDateRange('custom');
                   setShowRangeModal(false);
                 }}
@@ -1840,7 +2072,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
 
       {isChartExpanded && (
         <div
-          className="fixed inset-0 z-50 bg-slate-900/95 flex flex-col p-4 md:p-6 backdrop-blur-xl transition-all duration-300 animate-fadeIn"
+          className="fixed inset-0 z-[9999] bg-slate-950 flex flex-col p-4 md:p-6 transition-all duration-300 animate-fadeIn"
           style={isLandscape ? {
             position: 'fixed',
             top: '50%',
@@ -1852,92 +2084,110 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
           } : {}}
         >
           {/* Header */}
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex justify-between items-center mb-4">
             <div>
-              <h3 className="text-lg font-black text-white">Glucose Profile (Full View)</h3>
-              <p className="text-xs text-slate-400 font-semibold mt-0.5">Detailed continuous trend map & food correlation events.</p>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base sm:text-lg font-black text-white">Glucose Profile (Full View)</h3>
+                <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-primary/20 text-primary-light border border-primary/30">
+                  {dateRange === 'day' ? selectedDate : dateRange === 'week' ? '7-Day AGP' : dateRange === 'month' ? '30-Day AGP' : 'Custom Period'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 font-semibold mt-0.5">Continuous glucose trend curve with target zone reference.</p>
             </div>
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => setIsLandscape(!isLandscape)}
-                className="p-2.5 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white rounded-xl transition-all flex items-center space-x-1.5 active:scale-95"
+                className="p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white rounded-xl transition-all flex items-center space-x-1.5 active:scale-95 cursor-pointer"
                 title="Rotate View"
               >
                 <RotateCw className="h-4 w-4" />
-                <span className="text-xs font-extrabold hidden md:inline">Rotate</span>
+                <span className="text-xs font-extrabold hidden sm:inline">Rotate</span>
               </button>
               <button
                 onClick={() => {
                   setIsChartExpanded(false);
                   setIsLandscape(false);
                 }}
-                className="p-2.5 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white rounded-xl transition-all active:scale-95"
+                className="p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white rounded-xl transition-all active:scale-95 cursor-pointer"
+                title="Close Full View"
               >
-                <Minimize2 className="h-4 w-4" />
+                <X className="h-4 w-4" />
               </button>
             </div>
           </div>
 
-          <div className="flex-1 bg-slate-950/40 rounded-3xl border border-slate-900 p-5 flex flex-col justify-center shadow-inner">
-            {glucoseReadings.length === 0 ? (
-              <div className="text-center text-slate-500 py-12 font-bold uppercase">No readings available.</div>
-            ) : (
-              <div ref={fullscreenScrollRef} className="flex-1 h-full min-h-[250px] w-full overflow-x-auto no-scrollbar scroll-smooth">
-                <div style={{ width: dateRange === 'day' ? '100%' : dateRange === 'week' ? '250%' : '500%', minWidth: '100%' }} className="h-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={formatChartData()} margin={{ top: 20, right: 20, left: -20, bottom: 20 }}>
-                      <defs>
-                        <linearGradient id="glucoseGradientFullscreen" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1E293B" />
-                      <XAxis
-                        dataKey={glucoseReadings[0]?.timestamp ? 'timestamp' : 'timeLabel'}
-                        tickFormatter={(value) => {
-                          const d = new Date(value);
-                          if (isNaN(d.getTime())) return value;
-                          if (dateRange === 'day') {
-                            return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                          } else {
-                            return d.toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit' });
-                          }
-                        }}
-                        tick={{ fontSize: 9, fill: '#64748B', fontWeight: 600 }}
-                        axisLine={false}
-                        tickLine={false}
-                        minTickGap={60}
-                      />
-                      <YAxis
-                        domain={[40, 200]}
-                        tick={{ fontSize: 10, fill: '#64748B', fontWeight: 600 }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <Tooltip content={<CustomTooltip />} />
-                      <ReferenceLine
-                        y={spikeThreshold}
-                        stroke="#14B8A6"
-                        strokeDasharray="4 4"
-                        strokeWidth={1.5}
-                        label={{ value: `Spike limit: ${spikeThreshold}`, fill: '#14B8A6', fontSize: 9, position: 'insideTopLeft', fontWeight: 'bold' }}
-                      />
+          <div className="flex-1 bg-slate-900/60 rounded-3xl border border-slate-800/80 p-4 sm:p-5 flex flex-col justify-center shadow-2xl overflow-hidden">
+            {(() => {
+              const fullData = formatChartData();
+              const hasFullData = fullData.length > 0 && fullData.some(d => d.value != null);
 
-                      <Area
-                        type="monotone"
-                        dataKey="value"
-                        stroke="#3B82F6"
-                        strokeWidth={3}
-                        dot={<CustomDot />}
-                        fillOpacity={1}
-                        fill="url(#glucoseGradientFullscreen)"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
+              if (!hasFullData) {
+                return (
+                  <div className="text-center text-slate-500 py-12 font-bold uppercase tracking-wider">
+                    No readings available for this period.
+                  </div>
+                );
+              }
+
+              return (
+                <div ref={fullscreenScrollRef} className="flex-1 h-full min-h-[280px] w-full overflow-x-auto no-scrollbar scroll-smooth">
+                  <div style={{ width: dateRange === 'day' ? '100%' : dateRange === 'week' ? '180%' : '260%', minWidth: '100%' }} className="h-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={fullData} margin={{ top: 20, right: 20, left: -20, bottom: 20 }}>
+                        <defs>
+                          <linearGradient id="glucoseGradientFullscreen" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.35} />
+                            <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.01} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1E293B" opacity={0.8} />
+
+                        {/* In-Target Zone (70 to Spike Threshold) */}
+                        <ReferenceArea
+                          y1={70}
+                          y2={spikeThreshold}
+                          fill="#10B981"
+                          fillOpacity={0.06}
+                        />
+
+                        <XAxis
+                          dataKey="timeLabel"
+                          tickFormatter={(value) => value}
+                          tick={{ fontSize: 10, fill: '#94A3B8', fontWeight: 700 }}
+                          axisLine={false}
+                          tickLine={false}
+                          minTickGap={15}
+                        />
+                        <YAxis
+                          domain={[40, 200]}
+                          tick={{ fontSize: 10, fill: '#94A3B8', fontWeight: 700 }}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <Tooltip content={<CustomTooltip />} />
+                        <ReferenceLine
+                          y={spikeThreshold}
+                          stroke="#14B8A6"
+                          strokeDasharray="4 4"
+                          strokeWidth={1.5}
+                          label={{ value: `Spike limit: ${spikeThreshold}`, fill: '#14B8A6', fontSize: 10, position: 'insideTopLeft', fontWeight: '800' }}
+                        />
+
+                        <Area
+                          type="monotone"
+                          dataKey="value"
+                          stroke="#3B82F6"
+                          strokeWidth={3}
+                          dot={<CustomDot />}
+                          fillOpacity={1}
+                          fill="url(#glucoseGradientFullscreen)"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
         </div>
       )}

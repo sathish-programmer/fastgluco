@@ -1,5 +1,6 @@
 import { GlucoseReading } from '../models/GlucoseReading';
 import { FoodLog } from '../models/FoodLog';
+import { CGMReport } from '../models/CGMReport';
 import { PaymentGatewayConfig } from '../models/PaymentGatewayConfig';
 import { User } from '../models/User';
 import { EmailService } from './emailService';
@@ -34,6 +35,68 @@ export class GlucoseService {
     });
 
     if (postReadings.length === 0) {
+      // Check if user has an active uploaded CGM report covering this meal time
+      const report = await CGMReport.findOne({
+        userId,
+        status: 'Processed'
+      }).sort({ createdAt: -1 });
+
+      if (report && (report.hourlyPatternSummaries?.length || report.pdfSummaryAverageGlucose)) {
+        const mealHour = mealTime.getHours();
+        const baseAvg = report.pdfSummaryAverageGlucose || 90;
+        const hourIdx = Math.floor(mealHour / 2) % (report.hourlyPatternSummaries?.length || 12);
+        const beforeEst = report.hourlyPatternSummaries?.[hourIdx]?.medianGlucose || baseAvg;
+        
+        // Calculate expected postprandial glycemic surge from carbohydrates & calories
+        const totalCarbs = (foodLog.carbs || 0) * (foodLog.quantity || 1);
+        const totalCalories = (foodLog.calories || 0) * (foodLog.quantity || 1);
+        
+        let carbRise = 0;
+        if (totalCarbs >= 60 || totalCalories >= 600) {
+          // High carb / heavy meal surge (+25 to +55 mg/dL)
+          carbRise = Math.min(55, Math.round(25 + Math.min(30, (totalCarbs - 60) * 0.08)));
+        } else if (totalCarbs >= 25 || totalCalories >= 300) {
+          // Moderate carb meal surge (+12 to +24 mg/dL)
+          carbRise = Math.min(24, Math.round(12 + (totalCarbs - 25) * 0.35));
+        } else if (totalCarbs >= 5) {
+          // Mild carb meal surge (+2 to +10 mg/dL)
+          carbRise = Math.min(10, Math.round(totalCarbs * 0.4));
+        }
+
+        const peakHourIdx = Math.floor(((mealHour + 1) % 24) / 2) % (report.hourlyPatternSummaries?.length || 12);
+        const reportPeak = report.hourlyPatternSummaries?.[peakHourIdx]?.medianGlucose || beforeEst;
+        
+        const beforeGlucose = beforeReading ? beforeReading.value : beforeEst;
+        const peakGlucose = Math.max(beforeGlucose + carbRise, reportPeak);
+        const difference = parseFloat((peakGlucose - beforeGlucose).toFixed(1));
+        const netRise = peakGlucose - beforeGlucose;
+
+        const config = await PaymentGatewayConfig.findOne();
+        const safeLimit = user?.spikeThreshold ?? config?.safeGlucoseThreshold ?? 90;
+        const moderateLimit = config?.moderateGlucoseThreshold ?? 110;
+
+        let status: 'Safe' | 'Moderate' | 'Avoid' = 'Safe';
+        if (netRise > 0) {
+          if (peakGlucose > moderateLimit && netRise >= 20) {
+            status = 'Avoid';
+          } else if (peakGlucose > safeLimit && netRise >= 8) {
+            status = 'Moderate';
+          }
+        }
+
+        const analysis = {
+          beforeGlucose,
+          peakGlucose,
+          difference,
+          status,
+          walkReminderSent: foodLog.glucoseAnalysis?.walkReminderSent || false
+        };
+
+        foodLog.glucoseAnalysis = analysis;
+        await foodLog.save();
+        return analysis;
+      }
+
       // No readings after meal, unable to analyze spikes yet
       return null;
     }

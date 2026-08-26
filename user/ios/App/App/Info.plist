@@ -68,12 +68,12 @@
 	<key>NSCameraUsageDescription</key>
 	<string>We need access to your camera to take photos of your meals for the food scanner.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>We need microphone access for camera reliability during meal scanning.</string>
+	<string>We need access to your microphone so you can speak your daily health habit check-ins and converse with the AI Voice Assistant.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>We use speech recognition to transcribe your spoken answers into daily health habit logs.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>We need access to your photo library to let you upload images of your meals for the food scanner.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>We need access to save photos of your meals to your photo library.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>We need microphone access to support video capture features in the future.</string>
 </dict>
 </plist>

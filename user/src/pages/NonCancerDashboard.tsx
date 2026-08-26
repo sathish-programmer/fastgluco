@@ -737,7 +737,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
   };
 
   return (
-    <div className="pb-24 pt-4 px-2 sm:px-3 max-w-5xl mx-auto bg-gradient-to-b from-slate-50/90 to-slate-100/80 dark:from-slate-900/90 dark:to-slate-950/80 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-200 transition-colors duration-300">
+    <div className="pb-24 pt-4 px-3.5 sm:px-4 max-w-5xl mx-auto bg-gradient-to-b from-slate-50/90 to-slate-100/80 dark:from-slate-900/90 dark:to-slate-950/80 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-200 transition-colors duration-300">
       
       {/* Feature Discovery & Ask Mito Modals */}
       <AskMitoDrawer
@@ -1452,28 +1452,28 @@ const HabitItem = ({ icon, label, onClick, score }: { icon: React.ReactNode, lab
   return (
     <button 
       onClick={onClick}
-      className="group flex items-center justify-between w-full px-2.5 py-2 bg-white/80 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800/90 border border-slate-200/60 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-600 rounded-xl transition-all duration-200 shadow-2xs hover:shadow-xs active:scale-[0.99] text-left"
+      className="group flex items-center justify-between w-full px-3 py-2.5 sm:py-3 bg-white/80 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800/90 border border-slate-200/60 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-600 rounded-2xl transition-all duration-200 shadow-2xs hover:shadow-xs active:scale-[0.99] text-left"
     >
-      <div className="flex items-center gap-2 text-left flex-1 min-w-0">
-        <div className="p-1.5 rounded-lg bg-slate-100/90 dark:bg-slate-900/80 group-hover:scale-105 transition-transform shrink-0">
+      <div className="flex items-center gap-2.5 text-left flex-1 min-w-0">
+        <div className="p-1.5 rounded-xl bg-slate-100/90 dark:bg-slate-900/80 group-hover:scale-105 transition-transform shrink-0">
           {icon}
         </div>
-        <span className="text-[11px] sm:text-xs font-semibold text-slate-700 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white transition-colors truncate">
+        <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white transition-colors truncate">
           {label}
         </span>
       </div>
       {score !== undefined && score !== null ? (
-        <span className={`text-[9px] sm:text-[10px] font-extrabold px-2 py-0.5 rounded-lg transition-all shadow-2xs shrink-0 ml-1.5 ${
+        <span className={`text-[10px] sm:text-xs font-extrabold px-2.5 py-1 rounded-xl transition-all shadow-2xs shrink-0 ml-1.5 ${
           isNegative
             ? 'bg-rose-50 text-rose-600 border border-rose-200/60 dark:bg-rose-950/60 dark:text-rose-400 dark:border-rose-800/50' 
             : isPositive
               ? 'bg-emerald-50 text-emerald-600 border border-emerald-200/60 dark:bg-emerald-950/60 dark:text-emerald-400 dark:border-emerald-800/50'
-              : 'bg-slate-100 text-slate-600 border border-slate-200/60 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700/60'
+              : 'bg-slate-100 text-slate-700 border border-slate-200/60 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700/60'
         }`}>
           {score > 0 ? `+${score}` : score}
         </span>
       ) : (
-        <div className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600 group-hover:bg-slate-400 dark:group-hover:bg-slate-500 transition-colors shrink-0 ml-1.5"></div>
+        <div className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600 group-hover:bg-slate-400 dark:group-hover:bg-slate-500 transition-colors shrink-0 ml-1.5"></div>
       )}
     </button>
   );

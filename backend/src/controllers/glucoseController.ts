@@ -88,17 +88,22 @@ export class GlucoseController {
   public static async getSpikeAnalysis(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
-      const { range } = req.query;
+      const { range, startDate, endDate } = req.query;
 
       // Trigger analysis for any pending logs before returning list
       await GlucoseService.analyzeAllUserFoodLogs(userId!);
 
       const query: any = {
         userId,
-        glucoseAnalysis: { $exists: true }
+        'glucoseAnalysis.beforeGlucose': { $exists: true }
       };
 
-      if (range && range !== 'all') {
+      if (startDate && endDate) {
+        const s = new Date(startDate as string);
+        const e = new Date(endDate as string);
+        e.setHours(23, 59, 59, 999);
+        query.loggedAt = { $gte: s, $lte: e };
+      } else if (range && range !== 'all') {
         const now = new Date();
         let limitDate = new Date();
         if (range === 'day') {
