@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Check, X, Info, ChevronDown, ChevronUp, Trash2, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { HabitsService, type HabitLog } from '../../services/habitsService';
-
 interface AntioxidantLogScreenProps {
   onBack: () => void;
   onViewShop?: () => void;

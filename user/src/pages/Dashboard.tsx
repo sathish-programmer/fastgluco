@@ -21,10 +21,12 @@ import {
   Lightbulb,
   Sparkles,
   Calendar,
+  Bot,
   X
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, CartesianGrid } from 'recharts';
 import { motion } from 'framer-motion';
+import { DailyLoggingChatbotModal } from '../components/DailyLoggingChatbotModal';
 
 interface DashboardProps {
   onNavigateToTab: (tab: string) => void;
@@ -88,7 +90,7 @@ const StabilityScoreGauge: React.FC<StabilityScoreGaugeProps> = ({ percentage, s
 };
 
 export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features, onBackToTugOfWar }) => {
-  const { token, user, apiUrl, branding } = useAuth();
+  const { token, user, apiUrl, branding, activeMode } = useAuth();
   const { showToast } = useToast();
   const { setPendingRecommendationId } = useConsultation();
 
@@ -138,6 +140,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
   const [submittingActivity, setSubmittingActivity] = useState(false);
   const [upcomingAppt, setUpcomingAppt] = useState<any | null>(null);
   const [isApptDismissed, setIsApptDismissed] = useState<boolean>(false);
+  const [showChatbotModal, setShowChatbotModal] = useState<boolean>(false);
 
   // Format date range string for summary report
   const formatReportDateRange = (report: any): string => {
@@ -330,6 +333,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
     // Count offline queued items
     setOfflineMealsCount(SyncService.getOfflineQueue().length);
   }, [token, dateRange, selectedDate, customStartDate, customEndDate]);
+
+  useEffect(() => {
+    const hasAutoOpened = sessionStorage.getItem('mito_ai_checkin_auto_opened');
+    if (!hasAutoOpened) {
+      setShowChatbotModal(true);
+      sessionStorage.setItem('mito_ai_checkin_auto_opened', 'true');
+    }
+  }, []);
 
   const fetchDashboardData = async () => {
     if (!token) return;
@@ -819,11 +830,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
   };
 
   return (
-    <motion.div 
+    <>
+      <motion.div 
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="pb-36 pt-2 px-0 max-w-5xl mx-auto font-sans antialiased text-slate-800 dark:text-slate-100"
+      className="pb-36 pt-2 px-3 max-w-5xl mx-auto font-sans antialiased text-slate-800 dark:text-slate-100"
     >
       {/* Welcome Header */}
       <motion.div 
@@ -895,6 +907,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
           </div>
         </motion.button>
       )}
+
+
 
 
       {/* Offline sync message */}
@@ -1928,5 +1942,26 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
         </div>
       )}
     </motion.div>
+
+      {/* Floating AI Check-in Bot Trigger Button */}
+      <button
+        onClick={() => setShowChatbotModal(true)}
+        className="fixed bottom-20 right-5 z-40 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white p-3.5 rounded-full shadow-2xl flex items-center gap-2 border-2 border-white/80 active:scale-95 transition-all cursor-pointer"
+        title="Open AI Daily Check-in Assistant"
+      >
+        <Bot className="h-6 w-6 text-white" />
+        <span className="text-xs font-black tracking-wide pr-1 hidden sm:inline">AI Check-in</span>
+      </button>
+
+      {/* AI Daily Logging Chatbot Modal */}
+      <DailyLoggingChatbotModal
+        isOpen={showChatbotModal}
+        onClose={() => setShowChatbotModal(false)}
+        apiUrl={apiUrl}
+        token={token}
+        userMode={activeMode as any}
+        onRefreshDashboard={() => fetchDashboardData()}
+      />
+    </>
   );
 };

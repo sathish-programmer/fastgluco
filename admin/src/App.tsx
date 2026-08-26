@@ -66,6 +66,8 @@ import { ConsultationAnalytics } from './components/ConsultationAnalytics';
 import { AdminLabs } from './components/AdminLabs';
 import { LabPortal } from './components/LabPortal';
 import { SupportPortal } from './components/SupportPortal';
+import { AdminDailyLoggingWorkflows } from './components/AdminDailyLoggingWorkflows';
+import { AdminAskMitoTopics } from './components/AdminAskMitoTopics';
 
 const getCategoryStyle = (score: number) => {
   if (score <= 15) return 'bg-emerald-50 text-emerald-700 border-emerald-250';
@@ -2442,6 +2444,22 @@ const AdminPanelContent: React.FC = () => {
                       }`}
                     >
                       Subscription Plans
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('daily-workflows'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'daily-workflows' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Daily Logging Workflows
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('ask-mito-workflows'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'ask-mito-workflows' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Ask Mito Workflows & Q&A
                     </button>
                     <button 
                       onClick={() => { setActiveView('aicoach'); setSearchQuery(''); }}
@@ -7123,6 +7141,16 @@ const AdminPanelContent: React.FC = () => {
               </div>
             )}
           </div>
+        )}
+
+        {/* DAILY LOGGING WORKFLOWS TAB */}
+        {activeView === 'daily-workflows' && (
+          <AdminDailyLoggingWorkflows apiUrl={apiUrl} token={token} />
+        )}
+
+        {/* ASK MITO WORKFLOWS & Q&A TAB */}
+        {activeView === 'ask-mito-workflows' && (
+          <AdminAskMitoTopics apiUrl={apiUrl} token={token} />
         )}
 
         {/* AI COACH SETTINGS TAB */}

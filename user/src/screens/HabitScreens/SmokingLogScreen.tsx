@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Bot } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { HabitsService, type HabitLog } from '../../services/habitsService';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts';
@@ -8,9 +8,10 @@ import { ConsultationBanner } from '../../components/ConsultationBanner';
 interface SmokingLogScreenProps {
   onBack: () => void;
   onBookAppointment?: (reason: string) => void;
+  onOpenAiCheckin?: () => void;
 }
 
-export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBookAppointment }) => {
+export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBookAppointment, onOpenAiCheckin }) => {
   const { user, token, apiUrl } = useAuth();
   const [count, setCount] = useState<number>(0);
   const [history, setHistory] = useState<HabitLog[]>([]);
@@ -85,6 +86,27 @@ export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBo
           <h2 className="text-2xl font-sans font-bold text-slate-800 dark:text-slate-50 leading-none mt-1">Count, then taper</h2>
         </div>
       </div>
+
+      {/* AI Assistant Quick Banner */}
+      {onOpenAiCheckin && (
+        <div className="mb-5 p-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl shadow-md flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-xl bg-white/20 border border-white/30 flex items-center justify-center text-white shrink-0">
+              <Bot className="h-4.5 w-4.5 animate-pulse" />
+            </div>
+            <div>
+              <p className="text-xs font-black">Want to log all habits 10x faster?</p>
+              <p className="text-[10px] text-blue-100 font-medium">Log habits & upload reports in 60s via AI voice</p>
+            </div>
+          </div>
+          <button
+            onClick={onOpenAiCheckin}
+            className="px-3 py-1.5 bg-white text-blue-700 hover:bg-blue-50 font-extrabold text-[11px] rounded-xl shadow-xs transition-all shrink-0 cursor-pointer"
+          >
+            Try AI →
+          </button>
+        </div>
+      )}
 
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl p-4 mb-6">
         <h3 className="font-bold text-slate-800 dark:text-slate-200 mb-1.5">Every cigarette adds carcinogens.</h3>

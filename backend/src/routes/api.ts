@@ -35,8 +35,20 @@ import { VendorController } from '../controllers/vendorController';
 import * as AdminReviewController from '../controllers/adminReviewController';
 import { assignLabBookingDoctor } from '../controllers/labController';
 import { IndianCancerController } from '../controllers/indianCancerController';
+import * as DailyLoggingWorkflowController from '../controllers/dailyLoggingWorkflowController';
+import * as AskMitoController from '../controllers/askMitoController';
 
 const router = Router();
+
+// ─── Ask Mito – Conversational AI & Knowledge Workflows ──────────────────────
+router.post('/ai/ask', authenticateToken, AskMitoController.askMito);
+router.get('/ask-mito/topics', authenticateToken, AskMitoController.getAskMitoTopics);
+
+// Admin endpoints for Ask Mito Workflows & Q&A Topics
+router.get('/admin/ask-mito/topics', authenticateToken, requireRole(['Admin', 'SuperAdmin']), AskMitoController.getAdminAskMitoTopics);
+router.post('/admin/ask-mito/topics', authenticateToken, requireRole(['Admin', 'SuperAdmin']), AskMitoController.createAskMitoTopic);
+router.put('/admin/ask-mito/topics/:id', authenticateToken, requireRole(['Admin', 'SuperAdmin']), AskMitoController.updateAskMitoTopic);
+router.delete('/admin/ask-mito/topics/:id', authenticateToken, requireRole(['Admin', 'SuperAdmin']), AskMitoController.deleteAskMitoTopic);
 
 // --- MULTER STORAGE SETUP FOR REPORT UPLOADS ---
 const uploadDir = path.join(process.cwd(), 'uploads');
@@ -519,6 +531,13 @@ router.get('/admin/global-search', authenticateToken, requireRole(['SuperAdmin',
 
 router.get('/admin/workflow-config/:type', ScreeningController.getAdminWorkflowConfig);
 router.put('/admin/workflow-config/:type', ScreeningController.updateAdminWorkflowConfig);
+
+// --- DAILY LOGGING WORKFLOW ROUTES ---
+router.get('/daily-logging-workflows/active', authenticateToken, DailyLoggingWorkflowController.getActiveWorkflow);
+router.get('/admin/daily-logging-workflows', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), DailyLoggingWorkflowController.getAdminWorkflows);
+router.post('/admin/daily-logging-workflows', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), DailyLoggingWorkflowController.createWorkflow);
+router.put('/admin/daily-logging-workflows/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), DailyLoggingWorkflowController.updateWorkflow);
+router.delete('/admin/daily-logging-workflows/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), DailyLoggingWorkflowController.deleteWorkflow);
 
 // --- DOCTOR MANAGEMENT FOR ADMIN ---
 router.get('/admin/doctors', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), DoctorController.adminGetDoctors);

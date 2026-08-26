@@ -12,6 +12,8 @@ import { SubscriptionCron } from './cron/subscriptionCron';
 import { AppointmentReminderCron } from './cron/appointmentReminderCron';
 import { LibreSyncService } from './services/libreSyncService';
 import { FoodSyncService } from './services/foodSyncService';
+import { seedWorkflows } from './utils/seedWorkflows';
+import { seedAskMitoTopics } from './utils/seedAskMitoTopics';
 
 const PORT = process.env.PORT || 5001;
 
@@ -20,6 +22,10 @@ const bootstrap = async () => {
   try {
     // Connect to database
     await connectDB();
+
+    // Auto-reseed AI chat workflows (delete stale + insert correct 3-mode workflows)
+    await seedWorkflows();
+    await seedAskMitoTopics();
 
     // Verify Brevo SMTP connection
     await EmailService.verifyConnection();

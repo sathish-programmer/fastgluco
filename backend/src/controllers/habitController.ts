@@ -4,7 +4,7 @@ import HabitLog from '../models/HabitLog';
 export const logHabit = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.id;
-    const { type, value, timestamp } = req.body;
+    const { type, value, timestamp, source } = req.body;
 
     if (!type || value === undefined) {
       return res.status(400).json({ message: 'Type and value are required' });
@@ -14,6 +14,7 @@ export const logHabit = async (req: Request, res: Response) => {
       userId,
       type,
       value,
+      source: source || 'manual',
       timestamp: timestamp || new Date()
     });
 

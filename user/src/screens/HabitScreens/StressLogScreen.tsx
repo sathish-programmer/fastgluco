@@ -92,6 +92,8 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
         </div>
       </div>
 
+
+
       {/* Intro Card */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm rounded-2xl p-4 mb-6">
         <h3 className="font-bold text-slate-800 dark:text-slate-200 mb-1.5 flex items-center gap-2">

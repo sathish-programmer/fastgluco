@@ -6,7 +6,7 @@ import { ConsultationBanner } from '../../components/ConsultationBanner';
 
 interface SleepLogScreenProps {
   onBack: () => void;
-  onBookAppointment?: (reason: string) => void;
+  onBookAppointment?: (recommendationId: string) => void;
 }
 
 export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAppointment }) => {

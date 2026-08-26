@@ -28,8 +28,11 @@ import {
   Globe,
   BrainCircuit,
   ShoppingBag,
-  ArrowLeft
+  ArrowLeft,
+  Bot
 } from 'lucide-react';
+import { DailyLoggingChatbotModal } from '../components/DailyLoggingChatbotModal';
+import { AiBannerQuickNudge } from '../components/AiBannerQuickNudge';
 import { useConsultation } from '../context/ConsultationContext';
 import { StressLogScreen } from '../screens/HabitScreens/StressLogScreen';
 import { SmokingLogScreen } from '../screens/HabitScreens/SmokingLogScreen';
@@ -58,6 +61,7 @@ import { TodaysFocusCard } from '../components/TodaysFocusCard';
 import { ExploreFeaturesGrid } from '../components/ExploreFeaturesGrid';
 import { ContextualShopCard } from '../components/ContextualShopCard';
 import { AskMitoDrawer } from '../components/AskMitoDrawer';
+import { AiFeatureDiscoveryModal } from '../components/AiFeatureDiscoveryModal';
 import { Sparkles } from 'lucide-react';
 
 interface NonCancerDashboardProps {
@@ -97,6 +101,12 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
   const [upcomingAppt, setUpcomingAppt] = useState<any | null>(null);
   const [isApptDismissed, setIsApptDismissed] = useState<boolean>(false);
   const [showAskMito, setShowAskMito] = useState<boolean>(false);
+  const [showChatbotModal, setShowChatbotModal] = useState<boolean>(false);
+  const [pendingManualAction, setPendingManualAction] = useState<{ key: string; params?: any } | null>(null);
+  const [showAiNudgeModal, setShowAiNudgeModal] = useState<boolean>(false);
+  const [showFabTooltip, setShowFabTooltip] = useState<boolean>(
+    () => !localStorage.getItem('ai_checkin_tooltip_seen')
+  );
   const [showFastingDisclaimer, setShowFastingDisclaimer] = useState<boolean>(false);
   const [fastingStep, setFastingStep] = useState<number>(1);
 
@@ -118,65 +128,74 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
     setShowTugOfWarState(!savedShowCGM);
   }, [activeMode]);
 
-  useEffect(() => {
-    const fetchHabitsAndAppointments = async () => {
+  const fetchHabitsAndAppointments = async () => {
+    try {
+      const logs = await HabitsService.getRecentHabits(apiUrl, token, 'all', 30);
+      setHabits(logs);
+      checkHealthDanger(logs);
+    } catch (err) {
+      console.error('Failed to load habits', err);
+    }
+
+    // Fetch CGM reports to check if user has uploaded reports
+    if (token) {
       try {
-        const logs = await HabitsService.getRecentHabits(apiUrl, token, 'all', 30);
-        setHabits(logs);
-        checkHealthDanger(logs);
-      } catch (err) {
-        console.error('Failed to load habits', err);
-      }
-
-      // Fetch CGM reports to check if user has uploaded reports
-      if (token) {
-        try {
-          const reportsRes = await fetch(`${apiUrl}/reports`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          if (reportsRes.ok) {
-            const reports = await reportsRes.json();
-            const hasUploaded = Array.isArray(reports) && reports.length > 0;
-            setHasCGMData(hasUploaded);
-            if (hasUploaded) {
-              localStorage.setItem('mito_has_cgm_reports', 'true');
-            } else {
-              localStorage.removeItem('mito_has_cgm_reports');
-            }
+        const reportsRes = await fetch(`${apiUrl}/reports`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (reportsRes.ok) {
+          const reports = await reportsRes.json();
+          const hasUploaded = Array.isArray(reports) && reports.length > 0;
+          setHasCGMData(hasUploaded);
+          if (hasUploaded) {
+            localStorage.setItem('mito_has_cgm_reports', 'true');
+          } else {
+            localStorage.removeItem('mito_has_cgm_reports');
           }
-        } catch (e) {
-          console.error('Failed to load CGM reports for focus card', e);
         }
+      } catch (e) {
+        console.error('Failed to load CGM reports for focus card', e);
       }
+    }
 
-      // Fetch upcoming confirmed appointments
-      if (token) {
-        try {
-          const res = await fetch(`${apiUrl}/patient/appointments`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          if (res.ok) {
-            const data = await res.json();
-            // Find first confirmed appointment in the future
-            const confirmedFuture = data
-              .filter((a: any) => a.status === 'confirmed')
-              .sort((a: any, b: any) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime())[0];
-            
-            if (confirmedFuture) {
-              const dismissedId = localStorage.getItem(`dismissed_appt_${confirmedFuture._id}`);
-              setIsApptDismissed(!!dismissedId);
-            }
-            setUpcomingAppt(confirmedFuture || null);
+    // Fetch upcoming confirmed appointments
+    if (token) {
+      try {
+        const res = await fetch(`${apiUrl}/patient/appointments`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          // Find first confirmed appointment in the future
+          const confirmedFuture = data
+            .filter((a: any) => a.status === 'confirmed')
+            .sort((a: any, b: any) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime())[0];
+          
+          if (confirmedFuture) {
+            const dismissedId = localStorage.getItem(`dismissed_appt_${confirmedFuture._id}`);
+            setIsApptDismissed(!!dismissedId);
           }
-        } catch (e) {
-          console.error('Failed to load appointments', e);
+          setUpcomingAppt(confirmedFuture || null);
         }
+      } catch (e) {
+        console.error('Failed to load appointments', e);
       }
-    };
+    }
+  };
+
+  useEffect(() => {
     if (activeScreen === null) {
       fetchHabitsAndAppointments();
     }
   }, [activeScreen, apiUrl, token]);
+
+  useEffect(() => {
+    const hasAutoOpened = sessionStorage.getItem('mito_ai_checkin_auto_opened');
+    if (!hasAutoOpened) {
+      setShowChatbotModal(true);
+      sessionStorage.setItem('mito_ai_checkin_auto_opened', 'true');
+    }
+  }, []);
 
   const checkHealthDanger = (logs: HabitLog[]) => {
     // Group logs by type and date
@@ -277,39 +296,62 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
 
   const cancerGuidelines = getCancerLoggedGuidelines();
 
+  // Get the most recent log per habit type for current period
+  const getLatestLogForTypes = (...types: string[]) => {
+    const uppercaseTypes = types.map(t => t.toUpperCase());
+    const matching = periodHabits.filter(h => {
+      const t = (h.type || '').toUpperCase();
+      return uppercaseTypes.some(ut => t.includes(ut));
+    });
+    if (matching.length === 0) return null;
+    return matching.sort((a, b) => new Date(b.timestamp || (b as any).createdAt || 0).getTime() - new Date(a.timestamp || (a as any).createdAt || 0).getTime())[0];
+  };
+
   const calculateDamageCount = () => {
     let count = 0;
-    periodHabits.forEach(h => {
-      if (h.type === 'Stress' && (h.value?.faceId === 'tense' || h.value?.faceId === 'stressed' || h.value?.faceId === 'maxed')) count += 1;
-      if (h.type === 'Sleep' && (h.value?.hours < 6 || h.value?.quality === 'poor')) count += 1;
-      if (h.type === 'Smoking' && h.value?.count > 0) count += 1;
-      if (h.type === 'Alcohol' && h.value?.drinks > 0) count += 1;
-      if (h.type === 'Substances' && h.value?.used === true) count += 1;
-      if (h.type === 'Intimacy' && h.value?.happy === false) count += 1;
-      if (h.type === 'Dental' && (h.value?.sharpTooth === true || h.value?.tobacco === true || h.value?.illFittingDenture === true)) count += 1;
-      if (h.type === 'Gastritis' && h.value?.gastritis === true) count += 1;
-      if (h.type === 'Genetic' && h.value?.geneticLink === true) count += 1;
-      if (h.type === 'Environmental' && h.value?.score < 0) count += 1;
+    const categories = ['STRESS', 'SLEEP', 'SMOKING', 'ALCOHOL', 'SUBSTANCES', 'INTIMACY', 'DENTAL', 'GASTRITIS', 'GENETIC', 'ENVIRONMENT'];
+    categories.forEach(cat => {
+      const latest = getLatestLogForTypes(cat);
+      if (!latest) return;
+      const typeUpper = (latest.type || '').toUpperCase();
+      const val = latest.value;
+      const optStr = (typeof val === 'object' ? (val.option || val.notes || val.faceId || '') : `${val}`).toLowerCase();
+
+      if (typeUpper.includes('STRESS') && (optStr.includes('tense') || optStr.includes('high') || optStr.includes('stressed') || optStr.includes('maxed') || val === 3 || val?.faceId === 'tense' || val?.faceId === 'stressed' || val?.faceId === 'maxed')) count += 1;
+      if (typeUpper.includes('SLEEP') && ((typeof val === 'number' && val < 6) || val?.hours < 6 || val?.quality === 'poor' || optStr.includes('poor'))) count += 1;
+      if ((typeUpper.includes('SMOKING') || typeUpper.includes('ALCOHOL')) && ((typeof val === 'number' && val > 0) || val?.count > 0 || val?.drinks > 0 || optStr.includes('smoke') || optStr.includes('drink') || optStr.includes('both'))) count += 1;
+      if (typeUpper.includes('SUBSTANCES') && (val === 1 || val?.used === true || optStr.includes('exposure'))) count += 1;
+      if (typeUpper.includes('INTIMACY') && (val?.happy === false)) count += 1;
+      if (typeUpper.includes('DENTAL') && (val?.sharpTooth === true || val?.tobacco === true || val?.illFittingDenture === true || optStr.includes('discomfort'))) count += 1;
+      if (typeUpper.includes('GASTRITIS') && (val?.gastritis === true || optStr.includes('gastritis') || optStr.includes('acidity'))) count += 1;
+      if (typeUpper.includes('GENETIC') && (val?.geneticLink === true || optStr.includes('family'))) count += 1;
+      if ((typeUpper.includes('ENVIRONMENT') || typeUpper.includes('DAMAGE')) && (val === 1 || val?.score < 0 || val?.isExposure === true || optStr.includes('chemical') || optStr.includes('junk'))) count += 1;
     });
     return count;
   };
 
   const calculateRepairCount = () => {
     let count = 0;
-    periodHabits.forEach(h => {
-      if (h.type === 'Stress' && h.value?.faceId === 'calm') count += 1;
-      if (h.type === 'Sleep' && (h.value?.hours >= 6 && h.value?.quality !== 'poor')) count += 1;
-      if (h.type === 'Smoking' && h.value?.count === 0) count += 1;
-      if (h.type === 'Alcohol' && h.value?.drinks === 0) count += 1;
-      if (h.type === 'Substances' && h.value?.used === false) count += 1;
-      if (h.type === 'Fasting') count += 1;
-      if (h.type === 'Antioxidants') count += 1;
-      if (h.type === 'Movement' && h.value?.minutes >= 20) count += 1;
-      if (h.type === 'Stillness' && h.value?.sat === true) count += 1;
-      if (h.type === 'Joy' && h.value?.done !== false) count += 1;
-      if (h.type === 'SaferProducts') count += 1;
-      if (h.type === 'CancerScreening') count += 1;
-      if (h.type === 'Intimacy' && h.value?.happy === true) count += 1;
+    const categories = ['STRESS', 'SLEEP', 'SMOKING', 'ALCOHOL', 'SUBSTANCES', 'FASTING', 'ANTIOXIDANTS', 'MOVEMENT', 'STILLNESS', 'JOY', 'SAFERPRODUCTS', 'CANCERSCREENING', 'INTIMACY'];
+    categories.forEach(cat => {
+      const latest = getLatestLogForTypes(cat);
+      if (!latest) return;
+      const typeUpper = (latest.type || '').toUpperCase();
+      const val = latest.value;
+      const optStr = (typeof val === 'object' ? (val.option || val.notes || val.faceId || '') : `${val}`).toLowerCase();
+
+      if (typeUpper.includes('STRESS') && (optStr.includes('calm') || optStr.includes('steady') || optStr.includes('no stress') || val === 1 || val?.faceId === 'calm')) count += 1;
+      if (typeUpper.includes('SLEEP') && ((typeof val === 'number' && val >= 6) || (val?.hours >= 6 && val?.quality !== 'poor'))) count += 1;
+      if ((typeUpper.includes('SMOKING') || typeUpper.includes('ALCOHOL')) && ((typeof val === 'number' && val === 0) || val?.count === 0 || val?.drinks === 0 || optStr.includes('clean') || optStr.includes('no alcohol') || optStr.includes('no (clean'))) count += 1;
+      if (typeUpper.includes('SUBSTANCES') && (val === 0 || val?.used === false || optStr.includes('clean'))) count += 1;
+      if (typeUpper.includes('FASTING') && (val === 1 || val?.hours >= 12 || typeof val === 'object' || optStr.includes('yes') || optStr.includes('16') || optStr.includes('12'))) count += 1;
+      if (typeUpper.includes('ANTIOXIDANTS') && (val === 1 || val?.consumed === true || optStr.includes('yes') || optStr.includes('consumed'))) count += 1;
+      if (typeUpper.includes('MOVEMENT') && (val === 1 || val?.minutes >= 20 || typeof val === 'number' || optStr.includes('walk') || optStr.includes('run') || optStr.includes('30+') || optStr.includes('yoga'))) count += 1;
+      if (typeUpper.includes('STILLNESS') && (val === 1 || val?.sat === true || optStr.includes('yes') || optStr.includes('practiced'))) count += 1;
+      if ((typeUpper.includes('JOY') || typeUpper.includes('REPAIR')) && (val === 1 || val?.done !== false || val?.isCompleted === true || optStr.includes('yes'))) count += 1;
+      if (typeUpper.includes('SAFERPRODUCTS') && (val === 1 || typeof val === 'object')) count += 1;
+      if (typeUpper.includes('CANCERSCREENING') && (val === 1 || typeof val === 'object')) count += 1;
+      if (typeUpper.includes('INTIMACY') && (val?.happy === true)) count += 1;
     });
     return count;
   };
@@ -354,79 +396,75 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
   }
 
   const getDentalScore = () => {
-    const logs = periodHabits.filter(h => h.type === 'Dental');
-    if (logs.length === 0) return null;
-    const damageLogs = logs.filter(l => l.value?.sharpTooth === true || l.value?.tobacco === true || l.value?.illFittingDenture === true).length;
-    const repairLogs = logs.filter(l => l.value?.sharpTooth === false && l.value?.tobacco === false && l.value?.illFittingDenture === false).length;
-    if (damageLogs > 0) return -damageLogs;
-    if (repairLogs > 0) return repairLogs;
+    const latest = getLatestLogForTypes('DENTAL');
+    if (!latest) return null;
+    const val = latest.value;
+    const optStr = (typeof val === 'object' ? (val.option || val.notes || '') : `${val}`).toLowerCase();
+    if (val === 1 || val?.sharpTooth === true || val?.tobacco === true || val?.illFittingDenture === true || optStr.includes('discomfort')) return -1;
     return 0;
   };
 
   const getGastritisScore = () => {
-    const logs = periodHabits.filter(h => h.type === 'Gastritis');
-    if (logs.length === 0) return null;
-    const damageLogs = logs.filter(l => l.value?.gastritis === true).length;
-    const repairLogs = logs.filter(l => l.value?.gastritis === false).length;
-    if (damageLogs > 0) return -damageLogs;
-    if (repairLogs > 0) return repairLogs;
+    const latest = getLatestLogForTypes('GASTRITIS');
+    if (!latest) return null;
+    const val = latest.value;
+    const optStr = (typeof val === 'object' ? (val.option || val.notes || '') : `${val}`).toLowerCase();
+    if (val === 1 || val?.gastritis === true || optStr.includes('gastritis') || optStr.includes('acidity')) return -1;
     return 0;
   };
 
   const getGeneticScore = () => {
-    const logs = periodHabits.filter(h => h.type === 'Genetic');
-    if (logs.length === 0) return null;
-    const damageLogs = logs.filter(l => l.value?.geneticLink === true).length;
-    return damageLogs > 0 ? -damageLogs : 0;
+    const latest = getLatestLogForTypes('GENETIC');
+    if (!latest) return null;
+    const val = latest.value;
+    const optStr = (typeof val === 'object' ? (val.option || val.notes || '') : `${val}`).toLowerCase();
+    if (val === 1 || val?.geneticLink === true || optStr.includes('family')) return -1;
+    return 0;
   };
 
   const getStressScore = () => {
-    const logs = periodHabits.filter(h => h.type === 'Stress');
-    if (logs.length === 0) return null;
-    const damageLogs = logs.filter(l => l.value?.faceId === 'tense' || l.value?.faceId === 'stressed' || l.value?.faceId === 'maxed').length;
-    const repairLogs = logs.filter(l => l.value?.faceId === 'calm').length;
-    if (damageLogs > 0) return -damageLogs;
-    if (repairLogs > 0) return repairLogs;
+    const latest = getLatestLogForTypes('STRESS');
+    if (!latest) return null;
+    const val = latest.value;
+    const optStr = (typeof val === 'object' ? (val.option || val.notes || val.faceId || '') : `${val}`).toLowerCase();
+    if (optStr.includes('tense') || optStr.includes('high') || optStr.includes('stressed') || optStr.includes('maxed') || val === 3 || val?.faceId === 'tense' || val?.faceId === 'stressed' || val?.faceId === 'maxed') return -1;
+    if (optStr.includes('calm') || optStr.includes('steady') || optStr.includes('no stress') || val === 1 || val?.faceId === 'calm' || val?.faceId === 'steady') return 0;
     return 0;
   };
 
   const getSleepScore = () => {
-    const logs = periodHabits.filter(h => h.type === 'Sleep');
-    if (logs.length === 0) return null;
-    const damageLogs = logs.filter(l => l.value?.hours < 6 || l.value?.quality === 'poor').length;
-    const repairLogs = logs.filter(l => l.value?.hours >= 6 && l.value?.quality !== 'poor').length;
-    if (damageLogs > 0) return -damageLogs;
-    if (repairLogs > 0) return repairLogs;
+    const latest = getLatestLogForTypes('SLEEP');
+    if (!latest) return null;
+    const val = latest.value;
+    const optStr = (typeof val === 'object' ? (val.option || val.notes || '') : `${val}`).toLowerCase();
+    if ((typeof val === 'number' && val < 6) || val?.hours < 6 || val?.quality === 'poor' || optStr.includes('poor')) return -1;
     return 0;
   };
 
   const getSmokingScore = () => {
-    const logs = periodHabits.filter(h => h.type === 'Smoking');
-    if (logs.length === 0) return null;
-    const damageLogs = logs.filter(l => l.value?.count > 0).length;
-    const repairLogs = logs.filter(l => l.value?.count === 0).length;
-    if (damageLogs > 0) return -damageLogs;
-    if (repairLogs > 0) return repairLogs;
+    const latest = getLatestLogForTypes('SMOKING');
+    if (!latest) return null;
+    const val = latest.value;
+    const optStr = (typeof val === 'object' ? (val.option || val.notes || '') : `${val}`).toLowerCase();
+    if ((typeof val === 'number' && val > 0) || val?.count > 0 || optStr.includes('smoke') || optStr.includes('yes')) return -1;
     return 0;
   };
 
   const getAlcoholScore = () => {
-    const logs = periodHabits.filter(h => h.type === 'Alcohol');
-    if (logs.length === 0) return null;
-    const damageLogs = logs.filter(l => l.value?.drinks > 0).length;
-    const repairLogs = logs.filter(l => l.value?.drinks === 0).length;
-    if (damageLogs > 0) return -damageLogs;
-    if (repairLogs > 0) return repairLogs;
+    const latest = getLatestLogForTypes('ALCOHOL');
+    if (!latest) return null;
+    const val = latest.value;
+    const optStr = (typeof val === 'object' ? (val.option || val.notes || '') : `${val}`).toLowerCase();
+    if ((typeof val === 'number' && val > 0) || val?.drinks > 0 || optStr.includes('drink') || optStr.includes('heavy')) return -1;
     return 0;
   };
 
   const getSubstancesScore = () => {
-    const logs = periodHabits.filter(h => h.type === 'Substances');
-    if (logs.length === 0) return null;
-    const damageLogs = logs.filter(l => l.value?.used === true).length;
-    const repairLogs = logs.filter(l => l.value?.used === false).length;
-    if (damageLogs > 0) return -damageLogs;
-    if (repairLogs > 0) return repairLogs;
+    const latest = getLatestLogForTypes('SUBSTANCE');
+    if (!latest) return null;
+    const val = latest.value;
+    const optStr = (typeof val === 'object' ? (val.option || val.notes || '') : `${val}`).toLowerCase();
+    if (val === 1 || val?.used === true || optStr.includes('exposure') || optStr.includes('yes')) return -1;
     return 0;
   };
 
@@ -438,51 +476,63 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
   };
 
   const getFastingScore = () => {
-    const logs = periodHabits.filter(h => h.type === 'Fasting');
-    if (logs.length === 0) return null;
-    const repairLogs = logs.filter(l => l.value?.hours >= 12).length;
-    return repairLogs > 0 ? repairLogs : 0;
+    const latest = getLatestLogForTypes('FASTING', 'REPAIR');
+    if (!latest) return null;
+    const val = latest.value;
+    const optStr = (typeof val === 'object' ? (val.option || val.notes || '') : `${val}`).toLowerCase();
+    if (val === 1 || val?.hours >= 12 || typeof val === 'object' || optStr.includes('yes') || optStr.includes('16') || optStr.includes('12')) return 1;
+    return 0;
   };
 
   const getAntioxidantsScore = () => {
-    const logs = periodHabits.filter(h => h.type === 'Antioxidants');
-    if (logs.length === 0) return null;
-    const repairLogs = logs.filter(l => l.value?.consumed === true).length;
-    return repairLogs > 0 ? repairLogs : 0;
+    const latest = getLatestLogForTypes('ANTIOXIDANT');
+    if (!latest) return null;
+    const val = latest.value;
+    const optStr = (typeof val === 'object' ? (val.option || val.notes || '') : `${val}`).toLowerCase();
+    if (val === 1 || val?.consumed === true || optStr.includes('yes') || optStr.includes('consumed')) return 1;
+    return 0;
   };
 
   const getMovementScore = () => {
-    const logs = periodHabits.filter(h => h.type === 'Movement');
-    if (logs.length === 0) return null;
-    const repairLogs = logs.filter(l => l.value?.minutes >= 20).length;
-    return repairLogs > 0 ? repairLogs : 0;
+    const latest = getLatestLogForTypes('MOVEMENT');
+    if (!latest) return null;
+    const val = latest.value;
+    const optStr = (typeof val === 'object' ? (val.option || val.notes || '') : `${val}`).toLowerCase();
+    if (val === 1 || val?.minutes >= 20 || typeof val === 'number' || optStr.includes('walk') || optStr.includes('run') || optStr.includes('30+') || optStr.includes('yoga')) return 1;
+    return 0;
   };
 
   const getStillnessScore = () => {
-    const logs = periodHabits.filter(h => h.type === 'Stillness');
-    if (logs.length === 0) return null;
-    const repairLogs = logs.filter(l => l.value?.sat === true).length;
-    return repairLogs > 0 ? repairLogs : 0;
+    const latest = getLatestLogForTypes('STILLNESS');
+    if (!latest) return null;
+    const val = latest.value;
+    const optStr = (typeof val === 'object' ? (val.option || val.notes || '') : `${val}`).toLowerCase();
+    if (val === 1 || val?.sat === true || optStr.includes('yes') || optStr.includes('practiced')) return 1;
+    return 0;
   };
 
   const getJoyScore = () => {
-    const logs = periodHabits.filter(h => h.type === 'Joy');
-    if (logs.length === 0) return null;
-    const repairLogs = logs.filter(l => l.value?.done !== false).length;
-    return repairLogs > 0 ? repairLogs : 0;
+    const latest = getLatestLogForTypes('JOY');
+    if (!latest) return null;
+    const val = latest.value;
+    const optStr = (typeof val === 'object' ? (val.option || val.notes || '') : `${val}`).toLowerCase();
+    if (val === 1 || val?.done !== false || val?.isCompleted === true || optStr.includes('yes')) return 1;
+    return 0;
   };
 
   const getSaferProductsScore = () => {
-    const logs = periodHabits.filter(h => h.type === 'SaferProducts');
-    if (logs.length === 0) return null;
-    return logs.length;
+    const latest = getLatestLogForTypes('SAFERPRODUCT');
+    if (!latest) return null;
+    return 1;
   };
 
   const getEnvironmentalScore = () => {
-    const logs = periodHabits.filter(h => h.type === 'Environmental');
-    if (logs.length === 0) return null;
-    const negLogs = logs.filter(l => l.value?.score < 0).length;
-    return negLogs > 0 ? -negLogs : 0;
+    const latest = getLatestLogForTypes('ENVIRONMENT', 'DAMAGE');
+    if (!latest) return null;
+    const val = latest.value;
+    const optStr = (typeof val === 'object' ? (val.option || val.notes || '') : `${val}`).toLowerCase();
+    if (val === 1 || val?.score < 0 || val?.isExposure === true || optStr.includes('chemical') || optStr.includes('junk')) return -1;
+    return 0;
   };
 
   // Calculate percentages for the tug-of-war bar
@@ -590,9 +640,25 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
             </div>
           </header>
         )}
+        {!isShopScreen && (
+          <div className="px-4 pt-4 max-w-5xl w-full mx-auto">
+            <AiBannerQuickNudge onOpenAiCheckin={() => setShowChatbotModal(true)} />
+          </div>
+        )}
+
         <div className="sub-page-body flex-1">
           {activeScreenComponent}
         </div>
+
+        {/* AI Daily Logging Chatbot Modal */}
+        <DailyLoggingChatbotModal
+          isOpen={showChatbotModal}
+          onClose={() => setShowChatbotModal(false)}
+          apiUrl={apiUrl}
+          token={token}
+          userMode={activeMode as any}
+          onRefreshDashboard={() => fetchHabitsAndAppointments()}
+        />
       </div>
     );
   }
@@ -617,7 +683,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
   // Treatment Mode
   if (activeMode === 'TREATMENT' && !showTugOfWar) {
     return (
-      <div className="pb-36 pt-4 px-3.5 max-w-5xl mx-auto bg-gradient-to-b from-slate-50/90 to-slate-100/80 dark:from-slate-950/90 dark:to-slate-900/80 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-200 transition-colors duration-300">
+      <div className="pb-36 pt-4 px-0 max-w-5xl mx-auto bg-gradient-to-b from-slate-50/90 to-slate-100/80 dark:from-slate-950/90 dark:to-slate-900/80 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-200 transition-colors duration-300">
         <ModeSwitcher />
         <Dashboard onNavigateToTab={onNavigateToTab} onBackToTugOfWar={() => setShowTugOfWar(true)} />
       </div>
@@ -626,16 +692,8 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
 
 
 
-  const handleActionKey = (key: string, params?: any) => {
-    if (!key) return;
+  const executeManualAction = (key: string, _params?: any) => {
     const lowerKey = key.toLowerCase();
-
-    if (params?.search) {
-      setShopQuery(params.search);
-      if (params.search.toLowerCase() === 'wig') return setActiveScreen('WigShop');
-      return setActiveScreen('EnvironmentalShop');
-    }
-
     if (lowerKey === 'environmental_exposures' || lowerKey === 'environment' || lowerKey === 'environmental') return setActiveScreen('Environmental');
     if (lowerKey === 'antioxidants') return setActiveScreen('Antioxidants');
     if (lowerKey === 'genetics' || lowerKey === 'genetic') return setActiveScreen('Genetic');
@@ -656,8 +714,30 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
     }
   };
 
+  const handleActionKey = (key: string, params?: any) => {
+    if (!key) return;
+    const lowerKey = key.toLowerCase();
+
+    if (params?.search) {
+      setShopQuery(params.search);
+      if (params.search.toLowerCase() === 'wig') return setActiveScreen('WigShop');
+      return setActiveScreen('EnvironmentalShop');
+    }
+
+    // Intercept manual habit logging & report upload clicks to show AI Check-in discovery nudge!
+    const isManualHabitOrReport = ['fasting', 'stress', 'sleep', 'movement', 'exercise', 'cancer_screening', 'reports'].includes(lowerKey);
+
+    if (isManualHabitOrReport) {
+      setPendingManualAction({ key, params });
+      setShowAiNudgeModal(true);
+      return;
+    }
+
+    executeManualAction(key, params);
+  };
+
   return (
-    <div className="pb-24 pt-4 px-3.5 max-w-5xl mx-auto bg-gradient-to-b from-slate-50/90 to-slate-100/80 dark:from-slate-900/90 dark:to-slate-950/80 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-200 transition-colors duration-300">
+    <div className="pb-24 pt-4 px-2 sm:px-3 max-w-5xl mx-auto bg-gradient-to-b from-slate-50/90 to-slate-100/80 dark:from-slate-900/90 dark:to-slate-950/80 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-200 transition-colors duration-300">
       
       {/* Feature Discovery & Ask Mito Modals */}
       <AskMitoDrawer
@@ -680,9 +760,9 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
         <div className="flex items-center space-x-2">
           <button
             onClick={() => setShowAskMito(true)}
-            className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary dark:text-primary-light rounded-2xl text-xs font-extrabold transition-all flex items-center space-x-1.5 border border-primary/20"
+            className="px-3.5 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl text-xs font-black transition-all flex items-center space-x-1.5 border border-white/20 shadow-xs cursor-pointer"
           >
-            <Sparkles className="h-3.5 w-3.5" />
+            <Sparkles className="h-3.5 w-3.5 text-amber-300 fill-amber-300" />
             <span>Ask Mito</span>
           </button>
         </div>
@@ -1144,6 +1224,89 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
             setActiveScreen('EnvironmentalShop');
           }
         }}
+      />
+
+      {/* ── Floating AI Check-in FAB with feature-discovery tooltip ── */}
+      <div className="fixed bottom-20 right-5 z-40 flex flex-col items-end gap-2">
+
+        {/* Tooltip bubble — only on first visit, appears after 1.5s */}
+        {showFabTooltip && (
+          <div className="animate-in fade-in slide-in-from-right-2 duration-400" style={{ animationDelay: '1.5s', animationFillMode: 'both' }}>
+            <div className="relative bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xl rounded-2xl rounded-br-sm px-4 py-3 max-w-[195px]">
+              {/* Dismiss × */}
+              <button
+                onClick={() => { localStorage.setItem('ai_checkin_tooltip_seen', '1'); setShowFabTooltip(false); }}
+                className="absolute -top-2 -right-2 h-5 w-5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-full flex items-center justify-center shadow-sm transition-all"
+              >
+                <span className="text-[9px] text-slate-500 dark:text-slate-400 leading-none font-bold">✕</span>
+              </button>
+              {/* Content */}
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="text-base">🤖</span>
+                <p className="text-[10px] font-black text-slate-800 dark:text-slate-100 leading-tight">AI Daily Check-in</p>
+              </div>
+              <p className="text-[9px] text-slate-500 dark:text-slate-400 leading-snug mb-2">Log all your habits in under 60 seconds — just answer a few quick questions!</p>
+              <button
+                onClick={() => {
+                  localStorage.setItem('ai_checkin_tooltip_seen', '1');
+                  setShowFabTooltip(false);
+                  setShowChatbotModal(true);
+                }}
+                className="w-full py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[9px] font-black rounded-xl hover:opacity-90 transition-all"
+              >
+                Try it now →
+              </button>
+              {/* Speech-bubble tail */}
+              <div className="absolute -bottom-2 right-6 w-3 h-3 bg-white dark:bg-slate-800 border-r border-b border-slate-200 dark:border-slate-700 rotate-45" />
+            </div>
+          </div>
+        )}
+
+        {/* FAB with pulsing rings on first visit */}
+        <div className="relative">
+          {showFabTooltip && (
+            <>
+              <span className="absolute inset-0 rounded-full bg-blue-500/35 animate-ping" />
+              <span className="absolute inset-0 rounded-full bg-indigo-400/20 animate-pulse" />
+            </>
+          )}
+          <button
+            onClick={() => {
+              localStorage.setItem('ai_checkin_tooltip_seen', '1');
+              setShowFabTooltip(false);
+              setShowChatbotModal(true);
+            }}
+            className="relative bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white p-3.5 rounded-full shadow-2xl flex items-center gap-2 border-2 border-white/80 active:scale-95 transition-all cursor-pointer"
+            title="Open AI Daily Check-in Assistant"
+          >
+            <Bot className="h-6 w-6 text-white" />
+            <span className="text-xs font-black tracking-wide pr-1 hidden sm:inline">AI Check-in</span>
+          </button>
+        </div>
+      </div>
+
+      {/* AI Daily Logging Chatbot Modal */}
+      <DailyLoggingChatbotModal
+        isOpen={showChatbotModal}
+        onClose={() => setShowChatbotModal(false)}
+        apiUrl={apiUrl}
+        token={token}
+        userMode={activeMode as any}
+        onRefreshDashboard={() => fetchHabitsAndAppointments()}
+      />
+
+      {/* AI Feature Discovery Nudge Modal */}
+      <AiFeatureDiscoveryModal
+        isOpen={showAiNudgeModal}
+        onClose={() => setShowAiNudgeModal(false)}
+        onOpenAiChat={() => setShowChatbotModal(true)}
+        onContinueManually={() => {
+          if (pendingManualAction) {
+            executeManualAction(pendingManualAction.key, pendingManualAction.params);
+            setPendingManualAction(null);
+          }
+        }}
+        targetFeatureName={pendingManualAction?.key || 'Habit'}
       />
 
       {showStressedModal && (

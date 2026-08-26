@@ -5,6 +5,7 @@ export interface IHabitLog extends Document {
   type: string;
   value: any;
   timestamp: Date;
+  source?: 'manual' | 'chatbot' | string;
   reviewed?: boolean;
   reviewedAt?: Date;
   reviewedBy?: mongoose.Types.ObjectId;
@@ -18,6 +19,7 @@ const habitLogSchema = new Schema<IHabitLog>(
     type: { type: String, required: true },
     value: { type: Schema.Types.Mixed, required: true },
     timestamp: { type: Date, default: Date.now },
+    source: { type: String, default: 'manual' },  // 'manual' | 'chatbot'
     reviewed: { type: Boolean, default: false },
     reviewedAt: { type: Date },
     reviewedBy: { type: Schema.Types.ObjectId, ref: 'AdminUser' },
