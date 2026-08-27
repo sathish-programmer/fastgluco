@@ -57,6 +57,12 @@ import { EnvironmentalExposuresLogScreen } from '../screens/HabitScreens/Environ
 import { ModeSwitcher } from '../components/ModeSwitcher';
 import { Dashboard } from './Dashboard';
 import { TodaysFocusCard } from '../components/TodaysFocusCard';
+import { AgeingModule } from '../modules/AgeingModule';
+import { PCODModule } from '../modules/PCODModule';
+import { DiabetesModule } from '../modules/DiabetesModule';
+import { HypertensionModule } from '../modules/HypertensionModule';
+import { CardiacModule } from '../modules/CardiacModule';
+import { ParkinsonModule } from '../modules/ParkinsonModule';
 // import { ContinueWhereLeftOff } from '../components/ContinueWhereLeftOff';
 // import { MitoProgressCard } from '../components/MitoProgressCard';
 import { ExploreFeaturesGrid } from '../components/ExploreFeaturesGrid';
@@ -823,16 +829,51 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
 
       <ModeSwitcher />
 
-      {/* PRIMARY DASHBOARD SECTION: Today's Focus */}
-      <div className="mb-4">
-        <TodaysFocusCard
-          activeMode={activeMode as any}
-          habits={habits}
-          hasCGMData={hasCGMData}
-          upcomingAppt={upcomingAppt}
-          onTakeAction={(actionKey) => handleActionKey(actionKey)}
-        />
-      </div>
+      {/* SPECIALIZED MULTI-CONDITION HEALTH MODULES (Ageing, PCOD, Diabetes, Hypertension, Parkinson's, Cardiac) */}
+      {activeMode === 'AGEING' && (
+        <div className="mb-6">
+          <AgeingModule />
+        </div>
+      )}
+      {activeMode === 'PCOD' && (
+        <div className="mb-6">
+          <PCODModule />
+        </div>
+      )}
+      {activeMode === 'DIABETES' && (
+        <div className="mb-6">
+          <DiabetesModule />
+        </div>
+      )}
+      {activeMode === 'HYPERTENSION' && (
+        <div className="mb-6">
+          <HypertensionModule />
+        </div>
+      )}
+      {activeMode === 'PARKINSON' && (
+        <div className="mb-6">
+          <ParkinsonModule />
+        </div>
+      )}
+      {activeMode === 'CARDIAC' && (
+        <div className="mb-6">
+          <CardiacModule />
+        </div>
+      )}
+
+      {/* RENDER CANCER PREVENTION/RECURRENCE DASHBOARD ONLY WHEN IN CANCER MODES */}
+      {!['AGEING', 'PCOD', 'DIABETES', 'HYPERTENSION', 'PARKINSON', 'CARDIAC'].includes(activeMode) && (
+        <>
+          {/* PRIMARY DASHBOARD SECTION: Today's Focus */}
+          <div className="mb-4">
+            <TodaysFocusCard
+              activeMode={activeMode as any}
+              habits={habits}
+              hasCGMData={hasCGMData}
+              upcomingAppt={upcomingAppt}
+              onTakeAction={(actionKey) => handleActionKey(actionKey)}
+            />
+          </div>
 
       {/* SECONDARY DASHBOARD SECTION: Continue Where You Left Off (Hidden for future implementation) */}
       {/* 
@@ -1273,6 +1314,8 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
           }
         }}
       />
+      </>
+      )}
 
       {/* ── Floating AI Check-in FAB Trigger Button ── */}
       <div className="fixed bottom-20 right-5 z-40">

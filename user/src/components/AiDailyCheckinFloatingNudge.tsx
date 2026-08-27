@@ -139,9 +139,9 @@ export const AiDailyCheckinFloatingNudge: React.FC<AiDailyCheckinFloatingNudgePr
                 <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 mt-2.5">
                   <span className="text-[9.5px] text-slate-400 font-semibold">
                     {typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'denied' ? (
-                      <span className="text-rose-500 font-bold">⚠️ Blocked in browser settings</span>
+                      <span className="text-rose-500 font-bold">Blocked in browser settings</span>
                     ) : (
-                      <span>🔔 System Alarm & Sound</span>
+                      <span className="flex items-center gap-1"><Bell className="h-3 w-3 inline text-indigo-500" /> Active Alert Channel</span>
                     )}
                   </span>
                   <button

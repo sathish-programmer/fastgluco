@@ -114,9 +114,14 @@ const MainAppContent: React.FC = () => {
     const handleSubScreen = (e: any) => {
       setIsSubScreenActive(!!e.detail);
     };
+    const handleNav = (e: any) => {
+      if (e.detail) setActiveTab(e.detail);
+    };
     window.addEventListener('subScreenChange', handleSubScreen);
+    window.addEventListener('navigateToTab', handleNav);
     return () => {
       window.removeEventListener('subScreenChange', handleSubScreen);
+      window.removeEventListener('navigateToTab', handleNav);
     };
   }, []);
 
@@ -549,28 +554,28 @@ const MainAppContent: React.FC = () => {
         </div>
       </nav>
 
-      {/* Floating In-App Reminder Alert Card */}
+      {/* Floating In-App Reminder Alert Card (Dynamic Light & Dark Theme) */}
       {inAppReminder && (
-        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[999] max-w-md w-[92%] bg-slate-900/95 backdrop-blur-md text-white p-3.5 rounded-2xl shadow-2xl border border-blue-500/50 flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
+        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[999] max-w-md w-[92%] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md text-slate-900 dark:text-white p-3.5 rounded-2xl shadow-[0_12px_36px_rgba(0,0,0,0.12)] dark:shadow-2xl border border-blue-200/80 dark:border-blue-500/40 flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
           <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center shrink-0 shadow-sm">
             <Bot className="h-5 w-5 text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <h4 className="text-xs font-black text-white leading-tight">{inAppReminder.title}</h4>
-            <p className="text-[11px] text-slate-300 truncate mt-0.5">{inAppReminder.body}</p>
+            <h4 className="text-xs font-black text-slate-900 dark:text-white leading-tight">{inAppReminder.title}</h4>
+            <p className="text-[11px] text-slate-600 dark:text-slate-300 truncate mt-0.5">{inAppReminder.body}</p>
           </div>
           <button
             onClick={() => {
               setInAppReminder(null);
               window.dispatchEvent(new CustomEvent('openDailyCheckinChatbot'));
             }}
-            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-black rounded-xl shrink-0 cursor-pointer shadow-sm transition-all"
+            className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black rounded-xl shrink-0 cursor-pointer shadow-xs hover:shadow-md transition-all"
           >
             Check in
           </button>
           <button
             onClick={() => setInAppReminder(null)}
-            className="text-slate-400 hover:text-white text-xs p-1 cursor-pointer"
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-white text-xs p-1 cursor-pointer transition-colors"
           >
             ✕
           </button>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { Calendar as CalendarIcon, Clock, ArrowLeft, Star } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, ArrowLeft, Star, Sparkles, Globe, Video, Building2 } from 'lucide-react';
 import { useConsultation } from '../../context/ConsultationContext';
 import { Capacitor } from '@capacitor/core';
 
@@ -126,25 +126,71 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
     }
   }, [selectedDoctor, date]);
 
+  const isMatchingSpecialty = (doc: any): boolean => {
+    const targetSpec = (sessionStorage.getItem('mito_target_specialty') || '').toLowerCase();
+    const activeJourney = (user?.cancerJourney || (localStorage.getItem('fastgluco_active_mode') as string) || '').toLowerCase();
+
+    if (!targetSpec && !activeJourney) return false;
+    const docText = `${doc.name || ''} ${doc.specialty || ''} ${doc.department || ''} ${doc.qualification || ''} ${doc.description || ''} ${doc.bio || ''}`.toLowerCase();
+
+    if (targetSpec.includes('gynaec') || targetSpec.includes('gynec') || targetSpec.includes('pcod') || activeJourney === 'pcod') {
+      return docText.includes('gynaec') || docText.includes('gynec') || docText.includes('obgyn') || docText.includes('endocrin') || docText.includes('women') || docText.includes('pcod');
+    }
+    if (targetSpec.includes('diabet') || targetSpec.includes('endocrin') || activeJourney === 'diabetes') {
+      return docText.includes('diabet') || docText.includes('endocrin') || docText.includes('metabol') || docText.includes('physician');
+    }
+    if (targetSpec.includes('cardio') || activeJourney === 'hypertension' || activeJourney === 'cardiac') {
+      return docText.includes('cardio') || docText.includes('heart') || docText.includes('vascular') || docText.includes('physician');
+    }
+    if (targetSpec.includes('neuro') || activeJourney === 'parkinson') {
+      return docText.includes('neuro') || docText.includes('brain') || docText.includes('movement') || docText.includes('parkinson');
+    }
+    if (targetSpec.includes('geriat') || targetSpec.includes('preventive') || activeJourney === 'ageing') {
+      return docText.includes('geriat') || docText.includes('preventive') || docText.includes('physician') || docText.includes('longevity');
+    }
+    if (targetSpec.includes('oncol') || targetSpec.includes('cancer') || activeJourney === 'treatment' || activeJourney === 'prevention' || activeJourney === 'secondary_prevention') {
+      return docText.includes('oncol') || docText.includes('cancer') || docText.includes('chemo') || docText.includes('radiation') || docText.includes('surgical oncol');
+    }
+    return targetSpec ? docText.includes(targetSpec) : false;
+  };
+
   const fetchDoctors = async () => {
     try {
       const res = await fetch(`${apiUrl}/patient/doctors`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
-      // Sort: highest rated first, then most experienced, then lowest fee
+
+      const targetSpec = sessionStorage.getItem('mito_target_specialty');
+      if (targetSpec) {
+        const customReason = `${targetSpec} Consultation`;
+        setReasons(prev => prev.includes(customReason) ? prev : [customReason, ...prev]);
+        setReason(customReason);
+      }
+
+      // Sort: Specialty matches FIRST, then highest rated, then most experienced, then lowest fee
       const sorted = [...data].sort((a: any, b: any) => {
+        const matchA = isMatchingSpecialty(a) ? 1 : 0;
+        const matchB = isMatchingSpecialty(b) ? 1 : 0;
+        if (matchB !== matchA) return matchB - matchA;
+
         const ratingA = a.avgRating ?? -1;
         const ratingB = b.avgRating ?? -1;
         if (ratingB !== ratingA) return ratingB - ratingA;
+
         const expA = a.experience ?? 0;
         const expB = b.experience ?? 0;
         if (expB !== expA) return expB - expA;
+
         const feeA = a.onlineConsultationFee ?? 0;
         const feeB = b.onlineConsultationFee ?? 0;
         return feeA - feeB;
       });
       setDoctors(sorted);
+
+      if (sorted.length > 0 && !selectedDoctor) {
+        setSelectedDoctor(sorted[0]);
+      }
     } catch (e) {
       console.error(e);
     }
@@ -369,32 +415,35 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
               <div>
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Select Specialist</label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {[...doctors].sort((a, b) => {
-                    if (reason === 'Endocrinologist Consultation') {
-                      const aIsEndo = a.specialty?.toLowerCase().includes('endocrinologist');
-                      const bIsEndo = b.specialty?.toLowerCase().includes('endocrinologist');
-                      if (aIsEndo && !bIsEndo) return -1;
-                      if (!aIsEndo && bIsEndo) return 1;
-                    }
-                    return 0;
-                  }).map(doc => (
-                    <button
-                      key={doc._id}
-                      onClick={() => setSelectedDoctor(doc)}
-                      className={`p-4 rounded-2xl border text-left transition-all ${
-                        selectedDoctor?._id === doc._id 
-                          ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/20 shadow-sm text-slate-800 dark:text-slate-100' 
-                          : 'border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 hover:border-slate-200 dark:hover:border-slate-700'
-                      }`}
-                    >
-                      <div className="flex justify-between items-start gap-2">
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">{doc.name}</h4>
-                          <p className="text-xs text-slate-500 mt-0.5">{doc.specialty}</p>
-                          {doc.languagesKnown && doc.languagesKnown.length > 0 && (
-                            <p className="text-[10px] text-slate-400 font-semibold mt-0.5">🗣️ {doc.languagesKnown.join(', ')}</p>
-                          )}
-                        </div>
+                  {doctors.map(doc => {
+                    const isRec = isMatchingSpecialty(doc);
+                    return (
+                      <button
+                        key={doc._id}
+                        onClick={() => setSelectedDoctor(doc)}
+                        className={`p-4 rounded-2xl border text-left transition-all ${
+                          selectedDoctor?._id === doc._id 
+                            ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/20 shadow-sm text-slate-800 dark:text-slate-100' 
+                            : 'border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 hover:border-slate-200 dark:hover:border-slate-700'
+                        }`}
+                      >
+                        <div className="flex justify-between items-start gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+                              <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">{doc.name}</h4>
+                              {isRec && (
+                                <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/80 flex items-center gap-1">
+                                  <Sparkles className="h-2.5 w-2.5 text-blue-600 dark:text-blue-400" /> Recommended
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-slate-500 mt-0.5">{doc.specialty}</p>
+                            {doc.languagesKnown && doc.languagesKnown.length > 0 && (
+                              <p className="text-[10px] text-slate-400 font-semibold mt-0.5 flex items-center gap-1">
+                                <Globe className="h-3 w-3 inline text-slate-400" /> {doc.languagesKnown.join(', ')}
+                              </p>
+                            )}
+                          </div>
                         {doc.avgRating != null && (
                           <div className="flex flex-col items-end shrink-0">
                             <div className="flex items-center gap-0.5">
@@ -414,14 +463,19 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                       <p className="text-[10px] text-slate-400 mt-1 line-clamp-2">{doc.description}</p>
                       <div className="flex gap-3 mt-2">
                         {doc.onlineConsultationFee !== undefined && (
-                          <span className="text-[10px] font-bold text-emerald-600">🌐 Rs. {doc.onlineConsultationFee}</span>
+                          <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-1">
+                            <Video className="h-3 w-3 inline text-emerald-600" /> Online: Rs. {doc.onlineConsultationFee}
+                          </span>
                         )}
                         {doc.offlineConsultationFee !== undefined && (
-                          <span className="text-[10px] font-bold text-purple-600">🏥 Rs. {doc.offlineConsultationFee}</span>
+                          <span className="text-[10px] font-bold text-purple-600 flex items-center gap-1">
+                            <Building2 className="h-3 w-3 inline text-purple-600" /> In-Clinic: Rs. {doc.offlineConsultationFee}
+                          </span>
                         )}
                       </div>
                     </button>
-                  ))}
+                  );
+                })}
                 </div>
               </div>
 
@@ -433,17 +487,17 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                       <button
                         type="button"
                         onClick={() => setConsultationType('online')}
-                        className={`p-3 rounded-xl border text-sm font-bold text-center transition-all ${consultationType === 'online' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'}`}
+                        className={`p-3 rounded-xl border text-sm font-bold text-center transition-all flex flex-col items-center justify-center gap-0.5 ${consultationType === 'online' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'}`}
                       >
-                        🌐 Online Consultation
+                        <span className="flex items-center gap-1.5"><Video className="h-4 w-4" /> Online Consultation</span>
                         <span className="block text-[10px] opacity-80 font-normal mt-0.5">Fee: Rs. {selectedDoctor.onlineConsultationFee || 0}</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => setConsultationType('offline')}
-                        className={`p-3 rounded-xl border text-sm font-bold text-center transition-all ${consultationType === 'offline' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'}`}
+                        className={`p-3 rounded-xl border text-sm font-bold text-center transition-all flex flex-col items-center justify-center gap-0.5 ${consultationType === 'offline' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'}`}
                       >
-                        🏥 Offline Consultation
+                        <span className="flex items-center gap-1.5"><Building2 className="h-4 w-4" /> In-Clinic Visit</span>
                         <span className="block text-[10px] opacity-80 font-normal mt-0.5">Fee: Rs. {selectedDoctor.offlineConsultationFee || 0}</span>
                       </button>
                     </div>

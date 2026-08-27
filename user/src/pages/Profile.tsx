@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, type FocusModeType } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useTheme } from '../context/ThemeContext';
 import {
@@ -49,8 +49,8 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
   const [addressState, setAddressState] = useState(user?.addressState || '');
   const [addressPinCode, setAddressPinCode] = useState(user?.addressPinCode || '');
 
-  // Cancer Care Journey states
-  const [cancerJourney, setCancerJourney] = useState<'PREVENTION' | 'TREATMENT' | 'SECONDARY_PREVENTION'>(user?.cancerJourney || 'PREVENTION');
+  // Health Care Journey states
+  const [cancerJourney, setCancerJourney] = useState<FocusModeType>(user?.cancerJourney || 'PREVENTION');
   const [showDisclaimer, setShowDisclaimer] = useState<boolean>(false);
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(user?.cancerDisclaimerAccepted || false);
 

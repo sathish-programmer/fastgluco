@@ -1,5 +1,16 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
+export type FocusModeType =
+  | 'PREVENTION'
+  | 'TREATMENT'
+  | 'SECONDARY_PREVENTION'
+  | 'AGEING'
+  | 'PCOD'
+  | 'DIABETES'
+  | 'HYPERTENSION'
+  | 'PARKINSON'
+  | 'CARDIAC';
+
 export interface UserProfile {
   id: string;
   name?: string;
@@ -19,7 +30,7 @@ export interface UserProfile {
   libreRegion?: string;
   libreActive?: boolean;
   libreLastSyncAt?: string;
-  cancerJourney?: 'PREVENTION' | 'TREATMENT' | 'SECONDARY_PREVENTION';
+  cancerJourney?: FocusModeType;
   cancerDisclaimerAccepted?: boolean;
   cancerDisclaimerAcceptedAt?: string;
   termsAccepted?: boolean;
@@ -61,8 +72,8 @@ interface AuthContextType {
   clearError: () => void;
   apiUrl: string;
   branding: AppBranding;
-  activeMode: 'PREVENTION' | 'TREATMENT' | 'SECONDARY_PREVENTION';
-  setActiveMode: (mode: 'PREVENTION' | 'TREATMENT' | 'SECONDARY_PREVENTION') => Promise<void>;
+  activeMode: FocusModeType;
+  setActiveMode: (mode: FocusModeType) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -84,13 +95,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     enableSubscriptions: false,
     enableExternalPayments: false
   });
-  const [activeMode, _setActiveMode] = useState<'PREVENTION' | 'TREATMENT' | 'SECONDARY_PREVENTION'>('PREVENTION');
+  const [activeMode, _setActiveMode] = useState<FocusModeType>(() => {
+    return (localStorage.getItem('fastgluco_active_mode') as FocusModeType) || 'PREVENTION';
+  });
 
   const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5001/api' : 'https://api.mitoreboot.in/api');
 
   useEffect(() => {
     if (user && user.cancerJourney) {
-      _setActiveMode(user.cancerJourney as any);
+      _setActiveMode(user.cancerJourney);
       localStorage.setItem('fastgluco_active_mode', user.cancerJourney);
     }
   }, [user?.cancerJourney]);

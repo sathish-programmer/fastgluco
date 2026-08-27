@@ -107,7 +107,7 @@ export const triggerTestNotification = async () => {
         notifications: [
           {
             id: 9999,
-            title: '🔔 Test Notification • Mito Reboot',
+            title: 'Test Notification • Mito Reboot',
             body: 'Your notification system is working perfectly!',
             schedule: { at: new Date(Date.now() + 1000) },
             channelId: CHECKIN_CHANNEL_ID,
@@ -120,7 +120,7 @@ export const triggerTestNotification = async () => {
     }
   } else {
     fireWebNotification(
-      '🔔 Test Notification • Mito Reboot',
+      'Test Notification • Mito Reboot',
       'Your notification and chime system is working perfectly!'
     );
   }

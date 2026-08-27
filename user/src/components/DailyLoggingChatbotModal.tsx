@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Capacitor } from '@capacitor/core';
 import { TextToSpeech } from '@capacitor-community/text-to-speech';
 import { scheduleDailyCheckinReminder, triggerTestNotification } from '../utils/notificationScheduler';
+import type { FocusModeType } from '../context/AuthContext';
 
 interface WorkflowStep {
   stepId: string;
@@ -17,6 +18,7 @@ interface WorkflowStep {
   options?: string[];
   order: number;
   isEnabled: boolean;
+  habitType?: string;
 }
 
 interface Workflow {
@@ -46,7 +48,7 @@ interface DailyLoggingChatbotModalProps {
   onClose: () => void;
   apiUrl: string;
   token: string | null;
-  userMode?: 'PREVENTION' | 'TREATMENT' | 'SECONDARY_PREVENTION';
+  userMode?: FocusModeType;
   onRefreshDashboard?: () => void;
 }
 
@@ -511,23 +513,361 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
     }
   };
 
+  const getConditionWorkflow = (targetMode: string): Workflow | null => {
+    if (targetMode === 'AGEING') {
+      return {
+        name: 'Healthy Ageing & Longevity Protocol',
+        targetMode: 'AGEING',
+        steps: [
+          {
+            stepId: 'found_exercise',
+            title: 'Daily Movement',
+            questionPrompt: 'Did you get in some exercise or resistance movement today?',
+            inputType: 'YES_NO',
+            options: ['Yes', 'No'],
+            order: 1,
+            isEnabled: true
+          },
+          {
+            stepId: 'found_sleep',
+            title: '8 Hours Sleep',
+            questionPrompt: 'Did you get 8 hours of restorative sleep last night?',
+            inputType: 'YES_NO',
+            options: ['Yes', 'No'],
+            order: 2,
+            isEnabled: true
+          },
+          {
+            stepId: 'found_diet',
+            title: 'Whole-Food Diet',
+            questionPrompt: 'Did you eat a balanced, whole-food diet with minimal processed foods today?',
+            inputType: 'YES_NO',
+            options: ['Yes', 'No'],
+            order: 3,
+            isEnabled: true
+          },
+          {
+            stepId: 'found_fasting',
+            title: 'Fasting Window',
+            questionPrompt: 'Did you adhere to your intermittent circadian fasting window today?',
+            inputType: 'YES_NO',
+            options: ['Yes', 'No'],
+            order: 4,
+            isEnabled: true
+          },
+          {
+            stepId: 'found_antioxidants',
+            title: 'Antioxidant Foods',
+            questionPrompt: 'Did you include antioxidant-rich vegetables, berries, or greens today?',
+            inputType: 'YES_NO',
+            options: ['Yes', 'No'],
+            order: 5,
+            isEnabled: true
+          },
+          {
+            stepId: 'found_stress',
+            title: 'Stress Level',
+            questionPrompt: 'On a scale from 1 (Calm) to 10 (High), what was your stress level today?',
+            inputType: 'NUMBER',
+            order: 6,
+            isEnabled: true
+          }
+        ]
+      };
+    }
+    if (targetMode === 'PCOD') {
+      return {
+        name: 'PCOD & Hormonal Balance Protocol',
+        targetMode: 'PCOD',
+        steps: [
+          {
+            stepId: 'pcod_exercise',
+            title: '20 Min Exercise',
+            questionPrompt: 'Did you complete 20 minutes of exercise or strength movement today?',
+            inputType: 'YES_NO',
+            options: ['Yes', 'No'],
+            order: 1,
+            isEnabled: true
+          },
+          {
+            stepId: 'pcod_junk',
+            title: 'Junk / Processed Food',
+            questionPrompt: 'Did you consume any junk food, refined sugar, or ultra-processed snacks today?',
+            inputType: 'YES_NO',
+            options: ['Yes', 'No'],
+            order: 2,
+            isEnabled: true
+          },
+          {
+            stepId: 'pcod_sleep',
+            title: '8 Hours Sleep',
+            questionPrompt: 'Did you get 8 hours of restorative sleep?',
+            inputType: 'YES_NO',
+            options: ['Yes', 'No'],
+            order: 3,
+            isEnabled: true
+          },
+          {
+            stepId: 'pcod_stress',
+            title: 'Stress Scale',
+            questionPrompt: 'On a scale from 1 to 10, how stressed did you feel today?',
+            inputType: 'NUMBER',
+            order: 4,
+            isEnabled: true
+          },
+          {
+            stepId: 'pcod_hirsutism',
+            title: 'Symptom Check-in',
+            questionPrompt: 'Are you noticing any excess facial/body hair growth (hirsutism) or hormonal breakouts?',
+            inputType: 'YES_NO',
+            options: ['Yes', 'No'],
+            order: 5,
+            isEnabled: true
+          }
+        ]
+      };
+    }
+    if (targetMode === 'DIABETES') {
+      return {
+        name: 'Diabetes & Glycemic Protocol',
+        targetMode: 'DIABETES',
+        steps: [
+          {
+            stepId: 'diab_exercise',
+            title: '20 Min Exercise',
+            questionPrompt: 'Did you get in at least 20 minutes of exercise or walking today to activate glucose uptake?',
+            inputType: 'YES_NO',
+            options: ['Yes', 'No'],
+            order: 1,
+            isEnabled: true
+          },
+          {
+            stepId: 'diab_alcohol',
+            title: 'Alcohol Intake',
+            questionPrompt: 'Did you have any alcoholic beverages today?',
+            inputType: 'YES_NO',
+            options: ['Yes', 'No'],
+            order: 2,
+            isEnabled: true
+          },
+          {
+            stepId: 'diab_junk',
+            title: 'High-Carb / Sugar Foods',
+            questionPrompt: 'Did you eat high-carb, sugary, or refined junk food today?',
+            inputType: 'YES_NO',
+            options: ['Yes', 'No'],
+            order: 3,
+            isEnabled: true
+          },
+          {
+            stepId: 'diab_sleep',
+            title: '8 Hours Sleep',
+            questionPrompt: 'Did you sleep 8 hours last night to maintain healthy insulin sensitivity?',
+            inputType: 'YES_NO',
+            options: ['Yes', 'No'],
+            order: 4,
+            isEnabled: true
+          },
+          {
+            stepId: 'diab_stress',
+            title: 'Stress Level',
+            questionPrompt: 'On a scale from 1 (Calm) to 10 (High), what was your stress level today?',
+            inputType: 'NUMBER',
+            order: 5,
+            isEnabled: true
+          }
+        ]
+      };
+    }
+    if (targetMode === 'HYPERTENSION') {
+      return {
+        name: 'Hypertension & Blood Pressure Protocol',
+        targetMode: 'HYPERTENSION',
+        steps: [
+          {
+            stepId: 'htn_exercise',
+            title: '20 Min Exercise',
+            questionPrompt: 'Did you get in at least 20 minutes of cardiovascular exercise or walking today?',
+            inputType: 'YES_NO',
+            options: ['Yes', 'No'],
+            order: 1,
+            isEnabled: true
+          },
+          {
+            stepId: 'htn_meditated',
+            title: 'Meditation & Breathwork',
+            questionPrompt: 'Did you meditate or practice 10 minutes of deep slow breathing today?',
+            inputType: 'YES_NO',
+            options: ['Yes', 'No'],
+            order: 2,
+            isEnabled: true
+          },
+          {
+            stepId: 'htn_lowsalt',
+            title: 'Low-Salt DASH Diet',
+            questionPrompt: 'Did you stick to a low-salt, DASH-friendly whole food diet today?',
+            inputType: 'YES_NO',
+            options: ['Yes', 'No'],
+            order: 3,
+            isEnabled: true
+          },
+          {
+            stepId: 'htn_sleep',
+            title: '8 Hours Sleep',
+            questionPrompt: 'Did you get 8 hours of sleep last night?',
+            inputType: 'YES_NO',
+            options: ['Yes', 'No'],
+            order: 4,
+            isEnabled: true
+          },
+          {
+            stepId: 'htn_stress',
+            title: 'Stress Level',
+            questionPrompt: 'On a scale from 1 to 10, how was your stress and vascular tension today?',
+            inputType: 'NUMBER',
+            order: 5,
+            isEnabled: true
+          }
+        ]
+      };
+    }
+    if (targetMode === 'PARKINSON') {
+      return {
+        name: "Parkinson's Motor & Dopamine Protocol",
+        targetMode: 'PARKINSON',
+        steps: [
+          {
+            stepId: 'pd_tremor',
+            title: 'Tremor Severity',
+            questionPrompt: 'On a scale from 1 (Minimal) to 10 (Severe), how is your tremor today?',
+            inputType: 'NUMBER',
+            order: 1,
+            isEnabled: true
+          },
+          {
+            stepId: 'pd_rigidity',
+            title: 'Muscle Rigidity',
+            questionPrompt: 'On a scale from 1 (Loose) to 10 (Very Stiff), rate your muscle stiffness today:',
+            inputType: 'NUMBER',
+            order: 2,
+            isEnabled: true
+          },
+          {
+            stepId: 'pd_bradykinesia',
+            title: 'Movement Slowness',
+            questionPrompt: 'On a scale from 1 to 10, rate any slowness of movement (bradykinesia) today:',
+            inputType: 'NUMBER',
+            order: 3,
+            isEnabled: true
+          },
+          {
+            stepId: 'pd_sleep',
+            title: '8 Hours Sleep',
+            questionPrompt: 'Did you get 8 hours of restful sleep last night?',
+            inputType: 'YES_NO',
+            options: ['Yes', 'No'],
+            order: 4,
+            isEnabled: true
+          },
+          {
+            stepId: 'pd_loved',
+            title: 'Dopamine Booster',
+            questionPrompt: 'Did you engage in an activity you love, spend time in sunlight, or enjoy dark chocolate today?',
+            inputType: 'YES_NO',
+            options: ['Yes', 'No'],
+            order: 5,
+            isEnabled: true
+          }
+        ]
+      };
+    }
+    if (targetMode === 'CARDIAC') {
+      return {
+        name: 'Cardiovascular Health Protocol',
+        targetMode: 'CARDIAC',
+        steps: [
+          {
+            stepId: 'cardiac_exercise',
+            title: 'Cardiovascular Movement',
+            questionPrompt: 'Did you complete 20 minutes of cardio or light movement today?',
+            inputType: 'YES_NO',
+            options: ['Yes', 'No'],
+            order: 1,
+            isEnabled: true
+          },
+          {
+            stepId: 'cardiac_lowsalt',
+            title: 'Low-Salt Meals',
+            questionPrompt: 'Did you eat low-salt meals to protect arterial pressure today?',
+            inputType: 'YES_NO',
+            options: ['Yes', 'No'],
+            order: 2,
+            isEnabled: true
+          },
+          {
+            stepId: 'cardiac_lowjunk',
+            title: 'Low-Sugar / Low-Fat',
+            questionPrompt: 'Did you eat low-sugar and low-fat whole foods today?',
+            inputType: 'YES_NO',
+            options: ['Yes', 'No'],
+            order: 3,
+            isEnabled: true
+          },
+          {
+            stepId: 'cardiac_alcohol',
+            title: 'Alcohol Intake',
+            questionPrompt: 'Did you drink any alcohol today?',
+            inputType: 'YES_NO',
+            options: ['Yes', 'No'],
+            order: 4,
+            isEnabled: true
+          },
+          {
+            stepId: 'cardiac_sleep',
+            title: '8 Hours Sleep',
+            questionPrompt: 'Did you sleep 8 hours last night?',
+            inputType: 'YES_NO',
+            options: ['Yes', 'No'],
+            order: 5,
+            isEnabled: true
+          },
+          {
+            stepId: 'cardiac_stress',
+            title: 'Stress Level',
+            questionPrompt: 'On a scale from 1 (Calm) to 10 (High), what was your stress level today?',
+            inputType: 'NUMBER',
+            order: 6,
+            isEnabled: true
+          }
+        ]
+      };
+    }
+    return null;
+  };
+
   const fetchWorkflow = async () => {
     if (!token) return;
     setLoading(true);
     try {
+      const customWf = getConditionWorkflow(userMode);
+
       // Map user journey mode to backend workflow mode
       let mode = 'STANDARD'; // PREVENTION
       if (userMode === 'TREATMENT') mode = 'CANCER_PATIENT';
       else if (userMode === 'SECONDARY_PREVENTION') mode = 'SECONDARY_PREVENTION';
       const [wfRes, habitsRes, reportsRes] = await Promise.all([
-        fetch(`${apiUrl}/daily-logging-workflows/active?mode=${mode}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        customWf ? Promise.resolve({ ok: false } as any) : fetch(`${apiUrl}/daily-logging-workflows/active?mode=${mode}`, { headers: { 'Authorization': `Bearer ${token}` } }),
         fetch(`${apiUrl}/habits?type=all&days=2`, { headers: { 'Authorization': `Bearer ${token}` } }),
         fetch(`${apiUrl}/reports`, { headers: { 'Authorization': `Bearer ${token}` } }).catch(() => null)
       ]);
 
       let activeSteps: WorkflowStep[] = [];
       let wfData: Workflow | null = null;
-      if (wfRes.ok) {
+
+      if (customWf) {
+        wfData = customWf;
+        activeSteps = customWf.steps;
+      } else if (wfRes.ok) {
         wfData = await wfRes.json();
         activeSteps = (wfData?.steps || []).filter(s => s.isEnabled).sort((a, b) => a.order - b.order);
       }
@@ -910,6 +1250,61 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
         // Combined legacy step
         habitType = 'Joy';
         habitValue = { done: isYes };
+      // ── Condition-specific steps sync to localStorage and backend ──
+      } else if (stepId.startsWith('found_')) {
+        habitType = stepId === 'found_exercise' ? 'Movement' : stepId === 'found_sleep' ? 'Sleep' : stepId === 'found_fasting' ? 'Fasting' : stepId === 'found_antioxidants' ? 'Antioxidants' : stepId === 'found_stress' ? 'Stress' : 'Food';
+        habitValue = { value: isYes ? 1 : 0 };
+        try {
+          const stored = JSON.parse(localStorage.getItem('mito_ageing_factors') || '{}');
+          stored[stepId] = isYes || (!isNaN(Number(valueStr)) && Number(valueStr) <= 5);
+          localStorage.setItem('mito_ageing_factors', JSON.stringify(stored));
+        } catch {}
+      } else if (stepId.startsWith('pcod_')) {
+        habitType = stepId === 'pcod_exercise' ? 'Movement' : stepId === 'pcod_sleep' ? 'Sleep' : stepId === 'pcod_stress' ? 'Stress' : 'Food';
+        habitValue = { value: isYes ? 1 : 0 };
+        if (stepId === 'pcod_exercise') localStorage.setItem('mito_pcod_exercised', String(isYes));
+        else if (stepId === 'pcod_junk') localStorage.setItem('mito_pcod_junk', String(isYes));
+        else if (stepId === 'pcod_sleep') localStorage.setItem('mito_pcod_slept8', String(isYes));
+        else if (stepId === 'pcod_stress') localStorage.setItem('mito_pcod_stress', String(parseFloat(valueStr) || 5));
+        else if (stepId === 'pcod_hirsutism') localStorage.setItem('mito_pcod_hirsutism', String(isYes));
+      } else if (stepId.startsWith('diab_')) {
+        habitType = stepId === 'diab_exercise' ? 'Movement' : stepId === 'diab_alcohol' ? 'Alcohol' : stepId === 'diab_sleep' ? 'Sleep' : stepId === 'diab_stress' ? 'Stress' : 'Food';
+        habitValue = { value: isYes ? 1 : 0 };
+        if (stepId === 'diab_exercise') localStorage.setItem('mito_diab_exercised', String(isYes));
+        else if (stepId === 'diab_alcohol') localStorage.setItem('mito_diab_alcohol', String(isYes));
+        else if (stepId === 'diab_junk') localStorage.setItem('mito_diab_junk', String(isYes));
+        else if (stepId === 'diab_sleep') localStorage.setItem('mito_diab_slept8', String(isYes));
+        else if (stepId === 'diab_stress') localStorage.setItem('mito_diab_stress', String(parseFloat(valueStr) || 5));
+      } else if (stepId.startsWith('htn_')) {
+        habitType = stepId === 'htn_exercise' ? 'Movement' : stepId === 'htn_meditated' ? 'Stillness' : stepId === 'htn_sleep' ? 'Sleep' : stepId === 'htn_stress' ? 'Stress' : 'Food';
+        habitValue = { value: isYes ? 1 : 0 };
+        if (stepId === 'htn_exercise') localStorage.setItem('mito_htn_exercised', String(isYes));
+        else if (stepId === 'htn_meditated') localStorage.setItem('mito_htn_meditated', String(isYes));
+        else if (stepId === 'htn_lowsalt') localStorage.setItem('mito_htn_lowsalt', String(isYes));
+        else if (stepId === 'htn_sleep') localStorage.setItem('mito_htn_slept8', String(isYes));
+        else if (stepId === 'htn_stress') localStorage.setItem('mito_htn_stress', String(parseFloat(valueStr) || 5));
+      } else if (stepId.startsWith('pd_')) {
+        habitType = stepId === 'pd_sleep' ? 'Sleep' : stepId === 'pd_loved' ? 'Joy' : 'Symptoms';
+        habitValue = { value: isYes ? 1 : 0 };
+        if (stepId === 'pd_sleep') localStorage.setItem('mito_pd_slept8', String(isYes));
+        else if (stepId === 'pd_loved') localStorage.setItem('mito_pd_loved', String(isYes));
+        else {
+          try {
+            const stored = JSON.parse(localStorage.getItem('mito_pd_symptom_scores') || '{}');
+            const sympKey = stepId.replace('pd_', '');
+            stored['9:00 AM'] = { ...(stored['9:00 AM'] || {}), [sympKey]: parseFloat(valueStr) || 1 };
+            localStorage.setItem('mito_pd_symptom_scores', JSON.stringify(stored));
+          } catch {}
+        }
+      } else if (stepId.startsWith('cardiac_')) {
+        habitType = stepId === 'cardiac_exercise' ? 'Movement' : stepId === 'cardiac_alcohol' ? 'Alcohol' : stepId === 'cardiac_sleep' ? 'Sleep' : stepId === 'cardiac_stress' ? 'Stress' : 'Food';
+        habitValue = { value: isYes ? 1 : 0 };
+        if (stepId === 'cardiac_exercise') localStorage.setItem('mito_cardiac_exercised', String(isYes));
+        else if (stepId === 'cardiac_lowsalt') localStorage.setItem('mito_cardiac_lowsalt', String(isYes));
+        else if (stepId === 'cardiac_lowjunk') localStorage.setItem('mito_cardiac_lowjunk', String(isYes));
+        else if (stepId === 'cardiac_alcohol') localStorage.setItem('mito_cardiac_alcohol', String(isYes));
+        else if (stepId === 'cardiac_sleep') localStorage.setItem('mito_cardiac_slept8', String(isYes));
+        else if (stepId === 'cardiac_stress') localStorage.setItem('mito_cardiac_stress', String(parseFloat(valueStr) || 5));
       }
 
       // Ensure option & notes & stepId are attached for clear summary rendering next time
@@ -1372,9 +1767,9 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                 <div className="flex items-center justify-between pt-2 border-t border-white/10 mt-2.5">
                   <span className="text-[9.5px] text-blue-100/70 font-medium">
                     {typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'denied' ? (
-                      <span className="text-rose-300 font-bold">⚠️ Blocked in browser settings</span>
+                      <span className="text-rose-300 font-bold">Blocked in browser settings</span>
                     ) : (
-                      <span>🔔 System Alarm & Chime</span>
+                      <span className="flex items-center gap-1"><Bell className="h-3 w-3 inline text-blue-200" /> Active Alert Channel</span>
                     )}
                   </span>
                   <button
