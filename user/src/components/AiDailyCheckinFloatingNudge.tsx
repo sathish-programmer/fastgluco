@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, Sparkles, X, ArrowRight, CheckCircle2, Mic, Bell, Clock, Check } from 'lucide-react';
+import { scheduleDailyCheckinReminder, triggerTestNotification } from '../utils/notificationScheduler';
 
 interface AiDailyCheckinFloatingNudgeProps {
   pendingHabitsCount: number;
@@ -34,19 +35,15 @@ export const AiDailyCheckinFloatingNudge: React.FC<AiDailyCheckinFloatingNudgePr
     onOpenCheckin();
   };
 
-  const handleSaveReminder = (time: string) => {
+  const handleSaveReminder = async (time: string) => {
     setReminderTime(time);
     setCustomTimeInput(time);
-    localStorage.setItem('mito_checkin_reminder_time', time);
     setReminderSaved(true);
+    await scheduleDailyCheckinReminder(time);
     setTimeout(() => {
       setReminderSaved(false);
       setShowReminderSettings(false);
     }, 1200);
-
-    if ('Notification' in window && Notification.permission !== 'granted') {
-      Notification.requestPermission();
-    }
   };
 
   const formatDisplayTime = (timeStr: string) => {
@@ -137,6 +134,24 @@ export const AiDailyCheckinFloatingNudge: React.FC<AiDailyCheckinFloatingNudgePr
                     <Check className="h-3.5 w-3.5" /> Reminder scheduled for {formatDisplayTime(reminderTime)}!
                   </p>
                 )}
+
+                {/* Test Alert Button & Permission Status */}
+                <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 mt-2.5">
+                  <span className="text-[9.5px] text-slate-400 font-semibold">
+                    {typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'denied' ? (
+                      <span className="text-rose-500 font-bold">⚠️ Blocked in browser settings</span>
+                    ) : (
+                      <span>🔔 System Alarm & Sound</span>
+                    )}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => triggerTestNotification()}
+                    className="text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <Bell className="h-3 w-3" /> Test Alert Now
+                  </button>
+                </div>
               </motion.div>
             )}
 

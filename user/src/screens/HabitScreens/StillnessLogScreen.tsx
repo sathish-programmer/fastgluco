@@ -3,6 +3,7 @@ import { ArrowLeft, Clock, Check, Minus, Trash2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { HabitsService, type HabitLog } from '../../services/habitsService';
+import { scheduleHabitReminder, STILLNESS_NOTIFICATION_ID } from '../../utils/notificationScheduler';
 
 interface StillnessLogScreenProps {
   onBack: () => void;
@@ -127,8 +128,16 @@ export const StillnessLogScreen: React.FC<StillnessLogScreenProps> = ({ onBack }
         </div>
 
         <button 
-          onClick={() => showToast(`Reminder set for ${reminderTime}`, 'success')}
-          className="w-full py-3.5 rounded-xl font-bold text-slate-900 bg-amber-400 hover:bg-amber-500 transition-all shadow-sm"
+          onClick={async () => {
+            const ok = await scheduleHabitReminder(
+              STILLNESS_NOTIFICATION_ID,
+              'Mito Reboot • Stillness & Meditation',
+              'Take 10 minutes to practice stillness and calm breathing today.',
+              reminderTime
+            );
+            showToast(ok ? `Daily stillness reminder set for ${reminderTime}` : 'Permission needed to set reminder', ok ? 'success' : 'error');
+          }}
+          className="w-full py-3.5 rounded-xl font-bold text-slate-900 bg-amber-400 hover:bg-amber-500 transition-all shadow-sm cursor-pointer"
         >
           Set reminder
         </button>

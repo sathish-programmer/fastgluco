@@ -30,14 +30,15 @@ import {
   BookOpen,
   Calendar,
   Headphones,
-  X
+  X,
+  Bot
 } from 'lucide-react';
 import { GlobalAICoachPopup } from './components/GlobalAICoachPopup';
 import { NotificationBell } from './components/NotificationBell';
 import { WelcomeOnboardingModal } from './components/WelcomeOnboardingModal';
 import { TermsAndConditionsAcceptancePage, CURRENT_TERMS_VERSION } from './components/TermsAndConditionsAcceptancePage';
-
 import { DeleteAccount } from './pages/DeleteAccount';
+import { initNotificationScheduler } from './utils/notificationScheduler';
 
 const MainAppContent: React.FC = () => {
   const { isAuthenticated, isLoading, token, apiUrl, logout, branding, user, activeMode } = useAuth();
@@ -68,6 +69,15 @@ const MainAppContent: React.FC = () => {
     setShowCancerCGMDashboardState(show);
   };
   const [showHelpModal, setShowHelpModal] = useState<boolean>(false);
+  const [inAppReminder, setInAppReminder] = useState<{ title: string; body: string } | null>(null);
+
+  useEffect(() => {
+    const handleTriggered = (e: any) => {
+      setInAppReminder(e.detail);
+    };
+    window.addEventListener('mito_reminder_triggered', handleTriggered);
+    return () => window.removeEventListener('mito_reminder_triggered', handleTriggered);
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -82,6 +92,8 @@ const MainAppContent: React.FC = () => {
       setRateOrderId(rateOrderParam);
       setActiveTab('RateProduct');
     }
+    // Initialize & verify background notification scheduler
+    initNotificationScheduler();
   }, []);
 
   // Reset tab to Home and trigger onboarding modal for new users upon successful authentication
@@ -536,6 +548,34 @@ const MainAppContent: React.FC = () => {
           </button>
         </div>
       </nav>
+
+      {/* Floating In-App Reminder Alert Card */}
+      {inAppReminder && (
+        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[999] max-w-md w-[92%] bg-slate-900/95 backdrop-blur-md text-white p-3.5 rounded-2xl shadow-2xl border border-blue-500/50 flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center shrink-0 shadow-sm">
+            <Bot className="h-5 w-5 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h4 className="text-xs font-black text-white leading-tight">{inAppReminder.title}</h4>
+            <p className="text-[11px] text-slate-300 truncate mt-0.5">{inAppReminder.body}</p>
+          </div>
+          <button
+            onClick={() => {
+              setInAppReminder(null);
+              window.dispatchEvent(new CustomEvent('openDailyCheckinChatbot'));
+            }}
+            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-black rounded-xl shrink-0 cursor-pointer shadow-sm transition-all"
+          >
+            Check in
+          </button>
+          <button
+            onClick={() => setInAppReminder(null)}
+            className="text-slate-400 hover:text-white text-xs p-1 cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Help & Support Modal */}
       {showHelpModal && (

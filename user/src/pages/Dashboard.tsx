@@ -140,6 +140,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
   const [showChatbotModal, setShowChatbotModal] = useState<boolean>(false);
   const [pendingHabitsCount, setPendingHabitsCount] = useState<number>(0);
 
+  useEffect(() => {
+    const handleOpen = () => setShowChatbotModal(true);
+    window.addEventListener('openDailyCheckinChatbot', handleOpen);
+    return () => window.removeEventListener('openDailyCheckinChatbot', handleOpen);
+  }, []);
+
   const handleDateStep = (direction: 'prev' | 'next') => {
     const parts = selectedDate.split('-');
     const cur = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));

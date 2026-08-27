@@ -5,6 +5,9 @@ import {
   Volume2, VolumeX, Sparkles, Flame, Trophy, Bell, Clock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Capacitor } from '@capacitor/core';
+import { TextToSpeech } from '@capacitor-community/text-to-speech';
+import { scheduleDailyCheckinReminder, triggerTestNotification } from '../utils/notificationScheduler';
 
 interface WorkflowStep {
   stepId: string;
@@ -93,19 +96,15 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
   const [customTimeInput, setCustomTimeInput] = useState<string>(() => localStorage.getItem('mito_checkin_reminder_time') || '20:30');
   const [reminderSaved, setReminderSaved] = useState<boolean>(false);
 
-  const handleSaveReminder = (time: string) => {
+  const handleSaveReminder = async (time: string) => {
     setReminderTime(time);
     setCustomTimeInput(time);
-    localStorage.setItem('mito_checkin_reminder_time', time);
     setReminderSaved(true);
+    await scheduleDailyCheckinReminder(time);
     setTimeout(() => {
       setReminderSaved(false);
       setShowReminderSettings(false);
     }, 1200);
-
-    if ('Notification' in window && Notification.permission !== 'granted') {
-      Notification.requestPermission();
-    }
   };
 
   const formatDisplayTime = (timeStr: string) => {
@@ -124,26 +123,57 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
     }
   }, [editingMessageId]);
 
-  // Text-To-Speech (Speech Synthesis) to read question aloud reliably
-  const speakQuestion = (text: string, onDone?: () => void) => {
+  // Text-To-Speech (Native Android/iOS + Web Speech Synthesis fallback)
+  const speakQuestion = async (text: string, onDone?: () => void) => {
     // Immediately stop mic so it doesn't record speaker audio
     stopListening();
 
-    if (!window.speechSynthesis || isVoiceMutedRef.current) {
+    if (isVoiceMutedRef.current) {
       if (onDone) {
         setTimeout(onDone, 300);
       }
+      return;
+    }
+
+    const clean = text.replace(/[*_#•]/g, '').trim();
+    if (!clean) {
+      if (onDone) onDone();
+      return;
+    }
+
+    // ── NATIVE CAPACITOR (Android & iOS) ──
+    if (Capacitor.isNativePlatform()) {
+      try {
+        setIsSpeaking(true);
+        try { await TextToSpeech.stop(); } catch {}
+        await TextToSpeech.speak({
+          text: clean,
+          lang: 'en-US',
+          rate: 1.0,
+          pitch: 1.0,
+          volume: 1.0,
+          category: 'ambient'
+        });
+      } catch (err) {
+        console.warn('Native TTS error:', err);
+      } finally {
+        setIsSpeaking(false);
+        if (onDone) {
+          setTimeout(onDone, 400);
+        }
+      }
+      return;
+    }
+
+    // ── WEB BROWSER FALLBACK ──
+    if (!window.speechSynthesis) {
+      if (onDone) onDone();
       return;
     }
     try {
       window.speechSynthesis.cancel();
       if (window.speechSynthesis.paused) {
         window.speechSynthesis.resume();
-      }
-      const clean = text.replace(/[*_#•]/g, '').trim();
-      if (!clean) {
-        if (onDone) onDone();
-        return;
       }
 
       const utterance = new SpeechSynthesisUtterance(clean);
@@ -166,7 +196,6 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
         doneFired = true;
         setIsSpeaking(false);
         if (onDone) {
-          // Delay mic by 400ms after speech ends so device speaker audio has fully cleared
           setTimeout(onDone, 400);
         }
       };
@@ -179,16 +208,6 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
         window.speechSynthesis.resume();
       };
 
-      // Chrome SpeechSynthesis freeze recovery
-      const resumeInterval = setInterval(() => {
-        if (!window.speechSynthesis.speaking) {
-          setIsSpeaking(false);
-          clearInterval(resumeInterval);
-        } else {
-          window.speechSynthesis.resume();
-        }
-      }, 2500);
-
       window.speechSynthesis.speak(utterance);
     } catch (e) {
       console.warn('TTS error:', e);
@@ -197,7 +216,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
     }
   };
 
-  const toggleVoiceMute = () => {
+  const toggleVoiceMute = async () => {
     const next = !isVoiceMuted;
     setIsVoiceMuted(next);
     isVoiceMutedRef.current = next; // Immediately update ref for instant response
@@ -205,11 +224,15 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
 
     if (next) {
       setIsSpeaking(false);
-      if (window.speechSynthesis) {
+      if (Capacitor.isNativePlatform()) {
+        try { await TextToSpeech.stop(); } catch {}
+      } else if (window.speechSynthesis) {
         window.speechSynthesis.cancel();
       }
     } else {
-      if (window.speechSynthesis) {
+      if (Capacitor.isNativePlatform()) {
+        try { await TextToSpeech.stop(); } catch {}
+      } else if (window.speechSynthesis) {
         window.speechSynthesis.cancel();
         window.speechSynthesis.resume();
       }
@@ -232,32 +255,172 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
     }
   };
 
-  const mapSpokenAnswerToOption = (spokenText: string, options?: string[]): string => {
-    if (!spokenText) return '';
-    const clean = spokenText.trim().toLowerCase();
-    if (!options || options.length === 0) return spokenText;
-
-    const exact = options.find(o => o.toLowerCase() === clean);
-    if (exact) return exact;
-
-    const sub = options.find(o => o.toLowerCase().includes(clean) || clean.includes(o.toLowerCase()));
-    if (sub) return sub;
-
-    // Positive intents
-    if (['yes', 'yeah', 'yep', 'done', 'completed', 'good', 'positive', 'take'].some(w => clean.includes(w))) {
-      return options[0];
+  const validateAndMapAnswer = (
+    inputText: string,
+    currentStep?: WorkflowStep
+  ): { valid: boolean; mappedValue: string; clarificationMsg?: string } => {
+    if (!inputText || !inputText.trim()) {
+      return { valid: false, mappedValue: '', clarificationMsg: 'Please provide an answer.' };
     }
-    // Negative intents
-    if (['no', 'nope', 'skipped', 'not today', 'rest', 'none', 'missed'].some(w => clean.includes(w))) {
-      const negOpt = options.find(o => 
-        o.toLowerCase().includes('no') || 
-        o.toLowerCase().includes('not') || 
-        o.toLowerCase().includes('skip') || 
-        o.toLowerCase().includes('rest')
-      );
-      return negOpt || options[options.length - 1];
+
+    const clean = inputText.trim().toLowerCase();
+    if (!currentStep) {
+      return { valid: true, mappedValue: inputText.trim() };
     }
-    return spokenText;
+
+    const { inputType, options = [], stepId = '' } = currentStep;
+    const s = stepId.toLowerCase();
+
+    // ── 1. NUMBER / SLEEP TYPE ──
+    if (inputType === 'NUMBER' || s === 'sleep' || s === 'glucose_check') {
+      const match = clean.match(/(\d+(\.\d+)?)/);
+      if (match) {
+        const numVal = parseFloat(match[1]);
+        if (s === 'sleep') {
+          if (numVal >= 0 && numVal <= 24) {
+            return { valid: true, mappedValue: `${numVal}` };
+          } else {
+            return { valid: false, mappedValue: '', clarificationMsg: 'Please enter a valid sleep duration between 0 and 24 hours.' };
+          }
+        }
+        return { valid: true, mappedValue: `${numVal}` };
+      }
+      return { valid: false, mappedValue: '', clarificationMsg: 'Please enter or say a number (e.g., 7 or 8 hours).' };
+    }
+
+    // ── 2. OPTIONS / YES_NO TYPES ──
+    if (inputType === 'OPTIONS' || inputType === 'YES_NO') {
+      if (options.length === 0) {
+        return { valid: true, mappedValue: inputText.trim() };
+      }
+
+      // Exact match with an option
+      const exact = options.find(o => o.toLowerCase() === clean);
+      if (exact) return { valid: true, mappedValue: exact };
+
+      // Substring match
+      const sub = options.find(o => {
+        const oLower = o.toLowerCase();
+        const stripped = oLower.replace(/[()]/g, ' ');
+        return stripped.includes(clean) || clean.includes(oLower);
+      });
+      if (sub) return { valid: true, mappedValue: sub };
+
+      // Step-specific smart semantic matching
+      // STRESS
+      if (s === 'stress' || s === 'caregiver_stress') {
+        if (['calm', 'no stress', 'zero', 'peaceful', 'none', 'good', 'fine', 'relaxed', 'normal', 'low stress'].some(w => clean.includes(w))) {
+          return { valid: true, mappedValue: options.find(o => o.toLowerCase().includes('calm') || o.toLowerCase().includes('no stress')) || options[0] };
+        }
+        if (['mild', 'little', 'slightly', 'small'].some(w => clean.includes(w))) {
+          return { valid: true, mappedValue: options.find(o => o.toLowerCase().includes('mild')) || options[1] };
+        }
+        if (['moderate', 'medium', 'average', 'some', 'okay'].some(w => clean.includes(w))) {
+          return { valid: true, mappedValue: options.find(o => o.toLowerCase().includes('moderate')) || options[2] || options[1] };
+        }
+        if (['high', 'severe', 'lot of stress', 'heavy', 'extreme', 'overwhelmed', 'drained', 'very stressed'].some(w => clean.includes(w))) {
+          return { valid: true, mappedValue: options.find(o => o.toLowerCase().includes('high')) || options[options.length - 1] };
+        }
+      }
+
+      // FASTING
+      if (s === 'fasting') {
+        if (['16', '17', '18', '19', '20', '24', 'omad', 'long fast'].some(w => clean.includes(w))) {
+          return { valid: true, mappedValue: options.find(o => o.includes('16+')) || options[0] };
+        }
+        if (['12', '13', '14', '15'].some(w => clean.includes(w))) {
+          return { valid: true, mappedValue: options.find(o => o.includes('12-16')) || options[1] };
+        }
+        if (['partial', 'less than 12', 'under 12', '8 hours', '10 hours'].some(w => clean.includes(w))) {
+          return { valid: true, mappedValue: options.find(o => o.includes('<12') || o.toLowerCase().includes('partial')) || options[2] };
+        }
+        if (['no', 'skip', 'didn\'t fast', 'ate normal', 'none'].some(w => clean.includes(w))) {
+          return { valid: true, mappedValue: options.find(o => o.toLowerCase().includes('skip') || o.toLowerCase().includes('no')) || options[options.length - 1] };
+        }
+      }
+
+      // MOVEMENT
+      if (s === 'movement') {
+        if (['30', '40', '45', '60', 'brisk', 'long walk', 'workout', 'gym', 'run'].some(w => clean.includes(w))) {
+          return { valid: true, mappedValue: options.find(o => o.includes('30+')) || options[0] };
+        }
+        if (['yoga', 'stretch', 'stretching', 'pilates', 'mobility'].some(w => clean.includes(w))) {
+          return { valid: true, mappedValue: options.find(o => o.toLowerCase().includes('yoga')) || options[1] };
+        }
+        if (['light', 'short walk', '10 min', '15 min', '<20', 'less than 20'].some(w => clean.includes(w))) {
+          return { valid: true, mappedValue: options.find(o => o.includes('<20') || o.toLowerCase().includes('light')) || options[2] };
+        }
+        if (['bed rest', 'rest only', 'no movement', 'none', 'tired', 'rest'].some(w => clean.includes(w))) {
+          return { valid: true, mappedValue: options.find(o => o.toLowerCase().includes('bed') || o.toLowerCase().includes('rest')) || options[options.length - 1] };
+        }
+      }
+
+      // ALCOHOL
+      if (s === 'alcohol') {
+        if (['no', 'none', 'clean', 'zero', 'didn\'t drink', 'not today', 'sober'].some(w => clean.includes(w))) {
+          return { valid: true, mappedValue: options.find(o => o.toLowerCase().includes('no alcohol') || o.toLowerCase().includes('clean')) || options[0] };
+        }
+        if (['1', '2', 'one', 'two', 'couple', 'beer', 'glass'].some(w => clean.includes(w))) {
+          return { valid: true, mappedValue: options.find(o => o.includes('1-2')) || options[1] };
+        }
+        if (['3', '4', '5', 'heavy', 'lot', 'many', 'party'].some(w => clean.includes(w))) {
+          return { valid: true, mappedValue: options.find(o => o.includes('3+')) || options[options.length - 1] };
+        }
+      }
+
+      // GUT HEALTH
+      if (s === 'gut_health') {
+        if (['no', 'healthy', 'fine', 'good', 'neither', 'no issue', 'clean', 'calm'].some(w => clean.includes(w))) {
+          return { valid: true, mappedValue: options.find(o => o.toLowerCase().includes('no issues') || o.toLowerCase().includes('healthy')) || options[0] };
+        }
+        if (['both', 'all'].some(w => clean.includes(w))) {
+          return { valid: true, mappedValue: options.find(o => o.toLowerCase().includes('both')) || options[options.length - 1] };
+        }
+        if (['gastritis', 'acidity', 'gas', 'acid', 'stomach', 'heartburn', 'bloating'].some(w => clean.includes(w))) {
+          return { valid: true, mappedValue: options.find(o => o.toLowerCase().includes('gastritis') || o.toLowerCase().includes('acidity')) || options[1] };
+        }
+        if (['dental', 'tooth', 'teeth', 'gum', 'mouth', 'oral'].some(w => clean.includes(w))) {
+          return { valid: true, mappedValue: options.find(o => o.toLowerCase().includes('dental')) || options[2] };
+        }
+      }
+
+      // GENERAL POSITIVE INTENTS
+      if (['yes', 'yeah', 'yep', 'done', 'completed', 'good', 'true', 'taken', 'did', 'practiced', 'safe', 'clean', 'positive'].some(w => clean.includes(w))) {
+        const posOpt = options.find(o => 
+          o.toLowerCase().startsWith('yes') || 
+          o.toLowerCase().includes('consumed') || 
+          o.toLowerCase().includes('practiced') || 
+          o.toLowerCase().includes('safe') || 
+          o.toLowerCase().includes('clean') ||
+          (o.toLowerCase().startsWith('no') && (s.startsWith('env_') || s === 'smoking' || s === 'genetics' || s === 'substances'))
+        );
+        if (posOpt) return { valid: true, mappedValue: posOpt };
+        return { valid: true, mappedValue: options[0] };
+      }
+
+      // GENERAL NEGATIVE INTENTS
+      if (['no', 'nope', 'nah', 'not today', 'none', 'skipped', 'missed', 'never', 'zero', 'negative', 'avoided'].some(w => clean.includes(w))) {
+        const negOpt = options.find(o => 
+          o.toLowerCase().includes('not today') || 
+          o.toLowerCase().includes('skipped') || 
+          o.toLowerCase().includes('no family') ||
+          o.toLowerCase().includes('no alcohol') ||
+          o.toLowerCase().startsWith('no') ||
+          (o.toLowerCase().startsWith('yes') && (s.startsWith('env_') || s === 'smoking' || s === 'substances'))
+        );
+        if (negOpt) return { valid: true, mappedValue: negOpt };
+        return { valid: true, mappedValue: options[options.length - 1] };
+      }
+
+      // If unrecognized/irrelevant speech:
+      return {
+        valid: false,
+        mappedValue: '',
+        clarificationMsg: `I didn't recognize that option. Please tap one of the buttons or say: ${options.slice(0, 3).join(', ')}.`
+      };
+    }
+
+    return { valid: true, mappedValue: inputText.trim() };
   };
 
   const startListening = async () => {
@@ -316,9 +479,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
         capturedTextRef.current = '';
         if (txt) {
           setInputText('');
-          const curStep = workflowRef.current?.steps[activeStepIndexRef.current];
-          const mappedAnswer = mapSpokenAnswerToOption(txt, curStep?.options);
-          advanceToNextStep(mappedAnswer, true);
+          advanceToNextStep(txt, true);
         }
       };
 
@@ -610,7 +771,11 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
     } else {
       // Stop mic and speech when modal closes
       stopListening();
-      if (window.speechSynthesis) window.speechSynthesis.cancel();
+      if (Capacitor.isNativePlatform()) {
+        try { TextToSpeech.stop(); } catch {}
+      } else if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
       setIsListening(false);
     }
   }, [isOpen]);
@@ -958,8 +1123,33 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
     }
 
     const currentStep = currentWf.steps[currentIndex];
-    const userMsg: ChatMessage = { id: `user_${Date.now()}`, sender: 'user', text: userAnswer, timestamp: ts, stepId: currentStep?.stepId };
-    if (currentStep) saveHabitToBackend(currentStep.stepId, userAnswer);
+
+    // Validate single-question input against valid options / types
+    const validation = validateAndMapAnswer(userAnswer, currentStep);
+
+    if (!validation.valid) {
+      const userMsg: ChatMessage = { id: `user_${Date.now()}`, sender: 'user', text: userAnswer, timestamp: ts, stepId: currentStep?.stepId };
+      const clarifyMsg: ChatMessage = {
+        id: `bot_clarify_${Date.now()}`,
+        sender: 'bot',
+        text: validation.clarificationMsg || 'Please choose one of the available options below.',
+        timestamp: ts,
+        inputType: currentStep?.inputType,
+        options: currentStep?.options,
+        stepId: currentStep?.stepId
+      };
+      setMessages([...currentMsgs, userMsg, clarifyMsg]);
+      speakQuestion(validation.clarificationMsg || 'Please choose one of the options on screen.', () => {
+        if (currentStep?.inputType !== 'FILE') {
+          startListening();
+        }
+      });
+      return; // Block advancement and do NOT save incorrect answer!
+    }
+
+    const validatedAnswer = validation.mappedValue;
+    const userMsg: ChatMessage = { id: `user_${Date.now()}`, sender: 'user', text: validatedAnswer, timestamp: ts, stepId: currentStep?.stepId };
+    if (currentStep) saveHabitToBackend(currentStep.stepId, validatedAnswer);
     setEditingStepId(null);
     const nextIndex = currentIndex + 1;
     const updatedMsgs = [...currentMsgs, userMsg];
@@ -1177,6 +1367,24 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                     <Check className="h-3.5 w-3.5" /> Reminder scheduled for {formatDisplayTime(reminderTime)}!
                   </p>
                 )}
+
+                {/* Test Alert Button */}
+                <div className="flex items-center justify-between pt-2 border-t border-white/10 mt-2.5">
+                  <span className="text-[9.5px] text-blue-100/70 font-medium">
+                    {typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'denied' ? (
+                      <span className="text-rose-300 font-bold">⚠️ Blocked in browser settings</span>
+                    ) : (
+                      <span>🔔 System Alarm & Chime</span>
+                    )}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => triggerTestNotification()}
+                    className="text-[10px] font-bold text-white bg-white/20 hover:bg-white/30 px-2 py-0.5 rounded-md flex items-center gap-1 cursor-pointer"
+                  >
+                    <Bell className="h-3 w-3" /> Test Alert Now
+                  </button>
+                </div>
               </motion.div>
             )}
 

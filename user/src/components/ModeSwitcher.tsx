@@ -275,8 +275,15 @@ Always adhere to recommended age-appropriate screening tests and consult certifi
             </div>
 
             {/* Dynamic Admin Content Box */}
-            <div className="flex-1 overflow-y-auto my-3 bg-slate-50 dark:bg-slate-800/80 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap max-h-72">
-              {getDynamicDisclaimer(pendingMode)}
+            <div className="flex-1 overflow-y-auto my-3 bg-slate-50 dark:bg-slate-800/80 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 text-xs text-slate-700 dark:text-slate-300 leading-relaxed max-h-72">
+              {getDynamicDisclaimer(pendingMode).includes('<') ? (
+                <div 
+                  className="space-y-2 [&_p]:mb-2 [&_strong]:font-bold [&_ul]:list-disc [&_ul]:pl-4 [&_li]:mb-1"
+                  dangerouslySetInnerHTML={{ __html: getDynamicDisclaimer(pendingMode) }} 
+                />
+              ) : (
+                <div className="whitespace-pre-wrap">{getDynamicDisclaimer(pendingMode)}</div>
+              )}
             </div>
 
             {/* Modal Actions */}
