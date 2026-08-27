@@ -184,21 +184,76 @@ export const PCODModule: React.FC = () => {
           </button>
         </div>
 
-        {periodDates.length > 0 && (
-          <div className="mb-3 space-y-1.5">
-            <span className="text-[10.5px] font-black uppercase tracking-wider text-slate-400 block">Logged Periods:</span>
-            <div className="flex flex-wrap gap-2">
-              {periodDates.slice(-5).map(dStr => (
-                <span
-                  key={dStr}
-                  className="bg-pink-50 dark:bg-pink-950/40 text-pink-700 dark:text-pink-300 border border-pink-200 dark:border-pink-900/60 text-[11px] font-bold px-2.5 py-1 rounded-xl flex items-center gap-1.5"
-                >
-                  {new Date(dStr).toLocaleDateString()}
-                  <button onClick={() => removePeriodDate(dStr)} className="text-pink-400 hover:text-pink-600">×</button>
+        {/* Logged Period History List */}
+        {periodDates.length > 0 ? (
+          <div className="mb-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[10.5px] font-black uppercase tracking-wider text-slate-400">
+                Period History ({periodDates.length} Logged)
+              </span>
+              {periodDates.length > 3 && (
+                <span className="text-[10px] font-bold text-pink-600 dark:text-pink-400">
+                  Showing all recorded cycles
                 </span>
-              ))}
+              )}
+            </div>
+
+            <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+              {periodDates
+                .slice()
+                .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
+                .map((dStr, idx, arr) => {
+                  const currentDate = new Date(dStr);
+                  const prevDateStr = arr[idx + 1];
+                  const cycleDays = prevDateStr
+                    ? Math.round((currentDate.getTime() - new Date(prevDateStr).getTime()) / (1000 * 60 * 60 * 24))
+                    : null;
+
+                  return (
+                    <div
+                      key={dStr}
+                      className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-2 text-xs"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="h-7 w-7 rounded-lg bg-pink-100 dark:bg-pink-900/50 text-pink-600 dark:text-pink-300 flex items-center justify-center shrink-0 font-black text-[10px]">
+                          {currentDate.getDate()}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-bold text-slate-800 dark:text-slate-200 text-xs">
+                            {currentDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </p>
+                          {cycleDays !== null ? (
+                            <p className="text-[10px] text-slate-400">
+                              Cycle duration: <span className="font-bold text-pink-600 dark:text-pink-400">{cycleDays} days</span>
+                              {cycleDays >= 21 && cycleDays <= 35 ? (
+                                <span className="ml-1 text-emerald-600 font-semibold">(Regular)</span>
+                              ) : (
+                                <span className="ml-1 text-amber-600 font-semibold">(Varied)</span>
+                              )}
+                            </p>
+                          ) : (
+                            <p className="text-[10px] text-slate-400 italic">Initial recorded baseline</p>
+                          )}
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => removePeriodDate(dStr)}
+                        className="text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 p-1 text-sm font-bold transition-colors cursor-pointer"
+                        title="Delete entry"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  );
+                })}
             </div>
           </div>
+        ) : (
+          <p className="text-[11px] text-slate-400 dark:text-slate-500 italic mb-3">
+            No period start dates logged yet. Select a date above to begin your cycle history.
+          </p>
         )}
 
         {cycleStats.avgLength ? (
