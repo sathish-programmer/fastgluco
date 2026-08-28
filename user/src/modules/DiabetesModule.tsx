@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Activity, Sparkles, AlertTriangle, Check, Calendar, Plus } from 'lucide-react';
+import { Activity, Sparkles, AlertTriangle, Check, Calendar, Plus, History, ChevronRight, X, FileText } from 'lucide-react';
 import { Card, SectionTitle, YesNoToggle, ModeTabs, StressTracker, TalkToDoctorCard } from './shared/ConditionUI';
 
 const YEARLY_CHECKS_TEMPLATE = [
@@ -16,6 +16,7 @@ function daysSince(dateStr: string) {
 
 export const DiabetesModule: React.FC = () => {
   const [mode, setMode] = useState<string>('Prevention');
+  const [showHba1cHistoryModal, setShowHba1cHistoryModal] = useState<boolean>(false);
 
   // Prevention State
   const [exercised, setExercised] = useState<boolean | null>(() => {
@@ -99,6 +100,20 @@ export const DiabetesModule: React.FC = () => {
     setNewHba1cDate('');
     setNewHba1cValue('');
   };
+
+  const removeHba1c = (dateStr: string) => {
+    setHba1cLog(prev => prev.filter(e => e.date !== dateStr));
+  };
+
+  const hba1cStats = useMemo(() => {
+    if (hba1cLog.length === 0) return { latest: null, min: null, max: null, avg: null };
+    const vals = hba1cLog.map(e => e.value);
+    const latest = hba1cLog[hba1cLog.length - 1]?.value ?? null;
+    const min = Math.min(...vals);
+    const max = Math.max(...vals);
+    const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+    return { latest, min, max, avg: parseFloat(avg.toFixed(1)) };
+  }, [hba1cLog]);
 
   const chartData = hba1cLog.map(e => ({
     date: new Date(e.date).toLocaleDateString(undefined, { month: 'short', year: '2-digit' }),
@@ -216,7 +231,143 @@ export const DiabetesModule: React.FC = () => {
                 Add HbA1c test readings to view your longitudinal glycemic trends.
               </p>
             )}
+
+            {/* Compact History Trigger Bar */}
+            {hba1cLog.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowHba1cHistoryModal(true)}
+                className="w-full mt-3 p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-300 dark:hover:border-emerald-800 transition-all flex items-center justify-between gap-2 group cursor-pointer text-left"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="h-8 w-8 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-300 flex items-center justify-center shrink-0">
+                    <History className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                      HbA1c Lab History ({hba1cLog.length} Tests Logged)
+                    </p>
+                    <p className="text-[10.5px] text-slate-400 truncate">
+                      Latest: {hba1cStats.latest}% · Avg: {hba1cStats.avg}%
+                    </p>
+                  </div>
+                </div>
+                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5 shrink-0 group-hover:translate-x-0.5 transition-transform">
+                  View All Tests <ChevronRight className="h-4 w-4" />
+                </span>
+              </button>
+            )}
           </Card>
+
+          {/* Full HbA1c History & Analytics Modal */}
+          {showHba1cHistoryModal && (
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[999] flex items-center justify-center p-4 animate-in fade-in duration-200">
+              <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200">
+                {/* Modal Header */}
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-300 flex items-center justify-center">
+                      <FileText className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-black text-slate-800 dark:text-slate-100">HbA1c Glycemic Records</h3>
+                      <p className="text-[10.5px] text-slate-400">Quarterly blood test logs & clinical ranges</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowHba1cHistoryModal(false)}
+                    className="h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+
+                {/* Quick HbA1c Summary */}
+                {hba1cLog.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2 my-3.5">
+                    <div className="p-2.5 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/40 text-center">
+                      <span className="text-[9px] font-extrabold uppercase text-emerald-600 block">Latest</span>
+                      <span className="text-sm font-black text-emerald-700 dark:text-emerald-300">{hba1cStats.latest}%</span>
+                    </div>
+                    <div className="p-2.5 rounded-2xl bg-teal-50/70 dark:bg-teal-950/30 border border-teal-100 dark:border-teal-900/40 text-center">
+                      <span className="text-[9px] font-extrabold uppercase text-teal-600 block">Lowest (Best)</span>
+                      <span className="text-sm font-black text-teal-700 dark:text-teal-300">{hba1cStats.min}%</span>
+                    </div>
+                    <div className="p-2.5 rounded-2xl bg-cyan-50/70 dark:bg-cyan-950/30 border border-cyan-100 dark:border-cyan-900/40 text-center">
+                      <span className="text-[9px] font-extrabold uppercase text-cyan-600 block">Average</span>
+                      <span className="text-sm font-black text-cyan-700 dark:text-cyan-300">{hba1cStats.avg}%</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Scrollable Timeline List */}
+                <div className="flex-1 overflow-y-auto space-y-2 py-2 pr-1">
+                  {hba1cLog
+                    .slice()
+                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                    .map((item) => {
+                      const logDate = new Date(item.date);
+                      const isNormal = item.value < 5.7;
+                      const isPrediabetic = item.value >= 5.7 && item.value < 6.5;
+
+                      return (
+                        <div
+                          key={item.date}
+                          className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-3 text-xs"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-500 text-white flex flex-col items-center justify-center shrink-0 shadow-xs">
+                              <span className="text-[9px] font-semibold leading-none uppercase">{logDate.toLocaleString(undefined, { month: 'short' })}</span>
+                              <span className="text-xs font-black leading-none mt-0.5">{logDate.getDate()}</span>
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-extrabold text-slate-900 dark:text-slate-100 text-xs">
+                                {logDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                              </p>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="font-black text-sm text-emerald-600 dark:text-emerald-400">
+                                  {item.value}%
+                                </span>
+                                <span className={`text-[9.5px] font-black px-2 py-0.5 rounded-md ${
+                                  isNormal
+                                    ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300'
+                                    : isPrediabetic
+                                    ? 'bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300'
+                                    : 'bg-rose-100 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300'
+                                }`}>
+                                  {isNormal ? 'Normal (<5.7%)' : isPrediabetic ? 'Prediabetic (5.7-6.4%)' : 'Diabetic (>=6.5%)'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => removeHba1c(item.date)}
+                            className="h-7 w-7 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/50 dark:hover:text-rose-400 flex items-center justify-center text-xs font-bold transition-all cursor-pointer shrink-0"
+                            title="Delete test"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      );
+                    })}
+                </div>
+
+                {/* Modal Footer */}
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowHba1cHistoryModal(false)}
+                    className="w-full py-2.5 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-black rounded-xl cursor-pointer hover:opacity-95 transition-opacity"
+                  >
+                    Close History
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           <Card>
             <SectionTitle icon={Calendar}>Annual Organ Protection Checks</SectionTitle>

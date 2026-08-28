@@ -1112,49 +1112,49 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
         </div>
       )}
 
-      <div className={`${isCancerPatient ? 'w-full mb-4' : 'grid grid-cols-2 gap-2.5 sm:gap-3.5 mb-8 items-start'}`}>
+      <div className={`${isCancerPatient ? 'w-full mb-4' : 'grid grid-cols-2 gap-2 sm:gap-3 mb-6 items-start'}`}>
         {/* Damage Column (Left) */}
         {!isCancerPatient && (forcesView === 'all' || forcesView === 'damage') && (
-          <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-rose-100 dark:border-rose-900/30 shadow-[0_8px_30px_rgba(225,29,72,0.03)] rounded-3xl p-2.5 sm:p-3 flex flex-col h-fit self-start transition-colors duration-300">
-            <div className="px-1.5 pt-1.5 pb-2.5 flex items-center justify-between">
+          <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-rose-100 dark:border-rose-900/30 shadow-[0_8px_30px_rgba(225,29,72,0.03)] rounded-2xl sm:rounded-3xl p-1.5 sm:p-3 flex flex-col h-fit self-start transition-colors duration-300">
+            <div className="px-1 pt-1 pb-2 flex items-center justify-between">
               <div>
-                <h3 className="text-rose-500 font-sans text-sm sm:text-base font-bold flex items-center gap-1 mb-0.5">
-                  <Skull className="h-4 w-4" /> Damage
+                <h3 className="text-rose-500 font-sans text-xs sm:text-base font-bold flex items-center gap-1 mb-0.5">
+                  <Skull className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Damage
                 </h3>
-                <p className="text-[7.5px] sm:text-[8px] text-slate-400 font-bold uppercase tracking-widest">Reduce the load</p>
+                <p className="text-[7px] sm:text-[8px] text-slate-400 font-bold uppercase tracking-widest">Reduce the load</p>
               </div>
-              <span className="text-[8.5px] sm:text-[9px] font-extrabold text-rose-500 bg-rose-50 dark:bg-rose-950/40 px-1.5 sm:px-2 py-0.5 rounded-full border border-rose-200/50 dark:border-rose-900/40 shrink-0">
+              <span className="text-[8px] sm:text-[9px] font-extrabold text-rose-500 bg-rose-50 dark:bg-rose-950/40 px-1.5 sm:px-2 py-0.5 rounded-full border border-rose-200/50 dark:border-rose-900/40 shrink-0">
                 {damageCount} active
               </span>
             </div>
 
             <div className="flex flex-col gap-1 sm:gap-1.5">
-              <HabitItem icon={<Frown className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-500" />} label="Stress" onClick={() => handleOpenHabit('Stress')} score={getStressScore()} />
-              <HabitItem icon={<Moon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-indigo-400" />} label="Sleep debt" onClick={() => handleOpenHabit('Sleep')} score={getSleepScore()} />
-              <HabitItem icon={<Cigarette className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-400" />} label="Smoking" onClick={() => handleOpenHabit('Smoking')} score={getSmokingScore()} />
-              <HabitItem icon={<Wine className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-rose-600" />} label="Alcohol" onClick={() => handleOpenHabit('Alcohol')} score={getAlcoholScore()} />
-              <HabitItem icon={<Pill className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-500" />} label="Substances" onClick={() => handleOpenHabit('Substances')} score={getSubstancesScore()} />
-              <HabitItem icon={<Globe className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-cyan-500" />} label="Environment" onClick={() => handleOpenHabit('Environmental')} score={getEnvironmentalScore()} />
-              <HabitItem icon={<Scale className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-rose-500" />} label="Obesity" onClick={() => handleOpenHabit('Obesity')} score={getObesityScore()} />
-              <HabitItem icon={<Stethoscope className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-500" />} label="Dental health" onClick={() => handleOpenHabit('Dental')} score={getDentalScore()} />
-              <HabitItem icon={<Flame className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />} label="Gastritis" onClick={() => handleOpenHabit('Gastritis')} score={getGastritisScore()} />
-              <HabitItem icon={<Dna className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-purple-500" />} label="Genetic risk" onClick={() => handleOpenHabit('Genetic')} score={getGeneticScore()} />
+              <HabitItem icon={<Frown className="h-3.5 w-3.5 text-amber-500" />} label="Stress" onClick={() => handleOpenHabit('Stress')} score={getStressScore()} />
+              <HabitItem icon={<Moon className="h-3.5 w-3.5 text-indigo-400" />} label="Sleep debt" onClick={() => handleOpenHabit('Sleep')} score={getSleepScore()} />
+              <HabitItem icon={<Cigarette className="h-3.5 w-3.5 text-slate-400" />} label="Smoking" onClick={() => handleOpenHabit('Smoking')} score={getSmokingScore()} />
+              <HabitItem icon={<Wine className="h-3.5 w-3.5 text-rose-600" />} label="Alcohol" onClick={() => handleOpenHabit('Alcohol')} score={getAlcoholScore()} />
+              <HabitItem icon={<Pill className="h-3.5 w-3.5 text-amber-500" />} label="Substances" onClick={() => handleOpenHabit('Substances')} score={getSubstancesScore()} />
+              <HabitItem icon={<Globe className="h-3.5 w-3.5 text-cyan-500" />} label="Environment" onClick={() => handleOpenHabit('Environmental')} score={getEnvironmentalScore()} />
+              <HabitItem icon={<Scale className="h-3.5 w-3.5 text-rose-500" />} label="Obesity" onClick={() => handleOpenHabit('Obesity')} score={getObesityScore()} />
+              <HabitItem icon={<Stethoscope className="h-3.5 w-3.5 text-slate-500" />} label="Dental health" onClick={() => handleOpenHabit('Dental')} score={getDentalScore()} />
+              <HabitItem icon={<Flame className="h-3.5 w-3.5 text-orange-500" />} label="Gastritis" onClick={() => handleOpenHabit('Gastritis')} score={getGastritisScore()} />
+              <HabitItem icon={<Dna className="h-3.5 w-3.5 text-purple-500" />} label="Genetic risk" onClick={() => handleOpenHabit('Genetic')} score={getGeneticScore()} />
             </div>
           </div>
         )}
 
         {/* Repair Column (Right) */}
         {(forcesView === 'all' || forcesView === 'repair') && (
-          <div className={`bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs rounded-3xl p-2.5 sm:p-3 flex flex-col h-fit self-start transition-colors duration-300 ${isCancerPatient ? 'w-full' : ''}`}>
+          <div className={`bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs rounded-2xl sm:rounded-3xl p-1.5 sm:p-3 flex flex-col h-fit self-start transition-colors duration-300 ${isCancerPatient ? 'w-full' : ''}`}>
             {!isCancerPatient && (
-              <div className="px-1.5 pt-1.5 pb-2.5 flex items-center justify-between">
+              <div className="px-1 pt-1 pb-2 flex items-center justify-between">
                 <div>
-                  <h3 className="text-emerald-500 font-sans text-sm sm:text-base font-bold flex items-center gap-1 mb-0.5">
-                    <Leaf className="h-4 w-4" /> Repair
+                  <h3 className="text-emerald-500 font-sans text-xs sm:text-base font-bold flex items-center gap-1 mb-0.5">
+                    <Leaf className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Repair
                   </h3>
-                  <p className="text-[7.5px] sm:text-[8px] text-slate-400 font-bold uppercase tracking-widest">Build the defence</p>
+                  <p className="text-[7px] sm:text-[8px] text-slate-400 font-bold uppercase tracking-widest">Build the defence</p>
                 </div>
-                <span className="text-[8.5px] sm:text-[9px] font-extrabold text-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 sm:px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-900/40 shrink-0">
+                <span className="text-[8px] sm:text-[9px] font-extrabold text-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 sm:px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-900/40 shrink-0">
                   {repairCount} active
                 </span>
               </div>
@@ -1163,22 +1163,22 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
             <div className="flex flex-col gap-1 sm:gap-1.5">
               {isCancerPatient ? (
                 <>
-                  <HabitItem icon={<Timer className="h-4 w-4 text-sky-500" />} label="INTERMITTENT FASTING" onClick={() => handleOpenHabit('Fasting')} score={getFastingScore()} />
-                  <HabitItem icon={<User className="h-4 w-4 text-amber-500" />} label="MOVEMENT" onClick={() => handleOpenHabit('Movement')} score={getMovementScore()} />
-                  <HabitItem icon={<User className="h-4 w-4 text-amber-600" />} label="Stillness" onClick={() => handleOpenHabit('Stillness')} score={getStillnessScore()} />
-                  <HabitItem icon={<Palette className="h-4 w-4 text-indigo-400" />} label="THINGS YOU LOVE" onClick={() => handleOpenHabit('Joy')} score={getJoyScore()} />
-                  <HabitItem icon={<BrainCircuit className="h-4 w-4 text-rose-500" />} label="ARE YOU STRESSED/WORRIED?" onClick={() => setShowStressedModal(true)} />
-                  <HabitItem icon={<User className="h-4 w-4 text-teal-500" />} label="CAREGIVER STRESS" onClick={() => setShowCaregiverModal(true)} />
-                  <HabitItem icon={<ShoppingBag className="h-4 w-4 text-pink-500" />} label="Explore wigs for hairloss" onClick={() => setActiveScreen('WigShop')} />
+                  <HabitItem icon={<Timer className="h-3.5 w-3.5 text-sky-500" />} label="INTERMITTENT FASTING" onClick={() => handleOpenHabit('Fasting')} score={getFastingScore()} />
+                  <HabitItem icon={<User className="h-3.5 w-3.5 text-amber-500" />} label="MOVEMENT" onClick={() => handleOpenHabit('Movement')} score={getMovementScore()} />
+                  <HabitItem icon={<User className="h-3.5 w-3.5 text-amber-600" />} label="Stillness" onClick={() => handleOpenHabit('Stillness')} score={getStillnessScore()} />
+                  <HabitItem icon={<Palette className="h-3.5 w-3.5 text-indigo-400" />} label="THINGS YOU LOVE" onClick={() => handleOpenHabit('Joy')} score={getJoyScore()} />
+                  <HabitItem icon={<BrainCircuit className="h-3.5 w-3.5 text-rose-500" />} label="ARE YOU STRESSED/WORRIED?" onClick={() => setShowStressedModal(true)} />
+                  <HabitItem icon={<User className="h-3.5 w-3.5 text-teal-500" />} label="CAREGIVER STRESS" onClick={() => setShowCaregiverModal(true)} />
+                  <HabitItem icon={<ShoppingBag className="h-3.5 w-3.5 text-pink-500" />} label="Explore wigs for hairloss" onClick={() => setActiveScreen('WigShop')} />
                 </>
               ) : (
                 <>
-                  <HabitItem icon={<Timer className="h-4 w-4 text-sky-500" />} label="Fasting" onClick={() => handleOpenHabit('Fasting')} score={getFastingScore()} />
-                  <HabitItem icon={<Cherry className="h-4 w-4 text-rose-400" />} label="Antioxidants" onClick={() => handleOpenHabit('Antioxidants')} score={getAntioxidantsScore()} />
-                  <HabitItem icon={<User className="h-4 w-4 text-amber-500" />} label="Exercise" onClick={() => handleOpenHabit('Movement')} score={getMovementScore()} />
-                  <HabitItem icon={<User className="h-4 w-4 text-amber-600" />} label="Stillness" onClick={() => handleOpenHabit('Stillness')} score={getStillnessScore()} />
-                  <HabitItem icon={<Palette className="h-4 w-4 text-indigo-400" />} label="Things you love" onClick={() => handleOpenHabit('Joy')} score={getJoyScore()} />
-                  <HabitItem icon={<ShieldCheck className="h-4 w-4 text-emerald-500" />} label="Safer products" onClick={() => handleOpenHabit('SaferProducts')} score={getSaferProductsScore()} />
+                  <HabitItem icon={<Timer className="h-3.5 w-3.5 text-sky-500" />} label="Fasting" onClick={() => handleOpenHabit('Fasting')} score={getFastingScore()} />
+                  <HabitItem icon={<Cherry className="h-3.5 w-3.5 text-rose-400" />} label="Antioxidants" onClick={() => handleOpenHabit('Antioxidants')} score={getAntioxidantsScore()} />
+                  <HabitItem icon={<User className="h-3.5 w-3.5 text-amber-500" />} label="Exercise" onClick={() => handleOpenHabit('Movement')} score={getMovementScore()} />
+                  <HabitItem icon={<User className="h-3.5 w-3.5 text-amber-600" />} label="Stillness" onClick={() => handleOpenHabit('Stillness')} score={getStillnessScore()} />
+                  <HabitItem icon={<Palette className="h-3.5 w-3.5 text-indigo-400" />} label="Things you love" onClick={() => handleOpenHabit('Joy')} score={getJoyScore()} />
+                  <HabitItem icon={<ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />} label="Safer products" onClick={() => handleOpenHabit('SaferProducts')} score={getSaferProductsScore()} />
                 </>
               )}
             </div>
@@ -1505,18 +1505,18 @@ const HabitItem = ({ icon, label, onClick, score }: { icon: React.ReactNode, lab
   return (
     <button
       onClick={onClick}
-      className="group flex items-center justify-between w-full px-3 py-2.5 sm:py-3 bg-white/80 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800/90 border border-slate-200/60 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-600 rounded-2xl transition-all duration-200 shadow-2xs hover:shadow-xs active:scale-[0.99] text-left"
+      className="group flex items-center justify-between w-full px-2 sm:px-3 py-2 sm:py-2.5 bg-white/80 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800/90 border border-slate-200/60 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-600 rounded-2xl transition-all duration-200 shadow-2xs hover:shadow-xs active:scale-[0.99] text-left gap-1"
     >
-      <div className="flex items-center gap-2.5 text-left flex-1 min-w-0">
-        <div className="p-1.5 rounded-xl bg-slate-100/90 dark:bg-slate-900/80 group-hover:scale-105 transition-transform shrink-0">
+      <div className="flex items-center gap-1.5 sm:gap-2 text-left flex-1 min-w-0">
+        <div className="p-1 sm:p-1.5 rounded-lg bg-slate-100/90 dark:bg-slate-900/80 group-hover:scale-105 transition-transform shrink-0">
           {icon}
         </div>
-        <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white transition-colors truncate">
+        <span className="text-[10.5px] xs:text-[11px] sm:text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white transition-colors leading-[1.15] break-words line-clamp-2">
           {label}
         </span>
       </div>
       {score !== undefined && score !== null ? (
-        <span className={`text-[10px] sm:text-xs font-extrabold px-2.5 py-1 rounded-xl transition-all shadow-2xs shrink-0 ml-1.5 ${isNegative
+        <span className={`text-[9px] sm:text-[10.5px] font-black px-1.5 sm:px-2 py-0.5 rounded-lg transition-all shadow-2xs shrink-0 ml-1 ${isNegative
           ? 'bg-rose-50 text-rose-600 border border-rose-200/60 dark:bg-rose-950/60 dark:text-rose-400 dark:border-rose-800/50'
           : isPositive
             ? 'bg-emerald-50 text-emerald-600 border border-emerald-200/60 dark:bg-emerald-950/60 dark:text-emerald-400 dark:border-emerald-800/50'
@@ -1525,7 +1525,7 @@ const HabitItem = ({ icon, label, onClick, score }: { icon: React.ReactNode, lab
           {score > 0 ? `+${score}` : score}
         </span>
       ) : (
-        <div className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600 group-hover:bg-slate-400 dark:group-hover:bg-slate-500 transition-colors shrink-0 ml-1.5"></div>
+        <div className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600 group-hover:bg-slate-400 dark:group-hover:bg-slate-500 transition-colors shrink-0 ml-1"></div>
       )}
     </button>
   );

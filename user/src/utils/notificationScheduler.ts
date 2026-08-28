@@ -49,6 +49,28 @@ export const playNotificationChime = () => {
 };
 
 /**
+ * Ensure high-importance notification channel exists on Android 8+
+ */
+export const ensureNotificationChannel = async () => {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      await LocalNotifications.createChannel({
+        id: CHECKIN_CHANNEL_ID,
+        name: 'Daily Health Check-in Reminders',
+        description: 'Recurring alerts for daily oncology & metabolic habit check-ins',
+        importance: 5, // High importance (heads-up banner + sound)
+        visibility: 1, // Public on lockscreen
+        vibration: true,
+        lights: true,
+        lightColor: '#6366F1'
+      });
+    } catch (channelErr) {
+      console.warn('[NotificationScheduler] Channel creation notice:', channelErr);
+    }
+  }
+};
+
+/**
  * Request notification permissions across native Capacitor and Web
  */
 export const requestNotificationPermission = async (): Promise<boolean> => {
@@ -100,18 +122,30 @@ export const fireWebNotification = (title: string, body: string) => {
  * Trigger an immediate test notification to verify audio & display
  */
 export const triggerTestNotification = async () => {
+  // Always trigger sound & in-app visual feedback
+  playNotificationChime();
+  window.dispatchEvent(new CustomEvent('mito_reminder_triggered', {
+    detail: {
+      title: 'Test Notification • Mito Reboot',
+      body: 'Your notification and chime system is working perfectly!'
+    }
+  }));
+
   await requestNotificationPermission();
   if (Capacitor.isNativePlatform()) {
     try {
+      await ensureNotificationChannel();
       await LocalNotifications.schedule({
         notifications: [
           {
             id: 9999,
             title: 'Test Notification • Mito Reboot',
             body: 'Your notification system is working perfectly!',
-            schedule: { at: new Date(Date.now() + 1000) },
+            schedule: { at: new Date(Date.now() + 500), allowWhileIdle: true },
             channelId: CHECKIN_CHANNEL_ID,
-            sound: 'beep.wav'
+            extra: {
+              type: 'DAILY_CHECKIN'
+            }
           }
         ]
       });
@@ -145,21 +179,7 @@ export const scheduleDailyCheckinReminder = async (timeStr: string): Promise<boo
   if (Capacitor.isNativePlatform()) {
     try {
       // 1. Ensure high-importance notification channel exists on Android 8+
-      try {
-        await LocalNotifications.createChannel({
-          id: CHECKIN_CHANNEL_ID,
-          name: 'Daily Health Check-in Reminders',
-          description: 'Recurring alerts for daily oncology & metabolic habit check-ins',
-          importance: 5, // High importance (heads-up banner + sound)
-          visibility: 1, // Public on lockscreen
-          sound: 'beep.wav',
-          vibration: true,
-          lights: true,
-          lightColor: '#6366F1'
-        });
-      } catch (channelErr) {
-        console.warn('[NotificationScheduler] Channel creation notice:', channelErr);
-      }
+      await ensureNotificationChannel();
 
       // 2. Cancel previous check-in notification to prevent duplicate rings
       await LocalNotifications.cancel({ notifications: [{ id: CHECKIN_NOTIFICATION_ID }] }).catch(() => {});
@@ -187,8 +207,6 @@ export const scheduleDailyCheckinReminder = async (timeStr: string): Promise<boo
               allowWhileIdle: true
             },
             channelId: CHECKIN_CHANNEL_ID,
-            sound: 'beep.wav',
-            smallIcon: 'ic_stat_icon_config_sample',
             extra: {
               type: 'DAILY_CHECKIN',
               timeStr
@@ -273,8 +291,6 @@ export const scheduleHabitReminder = async (
               allowWhileIdle: true
             },
             channelId: CHECKIN_CHANNEL_ID,
-            sound: 'beep.wav',
-            smallIcon: 'ic_stat_icon_config_sample',
             extra: {
               type: 'HABIT_REMINDER',
               timeStr
@@ -300,12 +316,25 @@ export const initNotificationScheduler = async () => {
 
   if (Capacitor.isNativePlatform()) {
     try {
+      await ensureNotificationChannel();
+
       // Register notification click listener to open the AI Checkin Modal
       LocalNotifications.addListener('localNotificationActionPerformed', (notificationAction) => {
         const extra = notificationAction.notification.extra;
         if (extra?.type === 'DAILY_CHECKIN') {
           window.dispatchEvent(new CustomEvent('openDailyCheckinChatbot'));
         }
+      });
+
+      // Register foreground notification listener for in-app alert & chime
+      LocalNotifications.addListener('localNotificationReceived', (notification) => {
+        playNotificationChime();
+        window.dispatchEvent(new CustomEvent('mito_reminder_triggered', {
+          detail: {
+            title: notification.title,
+            body: notification.body
+          }
+        }));
       });
 
       const pending = await LocalNotifications.getPending();

@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Sparkles, Calendar, Activity, Scale, AlertCircle, Plus } from 'lucide-react';
+import { Sparkles, Calendar, Activity, Scale, AlertCircle, Plus, History, ChevronRight, X } from 'lucide-react';
 import { Card, SectionTitle, YesNoToggle, TalkToDoctorCard, StressTracker } from './shared/ConditionUI';
 
 export const PCODModule: React.FC = () => {
+  const [showHistoryModal, setShowHistoryModal] = useState<boolean>(false);
   const [height, setHeight] = useState<string>(() => localStorage.getItem('mito_pcod_height') || '');
   const [weight, setWeight] = useState<string>(() => localStorage.getItem('mito_pcod_weight') || '');
   const [exercised, setExercised] = useState<boolean | null>(() => {
@@ -180,25 +181,102 @@ export const PCODModule: React.FC = () => {
             onClick={logPeriod}
             className="px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white text-xs font-black rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
           >
-            <Plus className="h-4 w-4" /> Log Period Start
+            <Plus className="h-4 w-4" /> Log Period
           </button>
         </div>
 
-        {/* Logged Period History List */}
-        {periodDates.length > 0 ? (
-          <div className="mb-3 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[10.5px] font-black uppercase tracking-wider text-slate-400">
-                Period History ({periodDates.length} Logged)
-              </span>
-              {periodDates.length > 3 && (
-                <span className="text-[10px] font-bold text-pink-600 dark:text-pink-400">
-                  Showing all recorded cycles
-                </span>
-              )}
+        {/* Prediction Summary Card */}
+        {cycleStats.avgLength ? (
+          <div className="p-3.5 rounded-2xl bg-gradient-to-r from-pink-50 via-rose-50 to-purple-50 dark:from-pink-950/30 dark:via-rose-950/20 dark:to-purple-950/30 border border-pink-200/80 dark:border-pink-900/40 text-xs font-bold text-pink-950 dark:text-pink-200 mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <span className="text-[10px] text-pink-500 font-bold uppercase tracking-wider block">Average Cycle</span>
+              <span className="text-sm font-black text-pink-700 dark:text-pink-300">{Math.round(cycleStats.avgLength)} days</span>
+            </div>
+            <div className="h-7 w-[1px] bg-pink-200 dark:bg-pink-800/60 hidden sm:block"></div>
+            <div>
+              <span className="text-[10px] text-purple-500 font-bold uppercase tracking-wider block">Next Predicted Period</span>
+              <span className="text-sm font-black text-purple-700 dark:text-purple-300">{cycleStats.nextPredicted?.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+            </div>
+          </div>
+        ) : (
+          <p className="text-[11px] text-slate-400 dark:text-slate-500 italic mb-3">
+            Log at least 2 period dates to calculate your average cycle length and predict future cycles.
+          </p>
+        )}
+
+        {/* Compact History Trigger Bar */}
+        {periodDates.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setShowHistoryModal(true)}
+            className="w-full p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 hover:border-pink-300 dark:hover:border-pink-800 transition-all flex items-center justify-between gap-2 group cursor-pointer text-left"
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="h-8 w-8 rounded-xl bg-pink-100 dark:bg-pink-900/50 text-pink-600 dark:text-pink-300 flex items-center justify-center shrink-0">
+                <History className="h-4 w-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                  Period History ({periodDates.length} Logged)
+                </p>
+                <p className="text-[10.5px] text-slate-400 truncate">
+                  Latest: {new Date(periodDates.slice().sort((a,b) => new Date(b).getTime() - new Date(a).getTime())[0]).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                </p>
+              </div>
+            </div>
+            <span className="text-xs font-bold text-pink-600 dark:text-pink-400 flex items-center gap-0.5 shrink-0 group-hover:translate-x-0.5 transition-transform">
+              View All History <ChevronRight className="h-4 w-4" />
+            </span>
+          </button>
+        )}
+      </Card>
+
+      {/* Full Period History & Analytics Modal */}
+      {showHistoryModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[999] flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-xl bg-pink-100 dark:bg-pink-900/50 text-pink-600 dark:text-pink-300 flex items-center justify-center">
+                  <Calendar className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-800 dark:text-slate-100">Period Cycle History</h3>
+                  <p className="text-[10.5px] text-slate-400">All recorded menstrual cycles & regularity</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowHistoryModal(false)}
+                className="h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
 
-            <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+            {/* Quick Metrics Cards */}
+            {periodDates.length >= 2 && (
+              <div className="grid grid-cols-3 gap-2 my-3.5">
+                <div className="p-2.5 rounded-2xl bg-pink-50/70 dark:bg-pink-950/30 border border-pink-100 dark:border-pink-900/40 text-center">
+                  <span className="text-[9px] font-extrabold uppercase text-pink-500 block">Total Logs</span>
+                  <span className="text-base font-black text-pink-700 dark:text-pink-300">{periodDates.length}</span>
+                </div>
+                <div className="p-2.5 rounded-2xl bg-purple-50/70 dark:bg-purple-950/30 border border-purple-100 dark:border-purple-900/40 text-center">
+                  <span className="text-[9px] font-extrabold uppercase text-purple-500 block">Avg Duration</span>
+                  <span className="text-base font-black text-purple-700 dark:text-purple-300">{Math.round(cycleStats.avgLength || 0)}d</span>
+                </div>
+                <div className="p-2.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/40 text-center">
+                  <span className="text-[9px] font-extrabold uppercase text-indigo-500 block">Next Cycle</span>
+                  <span className="text-xs font-black text-indigo-700 dark:text-indigo-300 mt-1 block">
+                    {cycleStats.nextPredicted ? cycleStats.nextPredicted.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '--'}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Scrollable Timeline List */}
+            <div className="flex-1 overflow-y-auto space-y-2 py-2 pr-1">
               {periodDates
                 .slice()
                 .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
@@ -212,27 +290,30 @@ export const PCODModule: React.FC = () => {
                   return (
                     <div
                       key={dStr}
-                      className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-2 text-xs"
+                      className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-3 text-xs"
                     >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="h-7 w-7 rounded-lg bg-pink-100 dark:bg-pink-900/50 text-pink-600 dark:text-pink-300 flex items-center justify-center shrink-0 font-black text-[10px]">
-                          {currentDate.getDate()}
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-pink-500 to-rose-500 text-white flex flex-col items-center justify-center shrink-0 shadow-xs">
+                          <span className="text-[9px] font-semibold leading-none uppercase">{currentDate.toLocaleString(undefined, { month: 'short' })}</span>
+                          <span className="text-xs font-black leading-none mt-0.5">{currentDate.getDate()}</span>
                         </div>
                         <div className="min-w-0">
-                          <p className="font-bold text-slate-800 dark:text-slate-200 text-xs">
-                            {currentDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                          <p className="font-extrabold text-slate-900 dark:text-slate-100 text-xs">
+                            {currentDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
                           </p>
                           {cycleDays !== null ? (
-                            <p className="text-[10px] text-slate-400">
-                              Cycle duration: <span className="font-bold text-pink-600 dark:text-pink-400">{cycleDays} days</span>
-                              {cycleDays >= 21 && cycleDays <= 35 ? (
-                                <span className="ml-1 text-emerald-600 font-semibold">(Regular)</span>
-                              ) : (
-                                <span className="ml-1 text-amber-600 font-semibold">(Varied)</span>
-                              )}
+                            <p className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1.5">
+                              <span>Cycle gap: <strong className="text-pink-600 dark:text-pink-400">{cycleDays} days</strong></span>
+                              <span className={`text-[9.5px] font-black px-2 py-0.5 rounded-md ${
+                                cycleDays >= 21 && cycleDays <= 35
+                                  ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300'
+                                  : 'bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300'
+                              }`}>
+                                {cycleDays >= 21 && cycleDays <= 35 ? 'Regular' : 'Varied'}
+                              </span>
                             </p>
                           ) : (
-                            <p className="text-[10px] text-slate-400 italic">Initial recorded baseline</p>
+                            <p className="text-[10px] text-slate-400 italic mt-0.5">Initial baseline cycle recorded</p>
                           )}
                         </div>
                       </div>
@@ -240,8 +321,8 @@ export const PCODModule: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => removePeriodDate(dStr)}
-                        className="text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 p-1 text-sm font-bold transition-colors cursor-pointer"
-                        title="Delete entry"
+                        className="h-7 w-7 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/50 dark:hover:text-rose-400 flex items-center justify-center text-xs font-bold transition-all cursor-pointer shrink-0"
+                        title="Delete log"
                       >
                         ✕
                       </button>
@@ -249,25 +330,20 @@ export const PCODModule: React.FC = () => {
                   );
                 })}
             </div>
-          </div>
-        ) : (
-          <p className="text-[11px] text-slate-400 dark:text-slate-500 italic mb-3">
-            No period start dates logged yet. Select a date above to begin your cycle history.
-          </p>
-        )}
 
-        {cycleStats.avgLength ? (
-          <div className="p-3.5 rounded-2xl bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30 border border-pink-200/80 dark:border-pink-900/40 text-xs font-bold text-pink-950 dark:text-pink-200">
-            Average Cycle Length: <span className="font-black text-pink-600 dark:text-pink-400">{Math.round(cycleStats.avgLength)} days</span>
-            <span className="mx-2">•</span>
-            Next Expected Period: <span className="font-black text-purple-600 dark:text-purple-400">{cycleStats.nextPredicted?.toLocaleDateString()}</span>
+            {/* Modal Footer */}
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 mt-2">
+              <button
+                type="button"
+                onClick={() => setShowHistoryModal(false)}
+                className="w-full py-2.5 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-black rounded-xl cursor-pointer hover:opacity-95 transition-opacity"
+              >
+                Close History
+              </button>
+            </div>
           </div>
-        ) : (
-          <p className="text-[11px] text-slate-400 dark:text-slate-500 italic">
-            Log at least 2 period dates to calculate average cycle length and predict your next period.
-          </p>
-        )}
-      </Card>
+        </div>
+      )}
 
       {/* Symptom Check-in */}
       <Card>

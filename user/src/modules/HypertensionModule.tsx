@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Heart, Activity, Sparkles, Plus } from 'lucide-react';
+import { Heart, Activity, Sparkles, Plus, History, ChevronRight, X } from 'lucide-react';
 import { Card, SectionTitle, YesNoToggle, ModeTabs, StressTracker, TalkToDoctorCard } from './shared/ConditionUI';
 
 export const HypertensionModule: React.FC = () => {
   const [mode, setMode] = useState<string>('Prevention');
+  const [showBpHistoryModal, setShowBpHistoryModal] = useState<boolean>(false);
 
   // Prevention State
   const [exercised, setExercised] = useState<boolean | null>(() => {
@@ -92,7 +93,7 @@ export const HypertensionModule: React.FC = () => {
     if (!entryDate) return;
     setBpLog(prev =>
       [
-        ...prev,
+        ...prev.filter(e => e.date !== entryDate),
         {
           date: entryDate,
           amSys: amSys ? Number(amSys) : undefined,
@@ -108,6 +109,20 @@ export const HypertensionModule: React.FC = () => {
     setPmSys('');
     setPmDia('');
   };
+
+  const removeBpEntry = (dateStr: string) => {
+    setBpLog(prev => prev.filter(e => e.date !== dateStr));
+  };
+
+  const bpStats = useMemo(() => {
+    const amEntries = bpLog.filter(e => e.amSys && e.amDia);
+    const pmEntries = bpLog.filter(e => e.pmSys && e.pmDia);
+    const avgAmSys = amEntries.length ? Math.round(amEntries.reduce((s, e) => s + (e.amSys || 0), 0) / amEntries.length) : null;
+    const avgAmDia = amEntries.length ? Math.round(amEntries.reduce((s, e) => s + (e.amDia || 0), 0) / amEntries.length) : null;
+    const avgPmSys = pmEntries.length ? Math.round(pmEntries.reduce((s, e) => s + (e.pmSys || 0), 0) / pmEntries.length) : null;
+    const avgPmDia = pmEntries.length ? Math.round(pmEntries.reduce((s, e) => s + (e.pmDia || 0), 0) / pmEntries.length) : null;
+    return { avgAmSys, avgAmDia, avgPmSys, avgPmDia };
+  }, [bpLog]);
 
   const chartData = bpLog.map(e => ({
     date: new Date(e.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }),
@@ -209,7 +224,7 @@ export const HypertensionModule: React.FC = () => {
             </button>
 
             {chartData.length > 0 ? (
-              <div style={{ width: '100%', height: 230 }}>
+              <div style={{ width: '100%', height: 210 }}>
                 <ResponsiveContainer>
                   <LineChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.6} />
@@ -229,7 +244,138 @@ export const HypertensionModule: React.FC = () => {
                 Log morning and evening readings to track your blood pressure trend over time.
               </p>
             )}
+
+            {/* Compact History Trigger Bar */}
+            {bpLog.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowBpHistoryModal(true)}
+                className="w-full mt-3 p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 hover:border-rose-300 dark:hover:border-rose-800 transition-all flex items-center justify-between gap-2 group cursor-pointer text-left"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="h-8 w-8 rounded-xl bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-300 flex items-center justify-center shrink-0">
+                    <History className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                      Blood Pressure History ({bpLog.length} Days Logged)
+                    </p>
+                    <p className="text-[10.5px] text-slate-400 truncate">
+                      {bpStats.avgAmSys ? `Avg AM: ${bpStats.avgAmSys}/${bpStats.avgAmDia} mmHg` : 'View recorded readings'}
+                    </p>
+                  </div>
+                </div>
+                <span className="text-xs font-bold text-rose-600 dark:text-rose-400 flex items-center gap-0.5 shrink-0 group-hover:translate-x-0.5 transition-transform">
+                  View All Logs <ChevronRight className="h-4 w-4" />
+                </span>
+              </button>
+            )}
           </Card>
+
+          {/* Full BP History & Analytics Modal */}
+          {showBpHistoryModal && (
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[999] flex items-center justify-center p-4 animate-in fade-in duration-200">
+              <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200">
+                {/* Modal Header */}
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-xl bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-300 flex items-center justify-center">
+                      <Heart className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-black text-slate-800 dark:text-slate-100">Blood Pressure History</h3>
+                      <p className="text-[10.5px] text-slate-400">AM & PM longitudinal pressure logs</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowBpHistoryModal(false)}
+                    className="h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+
+                {/* Quick Pressure Summary */}
+                {bpLog.length > 0 && (
+                  <div className="grid grid-cols-2 gap-2 my-3.5">
+                    <div className="p-2.5 rounded-2xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-100 dark:border-rose-900/40 text-center">
+                      <span className="text-[9px] font-extrabold uppercase text-rose-500 block">Avg Morning (AM)</span>
+                      <span className="text-sm font-black text-rose-700 dark:text-rose-300">
+                        {bpStats.avgAmSys ? `${bpStats.avgAmSys}/${bpStats.avgAmDia} mmHg` : '--'}
+                      </span>
+                    </div>
+                    <div className="p-2.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/40 text-center">
+                      <span className="text-[9px] font-extrabold uppercase text-indigo-500 block">Avg Evening (PM)</span>
+                      <span className="text-sm font-black text-indigo-700 dark:text-indigo-300">
+                        {bpStats.avgPmSys ? `${bpStats.avgPmSys}/${bpStats.avgPmDia} mmHg` : '--'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Scrollable Timeline List */}
+                <div className="flex-1 overflow-y-auto space-y-2 py-2 pr-1">
+                  {bpLog
+                    .slice()
+                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                    .map((log) => {
+                      const logDate = new Date(log.date);
+                      return (
+                        <div
+                          key={log.date}
+                          className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-3 text-xs"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-rose-500 to-amber-500 text-white flex flex-col items-center justify-center shrink-0 shadow-xs">
+                              <span className="text-[9px] font-semibold leading-none uppercase">{logDate.toLocaleString(undefined, { month: 'short' })}</span>
+                              <span className="text-xs font-black leading-none mt-0.5">{logDate.getDate()}</span>
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-extrabold text-slate-900 dark:text-slate-100 text-xs">
+                                {logDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                              </p>
+                              <div className="flex flex-wrap gap-2 mt-1">
+                                {log.amSys ? (
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-100 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300">
+                                    AM: {log.amSys}/{log.amDia} mmHg
+                                  </span>
+                                ) : null}
+                                {log.pmSys ? (
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300">
+                                    PM: {log.pmSys}/{log.pmDia} mmHg
+                                  </span>
+                                ) : null}
+                              </div>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => removeBpEntry(log.date)}
+                            className="h-7 w-7 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/50 dark:hover:text-rose-400 flex items-center justify-center text-xs font-bold transition-all cursor-pointer shrink-0"
+                            title="Delete log"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      );
+                    })}
+                </div>
+
+                {/* Modal Footer */}
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowBpHistoryModal(false)}
+                    className="w-full py-2.5 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-black rounded-xl cursor-pointer hover:opacity-95 transition-opacity"
+                  >
+                    Close History
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           <Card>
             <SectionTitle icon={Heart}>Treatment Daily Habits & Stress</SectionTitle>
