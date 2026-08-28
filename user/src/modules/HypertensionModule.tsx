@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Heart, Activity, Sparkles, Plus, History, ChevronRight, X } from 'lucide-react';
 import { Card, SectionTitle, YesNoToggle, ModeTabs, StressTracker, TalkToDoctorCard } from './shared/ConditionUI';
+import { triggerHealthInsightNotification } from '../utils/notificationScheduler';
 
 export const HypertensionModule: React.FC = () => {
   const [mode, setMode] = useState<string>('Prevention');
@@ -91,18 +92,35 @@ export const HypertensionModule: React.FC = () => {
 
   const addBpEntry = () => {
     if (!entryDate) return;
+    const numAmSys = amSys ? Number(amSys) : undefined;
+    const numAmDia = amDia ? Number(amDia) : undefined;
+    const numPmSys = pmSys ? Number(pmSys) : undefined;
+    const numPmDia = pmDia ? Number(pmDia) : undefined;
+
     setBpLog(prev =>
       [
         ...prev.filter(e => e.date !== entryDate),
         {
           date: entryDate,
-          amSys: amSys ? Number(amSys) : undefined,
-          amDia: amDia ? Number(amDia) : undefined,
-          pmSys: pmSys ? Number(pmSys) : undefined,
-          pmDia: pmDia ? Number(pmDia) : undefined
+          amSys: numAmSys,
+          amDia: numAmDia,
+          pmSys: numPmSys,
+          pmDia: numPmDia
         }
       ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     );
+
+    // Trigger proactive actionable alert if BP is elevated (>130 / >85)
+    const maxSys = Math.max(numAmSys || 0, numPmSys || 0);
+    const maxDia = Math.max(numAmDia || 0, numPmDia || 0);
+    if (maxSys >= 130 || maxDia >= 85) {
+      triggerHealthInsightNotification({
+        category: 'HYPERTENSION_HIGH',
+        metricValue: maxSys || 135,
+        secondaryValue: maxDia || 88
+      });
+    }
+
     setEntryDate('');
     setAmSys('');
     setAmDia('');

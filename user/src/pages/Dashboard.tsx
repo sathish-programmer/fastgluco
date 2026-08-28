@@ -568,6 +568,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
           const todayLogs = habitsData.filter((h: any) => 
             new Date(h.timestamp || h.createdAt).toDateString() === todayStr
           );
+          if (todayLogs.length > 0) {
+            localStorage.setItem('mito_last_habit_log_date', todayStr);
+          }
           const envHabit = todayLogs.find((h: any) => (h.type || '').toUpperCase() === 'ENVIRONMENTAL');
           const envAnswers = envHabit?.value?.answers || {};
 

@@ -2,12 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   X, Mic, Send, Bot, CheckCircle2,
   Upload, RefreshCw, ArrowRight, Pencil, Check,
-  Volume2, VolumeX, Sparkles, Flame, Trophy, Bell, Clock
+  Volume2, VolumeX, Sparkles, Bell, BellOff, Clock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Capacitor } from '@capacitor/core';
 import { TextToSpeech } from '@capacitor-community/text-to-speech';
-import { scheduleDailyCheckinReminder, triggerTestNotification } from '../utils/notificationScheduler';
+import { scheduleDailyCheckinReminder, cancelDailyCheckinReminder, triggerTestNotification } from '../utils/notificationScheduler';
 import type { FocusModeType } from '../context/AuthContext';
 
 interface WorkflowStep {
@@ -94,23 +94,238 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
   useEffect(() => { isVoiceMutedRef.current = isVoiceMuted; }, [isVoiceMuted]);
 
   const [showReminderSettings, setShowReminderSettings] = useState<boolean>(false);
-  const [reminderTime, setReminderTime] = useState<string>(() => localStorage.getItem('mito_checkin_reminder_time') || '20:30');
+  const [reminderEnabled, setReminderEnabled] = useState<boolean>(() => localStorage.getItem('mito_checkin_reminder_enabled') !== 'false' && Boolean(localStorage.getItem('mito_checkin_reminder_time')));
+  const [reminderTime, setReminderTime] = useState<string>(() => localStorage.getItem('mito_checkin_reminder_time') || '');
   const [customTimeInput, setCustomTimeInput] = useState<string>(() => localStorage.getItem('mito_checkin_reminder_time') || '20:30');
-  const [reminderSaved, setReminderSaved] = useState<boolean>(false);
+  const [reminderStatusMsg, setReminderStatusMsg] = useState<string>('');
+
+  const [sessionAnswers, setSessionAnswers] = useState<Record<string, string>>({});
+  const [sessionSummary, setSessionSummary] = useState<{
+    damageScore: number;
+    repairScore: number;
+    netBalance: number;
+    damageHighlights: string[];
+    repairHighlights: string[];
+    priorityActionHints: string[];
+  }>({
+    damageScore: 0,
+    repairScore: 0,
+    netBalance: 0,
+    damageHighlights: [],
+    repairHighlights: [],
+    priorityActionHints: []
+  });
+
+  const sessionAnswersRef = useRef(sessionAnswers);
+  useEffect(() => { sessionAnswersRef.current = sessionAnswers; }, [sessionAnswers]);
+
+  const computeSessionScoreSummary = (answers: Record<string, string>) => {
+    let damageCount = 0;
+    let repairCount = 0;
+    const damageHighlights: string[] = [];
+    const repairHighlights: string[] = [];
+    const damageActionHints: string[] = [];
+    const repairActionHints: string[] = [];
+
+    // Helper to extract text from current session answers or loaded habits
+    const getAnswer = (keys: string[]) => {
+      for (const k of keys) {
+        if (answers[k]) return answers[k];
+      }
+      // Check loaded today's habits
+      const todayStr = new Date().toDateString();
+      const match = loggedHabits.find(h => {
+        const isToday = new Date(h.timestamp || (h as any).createdAt || 0).toDateString() === todayStr;
+        if (!isToday) return false;
+        const typeUpper = (h.type || '').toUpperCase();
+        return keys.some(k => typeUpper.includes(k.toUpperCase()));
+      });
+      if (match) {
+        const val = match.value;
+        return typeof val === 'object' ? (val.option || val.notes || val.faceId || JSON.stringify(val)) : `${val}`;
+      }
+      return '';
+    };
+
+    // 1. Stress
+    const stressVal = getAnswer(['stress', 'caregiver_stress']).toLowerCase();
+    if (stressVal) {
+      if (stressVal.includes('high') || stressVal.includes('tense') || stressVal.includes('stressed') || stressVal.includes('severe') || stressVal.includes('strain') || stressVal.includes('drained') || stressVal.includes('yes')) {
+        damageCount += 1;
+        damageHighlights.push('High Stress / Cortisol');
+        damageActionHints.push('Lower cortisol with 10 minutes of stillness breathwork or meditation.');
+      } else if (stressVal.includes('calm') || stressVal.includes('low') || stressVal.includes('none') || stressVal.includes('good') || stressVal.includes('steady')) {
+        repairCount += 1;
+        repairHighlights.push('Calm Nervous System');
+      }
+    }
+
+    // 2. Sleep
+    const sleepVal = getAnswer(['sleep']).toLowerCase();
+    if (sleepVal) {
+      const sleepHours = parseFloat(sleepVal);
+      if ((sleepHours && sleepHours < 6) || sleepVal.includes('poor') || sleepVal.includes('low') || sleepVal.includes('<6')) {
+        damageCount += 1;
+        damageHighlights.push('Sleep Debt (<6h)');
+        damageActionHints.push('Protect cellular mitochondria by getting at least 7-8 hours of sleep.');
+      } else if ((sleepHours && sleepHours >= 6) || sleepVal.includes('good') || sleepVal.includes('restful') || sleepVal.includes('7') || sleepVal.includes('8')) {
+        repairCount += 1;
+        repairHighlights.push('7+ Hours Restorative Sleep');
+      }
+    }
+
+    // 3. Smoking
+    const smokingVal = getAnswer(['smoking']).toLowerCase();
+    if (smokingVal) {
+      if (smokingVal.includes('yes') || smokingVal.includes('smoke') || (parseFloat(smokingVal) > 0)) {
+        damageCount += 1;
+        damageHighlights.push('Tobacco / Smoking');
+        damageActionHints.push('Avoid smoking triggers tomorrow to prevent oxidative cellular stress.');
+      } else if (smokingVal.includes('no') || smokingVal.includes('clean') || smokingVal === '0') {
+        repairCount += 1;
+        repairHighlights.push('Smoke-Free Clean Lungs');
+      }
+    }
+
+    // 4. Alcohol
+    const alcoholVal = getAnswer(['alcohol']).toLowerCase();
+    if (alcoholVal) {
+      if (alcoholVal.includes('yes') || alcoholVal.includes('drink') || (parseFloat(alcoholVal) > 0)) {
+        damageCount += 1;
+        damageHighlights.push('Alcohol Intake');
+        damageActionHints.push('Plan an alcohol-free day tomorrow with herbal tea and high hydration.');
+      } else if (alcoholVal.includes('no') || alcoholVal.includes('clean') || alcoholVal === '0') {
+        repairCount += 1;
+        repairHighlights.push('Zero Alcohol Exposure');
+      }
+    }
+
+    // 5. Environmental Toxins
+    const envVal = getAnswer(['environmental', 'env_air', 'env_pesticides', 'env_microplastics', 'env_water']).toLowerCase();
+    if (envVal) {
+      if (envVal.includes('exposed') || envVal.includes('plastic') || envVal.includes('chemical') || envVal.includes('smog') || envVal.includes('tap')) {
+        damageCount += 1;
+        damageHighlights.push('Environmental Toxins');
+        damageActionHints.push('Drink filtered water and avoid heating food in plastics.');
+      } else if (envVal.includes('clean') || envVal.includes('filtered') || envVal.includes('organic') || envVal.includes('plastic-free')) {
+        repairCount += 1;
+        repairHighlights.push('Low Toxic Burden');
+      }
+    }
+
+    // 6. Gastritis / Acidity / Dental
+    const gutVal = getAnswer(['gut_health', 'gastritis', 'dental', 'damage_habits']).toLowerCase();
+    if (gutVal) {
+      if (gutVal.includes('gastritis') || gutVal.includes('acidity') || gutVal.includes('sugar') || gutVal.includes('junk') || gutVal.includes('discomfort') || gutVal.includes('sharp')) {
+        damageCount += 1;
+        damageHighlights.push('Gastric Acidity / Refined Food');
+        damageActionHints.push('Avoid spicy, fried, or high-sugar foods to soothe your stomach lining.');
+      } else if (gutVal.includes('none') || gutVal.includes('healthy') || gutVal.includes('clean')) {
+        repairCount += 1;
+        repairHighlights.push('Healthy Gut & Oral Balance');
+      }
+    }
+
+    // 7. Fasting (Circadian Repair)
+    const fastingVal = getAnswer(['fasting']).toLowerCase();
+    if (fastingVal) {
+      if (fastingVal.includes('yes') || fastingVal.includes('14') || fastingVal.includes('16') || fastingVal.includes('12') || fastingVal.includes('completed')) {
+        repairCount += 1;
+        repairHighlights.push('Circadian Fasting (14h+)');
+      } else {
+        repairActionHints.push('Complete a 14-hour overnight fasting window to activate cellular autophagy.');
+      }
+    } else {
+      repairActionHints.push('Target a 14-hour overnight fasting window to activate cellular autophagy.');
+    }
+
+    // 8. Movement / Physical Activity
+    const movementVal = getAnswer(['movement']).toLowerCase();
+    if (movementVal) {
+      if (movementVal.includes('yes') || movementVal.includes('walk') || movementVal.includes('run') || movementVal.includes('20') || movementVal.includes('30') || movementVal.includes('exercise')) {
+        repairCount += 1;
+        repairHighlights.push('20+ Mins Aerobic Movement');
+      } else {
+        repairActionHints.push('Take a brisk 20-minute walk or light exercise session tomorrow.');
+      }
+    } else {
+      repairActionHints.push('Take a brisk 20-minute walk or light exercise session tomorrow.');
+    }
+
+    // 9. Antioxidants & Phytonutrients
+    const antioxVal = getAnswer(['antioxidants', 'repair_habits']).toLowerCase();
+    if (antioxVal) {
+      if (antioxVal.includes('yes') || antioxVal.includes('consumed') || antioxVal.includes('berries') || antioxVal.includes('vegetables') || antioxVal.includes('greens')) {
+        repairCount += 1;
+        repairHighlights.push('Antioxidant Cellular Protection');
+      } else {
+        repairActionHints.push('Add antioxidant-rich berries, dark greens, or turmeric to your meals.');
+      }
+    } else {
+      repairActionHints.push('Add antioxidant-rich berries, dark greens, or turmeric to your meals.');
+    }
+
+    // 10. Joy & Stillness
+    const joyVal = getAnswer(['joy', 'stillness', 'loved']).toLowerCase();
+    if (joyVal) {
+      if (joyVal.includes('yes') || joyVal.includes('done') || joyVal.includes('sat') || joyVal.includes('loved')) {
+        repairCount += 1;
+        repairHighlights.push('Joy & Mindfulness');
+      }
+    }
+
+    // Dynamic consolidated priority action hints based on user's real answers
+    const finalPriorityHints: string[] = [];
+    if (damageActionHints.length > 0) {
+      finalPriorityHints.push(damageActionHints[0]);
+    } else if (damageCount > 0) {
+      finalPriorityHints.push('Focus on reducing daily stress and avoiding processed snacks.');
+    } else {
+      finalPriorityHints.push('Maintain your 0 damage streak by continuing to protect against toxic exposures.');
+    }
+
+    if (repairActionHints.length > 0) {
+      finalPriorityHints.push(repairActionHints[0]);
+    } else {
+      finalPriorityHints.push('Keep boosting your repair defense with 14-hour intermittent fasting and exercise.');
+    }
+
+    return {
+      damageScore: damageCount,
+      repairScore: repairCount,
+      netBalance: repairCount - damageCount,
+      damageHighlights,
+      repairHighlights,
+      priorityActionHints: finalPriorityHints.slice(0, 2)
+    };
+  };
 
   const handleSaveReminder = async (time: string) => {
+    if (!time) return;
     setReminderTime(time);
     setCustomTimeInput(time);
-    setReminderSaved(true);
+    setReminderEnabled(true);
+    setReminderStatusMsg(`Reminder set for ${formatDisplayTime(time)}`);
     await scheduleDailyCheckinReminder(time);
     setTimeout(() => {
-      setReminderSaved(false);
+      setReminderStatusMsg('');
+      setShowReminderSettings(false);
+    }, 1200);
+  };
+
+  const handleCancelReminder = async () => {
+    await cancelDailyCheckinReminder();
+    setReminderEnabled(false);
+    setReminderTime('');
+    setReminderStatusMsg('Daily reminder turned off');
+    setTimeout(() => {
+      setReminderStatusMsg('');
       setShowReminderSettings(false);
     }, 1200);
   };
 
   const formatDisplayTime = (timeStr: string) => {
-    if (!timeStr) return '8:30 PM';
+    if (!timeStr) return 'Off';
     const [hours, minutes] = timeStr.split(':').map(Number);
     if (isNaN(hours) || isNaN(minutes)) return timeStr;
     const period = hours >= 12 ? 'PM' : 'AM';
@@ -1123,6 +1338,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
   const saveHabitToBackend = async (stepId: string, valueStr: string) => {
+    setSessionAnswers(prev => ({ ...prev, [stepId]: valueStr }));
     if (!token) return;
     try {
       const lowerVal = valueStr.toLowerCase();
@@ -1469,7 +1685,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       const summaryMsg: ChatMessage = {
         id: `multi_${Date.now()}`,
         sender: 'bot',
-        text: `✨ Smart Natural Language: Logged ${detectedMulti.length} habits in one shot!`,
+        text: `Logged ${detectedMulti.length} habits:`,
         isMultiHabitSummary: true,
         multiHabitsList: detectedMulti.map(d => ({ name: d.name, value: d.valueStr })),
         timestamp: ts
@@ -1502,16 +1718,25 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
           }
         });
       } else {
+        const multiMap: Record<string, string> = {};
+        detectedMulti.forEach(d => { multiMap[d.stepId] = d.valueStr; });
+        const finalAnswers = { ...sessionAnswersRef.current, ...multiMap };
+        const summary = computeSessionScoreSummary(finalAnswers);
+        setSessionSummary(summary);
         setIsCompleted(true);
-        const finishMsg = 'All daily check-ins logged. Your cellular defense dashboard is updated.';
+
+        const finishVoice = `All daily check-ins complete. Today your Damage score is ${summary.damageScore}, and Repair score is ${summary.repairScore}. Tomorrow, focus on reducing your damage score by ${summary.priorityActionHints[0] || 'avoiding stress and processed foods'}, and improve your repair score with ${summary.priorityActionHints[1] || 'intermittent fasting and 20 minutes of daily exercise'}.`;
+
+        const finishCardText = `Daily Check-in Complete\n\nDamage Load: -${summary.damageScore}\nRepair Defense: +${summary.repairScore}\n\nPriority Actions for Tomorrow:\n1. ${summary.priorityActionHints[0] || 'Reduce daily stress and avoid late-night eating'}\n2. ${summary.priorityActionHints[1] || 'Boost cellular repair with 14-hour fasting and exercise'}`;
+
         updatedMsgs.push({
           id: 'bot_finish',
           sender: 'bot',
-          text: finishMsg,
+          text: finishCardText,
           timestamp: ts
         });
         setMessages(updatedMsgs);
-        speakQuestion(finishMsg);
+        speakQuestion(finishVoice);
         if (onRefreshDashboard) onRefreshDashboard();
       }
       return;
@@ -1560,11 +1785,18 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
         }
       });
     } else {
+      const finalAnswers = { ...sessionAnswersRef.current, ...(currentStep ? { [currentStep.stepId]: validatedAnswer } : {}) };
+      const summary = computeSessionScoreSummary(finalAnswers);
+      setSessionSummary(summary);
       setIsCompleted(true);
-      const finishMsg = 'All check-ins logged. Your cellular defense dashboard is updated.';
-      updatedMsgs.push({ id: 'bot_finish', sender: 'bot', text: finishMsg, timestamp: ts });
+
+      const finishVoice = `All daily check-ins complete. Today your Damage score is ${summary.damageScore}, and Repair score is ${summary.repairScore}. Tomorrow, focus on reducing your damage score by ${summary.priorityActionHints[0] || 'avoiding stress and processed foods'}, and improve your repair score with ${summary.priorityActionHints[1] || 'intermittent fasting and 20 minutes of daily exercise'}.`;
+
+      const finishCardText = `Daily Check-in Complete\n\nDamage Load: -${summary.damageScore}\nRepair Defense: +${summary.repairScore}\n\nPriority Actions for Tomorrow:\n1. ${summary.priorityActionHints[0] || 'Reduce daily stress and avoid late-night eating'}\n2. ${summary.priorityActionHints[1] || 'Boost cellular repair with 14-hour fasting and exercise'}`;
+
+      updatedMsgs.push({ id: 'bot_finish', sender: 'bot', text: finishCardText, timestamp: ts });
       setMessages(updatedMsgs);
-      speakQuestion(finishMsg);
+      speakQuestion(finishVoice);
       if (onRefreshDashboard) onRefreshDashboard();
     }
   };
@@ -1654,12 +1886,26 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                 <button
                   type="button"
                   onClick={() => setShowReminderSettings(prev => !prev)}
-                  className={`h-8 w-8 rounded-full border flex items-center justify-center transition-all cursor-pointer ${
-                    showReminderSettings ? 'bg-white text-blue-600 border-white shadow-xs' : 'bg-white/15 hover:bg-white/25 border-white/20 text-white'
+                  className={`h-8 px-2.5 rounded-full border flex items-center gap-1.5 transition-all cursor-pointer ${
+                    showReminderSettings
+                      ? 'bg-white text-blue-600 border-white shadow-xs font-black'
+                      : reminderEnabled && reminderTime
+                        ? 'bg-white/20 hover:bg-white/30 border-white/30 text-white font-bold'
+                        : 'bg-white/10 hover:bg-white/20 border-white/20 text-white/70'
                   }`}
                   title="Daily AI Check-in Reminder Time"
                 >
-                  <Bell className="h-4 w-4" />
+                  {reminderEnabled && reminderTime ? (
+                    <>
+                      <Bell className="h-3.5 w-3.5 text-amber-300" />
+                      <span className="text-[9px] uppercase tracking-wider font-black">{formatDisplayTime(reminderTime)}</span>
+                    </>
+                  ) : (
+                    <>
+                      <BellOff className="h-3.5 w-3.5 opacity-80" />
+                      <span className="text-[9px] uppercase tracking-wider font-bold opacity-80">Off</span>
+                    </>
+                  )}
                 </button>
                 <button
                   type="button"
@@ -1707,7 +1953,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-black text-white flex items-center gap-1.5">
                     <Clock className="h-4 w-4 text-blue-200" />
-                    Daily AI Check-in Reminder Time
+                    Daily AI Check-in Reminder
                   </span>
                   <button
                     type="button"
@@ -1718,7 +1964,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                   </button>
                 </div>
                 <p className="text-[10.5px] text-blue-100/90 mb-2.5 font-medium">
-                  Select a quick time or pick any custom reminder time:
+                  Select a reminder time or turn off alerts completely:
                 </p>
 
                 {/* Quick Presets */}
@@ -1729,7 +1975,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                       type="button"
                       onClick={() => handleSaveReminder(t)}
                       className={`py-1.5 rounded-xl text-[10px] font-bold border transition-all cursor-pointer ${
-                        reminderTime === t
+                        reminderEnabled && reminderTime === t
                           ? 'bg-white text-blue-700 border-white shadow-xs font-black'
                           : 'bg-white/10 text-white border-white/20 hover:bg-white/20'
                       }`}
@@ -1740,7 +1986,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                 </div>
 
                 {/* Custom Time Picker */}
-                <div className="flex items-center gap-2 bg-white/20 p-2 rounded-xl border border-white/25">
+                <div className="flex items-center gap-2 bg-white/20 p-2 rounded-xl border border-white/25 mb-2.5">
                   <span className="text-[10px] font-black text-white/80 uppercase tracking-wider shrink-0">Custom Time:</span>
                   <input
                     type="time"
@@ -1757,19 +2003,31 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                   </button>
                 </div>
 
-                {reminderSaved && (
-                  <p className="text-[11px] font-bold text-emerald-300 mt-2 flex items-center gap-1">
-                    <Check className="h-3.5 w-3.5" /> Reminder scheduled for {formatDisplayTime(reminderTime)}!
+                {/* Turn Off / Disable Option */}
+                {reminderEnabled && (
+                  <button
+                    type="button"
+                    onClick={handleCancelReminder}
+                    className="w-full py-1.5 bg-rose-500/30 hover:bg-rose-500/40 border border-rose-400/40 text-rose-100 rounded-xl text-[10.5px] font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer mb-2"
+                  >
+                    <BellOff className="h-3.5 w-3.5" />
+                    Turn Off Daily Reminder
+                  </button>
+                )}
+
+                {reminderStatusMsg && (
+                  <p className="text-[11px] font-bold text-emerald-300 mb-2 flex items-center gap-1">
+                    <Check className="h-3.5 w-3.5" /> {reminderStatusMsg}
                   </p>
                 )}
 
                 {/* Test Alert Button */}
-                <div className="flex items-center justify-between pt-2 border-t border-white/10 mt-2.5">
+                <div className="flex items-center justify-between pt-2 border-t border-white/10">
                   <span className="text-[9.5px] text-blue-100/70 font-medium">
                     {typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'denied' ? (
                       <span className="text-rose-300 font-bold">Blocked in browser settings</span>
                     ) : (
-                      <span className="flex items-center gap-1"><Bell className="h-3 w-3 inline text-blue-200" /> Active Alert Channel</span>
+                      <span className="flex items-center gap-1"><Bell className="h-3 w-3 inline text-blue-200" /> {reminderEnabled ? 'Active Alert Channel' : 'Alerts Disabled'}</span>
                     )}
                   </span>
                   <button
@@ -1972,40 +2230,71 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                 {/* ── Celebratory Post-Check-in Health Impact Card ── */}
                 {isCompleted && (
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                    initial={{ opacity: 0, scale: 0.98, y: 10 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
-                    className="bg-gradient-to-br from-emerald-50 via-teal-50 to-blue-50 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-slate-900 border border-emerald-200/80 dark:border-emerald-800/60 rounded-3xl p-5 shadow-lg my-4 text-center"
+                    className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-5 shadow-lg my-4 text-center"
                   >
-                    <div className="inline-flex items-center justify-center h-14 w-14 rounded-3xl bg-gradient-to-tr from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/30 mx-auto mb-3">
-                      <Trophy className="h-7 w-7 animate-bounce" />
+                    <div className="inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200/50 dark:border-blue-900/40 mx-auto mb-3">
+                      <CheckCircle2 className="h-6 w-6" />
                     </div>
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 text-[10px] font-black uppercase tracking-wider mb-1.5">
-                      <Sparkles className="h-3 w-3 fill-current" />
-                      Daily Cellular Defense Updated
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-black uppercase tracking-wider mb-1.5">
+                      Daily Health Summary
                     </div>
                     <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
-                      All Daily Habits Logged
+                      Check-in Logged Successfully
                     </h3>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 max-w-sm mx-auto leading-relaxed">
-                      Your circadian fasting, cellular repair, and risk prevention logs are synced to your live metabolic health dashboard.
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto leading-relaxed">
+                      Your circadian fasting, cellular repair, and risk prevention logs are updated on your dashboard.
                     </p>
 
+                    {/* Live Scorecard Metrics */}
                     <div className="grid grid-cols-2 gap-2.5 my-4 text-left">
-                      <div className="bg-white/80 dark:bg-slate-900/80 p-3 rounded-2xl border border-emerald-100 dark:border-emerald-900/40">
-                        <span className="text-[10px] font-extrabold uppercase text-emerald-600 dark:text-emerald-400 block mb-0.5">Cellular Defense</span>
-                        <span className="text-base sm:text-lg font-black text-slate-900 dark:text-slate-100">+8 Balance</span>
-                      </div>
-                      <div className="bg-white/80 dark:bg-slate-900/80 p-3 rounded-2xl border border-teal-100 dark:border-teal-900/40">
-                        <span className="text-[10px] font-extrabold uppercase text-teal-600 dark:text-teal-400 block mb-0.5">Logging Streak</span>
-                        <span className="text-base sm:text-lg font-black text-slate-900 dark:text-slate-100 flex items-center gap-1">
-                          <Flame className="h-4 w-4 text-amber-500 fill-amber-500" /> Active
+                      <div className="bg-rose-50/50 dark:bg-rose-950/20 p-3 rounded-2xl border border-rose-200/60 dark:border-rose-900/40">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-rose-600 dark:text-rose-400">Damage Load</span>
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400">Reduce</span>
+                        </div>
+                        <span className="text-xl sm:text-2xl font-black text-rose-600 dark:text-rose-400">
+                          -{sessionSummary.damageScore}
                         </span>
+                      </div>
+                      <div className="bg-emerald-50/50 dark:bg-emerald-950/20 p-3 rounded-2xl border border-emerald-200/60 dark:border-emerald-900/40">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Repair Defense</span>
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400">Build</span>
+                        </div>
+                        <span className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                          +{sessionSummary.repairScore}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Priority Action Hints for Tomorrow */}
+                    <div className="bg-slate-50 dark:bg-slate-950/60 rounded-2xl p-3.5 border border-slate-200/70 dark:border-slate-800 text-left mb-4">
+                      <span className="text-[10.5px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider block mb-2">
+                        Priority Action Plan for Tomorrow:
+                      </span>
+                      <div className="space-y-2 text-xs">
+                        <div className="flex items-start gap-2.5 bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-800 text-slate-800 dark:text-slate-200">
+                          <span className="h-5 w-5 rounded-md bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 font-black flex items-center justify-center text-[10px] shrink-0">1</span>
+                          <div>
+                            <strong className="block text-[11px] font-bold text-slate-900 dark:text-slate-100">Reduce Damage</strong>
+                            <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed mt-0.5">{sessionSummary.priorityActionHints[0] || 'Avoid evening stress, limit junk food, and get 7+ hours of sleep.'}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-2.5 bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-800 text-slate-800 dark:text-slate-200">
+                          <span className="h-5 w-5 rounded-md bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 font-black flex items-center justify-center text-[10px] shrink-0">2</span>
+                          <div>
+                            <strong className="block text-[11px] font-bold text-slate-900 dark:text-slate-100">Boost Repair</strong>
+                            <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed mt-0.5">{sessionSummary.priorityActionHints[1] || 'Target a 14-hour intermittent fast and 20 minutes of aerobic exercise.'}</p>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
                     <button
                       onClick={onClose}
-                      className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-xs sm:text-sm rounded-2xl shadow-md hover:shadow-lg transition-all active:scale-98 cursor-pointer flex items-center justify-center gap-2"
+                      className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs sm:text-sm rounded-xl shadow-xs transition-all active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
                     >
                       <span>View Cellular Dashboard</span>
                       <ArrowRight className="h-4 w-4" />

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Sparkles, Calendar, Activity, Scale, AlertCircle, Plus, History, ChevronRight, X } from 'lucide-react';
 import { Card, SectionTitle, YesNoToggle, TalkToDoctorCard, StressTracker } from './shared/ConditionUI';
+import { triggerHealthInsightNotification } from '../utils/notificationScheduler';
 
 export const PCODModule: React.FC = () => {
   const [showHistoryModal, setShowHistoryModal] = useState<boolean>(false);
@@ -90,8 +91,21 @@ export const PCODModule: React.FC = () => {
 
   const logPeriod = () => {
     if (!newPeriodDate) return;
-    setPeriodDates(prev => [...new Set([...prev, newPeriodDate])].sort());
+    const updatedDates = [...new Set([...periodDates, newPeriodDate])].sort();
+    setPeriodDates(updatedDates);
     setNewPeriodDate('');
+
+    // Check if cycle interval is irregular (> 35 days)
+    if (updatedDates.length >= 2) {
+      const dates = updatedDates.map(d => new Date(d).getTime()).sort((a, b) => a - b);
+      const lastGap = (dates[dates.length - 1] - dates[dates.length - 2]) / (1000 * 60 * 60 * 24);
+      if (lastGap > 35) {
+        triggerHealthInsightNotification({
+          category: 'PCOS_IRREGULAR',
+          metricValue: Math.round(lastGap)
+        });
+      }
+    }
   };
 
   const removePeriodDate = (dStr: string) => {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { triggerHealthInsightNotification } from '../utils/notificationScheduler';
 import { 
   FileUp, 
   History, 
@@ -178,6 +179,16 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
         
         showToast(msgText, 'success');
         setMessage({ text: msgText, isError: false });
+
+        // If glucose is elevated in the parsed report, fire priority actionable dietary insight notification
+        const avgG = reportObj.pdfSummaryAverageGlucose || reportObj.averageGlucose || (reportObj.summary && reportObj.summary.averageGlucose);
+        if (avgG && avgG > 135) {
+          triggerHealthInsightNotification({
+            category: 'GLUCOSE_SPIKE',
+            metricValue: Math.round(avgG)
+          });
+        }
+
         setFile(null);
         // Clear input element
         const fileInput = document.getElementById('report-input') as HTMLInputElement;

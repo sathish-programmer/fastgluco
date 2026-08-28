@@ -69,7 +69,7 @@ const MainAppContent: React.FC = () => {
     setShowCancerCGMDashboardState(show);
   };
   const [showHelpModal, setShowHelpModal] = useState<boolean>(false);
-  const [inAppReminder, setInAppReminder] = useState<{ title: string; body: string } | null>(null);
+  const [inAppReminder, setInAppReminder] = useState<{ title: string; body: string; type?: string } | null>(null);
 
   useEffect(() => {
     const handleTriggered = (e: any) => {
@@ -566,12 +566,19 @@ const MainAppContent: React.FC = () => {
           </div>
           <button
             onClick={() => {
+              const type = inAppReminder.type;
               setInAppReminder(null);
-              window.dispatchEvent(new CustomEvent('openDailyCheckinChatbot'));
+              if (type === 'REPORT_UPLOAD') {
+                setActiveTab('Reports');
+              } else if (type === 'FASTING') {
+                setActiveTab('Home');
+              } else {
+                window.dispatchEvent(new CustomEvent('openDailyCheckinChatbot'));
+              }
             }}
             className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black rounded-xl shrink-0 cursor-pointer shadow-xs hover:shadow-md transition-all"
           >
-            Check in
+            {inAppReminder.type === 'REPORT_UPLOAD' ? 'Upload' : inAppReminder.type === 'FASTING' ? 'Fasting' : 'Check in'}
           </button>
           <button
             onClick={() => setInAppReminder(null)}
