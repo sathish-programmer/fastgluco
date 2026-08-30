@@ -128,6 +128,38 @@ export const requestNotificationPermission = async (): Promise<boolean> => {
  * Trigger web browser notification, sound & custom in-app event
  */
 export const fireWebNotification = (title: string, body: string, type: string = 'DAILY_CHECKIN') => {
+  const todayStr = new Date().toDateString();
+
+  // Dynamic Suppression: If user already uploaded glucose CSV/PDF or medical report today, suppress report reminders
+  if (type === 'REPORT_UPLOAD') {
+    const lastReport = localStorage.getItem('mito_last_report_upload_date');
+    if (lastReport === todayStr) {
+      console.log('[NotificationScheduler] Report reminder suppressed - user already uploaded today');
+      return;
+    }
+  }
+
+  // Dynamic Suppression: If user already completed habit checkin today, suppress checkin reminders
+  if (type === 'DAILY_CHECKIN') {
+    const lastHabit = localStorage.getItem('mito_last_habit_log_date');
+    if (lastHabit === todayStr) {
+      console.log('[NotificationScheduler] Daily check-in reminder suppressed - user already logged today');
+      return;
+    }
+  }
+
+  // Dynamic Suppression: If user already logged fasting today
+  if (type === 'FASTING') {
+    const lastFasting = localStorage.getItem('mito_fasting_logged_today');
+    if (lastFasting === todayStr) return;
+  }
+
+  // Dynamic Suppression: If user already logged stillness today
+  if (type === 'STILLNESS') {
+    const lastStillness = localStorage.getItem('mito_stillness_logged_today');
+    if (lastStillness === todayStr) return;
+  }
+
   playNotificationChime();
   try {
     if ('Notification' in window && Notification.permission === 'granted') {
@@ -685,14 +717,34 @@ export const initNotificationScheduler = async () => {
         }
       });
 
-      // Register foreground notification listener for in-app alert & chime
+      // Register foreground notification listener with dynamic condition checks
       LocalNotifications.addListener('localNotificationReceived', (notification) => {
+        const type = notification.extra?.type || 'DAILY_CHECKIN';
+        const todayStr = new Date().toDateString();
+
+        if (type === 'REPORT_UPLOAD') {
+          const lastReport = localStorage.getItem('mito_last_report_upload_date');
+          if (lastReport === todayStr) return; // Suppress if already uploaded
+        }
+        if (type === 'DAILY_CHECKIN') {
+          const lastHabit = localStorage.getItem('mito_last_habit_log_date');
+          if (lastHabit === todayStr) return; // Suppress if already logged
+        }
+        if (type === 'FASTING') {
+          const lastFasting = localStorage.getItem('mito_fasting_logged_today');
+          if (lastFasting === todayStr) return;
+        }
+        if (type === 'STILLNESS') {
+          const lastStillness = localStorage.getItem('mito_stillness_logged_today');
+          if (lastStillness === todayStr) return;
+        }
+
         playNotificationChime();
         window.dispatchEvent(new CustomEvent('mito_reminder_triggered', {
           detail: {
             title: notification.title,
             body: notification.body,
-            type: notification.extra?.type || 'DAILY_CHECKIN'
+            type
           }
         }));
       });

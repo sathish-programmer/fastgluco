@@ -112,8 +112,13 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
       if (response.ok) {
         const data = await response.json();
         setHistory(data);
+        const todayStr = new Date().toDateString();
         if (Array.isArray(data) && data.length > 0) {
           localStorage.setItem('mito_has_cgm_reports', 'true');
+          const hasTodayReport = data.some((r: any) => new Date(r.createdAt || r.uploadedAt || 0).toDateString() === todayStr);
+          if (hasTodayReport) {
+            localStorage.setItem('mito_last_report_upload_date', todayStr);
+          }
         } else {
           localStorage.removeItem('mito_has_cgm_reports');
         }
@@ -179,6 +184,7 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
         
         showToast(msgText, 'success');
         setMessage({ text: msgText, isError: false });
+        localStorage.setItem('mito_last_report_upload_date', new Date().toDateString());
 
         // If glucose is elevated in the parsed report, fire priority actionable dietary insight notification
         const avgG = reportObj.pdfSummaryAverageGlucose || reportObj.averageGlucose || (reportObj.summary && reportObj.summary.averageGlucose);

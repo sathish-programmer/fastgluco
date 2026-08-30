@@ -2455,11 +2455,12 @@ const AdminPanelContent: React.FC = () => {
                     </button>
                     <button 
                       onClick={() => { setActiveView('ask-mito-workflows'); setSearchQuery(''); }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold flex items-center justify-between ${
                         activeView === 'ask-mito-workflows' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
                       }`}
                     >
-                      Ask Mito Workflows & Q&A
+                      <span>Ask Mito • Patient Queries</span>
+                      <span className="text-[10px] bg-blue-500/30 text-blue-300 font-bold px-1.5 py-0.5 rounded">48h</span>
                     </button>
                     <button 
                       onClick={() => { setActiveView('aicoach'); setSearchQuery(''); }}

@@ -127,109 +127,127 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
     const damageActionHints: string[] = [];
     const repairActionHints: string[] = [];
 
-    // Helper to extract text from current session answers or loaded habits
+    // Helper to extract text / values from current session answers or loaded habits
     const getAnswer = (keys: string[]) => {
+      // 1. Check current in-memory session answers
       for (const k of keys) {
-        if (answers[k]) return answers[k];
+        if (answers[k] !== undefined && answers[k] !== '') return `${answers[k]}`;
+        const foundKey = Object.keys(answers).find(ak =>
+          ak.toLowerCase().includes(k.toLowerCase()) || k.toLowerCase().includes(ak.toLowerCase())
+        );
+        if (foundKey && answers[foundKey] !== undefined && answers[foundKey] !== '') {
+          return `${answers[foundKey]}`;
+        }
       }
-      // Check loaded today's habits
+
+      // 2. Check loaded today's / recent habits
       const todayStr = new Date().toDateString();
       const match = loggedHabits.find(h => {
         const isToday = new Date(h.timestamp || (h as any).createdAt || 0).toDateString() === todayStr;
-        if (!isToday) return false;
         const typeUpper = (h.type || '').toUpperCase();
-        return keys.some(k => typeUpper.includes(k.toUpperCase()));
+        return isToday && keys.some(k => typeUpper.includes(k.toUpperCase()) || k.toUpperCase().includes(typeUpper));
+      }) || loggedHabits.find(h => {
+        const typeUpper = (h.type || '').toUpperCase();
+        return keys.some(k => typeUpper.includes(k.toUpperCase()) || k.toUpperCase().includes(typeUpper));
       });
+
       if (match) {
         const val = match.value;
-        return typeof val === 'object' ? (val.option || val.notes || val.faceId || JSON.stringify(val)) : `${val}`;
+        if (val == null) return '';
+        if (typeof val === 'object') {
+          return (val.option || val.notes || val.faceId || val.activity || (val.hours != null ? `${val.hours}` : '') || (val.minutes != null ? `${val.minutes}` : '') || JSON.stringify(val));
+        }
+        return `${val}`;
       }
       return '';
     };
 
     // 1. Stress
-    const stressVal = getAnswer(['stress', 'caregiver_stress']).toLowerCase();
+    const stressVal = getAnswer(['stress', 'caregiver_stress', 'stress_level']).toLowerCase();
     if (stressVal) {
-      if (stressVal.includes('high') || stressVal.includes('tense') || stressVal.includes('stressed') || stressVal.includes('severe') || stressVal.includes('strain') || stressVal.includes('drained') || stressVal.includes('yes')) {
+      if (stressVal.includes('high') || stressVal.includes('tense') || stressVal.includes('stressed') || stressVal.includes('severe') || stressVal.includes('strain') || stressVal.includes('drained') || stressVal.includes('maxed') || stressVal.includes('yes') || stressVal === '3') {
         damageCount += 1;
         damageHighlights.push('High Stress / Cortisol');
         damageActionHints.push('Lower cortisol with 10 minutes of stillness breathwork or meditation.');
-      } else if (stressVal.includes('calm') || stressVal.includes('low') || stressVal.includes('none') || stressVal.includes('good') || stressVal.includes('steady')) {
+      } else if (stressVal.includes('calm') || stressVal.includes('low') || stressVal.includes('none') || stressVal.includes('good') || stressVal.includes('steady') || stressVal.includes('no stress') || stressVal === '1') {
         repairCount += 1;
         repairHighlights.push('Calm Nervous System');
       }
     }
 
     // 2. Sleep
-    const sleepVal = getAnswer(['sleep']).toLowerCase();
+    const sleepVal = getAnswer(['sleep', 'sleep_duration', 'sleep_hours']).toLowerCase();
     if (sleepVal) {
       const sleepHours = parseFloat(sleepVal);
       if ((sleepHours && sleepHours < 6) || sleepVal.includes('poor') || sleepVal.includes('low') || sleepVal.includes('<6')) {
         damageCount += 1;
         damageHighlights.push('Sleep Debt (<6h)');
         damageActionHints.push('Protect cellular mitochondria by getting at least 7-8 hours of sleep.');
-      } else if ((sleepHours && sleepHours >= 6) || sleepVal.includes('good') || sleepVal.includes('restful') || sleepVal.includes('7') || sleepVal.includes('8')) {
+      } else if ((sleepHours && sleepHours >= 6) || sleepVal.includes('good') || sleepVal.includes('restful') || sleepVal.includes('7') || sleepVal.includes('8') || sleepVal.includes('9')) {
         repairCount += 1;
         repairHighlights.push('7+ Hours Restorative Sleep');
       }
     }
 
     // 3. Smoking
-    const smokingVal = getAnswer(['smoking']).toLowerCase();
+    const smokingVal = getAnswer(['smoking', 'tobacco']).toLowerCase();
     if (smokingVal) {
-      if (smokingVal.includes('yes') || smokingVal.includes('smoke') || (parseFloat(smokingVal) > 0)) {
+      const numSmk = parseFloat(smokingVal);
+      if (smokingVal.includes('yes') || smokingVal.includes('smoke') || (!isNaN(numSmk) && numSmk > 0)) {
         damageCount += 1;
         damageHighlights.push('Tobacco / Smoking');
         damageActionHints.push('Avoid smoking triggers tomorrow to prevent oxidative cellular stress.');
-      } else if (smokingVal.includes('no') || smokingVal.includes('clean') || smokingVal === '0') {
+      } else if (smokingVal.includes('no') || smokingVal.includes('clean') || smokingVal === '0' || smokingVal.includes('none')) {
         repairCount += 1;
         repairHighlights.push('Smoke-Free Clean Lungs');
       }
     }
 
     // 4. Alcohol
-    const alcoholVal = getAnswer(['alcohol']).toLowerCase();
+    const alcoholVal = getAnswer(['alcohol', 'drinks']).toLowerCase();
     if (alcoholVal) {
-      if (alcoholVal.includes('yes') || alcoholVal.includes('drink') || (parseFloat(alcoholVal) > 0)) {
+      const numAlc = parseFloat(alcoholVal);
+      if (alcoholVal.includes('yes') || alcoholVal.includes('drink') || (!isNaN(numAlc) && numAlc > 0)) {
         damageCount += 1;
         damageHighlights.push('Alcohol Intake');
         damageActionHints.push('Plan an alcohol-free day tomorrow with herbal tea and high hydration.');
-      } else if (alcoholVal.includes('no') || alcoholVal.includes('clean') || alcoholVal === '0') {
+      } else if (alcoholVal.includes('no') || alcoholVal.includes('clean') || alcoholVal === '0' || alcoholVal.includes('none')) {
         repairCount += 1;
         repairHighlights.push('Zero Alcohol Exposure');
       }
     }
 
     // 5. Environmental Toxins
-    const envVal = getAnswer(['environmental', 'env_air', 'env_pesticides', 'env_microplastics', 'env_water']).toLowerCase();
+    const envVal = getAnswer(['environmental', 'env_air', 'env_pesticides', 'env_microplastics', 'env_water', 'substances']).toLowerCase();
     if (envVal) {
-      if (envVal.includes('exposed') || envVal.includes('plastic') || envVal.includes('chemical') || envVal.includes('smog') || envVal.includes('tap')) {
+      if (envVal.includes('exposed') || envVal.includes('plastic') || envVal.includes('chemical') || envVal.includes('smog') || envVal.includes('tap') || envVal.includes('used') || envVal.includes('yes')) {
         damageCount += 1;
         damageHighlights.push('Environmental Toxins');
         damageActionHints.push('Drink filtered water and avoid heating food in plastics.');
-      } else if (envVal.includes('clean') || envVal.includes('filtered') || envVal.includes('organic') || envVal.includes('plastic-free')) {
+      } else if (envVal.includes('clean') || envVal.includes('filtered') || envVal.includes('organic') || envVal.includes('plastic-free') || envVal.includes('no') || envVal.includes('none')) {
         repairCount += 1;
         repairHighlights.push('Low Toxic Burden');
       }
     }
 
-    // 6. Gastritis / Acidity / Dental
+    // 6. Gastritis / Acidity / Dental / Refined Sugar
     const gutVal = getAnswer(['gut_health', 'gastritis', 'dental', 'damage_habits']).toLowerCase();
     if (gutVal) {
-      if (gutVal.includes('gastritis') || gutVal.includes('acidity') || gutVal.includes('sugar') || gutVal.includes('junk') || gutVal.includes('discomfort') || gutVal.includes('sharp')) {
+      if (gutVal.includes('gastritis') || gutVal.includes('acidity') || gutVal.includes('sugar') || gutVal.includes('junk') || gutVal.includes('discomfort') || gutVal.includes('sharp') || gutVal.includes('yes')) {
         damageCount += 1;
         damageHighlights.push('Gastric Acidity / Refined Food');
         damageActionHints.push('Avoid spicy, fried, or high-sugar foods to soothe your stomach lining.');
-      } else if (gutVal.includes('none') || gutVal.includes('healthy') || gutVal.includes('clean')) {
+      } else if (gutVal.includes('none') || gutVal.includes('healthy') || gutVal.includes('clean') || gutVal.includes('no')) {
         repairCount += 1;
         repairHighlights.push('Healthy Gut & Oral Balance');
       }
     }
 
     // 7. Fasting (Circadian Repair)
-    const fastingVal = getAnswer(['fasting']).toLowerCase();
+    const fastingVal = getAnswer(['fasting', 'fasting_hours']).toLowerCase();
     if (fastingVal) {
-      if (fastingVal.includes('yes') || fastingVal.includes('14') || fastingVal.includes('16') || fastingVal.includes('12') || fastingVal.includes('completed')) {
+      const numF = parseFloat(fastingVal);
+      if (fastingVal.includes('yes') || fastingVal.includes('14') || fastingVal.includes('16') || fastingVal.includes('12') || fastingVal.includes('completed') || (!isNaN(numF) && numF >= 12)) {
         repairCount += 1;
         repairHighlights.push('Circadian Fasting (14h+)');
       } else {
@@ -240,9 +258,10 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
     }
 
     // 8. Movement / Physical Activity
-    const movementVal = getAnswer(['movement']).toLowerCase();
+    const movementVal = getAnswer(['movement', 'movement_mins', 'exercise']).toLowerCase();
     if (movementVal) {
-      if (movementVal.includes('yes') || movementVal.includes('walk') || movementVal.includes('run') || movementVal.includes('20') || movementVal.includes('30') || movementVal.includes('exercise')) {
+      const numM = parseFloat(movementVal);
+      if (movementVal.includes('yes') || movementVal.includes('walk') || movementVal.includes('run') || movementVal.includes('20') || movementVal.includes('30') || movementVal.includes('exercise') || (!isNaN(numM) && numM >= 20)) {
         repairCount += 1;
         repairHighlights.push('20+ Mins Aerobic Movement');
       } else {
@@ -255,7 +274,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
     // 9. Antioxidants & Phytonutrients
     const antioxVal = getAnswer(['antioxidants', 'repair_habits']).toLowerCase();
     if (antioxVal) {
-      if (antioxVal.includes('yes') || antioxVal.includes('consumed') || antioxVal.includes('berries') || antioxVal.includes('vegetables') || antioxVal.includes('greens')) {
+      if (antioxVal.includes('yes') || antioxVal.includes('consumed') || antioxVal.includes('berries') || antioxVal.includes('vegetables') || antioxVal.includes('greens') || antioxVal.includes('turmeric')) {
         repairCount += 1;
         repairHighlights.push('Antioxidant Cellular Protection');
       } else {
@@ -268,7 +287,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
     // 10. Joy & Stillness
     const joyVal = getAnswer(['joy', 'stillness', 'loved']).toLowerCase();
     if (joyVal) {
-      if (joyVal.includes('yes') || joyVal.includes('done') || joyVal.includes('sat') || joyVal.includes('loved')) {
+      if (joyVal.includes('yes') || joyVal.includes('done') || joyVal.includes('sat') || joyVal.includes('loved') || joyVal.includes('mindful')) {
         repairCount += 1;
         repairHighlights.push('Joy & Mindfulness');
       }
@@ -281,7 +300,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
     } else if (damageCount > 0) {
       finalPriorityHints.push('Focus on reducing daily stress and avoiding processed snacks.');
     } else {
-      finalPriorityHints.push('Maintain your 0 damage streak by continuing to protect against toxic exposures.');
+      finalPriorityHints.push('Maintain your zero damage streak by protecting against toxic exposures.');
     }
 
     if (repairActionHints.length > 0) {
@@ -1719,11 +1738,22 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
         });
       } else {
         const multiMap: Record<string, string> = {};
-        detectedMulti.forEach(d => { multiMap[d.stepId] = d.valueStr; });
+        detectedMulti.forEach(d => {
+          multiMap[d.stepId] = d.valueStr;
+          saveHabitToBackend(d.stepId, d.valueStr);
+        });
+        sessionAnswersRef.current = { ...sessionAnswersRef.current, ...multiMap };
+        setSessionAnswers(prev => ({ ...prev, ...multiMap }));
+
         const finalAnswers = { ...sessionAnswersRef.current, ...multiMap };
         const summary = computeSessionScoreSummary(finalAnswers);
         setSessionSummary(summary);
         setIsCompleted(true);
+
+        const todayStr = new Date().toDateString();
+        localStorage.setItem('mito_last_habit_log_date', todayStr);
+        if (finalAnswers['fasting']) localStorage.setItem('mito_fasting_logged_today', todayStr);
+        if (finalAnswers['stillness']) localStorage.setItem('mito_stillness_logged_today', todayStr);
 
         const finishVoice = `All daily check-ins complete. Today your Damage score is ${summary.damageScore}, and Repair score is ${summary.repairScore}. Tomorrow, focus on reducing your damage score by ${summary.priorityActionHints[0] || 'avoiding stress and processed foods'}, and improve your repair score with ${summary.priorityActionHints[1] || 'intermittent fasting and 20 minutes of daily exercise'}.`;
 
@@ -1769,7 +1799,11 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
 
     const validatedAnswer = validation.mappedValue;
     const userMsg: ChatMessage = { id: `user_${Date.now()}`, sender: 'user', text: validatedAnswer, timestamp: ts, stepId: currentStep?.stepId };
-    if (currentStep) saveHabitToBackend(currentStep.stepId, validatedAnswer);
+    if (currentStep) {
+      sessionAnswersRef.current = { ...sessionAnswersRef.current, [currentStep.stepId]: validatedAnswer };
+      setSessionAnswers(prev => ({ ...prev, [currentStep.stepId]: validatedAnswer }));
+      saveHabitToBackend(currentStep.stepId, validatedAnswer);
+    }
     setEditingStepId(null);
     const nextIndex = currentIndex + 1;
     const updatedMsgs = [...currentMsgs, userMsg];
@@ -1789,6 +1823,11 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       const summary = computeSessionScoreSummary(finalAnswers);
       setSessionSummary(summary);
       setIsCompleted(true);
+
+      const todayStr = new Date().toDateString();
+      localStorage.setItem('mito_last_habit_log_date', todayStr);
+      if (finalAnswers['fasting']) localStorage.setItem('mito_fasting_logged_today', todayStr);
+      if (finalAnswers['stillness']) localStorage.setItem('mito_stillness_logged_today', todayStr);
 
       const finishVoice = `All daily check-ins complete. Today your Damage score is ${summary.damageScore}, and Repair score is ${summary.repairScore}. Tomorrow, focus on reducing your damage score by ${summary.priorityActionHints[0] || 'avoiding stress and processed foods'}, and improve your repair score with ${summary.priorityActionHints[1] || 'intermittent fasting and 20 minutes of daily exercise'}.`;
 

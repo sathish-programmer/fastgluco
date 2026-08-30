@@ -43,12 +43,17 @@ const router = Router();
 // ─── Ask Mito – Conversational AI & Knowledge Workflows ──────────────────────
 router.post('/ai/ask', authenticateToken, AskMitoController.askMito);
 router.get('/ask-mito/topics', authenticateToken, AskMitoController.getAskMitoTopics);
+router.post('/ask-mito/queries', authenticateToken, AskMitoController.submitPatientQuery);
+router.get('/ask-mito/my-queries', authenticateToken, AskMitoController.getMyQueries);
 
-// Admin endpoints for Ask Mito Workflows & Q&A Topics
+// Admin endpoints for Ask Mito Workflows, Q&A Topics & Patient Queries
 router.get('/admin/ask-mito/topics', authenticateToken, requireRole(['Admin', 'SuperAdmin']), AskMitoController.getAdminAskMitoTopics);
 router.post('/admin/ask-mito/topics', authenticateToken, requireRole(['Admin', 'SuperAdmin']), AskMitoController.createAskMitoTopic);
 router.put('/admin/ask-mito/topics/:id', authenticateToken, requireRole(['Admin', 'SuperAdmin']), AskMitoController.updateAskMitoTopic);
 router.delete('/admin/ask-mito/topics/:id', authenticateToken, requireRole(['Admin', 'SuperAdmin']), AskMitoController.deleteAskMitoTopic);
+router.get('/admin/ask-mito/queries', authenticateToken, requireRole(['Admin', 'SuperAdmin']), AskMitoController.getAdminQueries);
+router.post('/admin/ask-mito/queries/:id/reply', authenticateToken, requireRole(['Admin', 'SuperAdmin']), AskMitoController.replyPatientQuery);
+router.delete('/admin/ask-mito/queries/:id', authenticateToken, requireRole(['Admin', 'SuperAdmin']), AskMitoController.deleteAdminQuery);
 
 // --- MULTER STORAGE SETUP FOR REPORT UPLOADS ---
 const uploadDir = path.join(process.cwd(), 'uploads');

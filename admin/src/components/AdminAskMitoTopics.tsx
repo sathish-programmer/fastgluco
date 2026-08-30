@@ -1,19 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Sparkles, Plus, Trash2, Edit2, ToggleLeft, ToggleRight, Search, 
-  BookOpen, Activity, Tag, Layers, X
+  Sparkles, Trash2, Search, 
+  X, MessageSquare, Clock, CheckCircle2, 
+  Send, User, RefreshCw, Stethoscope
 } from 'lucide-react';
 
-interface AskMitoTopic {
-  _id?: string;
-  title: string;
+interface PatientQuery {
+  _id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
   category: string;
-  keywords: string[];
-  answer: string;
-  suggestedPrompt: string;
-  icon?: string;
-  order: number;
-  isActive: boolean;
+  subject: string;
+  question: string;
+  status: 'pending' | 'answered';
+  adminReply?: string;
+  repliedBy?: string;
+  repliedAt?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface AdminAskMitoTopicsProps {
@@ -21,395 +26,440 @@ interface AdminAskMitoTopicsProps {
   token: string;
 }
 
+const REPLY_TEMPLATES = [
+  {
+    label: 'Nutrition & Diet Guidance',
+    text: 'Thank you for reaching out. Based on your health focus, we recommend prioritizing polyphenol-rich foods (berries, dark leafy greens, and turmeric) while minimizing refined carbohydrates and inflammatory seed oils to support mitochondrial repair.'
+  },
+  {
+    label: 'CGM & Glucose Spike Advice',
+    text: 'Thank you for sharing your query. Post-meal glucose spikes can be reduced by combining carbohydrates with healthy proteins/fats and engaging in a brisk 15-20 minute walk immediately after meals.'
+  },
+  {
+    label: 'Fasting & Autophagy Protocol',
+    text: 'For optimal cellular autophagy and metabolic recovery, aim for a 14-to-16-hour overnight circadian fasting window. Ensure adequate hydration with electrolytes during fasting hours.'
+  },
+  {
+    label: 'Physician Consultation Recommendation',
+    text: 'While these lifestyle adjustments support cellular defense, we advise discussing these specific lab results or medication adjustments with your primary physician or oncologist during your next consultation.'
+  }
+];
+
 export const AdminAskMitoTopics: React.FC<AdminAskMitoTopicsProps> = ({ apiUrl, token }) => {
-  const [topics, setTopics] = useState<AskMitoTopic[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [saving, setSaving] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<'list' | 'editor'>('list');
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  // Queries State
+  const [queries, setQueries] = useState<PatientQuery[]>([]);
+  const [queriesLoading, setQueriesLoading] = useState<boolean>(true);
+  const [queryFilter, setQueryFilter] = useState<'all' | 'pending' | 'answered'>('all');
+  const [querySearch, setQuerySearch] = useState<string>('');
+  const [pendingCount, setPendingCount] = useState<number>(0);
+  const [answeredCount, setAnsweredCount] = useState<number>(0);
 
-  const [editingTopic, setEditingTopic] = useState<AskMitoTopic>({
-    title: '',
-    category: 'General',
-    keywords: [],
-    answer: '',
-    suggestedPrompt: '',
-    icon: '💡',
-    order: 1,
-    isActive: true
-  });
-  const [keywordInput, setKeywordInput] = useState<string>('');
+  // Active Reply Modal
+  const [activeQueryForReply, setActiveQueryForReply] = useState<PatientQuery | null>(null);
+  const [replyText, setReplyText] = useState<string>('');
+  const [sendingReply, setSendingReply] = useState<boolean>(false);
 
-  const fetchTopics = async () => {
-    setLoading(true);
+  // Fetch Patient Queries
+  const fetchQueries = async () => {
+    setQueriesLoading(true);
     try {
-      const res = await fetch(`${apiUrl}/admin/ask-mito/topics`, {
+      const res = await fetch(`${apiUrl}/admin/ask-mito/queries`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
         const data = await res.json();
-        setTopics(data);
+        const queryList: PatientQuery[] = Array.isArray(data) ? data : (data.queries || []);
+        setQueries(queryList);
+        const pending = typeof data.pendingCount === 'number' 
+          ? data.pendingCount 
+          : queryList.filter(q => q.status === 'pending').length;
+        const answered = typeof data.answeredCount === 'number' 
+          ? data.answeredCount 
+          : queryList.filter(q => q.status === 'answered').length;
+        setPendingCount(pending);
+        setAnsweredCount(answered);
       }
     } catch (err) {
-      console.error('Error fetching Ask Mito topics:', err);
+      console.error('Error fetching patient queries:', err);
     } finally {
-      setLoading(false);
+      setQueriesLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchTopics();
-  }, [apiUrl, token]);
+    fetchQueries();
+  }, [token]);
 
-  const handleSaveTopic = async () => {
-    if (!editingTopic.title || !editingTopic.answer) {
-      alert('Please fill in title and detailed answer.');
-      return;
-    }
+  // Submit Doctor / Specialist Reply
+  const handleSendReply = async () => {
+    if (!activeQueryForReply || !replyText.trim()) return;
 
-    setSaving(true);
+    setSendingReply(true);
     try {
-      const url = editingTopic._id
-        ? `${apiUrl}/admin/ask-mito/topics/${editingTopic._id}`
-        : `${apiUrl}/admin/ask-mito/topics`;
-      const method = editingTopic._id ? 'PUT' : 'POST';
-
-      const res = await fetch(url, {
-        method,
+      const res = await fetch(`${apiUrl}/admin/ask-mito/queries/${activeQueryForReply._id}/reply`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(editingTopic)
+        body: JSON.stringify({ reply: replyText.trim() })
       });
 
       if (res.ok) {
-        alert('Ask Mito topic workflow saved successfully!');
-        fetchTopics();
-        setActiveTab('list');
+        setActiveQueryForReply(null);
+        setReplyText('');
+        fetchQueries();
       } else {
-        alert('Failed to save topic workflow.');
+        alert('Failed to send reply. Please try again.');
       }
     } catch (err) {
-      console.error('Error saving topic:', err);
-      alert('Error saving topic.');
+      console.error('Error sending reply:', err);
+      alert('Error sending reply.');
     } finally {
-      setSaving(false);
+      setSendingReply(false);
     }
   };
 
-  const handleDeleteTopic = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this Ask Mito topic?')) return;
+  // Delete Query
+  const handleDeleteQuery = async (queryId: string) => {
+    if (!window.confirm('Are you sure you want to delete this patient inquiry?')) return;
+
     try {
-      const res = await fetch(`${apiUrl}/admin/ask-mito/topics/${id}`, {
+      const res = await fetch(`${apiUrl}/admin/ask-mito/queries/${queryId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
+
       if (res.ok) {
-        fetchTopics();
+        fetchQueries();
+      } else {
+        alert('Failed to delete query.');
       }
     } catch (err) {
-      console.error('Error deleting topic:', err);
+      console.error('Error deleting query:', err);
     }
   };
 
-  const handleAddKeyword = () => {
-    const kw = keywordInput.trim().toLowerCase();
-    if (kw && !editingTopic.keywords.includes(kw)) {
-      setEditingTopic({ ...editingTopic, keywords: [...editingTopic.keywords, kw] });
-      setKeywordInput('');
-    }
-  };
-
-  const handleRemoveKeyword = (kwToRemove: string) => {
-    setEditingTopic({
-      ...editingTopic,
-      keywords: editingTopic.keywords.filter(k => k !== kwToRemove)
-    });
-  };
-
-  const filteredTopics = topics.filter(t => 
-    t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    t.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    t.keywords.some(k => k.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  // Filtered queries
+  const safeQueries = Array.isArray(queries) ? queries : [];
+  const filteredQueries = safeQueries.filter(q => {
+    const matchesFilter = queryFilter === 'all' || q.status === queryFilter;
+    const matchesSearch = 
+      q.subject?.toLowerCase().includes(querySearch.toLowerCase()) ||
+      q.question?.toLowerCase().includes(querySearch.toLowerCase()) ||
+      q.category?.toLowerCase().includes(querySearch.toLowerCase()) ||
+      q.userName?.toLowerCase().includes(querySearch.toLowerCase()) ||
+      q.userEmail?.toLowerCase().includes(querySearch.toLowerCase());
+    return matchesFilter && matchesSearch;
+  });
 
   return (
     <div className="p-6 bg-slate-50/50 min-h-screen text-slate-900 font-sans">
-      {/* Top Header matching Admin theme */}
+      {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <div className="p-2.5 bg-blue-50 border border-blue-100 text-blue-600 rounded-2xl shadow-xs">
-              <Sparkles className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900">Ask Mito Workflows & Q&A Topics</h1>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">
-                Configure Ask Mito knowledge base answers, suggested topic shortcuts, and intent matching keywords.
-              </p>
-            </div>
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-blue-50 border border-blue-100 text-blue-600 rounded-2xl shadow-xs">
+            <Sparkles className="h-5 w-5" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Ask Mito • Patient Consultations</h1>
+            <p className="text-xs text-slate-500 font-medium mt-0.5">
+              Review direct patient inquiries, track response times, and provide verified clinical advice.
+            </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {activeTab === 'list' ? (
-            <button
-              onClick={() => {
-                setEditingTopic({
-                  title: '',
-                  category: 'General',
-                  keywords: [],
-                  answer: '',
-                  suggestedPrompt: '',
-                  icon: '💡',
-                  order: topics.length + 1,
-                  isActive: true
-                });
-                setActiveTab('editor');
-              }}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Add New Topic</span>
-            </button>
-          ) : (
-            <button
-              onClick={() => setActiveTab('list')}
-              className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
-            >
-              Back to Topics List
-            </button>
-          )}
-        </div>
+        <button
+          onClick={fetchQueries}
+          className="p-2 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl text-slate-600 transition-colors shadow-xs cursor-pointer self-start md:self-auto"
+          title="Refresh Consultations"
+        >
+          <RefreshCw className="h-4 w-4" />
+        </button>
       </div>
 
-      {activeTab === 'list' ? (
-        <div className="space-y-5">
-          {/* Search bar */}
-          <div className="relative max-w-md">
-            <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search topics by title, category, or keyword..."
-              className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 shadow-xs transition-all"
-            />
+      {/* Patient Queries Section */}
+      <div className="space-y-5">
+        {/* Stat Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs flex items-center gap-3.5">
+            <div className="p-3 bg-blue-50 border border-blue-100 text-blue-600 rounded-xl">
+              <MessageSquare className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Questions</p>
+              <h3 className="text-xl font-black text-slate-900 mt-0.5">{queries.length}</h3>
+            </div>
           </div>
 
-          {loading ? (
-            <div className="p-12 text-center text-xs font-medium text-slate-400">Loading Ask Mito topics...</div>
-          ) : filteredTopics.length === 0 ? (
-            <div className="p-12 text-center bg-white border border-slate-200 rounded-2xl shadow-xs">
-              <BookOpen className="h-8 w-8 text-slate-300 mx-auto mb-2" />
-              <p className="text-sm font-bold text-slate-700">No topics found</p>
-              <p className="text-xs text-slate-400 mt-1">Click "Add New Topic" to create a new Ask Mito Q&A workflow topic.</p>
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs flex items-center gap-3.5">
+            <div className="p-3 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl">
+              <Clock className="h-5 w-5" />
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredTopics.map(t => (
-                <div
-                  key={t._id}
-                  className="bg-white border border-slate-200/80 hover:border-slate-300 rounded-2xl p-5 shadow-xs flex flex-col justify-between transition-all"
-                >
-                  <div>
-                    <div className="flex items-start justify-between gap-3 mb-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className="p-2 bg-blue-50 border border-blue-100 text-blue-600 rounded-xl">
-                          <Activity className="h-4 w-4" />
-                        </div>
-                        <div>
-                          <h3 className="text-sm font-bold text-slate-900 tracking-tight">{t.title}</h3>
-                          <span className="inline-block mt-0.5 text-[9.5px] font-bold bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-md uppercase tracking-wider">
-                            {t.category}
-                          </span>
-                        </div>
-                      </div>
-                      <span className={`text-[9.5px] font-bold px-2.5 py-0.5 rounded-full border ${t.isActive ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-400 border-slate-200'}`}>
-                        {t.isActive ? 'Active' : 'Disabled'}
-                      </span>
-                    </div>
+            <div>
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Pending Response</p>
+              <h3 className="text-xl font-black text-rose-600 mt-0.5">{pendingCount}</h3>
+            </div>
+          </div>
 
-                    <div className="mt-3">
-                      <p className="text-xs font-medium text-slate-600 leading-relaxed line-clamp-3 whitespace-pre-line bg-slate-50/80 p-3 rounded-xl border border-slate-100">
-                        {t.answer}
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs flex items-center gap-3.5">
+            <div className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded-xl">
+              <CheckCircle2 className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Answered by Team</p>
+              <h3 className="text-xl font-black text-emerald-600 mt-0.5">{answeredCount}</h3>
+            </div>
+          </div>
+        </div>
+
+        {/* Filter & Search Bar */}
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex items-center bg-slate-100 p-1 rounded-xl gap-1">
+            <button
+              onClick={() => setQueryFilter('all')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                queryFilter === 'all'
+                  ? 'bg-white text-slate-900 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              All ({queries.length})
+            </button>
+            <button
+              onClick={() => setQueryFilter('pending')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                queryFilter === 'pending'
+                  ? 'bg-white text-rose-600 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              Pending ({pendingCount})
+            </button>
+            <button
+              onClick={() => setQueryFilter('answered')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                queryFilter === 'answered'
+                  ? 'bg-white text-emerald-600 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              Answered ({answeredCount})
+            </button>
+          </div>
+
+          <div className="relative max-w-sm w-full">
+            <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              value={querySearch}
+              onChange={e => setQuerySearch(e.target.value)}
+              placeholder="Search by patient, subject, category..."
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500"
+            />
+          </div>
+        </div>
+
+        {/* Queries List */}
+        {queriesLoading ? (
+          <div className="py-16 text-center text-xs font-semibold text-slate-400">
+            Loading consultations...
+          </div>
+        ) : filteredQueries.length === 0 ? (
+          <div className="py-16 text-center bg-white border border-slate-200/80 rounded-2xl p-8">
+            <MessageSquare className="h-10 w-10 text-slate-300 mx-auto mb-2" />
+            <p className="text-sm font-bold text-slate-600">No patient inquiries found</p>
+            <p className="text-xs text-slate-400 mt-1">Questions submitted from the Mito mobile app will appear here for review.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filteredQueries.map(q => {
+              const isPending = q.status === 'pending';
+              const createdDate = new Date(q.createdAt);
+              const elapsedHours = Math.round((Date.now() - createdDate.getTime()) / (1000 * 60 * 60));
+              const isOverdue = isPending && elapsedHours > 48;
+
+              return (
+                <div
+                  key={q._id}
+                  className={`bg-white border rounded-2xl p-5 shadow-xs transition-all ${
+                    isPending 
+                      ? 'border-blue-200 hover:border-blue-300' 
+                      : 'border-slate-200/80 hover:border-slate-300'
+                  }`}
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3">
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200">
+                          {q.category || 'General'}
+                        </span>
+                        <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-md border flex items-center gap-1 ${
+                          isPending
+                            ? (isOverdue ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-amber-50 text-amber-700 border-amber-200')
+                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        }`}>
+                          {isPending ? <Clock className="h-3 w-3" /> : <CheckCircle2 className="h-3 w-3" />}
+                          <span>{isPending ? (isOverdue ? `Overdue (${elapsedHours}h)` : `Pending (${elapsedHours}h ago)`) : 'Answered'}</span>
+                        </span>
+                      </div>
+                      <h3 className="text-base font-bold text-slate-900">{q.subject}</h3>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        Submitted on {createdDate.toLocaleDateString()} at {createdDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
 
-                    {/* Keywords pills */}
-                    <div className="mt-3.5 flex flex-wrap gap-1.5">
-                      {t.keywords.map(kw => (
-                        <span key={kw} className="inline-flex items-center gap-1 text-[9.5px] font-medium bg-slate-100 text-slate-600 border border-slate-200/70 px-2 py-0.5 rounded-md">
-                          <Tag className="h-2.5 w-2.5 text-slate-400" />
-                          #{kw}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Footer Actions */}
-                  <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Order: {t.order}</span>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-2 shrink-0">
                       <button
                         onClick={() => {
-                          setEditingTopic(t);
-                          setActiveTab('editor');
+                          setActiveQueryForReply(q);
+                          setReplyText(q.adminReply || '');
                         }}
-                        className="p-2 hover:bg-blue-50 text-slate-500 hover:text-blue-600 rounded-xl transition-colors cursor-pointer"
-                        title="Edit Topic"
+                        className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer ${
+                          isPending
+                            ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                            : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                        }`}
                       >
-                        <Edit2 className="h-4 w-4" />
+                        <Send className="h-3.5 w-3.5" />
+                        <span>{isPending ? 'Write Reply' : 'Edit Reply'}</span>
                       </button>
                       <button
-                        onClick={() => t._id && handleDeleteTopic(t._id)}
-                        className="p-2 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-xl transition-colors cursor-pointer"
-                        title="Delete Topic"
+                        onClick={() => handleDeleteQuery(q._id)}
+                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
+                        title="Delete Query"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
                   </div>
+
+                  {/* Patient Info Card */}
+                  <div className="flex items-center gap-2 text-xs text-slate-500 font-medium bg-slate-50 px-3 py-2 rounded-xl border border-slate-100 mb-3">
+                    <User className="h-3.5 w-3.5 text-slate-400" />
+                    <span className="font-bold text-slate-700">{q.userName}</span>
+                    <span>•</span>
+                    <span className="text-slate-600">{q.userEmail}</span>
+                  </div>
+
+                  {/* Question Content */}
+                  <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-100 text-xs font-medium text-slate-800 leading-relaxed whitespace-pre-wrap">
+                    {q.question}
+                  </div>
+
+                  {/* Admin / Doctor Reply Section */}
+                  {q.adminReply && (
+                    <div className="mt-3.5 bg-emerald-50/70 border border-emerald-200 rounded-xl p-4 text-xs">
+                      <div className="flex items-center justify-between gap-2 mb-1.5">
+                        <div className="flex items-center gap-1.5 font-bold text-emerald-800">
+                          <Stethoscope className="h-4 w-4 text-emerald-600" />
+                          <span>Clinical Team Response</span>
+                        </div>
+                        {q.repliedAt && (
+                          <span className="text-[10.5px] font-semibold text-emerald-700">
+                            {new Date(q.repliedAt).toLocaleDateString()} ({q.repliedBy || 'Specialist'})
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-emerald-900 leading-relaxed whitespace-pre-wrap mt-1">
+                        {q.adminReply}
+                      </p>
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      ) : (
-        /* Editor View matching light admin theme */
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm max-w-3xl">
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-2">
-              <Layers className="h-5 w-5 text-blue-600" />
-              <h2 className="text-base font-bold text-slate-900">
-                {editingTopic._id ? 'Edit Ask Mito Topic Workflow' : 'Add New Ask Mito Topic Workflow'}
-              </h2>
-            </div>
-            <button 
-              onClick={() => setActiveTab('list')}
-              className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
-            >
-              <X className="h-4 w-4" />
-            </button>
+              );
+            })}
           </div>
+        )}
+      </div>
 
-          <div className="space-y-4 text-xs">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Title (Clean Text)</label>
-                <input
-                  type="text"
-                  value={editingTopic.title}
-                  onChange={e => setEditingTopic({ ...editingTopic, title: e.target.value })}
-                  placeholder="e.g. Continuous Glucose Monitoring (CGM) Guide"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Category</label>
-                <input
-                  type="text"
-                  value={editingTopic.category}
-                  onChange={e => setEditingTopic({ ...editingTopic, category: e.target.value })}
-                  placeholder="e.g. CGM, Fasting, Sleep, Nutrition, General"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Suggested User Prompt</label>
-                <input
-                  type="text"
-                  value={editingTopic.suggestedPrompt}
-                  onChange={e => setEditingTopic({ ...editingTopic, suggestedPrompt: e.target.value })}
-                  placeholder="e.g. How do I read my CGM report?"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Display Order</label>
-                <input
-                  type="number"
-                  value={editingTopic.order}
-                  onChange={e => setEditingTopic({ ...editingTopic, order: parseInt(e.target.value, 10) || 1 })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 font-medium text-slate-800 focus:outline-none focus:border-blue-500"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Detailed Answer / Knowledge Base Content</label>
-              <textarea
-                value={editingTopic.answer}
-                onChange={e => setEditingTopic({ ...editingTopic, answer: e.target.value })}
-                rows={6}
-                placeholder="Enter detailed, evidence-based answer content..."
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 leading-relaxed"
-              />
-            </div>
-
-            {/* Keyword matching tags */}
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Matching Keywords (for AI intent matching)</label>
-              <div className="flex gap-2 mb-2">
-                <input
-                  type="text"
-                  value={keywordInput}
-                  onChange={e => setKeywordInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddKeyword(); } }}
-                  placeholder="Type keyword and press Enter (e.g. cgm, spikes, glucose)"
-                  className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddKeyword}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-xl transition-all cursor-pointer"
-                >
-                  Add Keyword
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-1.5 min-h-[36px] p-2 bg-slate-50 border border-slate-200 rounded-xl">
-                {editingTopic.keywords.map(kw => (
-                  <span key={kw} className="inline-flex items-center gap-1 text-[11px] font-bold bg-white border border-slate-200 text-slate-700 px-2.5 py-1 rounded-lg shadow-2xs">
-                    #{kw}
-                    <button type="button" onClick={() => handleRemoveKeyword(kw)} className="text-slate-400 hover:text-rose-500 font-bold ml-1">✕</button>
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between pt-5 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setEditingTopic({ ...editingTopic, isActive: !editingTopic.isActive })}
-                className="flex items-center gap-2 font-bold cursor-pointer"
-              >
-                {editingTopic.isActive ? <ToggleRight className="h-6 w-6 text-emerald-600" /> : <ToggleLeft className="h-6 w-6 text-slate-400" />}
-                <span className={editingTopic.isActive ? 'text-emerald-700 font-bold' : 'text-slate-400'}>
-                  {editingTopic.isActive ? 'Active & Published' : 'Disabled'}
-                </span>
-              </button>
-
+      {/* ========================================================================= */}
+      {/* REPLY MODAL                                                               */}
+      {/* ========================================================================= */}
+      {activeQueryForReply && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl border border-slate-200 flex flex-col max-h-[90vh]">
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
               <div className="flex items-center gap-2">
+                <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+                  <Stethoscope className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-slate-900">Reply to Patient Question</h3>
+                  <p className="text-[11px] text-slate-500">Patient: {activeQueryForReply.userName} ({activeQueryForReply.userEmail})</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setActiveQueryForReply(null)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="p-5 overflow-y-auto space-y-4 flex-1">
+              {/* Question summary banner */}
+              <div className="bg-blue-50/60 border border-blue-100 rounded-xl p-3.5">
+                <span className="text-[10px] font-black uppercase text-blue-600 tracking-wider">
+                  Category: {activeQueryForReply.category}
+                </span>
+                <h4 className="font-bold text-xs text-slate-900 mt-1">{activeQueryForReply.subject}</h4>
+                <p className="text-xs text-slate-700 mt-1 leading-relaxed whitespace-pre-wrap">{activeQueryForReply.question}</p>
+              </div>
+
+              {/* Quick response templates */}
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1.5">
+                  Insert Clinical Template
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {REPLY_TEMPLATES.map((tmpl, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setReplyText(tmpl.text)}
+                      className="text-left p-2.5 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 rounded-xl text-[11px] text-slate-700 transition-colors cursor-pointer"
+                    >
+                      <span className="font-bold text-slate-900 block">{tmpl.label}</span>
+                      <span className="text-slate-500 line-clamp-2 mt-0.5 text-[10px]">{tmpl.text}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Reply textarea */}
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1.5">
+                  Clinical Response Text
+                </label>
+                <textarea
+                  rows={6}
+                  value={replyText}
+                  onChange={e => setReplyText(e.target.value)}
+                  placeholder="Type your medical / nutritional guidance here..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-900 font-medium focus:outline-none focus:border-blue-500 leading-relaxed"
+                />
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+              <span className="text-[11px] text-slate-400">Response will be instantly delivered to user app</span>
+              <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => setActiveTab('list')}
-                  className="px-4 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl font-bold transition-all cursor-pointer"
+                  onClick={() => setActiveQueryForReply(null)}
+                  className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
-                  onClick={handleSaveTopic}
-                  disabled={saving}
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-sm transition-all disabled:opacity-50 cursor-pointer"
+                  onClick={handleSendReply}
+                  disabled={sendingReply || !replyText.trim()}
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs disabled:opacity-50 flex items-center gap-1.5 transition-all cursor-pointer"
                 >
-                  {saving ? 'Saving...' : 'Save Topic Workflow'}
+                  <Send className="h-3.5 w-3.5" />
+                  <span>{sendingReply ? 'Sending...' : 'Send Reply to Patient'}</span>
                 </button>
               </div>
             </div>

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import AskMitoTopic from '../models/AskMitoTopic';
+import AskMitoQuery from '../models/AskMitoQuery';
 
 const SYSTEM_PROMPT = `You are Mito, an expert AI health companion for the Mito_Reboot app — a cancer prevention and metabolic health platform.
 
@@ -165,5 +166,147 @@ export const askMito = async (req: Request, res: Response) => {
     return res.status(500).json({
       answer: "I'm Mito, your health companion! Please try your question again or choose a suggested topic below."
     });
+  }
+};
+
+// ─── PATIENT QUERY CONSULTATION HANDLERS (48-HOUR SLA) ─────────────────────
+
+/**
+ * Submit a direct question to the clinical team
+ */
+export const submitPatientQuery = async (req: any, res: Response) => {
+  try {
+    const userId = req.user?.id || req.user?._id;
+    const userName = req.user?.name || req.body.userName || 'Patient';
+    const userEmail = req.user?.email || req.body.userEmail || '';
+    const { category, subject, question } = req.body;
+
+    if (!subject?.trim() || !question?.trim()) {
+      return res.status(400).json({ message: 'Subject and question are required.' });
+    }
+
+    const newQuery = new AskMitoQuery({
+      userId,
+      userName,
+      userEmail,
+      category: category?.trim() || 'General',
+      subject: subject.trim(),
+      question: question.trim(),
+      status: 'pending'
+    });
+
+    await newQuery.save();
+
+    return res.status(201).json({
+      message: 'Your question has been received. Our clinical specialists will review and reply within 48 hours.',
+      query: newQuery
+    });
+  } catch (err: any) {
+    console.error('Error submitting patient question:', err);
+    return res.status(500).json({ message: 'Failed to submit question. Please try again.' });
+  }
+};
+
+/**
+ * Get all questions submitted by the authenticated user
+ */
+export const getMyQueries = async (req: any, res: Response) => {
+  try {
+    const userId = req.user?.id || req.user?._id;
+    const queries = await AskMitoQuery.find({ userId }).sort({ createdAt: -1 });
+    return res.json(queries);
+  } catch (err: any) {
+    console.error('Error fetching patient questions:', err);
+    return res.status(500).json({ message: 'Error fetching your questions.' });
+  }
+};
+
+/**
+ * Admin: Get all patient questions with optional status and search filter
+ */
+export const getAdminQueries = async (req: Request, res: Response) => {
+  try {
+    const { status, search } = req.query as { status?: string; search?: string };
+    const filter: any = {};
+
+    if (status && status !== 'all') {
+      filter.status = status;
+    }
+
+    if (search?.trim()) {
+      const regex = new RegExp(search.trim(), 'i');
+      filter.$or = [
+        { userName: regex },
+        { userEmail: regex },
+        { subject: regex },
+        { question: regex },
+        { category: regex }
+      ];
+    }
+
+    const queries = await AskMitoQuery.find(filter).sort({ createdAt: -1 });
+    const pendingCount = await AskMitoQuery.countDocuments({ status: 'pending' });
+    const answeredCount = await AskMitoQuery.countDocuments({ status: 'answered' });
+
+    return res.json({
+      queries,
+      total: queries.length,
+      pendingCount,
+      answeredCount
+    });
+  } catch (err: any) {
+    console.error('Error fetching admin patient queries:', err);
+    return res.status(500).json({ message: 'Error fetching queries.' });
+  }
+};
+
+/**
+ * Admin: Reply to a patient query
+ */
+export const replyPatientQuery = async (req: any, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { reply } = req.body;
+    const adminName = req.user?.name && !req.user?.name.includes('@') ? req.user.name : 'Mito Clinical Specialist';
+
+    if (!reply?.trim()) {
+      return res.status(400).json({ message: 'Reply text is required.' });
+    }
+
+    const updatedQuery = await AskMitoQuery.findByIdAndUpdate(
+      id,
+      {
+        adminReply: reply.trim(),
+        status: 'answered',
+        repliedBy: adminName,
+        repliedAt: new Date()
+      },
+      { new: true }
+    );
+
+    if (!updatedQuery) {
+      return res.status(404).json({ message: 'Question not found.' });
+    }
+
+    return res.json({
+      message: 'Reply sent successfully to patient.',
+      query: updatedQuery
+    });
+  } catch (err: any) {
+    console.error('Error replying to patient question:', err);
+    return res.status(500).json({ message: 'Failed to send reply.' });
+  }
+};
+
+/**
+ * Admin: Delete a patient query
+ */
+export const deleteAdminQuery = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await AskMitoQuery.findByIdAndDelete(id);
+    return res.json({ message: 'Query deleted successfully.' });
+  } catch (err: any) {
+    return res.status(500).json({ message: 'Error deleting query.' });
   }
 };
