@@ -441,8 +441,10 @@ const AdminPanelContent: React.FC = () => {
     name: '',
     code: '',
     description: '',
-    monthlyPrice: 99,
-    yearlyPrice: 999,
+    monthlyPrice: 100,
+    yearlyPrice: 1000,
+    monthlyFreeQuestions: 1,
+    yearlyFreeQuestions: 10,
     trialDays: 7,
     displayOrder: 1,
     badge: 'None' as any,
@@ -1493,8 +1495,10 @@ const AdminPanelContent: React.FC = () => {
           name: '',
           code: '',
           description: '',
-          monthlyPrice: 99,
-          yearlyPrice: 999,
+          monthlyPrice: 100,
+          yearlyPrice: 1000,
+          monthlyFreeQuestions: 1,
+          yearlyFreeQuestions: 10,
           trialDays: 7,
           displayOrder: 1,
           badge: 'None',
@@ -5117,8 +5121,10 @@ const AdminPanelContent: React.FC = () => {
                     name: '',
                     code: '',
                     description: '',
-                    monthlyPrice: 99,
-                    yearlyPrice: 999,
+                    monthlyPrice: 100,
+                    yearlyPrice: 1000,
+                    monthlyFreeQuestions: 1,
+                    yearlyFreeQuestions: 10,
                     trialDays: 7,
                     displayOrder: 1,
                     badge: 'None',
@@ -5151,6 +5157,7 @@ const AdminPanelContent: React.FC = () => {
                     <th className="px-6 py-4">Plan Name</th>
                     <th className="px-6 py-4">Code</th>
                     <th className="px-6 py-4">Prices</th>
+                    <th className="px-6 py-4">Doctor Qs Quota</th>
                     <th className="px-6 py-4">Trial Period</th>
                     <th className="px-6 py-4">Features Check</th>
                     <th className="px-6 py-4">Display Order</th>
@@ -5161,7 +5168,7 @@ const AdminPanelContent: React.FC = () => {
                 <tbody className="divide-y divide-slate-100 text-sm font-semibold text-slate-700">
                   {plans.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="text-center py-8 text-slate-400">No subscription plans seeded. Create one.</td>
+                      <td colSpan={9} className="text-center py-8 text-slate-400">No subscription plans seeded. Create one.</td>
                     </tr>
                   ) : (
                     plans.map((p) => {
@@ -5182,8 +5189,16 @@ const AdminPanelContent: React.FC = () => {
                           </td>
                           <td className="px-6 py-4 text-slate-500 font-bold uppercase">{p.code}</td>
                           <td className="px-6 py-4">
-                            <span className="text-slate-800 block">₹{p.monthlyPrice}/mo</span>
+                            <span className="text-slate-800 block font-bold">₹{p.monthlyPrice}/mo</span>
                             <span className="text-[10px] text-slate-400 font-bold block">₹{p.yearlyPrice}/yr</span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 block whitespace-nowrap">
+                              {p.monthlyFreeQuestions ?? 1}/mo
+                            </span>
+                            <span className="text-[10px] font-bold text-slate-500 block mt-0.5">
+                              {p.yearlyFreeQuestions ?? 10}/yr
+                            </span>
                           </td>
                           <td className="px-6 py-4 font-medium text-slate-500">{p.trialDays} days</td>
                           <td className="px-6 py-4">
@@ -5214,6 +5229,8 @@ const AdminPanelContent: React.FC = () => {
                                     description: p.description || '',
                                     monthlyPrice: p.monthlyPrice,
                                     yearlyPrice: p.yearlyPrice,
+                                    monthlyFreeQuestions: p.monthlyFreeQuestions ?? 1,
+                                    yearlyFreeQuestions: p.yearlyFreeQuestions ?? 10,
                                     trialDays: p.trialDays,
                                     displayOrder: p.displayOrder,
                                     badge: p.badge || 'None',
@@ -5551,6 +5568,20 @@ const AdminPanelContent: React.FC = () => {
                             className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
                           />
                           <p className="text-[10px] text-slate-400 font-semibold mt-1">For Subscriptions.</p>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Ask Mito 48h Fee (₹)</label>
+                          <input
+                            type="number"
+                            min="0"
+                            required
+                            value={paymentConfig.askMitoQuestionFee !== undefined ? paymentConfig.askMitoQuestionFee : 100}
+                            onChange={(e) => setPaymentConfig({ ...paymentConfig, askMitoQuestionFee: parseFloat(e.target.value) || 0 })}
+                            placeholder="100"
+                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
+                          />
+                          <p className="text-[10px] text-slate-400 font-semibold mt-1">Fee per question (Default ₹100).</p>
                         </div>
                       </div>
 
@@ -6136,6 +6167,33 @@ const AdminPanelContent: React.FC = () => {
                       onChange={(e) => setPlanForm({ ...planForm, trialDays: parseInt(e.target.value, 10) })}
                       className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none"
                     />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 bg-emerald-50/60 p-3.5 rounded-2xl border border-emerald-100">
+                  <div>
+                    <label className="block text-xs font-bold text-emerald-800 uppercase mb-1">Free Qs / Month (Ask Mito)</label>
+                    <input
+                      type="number"
+                      required
+                      min={0}
+                      value={planForm.monthlyFreeQuestions}
+                      onChange={(e) => setPlanForm({ ...planForm, monthlyFreeQuestions: parseInt(e.target.value, 10) || 0 })}
+                      className="w-full px-3 py-2 bg-white border border-emerald-200 rounded-xl text-xs font-bold text-emerald-900 focus:outline-none focus:border-emerald-400"
+                    />
+                    <p className="text-[10px] text-emerald-600 font-semibold mt-1">Included for monthly subscribers (e.g. 1)</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-emerald-800 uppercase mb-1">Free Qs / Year (Ask Mito)</label>
+                    <input
+                      type="number"
+                      required
+                      min={0}
+                      value={planForm.yearlyFreeQuestions}
+                      onChange={(e) => setPlanForm({ ...planForm, yearlyFreeQuestions: parseInt(e.target.value, 10) || 0 })}
+                      className="w-full px-3 py-2 bg-white border border-emerald-200 rounded-xl text-xs font-bold text-emerald-900 focus:outline-none focus:border-emerald-400"
+                    />
+                    <p className="text-[10px] text-emerald-600 font-semibold mt-1">Included for annual subscribers (e.g. 10)</p>
                   </div>
                 </div>
 

@@ -1,7 +1,13 @@
 import { Request, Response } from 'express';
+import crypto from 'crypto';
+import Razorpay from 'razorpay';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import AskMitoTopic from '../models/AskMitoTopic';
 import AskMitoQuery from '../models/AskMitoQuery';
+import { UserSubscription } from '../models/UserSubscription';
+import { SubscriptionPlan } from '../models/SubscriptionPlan';
+import { PaymentGatewayConfig } from '../models/PaymentGatewayConfig';
+import { PaymentTransaction } from '../models/PaymentTransaction';
 
 const SYSTEM_PROMPT = `You are Mito, an expert AI health companion for the Mito_Reboot app — a cancer prevention and metabolic health platform.
 
@@ -169,7 +175,121 @@ export const askMito = async (req: Request, res: Response) => {
   }
 };
 
-// ─── PATIENT QUERY CONSULTATION HANDLERS (48-HOUR SLA) ─────────────────────
+// ─── PATIENT QUERY CONSULTATION HANDLERS (48-HOUR SLA & QUOTA) ────────────
+
+/**
+ * Get user's active consultation quota and fee details
+ */
+export const getQuotaStatus = async (req: any, res: Response) => {
+  try {
+    const userId = req.user?.id || req.user?._id;
+    const config = await PaymentGatewayConfig.findOne();
+    const questionFee = config?.askMitoQuestionFee ?? 100;
+    const isSandbox = config ? config.isSandbox : true;
+    const razorpayKeyId = config?.razorpayKeyId || '';
+
+    // Check user's active subscription
+    const subscription = await UserSubscription.findOne({
+      userId,
+      status: { $in: ['active', 'trialing'] },
+      endDate: { $gte: new Date() }
+    });
+
+    let isSubscribed = false;
+    let planName = 'Basic';
+    let billingCycle: 'monthly' | 'yearly' = 'monthly';
+    let totalFreeQuestions = 0;
+    let freeQuestionsUsed = 0;
+    let remainingFreeQuestions = 0;
+
+    if (subscription) {
+      isSubscribed = true;
+      billingCycle = subscription.billingCycle;
+      const plan = await SubscriptionPlan.findById(subscription.planId);
+      if (plan) {
+        planName = plan.name;
+        totalFreeQuestions = subscription.billingCycle === 'yearly'
+          ? (plan.yearlyFreeQuestions ?? 10)
+          : (plan.monthlyFreeQuestions ?? 1);
+      } else {
+        totalFreeQuestions = subscription.billingCycle === 'yearly' ? 10 : 1;
+      }
+
+      // Count questions submitted using free quota during current subscription window
+      freeQuestionsUsed = await AskMitoQuery.countDocuments({
+        userId,
+        isFreeQuotaUsed: true,
+        createdAt: { $gte: subscription.startDate, $lte: subscription.endDate }
+      });
+
+      remainingFreeQuestions = Math.max(0, totalFreeQuestions - freeQuestionsUsed);
+    }
+
+    return res.json({
+      isSubscribed,
+      planName,
+      billingCycle,
+      totalFreeQuestions,
+      freeQuestionsUsed,
+      remainingFreeQuestions,
+      questionFee,
+      isSandbox,
+      razorpayKeyId
+    });
+  } catch (err: any) {
+    console.error('Error fetching Ask Mito quota status:', err);
+    return res.status(500).json({ message: 'Error fetching quota status.' });
+  }
+};
+
+/**
+ * Create order for paid 48-hour question (₹100)
+ */
+export const createQuestionOrder = async (req: any, res: Response) => {
+  try {
+    const userId = req.user?.id || req.user?._id;
+    const config = await PaymentGatewayConfig.findOne();
+    const questionFee = config?.askMitoQuestionFee ?? 100;
+    const useRazorpay = !!(config && config.enablePayments && config.razorpayKeyId && config.razorpayKeySecret);
+
+    if (useRazorpay) {
+      const razorpay = new Razorpay({
+        key_id: config.razorpayKeyId!,
+        key_secret: config.razorpayKeySecret!
+      });
+
+      const order = await razorpay.orders.create({
+        amount: Math.round(questionFee * 100), // amount in paise
+        currency: 'INR',
+        receipt: `ask_mito_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+        notes: { userId: userId.toString(), type: 'ask_mito_query' }
+      });
+
+      return res.status(201).json({
+        gateway: 'razorpay',
+        orderId: order.id,
+        amount: order.amount, // in paise
+        currency: 'INR',
+        keyId: config.razorpayKeyId,
+        questionFee
+      });
+    } else {
+      // Mock gateway order
+      const mockOrderId = `mock_ask_order_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+      return res.status(201).json({
+        gateway: 'mock',
+        orderId: mockOrderId,
+        amount: Math.round(questionFee * 100),
+        currency: 'INR',
+        keyId: config?.razorpayKeyId || 'rzp_test_mock',
+        questionFee
+      });
+    }
+  } catch (err: any) {
+    console.error('Error creating Ask Mito order:', err);
+    return res.status(500).json({ message: 'Failed to create consultation order.' });
+  }
+};
 
 /**
  * Submit a direct question to the clinical team
@@ -179,10 +299,93 @@ export const submitPatientQuery = async (req: any, res: Response) => {
     const userId = req.user?.id || req.user?._id;
     const userName = req.user?.name || req.body.userName || 'Patient';
     const userEmail = req.user?.email || req.body.userEmail || '';
-    const { category, subject, question } = req.body;
+    const { category, subject, question, paymentDetails } = req.body;
 
     if (!subject?.trim() || !question?.trim()) {
       return res.status(400).json({ message: 'Subject and question are required.' });
+    }
+
+    const config = await PaymentGatewayConfig.findOne();
+    const questionFee = config?.askMitoQuestionFee ?? 100;
+
+    // 1. Check user's active subscription and free quota
+    const subscription = await UserSubscription.findOne({
+      userId,
+      status: { $in: ['active', 'trialing'] },
+      endDate: { $gte: new Date() }
+    });
+
+    let hasFreeQuota = false;
+    if (subscription) {
+      const plan = await SubscriptionPlan.findById(subscription.planId);
+      const totalFree = subscription.billingCycle === 'yearly'
+        ? (plan?.yearlyFreeQuestions ?? 10)
+        : (plan?.monthlyFreeQuestions ?? 1);
+
+      const used = await AskMitoQuery.countDocuments({
+        userId,
+        isFreeQuotaUsed: true,
+        createdAt: { $gte: subscription.startDate, $lte: subscription.endDate }
+      });
+
+      if (used < totalFree) {
+        hasFreeQuota = true;
+      }
+    }
+
+    let isPaid = false;
+    let amountPaid = 0;
+    let isFreeQuotaUsed = false;
+    let paymentTxId: any = undefined;
+
+    if (hasFreeQuota) {
+      isFreeQuotaUsed = true;
+      isPaid = true;
+      amountPaid = 0;
+    } else {
+      // Requires paid verification
+      if (!paymentDetails || !paymentDetails.orderId) {
+        return res.status(402).json({
+          message: `Doctor Consultation requires payment of ₹${questionFee}. Please complete payment.`,
+          requiresPayment: true,
+          questionFee
+        });
+      }
+
+      const { gateway, orderId, paymentId, signature } = paymentDetails;
+
+      // Verify Razorpay signature if gateway === 'razorpay'
+      if (gateway === 'razorpay' && config?.razorpayKeySecret) {
+        const body = orderId + '|' + paymentId;
+        const expectedSignature = crypto
+          .createHmac('sha256', config.razorpayKeySecret)
+          .update(body.toString())
+          .digest('hex');
+
+        if (expectedSignature !== signature) {
+          return res.status(400).json({ message: 'Invalid payment signature verification.' });
+        }
+      }
+
+      // Record transaction
+      const transaction = new PaymentTransaction({
+        userId,
+        amount: questionFee,
+        originalAmount: questionFee,
+        discountAmount: 0,
+        currency: 'INR',
+        gateway: gateway === 'razorpay' ? 'razorpay' : 'mock',
+        gatewayOrderId: orderId,
+        gatewayPaymentId: paymentId || `pay_${Date.now()}`,
+        gatewaySignature: signature,
+        status: 'success'
+      });
+      await transaction.save();
+      paymentTxId = transaction._id;
+
+      isPaid = true;
+      amountPaid = questionFee;
+      isFreeQuotaUsed = false;
     }
 
     const newQuery = new AskMitoQuery({
@@ -192,14 +395,20 @@ export const submitPatientQuery = async (req: any, res: Response) => {
       category: category?.trim() || 'General',
       subject: subject.trim(),
       question: question.trim(),
-      status: 'pending'
+      status: 'pending',
+      isPaid,
+      amountPaid,
+      isFreeQuotaUsed,
+      paymentTransactionId: paymentTxId
     });
 
     await newQuery.save();
 
     return res.status(201).json({
       message: 'Your question has been received. Our clinical specialists will review and reply within 48 hours.',
-      query: newQuery
+      query: newQuery,
+      isFreeQuotaUsed,
+      amountPaid
     });
   } catch (err: any) {
     console.error('Error submitting patient question:', err);

@@ -3,7 +3,7 @@ import { Schema, model, Document, Types } from 'mongoose';
 export interface IPaymentTransaction extends Document {
   userId: Types.ObjectId;
   subscriptionId?: Types.ObjectId;
-  planId: Types.ObjectId;
+  planId?: Types.ObjectId;
   amount: number;
   originalAmount: number;
   discountAmount: number;
@@ -26,7 +26,7 @@ const paymentTransactionSchema = new Schema<IPaymentTransaction>(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     subscriptionId: { type: Schema.Types.ObjectId, ref: 'UserSubscription' },
-    planId: { type: Schema.Types.ObjectId, ref: 'SubscriptionPlan', required: true },
+    planId: { type: Schema.Types.ObjectId, ref: 'SubscriptionPlan', required: false },
     amount: { type: Number, required: true, min: 0 },
     originalAmount: { type: Number, required: true, min: 0 },
     discountAmount: { type: Number, default: 0, min: 0 },

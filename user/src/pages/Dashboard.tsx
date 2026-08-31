@@ -1050,32 +1050,29 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1, duration: 0.4 }}
-        className="flex items-center justify-between gap-4 mb-5"
+        className="flex items-center justify-between gap-3 mb-5"
       >
-        <div>
-          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-widest uppercase">Overview</span>
-          <h2 className="text-2xl font-black text-slate-800 dark:text-slate-50 mt-0.5 tracking-tight flex items-center space-x-1.5">
-            <span>Good day,</span>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-indigo-600 dark:from-blue-400 dark:to-indigo-400">{user?.name || 'Patient'}</span>
+        <div className="min-w-0 flex-1 pr-2">
+          <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 tracking-widest uppercase block">
+            Overview
+          </span>
+          <h2 className="text-xl sm:text-2xl font-black text-slate-850 dark:text-slate-50 mt-0.5 tracking-tight truncate leading-snug">
+            Good day,{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
+              {user?.name || 'Patient'}
+            </span>
           </h2>
         </div>
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => setShowAskMito(true)}
-            className="px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl text-xs font-black transition-all flex items-center space-x-1.5 border border-white/20 shadow-xs cursor-pointer active:scale-95"
-            title="Ask Mito & Clinical Consultations"
-          >
-            <Sparkles className="h-3.5 w-3.5 text-amber-300 fill-amber-300" />
-            <span>Ask Mito</span>
-          </button>
+
+        <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => fetchDashboardData()}
-            className="h-10 w-10 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-400 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 border border-slate-200/60 dark:border-slate-700 rounded-2xl flex items-center justify-center transition-all duration-300 shadow-sm hover:shadow active:scale-90 cursor-pointer"
+            className="h-9 w-9 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-400 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 border border-slate-200/60 dark:border-slate-700 rounded-xl flex items-center justify-center transition-all shadow-xs active:scale-90 cursor-pointer shrink-0"
             title="Refresh Data"
           >
             <RefreshCw className="h-4 w-4" />
           </button>
-          <div className="h-10 w-10 bg-gradient-to-br from-primary to-indigo-600 dark:from-primary-dark dark:to-indigo-800 text-white rounded-2xl flex items-center justify-center font-extrabold shadow-sm tracking-wider">
+          <div className="h-9 w-9 bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-blue-500 dark:to-indigo-800 text-white rounded-xl flex items-center justify-center font-black shadow-xs tracking-wider text-xs shrink-0">
             {user?.name ? user.name.charAt(0).toUpperCase() : 'P'}
           </div>
         </div>

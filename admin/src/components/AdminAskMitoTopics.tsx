@@ -14,6 +14,9 @@ interface PatientQuery {
   subject: string;
   question: string;
   status: 'pending' | 'answered';
+  isPaid?: boolean;
+  amountPaid?: number;
+  isFreeQuotaUsed?: boolean;
   adminReply?: string;
   repliedBy?: string;
   repliedAt?: string;
@@ -302,6 +305,15 @@ export const AdminAskMitoTopics: React.FC<AdminAskMitoTopicsProps> = ({ apiUrl, 
                           {isPending ? <Clock className="h-3 w-3" /> : <CheckCircle2 className="h-3 w-3" />}
                           <span>{isPending ? (isOverdue ? `Overdue (${elapsedHours}h)` : `Pending (${elapsedHours}h ago)`) : 'Answered'}</span>
                         </span>
+                        {q.isFreeQuotaUsed ? (
+                          <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1">
+                            <span>✨ Free Sub Quota</span>
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1">
+                            <span>💳 ₹{q.amountPaid || 100} Paid</span>
+                          </span>
+                        )}
                       </div>
                       <h3 className="text-base font-bold text-slate-900">{q.subject}</h3>
                       <p className="text-[11px] text-slate-400 mt-0.5">

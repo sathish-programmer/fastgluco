@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, Send, Loader2,
   Stethoscope, Clock, CheckCircle2, Plus, RefreshCw,
-  MessageSquare, ChevronDown, Sparkles, User
+  MessageSquare, ChevronDown, Sparkles, User, ShieldCheck, CreditCard
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -13,10 +13,25 @@ interface PatientQuery {
   category: string;
   question: string;
   status: 'pending' | 'answered';
+  isPaid?: boolean;
+  amountPaid?: number;
+  isFreeQuotaUsed?: boolean;
   adminReply?: string;
   repliedBy?: string;
   repliedAt?: string;
   createdAt: string;
+}
+
+interface QuotaStatus {
+  isSubscribed: boolean;
+  planName: string;
+  billingCycle: 'monthly' | 'yearly';
+  totalFreeQuestions: number;
+  freeQuestionsUsed: number;
+  remainingFreeQuestions: number;
+  questionFee: number;
+  isSandbox: boolean;
+  razorpayKeyId?: string;
 }
 
 interface AskMitoDrawerProps {
@@ -45,6 +60,7 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
   const [queries, setQueries] = useState<PatientQuery[]>([]);
   const [loadingQueries, setLoadingQueries] = useState<boolean>(false);
   const [showNewQuestionModal, setShowNewQuestionModal] = useState<boolean>(false);
+  const [quotaStatus, setQuotaStatus] = useState<QuotaStatus | null>(null);
   
   // Form State
   const [newSubject, setNewSubject] = useState<string>('');
@@ -73,21 +89,32 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
     }
   };
 
+  // Fetch Quota Status & Fee
+  const fetchQuotaStatus = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${apiUrl}/ask-mito/quota-status`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setQuotaStatus(data);
+      }
+    } catch (err) {
+      console.error('Error fetching quota status:', err);
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
       fetchMyQueries();
+      fetchQuotaStatus();
     }
   }, [isOpen]);
 
-  // Submit Question
-  const handleQuestionSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Final Query Submitter (handles either free quota or verified payment details)
+  const submitFinalQuery = async (paymentDetails?: any) => {
     if (!newSubject.trim() || !newQuestion.trim() || !token) return;
-
-    if (newCategory === 'Others' && !customCategory.trim()) {
-      alert('Please specify your health topic or category.');
-      return;
-    }
 
     const finalCategory = newCategory === 'Others' && customCategory.trim()
       ? `Other: ${customCategory.trim()}`
@@ -107,7 +134,8 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
           category: finalCategory,
           question: newQuestion.trim(),
           userName: (user as any)?.name || 'Patient',
-          userEmail: (user as any)?.email || ''
+          userEmail: (user as any)?.email || '',
+          paymentDetails
         })
       });
 
@@ -116,21 +144,105 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
         setCustomCategory('');
         setNewQuestion('');
         setShowNewQuestionModal(false);
-        setSubmitSuccessMsg('Submitted! Our medical team will review and reply within 48 hours.');
+        setSubmitSuccessMsg('Submitted! Our clinical team will review and reply within 48 hours.');
         fetchMyQueries();
+        fetchQuotaStatus();
         setTimeout(() => setSubmitSuccessMsg(null), 7000);
       } else {
-        alert('Failed to submit question. Please try again.');
+        const data = await res.json();
+        alert(data.message || 'Failed to submit question. Please try again.');
       }
     } catch (err) {
       console.error('Error submitting question:', err);
-      alert('Error submitting question. Please check network connection.');
+      alert('Error submitting question. Please check your network connection.');
     } finally {
       setSubmittingQuestion(false);
     }
   };
 
+  // Submit Question Handler (determines free quota vs ₹100 payment flow)
+  const handleQuestionSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSubject.trim() || !newQuestion.trim() || !token) return;
+
+    if (newCategory === 'Others' && !customCategory.trim()) {
+      alert('Please specify your health topic or category.');
+      return;
+    }
+
+    // 1. If user has free question quota remaining on active subscription, submit immediately (₹0)
+    if (quotaStatus && quotaStatus.remainingFreeQuestions > 0) {
+      await submitFinalQuery();
+      return;
+    }
+
+    // 2. Otherwise, initiate paid order for ₹100
+    setSubmittingQuestion(true);
+    try {
+      const orderRes = await fetch(`${apiUrl}/ask-mito/create-order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!orderRes.ok) {
+        throw new Error('Failed to initiate consultation order.');
+      }
+
+      const orderData = await orderRes.json();
+
+      if (orderData.gateway === 'razorpay' && (window as any).Razorpay) {
+        const options = {
+          key: orderData.keyId,
+          amount: orderData.amount, // amount in paise from Razorpay order
+          currency: orderData.currency || 'INR',
+          name: 'Mito Reboot',
+          description: 'Doctor Consultation Question (48h Reply SLA)',
+          order_id: orderData.orderId,
+          handler: async (response: any) => {
+            await submitFinalQuery({
+              gateway: 'razorpay',
+              orderId: response.razorpay_order_id,
+              paymentId: response.razorpay_payment_id,
+              signature: response.razorpay_signature
+            });
+          },
+          prefill: {
+            name: (user as any)?.name || 'Patient',
+            email: (user as any)?.email || '',
+            contact: (user as any)?.phone || ''
+          },
+          theme: { color: '#2563EB' },
+          modal: {
+            ondismiss: () => {
+              setSubmittingQuestion(false);
+            }
+          }
+        };
+
+        const rzp = new (window as any).Razorpay(options);
+        rzp.open();
+      } else {
+        // Mock gateway instant sandbox payment
+        await submitFinalQuery({
+          gateway: 'mock',
+          orderId: orderData.orderId,
+          paymentId: `mock_pay_${Date.now()}`
+        });
+      }
+    } catch (err: any) {
+      console.error('Payment error:', err);
+      alert(err.message || 'Error initializing consultation payment.');
+      setSubmittingQuestion(false);
+    }
+  };
+
   if (!isOpen) return null;
+
+  const hasFreeQuota = (quotaStatus?.remainingFreeQuestions ?? 0) > 0;
+  const questionFee = quotaStatus?.questionFee ?? 100;
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
@@ -168,8 +280,7 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                 <h3 className="text-base font-extrabold text-slate-900 dark:text-white leading-tight">
                   Doctor Consultation
                 </h3>
-                <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <div className="text-xs text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">
                   <span>Clinical Team Active • Reply &lt;48h</span>
                 </div>
               </div>
@@ -177,7 +288,10 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
 
             <div className="flex items-center gap-1.5">
               <button
-                onClick={fetchMyQueries}
+                onClick={() => {
+                  fetchMyQueries();
+                  fetchQuotaStatus();
+                }}
                 className="h-8.5 w-8.5 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 flex items-center justify-center text-slate-600 dark:text-slate-300 transition-all cursor-pointer"
                 title="Refresh"
               >
@@ -197,6 +311,59 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
         {/* TIMELINE CONSULTATIONS STREAM                                             */}
         {/* ========================================================================= */}
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+          {/* Plan Quota or Per-Question Fee Banner */}
+          {quotaStatus && (
+            hasFreeQuota ? (
+              <div className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/40 border border-emerald-200 dark:border-emerald-800/80 rounded-2xl p-3 flex items-center justify-between shadow-xs">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-7 w-7 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                    <Sparkles className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-[11.5px] font-black text-emerald-900 dark:text-emerald-200">
+                      {quotaStatus.remainingFreeQuestions} Free Question{quotaStatus.remainingFreeQuestions > 1 ? 's' : ''} Remaining
+                    </p>
+                    <p className="text-[10px] text-emerald-700/80 dark:text-emerald-400/80 font-semibold">
+                      Included with your subscription • 48h Response SLA
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 bg-emerald-600 text-white rounded-md shrink-0">
+                  FREE
+                </span>
+              </div>
+            ) : (
+              <div 
+                onClick={() => setShowNewQuestionModal(true)}
+                className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/40 border border-blue-200 dark:border-blue-800/80 rounded-2xl p-3 flex items-center justify-between shadow-xs cursor-pointer hover:border-blue-300 dark:hover:border-blue-700 transition-all"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="h-7 w-7 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                    <CreditCard className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-[11.5px] font-black text-blue-950 dark:text-blue-200">
+                      Doctor Consultation: ₹{questionFee} / Question
+                    </p>
+                    <p className="text-[10px] text-blue-700/80 dark:text-blue-400/80 font-semibold">
+                      Verified Clinical Review within 48 hours
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowNewQuestionModal(true);
+                  }}
+                  className="text-[10.5px] font-black px-2.5 py-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg shadow-xs shrink-0 cursor-pointer active:scale-95 transition-all"
+                >
+                  Ask Now
+                </button>
+              </div>
+            )
+          )}
+
           {/* Success Banner */}
           {submitSuccessMsg && (
             <motion.div 
@@ -243,9 +410,20 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                     {/* Header Row: Subject, Category Pill & Status Tag */}
                     <div className="flex items-start justify-between gap-3 border-b border-slate-100 dark:border-slate-800/80 pb-3">
                       <div className="space-y-1">
-                        <span className="text-[10.5px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/80 px-2.5 py-1 rounded-xl">
-                          {q.category}
-                        </span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/80 px-2.5 py-0.5 rounded-xl">
+                            {q.category}
+                          </span>
+                          {q.isFreeQuotaUsed ? (
+                            <span className="text-[9px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
+                              ✨ Free Quota
+                            </span>
+                          ) : (
+                            <span className="text-[9px] font-black uppercase tracking-wider text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-800">
+                              💳 ₹{q.amountPaid || 100} Paid
+                            </span>
+                          )}
+                        </div>
                         <h4 className="text-base font-extrabold text-slate-900 dark:text-white leading-snug pt-1">
                           {q.subject}
                         </h4>
@@ -326,7 +504,9 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
             className="w-full h-12 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:opacity-95 active:scale-[0.98] text-white rounded-2xl text-xs font-black shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 cursor-pointer transition-all"
           >
             <Plus className="h-4 w-4" />
-            <span>Ask a New Medical Question</span>
+            <span>
+              {hasFreeQuota ? 'Ask a Doctor (Free with Plan)' : `Ask a Doctor (₹${questionFee})`}
+            </span>
           </button>
         </div>
 
@@ -365,11 +545,45 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                   <button
                     type="button"
                     onClick={() => setShowNewQuestionModal(false)}
-                    className="h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                    className="h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
                   >
                     <X className="h-4 w-4" />
                   </button>
                 </div>
+
+                {/* Quota & Pricing Summary Card */}
+                {hasFreeQuota ? (
+                  <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-2xl flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="h-4.5 w-4.5 text-emerald-600 dark:text-emerald-400" />
+                      <div>
+                        <span className="font-bold text-emerald-950 dark:text-emerald-200 block">
+                          Included Free with Subscription
+                        </span>
+                        <span className="text-[11px] text-emerald-700 dark:text-emerald-400">
+                          {quotaStatus?.remainingFreeQuestions} free question{quotaStatus?.remainingFreeQuestions !== 1 ? 's' : ''} left in this cycle
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-xs font-black px-2.5 py-1 bg-emerald-600 text-white rounded-lg">
+                      ₹0
+                    </span>
+                  </div>
+                ) : (
+                  <div className="p-3.5 bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-2xl flex items-center justify-between text-xs">
+                    <div>
+                      <span className="font-bold text-blue-950 dark:text-blue-200 block">
+                        Doctor Consultation Fee
+                      </span>
+                      <span className="text-[11px] text-blue-700 dark:text-blue-400">
+                        Detailed review by clinical team within 48h
+                      </span>
+                    </div>
+                    <span className="text-sm font-black text-blue-700 dark:text-blue-300">
+                      ₹{questionFee}
+                    </span>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">
@@ -437,17 +651,23 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                   <button
                     type="button"
                     onClick={() => setShowNewQuestionModal(false)}
-                    className="flex-1 py-3 text-xs font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-2xl hover:bg-slate-200 transition-colors"
+                    className="flex-1 py-3 text-xs font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-2xl hover:bg-slate-200 transition-colors cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={submittingQuestion || !newSubject.trim() || !newQuestion.trim()}
-                    className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl text-xs font-black shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 transition-all"
+                    className="flex-1 py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 text-white rounded-2xl text-xs font-black shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 transition-all cursor-pointer"
                   >
-                    {submittingQuestion ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                    <span>Submit Question</span>
+                    {submittingQuestion ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                    <span>
+                      {hasFreeQuota ? 'Submit Question (Free)' : `Pay ₹${questionFee} & Submit`}
+                    </span>
                   </button>
                 </div>
               </motion.form>

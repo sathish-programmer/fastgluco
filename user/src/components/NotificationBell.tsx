@@ -213,11 +213,13 @@ export const NotificationBell: React.FC = () => {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={handleToggleDropdown}
-        className="p-2 rounded-full hover:bg-slate-100 transition-colors relative text-slate-600 focus:outline-none"
+        className="p-1.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer relative focus:outline-none"
+        title="Notifications"
+        aria-label="Notifications"
       >
-        <Bell className="h-5 w-5" />
+        <Bell className="h-4.5 w-4.5" />
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 bg-red-500 text-white font-extrabold text-[8px] h-4 w-4 rounded-full flex items-center justify-center border border-white animate-pulse">
+          <span className="absolute top-0 right-0 bg-rose-500 text-white font-black text-[7.5px] h-3.5 min-w-3.5 px-0.5 rounded-full flex items-center justify-center border border-white dark:border-slate-800 shadow-xs animate-pulse">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}

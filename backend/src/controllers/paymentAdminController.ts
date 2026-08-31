@@ -72,7 +72,8 @@ export class PaymentAdminController {
         cancerPreventionDisclaimer,
         shopGstPercentage,
         shopDiscountPercentage,
-        shopShippingFee
+        shopShippingFee,
+        askMitoQuestionFee
       } = req.body;
 
       let config = await PaymentGatewayConfig.findOne();
@@ -90,6 +91,7 @@ export class PaymentAdminController {
       if (enableIOSExternalPayments !== undefined) config.enableIOSExternalPayments = enableIOSExternalPayments;
       if (enableSaferFoodCoupons !== undefined) config.enableSaferFoodCoupons = enableSaferFoodCoupons;
       if (gstPercentage !== undefined) config.gstPercentage = gstPercentage;
+      if (askMitoQuestionFee !== undefined) config.askMitoQuestionFee = Number(askMitoQuestionFee);
       if (safeGlucoseThreshold !== undefined) config.safeGlucoseThreshold = safeGlucoseThreshold;
       if (moderateGlucoseThreshold !== undefined) config.moderateGlucoseThreshold = moderateGlucoseThreshold;
       if (aiSpikeThreshold !== undefined) config.aiSpikeThreshold = aiSpikeThreshold;

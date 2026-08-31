@@ -31,8 +31,12 @@ import {
   Calendar,
   Headphones,
   X,
-  Bot
+  Bot,
+  Sparkles,
+  Crown,
+  ShieldCheck
 } from 'lucide-react';
+import { AskMitoDrawer } from './components/AskMitoDrawer';
 import { GlobalAICoachPopup } from './components/GlobalAICoachPopup';
 import { NotificationBell } from './components/NotificationBell';
 import { WelcomeOnboardingModal } from './components/WelcomeOnboardingModal';
@@ -69,14 +73,20 @@ const MainAppContent: React.FC = () => {
     setShowCancerCGMDashboardState(show);
   };
   const [showHelpModal, setShowHelpModal] = useState<boolean>(false);
+  const [showAskMitoDrawer, setShowAskMitoDrawer] = useState<boolean>(false);
   const [inAppReminder, setInAppReminder] = useState<{ title: string; body: string; type?: string } | null>(null);
 
   useEffect(() => {
     const handleTriggered = (e: any) => {
       setInAppReminder(e.detail);
     };
+    const handleOpenAskMito = () => setShowAskMitoDrawer(true);
     window.addEventListener('mito_reminder_triggered', handleTriggered);
-    return () => window.removeEventListener('mito_reminder_triggered', handleTriggered);
+    window.addEventListener('open_ask_mito', handleOpenAskMito);
+    return () => {
+      window.removeEventListener('mito_reminder_triggered', handleTriggered);
+      window.removeEventListener('open_ask_mito', handleOpenAskMito);
+    };
   }, []);
 
   useEffect(() => {
@@ -380,36 +390,73 @@ const MainAppContent: React.FC = () => {
       />
       {/* Dynamic Header with safe area padding for mobile notches */}
       {!isSubScreenActive && activeTab !== 'Subscription' && activeTab !== 'Recommended Foods' && (
-        <header className="sticky top-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 z-10 px-4 pt-[calc(env(safe-area-inset-top)+12px)] pb-3 max-w-5xl w-full mx-auto flex items-center justify-between transition-colors duration-300">
-          <div className="flex items-center space-x-2">
+        <header className="sticky top-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-100 dark:border-slate-800/80 z-20 px-3.5 sm:px-4 pt-[calc(env(safe-area-inset-top)+10px)] pb-2.5 max-w-5xl w-full mx-auto flex items-center justify-between gap-1.5 transition-all duration-300">
+          {/* Brand Identity */}
+          <div className="flex items-center gap-2 min-w-0">
             {branding.appLogoUrl ? (
-              <img src={branding.appLogoUrl.startsWith('http') ? branding.appLogoUrl : `${apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl}${branding.appLogoUrl.startsWith('/') ? '' : '/'}${branding.appLogoUrl}`} alt={branding.appName} className="h-6 w-auto object-contain max-w-[40px]" />
+              <img
+                src={branding.appLogoUrl.startsWith('http') ? branding.appLogoUrl : `${apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl}${branding.appLogoUrl.startsWith('/') ? '' : '/'}${branding.appLogoUrl}`}
+                alt={branding.appName}
+                className="h-6 w-auto object-contain max-w-[36px] shrink-0"
+              />
             ) : (
-              <Heart className="h-5 w-5 fill-primary text-primary" />
+              <Heart className="h-5 w-5 fill-primary text-primary shrink-0" />
             )}
-            <div className="flex flex-col">
-              <div className="flex items-center space-x-1.5">
-                <h1 className="text-sm font-extrabold text-slate-800 dark:text-slate-100 tracking-tight leading-tight">{branding.appName}</h1>
+            <div className="flex flex-col justify-center min-w-0">
+              <div className="flex items-center gap-1.5 leading-none">
+                <span className="text-[13.5px] sm:text-sm font-black text-slate-900 dark:text-white tracking-tight leading-none whitespace-nowrap">
+                  {branding.appName ? branding.appName.replace(/_/g, ' ') : 'Mito Reboot'}
+                </span>
                 {branding.enableSubscriptions !== false && (
-                  <span className="text-[8px] font-bold bg-primary-light text-primary px-1.5 py-0.5 rounded-full">
-                    {basicPlan}
-                  </span>
+                  <button
+                    onClick={() => setActiveTab('Subscription')}
+                    className={`text-[8.5px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full inline-flex items-center gap-1 border shadow-2xs shrink-0 leading-none -translate-y-[2px] cursor-pointer hover:opacity-95 active:scale-95 transition-all ${
+                      /premium|pro/i.test(basicPlan)
+                        ? 'bg-gradient-to-r from-amber-500/15 via-amber-400/20 to-yellow-500/15 dark:from-amber-500/25 dark:via-amber-400/30 dark:to-yellow-500/25 text-amber-700 dark:text-amber-300 border-amber-300/80 dark:border-amber-600/70 shadow-amber-500/10'
+                        : 'bg-gradient-to-r from-emerald-500/15 via-teal-500/20 to-emerald-500/15 dark:from-emerald-500/25 dark:via-teal-500/30 dark:to-emerald-500/25 text-emerald-700 dark:text-emerald-300 border-emerald-300/80 dark:border-emerald-600/70 shadow-emerald-500/10'
+                    }`}
+                    title="View / Upgrade Plan"
+                  >
+                    {/premium|pro/i.test(basicPlan) ? (
+                      <Crown className="h-2.5 w-2.5 text-amber-500 fill-amber-400 shrink-0" />
+                    ) : (
+                      <ShieldCheck className="h-2.5 w-2.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    )}
+                    <span className="translate-y-[0.5px]">{basicPlan}</span>
+                  </button>
                 )}
               </div>
               {branding.appTagline && (
-                <span className="text-[9px] text-slate-500 dark:text-slate-400 leading-none mt-0.5">{branding.appTagline}</span>
+                <span className="text-[9px] text-slate-400 dark:text-slate-500 font-medium leading-none truncate max-w-[120px] sm:max-w-[180px] mt-1.5">
+                  {branding.appTagline}
+                </span>
               )}
             </div>
           </div>
-          <div className="flex items-center space-x-1">
+
+          {/* Quick Action Cluster */}
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+            {/* Ask Mito Button */}
+            <button
+              onClick={() => setShowAskMitoDrawer(true)}
+              className="px-2.5 py-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:opacity-95 active:scale-95 text-white rounded-xl text-[11px] font-extrabold transition-all flex items-center gap-1.5 shadow-xs border border-white/20 cursor-pointer"
+              title="Ask Mito • Doctor Consultation"
+            >
+              <Sparkles className="h-3 w-3 text-amber-300 fill-amber-300" />
+              <span>Ask Mito</span>
+            </button>
+
+            {/* Support / Help */}
             <button
               onClick={() => setShowHelpModal(true)}
-              className="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="p-1.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               title="Help & Support"
               aria-label="Help & Support"
             >
-              <Headphones className="h-5 w-5" />
+              <Headphones className="h-4.5 w-4.5" />
             </button>
+
+            {/* Notification Bell */}
             <NotificationBell />
           </div>
         </header>
@@ -616,6 +663,13 @@ const MainAppContent: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Global Ask Mito / Doctor Consultation Drawer */}
+      <AskMitoDrawer
+        isOpen={showAskMitoDrawer}
+        onClose={() => setShowAskMitoDrawer(false)}
+        onNavigateToTab={setActiveTab}
+      />
     </div>
   );
 };

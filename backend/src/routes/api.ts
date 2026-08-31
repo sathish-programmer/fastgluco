@@ -43,6 +43,8 @@ const router = Router();
 // ─── Ask Mito – Conversational AI & Knowledge Workflows ──────────────────────
 router.post('/ai/ask', authenticateToken, AskMitoController.askMito);
 router.get('/ask-mito/topics', authenticateToken, AskMitoController.getAskMitoTopics);
+router.get('/ask-mito/quota-status', authenticateToken, AskMitoController.getQuotaStatus);
+router.post('/ask-mito/create-order', authenticateToken, AskMitoController.createQuestionOrder);
 router.post('/ask-mito/queries', authenticateToken, AskMitoController.submitPatientQuery);
 router.get('/ask-mito/my-queries', authenticateToken, AskMitoController.getMyQueries);
 

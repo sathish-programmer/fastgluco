@@ -35,6 +35,8 @@ interface Plan {
   description: string;
   monthlyPrice: number;
   yearlyPrice: number;
+  monthlyFreeQuestions?: number;
+  yearlyFreeQuestions?: number;
   trialDays: number;
   badge?: 'Popular' | 'Recommended' | 'Best Value' | 'None';
   color?: string;
@@ -378,8 +380,18 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
     }
   };
 
-  const renderFeatureList = (features: FeatureFlag) => {
+  const renderFeatureList = (features: FeatureFlag, plan?: Plan) => {
+    const includedQuestions = billingCycle === 'yearly'
+      ? (plan?.yearlyFreeQuestions ?? 10)
+      : (plan?.monthlyFreeQuestions ?? 1);
+
     const featureLabels = [
+      { 
+        key: 'doctorQuestions', 
+        label: `${includedQuestions} Free Doctor Consultation Question${includedQuestions > 1 ? 's' : ''} / ${billingCycle === 'yearly' ? 'Year' : 'Month'} (48h Reply SLA)`,
+        highlight: true,
+        alwaysIncluded: true
+      },
       { key: 'unlimitedReports', label: 'Unlimited Abbott CGM Report Uploads' },
       { key: 'advancedAnalysis', label: 'Advanced Spikes & Glucose Analysis' },
       { key: 'foodInsights', label: 'Top Safe / Moderate / Avoid Food Insights' },
@@ -392,7 +404,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
     return (
       <ul className="space-y-2.5 my-4 text-xs font-semibold text-slate-600">
         {featureLabels.map((f) => {
-          const hasFeature = !!(features as any)[f.key];
+          const hasFeature = f.alwaysIncluded ? true : !!(features as any)[f.key];
           const isHighlighted = f.highlight;
           return (
             <li key={f.key} className="flex items-start space-x-2">
@@ -409,7 +421,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                   <span>{f.label}</span>
                   {hasFeature && (
                     <span className="text-[7px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-full uppercase tracking-wider font-extrabold animate-pulse">
-                      New
+                      Included
                     </span>
                   )}
                 </span>
@@ -747,7 +759,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
 
                   {/* Feature Checklist */}
                   <div className="border-t border-slate-100 dark:border-slate-800 pt-3">
-                    {renderFeatureList(plan.features)}
+                    {renderFeatureList(plan.features, plan)}
                   </div>
 
                   {/* Action Button */}

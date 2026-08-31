@@ -69,7 +69,6 @@ import { ExploreFeaturesGrid } from '../components/ExploreFeaturesGrid';
 import { ContextualShopCard } from '../components/ContextualShopCard';
 import { AskMitoDrawer } from '../components/AskMitoDrawer';
 import { AiFeatureDiscoveryModal } from '../components/AiFeatureDiscoveryModal';
-import { Sparkles } from 'lucide-react';
 
 interface NonCancerDashboardProps {
   onNavigateToTab: (tab: string) => void;
@@ -809,25 +808,13 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
       />
 
       {/* Top Greeting & Action Bar */}
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
-            Welcome back
-          </span>
-          <h2 className="text-lg font-black text-slate-900 dark:text-slate-100 tracking-tight leading-tight">
-            Hello, {user?.name || 'Friend'}
-          </h2>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => setShowAskMito(true)}
-            className="px-3.5 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl text-xs font-black transition-all flex items-center space-x-1.5 border border-white/20 shadow-xs cursor-pointer"
-          >
-            <Sparkles className="h-3.5 w-3.5 text-amber-300 fill-amber-300" />
-            <span>Ask Mito</span>
-          </button>
-        </div>
+      <div className="mb-4">
+        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
+          Welcome back
+        </span>
+        <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight leading-tight mt-0.5">
+          Hello, {user?.name || 'Friend'}
+        </h2>
       </div>
 
       <ModeSwitcher />
