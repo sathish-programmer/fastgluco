@@ -249,7 +249,14 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
           theme: {
             color: '#4F46E5' // Indigo
           },
+          retry: {
+            enabled: true,
+            max_count: 4
+          },
           modal: {
+            backdropclose: false,
+            escape: false,
+            handleback: false,
             ondismiss: () => {
               setLoading(false);
             }
@@ -257,6 +264,11 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
         };
 
         const rzp = new (window as any).Razorpay(options);
+        rzp.on('payment.failed', (resp: any) => {
+          console.warn('[Shop] Razorpay payment failed event:', resp?.error);
+          setError(resp?.error?.description || resp?.error?.reason || 'Payment could not be completed.');
+          setLoading(false);
+        });
         rzp.open();
       }
     } catch (err: any) {

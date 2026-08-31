@@ -234,7 +234,8 @@ export const getQuotaStatus = async (req: any, res: Response) => {
       remainingFreeQuestions,
       questionFee,
       isSandbox,
-      razorpayKeyId
+      razorpayKeyId,
+      enableGlobalImageUpload: config?.enableAskMitoImageUpload ?? true
     });
   } catch (err: any) {
     console.error('Error fetching Ask Mito quota status:', err);
@@ -299,7 +300,7 @@ export const submitPatientQuery = async (req: any, res: Response) => {
     const userId = req.user?.id || req.user?._id;
     const userName = req.user?.name || req.body.userName || 'Patient';
     const userEmail = req.user?.email || req.body.userEmail || '';
-    const { category, subject, question, paymentDetails } = req.body;
+    const { category, subject, question, paymentDetails, patientImageUrl } = req.body;
 
     if (!subject?.trim() || !question?.trim()) {
       return res.status(400).json({ message: 'Subject and question are required.' });
@@ -399,7 +400,9 @@ export const submitPatientQuery = async (req: any, res: Response) => {
       isPaid,
       amountPaid,
       isFreeQuotaUsed,
-      paymentTransactionId: paymentTxId
+      paymentTransactionId: paymentTxId,
+      allowImageUpload: true,
+      patientImageUrl: patientImageUrl?.trim() || ''
     });
 
     await newQuery.save();
@@ -457,11 +460,13 @@ export const getAdminQueries = async (req: Request, res: Response) => {
     const pendingCount = await AskMitoQuery.countDocuments({ status: 'pending' });
     const answeredCount = await AskMitoQuery.countDocuments({ status: 'answered' });
 
+    const config = await PaymentGatewayConfig.findOne();
     return res.json({
       queries,
       total: queries.length,
       pendingCount,
-      answeredCount
+      answeredCount,
+      enableGlobalImageUpload: config?.enableAskMitoImageUpload ?? true
     });
   } catch (err: any) {
     console.error('Error fetching admin patient queries:', err);
@@ -519,3 +524,88 @@ export const deleteAdminQuery = async (req: Request, res: Response) => {
     return res.status(500).json({ message: 'Error deleting query.' });
   }
 };
+
+/**
+ * Admin: Toggle image upload permission for a query
+ */
+export const toggleImageUpload = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { allowImageUpload } = req.body;
+
+    const query = await AskMitoQuery.findByIdAndUpdate(
+      id,
+      { allowImageUpload: !!allowImageUpload },
+      { new: true }
+    );
+
+    if (!query) {
+      return res.status(404).json({ message: 'Query not found.' });
+    }
+
+    return res.json({
+      message: `Image upload permission set to ${allowImageUpload ? 'enabled' : 'disabled'}.`,
+      query
+    });
+  } catch (err: any) {
+    console.error('Error toggling image upload:', err);
+    return res.status(500).json({ message: 'Error updating image upload status.' });
+  }
+};
+
+/**
+ * Patient: Attach / update image for a query
+ */
+export const uploadPatientQueryImage = async (req: any, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { patientImageUrl } = req.body;
+    const userId = req.user?.id || req.user?._id;
+
+    const query = await AskMitoQuery.findOne({ _id: id, userId });
+    if (!query) {
+      return res.status(404).json({ message: 'Query not found or unauthorized.' });
+    }
+
+    if (query.allowImageUpload === false) {
+      return res.status(403).json({ message: 'Image upload is disabled by clinical team for this consultation.' });
+    }
+
+    query.patientImageUrl = patientImageUrl || '';
+    await query.save();
+
+    return res.json({
+      message: 'Image attached successfully to consultation.',
+      query
+    });
+  } catch (err: any) {
+    console.error('Error uploading patient query image:', err);
+    return res.status(500).json({ message: 'Error attaching image.' });
+  }
+};
+
+/**
+ * Admin: Toggle global image upload setting across all Ask Mito consultations
+ */
+export const toggleGlobalAskMitoImageUpload = async (req: Request, res: Response) => {
+  try {
+    let config = await PaymentGatewayConfig.findOne();
+    if (!config) {
+      config = new PaymentGatewayConfig();
+    }
+
+    const { enabled } = req.body;
+    config.enableAskMitoImageUpload = !!enabled;
+    await config.save();
+
+    return res.json({
+      message: `Global Ask Mito Image Upload set to ${config.enableAskMitoImageUpload ? 'enabled' : 'disabled'}.`,
+      enableGlobalImageUpload: config.enableAskMitoImageUpload
+    });
+  } catch (err: any) {
+    console.error('Error toggling global Ask Mito image upload setting:', err);
+    return res.status(500).json({ message: 'Error updating global image upload setting.' });
+  }
+};
+
+

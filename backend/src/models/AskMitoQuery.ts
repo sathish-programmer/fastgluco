@@ -15,6 +15,8 @@ export interface IAskMitoQuery extends Document {
   adminReply?: string;
   repliedBy?: string;
   repliedAt?: Date;
+  allowImageUpload?: boolean;
+  patientImageUrl?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -34,7 +36,9 @@ const AskMitoQuerySchema: Schema = new Schema(
     paymentTransactionId: { type: Schema.Types.ObjectId, ref: 'PaymentTransaction' },
     adminReply: { type: String, default: '' },
     repliedBy: { type: String, default: '' },
-    repliedAt: { type: Date }
+    repliedAt: { type: Date },
+    allowImageUpload: { type: Boolean, default: true },
+    patientImageUrl: { type: String, default: '' }
   },
   { timestamps: true }
 );

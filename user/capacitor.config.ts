@@ -6,7 +6,22 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     androidScheme: 'https',
-    iosScheme: 'https'
+    iosScheme: 'https',
+    allowNavigation: [
+      '*.razorpay.com',
+      'api.razorpay.com',
+      'checkout.razorpay.com',
+      'checkout-static-next.razorpay.com',
+      '*.npci.org.in',
+      '*.billdesk.com',
+      '*.payu.in',
+      '*.hdfcbank.com',
+      '*.icicibank.com',
+      '*.sbi.co.in',
+      '*.axisbank.com',
+      '*.idbibank.co.in',
+      '*.canarabank.com'
+    ]
   }
 };
 

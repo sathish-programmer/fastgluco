@@ -16,6 +16,7 @@ export interface IPaymentGatewayConfig extends Document {
   shopDiscountPercentage: number; // Global Discount for Shop products
   shopShippingFee: number; // Shipping fee for shop orders
   askMitoQuestionFee: number; // Fee per 48h medical query (default 100)
+  enableAskMitoImageUpload?: boolean; // Admin Global Image Upload ON/OFF
   safeGlucoseThreshold: number; // Safe limit (default 90)
   moderateGlucoseThreshold: number; // Moderate limit (default 110)
   aiSpikeThreshold: number; // AI triggers coaching above this
@@ -53,6 +54,7 @@ const paymentGatewayConfigSchema = new Schema<IPaymentGatewayConfig>(
     shopDiscountPercentage: { type: Number, default: 0, min: 0 },
     shopShippingFee: { type: Number, default: 0, min: 0 },
     askMitoQuestionFee: { type: Number, default: 100, min: 0 },
+    enableAskMitoImageUpload: { type: Boolean, default: true },
     safeGlucoseThreshold: { type: Number, default: 90, required: true },
     moderateGlucoseThreshold: { type: Number, default: 110, required: true },
     aiSpikeThreshold: { type: Number, default: 110 },

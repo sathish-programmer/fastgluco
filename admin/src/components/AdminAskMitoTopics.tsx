@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Sparkles, Trash2, Search, 
   X, MessageSquare, Clock, CheckCircle2, 
-  Send, User, RefreshCw, Stethoscope
+  Send, User, RefreshCw, Stethoscope, Image, Maximize2, ExternalLink
 } from 'lucide-react';
 
 interface PatientQuery {
@@ -20,6 +20,8 @@ interface PatientQuery {
   adminReply?: string;
   repliedBy?: string;
   repliedAt?: string;
+  allowImageUpload?: boolean;
+  patientImageUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -56,11 +58,40 @@ export const AdminAskMitoTopics: React.FC<AdminAskMitoTopicsProps> = ({ apiUrl, 
   const [querySearch, setQuerySearch] = useState<string>('');
   const [pendingCount, setPendingCount] = useState<number>(0);
   const [answeredCount, setAnsweredCount] = useState<number>(0);
+  const [globalImageUploadEnabled, setGlobalImageUploadEnabled] = useState<boolean>(true);
 
-  // Active Reply Modal
+  // Active Reply Modal & Lightbox Viewer
   const [activeQueryForReply, setActiveQueryForReply] = useState<PatientQuery | null>(null);
   const [replyText, setReplyText] = useState<string>('');
   const [sendingReply, setSendingReply] = useState<boolean>(false);
+  const [viewingFullImage, setViewingFullImage] = useState<string | null>(null);
+
+  // Helper to safely open images (including Data URIs) in a new tab
+  const openImageInNewTab = (imageUrl: string) => {
+    if (imageUrl.startsWith('data:')) {
+      const win = window.open();
+      if (win) {
+        win.document.write(`
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <title>Patient Diagnostic Image View</title>
+              <style>
+                body { margin: 0; background: #0f172a; display: flex; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; }
+                img { max-width: 95%; max-height: 95vh; object-fit: contain; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); }
+              </style>
+            </head>
+            <body>
+              <img src="${imageUrl}" alt="Patient Diagnostic Image" />
+            </body>
+          </html>
+        `);
+        win.document.close();
+      }
+    } else {
+      window.open(imageUrl, '_blank', 'noopener,noreferrer');
+    }
+  };
 
   // Fetch Patient Queries
   const fetchQueries = async () => {
@@ -73,6 +104,9 @@ export const AdminAskMitoTopics: React.FC<AdminAskMitoTopicsProps> = ({ apiUrl, 
         const data = await res.json();
         const queryList: PatientQuery[] = Array.isArray(data) ? data : (data.queries || []);
         setQueries(queryList);
+        if (typeof data.enableGlobalImageUpload === 'boolean') {
+          setGlobalImageUploadEnabled(data.enableGlobalImageUpload);
+        }
         const pending = typeof data.pendingCount === 'number' 
           ? data.pendingCount 
           : queryList.filter(q => q.status === 'pending').length;
@@ -86,6 +120,29 @@ export const AdminAskMitoTopics: React.FC<AdminAskMitoTopicsProps> = ({ apiUrl, 
       console.error('Error fetching patient queries:', err);
     } finally {
       setQueriesLoading(false);
+    }
+  };
+
+  const handleToggleGlobalImageUpload = async () => {
+    const targetState = !globalImageUploadEnabled;
+    try {
+      const res = await fetch(`${apiUrl}/admin/ask-mito/toggle-global-image-upload`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ enabled: targetState })
+      });
+
+      if (res.ok) {
+        setGlobalImageUploadEnabled(targetState);
+        fetchQueries();
+      } else {
+        alert('Failed to update global image upload setting.');
+      }
+    } catch (err) {
+      console.error('Error toggling global image upload:', err);
     }
   };
 
@@ -143,6 +200,29 @@ export const AdminAskMitoTopics: React.FC<AdminAskMitoTopicsProps> = ({ apiUrl, 
     }
   };
 
+  // Toggle Patient Image Upload Permission
+  const handleToggleImageUpload = async (queryId: string, currentStatus: boolean | undefined) => {
+    try {
+      const targetState = currentStatus === false ? true : false;
+      const res = await fetch(`${apiUrl}/admin/ask-mito/queries/${queryId}/toggle-image-upload`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ allowImageUpload: targetState })
+      });
+
+      if (res.ok) {
+        fetchQueries();
+      } else {
+        alert('Failed to update image upload permission.');
+      }
+    } catch (err) {
+      console.error('Error toggling image upload status:', err);
+    }
+  };
+
   // Filtered queries
   const safeQueries = Array.isArray(queries) ? queries : [];
   const filteredQueries = safeQueries.filter(q => {
@@ -172,13 +252,29 @@ export const AdminAskMitoTopics: React.FC<AdminAskMitoTopicsProps> = ({ apiUrl, 
           </div>
         </div>
 
-        <button
-          onClick={fetchQueries}
-          className="p-2 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl text-slate-600 transition-colors shadow-xs cursor-pointer self-start md:self-auto"
-          title="Refresh Consultations"
-        >
-          <RefreshCw className="h-4 w-4" />
-        </button>
+        <div className="flex items-center gap-2 self-start md:self-auto">
+          <button
+            type="button"
+            onClick={handleToggleGlobalImageUpload}
+            className={`px-3.5 py-2 rounded-xl border text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-xs ${
+              globalImageUploadEnabled
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100'
+                : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
+            }`}
+            title="Click to toggle patient image upload functionality across all consultations"
+          >
+            <Image className="h-4 w-4" />
+            <span>Patient Image Upload: {globalImageUploadEnabled ? 'ENABLED' : 'DISABLED'}</span>
+          </button>
+
+          <button
+            onClick={fetchQueries}
+            className="p-2 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl text-slate-600 transition-colors shadow-xs cursor-pointer"
+            title="Refresh Consultations"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       {/* Patient Queries Section */}
@@ -346,18 +442,60 @@ export const AdminAskMitoTopics: React.FC<AdminAskMitoTopicsProps> = ({ apiUrl, 
                     </div>
                   </div>
 
-                  {/* Patient Info Card */}
-                  <div className="flex items-center gap-2 text-xs text-slate-500 font-medium bg-slate-50 px-3 py-2 rounded-xl border border-slate-100 mb-3">
-                    <User className="h-3.5 w-3.5 text-slate-400" />
-                    <span className="font-bold text-slate-700">{q.userName}</span>
-                    <span>•</span>
-                    <span className="text-slate-600">{q.userEmail}</span>
+                  {/* Patient Info Card & Image Toggle */}
+                  <div className="flex items-center justify-between gap-2 text-xs text-slate-500 font-medium bg-slate-50 px-3 py-2 rounded-xl border border-slate-100 mb-3 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <User className="h-3.5 w-3.5 text-slate-400" />
+                      <span className="font-bold text-slate-700">{q.userName}</span>
+                      <span>•</span>
+                      <span className="text-slate-600">{q.userEmail}</span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleToggleImageUpload(q._id, q.allowImageUpload)}
+                      className={`text-[10.5px] font-bold px-2.5 py-1 rounded-lg border flex items-center gap-1.5 transition-all cursor-pointer ${
+                        q.allowImageUpload !== false
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100'
+                          : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
+                      }`}
+                      title="Click to toggle whether patient can upload image for this inquiry"
+                    >
+                      <Image className="h-3.5 w-3.5" />
+                      <span>{q.allowImageUpload !== false ? 'Patient Image Upload: Allowed' : 'Patient Image Upload: Disabled'}</span>
+                    </button>
                   </div>
 
                   {/* Question Content */}
                   <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-100 text-xs font-medium text-slate-800 leading-relaxed whitespace-pre-wrap">
                     {q.question}
                   </div>
+
+                  {/* Attached Patient Image View */}
+                  {q.patientImageUrl && (
+                    <div className="mt-3 bg-blue-50/50 p-3 rounded-xl border border-blue-100 flex items-start gap-3">
+                      <Image className="h-4 w-4 text-blue-600 shrink-0 mt-1" />
+                      <div className="space-y-1">
+                        <span className="text-[11px] font-bold text-blue-900 block">
+                          Attached Patient Diagnostic Image / Lab Report:
+                        </span>
+                        <div 
+                          onClick={() => setViewingFullImage(q.patientImageUrl!)}
+                          className="relative group inline-block cursor-pointer mt-1"
+                        >
+                          <img 
+                            src={q.patientImageUrl} 
+                            alt="Patient diagnostic upload" 
+                            className="h-44 max-w-xs object-cover rounded-xl border border-blue-200 shadow-xs group-hover:brightness-95 transition-all" 
+                          />
+                          <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center gap-2 text-white font-bold text-xs">
+                            <Maximize2 className="h-4 w-4" />
+                            <span>Click to Expand</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Admin / Doctor Reply Section */}
                   {q.adminReply && (
@@ -474,6 +612,51 @@ export const AdminAskMitoTopics: React.FC<AdminAskMitoTopicsProps> = ({ apiUrl, 
                   <span>{sendingReply ? 'Sending...' : 'Send Reply to Patient'}</span>
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* LIGHTBOX / FULLSCREEN IMAGE VIEWER MODAL                                  */}
+      {/* ========================================================================= */}
+      {viewingFullImage && (
+        <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+          <div className="relative max-w-4xl w-full flex flex-col items-center">
+            {/* Top Action Bar */}
+            <div className="w-full flex items-center justify-between p-3 bg-slate-900/90 border border-slate-800 rounded-2xl mb-3 text-white shadow-xl">
+              <div className="flex items-center gap-2 text-xs font-bold">
+                <Image className="h-4 w-4 text-blue-400" />
+                <span>Patient Diagnostic Image Viewer</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => openImageInNewTab(viewingFullImage)}
+                  className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+                  title="Open in full browser window"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  <span>Open Full Window</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewingFullImage(null)}
+                  className="p-1.5 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors cursor-pointer"
+                  title="Close Viewer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Image Viewport */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2 overflow-hidden shadow-2xl flex items-center justify-center max-h-[82vh] w-full">
+              <img 
+                src={viewingFullImage} 
+                alt="Patient Diagnostic Full View" 
+                className="max-h-[78vh] max-w-full object-contain rounded-xl"
+              />
             </div>
           </div>
         </div>

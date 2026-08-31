@@ -47,6 +47,7 @@ router.get('/ask-mito/quota-status', authenticateToken, AskMitoController.getQuo
 router.post('/ask-mito/create-order', authenticateToken, AskMitoController.createQuestionOrder);
 router.post('/ask-mito/queries', authenticateToken, AskMitoController.submitPatientQuery);
 router.get('/ask-mito/my-queries', authenticateToken, AskMitoController.getMyQueries);
+router.put('/ask-mito/queries/:id/image', authenticateToken, AskMitoController.uploadPatientQueryImage);
 
 // Admin endpoints for Ask Mito Workflows, Q&A Topics & Patient Queries
 router.get('/admin/ask-mito/topics', authenticateToken, requireRole(['Admin', 'SuperAdmin']), AskMitoController.getAdminAskMitoTopics);
@@ -55,6 +56,8 @@ router.put('/admin/ask-mito/topics/:id', authenticateToken, requireRole(['Admin'
 router.delete('/admin/ask-mito/topics/:id', authenticateToken, requireRole(['Admin', 'SuperAdmin']), AskMitoController.deleteAskMitoTopic);
 router.get('/admin/ask-mito/queries', authenticateToken, requireRole(['Admin', 'SuperAdmin']), AskMitoController.getAdminQueries);
 router.post('/admin/ask-mito/queries/:id/reply', authenticateToken, requireRole(['Admin', 'SuperAdmin']), AskMitoController.replyPatientQuery);
+router.put('/admin/ask-mito/queries/:id/toggle-image-upload', authenticateToken, requireRole(['Admin', 'SuperAdmin']), AskMitoController.toggleImageUpload);
+router.put('/admin/ask-mito/toggle-global-image-upload', authenticateToken, requireRole(['Admin', 'SuperAdmin']), AskMitoController.toggleGlobalAskMitoImageUpload);
 router.delete('/admin/ask-mito/queries/:id', authenticateToken, requireRole(['Admin', 'SuperAdmin']), AskMitoController.deleteAdminQuery);
 
 // --- MULTER STORAGE SETUP FOR REPORT UPLOADS ---

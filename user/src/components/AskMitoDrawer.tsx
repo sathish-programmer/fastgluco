@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, Send, Loader2,
   Stethoscope, Clock, CheckCircle2, Plus, RefreshCw,
-  MessageSquare, ChevronDown, Sparkles, User, ShieldCheck, CreditCard
+  MessageSquare, ChevronDown, Sparkles, User, ShieldCheck, CreditCard,
+  AlertTriangle, UploadCloud
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -19,6 +20,8 @@ interface PatientQuery {
   adminReply?: string;
   repliedBy?: string;
   repliedAt?: string;
+  allowImageUpload?: boolean;
+  patientImageUrl?: string;
   createdAt: string;
 }
 
@@ -32,6 +35,7 @@ interface QuotaStatus {
   questionFee: number;
   isSandbox: boolean;
   razorpayKeyId?: string;
+  enableGlobalImageUpload?: boolean;
 }
 
 interface AskMitoDrawerProps {
@@ -67,8 +71,33 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
   const [newCategory, setNewCategory] = useState<string>('CGM & Glucose Reports');
   const [customCategory, setCustomCategory] = useState<string>('');
   const [newQuestion, setNewQuestion] = useState<string>('');
+  const [patientImageUrl, setPatientImageUrl] = useState<string>('');
+  const [imageUploading, setImageUploading] = useState<boolean>(false);
   const [submittingQuestion, setSubmittingQuestion] = useState<boolean>(false);
   const [submitSuccessMsg, setSubmitSuccessMsg] = useState<string | null>(null);
+  const [questionError, setQuestionError] = useState<string | null>(null);
+
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 8 * 1024 * 1024) {
+      alert('File size exceeds 8MB limit. Please choose a smaller image.');
+      return;
+    }
+
+    setImageUploading(true);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPatientImageUrl(reader.result as string);
+      setImageUploading(false);
+    };
+    reader.onerror = () => {
+      setImageUploading(false);
+      alert('Failed to read image file.');
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Fetch Patient's Consultations
   const fetchMyQueries = async () => {
@@ -135,6 +164,7 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
           question: newQuestion.trim(),
           userName: (user as any)?.name || 'Patient',
           userEmail: (user as any)?.email || '',
+          patientImageUrl: patientImageUrl || undefined,
           paymentDetails
         })
       });
@@ -143,6 +173,7 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
         setNewSubject('');
         setCustomCategory('');
         setNewQuestion('');
+        setPatientImageUrl('');
         setShowNewQuestionModal(false);
         setSubmitSuccessMsg('Submitted! Our clinical team will review and reply within 48 hours.');
         fetchMyQueries();
@@ -215,7 +246,14 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
             contact: (user as any)?.phone || ''
           },
           theme: { color: '#2563EB' },
+          retry: {
+            enabled: true,
+            max_count: 4
+          },
           modal: {
+            backdropclose: false,
+            escape: false,
+            handleback: false,
             ondismiss: () => {
               setSubmittingQuestion(false);
             }
@@ -223,6 +261,11 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
         };
 
         const rzp = new (window as any).Razorpay(options);
+        rzp.on('payment.failed', (resp: any) => {
+          console.warn('[AskMito] Razorpay payment failed event:', resp?.error);
+          setQuestionError(resp?.error?.description || resp?.error?.reason || 'Payment could not be completed.');
+          setSubmittingQuestion(false);
+        });
         rzp.open();
       } else {
         // Mock gateway instant sandbox payment
@@ -454,6 +497,20 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                         <p className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 font-medium leading-relaxed whitespace-pre-wrap">
                           {q.question}
                         </p>
+                        {q.patientImageUrl && (
+                          <div className="mt-2.5 pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                              Attached Diagnostic Image / Report
+                            </span>
+                            <a href={q.patientImageUrl} target="_blank" rel="noopener noreferrer">
+                              <img 
+                                src={q.patientImageUrl} 
+                                alt="Attached patient report" 
+                                className="h-36 max-w-xs object-cover rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs hover:opacity-90 transition-opacity" 
+                              />
+                            </a>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -551,6 +608,15 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                   </button>
                 </div>
 
+                {questionError && (
+                  <div className="p-3 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 text-xs font-semibold rounded-2xl border border-red-200 dark:border-red-800 flex items-center justify-between">
+                    <span>{questionError}</span>
+                    <button type="button" onClick={() => setQuestionError(null)} className="text-red-500 hover:text-red-700">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
+
                 {/* Quota & Pricing Summary Card */}
                 {hasFreeQuota ? (
                   <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-2xl flex items-center justify-between text-xs">
@@ -646,6 +712,73 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                     className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-3.5 text-xs font-medium text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 leading-relaxed"
                   />
                 </div>
+
+                {/* Image Attachment & Policy Warning Section */}
+                {quotaStatus?.enableGlobalImageUpload === false ? (
+                  <div className="p-3 bg-slate-100 dark:bg-slate-800/60 rounded-2xl border border-slate-200/80 dark:border-slate-700 text-xs text-slate-500 font-medium flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-slate-400 shrink-0" />
+                    <span>Image attachments are currently disabled by the system administrator.</span>
+                  </div>
+                ) : (
+                  <div className="space-y-2.5 pt-1">
+                    <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500">
+                      Attach Diagnostic Image / Lab Report (Optional)
+                    </label>
+
+                    {/* Strict Policy & Guidelines Callout */}
+                    <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 rounded-2xl flex items-start gap-2.5 text-xs">
+                      <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                      <div className="text-[11px] text-amber-900 dark:text-amber-200 leading-relaxed font-medium">
+                        <strong className="font-bold text-amber-950 dark:text-amber-100 block mb-0.5">
+                          Medical Image Guidelines & Compliance Notice:
+                        </strong>
+                        Only upload clear photos of lab reports, CGM glucose readings, food items, or relevant diagnostic charts.
+                        <span className="text-rose-600 dark:text-rose-400 font-extrabold block mt-1">
+                          🚫 Strictly NO nudity, explicit, offensive, or non-medical personal images. Violations result in immediate permanent account suspension.
+                        </span>
+                      </div>
+                    </div>
+
+                    {patientImageUrl ? (
+                      <div className="relative inline-block mt-2">
+                        <img 
+                          src={patientImageUrl} 
+                          alt="Uploaded preview" 
+                          className="h-28 w-auto object-cover rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setPatientImageUrl('')}
+                          className="absolute -top-2 -right-2 p-1.5 bg-rose-600 text-white rounded-full hover:bg-rose-700 shadow-sm"
+                          title="Remove image"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="flex items-center justify-center gap-2 p-3.5 bg-slate-50 dark:bg-slate-800/80 border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-blue-500 rounded-2xl cursor-pointer transition-colors text-xs font-bold text-slate-600 dark:text-slate-300">
+                        {imageUploading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                            <span>Processing Image...</span>
+                          </>
+                        ) : (
+                          <>
+                            <UploadCloud className="h-4 w-4 text-blue-600" />
+                            <span>Choose Diagnostic Image / Report Photo</span>
+                          </>
+                        )}
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          onChange={handleImageFileChange} 
+                          className="hidden" 
+                          disabled={imageUploading}
+                        />
+                      </label>
+                    )}
+                  </div>
+                )}
 
                 <div className="pt-2 flex gap-3">
                   <button

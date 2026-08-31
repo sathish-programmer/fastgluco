@@ -364,7 +364,14 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
           theme: {
             color: '#2563EB'
           },
+          retry: {
+            enabled: true,
+            max_count: 4
+          },
           modal: {
+            backdropclose: false,
+            escape: false,
+            handleback: false,
             ondismiss: () => {
               setActionLoading(false);
             }
@@ -372,6 +379,11 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
         };
 
         const rzp = new (window as any).Razorpay(options);
+        rzp.on('payment.failed', (resp: any) => {
+          console.warn('[Razorpay] Payment failed event:', resp?.error);
+          setError(resp?.error?.description || resp?.error?.reason || 'Payment could not be completed.');
+          setActionLoading(false);
+        });
         rzp.open();
       }
     } catch (err: any) {
@@ -450,15 +462,26 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
 
   return (
     <div className={`pb-32 ${isBlocking ? 'pt-0' : 'pt-2'} px-6 md:px-10 lg:px-16 max-w-3xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-full h-full overflow-y-auto w-full`}>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6 bg-white dark:bg-slate-900 -mx-6 px-6 py-4 border-b border-slate-100 dark:border-slate-800 sticky top-0 z-20 shadow-sm">
+      {/* Header with Camera Notch & Safe-Area Inset Support */}
+      <div className="flex items-center justify-between mb-6 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md -mx-6 px-6 pt-[calc(env(safe-area-inset-top)+14px)] pb-4 border-b border-slate-100 dark:border-slate-800 sticky top-0 z-20 shadow-xs">
         <div className="flex items-center space-x-3">
           {!isBlocking && (
-            <button onClick={onBack} className="p-1 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
+            <button 
+              onClick={onBack} 
+              className="p-1.5 text-slate-600 hover:text-slate-800 dark:text-slate-300 dark:hover:text-white rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              title="Go Back"
+            >
               <ArrowLeft className="h-5 w-5" />
             </button>
           )}
-          <span className="font-extrabold text-slate-800 dark:text-slate-100 text-sm">Subscription & Billing</span>
+          <div>
+            <h1 className="font-black text-slate-900 dark:text-slate-100 text-sm sm:text-base leading-tight">
+              Subscription & Plans
+            </h1>
+            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500">
+              Manage your membership & clinical features
+            </p>
+          </div>
         </div>
         {isBlocking && (
           <button
