@@ -21,7 +21,7 @@ export class PlanAdminController {
    */
   public static async createPlan(req: AuthRequest, res: Response) {
     try {
-      const { name, code, description, monthlyPrice, yearlyPrice, monthlyFreeQuestions, yearlyFreeQuestions, trialDays, displayOrder, badge, color, features } = req.body;
+      const { name, code, description, monthlyPrice, yearlyPrice, originalMonthlyPrice, originalYearlyPrice, monthlyFreeQuestions, yearlyFreeQuestions, trialDays, displayOrder, badge, color, features } = req.body;
 
       if (!name || !code || monthlyPrice === undefined || yearlyPrice === undefined) {
         return res.status(400).json({ message: 'Missing fields required to create plan.' });
@@ -33,6 +33,8 @@ export class PlanAdminController {
         description,
         monthlyPrice,
         yearlyPrice,
+        originalMonthlyPrice: originalMonthlyPrice !== undefined ? Number(originalMonthlyPrice) : 0,
+        originalYearlyPrice: originalYearlyPrice !== undefined ? Number(originalYearlyPrice) : 0,
         monthlyFreeQuestions: monthlyFreeQuestions !== undefined ? Number(monthlyFreeQuestions) : 1,
         yearlyFreeQuestions: yearlyFreeQuestions !== undefined ? Number(yearlyFreeQuestions) : 10,
         trialDays: trialDays || 0,
@@ -76,7 +78,7 @@ export class PlanAdminController {
   public static async updatePlan(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
-      const { name, description, monthlyPrice, yearlyPrice, monthlyFreeQuestions, yearlyFreeQuestions, trialDays, displayOrder, badge, color, isActive, features } = req.body;
+      const { name, description, monthlyPrice, yearlyPrice, originalMonthlyPrice, originalYearlyPrice, monthlyFreeQuestions, yearlyFreeQuestions, trialDays, displayOrder, badge, color, isActive, features } = req.body;
 
       const plan = await SubscriptionPlan.findById(id);
       if (!plan) {
@@ -87,6 +89,8 @@ export class PlanAdminController {
       if (description !== undefined) plan.description = description;
       if (monthlyPrice !== undefined) plan.monthlyPrice = monthlyPrice;
       if (yearlyPrice !== undefined) plan.yearlyPrice = yearlyPrice;
+      if (originalMonthlyPrice !== undefined) plan.originalMonthlyPrice = Number(originalMonthlyPrice);
+      if (originalYearlyPrice !== undefined) plan.originalYearlyPrice = Number(originalYearlyPrice);
       if (monthlyFreeQuestions !== undefined) plan.monthlyFreeQuestions = Number(monthlyFreeQuestions);
       if (yearlyFreeQuestions !== undefined) plan.yearlyFreeQuestions = Number(yearlyFreeQuestions);
       if (trialDays !== undefined) plan.trialDays = trialDays;

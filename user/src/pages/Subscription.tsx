@@ -35,6 +35,8 @@ interface Plan {
   description: string;
   monthlyPrice: number;
   yearlyPrice: number;
+  originalMonthlyPrice?: number;
+  originalYearlyPrice?: number;
   monthlyFreeQuestions?: number;
   yearlyFreeQuestions?: number;
   trialDays: number;
@@ -449,6 +451,22 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
     );
   };
 
+  // Dynamically calculate average yearly savings percentage based on active plans & MRP discount
+  const yearlySavingsPercentage = React.useMemo(() => {
+    if (!plans || plans.length === 0) return 71;
+    const validPlans = plans.filter(p => (p.originalYearlyPrice && p.originalYearlyPrice > p.yearlyPrice) || (p.monthlyPrice > 0 && p.yearlyPrice > 0));
+    if (validPlans.length === 0) return 71;
+    const totalSavings = validPlans.reduce((acc, plan) => {
+      const benchmarkPrice = (plan.originalYearlyPrice && plan.originalYearlyPrice > plan.yearlyPrice)
+        ? plan.originalYearlyPrice
+        : plan.monthlyPrice * 12;
+      const savings = ((benchmarkPrice - plan.yearlyPrice) / benchmarkPrice) * 100;
+      return acc + savings;
+    }, 0);
+    const avgSavings = Math.round(totalSavings / validPlans.length);
+    return avgSavings > 0 ? avgSavings : 71;
+  }, [plans]);
+
   if (loading) {
     return (
       <div className="min-h-full bg-slate-50 dark:bg-slate-950 flex flex-col pt-12 pb-24 px-6 md:px-10 lg:px-16">
@@ -462,23 +480,23 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
 
   return (
     <div className={`pb-32 ${isBlocking ? 'pt-0' : 'pt-2'} px-6 md:px-10 lg:px-16 max-w-3xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-full h-full overflow-y-auto w-full`}>
-      {/* Header with Camera Notch & Safe-Area Inset Support */}
-      <div className="flex items-center justify-between mb-6 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md -mx-6 px-6 pt-[calc(env(safe-area-inset-top)+14px)] pb-4 border-b border-slate-100 dark:border-slate-800 sticky top-0 z-20 shadow-xs">
+      {/* Sleek Non-Overlapping Header */}
+      <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-200/80 dark:border-slate-800/80 pt-2">
         <div className="flex items-center space-x-3">
           {!isBlocking && (
             <button 
               onClick={onBack} 
-              className="p-1.5 text-slate-600 hover:text-slate-800 dark:text-slate-300 dark:hover:text-white rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="p-2 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all shadow-xs cursor-pointer"
               title="Go Back"
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
           )}
           <div>
-            <h1 className="font-black text-slate-900 dark:text-slate-100 text-sm sm:text-base leading-tight">
+            <h1 className="font-black text-slate-900 dark:text-slate-100 text-lg sm:text-xl tracking-tight leading-tight">
               Subscription & Plans
             </h1>
-            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500">
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">
               Manage your membership & clinical features
             </p>
           </div>
@@ -486,7 +504,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
         {isBlocking && (
           <button
             onClick={onBack}
-            className="text-xs font-bold text-red-500 hover:text-red-700 flex items-center space-x-1 px-3 py-1.5 bg-red-50 hover:bg-red-100 rounded-full transition-all"
+            className="text-xs font-extrabold text-rose-600 hover:text-rose-700 flex items-center space-x-1 px-3.5 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300 rounded-full border border-rose-200 dark:border-rose-800/50 transition-all cursor-pointer shadow-xs"
           >
             <span>Sign Out</span>
           </button>
@@ -509,39 +527,42 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
 
       {/* Active Subscription Banner */}
       {activeSub && activePlanDetails ? (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-soft mb-6">
-          <div className="flex justify-between items-start mb-3">
+        <div className="relative overflow-hidden bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-soft mb-6">
+          {/* Subtle Ambient Accent */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl pointer-events-none"></div>
+
+          <div className="flex justify-between items-start mb-3 relative z-10">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-full border border-slate-200/60 dark:border-slate-700">
                 Your Current Tier
               </span>
-              <h3 className="text-xl font-extrabold text-slate-800 dark:text-slate-100 mt-1 flex items-center space-x-2">
+              <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100 mt-2 flex items-center gap-2">
                 <span style={{ color: activePlanDetails.color }}>{activePlanDetails.name}</span>
                 {activeSub.status === 'trialing' && (
-                  <span className="text-[10px] font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded-full">
+                  <span className="text-[9.5px] font-bold bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200/80 dark:border-amber-700/60 px-2 py-0.5 rounded-md leading-none self-center">
                     Free Trial
                   </span>
                 )}
               </h3>
             </div>
             <div className="text-right">
-              <span className="text-xs font-extrabold text-slate-700 dark:text-slate-200">
+              <span className="text-lg font-black text-slate-900 dark:text-slate-100">
                 ₹{activeSub.billingCycle === 'yearly' ? activePlanDetails.yearlyPrice : activePlanDetails.monthlyPrice}
               </span>
-              <span className="text-[9px] text-slate-400 dark:text-slate-500 font-bold block">
+              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold block">
                 / {activeSub.billingCycle}
               </span>
             </div>
           </div>
 
-          <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold mb-4">
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed mb-4">
             {activePlanDetails.description}
           </p>
 
-          <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-2">
+          <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-2.5">
             <div className="flex justify-between items-center text-xs font-semibold text-slate-600 dark:text-slate-400">
               <span className="flex items-center space-x-1.5">
-                <Calendar className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
+                <Calendar className="h-4 w-4 text-slate-400 dark:text-slate-500" />
                 <span>Start Date</span>
               </span>
               <span className="text-slate-800 dark:text-slate-100 font-bold">
@@ -551,7 +572,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
 
             <div className="flex justify-between items-center text-xs font-semibold text-slate-600 dark:text-slate-400">
               <span className="flex items-center space-x-1.5">
-                <Calendar className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
+                <Calendar className="h-4 w-4 text-slate-400 dark:text-slate-500" />
                 <span>{activeSub.status === 'trialing' ? 'Trial Expiry' : activeSub.cancelAtPeriodEnd ? 'Expiry Date' : 'Renewal Date'}</span>
               </span>
               <span className="text-slate-800 dark:text-slate-100 font-bold">
@@ -561,14 +582,14 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
 
             {activeSub.cancelAtPeriodEnd ? (
               <div className="space-y-2.5 pt-2">
-                <div className="p-2.5 bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300 text-[10px] font-bold rounded-xl border border-amber-100 dark:border-amber-900/30 flex items-start space-x-1.5">
-                  <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-500" />
+                <div className="p-3 bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300 text-xs font-bold rounded-2xl border border-amber-100 dark:border-amber-900/30 flex items-start space-x-2">
+                  <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-500 mt-0.5" />
                   <span>Auto-renew is disabled. Your access will expire on {new Date(activeSub.endDate).toLocaleDateString()}.</span>
                 </div>
                 <button
                   onClick={handleReactivateSubscription}
                   disabled={actionLoading}
-                  className="w-full bg-primary hover:bg-primary-dark text-white text-xs font-bold py-2.5 rounded-xl transition-all shadow-sm"
+                  className="w-full bg-primary hover:bg-primary-dark text-white text-xs font-bold py-3 rounded-2xl transition-all shadow-sm cursor-pointer"
                 >
                   {actionLoading ? 'Processing...' : 'Turn On Auto-Renewal'}
                 </button>
@@ -578,7 +599,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                 <button
                   onClick={() => setShowCancelConfirmModal(true)}
                   disabled={actionLoading}
-                  className="w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold py-2.5 rounded-xl transition-all"
+                  className="w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold py-2.5 rounded-2xl transition-all cursor-pointer"
                 >
                   {actionLoading ? 'Processing...' : 'Turn Off Auto-Renewal'}
                 </button>
@@ -644,7 +665,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
               onClick={() => setBillingCycle('yearly')}
               className={`px-3 py-1 rounded-full transition-all ${billingCycle === 'yearly' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}
             >
-              Yearly (Save ~15%)
+              Yearly ({yearlySavingsPercentage > 0 ? `Save ~${yearlySavingsPercentage}%` : 'Billing'})
             </button>
           </div>
         </div>
@@ -721,6 +742,9 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
               }
             }
             const finalPrice = parseFloat((price - discount).toFixed(2));
+            const origPrice = billingCycle === 'yearly' ? (plan.originalYearlyPrice || 0) : (plan.originalMonthlyPrice || 0);
+            const hasOriginalPrice = origPrice > price;
+            const discountPct = hasOriginalPrice ? Math.round(((origPrice - price) / origPrice) * 100) : 0;
 
             return (
               <div
@@ -730,31 +754,58 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                 {/* Accent line */}
                 <div className="h-1.5 w-full" style={{ backgroundColor: color }}></div>
 
-                {plan.badge && plan.badge !== 'None' && !isIOSAppStoreBlocked && (
-                  <span
-                    className="absolute right-4 top-4 text-[9px] font-extrabold px-2 py-0.5 rounded-full text-white"
-                    style={{ backgroundColor: color }}
-                  >
-                    {plan.badge}
-                  </span>
-                )}
-
-                <div className="p-5">
-                  <h4 className="text-base font-extrabold mb-1" style={{ color: color }}>
-                    {plan.name}
-                  </h4>
-                  <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mb-4">
+                <div className="p-5 sm:p-6">
+                  <div className="flex items-center justify-between gap-2 flex-wrap mb-1.5">
+                    <h4 className="text-lg font-black tracking-tight" style={{ color: color }}>
+                      {plan.name}
+                    </h4>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {plan.badge && plan.badge !== 'None' && !isIOSAppStoreBlocked && (
+                        <span
+                          className="text-[10px] font-black px-2.5 py-0.5 rounded-full text-white shadow-xs"
+                          style={{ backgroundColor: color }}
+                        >
+                          {plan.badge}
+                        </span>
+                      )}
+                      {hasOriginalPrice && (
+                        <span className="text-[10px] font-black px-2.5 py-0.5 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/60 rounded-full flex items-center gap-1">
+                          <Percent className="h-3 w-3" />
+                          <span>{discountPct}% INTRO OFFER</span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed mb-4">
                     {plan.description}
                   </p>
 
                   {/* Price breakdown: Base, GST, Total */}
-                  <div className="mb-4 text-xs font-semibold text-slate-600 dark:text-slate-400 space-y-1.5 bg-slate-50/70 dark:bg-slate-800/50 p-3 rounded-2xl border border-slate-100 dark:border-slate-800">
+                  <div className="mb-4 text-xs font-semibold text-slate-600 dark:text-slate-400 space-y-1.5 bg-slate-50/80 dark:bg-slate-800/50 p-3.5 rounded-2xl border border-slate-200/60 dark:border-slate-800">
+                    {hasOriginalPrice && (
+                      <div className="flex items-center justify-between bg-gradient-to-r from-amber-500/10 via-amber-400/10 to-orange-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 p-2.5 rounded-xl text-xs font-bold mb-2">
+                        <span className="flex items-center gap-1.5">
+                          <Sparkles className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                          <span>Limited Introductory Deal</span>
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="line-through text-slate-400 text-xs font-medium">{currencySymbol}{origPrice}</span>
+                          <span className="text-amber-600 dark:text-amber-400 font-black text-sm">{currencySymbol}{price}</span>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="flex justify-between">
                       <span>Base Plan Price:</span>
-                      <span className="text-slate-800 dark:text-slate-200 font-extrabold">{currencySymbol}{discount > 0 ? finalPrice : price}</span>
+                      <span className="text-slate-800 dark:text-slate-200 font-extrabold flex items-center gap-1.5">
+                        {hasOriginalPrice && discount === 0 && (
+                          <span className="line-through text-slate-400 text-[11px] font-normal">{currencySymbol}{origPrice}</span>
+                        )}
+                        <span>{currencySymbol}{discount > 0 ? finalPrice : price}</span>
+                      </span>
                     </div>
                     {discount > 0 && (
-                      <div className="flex justify-between text-red-500 text-[10px] font-bold">
+                      <div className="flex justify-between text-rose-500 text-[10px] font-bold">
                         <span>Coupon Discount ({appliedCoupon?.code}):</span>
                         <span>-{currencySymbol}{discount}</span>
                       </div>
@@ -763,8 +814,8 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                       <span>GST ({gstPercentage}%):</span>
                       <span className="text-slate-800 dark:text-slate-200 font-bold">{currencySymbol}{((discount > 0 ? finalPrice : price) * gstPercentage / 100).toFixed(2)}</span>
                     </div>
-                    <div className="border-t border-slate-200/50 dark:border-slate-750/50 my-1"></div>
-                    <div className="flex justify-between font-black text-slate-800 dark:text-slate-100 text-sm">
+                    <div className="border-t border-slate-200/60 dark:border-slate-750/50 my-1"></div>
+                    <div className="flex justify-between font-black text-slate-900 dark:text-slate-100 text-sm">
                       <span className="flex items-baseline space-x-0.5">
                         <span>Total Price</span>
                         <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold ml-1">/ {billingCycle === 'yearly' ? 'year' : 'month'}</span>
@@ -773,8 +824,8 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                     </div>
                     {plan.trialDays > 0 && (
                       <div className="pt-1 flex items-center justify-between">
-                        <span className="text-[10px] font-extrabold text-blue-700 dark:text-blue-300 bg-blue-50/75 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/30 px-2 py-0.5 rounded-md">
-                          {plan.trialDays} Days Free Trial included
+                        <span className="text-[10px] font-extrabold text-blue-700 dark:text-blue-300 bg-blue-50/90 dark:bg-blue-900/30 border border-blue-200/80 dark:border-blue-800/40 px-2.5 py-0.5 rounded-full">
+                          🎁 {plan.trialDays} Days Free Trial included
                         </span>
                       </div>
                     )}
@@ -788,23 +839,23 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                   {/* Action Button */}
                   <div className="mt-4">
                     {isActivePlan ? (
-                      <div className="text-center py-2.5 text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/20 rounded-2xl border border-green-100 dark:border-green-900/30 font-extrabold flex items-center justify-center space-x-1.5">
-                        <Check className="h-4 w-4" />
+                      <div className="text-center py-3 text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 rounded-2xl border border-emerald-200 dark:border-emerald-900/40 font-extrabold flex items-center justify-center space-x-1.5 shadow-xs">
+                        <Check className="h-4 w-4 text-emerald-500" />
                         <span>Active Subscription</span>
                       </div>
                     ) : isIOSAppStoreBlocked ? (
-                      <div className="text-center py-2.5 text-xs text-slate-500 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 font-bold px-2">
+                      <div className="text-center py-3 text-xs text-slate-500 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 font-bold px-2">
                         <span>In-App Purchases coming soon to iOS</span>
                       </div>
                     ) : (
                       <button
                         onClick={() => handleSubscribe(plan._id)}
                         disabled={actionLoading}
-                        className="w-full text-white font-extrabold py-3 rounded-2xl shadow-md flex items-center justify-center space-x-2 transition-all disabled:opacity-50"
+                        className="w-full text-white font-extrabold py-3.5 px-4 rounded-2xl shadow-md hover:shadow-lg active:scale-[0.99] flex items-center justify-center space-x-2 transition-all disabled:opacity-50 cursor-pointer"
                         style={{ backgroundColor: color }}
                       >
                         <CreditCard className="h-4.5 w-4.5" />
-                        <span>{plan.trialDays > 0 && !activeSub ? 'Start Free Trial' : `Subscribe Now (${currencySymbol}${((discount > 0 ? finalPrice : price) * (1 + gstPercentage / 100)).toFixed(2)})`}</span>
+                        <span className="text-xs sm:text-sm font-black tracking-wide">{plan.trialDays > 0 && !activeSub ? 'Start Free Trial' : `Subscribe Now (${currencySymbol}${((discount > 0 ? finalPrice : price) * (1 + gstPercentage / 100)).toFixed(2)})`}</span>
                       </button>
                     )}
                   </div>

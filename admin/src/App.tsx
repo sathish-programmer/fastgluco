@@ -443,6 +443,8 @@ const AdminPanelContent: React.FC = () => {
     description: '',
     monthlyPrice: 100,
     yearlyPrice: 1000,
+    originalMonthlyPrice: 350,
+    originalYearlyPrice: 3500,
     monthlyFreeQuestions: 1,
     yearlyFreeQuestions: 10,
     trialDays: 7,
@@ -1497,6 +1499,8 @@ const AdminPanelContent: React.FC = () => {
           description: '',
           monthlyPrice: 100,
           yearlyPrice: 1000,
+          originalMonthlyPrice: 350,
+          originalYearlyPrice: 3500,
           monthlyFreeQuestions: 1,
           yearlyFreeQuestions: 10,
           trialDays: 7,
@@ -5123,6 +5127,8 @@ const AdminPanelContent: React.FC = () => {
                     description: '',
                     monthlyPrice: 100,
                     yearlyPrice: 1000,
+                    originalMonthlyPrice: 350,
+                    originalYearlyPrice: 3500,
                     monthlyFreeQuestions: 1,
                     yearlyFreeQuestions: 10,
                     trialDays: 7,
@@ -5229,6 +5235,8 @@ const AdminPanelContent: React.FC = () => {
                                     description: p.description || '',
                                     monthlyPrice: p.monthlyPrice,
                                     yearlyPrice: p.yearlyPrice,
+                                    originalMonthlyPrice: p.originalMonthlyPrice ?? 0,
+                                    originalYearlyPrice: p.originalYearlyPrice ?? 0,
                                     monthlyFreeQuestions: p.monthlyFreeQuestions ?? 1,
                                     yearlyFreeQuestions: p.yearlyFreeQuestions ?? 10,
                                     trialDays: p.trialDays,
@@ -6137,9 +6145,38 @@ const AdminPanelContent: React.FC = () => {
                   />
                 </div>
 
+                <div className="grid grid-cols-2 gap-4 bg-amber-50/70 p-3.5 rounded-2xl border border-amber-200/80">
+                  <div>
+                    <label className="block text-xs font-bold text-amber-900 uppercase mb-1">
+                      Original / MRP Monthly Price (Slashed)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 350"
+                      value={planForm.originalMonthlyPrice || ''}
+                      onChange={(e) => setPlanForm({ ...planForm, originalMonthlyPrice: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 bg-white border border-amber-200 rounded-xl text-xs font-bold focus:outline-none"
+                    />
+                    <span className="text-[10px] text-amber-700 font-medium mt-0.5 block">App displays as ~~₹350~~ (Intro Offer)</span>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-amber-900 uppercase mb-1">
+                      Original / MRP Yearly Price (Slashed)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 3500"
+                      value={planForm.originalYearlyPrice || ''}
+                      onChange={(e) => setPlanForm({ ...planForm, originalYearlyPrice: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 bg-white border border-amber-200 rounded-xl text-xs font-bold focus:outline-none"
+                    />
+                    <span className="text-[10px] text-amber-700 font-medium mt-0.5 block">App displays as ~~₹3,500~~ (Intro Offer)</span>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Monthly Price (INR)</label>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Selling Monthly Price (INR)</label>
                     <input
                       type="number"
                       required
@@ -6149,7 +6186,7 @@ const AdminPanelContent: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Yearly Price (INR)</label>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Selling Yearly Price (INR)</label>
                     <input
                       type="number"
                       required
