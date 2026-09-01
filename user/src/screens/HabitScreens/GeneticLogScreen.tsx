@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { ArrowLeft, Dna } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Dna, Sparkles } from 'lucide-react';
 import { ConsultationBanner } from '../../components/ConsultationBanner';
 import { useAuth } from '../../context/AuthContext';
 import { HabitsService } from '../../services/habitsService';
+import { GeneticRiskAIChatModal } from '../../components/GeneticRiskAIChatModal';
  
 interface GeneticLogScreenProps {
   onBack: () => void;
@@ -14,6 +15,25 @@ export const GeneticLogScreen: React.FC<GeneticLogScreenProps> = ({ onBack, onBo
   const { user, token, apiUrl } = useAuth();
   const [geneticLink, setGeneticLink] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(false);
+  // Auto-opens Gene AI modal when visiting the Genetic Risk page
+  const [showGeneAIModal, setShowGeneAIModal] = useState(true);
+
+  useEffect(() => {
+    if (user?.id) loadGeneticHistory();
+  }, [user]);
+
+  const loadGeneticHistory = async () => {
+    if (!user?.id) return;
+    try {
+      const logs = await HabitsService.getRecentHabits(apiUrl, token, 'Genetic', 7);
+      if (logs && logs.length > 0) {
+        const latest = logs[0];
+        if (latest.value && typeof latest.value.geneticLink === 'boolean') {
+          setGeneticLink(latest.value.geneticLink);
+        }
+      }
+    } catch (e) {}
+  };
 
   const handleSelectGenetic = async (val: boolean) => {
     setGeneticLink(val);
@@ -41,6 +61,29 @@ export const GeneticLogScreen: React.FC<GeneticLogScreenProps> = ({ onBack, onBo
           <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Damage · Genetics</span>
           <h2 className="text-2xl font-sans font-bold text-slate-800 dark:text-slate-100 leading-none mt-1">Genetic Link</h2>
         </div>
+      </div>
+
+      {/* Gene Oncogenetics AI Advisor Hero Banner */}
+      <div className="bg-gradient-to-r from-purple-50/90 via-indigo-50/80 to-slate-50 dark:from-slate-900 dark:to-slate-900/90 rounded-3xl p-5 mb-6 shadow-xs border border-purple-100 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="space-y-1.5 max-w-xl">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[10px] font-black uppercase tracking-widest text-purple-700 dark:text-purple-300 bg-purple-100/80 dark:bg-purple-950/60 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 border border-purple-200/60 dark:border-purple-800">
+              <Sparkles className="h-3 w-3 text-purple-600" /> Oncogenetics AI
+            </span>
+            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">NCCN v2.2025 & ASCO 2024 Guidelines</span>
+          </div>
+          <h3 className="text-base font-extrabold text-slate-900 dark:text-white leading-tight">Roughly 10% of cancers have a genetic risk.</h3>
+          <p className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
+            Chat with **Gene**, our Germline Risk Advisor AI, to evaluate your personal & family cancer history and see if multi-gene testing is recommended.
+          </p>
+        </div>
+
+        <button
+          onClick={() => setShowGeneAIModal(true)}
+          className="bg-purple-600 hover:bg-purple-700 text-white font-black text-xs px-4 py-3 rounded-2xl transition-all shadow-sm shrink-0 whitespace-nowrap cursor-pointer flex items-center gap-2 active:scale-95"
+        >
+          <Dna className="h-4 w-4" /> Chat with Genetic Risk AI
+        </button>
       </div>
 
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl p-4 mb-6">
@@ -111,6 +154,14 @@ export const GeneticLogScreen: React.FC<GeneticLogScreenProps> = ({ onBack, onBo
           )}
         </div>
       </div>
+
+      {/* Genetic Risk Advisor AI Modal */}
+      <GeneticRiskAIChatModal
+        isOpen={showGeneAIModal}
+        onClose={() => setShowGeneAIModal(false)}
+        onBookAppointment={onBookAppointment}
+        onNavigateToShop={onNavigateToShop}
+      />
     </div>
   );
 };

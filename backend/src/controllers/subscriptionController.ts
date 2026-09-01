@@ -744,7 +744,7 @@ export class SubscriptionController {
       // --- PDF DRAWING ---
       // Logo / Title Header
       doc.fillColor('#0284C7').fontSize(24).font('Helvetica-Bold').text('Mito_Reboot', 50, 50);
-      doc.fillColor('#64748B').fontSize(10).font('Helvetica-Bold').text('CIRCADIAN FASTING & METABOLIC HEALTH', 50, 78);
+      doc.fillColor('#64748B').fontSize(10).font('Helvetica-Bold').text('PREVENTIVE LIFESTYLE & METABOLIC HEALTH', 50, 78);
 
       doc.fillColor('#1E293B').fontSize(20).font('Helvetica-Bold').text('INVOICE', 400, 50, { align: 'right' });
       doc.fillColor('#64748B').fontSize(10).font('Helvetica').text(`Invoice #: ${invoice.invoiceNumber}`, 400, 75, { align: 'right' });
@@ -809,7 +809,7 @@ export class SubscriptionController {
 
       // Footer notice
       doc.fillColor('#94A3B8').fontSize(9).font('Helvetica').text('This is a computer generated invoice and does not require a signature.', 50, 480, { align: 'center', width: 500 });
-      doc.text('Mito_Reboot Platform - Circadian Fasting & Metabolic Monitoring', 50, 495, { align: 'center', width: 500 });
+      doc.text('Mito_Reboot Platform - Preventive Lifestyle & Metabolic Monitoring', 50, 495, { align: 'center', width: 500 });
 
       // End document
       doc.end();
@@ -839,7 +839,7 @@ export class SubscriptionController {
 
       // Logo / Title Header
       doc.fillColor('#0284C7').fontSize(24).font('Helvetica-Bold').text('Mito_Reboot', 50, 50);
-      doc.fillColor('#64748B').fontSize(10).font('Helvetica-Bold').text('CIRCADIAN FASTING & METABOLIC HEALTH', 50, 78);
+      doc.fillColor('#64748B').fontSize(10).font('Helvetica-Bold').text('PREVENTIVE LIFESTYLE & METABOLIC HEALTH', 50, 78);
 
       doc.fillColor('#1E293B').fontSize(20).font('Helvetica-Bold').text('INVOICE', 400, 50, { align: 'right' });
       doc.fillColor('#64748B').fontSize(10).font('Helvetica').text(`Invoice #: ${invoice.invoiceNumber}`, 400, 75, { align: 'right' });
@@ -904,7 +904,7 @@ export class SubscriptionController {
 
       // Footer notice
       doc.fillColor('#94A3B8').fontSize(9).font('Helvetica').text('This is a computer generated invoice and does not require a signature.', 50, 480, { align: 'center', width: 500 });
-      doc.text('Mito_Reboot Platform - Circadian Fasting & Metabolic Monitoring', 50, 495, { align: 'center', width: 500 });
+      doc.text('Mito_Reboot Platform - Preventive Lifestyle & Metabolic Monitoring', 50, 495, { align: 'center', width: 500 });
 
       doc.end();
     });

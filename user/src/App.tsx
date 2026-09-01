@@ -20,6 +20,7 @@ import { Coaching } from './pages/Coaching';
 import { BookAppointmentScreen } from './screens/Appointment/BookAppointmentScreen';
 import { ShopOrdersHistoryScreen } from './screens/Shop/ShopOrdersHistoryScreen';
 import { ProductRatingScreen } from './screens/Shop/ProductRatingScreen';
+import { HelpSupportModal } from './components/HelpSupportModal';
 import {
   Home,
   FileText,
@@ -30,7 +31,6 @@ import {
   BookOpen,
   Calendar,
   Headphones,
-  X,
   Bot,
   Sparkles,
   Crown,
@@ -637,32 +637,10 @@ const MainAppContent: React.FC = () => {
       )}
 
       {/* Help & Support Modal */}
-      {showHelpModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-sm w-full border border-slate-100 dark:border-slate-800 shadow-xl text-center relative">
-            <button
-              onClick={() => setShowHelpModal(false)}
-              className="absolute top-4 right-4 p-1.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 dark:text-slate-500 rounded-full transition-colors"
-            >
-              <X className="h-4 w-4" />
-            </button>
-            <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Headphones className="h-6 w-6 text-primary" />
-            </div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-2">Help & Support</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
-              Have questions or need assistance? Reach out to our support team directly via email.
-            </p>
-            <a
-              href="mailto:support@mitoreboot.in"
-              onClick={() => setShowHelpModal(false)}
-              className="block w-full py-2.5 bg-primary hover:bg-primary/95 text-white rounded-xl text-xs font-bold shadow-sm transition-all text-center"
-            >
-              Email support@mitoreboot.in
-            </a>
-          </div>
-        </div>
-      )}
+      <HelpSupportModal
+        isOpen={showHelpModal}
+        onClose={() => setShowHelpModal(false)}
+      />
 
       {/* Global Ask Mito / Doctor Consultation Drawer */}
       <AskMitoDrawer

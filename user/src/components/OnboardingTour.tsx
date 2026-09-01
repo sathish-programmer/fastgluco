@@ -21,7 +21,7 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ onComplete }) =>
   const slides: Slide[] = [
     {
       title: `Welcome to ${branding.appName}!`,
-      description: 'Your premium circadian fasting companion. We help you monitor glucose spikes, log meals, and get intelligent clinical recommendations to optimize your metabolic health.',
+      description: `Your premium ${branding.appTagline || 'Preventive Lifestyle App'}. We help you monitor glucose spikes, log meals, and get intelligent clinical recommendations to optimize your metabolic health.`,
       icon: branding.appLogoUrl ? (
         <img src={branding.appLogoUrl} alt={branding.appName} className="h-16 w-auto object-contain max-w-[100px]" />
       ) : (

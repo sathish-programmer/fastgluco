@@ -26,8 +26,8 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
   },
   {
     stepId: 'fasting',
-    title: 'Circadian Fasting Window',
-    questionPrompt: 'Did you complete your circadian fasting window today? (e.g., 16:8 intermittent fasting)',
+    title: 'Preventive Fasting Window',
+    questionPrompt: 'Did you complete your preventive fasting window today? (e.g., 16:8 intermittent fasting)',
     inputType: 'OPTIONS',
     options: ['Yes (16+ hrs)', 'Yes (12-16 hrs)', 'Partial (<12 hrs)', 'No (Skipped)'],
     order: 3,

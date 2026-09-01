@@ -12,6 +12,7 @@ const getEmbedUrl = (url: string) => {
   return url;
 };
 import { AdminAuthProvider, useAdminAuth } from './context/AdminAuthContext';
+import { AdminShippingPincodeConfig } from './components/AdminShippingPincodeConfig';
 import {
   Users,
   LayoutDashboard,
@@ -68,6 +69,7 @@ import { LabPortal } from './components/LabPortal';
 import { SupportPortal } from './components/SupportPortal';
 import { AdminDailyLoggingWorkflows } from './components/AdminDailyLoggingWorkflows';
 import { AdminAskMitoTopics } from './components/AdminAskMitoTopics';
+import { AdminUserFeedback } from './components/AdminUserFeedback';
 
 const getCategoryStyle = (score: number) => {
   if (score <= 15) return 'bg-emerald-50 text-emerald-700 border-emerald-250';
@@ -2422,6 +2424,15 @@ const AdminPanelContent: React.FC = () => {
                     >
                       Product Support
                     </button>
+                    <button 
+                      onClick={() => { setActiveView('user-feedback'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold flex items-center justify-between ${
+                        activeView === 'user-feedback' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <span>User Feedback</span>
+                      <span className="text-[10px] text-amber-400 font-bold">⭐</span>
+                    </button>
                   </div>
                 )}
               </div>
@@ -3632,8 +3643,10 @@ const AdminPanelContent: React.FC = () => {
         {activeView === 'store-products' && (
           <div className="space-y-6">
             {paymentConfig && (
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                <h3 className="text-lg font-bold text-slate-800 mb-4">Shop Configuration</h3>
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+                <h3 className="text-lg font-bold text-slate-800">Shop & Warehouse Configuration</h3>
+                
+                {/* Global Fees */}
                 <div className="grid grid-cols-3 gap-6">
                   <div>
                     <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Shop GST (%)</label>
@@ -3654,7 +3667,7 @@ const AdminPanelContent: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Shipping Fee (Base)</label>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Shipping Fee (Global Base Fallback)</label>
                     <input
                       type="number" min="0" step="0.01" required
                       value={paymentConfig.shopShippingFee !== undefined ? paymentConfig.shopShippingFee : 0}
@@ -3663,11 +3676,176 @@ const AdminPanelContent: React.FC = () => {
                     />
                   </div>
                 </div>
+
+                {/* Warehouse Origin Location Settings */}
+                <div className="border-t border-slate-100 pt-4 space-y-3">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-indigo-600">Store / Warehouse Origin Location (For Distance Calculations)</span>
+                  <div className="grid grid-cols-4 gap-4">
+                    <div className="col-span-2">
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Warehouse Address</label>
+                      <input
+                        type="text"
+                        value={paymentConfig.storeOriginAddress || 'MitoReboot Central Warehouse, Bangalore'}
+                        onChange={(e) => setPaymentConfig({ ...paymentConfig, storeOriginAddress: e.target.value })}
+                        placeholder="Warehouse Address"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Origin Pincode</label>
+                      <input
+                        type="text"
+                        value={paymentConfig.storeOriginPincode || '560001'}
+                        onChange={(e) => setPaymentConfig({ ...paymentConfig, storeOriginPincode: e.target.value })}
+                        placeholder="560001"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Unconfigured Pincodes Mode</label>
+                      <select
+                        value={paymentConfig.unconfiguredPincodeFallback || 'GLOBAL_FALLBACK'}
+                        onChange={(e) => setPaymentConfig({ ...paymentConfig, unconfiguredPincodeFallback: e.target.value as any })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 bg-white"
+                      >
+                        <option value="GLOBAL_FALLBACK">🟡 Global Fallback (Use Global Base Fee)</option>
+                        <option value="STRICT">🔴 Strict Mode (Only Listed Pincodes Serviceable)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Origin Latitude</label>
+                      <input
+                        type="number" step="0.000001"
+                        value={paymentConfig.storeOriginLat !== undefined ? paymentConfig.storeOriginLat : 12.9716}
+                        onChange={(e) => setPaymentConfig({ ...paymentConfig, storeOriginLat: parseFloat(e.target.value) || 12.9716 })}
+                        placeholder="12.9716"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Origin Longitude</label>
+                      <input
+                        type="number" step="0.000001"
+                        value={paymentConfig.storeOriginLon !== undefined ? paymentConfig.storeOriginLon : 77.5946}
+                        onChange={(e) => setPaymentConfig({ ...paymentConfig, storeOriginLon: parseFloat(e.target.value) || 77.5946 })}
+                        placeholder="77.5946"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Global Distance Tier Configuration */}
+                  <div className="border-t border-slate-100 pt-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-indigo-600">Global Default Distance Tiers (Inherited by all pincodes without custom tiers)</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const current = paymentConfig.globalDistanceRanges || [
+                            { minDistanceKm: 0, maxDistanceKm: 5, shippingCharge: 40, estimatedDeliveryTime: 'Same Day Delivery (2-4 hrs)' },
+                            { minDistanceKm: 5, maxDistanceKm: 15, shippingCharge: 75, estimatedDeliveryTime: '24 Hours Delivery' }
+                          ];
+                          const last = current[current.length - 1];
+                          const newMin = last ? last.maxDistanceKm : 0;
+                          const newMax = newMin + 10;
+                          const newFee = last ? last.shippingCharge + 30 : 50;
+                          setPaymentConfig({
+                            ...paymentConfig,
+                            globalDistanceRanges: [...current, { minDistanceKm: newMin, maxDistanceKm: newMax, shippingCharge: newFee, estimatedDeliveryTime: '2-4 Days' }]
+                          });
+                        }}
+                        className="text-[10px] font-bold text-indigo-600 hover:underline cursor-pointer"
+                      >
+                        + Add Global Tier
+                      </button>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      {(paymentConfig.globalDistanceRanges || [
+                        { minDistanceKm: 0, maxDistanceKm: 5, shippingCharge: 40, estimatedDeliveryTime: 'Same Day Delivery (2-4 hrs)' },
+                        { minDistanceKm: 5, maxDistanceKm: 15, shippingCharge: 75, estimatedDeliveryTime: '24 Hours Delivery' },
+                        { minDistanceKm: 15, maxDistanceKm: 30, shippingCharge: 120, estimatedDeliveryTime: '2-3 Business Days' }
+                      ]).map((range: any, idx: number) => (
+                        <div key={idx} className="bg-slate-50 border border-slate-200 p-2 rounded-xl grid grid-cols-12 gap-2 items-center text-xs font-semibold">
+                          <div className="col-span-3 flex items-center gap-1">
+                            <input
+                              type="number" min="0" value={range.minDistanceKm}
+                              onChange={(e) => {
+                                const updated = [...(paymentConfig.globalDistanceRanges || [])];
+                                updated[idx] = { ...updated[idx], minDistanceKm: parseFloat(e.target.value) || 0 };
+                                setPaymentConfig({ ...paymentConfig, globalDistanceRanges: updated });
+                              }}
+                              className="w-full px-2 py-1 border border-slate-200 rounded-lg text-xs bg-white"
+                            />
+                            <span>-</span>
+                            <input
+                              type="number" min="0" value={range.maxDistanceKm}
+                              onChange={(e) => {
+                                const updated = [...(paymentConfig.globalDistanceRanges || [])];
+                                updated[idx] = { ...updated[idx], maxDistanceKm: parseFloat(e.target.value) || 0 };
+                                setPaymentConfig({ ...paymentConfig, globalDistanceRanges: updated });
+                              }}
+                              className="w-full px-2 py-1 border border-slate-200 rounded-lg text-xs bg-white"
+                            />
+                            <span className="text-[10px] text-slate-400">km</span>
+                          </div>
+
+                          <div className="col-span-3">
+                            <input
+                              type="number" min="0" value={range.shippingCharge}
+                              onChange={(e) => {
+                                const updated = [...(paymentConfig.globalDistanceRanges || [])];
+                                updated[idx] = { ...updated[idx], shippingCharge: parseFloat(e.target.value) || 0 };
+                                setPaymentConfig({ ...paymentConfig, globalDistanceRanges: updated });
+                              }}
+                              placeholder="Fee ₹"
+                              className="w-full px-2 py-1 border border-slate-200 rounded-lg text-xs font-bold text-emerald-700 bg-white"
+                            />
+                          </div>
+
+                          <div className="col-span-5">
+                            <input
+                              type="text" value={range.estimatedDeliveryTime}
+                              onChange={(e) => {
+                                const updated = [...(paymentConfig.globalDistanceRanges || [])];
+                                updated[idx] = { ...updated[idx], estimatedDeliveryTime: e.target.value };
+                                setPaymentConfig({ ...paymentConfig, globalDistanceRanges: updated });
+                              }}
+                              placeholder="Delivery Estimate"
+                              className="w-full px-2 py-1 border border-slate-200 rounded-lg text-xs bg-white"
+                            />
+                          </div>
+
+                          <div className="col-span-1 text-right">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updated = (paymentConfig.globalDistanceRanges || []).filter((_: any, i: number) => i !== idx);
+                                setPaymentConfig({ ...paymentConfig, globalDistanceRanges: updated });
+                              }}
+                              className="text-rose-500 hover:text-rose-700 font-bold p-1 cursor-pointer"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
                 <div className="mt-4 flex justify-end">
-                  <button onClick={(e) => { e.preventDefault(); handleConfigSubmit(e); }} className="bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold shadow-soft hover:bg-primary-dark transition-all">Save Config</button>
+                  <button onClick={(e) => { e.preventDefault(); handleConfigSubmit(e); }} className="bg-primary text-white px-5 py-2 rounded-xl text-sm font-bold shadow-soft hover:bg-primary-dark transition-all">Save Shop Config</button>
                 </div>
               </div>
             )}
+
+            {/* Pincode & Distance Shipping Management Dashboard */}
+            <AdminShippingPincodeConfig apiUrl={apiUrl} token={token || ''} />
+
             <AdminShopProducts apiUrl={apiUrl} token={token} />
           </div>
         )}
@@ -3680,6 +3858,11 @@ const AdminPanelContent: React.FC = () => {
         {/* HEALTH STORE REPORTS VIEW */}
         {activeView === 'store-reports' && (
           <AdminShopReports apiUrl={apiUrl} token={token || ''} />
+        )}
+
+        {/* USER FEEDBACK & RATINGS VIEW */}
+        {activeView === 'user-feedback' && (
+          <AdminUserFeedback apiUrl={apiUrl} token={token || ''} />
         )}
 
         {/* CONSULTATION ANALYTICS VIEW */}
@@ -5821,9 +6004,9 @@ const AdminPanelContent: React.FC = () => {
                         <input
                           type="text"
                           required
-                          value={paymentConfig.appTagline !== undefined ? paymentConfig.appTagline : 'The circadian fasting app'}
+                          value={paymentConfig.appTagline !== undefined ? paymentConfig.appTagline : 'Preventive Lifestyle App'}
                           onChange={(e) => setPaymentConfig({ ...paymentConfig, appTagline: e.target.value })}
-                          placeholder="The circadian fasting app"
+                          placeholder="Preventive Lifestyle App"
                           className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
                         />
                         <p className="text-[10px] text-slate-400 font-semibold mt-1">Displayed in user app, website pages, and footer areas.</p>

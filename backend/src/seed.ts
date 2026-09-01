@@ -312,6 +312,8 @@ const seed = async () => {
     const hasValidKeys = isValidKey(envKeyId) && isValidKey(envKeySecret);
     
     await PaymentGatewayConfig.create({
+      appName: 'Mito_Reboot',
+      appTagline: 'Preventive Lifestyle App',
       isSandbox: true,
       enablePayments: hasValidKeys, // Enable real payments if valid keys are present in .env
       enableSubscriptions: true, // Subscriptions required globally

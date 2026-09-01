@@ -73,6 +73,12 @@ export class PaymentAdminController {
         shopGstPercentage,
         shopDiscountPercentage,
         shopShippingFee,
+        storeOriginAddress,
+        storeOriginPincode,
+        storeOriginLat,
+        storeOriginLon,
+        unconfiguredPincodeFallback,
+        globalDistanceRanges,
         askMitoQuestionFee
       } = req.body;
 
@@ -110,6 +116,12 @@ export class PaymentAdminController {
       if (shopGstPercentage !== undefined) config.shopGstPercentage = shopGstPercentage;
       if (shopDiscountPercentage !== undefined) config.shopDiscountPercentage = shopDiscountPercentage;
       if (shopShippingFee !== undefined) config.shopShippingFee = shopShippingFee;
+      if (storeOriginAddress !== undefined) config.storeOriginAddress = storeOriginAddress;
+      if (storeOriginPincode !== undefined) config.storeOriginPincode = storeOriginPincode;
+      if (storeOriginLat !== undefined) config.storeOriginLat = Number(storeOriginLat);
+      if (storeOriginLon !== undefined) config.storeOriginLon = Number(storeOriginLon);
+      if (unconfiguredPincodeFallback !== undefined) config.unconfiguredPincodeFallback = unconfiguredPincodeFallback;
+      if (globalDistanceRanges !== undefined && Array.isArray(globalDistanceRanges)) config.globalDistanceRanges = globalDistanceRanges;
       config.updatedBy = req.user?.id as any;
 
       await config.save();

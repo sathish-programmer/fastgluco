@@ -63,7 +63,7 @@ export default function App() {
 
   const [branding, setBranding] = useState({
     appName: 'Mito_Reboot',
-    appTagline: 'The circadian fasting app',
+    appTagline: 'Preventive Lifestyle App',
     appLogoUrl: ''
   });
 
@@ -87,12 +87,13 @@ export default function App() {
         const webVideos = vid.filter((v: any) => v.targetPlatform === 'Website' || v.targetPlatform === 'Both');
         setVideosData(webVideos.length > 0 ? webVideos : vid);
         if (config.appName) {
+          const tagline = (!config.appTagline || config.appTagline === 'The circadian fasting app') ? 'Preventive Lifestyle App' : config.appTagline;
           setBranding({
             appName: config.appName,
-            appTagline: config.appTagline,
+            appTagline: tagline,
             appLogoUrl: config.appLogoUrl || ''
           });
-          document.title = `${config.appName} - ${config.appTagline}`;
+          document.title = `${config.appName} - ${tagline}`;
         }
       } catch (err) {
         console.error('Failed to load dynamic content', err);

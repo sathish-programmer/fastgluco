@@ -20,6 +20,7 @@ import { HealthInsightController } from '../controllers/healthInsightController'
 import { NotificationController } from '../controllers/notificationController';
 import { ActivityController } from '../controllers/activityController';
 import { FounderController } from '../controllers/founderController';
+import { FeedbackController } from '../controllers/feedbackController';
 import * as RecommendedFoodController from '../controllers/recommendedFoodController';
 import * as HabitController from '../controllers/habitController';
 import { authenticateToken, requireRole } from '../middlewares/authMiddleware';
@@ -142,6 +143,10 @@ router.get('/config/public', async (req, res) => {
       });
       await config.save();
     }
+    if (!config.appTagline || config.appTagline === 'The circadian fasting app') {
+      config.appTagline = 'Preventive Lifestyle App';
+      await config.save();
+    }
     return res.status(200).json({
       enableHydrationTracker: config.enableHydrationTracker ?? true,
       hydrationDailyLimitMl: config.hydrationDailyLimitMl ?? 3000,
@@ -153,7 +158,7 @@ router.get('/config/public', async (req, res) => {
       enableSaferFoodCoupons: config.enableSaferFoodCoupons ?? true,
       enablePayments: config.enablePayments,
       appName: config.appName || 'Mito_Reboot',
-      appTagline: config.appTagline || 'The circadian fasting app',
+      appTagline: config.appTagline || 'Preventive Lifestyle App',
       appLogoUrl: config.appLogoUrl || '',
       cancerTreatmentDisclaimer: config.cancerTreatmentDisclaimer || `Lifestyle Guidance & Legal Disclaimer
 The recommendations provided in this application are intended solely for educational and general wellness purposes. They are designed to complement—not replace—the advice, diagnosis, or treatment provided by your healthcare professionals.
@@ -354,6 +359,7 @@ router.get('/shop/products', authenticateToken, requireRole(['User']), ShopContr
 router.get('/shop/products/:id', authenticateToken, requireRole(['User']), ShopController.getProductDetails);
 router.get('/shop/categories', authenticateToken, requireRole(['User', 'SuperAdmin', 'Admin', 'Editor']), ShopController.getCategories);
 router.post('/shop/validate-coupon', authenticateToken, requireRole(['User']), ShopController.validateShopCoupon);
+router.post('/shop/check-pincode', authenticateToken, requireRole(['User', 'SuperAdmin', 'Admin', 'Editor']), ShopController.checkPincodeServiceability);
 router.get('/shop/coupons', authenticateToken, requireRole(['User']), ShopController.getAvailableCoupons);
 router.post('/shop/create-order', authenticateToken, requireRole(['User']), ShopController.createOrder);
 router.post('/shop/verify-payment', authenticateToken, requireRole(['User']), ShopController.verifyPayment);
@@ -510,12 +516,23 @@ router.post('/admin/shop-products/upload-image', authenticateToken, requireRole(
   }
   res.json({ imageUrl: `/uploads/${req.file.filename}` });
 });
+router.post('/admin/shop-products/upload-images', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), uploadImage.array('images', 10), (req: any, res) => {
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ message: 'No files uploaded' });
+  }
+  const imageUrls = (req.files as any[]).map(file => `/uploads/${file.filename}`);
+  res.json({ imageUrls });
+});
 router.put('/admin/shop-products/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.updateAdminProduct);
 router.delete('/admin/shop-products/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.deleteAdminProduct);
 router.post('/admin/shop-categories', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.createAdminCategory);
 router.get('/admin/shop-reports', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopReportController.getReportsSummary);
 router.get('/admin/shop-reviews', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.getAdminReviews);
 router.put('/admin/shop-reviews/:id/status', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.updateReviewStatus);
+router.get('/admin/shop-pincodes', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.getAdminPincodeRules);
+router.post('/admin/shop-pincodes', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.createAdminPincodeRule);
+router.put('/admin/shop-pincodes/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.updateAdminPincodeRule);
+router.delete('/admin/shop-pincodes/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.deleteAdminPincodeRule);
 router.get('/admin/vendors/:id/performance', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminGetVendorPerformance);
 
 
@@ -656,5 +673,14 @@ router.get('/patient/orders', authenticateToken, requireRole(['User']), async (r
     res.status(500).json({ message: 'Error fetching patient orders.' });
   }
 });
+
+// --- USER & ADMIN FEEDBACK ROUTES ---
+router.post('/user/feedback', authenticateToken, FeedbackController.submitFeedback);
+router.get('/user/feedback/my', authenticateToken, FeedbackController.getMyFeedback);
+router.put('/user/feedback/:id', authenticateToken, FeedbackController.updateMyFeedback);
+router.delete('/user/feedback/:id', authenticateToken, FeedbackController.deleteMyFeedback);
+router.get('/admin/feedback', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), FeedbackController.getAllFeedbackAdmin);
+router.put('/admin/feedback/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin']), FeedbackController.updateFeedbackAdmin);
+router.delete('/admin/feedback/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin']), FeedbackController.deleteFeedbackAdmin);
 
 export default router;

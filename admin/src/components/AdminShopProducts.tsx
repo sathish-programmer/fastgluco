@@ -75,6 +75,7 @@ const EMPTY_PRODUCT_FORM = {
   sku: '',
   productStatus: 'active',
   discountPercent: '0',
+  images: [] as string[],
   variants: [] as { name: string; price: number; stock: number; sku: string }[]
 };
 
@@ -298,15 +299,17 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
     }
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleMultiImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
     const formData = new FormData();
-    formData.append('image', file);
+    for (let i = 0; i < files.length; i++) {
+      formData.append('images', files[i]);
+    }
 
     try {
-      const res = await fetch(`${apiUrl}/admin/shop-products/upload-image`, {
+      const res = await fetch(`${apiUrl}/admin/shop-products/upload-images`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -315,14 +318,25 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
       });
       if (res.ok) {
         const data = await res.json();
-        setForm(prev => ({ ...prev, image: data.imageUrl }));
+        const uploadedUrls: string[] = data.imageUrls || [];
+        setForm(prev => {
+          const combinedImages = Array.from(new Set([...(prev.images || []), ...uploadedUrls]));
+          const mainImg = (!prev.image || prev.image === '💊' || prev.image.length <= 4) && uploadedUrls.length > 0
+            ? uploadedUrls[0]
+            : prev.image;
+          return {
+            ...prev,
+            image: mainImg,
+            images: combinedImages
+          };
+        });
       } else {
         const err = await res.json();
-        alert(err.message || 'Image upload failed');
+        alert(err.message || 'Multiple image upload failed');
       }
     } catch (error) {
       console.error(error);
-      alert('Network error during image upload');
+      alert('Network error during multi-image upload');
     }
   };
 
@@ -361,6 +375,7 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
       sku: prod.sku || '',
       productStatus: prod.productStatus || 'active',
       discountPercent: String(prod.discountPercent || 0),
+      images: Array.isArray(prod.images) ? prod.images : [],
       variants: prod.variants || []
     });
     setIsEditing(true);
@@ -1094,7 +1109,7 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block">Product Icon/Emoji or Image URL *</label>
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block">Primary Image / Emoji *</label>
                       <input 
                         required
                         type="text" 
@@ -1106,21 +1121,67 @@ export const AdminShopProducts: React.FC<AdminShopProductsProps> = ({ apiUrl, to
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block">Upload Image File</label>
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block">Upload Multiple Images (E-Commerce Gallery)</label>
                       <div className="flex gap-2">
                         <input 
                           type="file" 
                           accept="image/*"
-                          onChange={handleImageUpload}
+                          multiple
+                          onChange={handleMultiImageUpload}
                           className="w-full border border-slate-200 rounded-xl p-1.5 text-xs focus:outline-none bg-white file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[10px] file:font-bold file:bg-indigo-500 file:text-white hover:file:bg-indigo-600 file:cursor-pointer"
                         />
-                        {form.image && (
-                          <div className="h-9 w-9 border border-slate-200 rounded-lg flex items-center justify-center overflow-hidden shrink-0 bg-slate-50">
-                            <ProductImage src={form.image} apiUrl={apiUrl} className="h-7 w-7 object-contain" textClassName="text-lg" />
-                          </div>
-                        )}
                       </div>
                     </div>
+                  </div>
+
+                  {/* Multi-Image Gallery Manager */}
+                  <div className="space-y-2 bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
+                    <div className="flex justify-between items-center">
+                      <label className="text-[10px] font-extrabold text-slate-700 uppercase tracking-wider block">
+                        Product Gallery Images ({form.images.length})
+                      </label>
+                      <span className="text-[9px] text-slate-400 font-semibold">Click thumbnail to set as main image</span>
+                    </div>
+
+                    {form.images.length === 0 ? (
+                      <p className="text-xs text-slate-400 italic">No additional gallery images added yet. Select multiple image files above to add them.</p>
+                    ) : (
+                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 pt-1">
+                        {form.images.map((imgUrl, imgIdx) => {
+                          const isMain = form.image === imgUrl;
+                          return (
+                            <div key={imgIdx} className={`relative group border-2 rounded-xl overflow-hidden aspect-square bg-white shadow-xs flex items-center justify-center ${isMain ? 'border-indigo-600 ring-2 ring-indigo-500/20' : 'border-slate-200'}`}>
+                              <ProductImage src={imgUrl} apiUrl={apiUrl} className="h-full w-full object-contain p-1" textClassName="text-xl" />
+                              {isMain && (
+                                <span className="absolute top-1 left-1 bg-indigo-600 text-white text-[7px] font-black px-1.5 py-0.5 rounded-full uppercase">
+                                  Main
+                                </span>
+                              )}
+                              <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 p-1">
+                                {!isMain && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setForm(prev => ({ ...prev, image: imgUrl }))}
+                                    className="bg-indigo-600 hover:bg-indigo-700 text-white text-[8px] font-bold px-1.5 py-1 rounded"
+                                    title="Set as Main Image"
+                                  >
+                                    Set Main
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => setForm(prev => ({ ...prev, images: prev.images.filter((_, idx) => idx !== imgIdx) }))}
+                                  className="bg-rose-600 hover:bg-rose-700 text-white p-1 rounded"
+                                  title="Remove Image"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
 
                     <div className="space-y-1">

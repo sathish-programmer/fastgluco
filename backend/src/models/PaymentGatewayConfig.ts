@@ -15,6 +15,12 @@ export interface IPaymentGatewayConfig extends Document {
   shopGstPercentage: number; // GST for Shop products
   shopDiscountPercentage: number; // Global Discount for Shop products
   shopShippingFee: number; // Shipping fee for shop orders
+  storeOriginAddress?: string; // Warehouse Origin Address
+  storeOriginPincode?: string; // Warehouse Origin Pincode
+  storeOriginLat?: number; // Warehouse Latitude
+  storeOriginLon?: number; // Warehouse Longitude
+  unconfiguredPincodeFallback?: 'STRICT' | 'GLOBAL_FALLBACK'; // Strict vs Global Base Fee Fallback
+  globalDistanceRanges?: { minDistanceKm: number; maxDistanceKm: number; shippingCharge: number; estimatedDeliveryTime: string }[];
   askMitoQuestionFee: number; // Fee per 48h medical query (default 100)
   enableAskMitoImageUpload?: boolean; // Admin Global Image Upload ON/OFF
   safeGlucoseThreshold: number; // Safe limit (default 90)
@@ -53,6 +59,26 @@ const paymentGatewayConfigSchema = new Schema<IPaymentGatewayConfig>(
     shopGstPercentage: { type: Number, default: 0, min: 0 },
     shopDiscountPercentage: { type: Number, default: 0, min: 0 },
     shopShippingFee: { type: Number, default: 0, min: 0 },
+    storeOriginAddress: { type: String, default: 'MitoReboot Health Central Warehouse, Bangalore' },
+    storeOriginPincode: { type: String, default: '560001' },
+    storeOriginLat: { type: Number, default: 12.9716 },
+    storeOriginLon: { type: Number, default: 77.5946 },
+    unconfiguredPincodeFallback: { type: String, enum: ['STRICT', 'GLOBAL_FALLBACK'], default: 'GLOBAL_FALLBACK' },
+    globalDistanceRanges: {
+      type: [
+        {
+          minDistanceKm: { type: Number, default: 0 },
+          maxDistanceKm: { type: Number, default: 5 },
+          shippingCharge: { type: Number, default: 40 },
+          estimatedDeliveryTime: { type: String, default: 'Same Day Delivery (2-4 hrs)' }
+        }
+      ],
+      default: [
+        { minDistanceKm: 0, maxDistanceKm: 5, shippingCharge: 40, estimatedDeliveryTime: 'Same Day Delivery (2-4 hrs)' },
+        { minDistanceKm: 5, maxDistanceKm: 15, shippingCharge: 75, estimatedDeliveryTime: '24 Hours Delivery' },
+        { minDistanceKm: 15, maxDistanceKm: 30, shippingCharge: 120, estimatedDeliveryTime: '2-3 Business Days' }
+      ]
+    },
     askMitoQuestionFee: { type: Number, default: 100, min: 0 },
     enableAskMitoImageUpload: { type: Boolean, default: true },
     safeGlucoseThreshold: { type: Number, default: 90, required: true },
@@ -62,7 +88,7 @@ const paymentGatewayConfigSchema = new Schema<IPaymentGatewayConfig>(
     hydrationDailyLimitMl: { type: Number, default: 3000, required: true },
     enableWorkoutTracker: { type: Boolean, default: true, required: true },
     appName: { type: String, default: 'Mito_Reboot' },
-    appTagline: { type: String, default: 'The circadian fasting app' },
+    appTagline: { type: String, default: 'Preventive Lifestyle App' },
     appLogoUrl: { type: String, default: '' },
     cancerTreatmentDisclaimer: { type: String, default: `Lifestyle Guidance & Legal Disclaimer
 The recommendations provided in this application are intended solely for educational and general wellness purposes. They are designed to complement—not replace—the advice, diagnosis, or treatment provided by your healthcare professionals.

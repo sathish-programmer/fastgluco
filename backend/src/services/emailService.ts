@@ -134,7 +134,7 @@ export class EmailService {
     const config = await PaymentGatewayConfig.findOne();
     return {
       appName: config?.appName || 'Mito_Reboot',
-      appTagline: config?.appTagline || 'The circadian fasting app'
+      appTagline: config?.appTagline || 'Preventive Lifestyle App'
     };
   }
 
@@ -164,7 +164,7 @@ export class EmailService {
 
     const html = generateEmailTemplate(`Welcome to ${appName}!`, `
       <p>Hi ${name},</p>
-      <p>We are thrilled to have you on board! ${appName} is designed to give you unparalleled insights into your circadian fasting cycles and metabolic health.</p>
+      <p>We are thrilled to have you on board! ${appName} is your ${appTagline || 'Preventive Lifestyle App'}, designed to give you unparalleled insights into your health and metabolic well-being.</p>
       <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #22c55e; padding: 16px; border-radius: 8px; margin: 20px 0;">
         <p style="margin: 0; color: #166534; font-weight: 600;">Getting Started:</p>
         <ul style="margin-top: 8px; margin-bottom: 0; color: #15803d; padding-left: 20px;">

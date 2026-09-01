@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, BrainCircuit, HeartHandshake } from 'lucide-react';
+import { ArrowLeft, BrainCircuit, HeartHandshake, MessageSquare, Sparkles } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { HabitsService, type HabitLog } from '../../services/habitsService';
 import { ConsultationBanner } from '../../components/ConsultationBanner';
+import { DeStressAIChatModal } from '../../components/DeStressAIChatModal';
 
 interface StressLogScreenProps {
   onBack: () => void;
@@ -37,6 +38,10 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
   // Stressed sub-options state
   const [selectedSubOption, setSelectedSubOption] = useState<string | null>(null);
 
+  // De-Stress AI Modal State - Auto-opens when visiting module page
+  const [showDeStressModal, setShowDeStressModal] = useState(true);
+  const [initialCategory, setInitialCategory] = useState('general');
+
   useEffect(() => {
     if (user?.id) loadHistory();
   }, [user]);
@@ -45,8 +50,36 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
     if (!user?.id) return;
     try {
       setLoadingHistory(true);
-      const logs = await HabitsService.getRecentHabits(apiUrl, token, 'Stress', 7);
-      setHistory(logs);
+      const rawLogs = await HabitsService.getRecentHabits(apiUrl, token, 'Stress', 7);
+      
+      // Deduplicate logs by date (keep latest log per day)
+      const uniqueMap = new Map<string, HabitLog>();
+      rawLogs.forEach(log => {
+        const dateKey = new Date(log.timestamp).toDateString();
+        if (!uniqueMap.has(dateKey)) {
+          uniqueMap.set(dateKey, log);
+        }
+      });
+
+      const deduplicated = Array.from(uniqueMap.values());
+      setHistory(deduplicated);
+
+      // Auto-highlight face & subOption from today's log (if logged manually or via AI chat)
+      const todayStr = new Date().toDateString();
+      const todayLog = deduplicated.find(l => new Date(l.timestamp).toDateString() === todayStr);
+      if (todayLog && todayLog.value) {
+        if (todayLog.value.faceId) setSelectedFace(todayLog.value.faceId);
+        
+        // Map category/subOption
+        const sub = todayLog.value.subOption || todayLog.value.label || '';
+        if (sub.includes('work') || sub.includes('Work-Life')) setSelectedSubOption('work_life');
+        else if (sub.includes('relation') || sub.includes('Relationship')) setSelectedSubOption('relationship');
+        else if (sub.includes('loss') || sub.includes('Loss')) setSelectedSubOption('loss');
+        else if (sub.includes('hormon') || sub.includes('Premenstru')) setSelectedSubOption('mood_swings');
+        else if (sub.includes('sexual') || sub.includes('Sexual')) setSelectedSubOption('sexual_health');
+        else if (sub.includes('other') || sub.includes('Other')) setSelectedSubOption('others');
+      }
+
     } catch (err) {
       console.error(err);
     } finally {
@@ -93,6 +126,28 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
       </div>
 
 
+
+      {/* Mia AI De-Stress Hero Banner */}
+      <div className="bg-gradient-to-r from-indigo-50/90 via-purple-50/80 to-slate-50 dark:from-slate-900 dark:to-slate-900/90 rounded-3xl p-5 mb-6 shadow-xs border border-indigo-100 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="space-y-1.5 max-w-xl">
+          <span className="text-[10px] font-black uppercase tracking-widest text-indigo-700 dark:text-indigo-300 bg-indigo-100/80 dark:bg-indigo-950/60 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 border border-indigo-200/60 dark:border-indigo-800">
+            <Sparkles className="h-3 w-3 text-indigo-600" /> Interactive De-Stress AI
+          </span>
+          <h3 className="text-base font-extrabold text-slate-900 dark:text-white leading-tight">Feeling stressed or anxious today?</h3>
+          <p className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
+            Chat with **Mia**, your AI wellness companion for instant personalized relaxation techniques and support.
+          </p>
+        </div>
+        <button
+          onClick={() => {
+            setInitialCategory('general');
+            setShowDeStressModal(true);
+          }}
+          className="bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs px-4 py-3 rounded-2xl transition-all shadow-sm shrink-0 whitespace-nowrap cursor-pointer flex items-center gap-2 active:scale-95"
+        >
+          <MessageSquare className="h-4 w-4" /> Chat with Mia AI
+        </button>
+      </div>
 
       {/* Intro Card */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm rounded-2xl p-4 mb-6">
@@ -173,24 +228,47 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
 
           {/* Connect to mental health specialist banner */}
           {selectedSubOption && selectedSubOption !== 'sexual_health' && (
-            <div className="bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 rounded-2xl p-4 mt-5 space-y-3 animate-in fade-in duration-200">
+            <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30 border border-purple-200/80 dark:border-purple-800/40 rounded-2xl p-4 mt-5 space-y-3 animate-in fade-in duration-200">
               <div className="flex items-start gap-3">
-                <HeartHandshake className="h-5 w-5 text-indigo-500 shrink-0 mt-0.5" />
+                <div className="w-9 h-9 rounded-xl bg-purple-600 text-white flex items-center justify-center text-sm font-black shrink-0">
+                  🤍
+                </div>
                 <div>
-                  <h5 className="text-xs font-bold text-indigo-850 dark:text-indigo-350">We're here to help</h5>
-                  <p className="text-xs text-indigo-700 dark:text-indigo-400 leading-relaxed mt-1">
-                    Managing mental loads is vital for physical wellness. We recommend scheduling a talk with a qualified therapist or counselor.
+                  <h5 className="text-xs font-black text-purple-950 dark:text-purple-200">Chat with Mito AI or Consult Specialist</h5>
+                  <p className="text-xs text-purple-800 dark:text-purple-300 leading-relaxed mt-0.5 font-medium">
+                    Our AI de-stress companion Mito AI can guide you through tailored relaxation exercises, or you can book a direct session with a counselor.
                   </p>
                 </div>
               </div>
-              {onBookAppointment && (
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
                 <button
-                  onClick={() => onBookAppointment(`Stress Management: ${STRESS_SUB_OPTIONS.find(o => o.id === selectedSubOption)?.label}`)}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] uppercase py-3 px-3 rounded-xl shadow-sm transition-all"
+                  onClick={() => {
+                    const catMap: Record<string, string> = {
+                      work_life: 'worklife',
+                      relationship: 'relationship',
+                      loss: 'loss',
+                      mood_swings: 'hormonal',
+                      sexual_health: 'sexual',
+                      others: 'others'
+                    };
+                    setInitialCategory(catMap[selectedSubOption] || 'general');
+                    setShowDeStressModal(true);
+                  }}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-black text-xs py-3 px-3 rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
-                  Connect to Mental Health Specialist
+                  <MessageSquare className="h-4 w-4" /> Chat with Mito AI
                 </button>
-              )}
+
+                {onBookAppointment && (
+                  <button
+                    onClick={() => onBookAppointment(`Stress Management: ${STRESS_SUB_OPTIONS.find(o => o.id === selectedSubOption)?.label}`)}
+                    className="w-full bg-white dark:bg-slate-800 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 hover:bg-purple-50 font-black text-xs py-3 px-3 rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <HeartHandshake className="h-4 w-4" /> Book Specialist
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -210,18 +288,31 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
               <p className="text-xs text-slate-400">No days logged yet</p>
             </div>
           ) : (
-            history.map((h) => (
-              <div key={h.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm rounded-xl p-3 flex justify-between items-center">
-                <div>
-                  <span className="text-sm font-bold text-slate-750 flex items-center gap-2">
-                    {h.value.emoji} {h.value.label}
-                  </span>
-                  <span className="text-[10px] text-slate-400 mt-1 block">
-                    {new Date(h.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                  </span>
+            history.map((h) => {
+              const emojiMap: Record<string, string> = { calm: '😁', steady: '🙂', tense: '😐', stressed: '☹️', maxed: '😫' };
+              const displayEmoji = h.value?.emoji || (h.value?.faceId ? emojiMap[h.value.faceId] : '😫');
+              const displayLabel = h.value?.label || h.value?.option || (h.value?.faceId ? h.value.faceId.charAt(0).toUpperCase() + h.value.faceId.slice(1) : 'Stress Logged');
+              const isAi = h.value?.source === 'ai_mia';
+
+              return (
+                <div key={h.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm rounded-xl p-3 flex justify-between items-center">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">{displayEmoji}</span>
+                      <span className="text-sm font-bold text-slate-800 dark:text-slate-100">{displayLabel}</span>
+                      {isAi && (
+                        <span className="text-[9px] bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-300 font-extrabold px-2 py-0.5 rounded-full border border-indigo-100 dark:border-indigo-900/60 uppercase">
+                          Mia AI
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-slate-400 mt-1 block font-medium">
+                      {new Date(h.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
@@ -241,6 +332,14 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
           />
         </div>
       )}
+
+      {/* Mito AI De-Stress Chat Modal */}
+      <DeStressAIChatModal
+        isOpen={showDeStressModal}
+        onClose={() => setShowDeStressModal(false)}
+        initialCategory={initialCategory}
+        onBookAppointment={onBookAppointment}
+      />
     </div>
   );
 };

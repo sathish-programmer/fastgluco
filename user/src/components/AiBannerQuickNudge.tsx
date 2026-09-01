@@ -15,7 +15,7 @@ export const AiBannerQuickNudge: React.FC<AiBannerQuickNudgeProps> = ({
   if (!onOpenAiCheckin) return null;
 
   return (
-    <div className="mb-6 relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 dark:from-blue-700 dark:via-indigo-700 dark:to-violet-800 text-white rounded-2xl sm:rounded-3xl p-4 sm:p-4.5 shadow-md hover:shadow-xl transition-all duration-300 border border-white/20 group">
+    <div className="mb-2 relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 dark:from-blue-700 dark:via-indigo-700 dark:to-violet-800 text-white rounded-2xl sm:rounded-3xl p-4 sm:p-4.5 shadow-md hover:shadow-xl transition-all duration-300 border border-white/20 group">
       {/* Decorative ambient glow */}
       <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-white/10 rounded-full blur-xl pointer-events-none group-hover:scale-150 transition-transform duration-500" />
       <div className="absolute -left-6 -top-6 w-20 h-20 bg-indigo-400/20 rounded-full blur-lg pointer-events-none" />

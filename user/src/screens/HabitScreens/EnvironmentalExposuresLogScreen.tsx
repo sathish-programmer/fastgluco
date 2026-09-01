@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Info, ShieldAlert, Award, ShoppingBag, ExternalLink, Activity } from 'lucide-react';
+import { ArrowLeft, Info, ShieldAlert, Award, ShoppingBag, ExternalLink } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { HabitsService } from '../../services/habitsService';
 import { ConsultationBanner } from '../../components/ConsultationBanner';
+import { LiveAQIWidget } from '../../components/LiveAQIWidget';
 
 interface EnvironmentalExposuresLogScreenProps {
   onBack: () => void;
@@ -159,7 +160,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
   };
 
   return (
-    <div className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100">
+    <div className="pb-24 pt-2 px-4 max-w-5xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100">
       
       {/* HEADER */}
       <div className="flex items-center gap-4 mb-6 sub-page-internal-header">
@@ -313,8 +314,18 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
 
       {/* VIEW 2: AIR POLLUTION */}
       {currentView === 'air' && (
-        <>
-          <div className="space-y-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 shadow-sm animate-in slide-in-from-right duration-250">
+        <div className="space-y-6 animate-in slide-in-from-right duration-250">
+          
+          {/* Hero Air Quality Tracking System (At the Top) */}
+          <LiveAQIWidget onNavigateToShop={onNavigateToShop} />
+
+          {/* Air Pollution Risk Assessment Questionnaire (Below Hero Tracker) */}
+          <div className="space-y-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 shadow-sm">
+            <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Personalized Risk Questionnaire</span>
+              <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100">Air Exposure Lifestyle Assessment</h3>
+            </div>
+
             <div className="space-y-4">
               {/* Q1 */}
               <div>
@@ -361,13 +372,13 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
                   </div>
                 </div>
               ) : (
-                <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl text-center text-xs text-slate-400 italic">
-                  Answer Question 1 to unlock the next question.
+                <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl text-center text-xs text-slate-400 font-bold italic">
+                  Answer Question 1 to unlock Question 2...
                 </div>
               )}
             </div>
 
-            {/* Referral banner if score is -2 */}
+            {/* Referral banner if airScore is -2 */}
             {airScore === -2 && onBookAppointment && (
               <ConsultationBanner
                 sourceModule="Environmental"
@@ -411,41 +422,12 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
             <button 
               onClick={() => setCurrentView('hub')}
               disabled={airQ1 === null || airQ2 === null}
-              className={`w-full py-3.5 rounded-xl font-bold text-xs transition-all text-white ${airQ1 !== null && airQ2 !== null ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-200 cursor-not-allowed opacity-60'}`}
+              className={`w-full py-3.5 rounded-xl font-bold text-xs transition-all text-white ${airQ1 !== null && airQ2 !== null ? 'bg-indigo-600 hover:bg-indigo-700 cursor-pointer shadow-sm' : 'bg-slate-200 dark:bg-slate-800 cursor-not-allowed opacity-60'}`}
             >
-              Done with Air Category
+              Done with Air Exposure Category
             </button>
           </div>
-
-          {/* Real-time AQI tracker link card */}
-          <div className="mt-4 bg-gradient-to-br from-indigo-50/50 to-white dark:from-indigo-950/20 dark:to-slate-900 border border-indigo-100/70 dark:border-slate-800 rounded-3xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-[0_8px_30px_rgb(0,0,0,0.02)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all duration-300">
-            <div className="flex items-start gap-3">
-              <div className="h-10 w-10 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-md shadow-indigo-100 dark:shadow-none shrink-0 mt-0.5 sm:mt-0">
-                <Activity className="h-5 w-5" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center">
-                  <span className="relative flex h-2 w-2 mr-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                  </span>
-                  <h4 className="text-[11px] font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">Live Air Quality Index (AQI)</h4>
-                </div>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium leading-normal mt-1">
-                  Know what you breathe. Check real-time air pollution levels in your city.
-                </p>
-              </div>
-            </div>
-            <a 
-              href="https://www.aqi.in/in" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="w-full sm:w-auto text-center justify-center px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-md shadow-indigo-100 dark:shadow-none active:scale-95 shrink-0"
-            >
-              Track Live AQI <ExternalLink className="h-3 w-3" />
-            </a>
-          </div>
-        </>
+        </div>
       )}
 
       {/* VIEW 3: WATER POLLUTION */}

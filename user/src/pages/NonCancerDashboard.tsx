@@ -478,8 +478,8 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
     const latest = getLatestLogForTypes('GENETIC');
     if (!latest) return null;
     const val = latest.value;
-    const optStr = (typeof val === 'object' ? (val.option || val.notes || '') : `${val}`).toLowerCase();
-    if (val === 1 || val?.geneticLink === true || optStr.includes('family')) return -1;
+    const optStr = (typeof val === 'object' ? (val.option || val.choice || val.notes || '') : `${val}`).toLowerCase();
+    if (val === 1 || val?.geneticLink === true || optStr.includes('family') || optStr.includes('personal') || optStr.includes('both') || optStr.includes('yes')) return -1;
     return 0;
   };
 
@@ -702,7 +702,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
           </header>
         )}
         {!isShopScreen && (
-          <div className="px-4 pt-4 max-w-5xl w-full mx-auto">
+          <div className="px-4 pt-2 max-w-5xl w-full mx-auto">
             <AiBannerQuickNudge onOpenAiCheckin={() => setShowChatbotModal(true)} />
           </div>
         )}

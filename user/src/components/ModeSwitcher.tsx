@@ -32,7 +32,7 @@ export const ModeSwitcher: React.FC = () => {
       key: 'PREVENTION',
       title: 'Cancer Prevention',
       shortLabel: 'Prevention',
-      description: 'Metabolic circadian fasting, toxin avoidance, and screening compliance.',
+      description: 'Preventive lifestyle habits, toxin avoidance, and screening compliance.',
       icon: ShieldCheck,
       accentColor: '#10B981',
       cardTheme: 'border-emerald-500/80 dark:border-emerald-500/70 bg-emerald-50/50 dark:bg-emerald-950/30 shadow-xs shadow-emerald-500/5',
@@ -156,7 +156,7 @@ export const ModeSwitcher: React.FC = () => {
       return (
         branding?.cancerTreatmentDisclaimer ||
         `Lifestyle Guidance & Legal Disclaimer for Cancer Treatment:
-This application provides lifestyle, circadian fasting, nutritional, and metabolic habit tracking designed solely to support overall wellness. It does NOT constitute medical treatment, chemotherapy, surgery, radiation, or direct medical diagnosis. All recommendations must be evaluated with your treating oncologist.`
+This application provides preventive lifestyle, nutritional, and metabolic habit tracking designed solely to support overall wellness. It does NOT constitute medical treatment, chemotherapy, surgery, radiation, or direct medical diagnosis. All recommendations must be evaluated with your treating oncologist.`
       );
     }
     if (mode === 'SECONDARY_PREVENTION') {
@@ -170,7 +170,7 @@ This program is designed to support long-term metabolic health, antioxidant inta
       return (
         branding?.cancerPreventionDisclaimer ||
         `Lifestyle Guidance & Legal Disclaimer for Cancer Prevention:
-This application offers evidence-informed guidance on circadian fasting, sleep hygiene, metabolic stability, and reducing environmental toxin exposure. It is intended for general educational wellness.`
+This application offers evidence-informed guidance on preventive lifestyle habits, sleep hygiene, metabolic stability, and reducing environmental toxin exposure. It is intended for general educational wellness.`
       );
     }
     return `Lifestyle & Wellness Tracking Protocol:

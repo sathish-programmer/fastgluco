@@ -5,6 +5,7 @@ import { ProductImage } from './ShopScreen';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { HabitsService } from '../../services/habitsService';
+import { PincodeDeliveryChecker } from '../../components/PincodeDeliveryChecker';
 
 interface BasketScreenProps {
   onBack: () => void;
@@ -38,6 +39,14 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
   const [finalTotal, setFinalTotal] = useState(0);
   const [validatingCoupon, setValidatingCoupon] = useState(false);
   const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
+  const [isPincodeServiceable, setIsPincodeServiceable] = useState<boolean>(true);
+
+  const handleShippingFeeCalculated = (fee: number, serviceable: boolean) => {
+    setShippingFee(fee);
+    setIsPincodeServiceable(serviceable);
+    const discounted = Math.max(0, subtotal - discountAmount);
+    setFinalTotal(discounted + gstAmount + fee);
+  };
 
   const curr = user?.currency === 'INR' ? '₹' : '$';
   
@@ -203,6 +212,7 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
 
       if (orderData.gateway === 'manual_bypass') {
         await HabitsService.logHabit(apiUrl, token, 'ShopOrder', { basket, total: subtotal });
+        localStorage.removeItem('mitoreboot_health_cart');
         setBasket([]);
         setOrdered(true);
         setLoading(false);
@@ -233,6 +243,7 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
               if (!verifyRes.ok) throw new Error(verifyData.message || 'Payment verification failed.');
 
               await HabitsService.logHabit(apiUrl, token, 'ShopOrder', { basket, total: subtotal });
+              localStorage.removeItem('mitoreboot_health_cart');
               setBasket([]);
               setOrdered(true);
             } catch (err: any) {
@@ -541,6 +552,13 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
             <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-4">
               <h3 className="font-bold text-sm text-slate-850">Billing Breakdown</h3>
               
+              {/* Delivery Pincode & Distance Checker */}
+              <PincodeDeliveryChecker
+                apiUrl={apiUrl}
+                token={token || ''}
+                onShippingFeeCalculated={handleShippingFeeCalculated}
+              />
+
               <div className="space-y-2.5 text-xs">
                 <div className="flex justify-between text-slate-500">
                   <span>Cart Subtotal</span>
@@ -576,10 +594,16 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
                 </div>
               </div>
 
+              {!isPincodeServiceable && (
+                <div className="p-2.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold rounded-xl text-center">
+                  ⚠️ Cannot checkout: Delivery is unavailable for the selected pincode.
+                </div>
+              )}
+
               <button 
                 onClick={handleCheckout}
-                disabled={loading}
-                className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold shadow-sm transition-all disabled:opacity-60 flex items-center justify-center gap-2 text-xs"
+                disabled={loading || !isPincodeServiceable}
+                className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-xs cursor-pointer"
               >
                 <Landmark className="h-4 w-4" /> {loading ? 'Processing Checkout...' : 'Confirm Shipment & Pay'}
               </button>

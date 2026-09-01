@@ -87,8 +87,8 @@ export const ensureNotificationChannel = async () => {
 
       await LocalNotifications.createChannel({
         id: HEALTH_HABITS_CHANNEL_ID,
-        name: 'Fasting, Stress & Sleep Health Alerts',
-        description: 'Timely reminders for circadian fasting, midday stillness, and sleep recovery',
+        name: 'Preventive Lifestyle, Fasting & Sleep Alerts',
+        description: 'Timely reminders for preventive lifestyle habits, midday stillness, and sleep recovery',
         importance: 4,
         visibility: 1,
         vibration: true,

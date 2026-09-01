@@ -429,7 +429,7 @@ export class ReportController {
       // --- PAGE 1: TITLE & USER METRICS ---
       // Logo Header
       doc.fillColor('#0284C7').fontSize(22).font('Helvetica-Bold').text('Mito_Reboot', 40, 35);
-      doc.fillColor('#64748B').fontSize(8.5).font('Helvetica-Bold').text('CIRCADIAN FASTING & METABOLIC ONCOLOGY CARE', 40, 60);
+      doc.fillColor('#64748B').fontSize(8.5).font('Helvetica-Bold').text('PREVENTIVE LIFESTYLE & METABOLIC ONCOLOGY CARE', 40, 60);
 
       doc.fillColor('#0F172A').fontSize(14).font('Helvetica-Bold').text('Doctor & Clinical Consultation Summary', 200, 35, { align: 'right' });
       doc.fillColor('#64748B').fontSize(8.5).font('Helvetica').text(`Generated: ${new Date().toLocaleDateString()}`, 200, 52, { align: 'right' });

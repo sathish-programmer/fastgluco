@@ -5,6 +5,7 @@ import ProductReview from '../models/ProductReview';
 import ShopOrder from '../models/ShopOrder';
 import { ShopCategory } from '../models/ShopCategory';
 import { PaymentGatewayConfig } from '../models/PaymentGatewayConfig';
+import { PincodeShippingRule } from '../models/PincodeShippingRule';
 import { Coupon } from '../models/Coupon';
 import { User } from '../models/User';
 import Razorpay from 'razorpay';
@@ -279,7 +280,13 @@ export const validateShopCoupon = async (req: Request, res: Response) => {
     
     const discountedAmount = Math.max(0, totalAmount - totalDiscountAmount);
     const gstAmount = (discountedAmount * (config?.shopGstPercentage || 0)) / 100;
-    const shippingFee = config?.shopShippingFee || 0;
+
+    const pincode = req.body.pincode || req.body.deliveryPincode || '';
+    const userLat = req.body.userLat ? Number(req.body.userLat) : undefined;
+    const userLon = req.body.userLon ? Number(req.body.userLon) : undefined;
+
+    const shippingRes = await computeShippingFeeForPincode(pincode, userLat, userLon);
+    const shippingFee = shippingRes.shippingFee;
     const finalAmount = discountedAmount + gstAmount + shippingFee;
 
     return res.status(200).json({
@@ -288,6 +295,8 @@ export const validateShopCoupon = async (req: Request, res: Response) => {
       discountAmount: totalDiscountAmount,
       gstAmount,
       shippingFee,
+      isServiceable: shippingRes.serviceable,
+      estimatedDeliveryTime: shippingRes.estimatedDeliveryTime,
       finalAmount,
       shopGstPercentage: config?.shopGstPercentage || 0,
       shopDiscountPercentage: config?.shopDiscountPercentage || 0
@@ -376,7 +385,18 @@ export const createOrder = async (req: Request, res: Response) => {
     const discountedAmount = Math.max(0, totalAmount - totalDiscountAmount);
     
     const gstAmount = (discountedAmount * (config?.shopGstPercentage || 0)) / 100;
-    const shippingCharge = config?.shopShippingFee || 0;
+    
+    // Extract delivery pincode and calculate shipping fee on backend
+    const orderPincode = shippingAddress?.postalCode || shippingAddress?.zip || shippingAddress?.pincode || req.body.pincode || '';
+    const userLat = req.body.userLat ? Number(req.body.userLat) : undefined;
+    const userLon = req.body.userLon ? Number(req.body.userLon) : undefined;
+
+    const shippingRes = await computeShippingFeeForPincode(orderPincode, userLat, userLon);
+    if (!shippingRes.serviceable) {
+      return res.status(400).json({ message: shippingRes.message || `Delivery is unavailable for pincode ${orderPincode}.` });
+    }
+
+    const shippingCharge = shippingRes.shippingFee;
     const finalAmount = discountedAmount + gstAmount + shippingCharge;
 
     // Create DB Order pending
@@ -618,5 +638,286 @@ export const getPatientReviews = async (req: any, res: Response) => {
     res.json(reviews);
   } catch (err) {
     res.status(500).json({ message: 'Error fetching reviews.' });
+  }
+};
+
+// --- PINCODE & DISTANCE SHIPPING CONTROLLER ---
+
+// Haversine distance calculator in kilometers
+function calculateHaversineDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Earth radius in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Number((R * c).toFixed(2));
+}
+
+// Get all pincode shipping rules (Admin)
+export const getAdminPincodeRules = async (req: Request, res: Response) => {
+  try {
+    const rules = await PincodeShippingRule.find().sort({ pincode: 1 });
+    res.json(rules);
+  } catch (err: any) {
+    res.status(500).json({ message: err.message || 'Error fetching pincode rules.' });
+  }
+};
+
+// --- PINCODE & DISTANCE SHIPPING VALIDATIONS & CALCULATIONS ---
+
+// Distance Range Validation Helper (Overlap & Boundaries Check)
+export function validateDistanceRanges(ranges: any[]): { valid: boolean; message?: string } {
+  if (!Array.isArray(ranges) || ranges.length === 0) {
+    return { valid: true };
+  }
+
+  for (let i = 0; i < ranges.length; i++) {
+    const r = ranges[i];
+    const min = Number(r.minDistanceKm);
+    const max = Number(r.maxDistanceKm);
+    const fee = Number(r.shippingCharge);
+
+    if (isNaN(min) || isNaN(max) || min < 0 || max <= 0) {
+      return { valid: false, message: `Invalid distance range at tier ${i + 1}. Minimum and maximum distances must be positive numbers.` };
+    }
+    if (min >= max) {
+      return { valid: false, message: `Invalid distance tier (${min}km - ${max}km) at row ${i + 1}. Minimum distance must be strictly less than maximum distance.` };
+    }
+    if (isNaN(fee) || fee < 0) {
+      return { valid: false, message: `Invalid shipping charge at tier ${i + 1}. Shipping charge must be a non-negative number.` };
+    }
+  }
+
+  // Check for range overlaps by sorting by minDistanceKm
+  const sorted = [...ranges].sort((a, b) => Number(a.minDistanceKm) - Number(b.minDistanceKm));
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const currentMax = Number(sorted[i].maxDistanceKm);
+    const nextMin = Number(sorted[i + 1].minDistanceKm);
+    if (currentMax > nextMin) {
+      return {
+        valid: false,
+        message: `Distance tier overlap detected! Range (${sorted[i].minDistanceKm}-${sorted[i].maxDistanceKm} km) overlaps with range (${sorted[i + 1].minDistanceKm}-${sorted[i + 1].maxDistanceKm} km).`
+      };
+    }
+  }
+
+  return { valid: true };
+}
+
+// Pincode Format Validation Helper
+export function validatePincodeFormat(pincode: string): { valid: boolean; cleanPincode: string; message?: string } {
+  const cleanPincode = (pincode || '').toString().trim();
+  if (!cleanPincode) {
+    return { valid: false, cleanPincode: '', message: 'Pincode is required.' };
+  }
+  if (!/^\d{6}$/.test(cleanPincode) && !/^[A-Z0-9\s-]{3,10}$/i.test(cleanPincode)) {
+    return { valid: false, cleanPincode, message: `Invalid pincode format (${cleanPincode}). Pincode must be a valid 6-digit number.` };
+  }
+  return { valid: true, cleanPincode };
+}
+
+// Shared Shipping Fee & Serviceability Calculation Helper
+export const computeShippingFeeForPincode = async (pincode?: string, userLat?: number, userLon?: number) => {
+  const cleanPincode = (pincode || '').toString().trim();
+  const config = await PaymentGatewayConfig.findOne();
+  const globalShippingFee = config?.shopShippingFee || 0;
+  const storeLat = config?.storeOriginLat || 12.9716;
+  const storeLon = config?.storeOriginLon || 77.5946;
+  const fallbackMode = config?.unconfiguredPincodeFallback || 'GLOBAL_FALLBACK';
+  const globalTiers = config?.globalDistanceRanges && config.globalDistanceRanges.length > 0
+    ? config.globalDistanceRanges
+    : [
+        { minDistanceKm: 0, maxDistanceKm: 5, shippingCharge: 40, estimatedDeliveryTime: 'Same Day Delivery (2-4 hrs)' },
+        { minDistanceKm: 5, maxDistanceKm: 15, shippingCharge: 75, estimatedDeliveryTime: '24 Hours Delivery' },
+        { minDistanceKm: 15, maxDistanceKm: 30, shippingCharge: 120, estimatedDeliveryTime: '2-3 Business Days' }
+      ];
+
+  if (!cleanPincode) {
+    return {
+      serviceable: true,
+      shippingFee: globalShippingFee,
+      estimatedDeliveryTime: 'Standard Delivery (3-5 Days)',
+      isFallback: true,
+      distanceKm: 0,
+      message: 'Using global standard shipping fee.'
+    };
+  }
+
+  const rule = await PincodeShippingRule.findOne({ pincode: cleanPincode });
+
+  // Unconfigured Pincode
+  if (!rule) {
+    if (fallbackMode === 'STRICT') {
+      return {
+        serviceable: false,
+        shippingFee: 0,
+        estimatedDeliveryTime: 'N/A',
+        isFallback: false,
+        distanceKm: 0,
+        message: `Delivery is currently unavailable for pincode ${cleanPincode}.`
+      };
+    }
+    // GLOBAL_FALLBACK
+    return {
+      serviceable: true,
+      shippingFee: globalShippingFee,
+      estimatedDeliveryTime: 'Standard Delivery (3-5 Days)',
+      isFallback: true,
+      distanceKm: 0,
+      message: `Standard delivery to ${cleanPincode}.`
+    };
+  }
+
+  // Configured & Non-Serviceable
+  if (!rule.isServiceable) {
+    return {
+      serviceable: false,
+      shippingFee: 0,
+      estimatedDeliveryTime: 'N/A',
+      isFallback: false,
+      distanceKm: 0,
+      message: `Delivery to ${rule.localityName} (${cleanPincode}) is currently suspended.`
+    };
+  }
+
+  // Configured & Serviceable: Calculate distance from Store Warehouse Origin
+  const destLat = userLat ? Number(userLat) : (rule.pincodeCenterLat || storeLat);
+  const destLon = userLon ? Number(userLon) : (rule.pincodeCenterLon || storeLon);
+  const distanceKm = calculateHaversineDistanceKm(storeLat, storeLon, destLat, destLon);
+
+  // Custom pincode distance ranges override, or inherit global distance tiers if empty
+  const activeTiers = (rule.distanceRanges && rule.distanceRanges.length > 0)
+    ? rule.distanceRanges
+    : globalTiers;
+
+  let matchedRange = activeTiers.find(
+    r => distanceKm >= r.minDistanceKm && distanceKm < r.maxDistanceKm
+  );
+
+  if (!matchedRange && activeTiers.length > 0) {
+    matchedRange = activeTiers[activeTiers.length - 1];
+  }
+
+  const calculatedFee = matchedRange ? matchedRange.shippingCharge : (rule.baseShippingFee ?? globalShippingFee);
+  const deliveryEstimate = matchedRange ? matchedRange.estimatedDeliveryTime : '24-48 Hours Delivery';
+
+  return {
+    serviceable: true,
+    localityName: rule.localityName,
+    city: rule.city,
+    state: rule.state,
+    shippingFee: calculatedFee,
+    estimatedDeliveryTime: deliveryEstimate,
+    distanceKm,
+    isFallback: false,
+    message: `Delivery available to ${rule.localityName} (${distanceKm} km from Warehouse).`
+  };
+};
+
+// Create a new pincode shipping rule (Admin)
+export const createAdminPincodeRule = async (req: Request, res: Response) => {
+  try {
+    const { pincode, localityName, city, state, isServiceable, pincodeCenterLat, pincodeCenterLon, baseShippingFee, distanceRanges } = req.body;
+    
+    // 1. Format validation
+    const pincodeCheck = validatePincodeFormat(pincode);
+    if (!pincodeCheck.valid) {
+      return res.status(400).json({ message: pincodeCheck.message });
+    }
+    if (!localityName || !localityName.trim()) {
+      return res.status(400).json({ message: 'Locality Name is required.' });
+    }
+
+    // 2. Uniqueness check
+    const existing = await PincodeShippingRule.findOne({ pincode: pincodeCheck.cleanPincode });
+    if (existing) {
+      return res.status(400).json({ message: `Pincode ${pincodeCheck.cleanPincode} is already configured in the system.` });
+    }
+
+    // 3. Distance Range Overlap check
+    if (distanceRanges && Array.isArray(distanceRanges) && distanceRanges.length > 0) {
+      const rangeCheck = validateDistanceRanges(distanceRanges);
+      if (!rangeCheck.valid) {
+        return res.status(400).json({ message: rangeCheck.message });
+      }
+    }
+
+    const rule = new PincodeShippingRule({
+      pincode: pincodeCheck.cleanPincode,
+      localityName: localityName.trim(),
+      city: city ? city.trim() : 'India',
+      state: state ? state.trim() : 'India',
+      isServiceable: isServiceable !== undefined ? isServiceable : true,
+      pincodeCenterLat: pincodeCenterLat ? Number(pincodeCenterLat) : 12.9716,
+      pincodeCenterLon: pincodeCenterLon ? Number(pincodeCenterLon) : 77.5946,
+      baseShippingFee: baseShippingFee !== undefined && baseShippingFee !== '' ? Number(baseShippingFee) : undefined,
+      distanceRanges: Array.isArray(distanceRanges) ? distanceRanges : []
+    });
+
+    await rule.save();
+    res.status(201).json(rule);
+  } catch (err: any) {
+    res.status(500).json({ message: err.message || 'Error creating pincode rule.' });
+  }
+};
+
+// Update an existing pincode rule (Admin)
+export const updateAdminPincodeRule = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { pincode, localityName, distanceRanges } = req.body;
+
+    if (pincode) {
+      const pincodeCheck = validatePincodeFormat(pincode);
+      if (!pincodeCheck.valid) {
+        return res.status(400).json({ message: pincodeCheck.message });
+      }
+      const existing = await PincodeShippingRule.findOne({ pincode: pincodeCheck.cleanPincode, _id: { $ne: id } });
+      if (existing) {
+        return res.status(400).json({ message: `Pincode ${pincodeCheck.cleanPincode} is already used by another rule.` });
+      }
+      req.body.pincode = pincodeCheck.cleanPincode;
+    }
+
+    if (distanceRanges && Array.isArray(distanceRanges) && distanceRanges.length > 0) {
+      const rangeCheck = validateDistanceRanges(distanceRanges);
+      if (!rangeCheck.valid) {
+        return res.status(400).json({ message: rangeCheck.message });
+      }
+    }
+
+    const rule = await PincodeShippingRule.findByIdAndUpdate(id, req.body, { new: true });
+    if (!rule) return res.status(404).json({ message: 'Pincode rule not found.' });
+    res.json(rule);
+  } catch (err: any) {
+    res.status(500).json({ message: err.message || 'Error updating pincode rule.' });
+  }
+};
+
+// Delete a pincode rule (Admin)
+export const deleteAdminPincodeRule = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const rule = await PincodeShippingRule.findByIdAndDelete(id);
+    if (!rule) return res.status(404).json({ message: 'Pincode rule not found.' });
+    res.json({ message: 'Pincode rule deleted successfully.' });
+  } catch (err: any) {
+    res.status(500).json({ message: err.message || 'Error deleting pincode rule.' });
+  }
+};
+
+// Public/User Serviceability & Distance Shipping Fee Calculation Check
+export const checkPincodeServiceability = async (req: Request, res: Response) => {
+  try {
+    const { pincode, userLat, userLon } = req.body;
+    const result = await computeShippingFeeForPincode(pincode, userLat, userLon);
+    return res.status(200).json(result);
+  } catch (err: any) {
+    return res.status(500).json({ message: err.message || 'Error checking pincode serviceability.' });
   }
 };

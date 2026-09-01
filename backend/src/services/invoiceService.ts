@@ -2,12 +2,17 @@ import fs from 'fs';
 import path from 'path';
 import PDFDocument from 'pdfkit';
 import { IShopOrder } from '../models/ShopOrder';
+import { PaymentGatewayConfig } from '../models/PaymentGatewayConfig';
 
 export class InvoiceService {
   /**
    * Generates a PDF invoice for a shop order and returns the relative path to it
    */
   public static async generateInvoicePDF(order: IShopOrder): Promise<string> {
+    const config = await PaymentGatewayConfig.findOne();
+    const appTagline = config?.appTagline || 'Preventive Lifestyle App';
+    const appName = config?.appName || 'Mito_Reboot';
+
     return new Promise((resolve, reject) => {
       try {
         const invoicesDir = path.join(__dirname, '../../uploads/invoices');
@@ -23,8 +28,8 @@ export class InvoiceService {
         doc.pipe(writeStream);
 
         // Header Branding
-        doc.fillColor('#2563EB').fontSize(24).font('Helvetica-Bold').text('Mito_Reboot Store', 50, 50);
-        doc.fillColor('#64748B').fontSize(10).font('Helvetica-Bold').text('The circadian fasting app', 50, 78);
+        doc.fillColor('#2563EB').fontSize(24).font('Helvetica-Bold').text(`${appName} Store`, 50, 50);
+        doc.fillColor('#64748B').fontSize(10).font('Helvetica-Bold').text(appTagline, 50, 78);
 
         doc.fillColor('#1E293B').fontSize(20).font('Helvetica-Bold').text('INVOICE', 350, 50, { width: 200, align: 'right' });
         doc.fillColor('#64748B').fontSize(8).font('Helvetica').text(`Invoice/Order ID: ${order._id}`, 300, 72, { width: 250, align: 'right' });
@@ -121,6 +126,10 @@ export class InvoiceService {
    * Generates a PDF invoice for an appointment and returns the relative path to it
    */
   public static async generateAppointmentInvoicePDF(appointment: any): Promise<string> {
+    const config = await PaymentGatewayConfig.findOne();
+    const appTagline = config?.appTagline || 'Preventive Lifestyle App';
+    const appName = config?.appName || 'Mito_Reboot';
+
     return new Promise((resolve, reject) => {
       try {
         const invoicesDir = path.join(__dirname, '../../uploads/invoices');
@@ -136,8 +145,8 @@ export class InvoiceService {
         doc.pipe(writeStream);
 
         // Header Branding
-        doc.fillColor('#2563EB').fontSize(24).font('Helvetica-Bold').text('Mito_Reboot', 50, 50);
-        doc.fillColor('#64748B').fontSize(10).font('Helvetica-Bold').text('The circadian fasting app', 50, 78);
+        doc.fillColor('#2563EB').fontSize(24).font('Helvetica-Bold').text(appName, 50, 50);
+        doc.fillColor('#64748B').fontSize(10).font('Helvetica-Bold').text(appTagline, 50, 78);
 
         doc.fillColor('#1E293B').fontSize(20).font('Helvetica-Bold').text('INVOICE', 350, 50, { width: 200, align: 'right' });
         doc.fillColor('#64748B').fontSize(8).font('Helvetica').text(`Invoice/Appointment ID: ${appointment._id}`, 300, 72, { width: 250, align: 'right' });

@@ -85,7 +85,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [error, setError] = useState<string | null>(null);
   const [branding, setBranding] = useState<AppBranding>({
     appName: 'Mito_Reboot',
-    appTagline: 'The circadian fasting app',
+    appTagline: 'Preventive Lifestyle App',
     appLogoUrl: '',
     cancerTreatmentDisclaimer: '',
     cancerSecondaryDisclaimer: '',
@@ -115,9 +115,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (res.ok) {
           const config = await res.json();
           if (config.appName) {
+            const tagline = (!config.appTagline || config.appTagline === 'The circadian fasting app') ? 'Preventive Lifestyle App' : config.appTagline;
             setBranding({
               appName: config.appName,
-              appTagline: config.appTagline,
+              appTagline: tagline,
               appLogoUrl: config.appLogoUrl || '',
               cancerTreatmentDisclaimer: config.cancerTreatmentDisclaimer || '',
               cancerSecondaryDisclaimer: config.cancerSecondaryDisclaimer || '',
@@ -128,7 +129,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               enableExternalPayments: config.enableExternalPayments,
               enableIOSExternalPayments: config.enableIOSExternalPayments
             });
-            document.title = `${config.appName} - ${config.appTagline}`;
+            document.title = `${config.appName} - ${tagline}`;
           }
         }
       } catch (err) {

@@ -91,7 +91,7 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
             )}
           </div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Complete Profile</h1>
-          <p className="text-slate-500 mt-1 text-sm">Please tell us a bit about yourself to customize your circadian fasting journey.</p>
+          <p className="text-slate-500 mt-1 text-sm">Please tell us a bit about yourself to customize your preventive lifestyle journey.</p>
           <div className="mt-2 text-xs font-semibold text-slate-400">
             Phone Verified: {user?.mobileNumber}
           </div>
