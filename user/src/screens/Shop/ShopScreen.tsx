@@ -468,7 +468,10 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
       : selectedProduct.image;
     
     return (
-      <div className="pb-24 pt-[calc(env(safe-area-inset-top)+14px)] px-4 max-w-5xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 animate-in fade-in slide-in-from-bottom duration-300">
+      <div 
+        className="pb-24 px-4 max-w-5xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 animate-in fade-in slide-in-from-bottom duration-300"
+        style={{ paddingTop: 'max(1.25rem, env(safe-area-inset-top))' }}
+      >
         {/* Back Button, Share & Basket Controls with Safe Notch Clearance */}
         <div className="flex items-center justify-between mb-6 gap-2 flex-wrap">
           <button 
@@ -846,7 +849,10 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
     <div className="pb-24 pt-6 px-4 max-w-6xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 transition-colors duration-300">
       
       {/* Header Panel */}
-      <div className="flex items-center justify-between mb-6 sticky top-0 z-50 bg-slate-50 dark:bg-slate-950 pt-[calc(env(safe-area-inset-top)+10px)] pb-3 -mx-4 px-4 shadow-xs gap-2 border-b border-slate-200/60 dark:border-slate-800/60">
+      <div 
+        className="flex items-center justify-between mb-6 sticky top-0 z-50 bg-slate-50 dark:bg-slate-950 pb-3 -mx-4 px-4 shadow-xs gap-2 border-b border-slate-200/60 dark:border-slate-800/60"
+        style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
+      >
         <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
           <button 
             onClick={onBack}

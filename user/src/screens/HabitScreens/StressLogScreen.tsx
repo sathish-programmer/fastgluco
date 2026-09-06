@@ -109,7 +109,10 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
   const showSubOptions = sadDaysCount >= 3 || (selectedFace === 'tense' || selectedFace === 'stressed' || selectedFace === 'maxed');
 
   return (
-    <div className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100">
+    <div 
+      className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100"
+      style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
+    >
       
       {/* Header */}
       <div className="flex items-center gap-4 mb-6 sub-page-internal-header">

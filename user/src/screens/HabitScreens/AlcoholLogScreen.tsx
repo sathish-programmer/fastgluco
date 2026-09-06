@@ -58,7 +58,10 @@ export const AlcoholLogScreen: React.FC<AlcoholLogScreenProps> = ({ onBack, onBo
   };
 
   return (
-    <div className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-slate-50 min-h-screen font-sans antialiased text-slate-800">
+    <div 
+      className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-slate-50 min-h-screen font-sans antialiased text-slate-800"
+      style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
+    >
       <div className="flex items-center gap-4 mb-6 sub-page-internal-header">
         <button 
           onClick={onBack}

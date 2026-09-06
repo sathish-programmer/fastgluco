@@ -151,7 +151,10 @@ export const IndianCancersScreen: React.FC<IndianCancersScreenProps> = ({ onBack
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20 pt-4 px-4 max-w-2xl mx-auto space-y-6 transition-colors duration-300">
+    <div 
+      className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20 px-4 max-w-2xl mx-auto space-y-6 transition-colors duration-300"
+      style={{ paddingTop: 'max(1.25rem, env(safe-area-inset-top))' }}
+    >
       
       {/* Header */}
       <div className="flex items-center gap-3 sub-page-internal-header">

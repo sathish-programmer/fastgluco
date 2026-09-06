@@ -291,7 +291,10 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
 
   if (ordered) {
     return (
-      <div className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-slate-50 min-h-screen font-sans antialiased text-slate-800 flex flex-col items-center justify-center">
+      <div 
+        className="pb-24 px-4 max-w-5xl mx-auto bg-slate-50 min-h-screen font-sans antialiased text-slate-800 flex flex-col items-center justify-center"
+        style={{ paddingTop: 'max(2rem, env(safe-area-inset-top))' }}
+      >
         <div className="w-16 h-16 rounded-full bg-emerald-100 border border-emerald-250 flex items-center justify-center mb-6">
           <ShieldCheck className="h-8 w-8 text-emerald-500" />
         </div>
@@ -310,7 +313,10 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
   }
 
   return (
-    <div className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-slate-50 min-h-screen font-sans antialiased text-slate-800">
+    <div 
+      className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-slate-50 min-h-screen font-sans antialiased text-slate-800"
+      style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
+    >
       <div className="flex items-center gap-4 mb-8">
         <button 
           onClick={onBack}

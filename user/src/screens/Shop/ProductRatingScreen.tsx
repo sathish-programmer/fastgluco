@@ -129,7 +129,10 @@ export const ProductRatingScreen: React.FC<ProductRatingScreenProps> = ({ orderI
   }
 
   return (
-    <div className="pb-24 pt-6 px-4 max-w-2xl mx-auto bg-slate-50 min-h-screen font-sans antialiased text-slate-800 animate-in fade-in duration-300">
+    <div 
+      className="pb-24 pt-6 px-4 max-w-2xl mx-auto bg-slate-50 min-h-screen font-sans antialiased text-slate-800 animate-in fade-in duration-300"
+      style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
+    >
       
       {/* Header Banner */}
       <div className="flex items-center justify-between mb-8">

@@ -243,7 +243,10 @@ export const CancerScreeningScreen: React.FC<CancerScreeningScreenProps> = ({ on
   const activeGroup = GROUPS.find((g) => g.id === activeTab) || GROUPS[0];
 
   return (
-    <div className="pb-24 pt-6 px-4 max-w-3xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 space-y-6 transition-colors duration-300">
+    <div 
+      className="pb-24 pt-6 px-4 max-w-3xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 space-y-6 transition-colors duration-300"
+      style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
+    >
         <div className="flex items-center gap-4 sub-page-internal-header">
           <button 
             onClick={onBack}
