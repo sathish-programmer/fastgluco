@@ -24,7 +24,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
   const [pesticidesQ1, setPesticidesQ1] = useState<boolean | null>(null); // true = Yes, false = No
   const [microplasticsQ1, setMicroplasticsQ1] = useState<boolean | null>(null); // true = Yes, false = No
 
-  const [showWaterInfo, setShowWaterInfo] = useState(false);
+  const [showWaterInfo, setShowWaterInfo] = useState(true);
   const [showAirModal, setShowAirModal] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -161,12 +161,12 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
 
   return (
     <div 
-      className="pb-24 pt-2 px-4 max-w-5xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100"
-      style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
+      className="pb-28 pt-4 px-4 sm:px-6 md:px-8 max-w-5xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100"
+      style={{ paddingTop: 'max(2rem, env(safe-area-inset-top))' }}
     >
       
       {/* HEADER */}
-      <div className="flex items-center gap-4 mb-6 sub-page-internal-header">
+      <div className="flex items-center gap-4 mb-8 sub-page-internal-header px-1">
         <button 
           onClick={currentView === 'hub' ? onBack : () => setCurrentView('hub')}
           className="h-10 w-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all"
@@ -189,7 +189,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
       {currentView === 'hub' && (
         <div className="space-y-6 animate-in fade-in duration-200">
           {/* Live Score Ring Card */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 shadow-sm flex flex-col sm:flex-row items-center gap-6">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row items-center gap-6 sm:gap-8">
             <div className="relative w-28 h-28 flex items-center justify-center shrink-0">
               <svg className="w-full h-full transform -rotate-90">
                 <circle cx="56" cy="56" r="48" strokeWidth="8" stroke="#f1f5f9" className="dark:stroke-slate-800" fill="transparent" />
@@ -216,19 +216,19 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
               {hasAnyAnswer && (
                 <div className="pt-2">
                   {overallScore === 0 && (
-                    <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs p-3 rounded-xl font-bold flex items-center gap-2">
+                    <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs p-4 rounded-2xl font-bold flex items-center gap-2.5">
                       <Award className="h-4 w-4 shrink-0" />
                       Excellent! You have very low exposure risks today. Keep following these best practices.
                     </div>
                   )}
                   {overallScore < 0 && overallScore >= -2 && (
-                    <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 text-amber-700 dark:text-amber-400 text-xs p-3 rounded-xl font-bold flex items-center gap-2">
+                    <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 text-amber-700 dark:text-amber-400 text-xs p-4 rounded-2xl font-bold flex items-center gap-2.5">
                       <ShieldAlert className="h-4 w-4 shrink-0" />
                       Moderate risk flagged. Take simple steps like carbon-filtering water and avoiding peak outdoor hours.
                     </div>
                   )}
                   {overallScore <= -3 && (
-                    <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 text-rose-700 dark:text-rose-400 text-xs p-3 rounded-xl font-bold">
+                    <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 text-rose-700 dark:text-rose-400 text-xs p-4 rounded-2xl font-bold">
                       <div className="flex items-center gap-2">
                         <ShieldAlert className="h-4 w-4 shrink-0" />
                         High environmental risk. We suggest scheduling a preventative oncology checkup.
@@ -236,7 +236,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
                       {onBookAppointment && (
                         <button 
                           onClick={() => onBookAppointment('Preventive Oncologist Consultation')}
-                          className="mt-2.5 w-full bg-rose-600 hover:bg-rose-700 text-white font-bold text-[10px] uppercase py-2 px-3 rounded-lg shadow-sm transition-all"
+                          className="mt-3 w-full bg-rose-600 hover:bg-rose-700 text-white font-bold text-[10px] uppercase py-2.5 px-4 rounded-xl shadow-sm transition-all"
                         >
                           Book Preventive Oncologist Consultation
                         </button>
@@ -249,15 +249,19 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
           </div>
 
           {/* Hub Option Tiles */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {/* Air Pollution */}
             <button 
               onClick={() => setCurrentView('air')}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 text-left flex justify-between items-center hover:border-indigo-200 dark:hover:border-slate-600 transition-all shadow-sm"
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 text-left flex justify-between items-center hover:border-indigo-300 dark:hover:border-indigo-700 transition-all shadow-sm group"
             >
-              <div className="space-y-1">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">01 · Outdoor Air & Fumes</span>
-                <span className="font-bold text-slate-800 dark:text-slate-200 text-sm block">Air Pollution</span>
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block flex items-center gap-1.5">
+                  01 · Outdoor Air & Fumes
+                  <span className="text-[9px] bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-md font-extrabold">AQI Tracked</span>
+                </span>
+                <span className="font-bold text-slate-800 dark:text-slate-200 text-base block group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Air Pollution</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium block">Live AQI widget & smog exposure test</span>
               </div>
               {getStatusBadge(airScore, airQ1 !== null || airQ2 !== null)}
             </button>
@@ -265,11 +269,15 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
             {/* Water Pollution */}
             <button 
               onClick={() => setCurrentView('water')}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 text-left flex justify-between items-center hover:border-indigo-200 dark:hover:border-slate-600 transition-all shadow-sm"
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 text-left flex justify-between items-center hover:border-indigo-300 dark:hover:border-indigo-700 transition-all shadow-sm group"
             >
-              <div className="space-y-1">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">02 · Water Contaminants</span>
-                <span className="font-bold text-slate-800 dark:text-slate-200 text-sm block">Water Pollution</span>
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block flex items-center gap-1.5">
+                  02 · Water Contaminants
+                  <span className="text-[9px] bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-md font-extrabold">Carbon + RO</span>
+                </span>
+                <span className="font-bold text-slate-800 dark:text-slate-200 text-base block group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Water Pollution</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium block">Dual Filtration: Activated Carbon + RO</span>
               </div>
               {getStatusBadge(waterScore, waterQ1 !== null)}
             </button>
@@ -277,11 +285,12 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
             {/* Pesticides */}
             <button 
               onClick={() => setCurrentView('pesticides')}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 text-left flex justify-between items-center hover:border-indigo-200 dark:hover:border-slate-600 transition-all shadow-sm"
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 text-left flex justify-between items-center hover:border-indigo-300 dark:hover:border-indigo-700 transition-all shadow-sm group"
             >
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">03 · Produce & Farming</span>
-                <span className="font-bold text-slate-800 dark:text-slate-200 text-sm block">Pesticides Exposure</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200 text-base block group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Pesticides Exposure</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium block">Non-organic & produce chemical risks</span>
               </div>
               {getStatusBadge(pesticidesScore, pesticidesQ1 !== null)}
             </button>
@@ -289,27 +298,28 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
             {/* Microplastics */}
             <button 
               onClick={() => setCurrentView('microplastics')}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 text-left flex justify-between items-center hover:border-indigo-200 dark:hover:border-slate-600 transition-all shadow-sm"
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 text-left flex justify-between items-center hover:border-indigo-300 dark:hover:border-indigo-700 transition-all shadow-sm group"
             >
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">04 · Plastic Containers</span>
-                <span className="font-bold text-slate-800 dark:text-slate-200 text-sm block">Microplastics Exposure</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200 text-base block group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Microplastics Exposure</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium block">Heated food containers & bottled water</span>
               </div>
               {getStatusBadge(microplasticsScore, microplasticsQ1 !== null)}
             </button>
           </div>
 
           {/* Action Footer */}
-          <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
+          <div className="pt-6 border-t border-slate-200 dark:border-slate-800 mt-6">
             <button 
               onClick={handleSaveLogs}
               disabled={loading || !hasAnyAnswer}
-              className={`w-full py-4 rounded-xl font-bold text-sm text-white transition-all shadow-sm ${hasAnyAnswer ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-300 dark:bg-slate-800 cursor-not-allowed opacity-50'}`}
+              className={`w-full py-4 rounded-2xl font-bold text-sm text-white transition-all shadow-sm ${hasAnyAnswer ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-300 dark:bg-slate-800 cursor-not-allowed opacity-50'}`}
             >
               {loading ? 'Saving...' : 'Save Exposure Log'}
             </button>
             {!hasAnyAnswer && (
-              <p className="text-[10px] text-center text-slate-450 mt-2 font-bold uppercase tracking-wider">Please answer at least one category to save.</p>
+              <p className="text-[10px] text-center text-slate-450 mt-2.5 font-bold uppercase tracking-wider">Please answer at least one category to save.</p>
             )}
           </div>
         </div>
@@ -323,29 +333,29 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
           <LiveAQIWidget onNavigateToShop={onNavigateToShop} />
 
           {/* Air Pollution Risk Assessment Questionnaire (Below Hero Tracker) */}
-          <div className="space-y-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 shadow-sm">
-            <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
+          <div className="space-y-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 sm:p-8 shadow-sm">
+            <div className="border-b border-slate-100 dark:border-slate-800 pb-4">
               <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Personalized Risk Questionnaire</span>
-              <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100">Air Exposure Lifestyle Assessment</h3>
+              <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100 mt-0.5">Air Exposure Lifestyle Assessment</h3>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-5">
               {/* Q1 */}
               <div>
                 <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-2">Question 1</p>
-                <p className="text-sm font-semibold text-slate-850 dark:text-slate-100 leading-relaxed mb-3">
+                <p className="text-sm font-semibold text-slate-850 dark:text-slate-100 leading-relaxed mb-3.5">
                   Does your work or daily routine require you to stay outdoors for more than 2 hours on days with poor air quality (AQI &gt; 150)?
                 </p>
                 <div className="flex gap-3">
                   <button 
                     onClick={() => setAirQ1(true)}
-                    className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all border ${airQ1 === true ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+                    className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${airQ1 === true ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
                   >
                     Yes (-1)
                   </button>
                   <button 
                     onClick={() => setAirQ1(false)}
-                    className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all border ${airQ1 === false ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+                    className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${airQ1 === false ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
                   >
                     No (0)
                   </button>
@@ -354,21 +364,21 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
 
               {/* Q2 (unlocked after Q1 answered) */}
               {airQ1 !== null ? (
-                <div className="pt-4 border-t border-slate-100 dark:border-slate-800 animate-in fade-in duration-200">
+                <div className="pt-5 border-t border-slate-100 dark:border-slate-800 animate-in fade-in duration-200">
                   <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-2">Question 2</p>
-                  <p className="text-sm font-semibold text-slate-850 dark:text-slate-100 leading-relaxed mb-3">
+                  <p className="text-sm font-semibold text-slate-850 dark:text-slate-100 leading-relaxed mb-3.5">
                     Does your work involve exposure to asbestos, silica, or industrial fumes?
                   </p>
                   <div className="flex gap-3">
                     <button 
                       onClick={() => setAirQ2(true)}
-                      className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all border ${airQ2 === true ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+                      className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${airQ2 === true ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
                     >
                       Yes (-1)
                     </button>
                     <button 
                       onClick={() => setAirQ2(false)}
-                      className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all border ${airQ2 === false ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+                      className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${airQ2 === false ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
                     >
                       No (0)
                     </button>
@@ -397,26 +407,26 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
             )}
 
             {airQ1 !== null && airQ2 !== null && (
-              <div className="bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 rounded-2xl p-4 space-y-4 animate-in fade-in duration-300">
+              <div className="bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 rounded-2xl p-5 space-y-4 animate-in fade-in duration-300">
                 <p className="text-xs text-indigo-750 dark:text-indigo-400 font-semibold leading-relaxed">
                   ℹ️ <strong>Recommendation:</strong> Reduce your exposure to air pollution where possible. Use an N95 mask and an air purifier when appropriate.
                 </p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3.5">
                   <button 
                     onClick={() => onNavigateToShop?.('N95 Mask')}
-                    className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-indigo-300 dark:hover:border-indigo-800 transition-all text-center group w-full"
+                    className="flex flex-col items-center justify-center p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl hover:border-indigo-300 dark:hover:border-indigo-800 transition-all text-center group w-full"
                   >
-                    <ShoppingBag className="h-5 w-5 text-indigo-500 mb-1 group-hover:scale-110 transition-transform" />
+                    <ShoppingBag className="h-5 w-5 text-indigo-500 mb-1.5 group-hover:scale-110 transition-transform" />
                     <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200">Order N95 Masks</span>
-                    <span className="text-[9px] text-slate-400 mt-0.5 inline-flex items-center gap-0.5">Shop now <ExternalLink className="h-2 w-2" /></span>
+                    <span className="text-[9px] text-slate-400 mt-1 inline-flex items-center gap-0.5">Shop now <ExternalLink className="h-2 w-2" /></span>
                   </button>
                   <button 
                     onClick={() => onNavigateToShop?.('Air Purifier')}
-                    className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-indigo-300 dark:hover:border-indigo-800 transition-all text-center group w-full"
+                    className="flex flex-col items-center justify-center p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl hover:border-indigo-300 dark:hover:border-indigo-800 transition-all text-center group w-full"
                   >
-                    <ShoppingBag className="h-5 w-5 text-indigo-500 mb-1 group-hover:scale-110 transition-transform" />
+                    <ShoppingBag className="h-5 w-5 text-indigo-500 mb-1.5 group-hover:scale-110 transition-transform" />
                     <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200">Order Air Purifier</span>
-                    <span className="text-[9px] text-slate-400 mt-0.5 inline-flex items-center gap-0.5">Shop now <ExternalLink className="h-2 w-2" /></span>
+                    <span className="text-[9px] text-slate-400 mt-1 inline-flex items-center gap-0.5">Shop now <ExternalLink className="h-2 w-2" /></span>
                   </button>
                 </div>
               </div>
@@ -425,7 +435,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
             <button 
               onClick={() => setCurrentView('hub')}
               disabled={airQ1 === null || airQ2 === null}
-              className={`w-full py-3.5 rounded-xl font-bold text-xs transition-all text-white ${airQ1 !== null && airQ2 !== null ? 'bg-indigo-600 hover:bg-indigo-700 cursor-pointer shadow-sm' : 'bg-slate-200 dark:bg-slate-800 cursor-not-allowed opacity-60'}`}
+              className={`w-full py-4 rounded-2xl font-bold text-xs transition-all text-white ${airQ1 !== null && airQ2 !== null ? 'bg-indigo-600 hover:bg-indigo-700 cursor-pointer shadow-sm' : 'bg-slate-200 dark:bg-slate-800 cursor-not-allowed opacity-60'}`}
             >
               Done with Air Exposure Category
             </button>
@@ -435,66 +445,107 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
 
       {/* VIEW 3: WATER POLLUTION */}
       {currentView === 'water' && (
-        <div className="space-y-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 shadow-sm animate-in slide-in-from-right duration-250">
-          <div>
-            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-2">Question 1</p>
-            <p className="text-sm font-semibold text-slate-850 dark:text-slate-100 leading-relaxed mb-4">
-              Do you know that your regular drinking water is free of carcinogenic contaminants (e.g., heavy metals, pesticides, PFAS)?
-            </p>
-            <div className="flex gap-3 mb-4">
-              <button 
-                onClick={() => setWaterQ1(true)}
-                className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all border ${waterQ1 === true ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
-              >
-                Yes, it is free (0)
-              </button>
-              <button 
-                onClick={() => setWaterQ1(false)}
-                className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all border ${waterQ1 === false ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
-              >
-                No / Not sure (-1)
-              </button>
+        <div className="space-y-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 sm:p-8 shadow-sm animate-in slide-in-from-right duration-250">
+          <div className="space-y-4">
+            <div>
+              <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-2">Question 1</p>
+              <p className="text-sm font-semibold text-slate-850 dark:text-slate-100 leading-relaxed mb-4">
+                Do you know that your regular drinking water is free of carcinogenic contaminants (e.g., heavy metals, pesticides, PFAS)?
+              </p>
+              <div className="flex gap-3 mb-5">
+                <button 
+                  onClick={() => setWaterQ1(true)}
+                  className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${waterQ1 === true ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+                >
+                  Yes, it is free (0)
+                </button>
+                <button 
+                  onClick={() => setWaterQ1(false)}
+                  className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${waterQ1 === false ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+                >
+                  No / Not sure (-1)
+                </button>
+              </div>
             </div>
 
             {/* Info Symbol & Table Toggle */}
-            <button 
-              onClick={() => setShowWaterInfo(v => !v)}
-              className="flex items-center gap-1.5 text-xs text-indigo-600 dark:text-indigo-400 font-bold hover:underline transition-colors mt-2"
-            >
-              <Info className="h-4 w-4 text-indigo-500" />
-              What filters remove water carcinogens?
-            </button>
+            <div className="pt-2">
+              <button 
+                onClick={() => setShowWaterInfo(v => !v)}
+                className="inline-flex items-center gap-2 text-xs text-indigo-600 dark:text-indigo-400 font-bold hover:underline transition-colors py-2 px-3.5 bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50 rounded-xl"
+              >
+                <Info className="h-4 w-4 text-indigo-500 shrink-0" />
+                <span>What filters remove water carcinogens?</span>
+              </button>
+            </div>
 
             {showWaterInfo && (
-              <div className="mt-4 border border-indigo-100 dark:border-slate-850 rounded-2xl overflow-hidden animate-in slide-in-from-top duration-200">
-                <div className="grid grid-cols-2 bg-indigo-50 dark:bg-indigo-950/20 px-4 py-2 border-b border-indigo-100 dark:border-slate-850 text-[10px] font-black uppercase text-indigo-700 dark:text-indigo-400 tracking-wider">
-                  <span>Contaminant</span>
-                  <span>Effective Treatment</span>
+              <div className="mt-5 mb-8 border border-indigo-100 dark:border-slate-800 rounded-3xl overflow-hidden shadow-xs animate-in slide-in-from-top duration-200">
+                <div className="grid grid-cols-12 bg-indigo-50/80 dark:bg-indigo-950/50 px-5 py-4 border-b border-indigo-100 dark:border-slate-800 text-[10px] font-black uppercase text-indigo-700 dark:text-indigo-300 tracking-wider gap-2">
+                  <span className="col-span-4">Technology</span>
+                  <span className="col-span-5">Main Purpose</span>
+                  <span className="col-span-3 text-right">MitoReboot</span>
                 </div>
                 <div className="bg-white dark:bg-slate-900 divide-y divide-slate-100 dark:divide-slate-800 text-xs">
-                  <div className="grid grid-cols-2 p-3">
-                    <span className="font-bold text-slate-700 dark:text-slate-200">Heavy metals (lead, arsenic, mercury, cadmium)</span>
-                    <span className="text-slate-500">Reverse osmosis (RO); certified activated carbon filters for lead</span>
+                  <div className="grid grid-cols-12 px-5 py-4 items-center gap-2">
+                    <span className="col-span-4 font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-full bg-amber-700 shrink-0" />
+                      Activated Carbon
+                    </span>
+                    <span className="col-span-5 text-slate-600 dark:text-slate-400 text-[11px] leading-relaxed">
+                      Chlorine, taste/odour, many pesticides & organic chemicals
+                    </span>
+                    <span className="col-span-3 text-right text-amber-500 text-xs tracking-tighter font-black">
+                      ⭐⭐⭐⭐⭐
+                    </span>
                   </div>
-                  <div className="grid grid-cols-2 p-3">
-                    <span className="font-bold text-slate-700 dark:text-slate-200">Pesticides</span>
-                    <span className="text-slate-500">Activated carbon; RO</span>
+                  <div className="grid grid-cols-12 px-5 py-4 items-center gap-2">
+                    <span className="col-span-4 font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-full bg-blue-500 shrink-0" />
+                      RO (Reverse Osmosis)
+                    </span>
+                    <span className="col-span-5 text-slate-600 dark:text-slate-400 text-[11px] leading-relaxed">
+                      Heavy metals, fluoride, nitrate, TDS, dissolved contaminants
+                    </span>
+                    <span className="col-span-3 text-right text-amber-500 text-xs tracking-tighter font-black">
+                      ⭐⭐⭐⭐⭐
+                    </span>
                   </div>
-                  <div className="grid grid-cols-2 p-3">
-                    <span className="font-bold text-slate-700 dark:text-slate-200">PFAS ("forever chemicals")</span>
-                    <span className="text-slate-500">Reverse osmosis; activated carbon (certified for PFAS)</span>
+                  <div className="grid grid-cols-12 px-5 py-4 items-center gap-2">
+                    <span className="col-span-4 font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-full bg-purple-500 shrink-0" />
+                      UV Sterilization
+                    </span>
+                    <span className="col-span-5 text-slate-600 dark:text-slate-400 text-[11px] leading-relaxed">
+                      Bacteria, viruses & microorganisms
+                    </span>
+                    <span className="col-span-3 text-right text-amber-500 text-xs tracking-tighter font-black">
+                      ⭐⭐⭐⭐
+                    </span>
                   </div>
-                  <div className="grid grid-cols-2 p-3">
-                    <span className="font-bold text-slate-700 dark:text-slate-200">Microplastics</span>
-                    <span className="text-slate-500">Reverse osmosis; ultrafiltration; nanofiltration</span>
+                  <div className="grid grid-cols-12 px-5 py-4 items-center gap-2">
+                    <span className="col-span-4 font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-full bg-slate-300 border border-slate-400 shrink-0" />
+                      Sediment Filter
+                    </span>
+                    <span className="col-span-5 text-slate-600 dark:text-slate-400 text-[11px] leading-relaxed">
+                      Sand, dirt, rust & suspended particles
+                    </span>
+                    <span className="col-span-3 text-right text-amber-500 text-xs tracking-tighter font-black">
+                      ⭐⭐⭐
+                    </span>
                   </div>
-                  <div className="grid grid-cols-2 p-3">
-                    <span className="font-bold text-slate-700 dark:text-slate-200">Nitrates</span>
-                    <span className="text-slate-500">Reverse osmosis; ion exchange</span>
-                  </div>
-                  <div className="grid grid-cols-2 p-3">
-                    <span className="font-bold text-slate-700 dark:text-slate-200">Bacteria/viruses</span>
-                    <span className="text-slate-500">UV, RO, ultrafiltration (depends on organism)</span>
+                  <div className="grid grid-cols-12 px-5 py-4 items-center gap-2">
+                    <span className="col-span-4 font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shrink-0" />
+                      Post-Carbon
+                    </span>
+                    <span className="col-span-5 text-slate-600 dark:text-slate-400 text-[11px] leading-relaxed">
+                      Taste & odour polishing
+                    </span>
+                    <span className="col-span-3 text-right text-amber-500 text-xs tracking-tighter font-black">
+                      ⭐⭐⭐
+                    </span>
                   </div>
                 </div>
               </div>
@@ -503,39 +554,50 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
 
           {/* Test link if risk flagged */}
           {waterQ1 === false && (
-            <div className="bg-rose-50/50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 rounded-2xl p-4 space-y-2">
-              <p className="text-xs text-rose-700 dark:text-rose-450 leading-relaxed font-semibold">
-                Water quality is crucial for chemical prevention. Consider testing your regular home drinking water.
+            <div className="my-6 bg-rose-50/50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 rounded-2xl p-5 sm:p-6 space-y-3">
+              <p className="text-xs text-rose-700 dark:text-rose-400 leading-relaxed font-semibold">
+                Water quality is crucial for chemical prevention. Unfiltered tap water can contain heavy metals, pesticides, and chlorine byproducts. Consider testing your regular home drinking water.
               </p>
               <a 
                 href="https://www.1mg.com/labs/test/water-testing" 
                 target="_blank" 
                 rel="noopener noreferrer" 
-                className="inline-flex items-center gap-1.5 text-xs text-rose-650 hover:underline font-bold"
+                className="inline-flex items-center gap-1.5 text-xs text-rose-600 dark:text-rose-400 hover:underline font-bold"
               >
                 🔗 Click here to order a 1mg Water Quality Test Kit
               </a>
             </div>
           )}
 
-          {waterQ1 !== null && (
-            <div className="bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 rounded-2xl p-4 mt-4 space-y-2 animate-in fade-in duration-200">
-              <p className="text-xs text-indigo-700 dark:text-indigo-400 font-semibold">
-                Use a certified water filter to eliminate carcinogenic contaminants like heavy metals and microplastics.
-              </p>
+          {/* MitoReboot Recommendation Card */}
+          <div className="my-8 bg-gradient-to-br from-indigo-50/90 via-blue-50/80 to-slate-50 dark:from-indigo-950/40 dark:via-blue-950/40 dark:to-slate-900 border border-indigo-200/80 dark:border-indigo-800/60 rounded-3xl p-6 sm:p-7 space-y-5 shadow-sm">
+            <div className="flex items-start gap-4">
+              <div className="h-10 w-10 rounded-2xl bg-indigo-500/15 border border-indigo-500/25 flex items-center justify-center shrink-0 mt-0.5">
+                <ShieldAlert className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <div className="space-y-1.5 min-w-0 flex-1">
+                <p className="text-xs font-black text-indigo-700 dark:text-indigo-300 uppercase tracking-wider">MitoReboot Official Recommendation</p>
+                <p className="text-xs text-slate-800 dark:text-slate-100 font-semibold leading-relaxed">
+                  Based on current availability, <strong>Dual Filtration systems with RO (Reverse Osmosis) and Activated Carbon</strong> are recommended. Remember <strong>not to store drinking water in plastic containers</strong> to prevent microplastic exposure.
+                </p>
+              </div>
+            </div>
+            <div className="pt-2">
               <button 
-                onClick={() => onNavigateToShop?.('Water Filter')}
-                className="inline-flex items-center gap-1.5 text-xs text-indigo-650 hover:underline font-bold text-left"
+                onClick={() => onNavigateToShop?.('Dual Filtration Activated Carbon RO Water Purifier')}
+                className="w-full py-4 px-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center gap-2.5 shadow-md hover:shadow-lg cursor-pointer active:scale-95"
               >
-                🔗 Click here to Order Water Filter
+                <ShoppingBag className="h-4.5 w-4.5" />
+                <span>Order Dual Filtration Purifier (Activated Carbon + RO)</span>
+                <ExternalLink className="h-3.5 w-3.5 opacity-80 ml-0.5" />
               </button>
             </div>
-          )}
+          </div>
 
           <button 
             onClick={() => setCurrentView('hub')}
             disabled={waterQ1 === null}
-            className={`w-full py-3.5 rounded-xl font-bold text-xs text-white ${waterQ1 !== null ? 'bg-indigo-600' : 'bg-slate-200 opacity-60 cursor-not-allowed'}`}
+            className={`w-full py-4 rounded-2xl font-bold text-xs text-white transition-all ${waterQ1 !== null ? 'bg-indigo-600 hover:bg-indigo-700 shadow-sm' : 'bg-slate-200 dark:bg-slate-800 opacity-60 cursor-not-allowed'}`}
           >
             Done with Water Category
           </button>
@@ -544,7 +606,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
 
       {/* VIEW 4: PESTICIDES */}
       {currentView === 'pesticides' && (
-        <div className="space-y-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 shadow-sm animate-in slide-in-from-right duration-250">
+        <div className="space-y-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 sm:p-8 shadow-sm animate-in slide-in-from-right duration-250">
           <div>
             <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-2">Question 1</p>
             <p className="text-sm font-semibold text-slate-850 dark:text-slate-100 leading-relaxed mb-4">
@@ -553,24 +615,24 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
             <div className="flex gap-3 mb-6">
               <button 
                 onClick={() => setPesticidesQ1(true)}
-                className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all border ${pesticidesQ1 === true ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+                className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${pesticidesQ1 === true ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
               >
                 Yes, I consume without steps (-1)
               </button>
               <button 
                 onClick={() => setPesticidesQ1(false)}
-                className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all border ${pesticidesQ1 === false ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+                className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${pesticidesQ1 === false ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
               >
                 No, I wash or choose organic (0)
               </button>
             </div>
 
             {/* Dirty Dozen Washing Tips Card */}
-            <div className="bg-amber-50/50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-2xl p-4 space-y-2">
+            <div className="bg-amber-50/50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-2xl p-5 space-y-3">
               <h4 className="text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
                 🥬 Dirty Dozen & Residue Washing Tips
               </h4>
-              <ul className="text-[11px] text-amber-700 dark:text-amber-450 space-y-1.5 list-disc pl-4 leading-relaxed font-semibold">
+              <ul className="text-xs text-amber-700 dark:text-amber-450 space-y-2 list-disc pl-4 leading-relaxed font-semibold">
                 <li>Soak produce in a baking soda solution (1 tsp baking soda to 2 cups water) for 12-15 minutes to clear surface residues.</li>
                 <li>Peel skins of apples, peaches, or cucumbers to completely remove surface residues.</li>
                 <li>Prioritize buying organic versions for the "Dirty Dozen" (strawberries, spinach, kale, nectarines, apples, grapes).</li>
@@ -578,7 +640,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
             </div>
 
             {pesticidesQ1 !== null && (
-              <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl p-4 mt-4 space-y-2 animate-in fade-in duration-200">
+              <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl p-5 mt-5 space-y-2.5 animate-in fade-in duration-200">
                 <p className="text-xs text-emerald-700 dark:text-emerald-450 font-semibold">
                   Choosing organic produce drastically reduces chemical pesticide residue levels in your diet.
                 </p>
@@ -595,7 +657,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
           <button 
             onClick={() => setCurrentView('hub')}
             disabled={pesticidesQ1 === null}
-            className={`w-full py-3.5 rounded-xl font-bold text-xs text-white ${pesticidesQ1 !== null ? 'bg-indigo-600' : 'bg-slate-200 opacity-60 cursor-not-allowed'}`}
+            className={`w-full py-4 rounded-2xl font-bold text-xs text-white transition-all ${pesticidesQ1 !== null ? 'bg-indigo-600 hover:bg-indigo-700 shadow-sm' : 'bg-slate-200 dark:bg-slate-800 opacity-60 cursor-not-allowed'}`}
           >
             Done with Pesticides Category
           </button>
@@ -604,7 +666,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
 
       {/* VIEW 5: MICROPLASTICS */}
       {currentView === 'microplastics' && (
-        <div className="space-y-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 shadow-sm animate-in slide-in-from-right duration-250">
+        <div className="space-y-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 sm:p-8 shadow-sm animate-in slide-in-from-right duration-250">
           <div>
             <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-2">Question 1</p>
             <p className="text-sm font-semibold text-slate-850 dark:text-slate-100 leading-relaxed mb-4">
@@ -613,29 +675,29 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
             <div className="flex gap-3 mb-6">
               <button 
                 onClick={() => setMicroplasticsQ1(true)}
-                className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all border ${microplasticsQ1 === true ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+                className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${microplasticsQ1 === true ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
               >
                 Yes, regularly (-1)
               </button>
               <button 
                 onClick={() => setMicroplasticsQ1(false)}
-                className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all border ${microplasticsQ1 === false ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+                className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${microplasticsQ1 === false ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
               >
                 No, I avoid plastic containers (0)
               </button>
             </div>
 
             {/* Plastic Swap Guide Card */}
-            <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl p-4 space-y-2">
+            <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl p-5 space-y-3">
               <h4 className="text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
                 🥛 Safe Container Plastic Swaps
               </h4>
-              <div className="grid grid-cols-2 text-[10px] text-emerald-700 dark:text-emerald-450 gap-2 font-semibold">
-                <div className="bg-white/60 dark:bg-slate-900/40 p-2.5 rounded-xl border border-emerald-100/50">
+              <div className="grid grid-cols-2 text-xs text-emerald-700 dark:text-emerald-450 gap-3 font-semibold">
+                <div className="bg-white/60 dark:bg-slate-900/40 p-3 rounded-xl border border-emerald-100/50">
                   <span className="block font-black text-rose-600 uppercase tracking-widest text-[9px] mb-1">Avoid ❌</span>
                   Disposable PET water bottles, heating plastic in microwaves, plastic tea bags.
                 </div>
-                <div className="bg-white/60 dark:bg-slate-900/40 p-2.5 rounded-xl border border-emerald-100/50">
+                <div className="bg-white/60 dark:bg-slate-900/40 p-3 rounded-xl border border-emerald-100/50">
                   <span className="block font-black text-emerald-600 uppercase tracking-widest text-[9px] mb-1">Choose ✅</span>
                   Borosilicate glass bottles, food-grade stainless steel containers, ceramic dinnerware.
                 </div>
@@ -643,7 +705,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
             </div>
 
             {microplasticsQ1 !== null && (
-              <div className="bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 rounded-2xl p-4 mt-4 space-y-2 animate-in fade-in duration-200">
+              <div className="bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 rounded-2xl p-5 mt-5 space-y-2.5 animate-in fade-in duration-200">
                 <p className="text-xs text-indigo-700 dark:text-indigo-400 font-semibold">
                   Swap plastic storage for premium borosilicate glass or stainless steel containers.
                 </p>
@@ -660,7 +722,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
           <button 
             onClick={() => setCurrentView('hub')}
             disabled={microplasticsQ1 === null}
-            className={`w-full py-3.5 rounded-xl font-bold text-xs text-white ${microplasticsQ1 !== null ? 'bg-indigo-600' : 'bg-slate-200 opacity-60'}`}
+            className={`w-full py-4 rounded-2xl font-bold text-xs text-white transition-all ${microplasticsQ1 !== null ? 'bg-indigo-600 hover:bg-indigo-700 shadow-sm' : 'bg-slate-200 dark:bg-slate-800 opacity-60'}`}
           >
             Done with Microplastics Category
           </button>

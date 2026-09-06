@@ -200,6 +200,18 @@ export const LiveAQIWidget: React.FC<LiveAQIWidgetProps> = ({ className = '', co
       };
 
       setAqiData(parsedAQIData);
+
+      try {
+        const aqiCategory = currentInAQI <= 50 ? 'Good (Clean)' : currentInAQI <= 100 ? 'Satisfactory / Moderate' : currentInAQI <= 200 ? 'Moderate Pollution' : currentInAQI <= 300 ? 'Poor' : 'Severe';
+        localStorage.setItem('mito_live_aqi', JSON.stringify({
+          inAqi: currentInAQI,
+          usAqi: currentUsAQI,
+          pm25: currentPM25,
+          cityName: locationLabel,
+          status: aqiCategory,
+          updatedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }));
+      } catch (e) {}
     } catch (err: any) {
       console.error('Error fetching AQI:', err);
       setError('Unable to load live AQI data. Tap refresh.');

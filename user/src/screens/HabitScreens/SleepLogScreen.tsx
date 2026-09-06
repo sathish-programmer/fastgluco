@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Check, Minus, Moon, Trash2 } from 'lucide-react';
+import { ArrowLeft, Check, Minus, Moon, Trash2, Sparkles, MessageSquare } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { HabitsService, type HabitLog } from '../../services/habitsService';
 import { ConsultationBanner } from '../../components/ConsultationBanner';
+import { DeStressAIChatModal } from '../../components/DeStressAIChatModal';
 
 interface SleepLogScreenProps {
   onBack: () => void;
@@ -14,6 +15,7 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
   const [hours, setHours] = useState<number>(7);
   const [quality, setQuality] = useState<string>('good');
   const [showSleepPopup, setShowSleepPopup] = useState<boolean>(false);
+  const [showMiaSleepModal, setShowMiaSleepModal] = useState<boolean>(false);
   const [history, setHistory] = useState<HabitLog[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -35,7 +37,6 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
     }
   };
 
-  
   const handleDelete = async (id: string) => {
     if (!token) return;
     try {
@@ -78,6 +79,25 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
           <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Damage · Sleep Debt</span>
           <h2 className="text-2xl font-sans font-bold text-slate-800 dark:text-slate-100 leading-none mt-1">Catch up on rest</h2>
         </div>
+      </div>
+
+      {/* Mia Sleep AI Assessment Hero Banner */}
+      <div className="bg-gradient-to-r from-blue-50/90 via-indigo-50/80 to-slate-50 dark:from-slate-900 dark:to-slate-900/90 rounded-3xl p-5 mb-6 shadow-xs border border-blue-100 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="space-y-1.5 max-w-xl">
+          <span className="text-[10px] font-black uppercase tracking-widest text-blue-700 dark:text-blue-300 bg-blue-100/80 dark:bg-blue-950/60 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 border border-blue-200/60 dark:border-blue-800">
+            <Sparkles className="h-3 w-3 text-blue-600" /> Sleep Health & Mental AI
+          </span>
+          <h3 className="text-base font-extrabold text-slate-900 dark:text-white leading-tight">Having trouble sleeping or staying asleep?</h3>
+          <p className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
+            Chat with <strong>Mia</strong>, your Mental Health & Sleep AI Expert, for root-cause diagnosis and 4 personalized sleep steps.
+          </p>
+        </div>
+        <button
+          onClick={() => setShowMiaSleepModal(true)}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-black text-xs px-4 py-3 rounded-2xl transition-all shadow-sm shrink-0 whitespace-nowrap cursor-pointer flex items-center gap-2 active:scale-95"
+        >
+          <MessageSquare className="h-4 w-4" /> Start Sleep Assessment
+        </button>
       </div>
 
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl p-4 mb-6">
@@ -242,6 +262,14 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
           </div>
         </div>
       )}
+
+      {/* Mia Sleep & Mental Health AI Expert Modal */}
+      <DeStressAIChatModal
+        isOpen={showMiaSleepModal}
+        onClose={() => setShowMiaSleepModal(false)}
+        initialMode="sleep"
+        onBookAppointment={onBookAppointment}
+      />
     </div>
   );
 };

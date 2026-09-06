@@ -66,18 +66,18 @@ export const GeneticLogScreen: React.FC<GeneticLogScreenProps> = ({ onBack, onBo
         </div>
       </div>
 
-      {/* Gene Oncogenetics AI Advisor Hero Banner */}
+      {/* Gia Genetic AI Counselor Hero Banner */}
       <div className="bg-gradient-to-r from-purple-50/90 via-indigo-50/80 to-slate-50 dark:from-slate-900 dark:to-slate-900/90 rounded-3xl p-5 mb-6 shadow-xs border border-purple-100 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="space-y-1.5 max-w-xl">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[10px] font-black uppercase tracking-widest text-purple-700 dark:text-purple-300 bg-purple-100/80 dark:bg-purple-950/60 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 border border-purple-200/60 dark:border-purple-800">
-              <Sparkles className="h-3 w-3 text-purple-600" /> Oncogenetics AI
+              <Sparkles className="h-3 w-3 text-purple-600" /> Genetic AI Counselor
             </span>
             <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">NCCN v2.2025 & ASCO 2024 Guidelines</span>
           </div>
           <h3 className="text-base font-extrabold text-slate-900 dark:text-white leading-tight">Roughly 10% of cancers have a genetic risk.</h3>
           <p className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
-            Chat with **Gene**, our Germline Risk Advisor AI, to evaluate your personal & family cancer history and see if multi-gene testing is recommended.
+            Chat with <strong>Gia</strong>, your genetic AI counselor at MitoReboot Care, to evaluate your personal & family cancer history and see if multi-gene testing is recommended.
           </p>
         </div>
 
@@ -85,7 +85,7 @@ export const GeneticLogScreen: React.FC<GeneticLogScreenProps> = ({ onBack, onBo
           onClick={() => setShowGeneAIModal(true)}
           className="bg-purple-600 hover:bg-purple-700 text-white font-black text-xs px-4 py-3 rounded-2xl transition-all shadow-sm shrink-0 whitespace-nowrap cursor-pointer flex items-center gap-2 active:scale-95"
         >
-          <Dna className="h-4 w-4" /> Chat with Genetic Risk AI
+          <Dna className="h-4 w-4" /> Chat with Gia AI Counselor
         </button>
       </div>
 

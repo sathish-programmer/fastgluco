@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  X, Mic, Send, Bot, CheckCircle2,
+  X, Send, CheckCircle2,
   Upload, RefreshCw, ArrowRight, Pencil, Check,
-  Volume2, VolumeX, Sparkles, Bell, BellOff, Clock
+  Volume2, VolumeX, Sparkles, Bell, BellOff, Clock,
+  Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Capacitor } from '@capacitor/core';
 import { TextToSpeech } from '@capacitor-community/text-to-speech';
 import { scheduleDailyCheckinReminder, cancelDailyCheckinReminder, triggerTestNotification } from '../utils/notificationScheduler';
 import type { FocusModeType } from '../context/AuthContext';
+import { RoboAvatar } from './RoboAvatar';
 
 interface WorkflowStep {
   stepId: string;
@@ -67,12 +69,12 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
   const [editingStepId, setEditingStepId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState<string>('');
-  const [isListening, setIsListening] = useState<boolean>(false);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
   const [loggedHabits, setLoggedHabits] = useState<any[]>([]);
   const [isVoiceMuted, setIsVoiceMuted] = useState<boolean>(() => localStorage.getItem('mito_ai_voice_muted') === 'true');
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
+  const [showQuickShortcuts, setShowQuickShortcuts] = useState<boolean>(false);
 
   // Edit state
   const [editInputText, setEditInputText] = useState<string>('');
@@ -80,7 +82,6 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
   const recognitionRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const capturedTextRef = useRef<string>('');
   const editInputRef = useRef<HTMLInputElement>(null);
 
   const activeStepIndexRef = useRef(activeStepIndex);
@@ -223,7 +224,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       if (envVal.includes('exposed') || envVal.includes('plastic') || envVal.includes('chemical') || envVal.includes('smog') || envVal.includes('tap') || envVal.includes('used') || envVal.includes('yes')) {
         damageCount += 1;
         damageHighlights.push('Environmental Toxins');
-        damageActionHints.push('Drink filtered water and avoid heating food in plastics.');
+        damageActionHints.push('Upgrade to Dual Filtration (Activated Carbon + RO) to eliminate heavy metals, pesticides, and PFAS.');
       } else if (envVal.includes('clean') || envVal.includes('filtered') || envVal.includes('organic') || envVal.includes('plastic-free') || envVal.includes('no') || envVal.includes('none')) {
         repairCount += 1;
         repairHighlights.push('Low Toxic Burden');
@@ -353,6 +354,38 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
     return `${h12}:${mStr} ${period}`;
   };
 
+  const getLiveAQIInfoString = (): string => {
+    try {
+      const raw = localStorage.getItem('mito_live_aqi');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.inAqi) {
+          const loc = parsed.cityName ? ` in ${parsed.cityName}` : '';
+          return `🌫️ Live Air Quality: AQI ${parsed.inAqi} (${parsed.status || 'Tracked'})${loc}. `;
+        }
+      }
+    } catch (e) {}
+    return '🌫️ Live Air Quality Tracked. ';
+  };
+
+  const formatQuestionPromptWithAQI = (stepId: string, prompt: string): string => {
+    if (!prompt) return prompt;
+    const s = (stepId || '').toLowerCase();
+    const pLower = prompt.toLowerCase();
+    if (s === 'env_air' || s.includes('air') || pLower.includes('air pollution') || pLower.includes('smog') || pLower.includes('traffic') || pLower.includes('incense')) {
+      const aqiPrefix = getLiveAQIInfoString();
+      if (!prompt.includes('Live Air Quality') && !prompt.includes('AQI')) {
+        return `${aqiPrefix}${prompt}`;
+      }
+    }
+    if (s === 'env_water' || pLower.includes('water carcinogens') || pLower.includes('drinking water')) {
+      if (!prompt.includes('Dual Filtration') && !prompt.includes('Activated Carbon')) {
+        return `💧 Water Carcinogens & Filtration Check: Based on current availability, dual filtration systems with RO and Activated Carbon are recommended. Remember not to store drinking water in plastic containers (to prevent microplastic exposure). Do you use Dual Filtration with Activated Carbon & RO?`;
+      }
+    }
+    return prompt;
+  };
+
   useEffect(() => {
     if (editingMessageId) {
       setTimeout(() => editInputRef.current?.focus(), 100);
@@ -365,14 +398,18 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
     stopListening();
 
     if (isVoiceMutedRef.current) {
+      setIsSpeaking(false);
       if (onDone) {
         setTimeout(onDone, 300);
       }
       return;
     }
 
+    setIsSpeaking(true);
+
     const clean = text.replace(/[*_#•]/g, '').trim();
     if (!clean) {
+      setIsSpeaking(false);
       if (onDone) onDone();
       return;
     }
@@ -480,16 +517,6 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
     }
   };
 
-  const requestMicPermission = async () => {
-    try {
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        stream.getTracks().forEach(t => t.stop());
-      }
-    } catch (e) {
-      console.warn('Microphone permission request error:', e);
-    }
-  };
 
   const validateAndMapAnswer = (
     inputText: string,
@@ -659,73 +686,6 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
     return { valid: true, mappedValue: inputText.trim() };
   };
 
-  const startListening = async () => {
-    // If device speaker is actively talking, do NOT open mic yet!
-    if (window.speechSynthesis && (window.speechSynthesis.speaking || window.speechSynthesis.pending)) {
-      return;
-    }
-
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert('Voice recognition is not supported in this browser. Try Chrome or Safari.');
-      return;
-    }
-
-    await requestMicPermission();
-
-    if (recognitionRef.current) {
-      try {
-        const old = recognitionRef.current;
-        old.onstart = null; old.onresult = null; old.onerror = null; old.onend = null;
-        old.abort();
-      } catch (e) {}
-      recognitionRef.current = null;
-    }
-    capturedTextRef.current = '';
-    setInputText('');
-    try {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = true;
-      recognition.lang = 'en-US';
-
-      recognition.onstart = () => setIsListening(true);
-      
-      recognition.onresult = (event: any) => {
-        let interim = '', final = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const t = event.results[i][0].transcript;
-          if (event.results[i].isFinal) final += t; else interim += t;
-        }
-        const combined = (final || interim).trim();
-        if (combined) {
-          capturedTextRef.current = combined;
-          setInputText(combined);
-        }
-      };
-
-      recognition.onerror = (err: any) => {
-        console.warn('Speech recognition error:', err);
-        setIsListening(false);
-      };
-
-      recognition.onend = () => {
-        setIsListening(false);
-        const txt = capturedTextRef.current.trim();
-        capturedTextRef.current = '';
-        if (txt) {
-          setInputText('');
-          advanceToNextStep(txt, true);
-        }
-      };
-
-      recognitionRef.current = recognition;
-      try { recognition.start(); } catch {
-        setTimeout(() => { try { recognition.start(); } catch { setIsListening(false); } }, 150);
-      }
-    } catch { setIsListening(false); }
-  };
-
   const stopListening = () => {
     if (recognitionRef.current) {
       try {
@@ -736,16 +696,8 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       } catch (e) {}
       recognitionRef.current = null;
     }
-    setIsListening(false);
   };
 
-  const toggleListening = () => {
-    if (isListening) {
-      stopListening();
-    } else {
-      startListening();
-    }
-  };
 
   const getConditionWorkflow = (targetMode: string): Workflow | null => {
     if (targetMode === 'AGEING') {
@@ -1308,7 +1260,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
           const nextStep = activeSteps[firstUnloggedIndex];
           setActiveStepIndex(firstUnloggedIndex);
 
-          let questionText = nextStep.questionPrompt;
+          let questionText = formatQuestionPromptWithAQI(nextStep.stepId, nextStep.questionPrompt);
           let questionOptions = nextStep.options;
 
           if (nextStep.stepId === 'report_upload' && todayReports.length > 0) {
@@ -1320,11 +1272,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
 
           initialMessages.push({ id: `step_${firstUnloggedIndex}`, sender: 'bot', text: questionText, timestamp: ts, inputType: nextStep.inputType, options: questionOptions, stepId: nextStep.stepId });
           setMessages(initialMessages);
-          speakQuestion(questionText, () => {
-            if (nextStep.inputType !== 'FILE') {
-              startListening();
-            }
-          });
+          speakQuestion(questionText);
         } else {
           setIsCompleted(true);
           initialMessages.push({ id: 'all_done', sender: 'bot', text: 'All daily check-ins completed. Your data is synced.', timestamp: ts });
@@ -1347,10 +1295,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       stopListening();
       if (Capacitor.isNativePlatform()) {
         try { TextToSpeech.stop(); } catch {}
-      } else if (window.speechSynthesis) {
-        window.speechSynthesis.cancel();
       }
-      setIsListening(false);
     }
   }, [isOpen]);
 
@@ -1580,6 +1525,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       setIsCompleted(false);
       const ts = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       
+      const promptWithAQI = formatQuestionPromptWithAQI(targetStep.stepId, targetStep.questionPrompt);
       setMessages(prev => {
         const filtered = prev.filter(m => !m.id.startsWith('relog_'));
         return [
@@ -1587,7 +1533,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
           {
             id: `relog_${stepId}`,
             sender: 'bot',
-            text: `✏️ Re-logging ${targetStep.title}: ${targetStep.questionPrompt}`,
+            text: `✏️ Re-logging ${targetStep.title}: ${promptWithAQI}`,
             timestamp: ts,
             inputType: targetStep.inputType,
             options: targetStep.options,
@@ -1595,10 +1541,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
           }
         ];
       });
-      speakQuestion(targetStep.questionPrompt);
-      if (targetStep.inputType !== 'FILE') {
-        setTimeout(() => startListening(), 800);
-      }
+      speakQuestion(promptWithAQI);
     }
   };
 
@@ -1731,11 +1674,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
           stepId: nextStep.stepId
         });
         setMessages(updatedMsgs);
-        speakQuestion(nextStep.questionPrompt, () => {
-          if (nextStep.inputType !== 'FILE') {
-            startListening();
-          }
-        });
+        speakQuestion(nextStep.questionPrompt);
       } else {
         const multiMap: Record<string, string> = {};
         detectedMulti.forEach(d => {
@@ -1789,11 +1728,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
         stepId: currentStep?.stepId
       };
       setMessages([...currentMsgs, userMsg, clarifyMsg]);
-      speakQuestion(validation.clarificationMsg || 'Please choose one of the options on screen.', () => {
-        if (currentStep?.inputType !== 'FILE') {
-          startListening();
-        }
-      });
+      speakQuestion(validation.clarificationMsg || 'Please choose one of the options on screen.');
       return; // Block advancement and do NOT save incorrect answer!
     }
 
@@ -1811,13 +1746,10 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
     if (nextIndex < currentWf.steps.length) {
       const nextStep = currentWf.steps[nextIndex];
       setActiveStepIndex(nextIndex);
-      updatedMsgs.push({ id: `bot_${Date.now()}`, sender: 'bot', text: nextStep.questionPrompt, timestamp: ts, inputType: nextStep.inputType, options: nextStep.options, stepId: nextStep.stepId });
+      const promptWithAQI = formatQuestionPromptWithAQI(nextStep.stepId, nextStep.questionPrompt);
+      updatedMsgs.push({ id: `bot_${Date.now()}`, sender: 'bot', text: promptWithAQI, timestamp: ts, inputType: nextStep.inputType, options: nextStep.options, stepId: nextStep.stepId });
       setMessages(updatedMsgs);
-      speakQuestion(nextStep.questionPrompt, () => {
-        if (nextStep.inputType !== 'FILE') {
-          startListening();
-        }
-      });
+      speakQuestion(promptWithAQI);
     } else {
       const finalAnswers = { ...sessionAnswersRef.current, ...(currentStep ? { [currentStep.stepId]: validatedAnswer } : {}) };
       const summary = computeSessionScoreSummary(finalAnswers);
@@ -1894,8 +1826,8 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
           <div className="bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 px-4 pt-[max(env(safe-area-inset-top),12px)] pb-3.5 text-white flex-shrink-0">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center shadow-inner">
-                  <Bot className="h-4.5 w-4.5 text-white" />
+                <div className="h-10 w-10 rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center shadow-inner overflow-hidden p-0.5">
+                  <RoboAvatar isSpeaking={isSpeaking} size={36} />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
@@ -2160,8 +2092,8 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                         {/* ── Bot bubble ── */}
                         {msg.sender === 'bot' && (
                           <div className="flex items-start gap-2 max-w-[90%]">
-                            <div className="h-6 w-6 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center shrink-0 mt-0.5">
-                              <Bot className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                            <div className="shrink-0 mt-0.5">
+                              <RoboAvatar isSpeaking={isSpeaking && msgIdx === messages.length - 1} size={28} />
                             </div>
                             <div className="bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-2xl rounded-tl-sm px-4 py-3 text-xs font-medium text-slate-800 dark:text-slate-100 leading-relaxed shadow-sm">
                               {msg.text}
@@ -2349,83 +2281,124 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
           {/* ── INPUT BAR / DONE BAR ── */}
           {!isCompleted ? (
             <div className="flex-shrink-0 bg-white dark:bg-slate-900 border-t border-slate-200/80 dark:border-slate-800">
-              {/* ── Live Listening Visualizer Banner ── */}
+              {/* Quick Shortcuts Bar (toggled or shown on tap) */}
               <AnimatePresence>
-                {isListening && (
+                {showQuickShortcuts && (
                   <motion.div
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 8 }}
-                    className="mx-3 mt-2.5 p-2.5 bg-gradient-to-r from-rose-500/10 via-rose-500/15 to-rose-500/10 border border-rose-500/30 rounded-2xl flex items-center justify-between shadow-xs"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="px-3 pt-2.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar text-xs border-b border-slate-100 dark:border-slate-800/60 pb-2"
                   >
-                    <div className="flex items-center gap-2.5">
-                      <div className="relative flex items-center justify-center">
-                        <span className="absolute h-7 w-7 rounded-full bg-rose-500/30 animate-ping" />
-                        <div className="h-6 w-6 rounded-full bg-rose-500 flex items-center justify-center text-white shadow-xs z-10">
-                          <Mic className="h-3.5 w-3.5 animate-bounce" />
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="text-[11px] font-black text-rose-600 dark:text-rose-400 leading-tight">Listening now...</p>
-                          <div className="flex items-end gap-0.5 h-2.5">
-                            <span className="w-0.5 bg-rose-500 rounded-full animate-[bounce_0.8s_infinite_100ms]" style={{ height: '60%' }} />
-                            <span className="w-0.5 bg-rose-500 rounded-full animate-[bounce_0.8s_infinite_300ms]" style={{ height: '100%' }} />
-                            <span className="w-0.5 bg-rose-500 rounded-full animate-[bounce_0.8s_infinite_200ms]" style={{ height: '40%' }} />
-                            <span className="w-0.5 bg-rose-500 rounded-full animate-[bounce_0.8s_infinite_400ms]" style={{ height: '80%' }} />
-                          </div>
-                        </div>
-                        <p className="text-[9.5px] text-slate-500 dark:text-slate-400 font-medium">Speak your answer clearly</p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={toggleListening}
-                      className="px-2.5 py-1 bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 text-[9.5px] font-bold rounded-xl border border-rose-200 dark:border-rose-900/40 shadow-2xs hover:bg-rose-50 transition-all cursor-pointer"
-                    >
-                      Done Speaking
-                    </button>
+                    <span className="text-[9.5px] font-black text-slate-400 uppercase tracking-wider shrink-0 flex items-center gap-1 mr-1">
+                      <Zap className="h-3 w-3 text-amber-500" /> Fast Answer:
+                    </span>
+                    {currentStep?.inputType === 'YES_NO' ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => { advanceToNextStep('Yes'); setShowQuickShortcuts(false); }}
+                          className="px-3 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0"
+                        >
+                          👍 Yes
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { advanceToNextStep('No'); setShowQuickShortcuts(false); }}
+                          className="px-3 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800 border border-rose-200 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0"
+                        >
+                          👎 No
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { advanceToNextStep('Skipped'); setShowQuickShortcuts(false); }}
+                          className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0"
+                        >
+                          ⏭️ Skip
+                        </button>
+                      </>
+                    ) : (currentStep?.options || []).length > 0 ? (
+                      (currentStep?.options || []).map((opt, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => { advanceToNextStep(opt); setShowQuickShortcuts(false); }}
+                          className="px-3 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800 border border-blue-200 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0"
+                        >
+                          {opt}
+                        </button>
+                      ))
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => { setInputText('7 hours'); setShowQuickShortcuts(false); }}
+                          className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 rounded-xl text-xs font-semibold cursor-pointer shrink-0"
+                        >
+                          7 hours
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setInputText('8 hours'); setShowQuickShortcuts(false); }}
+                          className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 rounded-xl text-xs font-semibold cursor-pointer shrink-0"
+                        >
+                          8 hours
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { advanceToNextStep('Skipped'); setShowQuickShortcuts(false); }}
+                          className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400 rounded-xl text-xs font-semibold cursor-pointer shrink-0"
+                        >
+                          Skip
+                        </button>
+                      </>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
 
               <form
                 onSubmit={handleSendSubmit}
-                className="px-3 py-3 flex items-center gap-2.5"
+                className="px-3 py-3 flex items-center gap-2"
                 style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 12px)' }}
               >
-              {/* Voice button */}
-              <button
-                type="button"
-                onClick={toggleListening}
-                className={`h-11 w-11 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-200 cursor-pointer ${
-                  isListening
-                    ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30 scale-95'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                }`}
-                title={isListening ? 'Listening…' : 'Tap to speak'}
-              >
-                <Mic className={`h-5 w-5 ${isListening ? 'animate-bounce text-white' : 'text-slate-500 dark:text-slate-400'}`} />
-              </button>
+                {/* Left Shortcuts Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowQuickShortcuts(prev => !prev)}
+                  className={`h-11 px-3 rounded-2xl flex items-center gap-1.5 shrink-0 transition-all duration-200 cursor-pointer border ${
+                    showQuickShortcuts
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/25 font-black'
+                      : 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 font-bold'
+                  }`}
+                  title="Quick Answer Shortcuts"
+                >
+                  <Zap className={`h-4 w-4 ${showQuickShortcuts ? 'fill-current text-amber-300 animate-pulse' : 'text-blue-600 dark:text-blue-400'}`} />
+                  <span className="text-[11px]">Shortcuts</span>
+                </button>
 
-              {/* Text input */}
-              <input
-                type={currentStep?.inputType === 'NUMBER' ? 'number' : 'text'}
-                value={inputText}
-                onChange={e => setInputText(e.target.value)}
-                placeholder={isListening ? '🎙 Listening...' : 'Type or speak your answer…'}
-                className="flex-1 min-w-0 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-blue-500 dark:focus:border-blue-500 rounded-2xl px-4 py-3 text-xs font-semibold text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none transition-colors"
-              />
+                {/* Text input with left Sparkles icon */}
+                <div className="relative flex-1 flex items-center bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus-within:border-blue-500 dark:focus-within:border-blue-500 rounded-2xl transition-colors min-w-0">
+                  <Sparkles className="h-4 w-4 text-blue-500/80 dark:text-blue-400/80 ml-3 shrink-0" />
+                  <input
+                    type={currentStep?.inputType === 'NUMBER' ? 'number' : 'text'}
+                    value={inputText}
+                    onChange={e => setInputText(e.target.value)}
+                    placeholder="Type your answer or select an option..."
+                    className="flex-1 min-w-0 bg-transparent border-none px-2.5 py-3 text-xs font-semibold text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none"
+                  />
+                </div>
 
-              {/* Send button */}
-              <button
-                type="submit"
-                disabled={!inputText.trim()}
-                className="h-11 w-11 bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-2xl flex items-center justify-center shrink-0 shadow-md shadow-blue-500/20 disabled:opacity-40 hover:opacity-90 active:scale-95 transition-all cursor-pointer"
-              >
-                <Send className="h-4 w-4" />
-              </button>
+                {/* Send button */}
+                <button
+                  type="submit"
+                  disabled={!inputText.trim()}
+                  className="h-11 w-11 bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-2xl flex items-center justify-center shrink-0 shadow-md shadow-blue-500/20 disabled:opacity-40 hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+                >
+                  <Send className="h-4 w-4" />
+                </button>
               </form>
+
             </div>
           ) : (
             <div

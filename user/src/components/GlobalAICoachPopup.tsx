@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Bot, Send, Loader2, User as UserIcon, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { RoboAvatar } from './RoboAvatar';
 
 const formatMessageContent = (content: string) => {
   if (!content) return '';
@@ -120,7 +121,7 @@ export const GlobalAICoachPopup: React.FC = () => {
     <div className="fixed bottom-20 right-4 w-80 bg-white rounded-3xl shadow-2xl border border-slate-100 z-50 flex flex-col overflow-hidden max-h-[28rem] animate-in slide-in-from-bottom-5">
       <div className="bg-primary px-4 py-3 flex justify-between items-center text-white">
         <div className="flex items-center space-x-2">
-          <Bot className="h-5 w-5" />
+          <RoboAvatar size={28} isSpeaking={false} />
           <span className="font-bold text-sm">AI Assistant</span>
         </div>
         <button onClick={handleDismiss} title="Dismiss this session" className="hover:bg-white/20 p-1 rounded-full transition-colors">

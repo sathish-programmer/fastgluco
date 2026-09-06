@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, ShoppingBag, Calendar, RefreshCw, FileText, CheckCircle2 } from 'lucide-react';
+import { X, Send, ShoppingBag, Calendar, RefreshCw, FileText, CheckCircle2, Zap, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { HabitsService } from '../services/habitsService';
 
@@ -15,9 +15,10 @@ interface Message {
   role: 'ai' | 'user';
   text: string;
   isAssessment?: boolean;
+  options?: string[];
 }
 
-const GENE_STORAGE_KEY = (userId?: string) => `mito_gene_ai_${userId || 'guest'}`;
+const GIA_STORAGE_KEY = (userId?: string) => `mito_gia_ai_${userId || 'guest'}`;
 
 export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
   isOpen,
@@ -32,6 +33,7 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
   const [isTyping, setIsTyping] = useState<boolean>(false);
   const [exchangeCount, setExchangeCount] = useState<number>(0);
   const [quickReplies, setQuickReplies] = useState<string[]>([]);
+  const [showQuickShortcuts, setShowQuickShortcuts] = useState<boolean>(false);
   const [collectedData, setCollectedData] = useState<{
     status?: string;
     cancers?: string[];
@@ -42,22 +44,79 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
 
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
+  const triggerShortcutGuide = (guideType: 'brca' | 'lynch' | 'family_tree') => {
+    setShowQuickShortcuts(false);
+
+    let userTitle = '';
+    let cardTitle = '';
+    let introText = '';
+    let tipsList: string[] = [];
+
+    if (guideType === 'brca') {
+      userTitle = "🧬 Assess BRCA1/BRCA2 Hereditary Breast & Ovarian Risk";
+      cardTitle = "🧬 BRCA1 & BRCA2 Genetic Risk Indicators";
+      introText = "BRCA mutations significantly increase lifetime risk of breast, ovarian, pancreatic, and prostate cancers. High-risk indicators include:";
+      tipsList = [
+        "Breast cancer diagnosed before age 50 in first-degree relative (mother/sister/daughter).",
+        "Multiple relatives with breast, ovarian, or pancreatic cancer on the same side of family.",
+        "Male breast cancer in any relative.",
+        "Ashkenazi Jewish ancestry (1 in 40 carry a founder BRCA mutation).",
+        "Triple-negative breast cancer diagnosed at or before age 60."
+      ];
+    } else if (guideType === 'lynch') {
+      userTitle = "🩸 Assess Lynch Syndrome & Hereditary Colorectal Risk";
+      cardTitle = "🩸 Lynch Syndrome (Hereditary Non-Polyposis Colorectal Cancer)";
+      introText = "Lynch syndrome is caused by mismatch repair gene mutations (MLH1, MSH2, MSH6, PMS2) elevating colon, uterine, and ovarian cancer risk:";
+      tipsList = [
+        "Colorectal or endometrial cancer diagnosed before age 50.",
+        "Multiple family members with colorectal, endometrial, stomach, or urinary tract cancers.",
+        "Tumor pathology showing Microsatellite Instability (MSI-High) or deficient MMR proteins (dMMR).",
+        "Amsterdam II Criteria: At least 3 relatives with Lynch-associated cancers across 2 generations."
+      ];
+    } else {
+      userTitle = "🌳 How to Build a 3-Generation Family Medical History Tree";
+      cardTitle = "🌳 3-Generation Family Tree Preparation Checklist";
+      introText = "A complete pedigree is the single most valuable tool for accurate genetic risk stratification during a clinical consultation:";
+      tipsList = [
+        "1st-Degree Relatives: Parents, full siblings, children.",
+        "2nd-Degree Relatives: Aunts, uncles, grandparents, nieces, nephews, half-siblings.",
+        "3rd-Degree Relatives: First cousins.",
+        "Key Info needed: Type of cancer/condition, age at primary diagnosis, current age or age at death, and ethnic/ancestral background."
+      ];
+    }
+
+    const userMsg: Message = { id: `user-${Date.now()}`, role: 'user', text: userTitle };
+    setMessages(prev => [
+      ...prev,
+      userMsg,
+      {
+        id: `guide-${Date.now()}`,
+        role: 'ai',
+        text: `**${cardTitle}**\n\n${introText}\n\n` + tipsList.map(t => `• ${t}`).join('\n') + `\n\n💡 *Ask Gia any follow-up question or book a counselor below for professional panel ordering.*`
+      }
+    ]);
+  };
+
   useEffect(() => {
     if (isOpen) {
       try {
-        const savedRaw = localStorage.getItem(GENE_STORAGE_KEY(user?.id));
+        const savedRaw = localStorage.getItem(GIA_STORAGE_KEY(user?.id)) || localStorage.getItem(`mito_gene_ai_${user?.id || 'guest'}`);
         if (savedRaw) {
           const saved = JSON.parse(savedRaw);
           if (saved.messages && saved.messages.length > 0) {
-            setMessages(saved.messages);
-            setExchangeCount(saved.exchangeCount || 0);
-            setQuickReplies(saved.quickReplies || []);
-            setCollectedData(saved.collectedData || {});
-            return;
+            const firstMsgText = saved.messages[0]?.text || '';
+            // If previous session had old Gene name, clear it and start fresh session with Gia
+            if (!firstMsgText.includes('Gene')) {
+              setMessages(saved.messages);
+              setExchangeCount(saved.exchangeCount || 0);
+              setQuickReplies(saved.quickReplies || []);
+              setCollectedData(saved.collectedData || {});
+              return;
+            }
           }
         }
       } catch (err) {
-        console.error('Error loading saved gene chat session:', err);
+        console.error('Error loading saved Gia chat session:', err);
       }
       startChatSession();
     }
@@ -67,7 +126,7 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
     if (messages.length > 0) {
       try {
         localStorage.setItem(
-          GENE_STORAGE_KEY(user?.id),
+          GIA_STORAGE_KEY(user?.id),
           JSON.stringify({ messages, exchangeCount, quickReplies, collectedData })
         );
       } catch (err) {}
@@ -82,27 +141,35 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
     setExchangeCount(0);
     setCollectedData({});
 
-    const greeting = `Hello ${user?.name ? user.name.split(' ')[0] : 'there'}, I am **Gene** — your oncogenetics risk advisor at MitoReboot Care.\n\nRoughly **10% of cancers** have an underlying hereditary genetic component. Based on **NCCN v2.2025** and **ASCO 2024 guidelines**, I can help evaluate whether germline genetic testing is recommended for you or your family.\n\nTo begin — are you here because of a **personal cancer diagnosis**, a **family history of cancer**, or **both**?`;
+    try {
+      localStorage.removeItem(`mito_gene_ai_${user?.id || 'guest'}`);
+    } catch (e) {}
 
-    setMessages([
-      {
-        id: 'msg-init-gene',
-        role: 'ai',
-        text: greeting
-      }
-    ]);
+    const greeting = `Hello ${user?.name ? user.name.split(' ')[0] : 'there'}, I am **Gia** — your genetic AI counselor at MitoReboot Care.\n\nRoughly **10% of cancers** have an underlying hereditary genetic component. Based on **NCCN v2.2025** and **ASCO 2024 guidelines**, I can help evaluate whether germline genetic testing is recommended for you or your family.\n\nTo begin — are you here because of a **personal cancer diagnosis**, a **family history of cancer**, or **both**?`;
 
-    setQuickReplies([
+    const initialOptions = [
       'Personal cancer diagnosis',
       'Family history only',
       'Both — personal + family history',
       'Cancer-free but want to assess risk'
+    ];
+
+    setMessages([
+      {
+        id: 'msg-init-gia',
+        role: 'ai',
+        text: greeting,
+        options: initialOptions
+      }
     ]);
+
+    setQuickReplies(initialOptions);
   };
 
   const restartChatSession = () => {
     try {
-      localStorage.removeItem(GENE_STORAGE_KEY(user?.id));
+      localStorage.removeItem(GIA_STORAGE_KEY(user?.id));
+      localStorage.removeItem(`mito_gene_ai_${user?.id || 'guest'}`);
     } catch (e) {}
     startChatSession();
   };
@@ -115,6 +182,7 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
     setMessages(prev => [...prev, userMsg]);
     setInputText('');
     setQuickReplies([]);
+    setShowQuickShortcuts(false);
     setIsTyping(true);
 
     const newCount = exchangeCount + 1;
@@ -138,7 +206,7 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
         HabitsService.logHabit(apiUrl, token, 'Genetic', {
           geneticLink: hasGeneticLink,
           choice: text,
-          source: 'ai_gene'
+          source: 'ai_gia'
         }).catch(e => console.error('Error saving AI genetic habit log:', e));
       } catch (e) {}
     }
@@ -168,13 +236,15 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
       setIsTyping(false);
       const isFinal = newCount >= 5 || replyText.includes('RECOMMENDED') || replyText.includes('indicated') || replyText.includes('Gene Panel');
 
+      const optionsForStep = !isFinal ? getGuidedQuickReplies(newCount) : undefined;
+
       setMessages(prev => [
         ...prev,
-        { id: `ai-${Date.now()}`, role: 'ai', text: replyText, isAssessment: isFinal }
+        { id: `ai-${Date.now()}`, role: 'ai', text: replyText, isAssessment: isFinal, options: optionsForStep }
       ]);
 
-      if (!isFinal) {
-        setQuickReplies(getGuidedQuickReplies(newCount));
+      if (!isFinal && optionsForStep) {
+        setQuickReplies(optionsForStep);
       }
 
     } catch (err) {
@@ -182,8 +252,10 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
       setIsTyping(false);
       const fallbackReply = generateGuidedOncogeneticReply(text, newCount);
       const isFinal = newCount >= 5;
-      setMessages(prev => [...prev, { id: `ai-${Date.now()}`, role: 'ai', text: fallbackReply, isAssessment: isFinal }]);
-      if (!isFinal) setQuickReplies(getGuidedQuickReplies(newCount));
+      const optionsForStep = !isFinal ? getGuidedQuickReplies(newCount) : undefined;
+
+      setMessages(prev => [...prev, { id: `ai-${Date.now()}`, role: 'ai', text: fallbackReply, isAssessment: isFinal, options: optionsForStep }]);
+      if (!isFinal && optionsForStep) setQuickReplies(optionsForStep);
     }
   };
 
@@ -222,6 +294,10 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
 
   if (!isOpen) return null;
 
+  // Identify ID of the latest AI message in the conversation
+  const aiMessages = messages.filter(m => m.role === 'ai');
+  const latestAiMsgId = aiMessages.length > 0 ? aiMessages[aiMessages.length - 1].id : null;
+
   return (
     <div className="fixed inset-0 z-[100] bg-white dark:bg-slate-900 flex flex-col h-full w-full overflow-hidden font-sans transition-all duration-300 animate-in fade-in slide-in-from-bottom-6">
       
@@ -237,15 +313,15 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="font-extrabold text-base text-slate-900 dark:text-white leading-tight">
-                Gene
+                Gia
               </h3>
               <span className="text-[10px] bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-extrabold px-2.5 py-0.5 rounded-full border border-purple-100 dark:border-purple-900/60 uppercase tracking-wider">
-                Germline Risk Advisor
+                Genetic AI Counselor
               </span>
             </div>
             <p className="text-xs text-purple-600 dark:text-purple-400 font-semibold flex items-center gap-1.5 mt-0.5 truncate">
               <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse shrink-0"></span>
-              <span>MitoReboot Oncogenetics</span>
+              <span>MitoReboot Genetic AI Counselor</span>
             </p>
           </div>
         </div>
@@ -302,6 +378,40 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
                     }}
                   />
                 )}
+
+                {/* Inline Option Buttons Directly Below Question */}
+                {msg.role === 'ai' && (() => {
+                  const isLatestAi = msg.id === latestAiMsgId;
+                  const optionsToDisplay = (msg.options && msg.options.length > 0)
+                    ? msg.options
+                    : (isLatestAi && quickReplies && quickReplies.length > 0 ? quickReplies : undefined);
+
+                  if (!optionsToDisplay || optionsToDisplay.length === 0) return null;
+
+                  return (
+                    <div className="mt-3.5 pt-3 border-t border-purple-100 dark:border-purple-900/40 space-y-2 animate-in fade-in duration-200">
+                      <p className="text-[10px] font-black uppercase tracking-wider text-purple-700 dark:text-purple-300">
+                        ⚡ Select an option to reply:
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {optionsToDisplay.map((opt, oIdx) => (
+                          <button
+                            key={oIdx}
+                            disabled={!isLatestAi || isTyping}
+                            onClick={() => handleSendMessage(opt)}
+                            className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all border text-center active:scale-95 ${
+                              isLatestAi && !isTyping
+                                ? 'bg-purple-50 dark:bg-purple-950/70 hover:bg-purple-600 hover:text-white text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800/80 shadow-2xs cursor-pointer'
+                                : 'bg-slate-50 dark:bg-slate-800/40 text-slate-400 dark:text-slate-500 border-slate-200/50 dark:border-slate-800 cursor-not-allowed opacity-50'
+                            }`}
+                          >
+                            <span>{opt}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Structured Next Steps Actions Card */}
                 {msg.isAssessment && (
@@ -370,18 +480,129 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
           <div ref={chatBottomRef} />
         </div>
 
-        {/* Quick Replies Strip */}
-        {quickReplies.length > 0 && (
-          <div className="px-4 py-2 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 flex gap-1.5 overflow-x-auto scrollbar-none shrink-0">
-            {quickReplies.map((qr, idx) => (
+        {/* Quick Shortcuts Overlay Drawer */}
+        {showQuickShortcuts && (
+          <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 animate-in slide-in-from-bottom-2 duration-200 shrink-0 shadow-xl max-h-80 overflow-y-auto">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-1.5">
+                <Zap className="h-4 w-4 text-purple-600 dark:text-purple-400 fill-current" />
+                <span className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                  Gia's Genetic Counseling Quick Tools
+                </span>
+              </div>
               <button
-                key={idx}
-                onClick={() => handleSendMessage(qr)}
-                className="px-3 py-1.5 bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 dark:hover:bg-purple-900/50 border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-purple-300 rounded-full text-xs font-bold transition-all whitespace-nowrap cursor-pointer shrink-0"
+                type="button"
+                onClick={() => setShowQuickShortcuts(false)}
+                className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-bold px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800"
               >
-                {qr}
+                Close
               </button>
-            ))}
+            </div>
+
+            <div className="space-y-3.5">
+              {/* Section 1: Hereditary Risk Checkers */}
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-purple-600 dark:text-purple-400 block mb-1.5">
+                  🧬 High-Risk Syndrome Guides
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => triggerShortcutGuide('brca')}
+                    className="p-2.5 bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 dark:hover:bg-purple-900/60 border border-purple-200 dark:border-purple-800/60 rounded-xl text-left transition-all cursor-pointer group"
+                  >
+                    <div className="font-extrabold text-xs text-purple-900 dark:text-purple-200 flex items-center gap-1">
+                      <span>🧬 BRCA1 / BRCA2 Breast Risk</span>
+                    </div>
+                    <div className="text-[10px] text-purple-700 dark:text-purple-400 font-medium mt-0.5">
+                      Hereditary breast & ovarian cancer red flags
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => triggerShortcutGuide('lynch')}
+                    className="p-2.5 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-800/60 rounded-xl text-left transition-all cursor-pointer group"
+                  >
+                    <div className="font-extrabold text-xs text-indigo-900 dark:text-indigo-200 flex items-center gap-1">
+                      <span>🩸 Lynch Syndrome Check</span>
+                    </div>
+                    <div className="text-[10px] text-indigo-700 dark:text-indigo-400 font-medium mt-0.5">
+                      Colorectal & uterine hereditary risk factors
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => triggerShortcutGuide('family_tree')}
+                    className="p-2.5 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-200 dark:border-amber-800/60 rounded-xl text-left transition-all cursor-pointer group"
+                  >
+                    <div className="font-extrabold text-xs text-amber-900 dark:text-amber-200 flex items-center gap-1">
+                      <span>🌳 3-Gen Pedigree Guide</span>
+                    </div>
+                    <div className="text-[10px] text-amber-700 dark:text-amber-400 font-medium mt-0.5">
+                      How to prepare family medical history tree
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Section 2: Fast Topic Jumps */}
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 block mb-1.5">
+                  ⚡ Jump to Specific Genetic Question
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { label: "🧬 What panel test do I need?", text: "Which multi-gene panel testing should I consider based on my family tree?" },
+                    { label: "🛡️ Genetic Discrimination Protection (GINA)", text: "Explain genetic discrimination protection laws and health insurance implications." },
+                    { label: "🧪 Direct-to-Consumer vs Clinical Gene Testing", text: "What is the difference between 23andMe DTC tests and clinical diagnostic germline testing?" },
+                    { label: "🩺 Pathogenic Variant Meaning", text: "What is a Variant of Uncertain Significance (VUS) vs Pathogenic Mutation?" }
+                  ].map((item, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        setShowQuickShortcuts(false);
+                        handleSendMessage(item.text);
+                      }}
+                      className="px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-purple-50 dark:hover:bg-purple-950 hover:text-purple-700 dark:hover:text-purple-300 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-300 transition-all cursor-pointer"
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Section 3: Direct Specialist & Shop Actions */}
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowQuickShortcuts(false);
+                    onClose();
+                    onBookAppointment?.('Genetic Counselor Consultation');
+                  }}
+                  className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                >
+                  <Calendar className="h-3.5 w-3.5" />
+                  <span>Book Certified Genetic Counselor</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowQuickShortcuts(false);
+                    onClose();
+                    onNavigateToShop?.('Genetic');
+                  }}
+                  className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 hover:bg-purple-50 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer"
+                >
+                  <ShoppingBag className="h-3.5 w-3.5" />
+                  <span>Browse Gene Testing Kits</span>
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -394,25 +615,44 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
             }}
             className="flex items-center gap-2"
           >
-            <input
-              type="text"
-              placeholder="Tell Gene about your family history..."
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-2.5 text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-purple-500"
-            />
+            {/* Bottom Left Shortcuts Button */}
+            <button
+              type="button"
+              onClick={() => setShowQuickShortcuts(prev => !prev)}
+              className={`h-11 px-3.5 rounded-2xl flex items-center gap-1.5 shrink-0 transition-all duration-200 cursor-pointer border ${
+                showQuickShortcuts
+                  ? 'bg-purple-600 text-white border-purple-600 shadow-md shadow-purple-500/25 font-black'
+                  : 'bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-800/60 hover:bg-purple-100 dark:hover:bg-purple-900/60 font-bold'
+              }`}
+              title="Genetic Counseling Shortcuts"
+            >
+              <Zap className={`h-4 w-4 ${showQuickShortcuts ? 'fill-current text-amber-300 animate-pulse' : 'text-purple-600 dark:text-purple-400'}`} />
+              <span className="text-[11px]">Shortcuts</span>
+            </button>
+
+            {/* Text Input with Sparkles Icon */}
+            <div className="relative flex-1 flex items-center bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus-within:border-purple-500 rounded-2xl transition-colors min-w-0">
+              <Sparkles className="h-4 w-4 ml-3 text-purple-500 shrink-0" />
+              <input
+                type="text"
+                placeholder="Tell Gia about your family history..."
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                className="flex-1 min-w-0 bg-transparent border-none px-2.5 py-3 text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none"
+              />
+            </div>
 
             <button
               type="submit"
               disabled={isTyping || !inputText.trim()}
-              className="w-10 h-10 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white flex items-center justify-center shadow-xs transition-all cursor-pointer disabled:opacity-40 shrink-0"
+              className="w-11 h-11 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white flex items-center justify-center shadow-xs transition-all cursor-pointer disabled:opacity-40 shrink-0"
             >
               <Send className="h-4 w-4" />
             </button>
           </form>
 
           <p className="text-[9px] text-slate-400 dark:text-slate-500 text-center mt-2 font-semibold">
-            Gene is an educational oncogenetics advisor based on NCCN guidelines. Always confirm with a certified genetic counselor.
+            Gia is your educational genetic AI counselor based on NCCN guidelines. Always confirm with a certified genetic counselor.
           </p>
         </div>
     </div>

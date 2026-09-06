@@ -1,5 +1,6 @@
 import React from 'react';
-import { Bot, Sparkles, ArrowRight } from 'lucide-react';
+import { Sparkles, ArrowRight } from 'lucide-react';
+import { RoboAvatar } from './RoboAvatar';
 
 interface AiBannerQuickNudgeProps {
   onOpenAiCheckin?: () => void;
@@ -10,7 +11,7 @@ interface AiBannerQuickNudgeProps {
 export const AiBannerQuickNudge: React.FC<AiBannerQuickNudgeProps> = ({
   onOpenAiCheckin,
   title = "Log all daily habits 10x faster",
-  subtitle = "Log habits & upload reports in under 60s via AI Voice"
+  subtitle = "Log habits & upload reports in under 60s via AI Assistant"
 }) => {
   if (!onOpenAiCheckin) return null;
 
@@ -22,8 +23,8 @@ export const AiBannerQuickNudge: React.FC<AiBannerQuickNudgeProps> = ({
 
       <div className="relative flex items-center justify-between gap-3 z-10">
         <div className="flex items-center gap-3.5 min-w-0">
-          <div className="h-10 w-10 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center text-white shrink-0 shadow-inner backdrop-blur-md group-hover:scale-105 transition-transform">
-            <Bot className="h-5 w-5 text-white animate-pulse" />
+          <div className="h-10 w-10 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center shrink-0 shadow-inner backdrop-blur-md group-hover:scale-105 transition-transform overflow-hidden p-0.5">
+            <RoboAvatar size={34} isSpeaking={false} />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bot, Sparkles, X, ArrowRight, CheckCircle2, Mic, Bell, Clock, Check } from 'lucide-react';
+import { Sparkles, X, ArrowRight, CheckCircle2, Mic, Bell, Clock, Check } from 'lucide-react';
 import { scheduleDailyCheckinReminder, triggerTestNotification } from '../utils/notificationScheduler';
+import { RoboAvatar } from './RoboAvatar';
 
 interface AiDailyCheckinFloatingNudgeProps {
   pendingHabitsCount: number;
@@ -166,7 +167,7 @@ export const AiDailyCheckinFloatingNudge: React.FC<AiDailyCheckinFloatingNudgePr
                   {isAllDone ? (
                     <CheckCircle2 className="h-5 w-5" />
                   ) : (
-                    <Bot className="h-5 w-5" />
+                    <RoboAvatar size={34} isSpeaking={false} />
                   )}
                 </div>
 

@@ -134,11 +134,11 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
       <div className="bg-gradient-to-r from-indigo-50/90 via-purple-50/80 to-slate-50 dark:from-slate-900 dark:to-slate-900/90 rounded-3xl p-5 mb-6 shadow-xs border border-indigo-100 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="space-y-1.5 max-w-xl">
           <span className="text-[10px] font-black uppercase tracking-widest text-indigo-700 dark:text-indigo-300 bg-indigo-100/80 dark:bg-indigo-950/60 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 border border-indigo-200/60 dark:border-indigo-800">
-            <Sparkles className="h-3 w-3 text-indigo-600" /> Interactive De-Stress AI
+            <Sparkles className="h-3 w-3 text-indigo-600" /> Mental Health AI Expert
           </span>
-          <h3 className="text-base font-extrabold text-slate-900 dark:text-white leading-tight">Feeling stressed or anxious today?</h3>
+          <h3 className="text-base font-extrabold text-slate-900 dark:text-white leading-tight">Feeling stressed, anxious, or struggling with sleep?</h3>
           <p className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
-            Chat with **Mia**, your AI wellness companion for instant personalized relaxation techniques and support.
+            Chat with <strong>Mia</strong>, your Mental Health AI Expert for 4 personalized lifestyle steps, sleep assessments, and dedicated support.
           </p>
         </div>
         <button
@@ -148,7 +148,7 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
           }}
           className="bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs px-4 py-3 rounded-2xl transition-all shadow-sm shrink-0 whitespace-nowrap cursor-pointer flex items-center gap-2 active:scale-95"
         >
-          <MessageSquare className="h-4 w-4" /> Chat with Mia AI
+          <MessageSquare className="h-4 w-4" /> Chat with Mia AI Expert
         </button>
       </div>
 
