@@ -151,6 +151,15 @@ export class AppointmentController {
 
       const consultationFee = type === 'online' ? (doc.onlineConsultationFee || 0) : (doc.offlineConsultationFee || 0);
 
+      let platformCommission = 0;
+      if (doc.commissionType === 'FIXED') {
+        platformCommission = doc.commissionValue ?? 10;
+      } else {
+        platformCommission = (consultationFee * (doc.commissionValue ?? 10)) / 100;
+      }
+      platformCommission = Math.min(consultationFee, platformCommission);
+      const doctorEarnings = Math.max(0, consultationFee - platformCommission);
+
       const appointment = new Appointment({
         doctorId,
         userId,
@@ -161,6 +170,8 @@ export class AppointmentController {
         patientNotes: patientNotes || '',
         type: type || 'offline',
         consultationFee,
+        platformCommission,
+        doctorEarnings,
         paymentStatus: (consultationFee > 0) ? 'pending' : 'waived',
         recommendationId
       });

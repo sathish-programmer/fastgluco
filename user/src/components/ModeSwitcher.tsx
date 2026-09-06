@@ -218,20 +218,20 @@ This module is intended to support your personal daily lifestyle habits, nutriti
   return (
     <>
       {/* Active Focus Header Card */}
-      <div className={`p-4 rounded-3xl border transition-all mb-4 ${currentDetails.cardTheme}`}>
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className={`h-11 w-11 rounded-2xl flex items-center justify-center shrink-0 border ${currentDetails.iconContainer}`}>
-              <ActiveIcon className="h-6 w-6" />
+      <div className={`py-2 px-3 sm:py-2.5 sm:px-3.5 rounded-2xl border transition-all mb-3 ${currentDetails.cardTheme}`}>
+        <div className="flex items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className={`h-8 w-8 rounded-xl flex items-center justify-center shrink-0 border ${currentDetails.iconContainer}`}>
+              <ActiveIcon className="h-4 w-4" />
             </div>
             <div className="min-w-0">
-              <div className="flex items-center gap-2 mb-0.5">
-                <span className={`h-2 w-2 rounded-full ${currentDetails.badgeDot}`} />
-                <span className={`text-[10px] font-black uppercase tracking-wider ${currentDetails.badgeText}`}>
+              <div className="flex items-center gap-1.5 leading-none">
+                <span className={`h-1.5 w-1.5 rounded-full ${currentDetails.badgeDot} animate-pulse`} />
+                <span className={`text-[9px] font-black uppercase tracking-wider ${currentDetails.badgeText}`}>
                   Active Focus
                 </span>
               </div>
-              <h2 className="text-base font-black text-slate-900 dark:text-slate-100 truncate">
+              <h2 className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-slate-100 truncate mt-0.5 leading-tight">
                 {currentDetails.title}
               </h2>
             </div>
@@ -240,9 +240,9 @@ This module is intended to support your personal daily lifestyle habits, nutriti
           <button
             type="button"
             onClick={() => setIsOpen(true)}
-            className={`px-3.5 py-2 rounded-2xl text-xs font-black border transition-all cursor-pointer flex items-center gap-1 shrink-0 ${currentDetails.changeBtn}`}
+            className={`px-2.5 py-1 rounded-xl text-[10px] sm:text-[11px] font-extrabold border transition-all cursor-pointer flex items-center gap-0.5 shrink-0 active:scale-95 ${currentDetails.changeBtn}`}
           >
-            Change <ChevronRight className="h-3.5 w-3.5" />
+            Change <ChevronRight className="h-3 w-3" />
           </button>
         </div>
       </div>

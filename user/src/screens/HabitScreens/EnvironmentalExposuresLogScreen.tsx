@@ -14,8 +14,8 @@ interface EnvironmentalExposuresLogScreenProps {
 export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLogScreenProps> = ({ onBack, onBookAppointment, onNavigateToShop }) => {
   const { user, token, apiUrl } = useAuth();
   
-  // Sub-screens: 'hub' | 'air' | 'water' | 'pesticides' | 'microplastics'
-  const [currentView, setCurrentView] = useState<'hub' | 'air' | 'water' | 'pesticides' | 'microplastics'>('hub');
+  // Sub-screens: 'hub' | 'air' | 'water' | 'pesticides' | 'microplastics' | 'kitchen'
+  const [currentView, setCurrentView] = useState<'hub' | 'air' | 'water' | 'pesticides' | 'microplastics' | 'kitchen'>('hub');
   
   // Answers state
   const [airQ1, setAirQ1] = useState<boolean | null>(null);
@@ -23,6 +23,11 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
   const [waterQ1, setWaterQ1] = useState<boolean | null>(null); // true = Yes, false = No/Not sure
   const [pesticidesQ1, setPesticidesQ1] = useState<boolean | null>(null); // true = Yes, false = No
   const [microplasticsQ1, setMicroplasticsQ1] = useState<boolean | null>(null); // true = Yes, false = No
+
+  // Kitchen audit answers state
+  const [kitchenQ1, setKitchenQ1] = useState<boolean | null>(null); // Drinking water NOT stored in plastic can (true = Yes, false = No)
+  const [kitchenQ2, setKitchenQ2] = useState<boolean | null>(null); // Utensils (Tava, pan) made of natural substances like iron, brass, aluminum (true = Yes, false = No)
+  const [kitchenQ3, setKitchenQ3] = useState<boolean | null>(null); // Commodities stored preferably in non-plastic containers (true = Yes, false = No)
 
   const [showWaterInfo, setShowWaterInfo] = useState(true);
   const [showAirModal, setShowAirModal] = useState(false);
@@ -58,6 +63,9 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
           setWaterQ1(latest.answers.waterQ1 ?? null);
           setPesticidesQ1(latest.answers.pesticidesQ1 ?? null);
           setMicroplasticsQ1(latest.answers.microplasticsQ1 ?? null);
+          setKitchenQ1(latest.answers.kitchenQ1 ?? null);
+          setKitchenQ2(latest.answers.kitchenQ2 ?? null);
+          setKitchenQ3(latest.answers.kitchenQ3 ?? null);
         }
       }
     } catch (err) {
@@ -89,22 +97,32 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
     return microplasticsQ1 === true ? -1 : 0; // Yes = -1, No = 0
   };
 
+  const getKitchenScore = () => {
+    if (kitchenQ1 === null && kitchenQ2 === null && kitchenQ3 === null) return null;
+    let score = 0;
+    if (kitchenQ1 === false) score -= 1;
+    if (kitchenQ2 === false) score -= 1;
+    if (kitchenQ3 === false) score -= 1;
+    return score;
+  };
+
   // Calculate live overall score
   const airScore = getAirScore();
   const waterScore = getWaterScore();
   const pesticidesScore = getPesticidesScore();
   const microplasticsScore = getMicroplasticsScore();
+  const kitchenScore = getKitchenScore();
 
-  const hasAnyAnswer = airQ1 !== null || airQ2 !== null || waterQ1 !== null || pesticidesQ1 !== null || microplasticsQ1 !== null;
+  const hasAnyAnswer = airQ1 !== null || airQ2 !== null || waterQ1 !== null || pesticidesQ1 !== null || microplasticsQ1 !== null || kitchenQ1 !== null || kitchenQ2 !== null || kitchenQ3 !== null;
 
   const getOverallScore = () => {
     let score = 0;
-    // Air contribution: if -2 combined, overall gets -1, else if -1, overall gets -0.5 (or we sum them up capped at -4)
-    if (airScore !== null) score += Math.max(-1, airScore); // cap air contribution to max -1
+    if (airScore !== null) score += Math.max(-1, airScore);
     if (waterScore !== null) score += waterScore;
     if (pesticidesScore !== null) score += pesticidesScore;
     if (microplasticsScore !== null) score += microplasticsScore;
-    return score;
+    if (kitchenScore !== null) score += Math.max(-1, kitchenScore);
+    return Math.max(-4, score);
   };
 
   const overallScore = getOverallScore();
@@ -124,11 +142,14 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
           airQ2,
           waterQ1,
           pesticidesQ1,
-          microplasticsQ1
+          microplasticsQ1,
+          kitchenQ1,
+          kitchenQ2,
+          kitchenQ3
         }
       }).catch(err => console.error('Environmental habit auto-save error', err));
     }
-  }, [airQ1, airQ2, waterQ1, pesticidesQ1, microplasticsQ1, overallScore, hasAnyAnswer, apiUrl, token, user?.id]);
+  }, [airQ1, airQ2, waterQ1, pesticidesQ1, microplasticsQ1, kitchenQ1, kitchenQ2, kitchenQ3, overallScore, hasAnyAnswer, apiUrl, token, user?.id]);
 
   const handleSaveLogs = async () => {
     if (!user?.id) return;
@@ -141,7 +162,10 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
           airQ2,
           waterQ1,
           pesticidesQ1,
-          microplasticsQ1
+          microplasticsQ1,
+          kitchenQ1,
+          kitchenQ2,
+          kitchenQ3
         }
       });
       onBack(); // Go back to dashboard immediately to trigger re-fetch of logs
@@ -725,6 +749,119 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
             className={`w-full py-4 rounded-2xl font-bold text-xs text-white transition-all ${microplasticsQ1 !== null ? 'bg-indigo-600 hover:bg-indigo-700 shadow-sm' : 'bg-slate-200 dark:bg-slate-800 opacity-60'}`}
           >
             Done with Microplastics Category
+          </button>
+        </div>
+      )}
+
+      {/* VIEW 6: CHECK YOUR KITCHEN AUDIT */}
+      {currentView === 'kitchen' && (
+        <div className="space-y-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 sm:p-8 shadow-sm animate-in slide-in-from-right duration-250">
+          <div className="border-b border-slate-100 dark:border-slate-800 pb-4">
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Kitchen Microplastics & Utensils Audit</span>
+            <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100 mt-0.5">Check Your Kitchen</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Audit water cans, cookware Teflon exposure, and plastic commodity storage.</p>
+          </div>
+
+          <div className="space-y-6">
+            {/* Question 1 */}
+            <div>
+              <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-2">Question 1</p>
+              <p className="text-sm font-semibold text-slate-850 dark:text-slate-100 leading-relaxed mb-3.5">
+                Is your drinking water <strong>NOT stored in a plastic can</strong>?
+              </p>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setKitchenQ1(true)}
+                  className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${kitchenQ1 === true ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+                >
+                  Yes (Safe - 0)
+                </button>
+                <button 
+                  onClick={() => setKitchenQ1(false)}
+                  className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${kitchenQ1 === false ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+                >
+                  No (Risk -1)
+                </button>
+              </div>
+            </div>
+
+            {/* Question 2 */}
+            <div className="pt-5 border-t border-slate-100 dark:border-slate-800">
+              <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-2">Question 2</p>
+              <p className="text-sm font-semibold text-slate-850 dark:text-slate-100 leading-relaxed mb-3.5">
+                Are utensils like <strong>Tava and pan made of natural substances</strong> like iron, brass, or aluminum (avoiding synthetic Teflon non-stick coatings)?
+              </p>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setKitchenQ2(true)}
+                  className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${kitchenQ2 === true ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+                >
+                  Yes (Safe - 0)
+                </button>
+                <button 
+                  onClick={() => setKitchenQ2(false)}
+                  className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${kitchenQ2 === false ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+                >
+                  No (Risk -1)
+                </button>
+              </div>
+            </div>
+
+            {/* Question 3 */}
+            <div className="pt-5 border-t border-slate-100 dark:border-slate-800">
+              <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-2">Question 3</p>
+              <p className="text-sm font-semibold text-slate-850 dark:text-slate-100 leading-relaxed mb-3.5">
+                Are commodities and ingredients <strong>stored preferably in non-plastic containers</strong> (e.g. glass, stainless steel, ceramic)?
+              </p>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setKitchenQ3(true)}
+                  className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${kitchenQ3 === true ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+                >
+                  Yes (Safe - 0)
+                </button>
+                <button 
+                  onClick={() => setKitchenQ3(false)}
+                  className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${kitchenQ3 === false ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+                >
+                  No (Risk -1)
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Kitchen Best Practices Card */}
+          <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl p-5 space-y-3">
+            <h4 className="text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+              🍳 Natural Kitchen & Utensil Guidelines
+            </h4>
+            <ul className="text-xs text-emerald-700 dark:text-emerald-400 space-y-2 list-disc pl-4 font-semibold leading-relaxed">
+              <li><strong>Cast Iron & Brass Tava</strong>: Natural iron cookware infuses dietary bioavailable iron while preventing toxic PFOA/PTFE Teflon breakdown fumes.</li>
+              <li><strong>Non-Plastic Water Storage</strong>: Store drinking water in copper, clay, or food-grade stainless steel pitchers instead of plastic cans.</li>
+              <li><strong>Glass & Stainless Jars</strong>: Store dry spices, pulses, and commodities in glass or stainless steel containers to eliminate plasticizer leaching.</li>
+            </ul>
+          </div>
+
+          {(kitchenQ1 !== null || kitchenQ2 !== null || kitchenQ3 !== null) && (
+            <div className="bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 rounded-2xl p-5 space-y-2.5 animate-in fade-in duration-200">
+              <p className="text-xs text-indigo-700 dark:text-indigo-400 font-semibold">
+                Looking for plastic-free stainless steel or glass kitchen storage containers?
+              </p>
+              <button 
+                onClick={() => onNavigateToShop?.('SaferProducts')}
+                className="inline-flex items-center gap-1.5 text-xs text-indigo-650 hover:underline font-bold text-left cursor-pointer"
+              >
+                🥛 Click here to order Plastic-Free Kitchen Products
+              </button>
+            </div>
+          )}
+
+          <button 
+            onClick={() => setCurrentView('hub')}
+            disabled={kitchenQ1 === null && kitchenQ2 === null && kitchenQ3 === null}
+            className={`w-full py-4 rounded-2xl font-bold text-xs text-white transition-all ${kitchenQ1 !== null || kitchenQ2 !== null || kitchenQ3 !== null ? 'bg-indigo-600 hover:bg-indigo-700 cursor-pointer shadow-sm' : 'bg-slate-200 dark:bg-slate-800 opacity-60'}`}
+          >
+            Done with Kitchen Category
           </button>
         </div>
       )}

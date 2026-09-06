@@ -13,7 +13,7 @@ export class DoctorController {
 
   public static async adminAddDoctor(req: Request, res: Response) {
     try {
-      const { name, email, password, specialty, description, avatar, languagesKnown } = req.body;
+      const { name, email, password, specialty, description, avatar, languagesKnown, consultationFee, onlineConsultationFee, offlineConsultationFee, commissionType, commissionValue } = req.body;
       if (!name || !email || !password || !specialty || !description) {
         return res.status(400).json({ message: 'Missing required doctor fields.' });
       }
@@ -31,7 +31,12 @@ export class DoctorController {
         specialty,
         description,
         avatar,
-        languagesKnown: Array.isArray(languagesKnown) ? languagesKnown : []
+        languagesKnown: Array.isArray(languagesKnown) ? languagesKnown : [],
+        consultationFee: consultationFee || 500,
+        onlineConsultationFee: onlineConsultationFee || 500,
+        offlineConsultationFee: offlineConsultationFee || 500,
+        commissionType: commissionType || 'PERCENTAGE',
+        commissionValue: commissionValue !== undefined ? Number(commissionValue) : 10
       });
       await doc.save();
 
@@ -71,7 +76,7 @@ export class DoctorController {
   public static async adminEditDoctor(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const { name, specialty, description, isActive, avatar, languagesKnown } = req.body;
+      const { name, specialty, description, isActive, avatar, languagesKnown, consultationFee, onlineConsultationFee, offlineConsultationFee, commissionType, commissionValue } = req.body;
       const doc = await Doctor.findById(id);
       if (!doc) return res.status(404).json({ message: 'Doctor not found.' });
 
@@ -80,6 +85,11 @@ export class DoctorController {
       if (description) doc.description = description;
       if (isActive !== undefined) doc.isActive = isActive;
       if (avatar !== undefined) doc.avatar = avatar;
+      if (consultationFee !== undefined) doc.consultationFee = consultationFee;
+      if (onlineConsultationFee !== undefined) doc.onlineConsultationFee = onlineConsultationFee;
+      if (offlineConsultationFee !== undefined) doc.offlineConsultationFee = offlineConsultationFee;
+      if (commissionType !== undefined) doc.commissionType = commissionType;
+      if (commissionValue !== undefined) doc.commissionValue = Number(commissionValue);
       if (languagesKnown !== undefined) {
         doc.languagesKnown = Array.isArray(languagesKnown) ? languagesKnown : [];
       }

@@ -26,6 +26,8 @@ export interface IDoctor extends Document {
   visibility?: boolean;
   notificationPreferences?: string;
   deaddictionHelpline?: string;
+  commissionType?: 'PERCENTAGE' | 'FIXED';
+  commissionValue?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -56,7 +58,9 @@ const DoctorSchema: Schema = new Schema(
     holidays: { type: [String], default: [] },
     visibility: { type: Boolean, default: true },
     notificationPreferences: { type: String, default: "{}" },
-    deaddictionHelpline: { type: String, default: "1800-11-0031" }
+    deaddictionHelpline: { type: String, default: "1800-11-0031" },
+    commissionType: { type: String, enum: ['PERCENTAGE', 'FIXED'], default: 'PERCENTAGE' },
+    commissionValue: { type: Number, default: 10 }
   },
   { timestamps: true }
 );

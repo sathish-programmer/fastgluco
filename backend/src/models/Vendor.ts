@@ -13,6 +13,8 @@ export interface IVendor extends Document {
   taxId?: string;
   businessAddress?: string;
   assignedProducts?: mongoose.Types.ObjectId[];
+  commissionType?: 'PERCENTAGE' | 'FIXED';
+  commissionValue?: number;
   deactivatedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -32,6 +34,8 @@ const VendorSchema: Schema = new Schema(
     taxId: { type: String, default: '' },
     businessAddress: { type: String, default: '' },
     assignedProducts: [{ type: Schema.Types.ObjectId, ref: 'ShopProduct' }],
+    commissionType: { type: String, enum: ['PERCENTAGE', 'FIXED'], default: 'PERCENTAGE' },
+    commissionValue: { type: Number, default: 10 },
     deactivatedAt: { type: Date }
   },
   { timestamps: true }

@@ -231,6 +231,19 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       }
     }
 
+    // Kitchen Audit
+    const kitchenVal = getAnswer(['kitchen', 'kitchen_audit', 'env_kitchen']).toLowerCase();
+    if (kitchenVal) {
+      if (kitchenVal.includes('plastic') || kitchenVal.includes('teflon') || kitchenVal.includes('risk') || kitchenVal.includes('no')) {
+        damageCount += 1;
+        damageHighlights.push('Kitchen Plastic & Cookware Risk');
+        damageActionHints.push('Replace plastic water cans and Teflon non-stick pans with stainless steel, glass, or iron cookware.');
+      } else if (kitchenVal.includes('yes') || kitchenVal.includes('safe') || kitchenVal.includes('clean') || kitchenVal.includes('non-plastic')) {
+        repairCount += 1;
+        repairHighlights.push('Safe Plastic-Free Kitchen');
+      }
+    }
+
     // 6. Gastritis / Acidity / Dental / Refined Sugar
     const gutVal = getAnswer(['gut_health', 'gastritis', 'dental', 'damage_habits']).toLowerCase();
     if (gutVal) {
@@ -1136,6 +1149,10 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
             }
             return true;
           }
+          // Check Your Kitchen Audit
+          if (s === 'kitchen' || s === 'env_kitchen') return todaysHabits.some(h =>
+            h.type === 'Kitchen' || h.type?.toUpperCase().includes('KITCHEN')
+          );
           // Gut & Dental check
           if (s === 'gut_health') return todaysHabits.some(h =>
             h.type === 'Gastritis' || h.type === 'Dental' ||
@@ -1186,6 +1203,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
             if (s === 'stillness') return t === 'stillness';
             if (s === 'joy') return t === 'joy';
             if (s === 'antioxidants') return t === 'antioxidants';
+            if (s === 'kitchen' || s === 'env_kitchen') return t.includes('kitchen');
             if (s.startsWith('env_')) return t === 'environmental';
             if (s === 'genetics') return t === 'genetic';
             if (s === 'substances') return t === 'substances';
@@ -1389,6 +1407,18 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
         habitValue = {
           score: calcScore,
           answers: updatedAnswers,
+          option: valueStr
+        };
+      } else if (stepId === 'kitchen' || stepId === 'env_kitchen') {
+        habitType = 'Kitchen';
+        const isSafe = isYes || lowerVal.includes('safe') || lowerVal.includes('no plastic') || lowerVal.includes('clean');
+        habitValue = {
+          score: isSafe ? 0 : -1,
+          answers: {
+            kitchenQ1: isSafe,
+            kitchenQ2: isSafe,
+            kitchenQ3: isSafe
+          },
           option: valueStr
         };
       } else if (stepId === 'gut_health') {
@@ -1622,6 +1652,9 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
     }
     if (text.includes('no plastic') || text.includes('plastic free') || text.includes('avoided plastic')) {
       detected.push({ stepId: 'env_microplastics', valueStr: 'No (Plastic-Free)', name: 'Microplastics (Clean)' });
+    }
+    if (text.includes('kitchen') || text.includes('utensils') || text.includes('water container') || text.includes('iron pan') || text.includes('brass pan')) {
+      detected.push({ stepId: 'kitchen', valueStr: 'Yes (Plastic-Free Safe Kitchen)', name: 'Check Your Kitchen (Safe)' });
     }
 
     return detected;

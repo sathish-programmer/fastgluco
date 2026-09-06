@@ -29,7 +29,16 @@ import {
   BrainCircuit,
   ShoppingBag,
   ArrowLeft,
-  Bot
+  Bot,
+  DownloadCloud,
+  Droplets,
+  Wind,
+  Apple,
+  Heart,
+  Sparkles,
+  ChevronDown,
+  ChevronUp,
+  Utensils
 } from 'lucide-react';
 import { DailyLoggingChatbotModal } from '../components/DailyLoggingChatbotModal';
 import { AiDailyCheckinFloatingNudge } from '../components/AiDailyCheckinFloatingNudge';
@@ -54,6 +63,7 @@ import { GastritisLogScreen } from '../screens/HabitScreens/GastritisLogScreen';
 import { GeneticLogScreen } from '../screens/HabitScreens/GeneticLogScreen';
 import { AntioxidantLogScreen } from '../screens/HabitScreens/AntioxidantLogScreen';
 import { EnvironmentalExposuresLogScreen } from '../screens/HabitScreens/EnvironmentalExposuresLogScreen';
+import { KitchenLogScreen } from '../screens/HabitScreens/KitchenLogScreen';
 import { ModeSwitcher } from '../components/ModeSwitcher';
 import { Dashboard } from './Dashboard';
 import { TodaysFocusCard } from '../components/TodaysFocusCard';
@@ -85,7 +95,8 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
   };
 
   useEffect(() => {
-    const handleBack = () => {
+    const handleBack = (e: Event) => {
+      if (e.defaultPrevented) return;
       if (activeScreen) {
         setActiveScreen(null);
       }
@@ -119,6 +130,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
   const [showAiNudgeModal, setShowAiNudgeModal] = useState<boolean>(false);
   const [showFastingDisclaimer, setShowFastingDisclaimer] = useState<boolean>(false);
   const [fastingStep, setFastingStep] = useState<number>(1);
+  const [showAllLogs, setShowAllLogs] = useState<boolean>(false);
 
   const [hasCGMData, setHasCGMData] = useState<boolean>(() => {
     return localStorage.getItem('mito_has_cgm_reports') === 'true';
@@ -140,7 +152,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
 
   const fetchHabitsAndAppointments = async () => {
     try {
-      const logs = await HabitsService.getRecentHabits(apiUrl, token, 'all', 30);
+      const logs = await HabitsService.getRecentHabits(apiUrl, token, 'all', 365);
       setHabits(logs);
       checkHealthDanger(logs);
 
@@ -312,26 +324,365 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
     setShowRecommendation(false);
   };
 
-  const [timePeriod, setTimePeriod] = useState<'today' | 'weekly' | 'monthly'>('today');
+  const [timePeriod, setTimePeriod] = useState<'today' | 'weekly' | 'monthly' | 'yearly'>('today');
   const [forcesView, setForcesView] = useState<'all' | 'damage' | 'repair'>('all');
 
-  const getFilteredPeriodHabits = (allHabits: HabitLog[], period: 'today' | 'weekly' | 'monthly') => {
+  const getFilteredPeriodHabits = (allHabits: HabitLog[], period: 'today' | 'weekly' | 'monthly' | 'yearly') => {
     const now = new Date();
     if (period === 'today') {
       const todayStr = now.toDateString();
-      return allHabits.filter(h => new Date(h.timestamp).toDateString() === todayStr);
+      return allHabits.filter(h => new Date(h.timestamp || (h as any).createdAt).toDateString() === todayStr);
     }
     if (period === 'weekly') {
       const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      return allHabits.filter(h => new Date(h.timestamp).getTime() >= sevenDaysAgo.getTime());
+      return allHabits.filter(h => new Date(h.timestamp || (h as any).createdAt).getTime() >= sevenDaysAgo.getTime());
     }
-    // monthly
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    return allHabits.filter(h => new Date(h.timestamp).getTime() >= thirtyDaysAgo.getTime());
+    if (period === 'monthly') {
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      return allHabits.filter(h => new Date(h.timestamp || (h as any).createdAt).getTime() >= thirtyDaysAgo.getTime());
+    }
+    // yearly
+    const fullYearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+    return allHabits.filter(h => new Date(h.timestamp || (h as any).createdAt).getTime() >= fullYearAgo.getTime());
   };
 
   const periodHabits = getFilteredPeriodHabits(habits, timePeriod);
   const todaysHabits = getFilteredPeriodHabits(habits, 'today');
+
+  const formatHabitLogItem = (log: HabitLog) => {
+    const t = (log.type || '').toUpperCase();
+    const val = log.value || {};
+    const optStr = typeof val === 'object' ? (val.option || val.notes || val.label || val.subOption || val.faceId || '') : `${val}`;
+
+    let title = log.type || 'Habit Check-in';
+    let subtitle = optStr;
+    let isRepair = false;
+    let category = 'default';
+
+    if (t.includes('KITCHEN')) {
+      title = 'Check Your Kitchen Audit';
+      const answers = val?.answers || {};
+      const isSafe = (val?.score === 0) || (answers.kitchenQ1 === true && answers.kitchenQ2 === true && answers.kitchenQ3 === true);
+      subtitle = isSafe ? 'Non-plastic water, natural iron/brass utensils & glass storage' : 'Plastic container / Teflon cookware risk flagged';
+      isRepair = isSafe;
+      category = 'microplastics';
+    } else if (t.includes('ENVIRONMENT')) {
+      const answers = val?.answers || {};
+      if (answers.waterQ1 !== undefined) {
+        title = 'Water Filtration Check';
+        subtitle = answers.waterQ1 === 0 ? 'RO + Activated Carbon Dual Filter' : 'Standard / Tap Water Exposure';
+        isRepair = answers.waterQ1 === 0;
+        category = 'water';
+      } else if (answers.airQ1 !== undefined) {
+        title = 'Air Exposure Check';
+        subtitle = answers.airQ1 === 0 ? 'Clean / Filtered Indoor Air' : 'Smog / Traffic Air Exposure';
+        isRepair = answers.airQ1 === 0;
+        category = 'air';
+      } else if (answers.pesticidesQ1 !== undefined) {
+        title = 'Pesticide Exposure Check';
+        subtitle = answers.pesticidesQ1 === 0 ? 'Organic / Thoroughly Washed' : 'Conventional Produce';
+        isRepair = answers.pesticidesQ1 === 0;
+        category = 'pesticides';
+      } else if (answers.microplasticsQ1 !== undefined) {
+        title = 'Microplastics Check';
+        subtitle = answers.microplasticsQ1 === 0 ? 'Glass / Stainless Steel Storage' : 'Plastic Water Bottle Exposure';
+        isRepair = answers.microplasticsQ1 === 0;
+        category = 'microplastics';
+      } else if (answers.kitchenQ1 !== undefined || answers.kitchenQ2 !== undefined || answers.kitchenQ3 !== undefined) {
+        title = 'Check Your Kitchen Audit';
+        const isSafe = answers.kitchenQ1 === true && answers.kitchenQ2 === true && answers.kitchenQ3 === true;
+        subtitle = isSafe ? 'Non-plastic water, natural iron/brass utensils & glass storage' : 'Plastic container / Teflon cookware risk flagged';
+        isRepair = isSafe;
+        category = 'microplastics';
+      } else {
+        title = 'Environmental Audit';
+        subtitle = optStr || 'Environmental Check-in';
+        isRepair = val?.isExposure !== true;
+        category = 'environment';
+      }
+    } else if (t.includes('STRESS')) {
+      title = 'Mental Health Check (Mia)';
+      subtitle = optStr || 'Stress Check-in';
+      isRepair = optStr.toLowerCase().includes('better') || optStr.toLowerCase().includes('calm') || val?.faceId === 'happy';
+      category = 'stress';
+    } else if (t.includes('SLEEP')) {
+      title = 'Sleep Health Assessment';
+      subtitle = optStr || (val?.hours ? `${val.hours} Hours Rested` : 'Sleep Quality Log');
+      isRepair = (val?.hours && val.hours >= 7) || optStr.toLowerCase().includes('good') || optStr.toLowerCase().includes('rested');
+      category = 'sleep';
+    } else if (t.includes('FASTING')) {
+      title = 'Autophagy Fasting Log';
+      subtitle = optStr || (val?.hours ? `${val.hours}-Hour Fast Completed` : 'Fasting Check-in');
+      isRepair = true;
+      category = 'fasting';
+    } else if (t.includes('MOVEMENT')) {
+      title = 'Daily Movement & Cardio';
+      subtitle = optStr || (val?.minutes ? `${val.minutes} Mins Active` : 'Physical Activity');
+      isRepair = true;
+      category = 'movement';
+    } else if (t.includes('STILLNESS')) {
+      title = 'Stillness & Breathwork';
+      subtitle = optStr || '4-7-8 Breathing / Meditation';
+      isRepair = true;
+      category = 'stillness';
+    } else if (t.includes('JOY')) {
+      title = 'Joy & Gratitude Check';
+      subtitle = optStr || 'Positive Emotional Check-in';
+      isRepair = true;
+      category = 'joy';
+    } else if (t.includes('GENETIC')) {
+      title = 'Genetic Risk Check (Gia)';
+      subtitle = optStr || 'Pedigree & Panel Screening';
+      isRepair = val?.geneticLink === false;
+      category = 'genetic';
+    } else if (t.includes('SMOKING') || t.includes('ALCOHOL')) {
+      title = t.includes('SMOKING') ? 'Tobacco Exposure' : 'Alcohol Check';
+      subtitle = optStr || (val?.count > 0 ? `${val.count} Units Logged` : 'Exposure Check-in');
+      isRepair = val === 0 || val?.count === 0;
+      category = t.includes('SMOKING') ? 'smoking' : 'alcohol';
+    } else {
+      isRepair = ['ANTIOXIDANTS', 'MEAL', 'NUTRITION', 'REPAIR'].some(k => t.includes(k));
+      category = 'default';
+    }
+
+    return { title, subtitle, isRepair, category };
+  };
+
+  const renderCategoryIcon = (category: string, isRepair: boolean) => {
+    switch (category) {
+      case 'water':
+        return <Droplets className="w-4 h-4" />;
+      case 'air':
+        return <Wind className="w-4 h-4" />;
+      case 'pesticides':
+        return <Apple className="w-4 h-4" />;
+      case 'microplastics':
+        return <ShieldCheck className="w-4 h-4" />;
+      case 'environment':
+        return <Globe className="w-4 h-4" />;
+      case 'stress':
+        return <Heart className="w-4 h-4" />;
+      case 'sleep':
+        return <Moon className="w-4 h-4" />;
+      case 'fasting':
+        return <Timer className="w-4 h-4" />;
+      case 'movement':
+        return <Activity className="w-4 h-4" />;
+      case 'stillness':
+        return <BrainCircuit className="w-4 h-4" />;
+      case 'joy':
+        return <Sparkles className="w-4 h-4" />;
+      case 'genetic':
+        return <Dna className="w-4 h-4" />;
+      case 'smoking':
+        return <Cigarette className="w-4 h-4" />;
+      case 'alcohol':
+        return <Wine className="w-4 h-4" />;
+      default:
+        return isRepair ? <Leaf className="w-4 h-4" /> : <Skull className="w-4 h-4" />;
+    }
+  };
+
+  const downloadDocumentedReport = () => {
+    if (periodHabits.length === 0) {
+      alert('No documented logs available for the selected timeframe to print/download.');
+      return;
+    }
+
+    const periodTitle = timePeriod === 'today' ? 'Daily Overview' : timePeriod === 'weekly' ? '7-Day Weekly Summary' : timePeriod === 'monthly' ? '30-Day Monthly History' : '365-Day Yearly History';
+    const reportDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const userName = user?.name || user?.email || 'MitoReboot Patient';
+
+    const logRowsHtml = periodHabits.map((log, idx) => {
+      const formatted = formatHabitLogItem(log);
+      const d = new Date(log.timestamp || (log as any).createdAt);
+      const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      
+      return `
+        <tr style="border-bottom: 1px solid #f1f5f9; ${idx % 2 === 0 ? 'background-color: #fafafa;' : ''}">
+          <td style="padding: 10px 14px; font-size: 11px; color: #475569; font-weight: 600;">${dateStr}<br/><span style="font-size: 10px; color: #94a3b8;">${timeStr}</span></td>
+          <td style="padding: 10px 14px; font-size: 12px; font-weight: 700; color: #0f172a;">${formatted.title}</td>
+          <td style="padding: 10px 14px;">
+            <span style="display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 800; text-transform: uppercase; ${
+              formatted.isRepair 
+                ? 'background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;' 
+                : 'background: #fff1f2; color: #be123c; border: 1px solid #fecdd3;'
+            }">
+              ${formatted.isRepair ? '+ Repair Score' : '+ Damage Score'}
+            </span>
+          </td>
+          <td style="padding: 10px 14px; font-size: 11px; color: #334155; font-weight: 600;">${formatted.subtitle || 'Logged Check-in'}</td>
+        </tr>
+      `;
+    }).join('');
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>MitoReboot Cellular Balance Report — ${periodTitle}</title>
+        <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet">
+        <style>
+          @page { size: A4; margin: 12mm; }
+          body { font-family: 'Sora', sans-serif; color: #0f172a; margin: 0; padding: 20px; background: #ffffff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .header-box { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 14px; margin-bottom: 20px; }
+          .logo { font-size: 24px; font-weight: 800; color: #0f172a; letter-spacing: -0.5px; }
+          .logo span { color: #2563eb; }
+          .report-tag { background: #eff6ff; color: #1d4ed8; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 800; border: 1px solid #bfdbfe; }
+          .grid-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+          .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 12px; text-align: center; }
+          .card-val { font-size: 20px; font-weight: 800; margin-top: 2px; }
+          .card-lbl { font-size: 9.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+          .progress-container { background: #f8fafc; border-radius: 16px; padding: 14px; margin-bottom: 20px; border: 1px solid #e2e8f0; }
+          .progress-bar-bg { height: 12px; background: #e2e8f0; border-radius: 10px; overflow: hidden; display: flex; margin: 8px 0; }
+          .progress-damage { height: 100%; background: #f43f5e; }
+          .progress-repair { height: 100%; background: #10b981; }
+          table { width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; }
+          th { background: #f1f5f9; padding: 10px 12px; text-align: left; font-size: 10.5px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; }
+          .footer { margin-top: 24px; padding-top: 14px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 9.5px; color: #94a3b8; font-weight: 600; }
+        </style>
+      </head>
+      <body>
+        <div class="header-box">
+          <div>
+            <div class="logo">Mito<span>Reboot</span></div>
+            <div style="font-size: 11px; color: #64748b; font-weight: 600; margin-top: 2px;">Cellular Health & Lifestyle Balance Audit Report</div>
+          </div>
+          <div style="text-align: right;">
+            <div class="report-tag">${periodTitle}</div>
+            <div style="font-size: 10px; color: #64748b; margin-top: 6px; font-weight: 600;">Patient: <strong>${userName}</strong></div>
+            <div style="font-size: 10px; color: #94a3b8; font-weight: 600;">Generated: ${reportDate}</div>
+          </div>
+        </div>
+
+        <div class="grid-summary">
+          <div class="card">
+            <div class="card-lbl">Total Documented Logs</div>
+            <div class="card-val" style="color: #0f172a;">${periodHabits.length}</div>
+          </div>
+          <div class="card" style="background: #fff1f2; border-color: #fecdd3;">
+            <div class="card-lbl" style="color: #9f1239;">Active Damage Score</div>
+            <div class="card-val" style="color: #e11d48;">${damageCount}</div>
+          </div>
+          <div class="card" style="background: #ecfdf5; border-color: #a7f3d0;">
+            <div class="card-lbl" style="color: #065f46;">Active Repair Score</div>
+            <div class="card-val" style="color: #059669;">${repairCount}</div>
+          </div>
+          <div class="card" style="background: #eff6ff; border-color: #bfdbfe;">
+            <div class="card-lbl" style="color: #1e40af;">Cellular Repair Ratio</div>
+            <div class="card-val" style="color: #2563eb;">${repairPct.toFixed(0)}%</div>
+          </div>
+        </div>
+
+        <div class="progress-container">
+          <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 800;">
+            <span style="color: #e11d48;">💀 Damage Balance (${damagePct.toFixed(1)}%)</span>
+            <span style="color: #059669;">🌿 Repair Balance (${repairPct.toFixed(1)}%)</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-damage" style="width: ${damagePct}%;"></div>
+            <div class="progress-repair" style="width: ${repairPct}%;"></div>
+          </div>
+          <div style="font-size: 10px; color: #64748b; text-align: center; font-weight: 600; margin-top: 4px;">
+            ${repairPct >= 50 ? '✅ Cellular repair signals are active and dominating damage factors.' : '⚠️ Elevated damage factors detected. Prioritise stillness, sleep, and antioxidant protocols.'}
+          </div>
+        </div>
+
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 16px; padding: 14px; margin-bottom: 20px;">
+          <div style="font-size: 12px; font-weight: 800; color: #166534; margin-bottom: 6px;">
+            💡 Personalized MitoReboot Cellular Action Plan (Repair Score Ratio: ${repairPct.toFixed(0)}%)
+          </div>
+          <p style="font-size: 10.5px; color: #15803d; font-weight: 600; margin: 0 0 8px 0; line-height: 1.4;">
+            ${repairPct >= 70
+              ? '🌟 <strong>Optimal Repair State</strong>: Your cellular signaling is strongly tilted toward repair and antioxidant protection. Follow these tips to sustain peak cellular energy:'
+              : repairPct >= 40
+                ? '⚖️ <strong>Moderate Balance</strong>: Your repair signals are active, but stress and environmental factors create periodic damage spikes. Follow these targeted habits:'
+                : '⚠️ <strong>High Damage Load Alert</strong>: Elevated stress, poor sleep, or environmental toxins are overwhelming your repair pathways. Priority intervention recommended:'}
+          </p>
+          <ul style="margin: 0; padding-left: 16px; font-size: 10.5px; color: #166534; font-weight: 600; line-height: 1.5;">
+            ${repairPct >= 70 ? `
+              <li><strong>Maintain Autophagy Window</strong>: Stick to a 14:10 or 16:8 overnight fasting routine to clear damaged mitochondrial proteins.</li>
+              <li><strong>Deep Rest Recovery</strong>: Protect your 7-8 hour sleep window for nighttime microglial brain cleansing.</li>
+              <li><strong>Antioxidant Protection</strong>: Consume daily berries, green tea, and 85%+ dark chocolate to neutralize ROS.</li>
+            ` : repairPct >= 40 ? `
+              <li><strong>Add 5-Min Stillness Routine</strong>: Practice 4-7-8 deep breathing twice daily to lower elevated cortisol.</li>
+              <li><strong>Post-Meal Light Walking</strong>: Take a 15-minute walk after lunch/dinner to blunt glucose spikes and limit cellular strain.</li>
+              <li><strong>Pure Water Protocol</strong>: Use dual water filtration (<strong>RO + Activated Carbon</strong>) to eliminate pesticides & heavy metals. Avoid plastic water bottles.</li>
+            ` : `
+              <li><strong>Immediate Stress Shield (Mia AI)</strong>: Use 4-7-8 breathing and 5-4-3-2-1 grounding exercises daily to calm your nervous system.</li>
+              <li><strong>Environmental Audit</strong>: Eliminate plastic drinking containers (prevents microplastics) and install RO + Activated Carbon filtration.</li>
+              <li><strong>Strict Sleep Hygiene</strong>: Turn off all screens 45 minutes before bed and sleep in a cool, pitch-dark room.</li>
+              <li><strong>Specialist Guidance</strong>: Consider booking a consultation with a certified counselor or specialist via MitoReboot Care.</li>
+            `}
+          </ul>
+        </div>
+
+        <div style="font-size: 12px; font-weight: 800; color: #0f172a; margin-bottom: 8px;">📋 Documented Check-in History Logs</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Date & Time</th>
+              <th>Habit Category</th>
+              <th>Score Impact</th>
+              <th>Documented Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${logRowsHtml}
+          </tbody>
+        </table>
+
+        <div class="footer">
+          MitoReboot Cellular Health Protocol • Official Documented Lifestyle Audit • Confidential Medical Record
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Try hidden printable iframe first (works natively inside iOS WKWebView & Android WebView without popups!)
+    try {
+      const oldIframe = document.getElementById('mr_pdf_print_iframe');
+      if (oldIframe) oldIframe.remove();
+
+      const iframe = document.createElement('iframe');
+      iframe.id = 'mr_pdf_print_iframe';
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+      document.body.appendChild(iframe);
+
+      const doc = iframe.contentWindow?.document || iframe.contentDocument;
+      if (doc) {
+        doc.open();
+        doc.write(htmlContent);
+        doc.close();
+
+        setTimeout(() => {
+          try {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+          } catch (e) {
+            console.error('Iframe print error:', e);
+          }
+        }, 500);
+        return;
+      }
+    } catch (e) {
+      console.error('Error creating print iframe, fallback to window.open:', e);
+    }
+
+    // Fallback: window.open popup
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.open();
+      printWindow.document.write(htmlContent + `<script>setTimeout(()=>{window.print();},600);</script>`);
+      printWindow.document.close();
+    }
+  };
 
   const getCancerLoggedGuidelines = () => {
     let fastingLogged = false;
@@ -368,9 +719,36 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
     return matching.sort((a, b) => new Date(b.timestamp || (b as any).createdAt || 0).getTime() - new Date(a.timestamp || (a as any).createdAt || 0).getTime())[0];
   };
 
+  const getKitchenScore = () => {
+    const latest = getLatestLogForTypes('KITCHEN');
+    if (!latest) return null;
+    const val = latest.value;
+    if (val === undefined || val === null) return null;
+
+    if (typeof val === 'number') {
+      return val < 0 ? -1 : 0;
+    }
+
+    if (typeof val === 'object') {
+      if (typeof val.score === 'number') {
+        return val.score < 0 ? -1 : 0;
+      }
+      const ans = val.answers || val;
+      if (ans.kitchenQ1 === false || ans.kitchenQ2 === false || ans.kitchenQ3 === false || ans.kitchenQ1 === 'no' || ans.kitchenQ2 === 'no' || ans.kitchenQ3 === 'no') {
+        return -1;
+      }
+      if (ans.kitchenQ1 === true || ans.kitchenQ2 === true || ans.kitchenQ3 === true || ans.kitchenQ1 === 'yes' || ans.kitchenQ2 === 'yes' || ans.kitchenQ3 === 'yes') {
+        return 0;
+      }
+    }
+    const optStr = (typeof val === 'object' ? (val.option || val.notes || '') : `${val}`).toLowerCase();
+    if (optStr.includes('risk') || optStr.includes('plastic') || optStr.includes('teflon')) return -1;
+    return 0;
+  };
+
   const calculateDamageCount = () => {
     let count = 0;
-    const categories = ['STRESS', 'SLEEP', 'SMOKING', 'ALCOHOL', 'SUBSTANCES', 'INTIMACY', 'DENTAL', 'GASTRITIS', 'GENETIC', 'ENVIRONMENT'];
+    const categories = ['STRESS', 'SLEEP', 'SMOKING', 'ALCOHOL', 'SUBSTANCES', 'INTIMACY', 'DENTAL', 'GASTRITIS', 'GENETIC', 'ENVIRONMENT', 'KITCHEN'];
     categories.forEach(cat => {
       const latest = getLatestLogForTypes(cat);
       if (!latest) return;
@@ -387,13 +765,17 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
       if (typeUpper.includes('GASTRITIS') && (val?.gastritis === true || optStr.includes('gastritis') || optStr.includes('acidity'))) count += 1;
       if (typeUpper.includes('GENETIC') && (val?.geneticLink === true || optStr.includes('family'))) count += 1;
       if ((typeUpper.includes('ENVIRONMENT') || typeUpper.includes('DAMAGE')) && (val === 1 || val?.score < 0 || val?.isExposure === true || optStr.includes('chemical') || optStr.includes('junk'))) count += 1;
+      if (typeUpper.includes('KITCHEN')) {
+        const kScore = getKitchenScore();
+        if (kScore !== null && kScore < 0) count += 1;
+      }
     });
     return count;
   };
 
   const calculateRepairCount = () => {
     let count = 0;
-    const categories = ['STRESS', 'SLEEP', 'SMOKING', 'ALCOHOL', 'SUBSTANCES', 'FASTING', 'ANTIOXIDANTS', 'MOVEMENT', 'STILLNESS', 'JOY', 'SAFERPRODUCTS', 'CANCERSCREENING', 'INTIMACY'];
+    const categories = ['STRESS', 'SLEEP', 'SMOKING', 'ALCOHOL', 'SUBSTANCES', 'FASTING', 'ANTIOXIDANTS', 'MOVEMENT', 'STILLNESS', 'JOY', 'SAFERPRODUCTS', 'CANCERSCREENING', 'INTIMACY', 'ENVIRONMENT', 'KITCHEN'];
     categories.forEach(cat => {
       const latest = getLatestLogForTypes(cat);
       if (!latest) return;
@@ -413,6 +795,11 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
       if (typeUpper.includes('SAFERPRODUCTS') && (val === 1 || typeof val === 'object')) count += 1;
       if (typeUpper.includes('CANCERSCREENING') && (val === 1 || typeof val === 'object')) count += 1;
       if (typeUpper.includes('INTIMACY') && (val?.happy === true)) count += 1;
+      if (typeUpper.includes('ENVIRONMENT') && (val?.score === 0 || val === 0 || val?.isExposure === false)) count += 1;
+      if (typeUpper.includes('KITCHEN')) {
+        const kScore = getKitchenScore();
+        if (kScore !== null && kScore === 0) count += 1;
+      }
     });
     return count;
   };
@@ -604,7 +991,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
 
   // Pie chart data
   const chartData = totalLogs === 0
-    ? [{ name: 'Empty', value: 1, color: '#f1f5f9' }] // slate-100
+    ? [{ name: 'Empty', value: 1, color: '#f1f5f9' }]
     : [
       ...(damageCount > 0 ? [{ name: 'Damage', value: damageCount, color: '#f43f5e' }] : []),
       ...(repairCount > 0 ? [{ name: 'Repair', value: repairCount, color: '#10b981' }] : []),
@@ -626,6 +1013,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
     if (activeScreen === 'Substances') return <SubstancesLogScreen onBack={() => setActiveScreen(null)} />;
     if (activeScreen === 'Intimacy') return <IntimacyCheckScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
     if (activeScreen === 'Environmental') return <EnvironmentalExposuresLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} onNavigateToShop={(query) => { setShopQuery(query); setActiveScreen('EnvironmentalShop'); }} />;
+    if (activeScreen === 'Kitchen') return <KitchenLogScreen onBack={() => setActiveScreen(null)} onNavigateToShop={(query) => { setShopQuery(query); setActiveScreen('EnvironmentalShop'); }} />;
     if (activeScreen === 'EnvironmentalShop') {
       if (shopQuery === 'SaferProducts') {
         return <ShopScreen type="SaferProducts" onBack={() => setActiveScreen('Environmental')} />;
@@ -677,6 +1065,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
         case 'Dental': return 'Dental Health';
         case 'Gastritis': return 'Gastritis';
         case 'Genetic': return 'Genetic Link';
+        case 'Kitchen': return 'Check Your Kitchen';
         default: return '';
       }
     };
@@ -684,7 +1073,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
     return (
       <div className={`sub-page-safe-wrapper min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col ${isShopScreen ? 'is-shop' : ''}`}>
         {!isShopScreen && (
-          <header className="sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 z-50 px-4 pt-[calc(env(safe-area-inset-top)+12px)] pb-3 w-full flex items-center gap-4 transition-colors duration-300">
+          <header className="sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 z-50 px-4 pt-[calc(env(safe-area-inset-top,24px)+12px)] pb-3 w-full flex items-center gap-4 transition-colors duration-300">
             <button
               onClick={() => setActiveScreen(null)}
               className="h-10 w-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all"
@@ -755,6 +1144,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
 
   const executeManualAction = (key: string, _params?: any) => {
     const lowerKey = key.toLowerCase();
+    if (lowerKey === 'kitchen' || lowerKey === 'check_kitchen') return setActiveScreen('Kitchen');
     if (lowerKey === 'environmental_exposures' || lowerKey === 'environment' || lowerKey === 'environmental') return setActiveScreen('Environmental');
     if (lowerKey === 'antioxidants') return setActiveScreen('Antioxidants');
     if (lowerKey === 'genetics' || lowerKey === 'genetic') return setActiveScreen('Genetic');
@@ -944,59 +1334,82 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
         </div>
       )}
       {!isCancerPatient && (
-        <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-white/80 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,0,0,0.015)] rounded-3xl p-4 sm:p-5 mb-5 transition-colors duration-300">
-          <div className="flex items-center justify-between mb-4 gap-1.5">
-            <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider uppercase shrink-0">Cellular Balance</span>
+        <div className="bg-gradient-to-b from-white via-slate-50/40 to-white dark:from-slate-900 dark:via-slate-900/90 dark:to-slate-900 backdrop-blur-xl border border-slate-200/70 dark:border-slate-800/80 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.04)] dark:shadow-none rounded-3xl p-4 sm:p-5 mb-4 transition-all duration-300">
+          {/* Header Row: Title with Glow Dot on Left, Timeframe Pills on RIGHT (Single Line Always) */}
+          <div className="flex items-center justify-between gap-2 mb-3.5 pb-2.5 border-b border-slate-100/80 dark:border-slate-800/60">
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-indigo-500 to-violet-600 text-white flex items-center justify-center shadow-xs shadow-indigo-500/20">
+                <Dna className="w-3.5 h-3.5 stroke-[2.5]" />
+              </div>
+              <span className="text-xs font-black tracking-wider text-slate-800 dark:text-slate-100 uppercase">
+                Cellular Balance
+              </span>
+            </div>
 
-            {/* History Selector Tabs */}
-            <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60 shrink-0">
+            {/* Timeframe Selector Pills (Moved strictly to Right Side of Header) */}
+            <div className="flex items-center bg-slate-100/90 dark:bg-slate-800/90 p-0.5 rounded-full border border-slate-200/50 dark:border-slate-700/50 shrink-0">
               <button
                 type="button"
                 onClick={() => setTimePeriod('today')}
-                className={`px-2 py-0.5 rounded-lg font-bold text-[9px] uppercase tracking-wider transition-all ${timePeriod === 'today'
-                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-2xs'
-                  : 'text-slate-500 dark:text-slate-400'
-                  }`}
+                className={`px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full font-bold text-[8.5px] sm:text-[9.5px] uppercase tracking-wider transition-all duration-200 ${
+                  timePeriod === 'today'
+                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-2xs font-black scale-[1.02]'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
               >
                 Today
               </button>
               <button
                 type="button"
                 onClick={() => setTimePeriod('weekly')}
-                className={`px-2 py-0.5 rounded-lg font-bold text-[9px] uppercase tracking-wider transition-all ${timePeriod === 'weekly'
-                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-2xs'
-                  : 'text-slate-500 dark:text-slate-400'
-                  }`}
+                className={`px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full font-bold text-[8.5px] sm:text-[9.5px] uppercase tracking-wider transition-all duration-200 ${
+                  timePeriod === 'weekly'
+                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-2xs font-black scale-[1.02]'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
               >
-                Weekly
+                7D
               </button>
               <button
                 type="button"
                 onClick={() => setTimePeriod('monthly')}
-                className={`px-2 py-0.5 rounded-lg font-bold text-[9px] uppercase tracking-wider transition-all ${timePeriod === 'monthly'
-                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-2xs'
-                  : 'text-slate-500 dark:text-slate-400'
-                  }`}
+                className={`px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full font-bold text-[8.5px] sm:text-[9.5px] uppercase tracking-wider transition-all duration-200 ${
+                  timePeriod === 'monthly'
+                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-2xs font-black scale-[1.02]'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
               >
-                Monthly
+                30D
+              </button>
+              <button
+                type="button"
+                onClick={() => setTimePeriod('yearly')}
+                className={`px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full font-bold text-[8.5px] sm:text-[9.5px] uppercase tracking-wider transition-all duration-200 ${
+                  timePeriod === 'yearly'
+                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-2xs font-black scale-[1.02]'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+              >
+                1Y
               </button>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 mb-5">
-            {/* Dynamic Half-Circle Chart */}
-            <div className="relative w-20 h-20 shrink-0">
+          {/* Integrated Overview Row with History Toggle Button on Right */}
+          <div className="flex items-center gap-3.5 py-0.5">
+            {/* Donut Gauge Ring */}
+            <div className="relative w-12 h-12 shrink-0 flex items-center justify-center p-0.5 rounded-full bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700/50 shadow-2xs">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={chartData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={26}
-                    outerRadius={36}
+                    innerRadius={15}
+                    outerRadius={22}
                     startAngle={180}
                     endAngle={-180}
-                    paddingAngle={4}
+                    paddingAngle={3}
                     dataKey="value"
                     stroke="none"
                   >
@@ -1007,53 +1420,134 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-lg font-black text-slate-800 dark:text-slate-100 leading-none">{totalLogs}</span>
-                <span className="text-[7.5px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Logs</span>
+                <span className="text-xs font-black text-slate-800 dark:text-slate-100 leading-none">{totalLogs}</span>
               </div>
             </div>
 
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5 flex-wrap mb-1">
-                <h3 className="text-base font-sans text-slate-800 dark:text-slate-100 font-bold leading-tight">
-                  {timePeriod === 'today' ? 'Daily Overview' : timePeriod === 'weekly' ? '7-Day Summary' : '30-Day History'}
-                </h3>
-                {timePeriod === 'today' && (
-                  <span className="text-[9px] font-extrabold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 rounded-full border border-amber-200/80 dark:border-amber-800/60 shrink-0 shadow-2xs flex items-center gap-1">
-                    <span>🔥</span>
-                    <span>{streak > 0 ? `${streak} DAY STREAK` : '0 DAY STREAK'}</span>
+            <div className="min-w-0 flex-1 space-y-2">
+              <div className="flex items-center justify-between gap-1.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100">
+                    {timePeriod === 'today' ? 'Daily Overview' : timePeriod === 'weekly' ? '7-Day Summary' : timePeriod === 'monthly' ? '30-Day History' : 'Yearly History'}
                   </span>
+                  {timePeriod === 'today' && streak > 0 && (
+                    <span className="text-[9.5px] font-extrabold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 border border-amber-200/60 dark:border-amber-800/60 px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0">
+                      <Flame className="w-3 h-3 text-amber-500 fill-amber-500/20" />
+                      <span>{streak}d streak</span>
+                    </span>
+                  )}
+                </div>
+
+                {/* History Toggle Button */}
+                {periodHabits.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllLogs(!showAllLogs)}
+                    className="text-[10px] sm:text-xs font-extrabold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 flex items-center gap-1 cursor-pointer shrink-0 bg-indigo-50/90 dark:bg-indigo-950/60 px-3 py-1 rounded-full border border-indigo-200/50 dark:border-indigo-800/50 transition-all shadow-2xs hover:scale-105 active:scale-95"
+                  >
+                    <span>{showAllLogs ? 'Hide History' : `Logs (${periodHabits.length})`}</span>
+                    {showAllLogs ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                  </button>
                 )}
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
-                {timePeriod === 'today'
-                  ? 'Log habits today to update your daily balance.'
-                  : timePeriod === 'weekly'
-                    ? 'Accumulated balance for the last 7 days.'
-                    : 'Accumulated balance for the last 30 days.'}
-              </p>
+
+              {/* Dual Balance Progress Bar with Tracking Graph Puck Icon */}
+              <div className="relative w-full h-2.5 sm:h-3 bg-slate-100 dark:bg-slate-800/80 rounded-full flex overflow-hidden shadow-inner my-1.5">
+                <div className="h-full bg-gradient-to-r from-rose-500 to-rose-400 transition-all duration-500 rounded-l-full" style={{ width: `${damagePct}%` }} />
+                <div className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all duration-500 rounded-r-full" style={{ width: `${repairPct}%` }} />
+
+                {/* Tracking Graph Puck Icon */}
+                <div
+                  className="absolute top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-5 h-5 bg-white dark:bg-slate-900 border-2 border-indigo-500 dark:border-indigo-400 rounded-full shadow-md flex items-center justify-center transition-all duration-500 z-10"
+                  style={{ left: `${damagePct}%` }}
+                >
+                  <Activity className="h-3 w-3 text-indigo-600 dark:text-indigo-400 animate-pulse" />
+                </div>
+              </div>
+
+              {/* Stat Badges for Damage & Repair */}
+              <div className="flex justify-between items-center text-[9.5px] font-black uppercase tracking-wider">
+                <div className="bg-rose-50/80 dark:bg-rose-950/40 border border-rose-100 dark:border-rose-900/40 px-2.5 py-0.5 rounded-xl flex items-center gap-1.5">
+                  <Skull className="w-3 h-3 text-rose-500" />
+                  <span className="text-rose-700 dark:text-rose-300">DAMAGE: <strong className="text-rose-600 dark:text-rose-400">{damageCount}</strong></span>
+                </div>
+                <div className="bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/40 px-2.5 py-0.5 rounded-xl flex items-center gap-1.5">
+                  <span className="text-emerald-700 dark:text-emerald-300">REPAIR: <strong className="text-emerald-600 dark:text-emerald-400">{repairCount}</strong></span>
+                  <ShieldCheck className="w-3 h-3 text-emerald-500" />
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Tug of war bar */}
-          <div className="relative w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full mb-3 flex overflow-hidden shadow-inner">
-            <div className="h-full bg-rose-500 transition-all duration-700 ease-out" style={{ width: `${damagePct}%` }}></div>
-            <div className="h-full bg-emerald-500 transition-all duration-700 ease-out" style={{ width: `${repairPct}%` }}></div>
-            {/* Center puck */}
-            <div
-              className="absolute top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-5 h-5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full shadow-md flex items-center justify-center transition-all duration-700 ease-out"
-              style={{ left: `${damagePct}%` }}
-            >
-              <Activity className="h-2.5 w-2.5 text-slate-400" />
+          {/* Borderless Documented Logs Drawer */}
+          {showAllLogs && (
+            <div className="mt-3.5 pt-3 border-t border-slate-100 dark:border-slate-800/80 space-y-2 animate-fadeIn">
+              <div className="flex items-center justify-between mb-2 px-0.5">
+                <span className="text-[10.5px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5 text-indigo-500" />
+                  <span>Documented History ({periodHabits.length})</span>
+                </span>
+
+                {/* Download Report Button Inside Documented History Header */}
+                <button
+                  type="button"
+                  onClick={downloadDocumentedReport}
+                  className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white border border-indigo-500 rounded-xl text-[10px] sm:text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs hover:shadow active:scale-95 cursor-pointer shrink-0"
+                  title="Download Documented Score Report"
+                >
+                  <DownloadCloud className="h-3.5 w-3.5 text-white" />
+                  <span>Download Report</span>
+                </button>
+              </div>
+
+              {periodHabits.length === 0 ? (
+                <div className="py-4 text-center text-[11px] text-slate-400 font-semibold">
+                  No logs documented for this timeframe.
+                </div>
+              ) : (
+                <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
+                  {periodHabits.map((log, idx) => {
+                    const formatted = formatHabitLogItem(log);
+                    const logDate = new Date(log.timestamp || (log as any).createdAt);
+                    const formattedDate = `${logDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} ${logDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+
+                    return (
+                      <div
+                        key={(log as any)._id || idx}
+                        className="p-2.5 rounded-2xl hover:bg-slate-50/90 dark:hover:bg-slate-800/50 flex items-center justify-between gap-3 transition-all border border-transparent hover:border-slate-100 dark:hover:border-slate-800"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className={`w-7 h-7 rounded-xl shrink-0 flex items-center justify-center text-xs ${
+                            formatted.isRepair
+                              ? 'bg-emerald-100/80 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400'
+                              : 'bg-rose-100/80 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400'
+                          }`}>
+                            {renderCategoryIcon(formatted.category, formatted.isRepair)}
+                          </div>
+                          <div className="min-w-0">
+                            <span className="font-bold text-slate-900 dark:text-slate-100 block truncate text-[11.5px] leading-tight">
+                              {formatted.title}
+                            </span>
+                            <span className="text-[9.5px] font-medium text-slate-400 dark:text-slate-500 block truncate leading-tight mt-0.5">
+                              {formatted.subtitle} • {formattedDate}
+                            </span>
+                          </div>
+                        </div>
+
+                        <span className={`px-2.5 py-0.5 rounded-full text-[8.5px] font-black uppercase tracking-wider shrink-0 ${
+                          formatted.isRepair
+                            ? 'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-800/50'
+                            : 'bg-rose-50 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 border border-rose-200/50 dark:border-rose-800/50'
+                        }`}>
+                          {formatted.isRepair ? '+ Repair' : '+ Damage'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          </div>
-          <div className="flex justify-between items-center text-[9px] font-bold uppercase tracking-widest px-1">
-            <span className="text-rose-500 flex items-center gap-1"><Skull className="h-2.5 w-2.5" /> Damage</span>
-            <span className="text-emerald-500 flex items-center gap-1">Repair <Leaf className="h-2.5 w-2.5" /></span>
-          </div>
-          <div className="flex justify-between items-center text-[8.5px] text-slate-400 mt-0.5 px-1">
-            <span>{damageCount} active</span>
-            <span>{repairCount} active</span>
-          </div>
+          )}
         </div>
       )}
 
@@ -1125,6 +1619,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
               <HabitItem icon={<Wine className="h-3.5 w-3.5 text-rose-600" />} label="Alcohol" onClick={() => handleOpenHabit('Alcohol')} score={getAlcoholScore()} />
               <HabitItem icon={<Pill className="h-3.5 w-3.5 text-amber-500" />} label="Substances" onClick={() => handleOpenHabit('Substances')} score={getSubstancesScore()} />
               <HabitItem icon={<Globe className="h-3.5 w-3.5 text-cyan-500" />} label="Environment" onClick={() => handleOpenHabit('Environmental')} score={getEnvironmentalScore()} />
+              <HabitItem icon={<Utensils className="h-3.5 w-3.5 text-amber-600" />} label="Check your kitchen" onClick={() => handleOpenHabit('Kitchen')} score={getKitchenScore()} />
               <HabitItem icon={<Scale className="h-3.5 w-3.5 text-rose-500" />} label="Obesity" onClick={() => handleOpenHabit('Obesity')} score={getObesityScore()} />
               <HabitItem icon={<Stethoscope className="h-3.5 w-3.5 text-slate-500" />} label="Dental health" onClick={() => handleOpenHabit('Dental')} score={getDentalScore()} />
               <HabitItem icon={<Flame className="h-3.5 w-3.5 text-orange-500" />} label="Gastritis" onClick={() => handleOpenHabit('Gastritis')} score={getGastritisScore()} />

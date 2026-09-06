@@ -26,7 +26,7 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
   // Doctors Management
   const [doctors, setDoctors] = useState<any[]>([]);
   const [showDocModal, setShowDocModal] = useState(false);
-  const [docForm, setDocForm] = useState({ _id: '', name: '', email: '', password: '', specialty: '', description: '', avatar: '', isActive: true, languagesKnown: [] as string[] });
+  const [docForm, setDocForm] = useState({ _id: '', name: '', email: '', password: '', specialty: '', description: '', avatar: '', isActive: true, languagesKnown: [] as string[], commissionType: 'PERCENTAGE' as 'PERCENTAGE' | 'FIXED', commissionValue: 10 });
   const [editingDocId, setEditingDocId] = useState<string | null>(null);
 
   // Vendor Management
@@ -252,7 +252,7 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
             </div>
             <button
               onClick={() => {
-                setDocForm({ _id: '', name: '', email: '', password: '', specialty: '', description: '', avatar: '', isActive: true, languagesKnown: [] });
+                setDocForm({ _id: '', name: '', email: '', password: '', specialty: '', description: '', avatar: '', isActive: true, languagesKnown: [], commissionType: 'PERCENTAGE', commissionValue: 10 });
                 setEditingDocId(null);
                 setShowDocModal(true);
               }}
@@ -268,6 +268,7 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
                 <tr>
                   <th className="px-6 py-4">Specialist</th>
                   <th className="px-6 py-4">Specialty</th>
+                  <th className="px-6 py-4">Commission</th>
                   <th className="px-6 py-4">Rating</th>
                   <th className="px-6 py-4">Status</th>
                   <th className="px-6 py-4 text-right">Actions</th>
@@ -286,6 +287,11 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
                       </div>
                     </td>
                     <td className="px-6 py-4 text-xs font-bold text-indigo-600">{doc.specialty}</td>
+                    <td className="px-6 py-4 text-xs font-semibold text-slate-700">
+                      <span className="bg-indigo-50 text-indigo-700 text-xs px-2.5 py-1 rounded-lg font-bold border border-indigo-100">
+                        {doc.commissionType === 'FIXED' ? `₹${doc.commissionValue ?? 10}` : `${doc.commissionValue ?? 10}%`}
+                      </span>
+                    </td>
                     <td className="px-6 py-4">
                       {doc.avgRating != null ? (
                         <div className="flex flex-col gap-0.5">
@@ -317,7 +323,7 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
                     <td className="px-6 py-4 text-right flex justify-end gap-2 mt-1">
                       <button
                         onClick={() => {
-                          setDocForm({ ...doc, password: '', languagesKnown: doc.languagesKnown || [] });
+                          setDocForm({ ...doc, password: '', languagesKnown: doc.languagesKnown || [], commissionType: doc.commissionType || 'PERCENTAGE', commissionValue: doc.commissionValue ?? 10 });
                           setEditingDocId(doc._id);
                           setShowDocModal(true);
                         }}
@@ -619,6 +625,31 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
               <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1">Profile Description</label>
                 <textarea required value={docForm.description} onChange={e => setDocForm({ ...docForm, description: e.target.value })} className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-400 font-semibold" rows={3}></textarea>
+              </div>
+              <div className="grid grid-cols-2 gap-4 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Commission Type</label>
+                  <select
+                    value={docForm.commissionType}
+                    onChange={e => setDocForm({ ...docForm, commissionType: e.target.value as any })}
+                    className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-bold bg-white focus:outline-none focus:border-indigo-400"
+                  >
+                    <option value="PERCENTAGE">Percentage (%)</option>
+                    <option value="FIXED font-bold">Fixed Amount (₹)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Commission Rate/Amt</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    required
+                    value={docForm.commissionValue}
+                    onChange={e => setDocForm({ ...docForm, commissionValue: Number(e.target.value) })}
+                    className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-bold bg-white focus:outline-none focus:border-indigo-400"
+                  />
+                </div>
               </div>
               <div className="flex justify-end gap-2 mt-6">
                 <button type="button" onClick={() => setShowDocModal(false)} className="px-4 py-2 bg-slate-100 rounded-xl text-sm font-bold text-slate-600">Cancel</button>

@@ -449,6 +449,31 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
     }
   };
 
+  // Handle back button (hardware back button or popstate) when product details or basket is open
+  useEffect(() => {
+    const handleBackButtonEvent = (e: Event) => {
+      if (showBasket) {
+        e.preventDefault();
+        if ('stopImmediatePropagation' in e) e.stopImmediatePropagation();
+        setShowBasket(false);
+        return;
+      }
+      if (selectedProduct) {
+        e.preventDefault();
+        if ('stopImmediatePropagation' in e) e.stopImmediatePropagation();
+        closeProductDetails();
+        return;
+      }
+    };
+
+    window.addEventListener('appBackButton', handleBackButtonEvent);
+    window.addEventListener('popstate', handleBackButtonEvent);
+    return () => {
+      window.removeEventListener('appBackButton', handleBackButtonEvent);
+      window.removeEventListener('popstate', handleBackButtonEvent);
+    };
+  }, [showBasket, selectedProduct]);
+
   if (showBasket) {
     return <BasketScreen onBack={() => setShowBasket(false)} basket={basket} setBasket={setBasket} />;
   }
@@ -470,7 +495,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
     return (
       <div 
         className="pb-24 px-4 max-w-5xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 animate-in fade-in slide-in-from-bottom duration-300"
-        style={{ paddingTop: 'max(1.25rem, env(safe-area-inset-top))' }}
+        style={{ paddingTop: 'calc(env(safe-area-inset-top, 24px) + 14px)' }}
       >
         {/* Back Button, Share & Basket Controls with Safe Notch Clearance */}
         <div className="flex items-center justify-between mb-6 gap-2 flex-wrap">
@@ -851,7 +876,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
       {/* Header Panel */}
       <div 
         className="flex items-center justify-between mb-6 sticky top-0 z-50 bg-slate-50 dark:bg-slate-950 pb-3 -mx-4 px-4 shadow-xs gap-2 border-b border-slate-200/60 dark:border-slate-800/60"
-        style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
+        style={{ paddingTop: 'calc(env(safe-area-inset-top, 24px) + 12px)' }}
       >
         <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
           <button 

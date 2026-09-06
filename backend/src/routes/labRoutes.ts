@@ -26,7 +26,8 @@ import {
   getPortalStaff,
   addPortalStaff,
   getPortalBookings,
-  verifyPayment
+  verifyPayment,
+  downloadLabBookingInvoice
 } from '../controllers/labController';
 
 const uploadDir = path.join(process.cwd(), 'uploads');
@@ -70,6 +71,9 @@ router.get('/booking/:bookingId/timeline', authenticateToken, getBookingTimeline
 
 // Get report for a specific booking
 router.get('/booking/:bookingId/report', authenticateToken, getBookingReport);
+
+// Download invoice PDF for booking
+router.get('/booking/:bookingId/invoice', downloadLabBookingInvoice);
 
 
 // --- LAB PORTAL FACING ---

@@ -11,9 +11,12 @@ import { AdminUser } from '../models/AdminUser';
 import jwt from 'jsonwebtoken';
 import { User } from '../models/User';
 import { EmailService } from '../services/emailService';
+import { InvoiceService } from '../services/invoiceService';
 import Razorpay from 'razorpay';
 import { PaymentGatewayConfig } from '../models/PaymentGatewayConfig';
 import crypto from 'crypto';
+import path from 'path';
+import fs from 'fs';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_12345!';
 
@@ -497,6 +500,34 @@ export const assignLabBookingDoctor = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error updating lab booking:', error);
     res.status(500).json({ error: 'Failed to update lab booking' });
+  }
+};
+
+export const downloadLabBookingInvoice = async (req: Request, res: Response) => {
+  try {
+    const { bookingId } = req.params;
+    const booking = await LabBooking.findById(bookingId)
+      .populate('userId', 'name email mobileNumber')
+      .populate('laboratoryId')
+      .populate('labTestId');
+      
+    if (!booking) {
+      return res.status(404).json({ error: 'Lab booking not found' });
+    }
+
+    const relPath = await InvoiceService.generateLabBookingInvoicePDF(booking);
+    const fullPath = path.join(__dirname, '../../', relPath);
+
+    if (!fs.existsSync(fullPath)) {
+      return res.status(404).json({ error: 'Invoice file could not be found.' });
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="Lab-Invoice-${booking._id}.pdf"`);
+    return res.sendFile(fullPath);
+  } catch (error) {
+    console.error('Error downloading lab invoice PDF:', error);
+    return res.status(500).json({ error: 'Failed to generate invoice PDF' });
   }
 };
 

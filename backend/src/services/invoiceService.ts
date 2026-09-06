@@ -103,6 +103,10 @@ export class InvoiceService {
         doc.fillColor('#1E293B').fontSize(11).font('Helvetica-Bold').text('Total Paid:', 320, calcTop + 70);
         doc.fillColor('#2563EB').fontSize(13).text(`${order.currency === 'USD' ? '$' : 'Rs.'}${order.totalAmount.toFixed(2)}`, 450, calcTop + 69, { width: 90, align: 'right' });
 
+        if (order.platformCommission !== undefined && order.vendorEarnings !== undefined && order.platformCommission > 0) {
+          doc.fillColor('#64748B').fontSize(8).font('Helvetica-Oblique').text(`Platform Commission (Deducted): ${order.currency === 'USD' ? '$' : 'Rs.'}${order.platformCommission.toFixed(2)} | Net Vendor Payout: ${order.currency === 'USD' ? '$' : 'Rs.'}${order.vendorEarnings.toFixed(2)}`, 50, calcTop + 95, { width: 490, align: 'right' });
+        }
+
         // Footer Notice
         doc.fillColor('#94A3B8').fontSize(8).font('Helvetica-Oblique').text('This is a computer generated document and does not require a physical signature.', 50, 720, { align: 'center' });
 
@@ -200,6 +204,116 @@ export class InvoiceService {
 
         doc.fillColor('#1E293B').fontSize(11).font('Helvetica-Bold').text('Total Amount:', 320, calcTop + 45);
         doc.fillColor('#2563EB').fontSize(13).text(`Rs.${(appointment.consultationFee || 0).toFixed(2)}`, 450, calcTop + 44, { width: 90, align: 'right' });
+
+        if (appointment.platformCommission !== undefined && appointment.doctorEarnings !== undefined && appointment.platformCommission > 0) {
+          doc.fillColor('#64748B').fontSize(8).font('Helvetica-Oblique').text(`Platform Commission (Deducted): Rs.${appointment.platformCommission.toFixed(2)} | Net Doctor Payout: Rs.${appointment.doctorEarnings.toFixed(2)}`, 50, calcTop + 70, { width: 490, align: 'right' });
+        }
+
+        // Footer Notice
+        doc.fillColor('#94A3B8').fontSize(8).font('Helvetica-Oblique').text('This is a computer generated document and does not require a physical signature.', 50, 720, { align: 'center' });
+
+        doc.end();
+
+        writeStream.on('finish', () => {
+          resolve(`/uploads/invoices/${fileName}`);
+        });
+
+        writeStream.on('error', (err) => {
+          reject(err);
+        });
+
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+
+  /**
+   * Generates a PDF invoice for a Lab test booking and returns the relative path to it
+   */
+  public static async generateLabBookingInvoicePDF(booking: any): Promise<string> {
+    const config = await PaymentGatewayConfig.findOne();
+    const appTagline = config?.appTagline || 'Preventive Lifestyle App';
+    const appName = config?.appName || 'Mito_Reboot';
+
+    return new Promise((resolve, reject) => {
+      try {
+        const invoicesDir = path.join(__dirname, '../../uploads/invoices');
+        if (!fs.existsSync(invoicesDir)) {
+          fs.mkdirSync(invoicesDir, { recursive: true });
+        }
+
+        const fileName = `Lab-Booking-Invoice-${booking._id}.pdf`;
+        const filePath = path.join(invoicesDir, fileName);
+
+        const doc = new PDFDocument({ margin: 50 });
+        const writeStream = fs.createWriteStream(filePath);
+        doc.pipe(writeStream);
+
+        // Header Branding
+        doc.fillColor('#2563EB').fontSize(24).font('Helvetica-Bold').text(appName, 50, 50);
+        doc.fillColor('#64748B').fontSize(10).font('Helvetica-Bold').text(appTagline, 50, 78);
+
+        doc.fillColor('#1E293B').fontSize(20).font('Helvetica-Bold').text('LAB INVOICE', 350, 50, { width: 200, align: 'right' });
+        doc.fillColor('#64748B').fontSize(8).font('Helvetica').text(`Booking ID: ${booking._id}`, 300, 72, { width: 250, align: 'right' });
+        doc.text(`Date: ${new Date(booking.preferredDate || booking.createdAt).toLocaleDateString()}`, 300, 92, { width: 250, align: 'right' });
+
+        // Divider
+        doc.moveTo(50, 115).lineTo(550, 115).strokeColor('#E2E8F0').lineWidth(1).stroke();
+
+        // Customer Details
+        doc.fillColor('#1E293B').fontSize(11).font('Helvetica-Bold').text('Patient Details:', 50, 130);
+        doc.fillColor('#334155').fontSize(9).font('Helvetica');
+        doc.text(`Name: ${booking.userId?.name || 'Patient'}`, 50, 148);
+        doc.text(`Email: ${booking.userId?.email || ''}`, 50, 160);
+        doc.text(`Phone: ${booking.userId?.mobileNumber || ''}`, 50, 172);
+        if (booking.collectionAddress) {
+          doc.text(`Address: ${booking.collectionAddress}`, 50, 184);
+        }
+
+        // Lab Details
+        doc.fillColor('#1E293B').fontSize(11).font('Helvetica-Bold').text('Partner Laboratory:', 320, 130);
+        doc.fillColor('#334155').fontSize(9).font('Helvetica');
+        doc.text(`${booking.laboratoryId?.name || 'Diagnostic Center'}`, 320, 148);
+        doc.text(`Address: ${booking.laboratoryId?.address || ''}`, 320, 160);
+        doc.text(`NABL Certified: ${booking.laboratoryId?.isNablCertified ? 'Yes' : 'No'}`, 320, 172);
+
+        // Table Header
+        const tableTop = 220;
+        doc.rect(50, tableTop, 500, 20).fill('#F8FAFC');
+        doc.fillColor('#475569').fontSize(9).font('Helvetica-Bold').text('Diagnostic Test Description', 60, tableTop + 5);
+        doc.text('Type', 300, tableTop + 5, { width: 60, align: 'center' });
+        doc.text('Slot Time', 360, tableTop + 5, { width: 90, align: 'right' });
+        doc.text('Total', 450, tableTop + 5, { width: 90, align: 'right' });
+
+        let currentTop = tableTop + 20;
+
+        // Render Test Row
+        const testName = booking.labTestId?.testName || 'Diagnostic Panel';
+        doc.fillColor('#1E293B').fontSize(9).font('Helvetica').text(testName, 60, currentTop + 6);
+        doc.text(booking.collectionType === 'HOME' ? 'Home Sample' : 'Lab Visit', 300, currentTop + 6, { width: 60, align: 'center' });
+        doc.text(booking.preferredTime || 'Morning', 360, currentTop + 6, { width: 90, align: 'right' });
+        doc.text(`Rs.${(booking.testPrice || 0).toFixed(2)}`, 450, currentTop + 6, { width: 90, align: 'right' });
+
+        currentTop += 20;
+        doc.moveTo(50, currentTop).lineTo(550, currentTop).strokeColor('#F1F5F9').lineWidth(1).stroke();
+
+        // Totals Breakdown
+        const calcTop = currentTop + 15;
+        doc.fillColor('#64748B').fontSize(9).text('Test Subtotal:', 320, calcTop);
+        doc.fillColor('#1E293B').text(`Rs.${(booking.testPrice || 0).toFixed(2)}`, 450, calcTop, { width: 90, align: 'right' });
+
+        doc.text('Home Collection Fee:', 320, calcTop + 15);
+        doc.text(`Rs.${(booking.homeCollectionFee || 0).toFixed(2)}`, 450, calcTop + 15, { width: 90, align: 'right' });
+
+        doc.moveTo(320, calcTop + 35).lineTo(540, calcTop + 35).strokeColor('#E2E8F0').stroke();
+
+        doc.fillColor('#1E293B').fontSize(11).font('Helvetica-Bold').text('Total Paid:', 320, calcTop + 45);
+        doc.fillColor('#2563EB').fontSize(13).text(`Rs.${(booking.totalAmount || 0).toFixed(2)}`, 450, calcTop + 44, { width: 90, align: 'right' });
+
+        if (booking.platformShare !== undefined && booking.labShare !== undefined && booking.platformShare > 0) {
+          doc.fillColor('#64748B').fontSize(8).font('Helvetica-Oblique').text(`Platform Commission (Deducted): Rs.${booking.platformShare.toFixed(2)} | Net Lab Payout: Rs.${booking.labShare.toFixed(2)}`, 50, calcTop + 70, { width: 490, align: 'right' });
+        }
 
         // Footer Notice
         doc.fillColor('#94A3B8').fontSize(8).font('Helvetica-Oblique').text('This is a computer generated document and does not require a physical signature.', 50, 720, { align: 'center' });

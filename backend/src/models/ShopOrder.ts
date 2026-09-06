@@ -47,6 +47,8 @@ export interface IShopOrder extends Document {
     trackingUrl?: string;
   };
   invoiceUrl?: string;
+  platformCommission?: number;
+  vendorEarnings?: number;
   deliveryDate?: Date;
   orderTimeline?: {
     status: string;
@@ -105,6 +107,8 @@ const ShopOrderSchema: Schema = new Schema({
     trackingUrl: { type: String, default: '' }
   },
   invoiceUrl: { type: String, default: '' },
+  platformCommission: { type: Number, default: 0 },
+  vendorEarnings: { type: Number, default: 0 },
   deliveryDate: { type: Date },
   orderTimeline: [{
     status: { type: String, required: true },

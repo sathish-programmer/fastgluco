@@ -216,45 +216,46 @@ export const TodaysFocusCard: React.FC<TodaysFocusCardProps> = ({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`w-full rounded-3xl p-5 bg-gradient-to-r ${action.gradient} bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm relative overflow-hidden my-4`}
+      className={`w-full rounded-2xl sm:rounded-3xl p-3 sm:p-3.5 bg-gradient-to-r ${action.gradient} bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-xs relative overflow-hidden mb-3.5`}
     >
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center space-x-2">
-          <div className="p-2 bg-primary/10 rounded-2xl text-primary">
-            <Sparkles className="h-4 w-4" />
-          </div>
-          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center space-x-1.5">
+          <Sparkles className="h-3.5 w-3.5 text-indigo-500 animate-pulse" />
+          <span className="text-[9.5px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
             Today’s Focus
           </span>
         </div>
-        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${action.badgeBg}`}>
+        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${action.badgeBg}`}>
           {action.category}
         </span>
       </div>
 
-      <div className="flex items-start gap-4">
-        <div className="p-3 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-xs shrink-0 mt-0.5">
-          {action.icon}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div className="p-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-2xs shrink-0 flex items-center justify-center">
+            {action.icon}
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-slate-100 tracking-tight leading-tight truncate">
+              {action.title}
+            </h3>
+            <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-medium leading-tight truncate mt-0.5">
+              <span className="font-semibold text-slate-600 dark:text-slate-300">Why: </span>
+              {action.reason}
+            </p>
+          </div>
         </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100 tracking-tight leading-snug">
-            {action.title}
-          </h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed mt-1">
-            <span className="font-semibold text-slate-700 dark:text-slate-300">Why recommended: </span>
-            {action.reason}
-          </p>
 
-          <button
-            onClick={() => onTakeAction(action.actionKey)}
-            className="mt-4 px-5 py-2.5 bg-primary hover:bg-primary/95 text-white text-xs font-extrabold rounded-2xl shadow-sm transition-all flex items-center space-x-2 transform active:scale-[0.98]"
-          >
-            <span>Take Action</span>
-            <ArrowRight className="h-3.5 w-3.5 stroke-[3px]" />
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => onTakeAction(action.actionKey)}
+          className="px-3 py-1.5 sm:px-3.5 sm:py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] sm:text-xs font-extrabold rounded-xl shadow-xs transition-all flex items-center gap-1 active:scale-95 shrink-0 cursor-pointer"
+        >
+          <span>Take Action</span>
+          <ArrowRight className="h-3 w-3 stroke-[2.5px]" />
+        </button>
       </div>
     </motion.div>
   );

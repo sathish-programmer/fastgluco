@@ -13,7 +13,7 @@ export class VendorController {
 
   public static async adminAddVendor(req: Request, res: Response) {
     try {
-      const { name, email, password, phone, address, businessName, licenseNumber, taxId, businessAddress, assignedProducts } = req.body;
+      const { name, email, password, phone, address, businessName, licenseNumber, taxId, businessAddress, assignedProducts, commissionType, commissionValue } = req.body;
       if (!name || !email || !password) {
         return res.status(400).json({ message: 'Name, email and password are required.' });
       }
@@ -35,6 +35,8 @@ export class VendorController {
         taxId: taxId || '',
         businessAddress: businessAddress || '',
         assignedProducts: assignedProducts || [],
+        commissionType: commissionType || 'PERCENTAGE',
+        commissionValue: commissionValue !== undefined ? Number(commissionValue) : 10,
         isActive: true
       });
       await vendor.save();
@@ -47,7 +49,7 @@ export class VendorController {
   public static async adminEditVendor(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const { name, phone, address, businessName, licenseNumber, taxId, businessAddress, assignedProducts, isActive } = req.body;
+      const { name, phone, address, businessName, licenseNumber, taxId, businessAddress, assignedProducts, isActive, commissionType, commissionValue } = req.body;
       const vendor = await Vendor.findById(id);
       if (!vendor) return res.status(404).json({ message: 'Vendor not found.' });
 
@@ -59,6 +61,8 @@ export class VendorController {
       if (taxId !== undefined) vendor.taxId = taxId;
       if (businessAddress !== undefined) vendor.businessAddress = businessAddress;
       if (assignedProducts !== undefined) vendor.assignedProducts = assignedProducts;
+      if (commissionType !== undefined) vendor.commissionType = commissionType;
+      if (commissionValue !== undefined) vendor.commissionValue = Number(commissionValue);
       if (isActive !== undefined) {
         vendor.isActive = isActive;
         if (!isActive) {
@@ -94,6 +98,20 @@ export class VendorController {
       order.vendorId = vendorId || undefined;
       order.deliveryStatus = vendorId ? 'assigned' : 'pending';
       
+      if (vendorId) {
+        const vendor = await Vendor.findById(vendorId);
+        if (vendor) {
+          let platformComm = 0;
+          if (vendor.commissionType === 'FIXED') {
+            platformComm = vendor.commissionValue ?? 10;
+          } else {
+            platformComm = (order.totalAmount * (vendor.commissionValue ?? 10)) / 100;
+          }
+          order.platformCommission = Math.min(order.totalAmount, platformComm);
+          order.vendorEarnings = Math.max(0, order.totalAmount - order.platformCommission);
+        }
+      }
+
       // Update order timeline
       const statusLabel = vendorId ? 'assigned' : 'pending';
       order.orderTimeline = order.orderTimeline || [];

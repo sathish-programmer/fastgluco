@@ -472,6 +472,14 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
                       >
                         <HelpCircle className="h-3.5 w-3.5 text-slate-500" /> Need Help?
                       </button>
+                      <a
+                        href={`${apiUrl.replace(/\/api$/, '')}/api/diagnostics/booking/${booking._id}/invoice`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="py-2 px-4 border border-indigo-200 dark:border-indigo-800/40 bg-indigo-50/60 dark:bg-indigo-950/30 hover:bg-indigo-100 rounded-xl text-xs font-bold text-indigo-700 dark:text-indigo-300 flex items-center gap-1.5 transition-all shadow-sm"
+                      >
+                        <FileText className="h-3.5 w-3.5 text-indigo-500" /> Invoice
+                      </a>
                     </div>
                     <div className="flex items-center gap-2">
                       {reportReady ? (

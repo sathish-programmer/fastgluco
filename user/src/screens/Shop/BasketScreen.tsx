@@ -315,7 +315,7 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
   return (
     <div 
       className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-slate-50 min-h-screen font-sans antialiased text-slate-800"
-      style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
+      style={{ paddingTop: 'calc(env(safe-area-inset-top, 24px) + 14px)' }}
     >
       <div className="flex items-center gap-4 mb-8">
         <button 
