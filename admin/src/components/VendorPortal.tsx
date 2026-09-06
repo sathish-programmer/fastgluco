@@ -218,8 +218,13 @@ export const VendorPortal: React.FC<VendorPortalProps> = ({ apiUrl, token, onLog
                   </div>
 
                   <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-2">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Revenue Earned</span>
-                    <span className="text-2xl font-black text-indigo-700">{currencySymbol}{dashboardData.stats.revenue.toFixed(2)}</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Net Revenue Earned</span>
+                    <span className="text-2xl font-black text-indigo-700">{currencySymbol}{(dashboardData.stats.netEarnings ?? dashboardData.stats.revenue).toFixed(2)}</span>
+                    {dashboardData.stats.totalCommission !== undefined && dashboardData.stats.totalCommission > 0 && (
+                      <span className="text-[9px] font-semibold text-slate-400 block">
+                        Gross: {currencySymbol}{(dashboardData.stats.grossSales ?? dashboardData.stats.revenue).toFixed(2)} (Comm: {currencySymbol}{dashboardData.stats.totalCommission.toFixed(2)})
+                      </span>
+                    )}
                   </div>
 
                 </div>

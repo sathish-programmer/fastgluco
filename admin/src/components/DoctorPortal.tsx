@@ -683,8 +683,15 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
                   <div className="bg-white border border-slate-150 rounded-3xl p-5 shadow-soft hover:shadow-md transition-all flex items-center gap-4">
                     <div className="p-3.5 bg-gradient-to-br from-emerald-500 to-emerald-650 text-white rounded-2xl shadow-md shadow-emerald-500/20"><CheckCircle className="h-5 w-5" /></div>
                     <div>
-                      <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block">Total Revenue</span>
-                      <h3 className="text-xl font-black text-slate-800 mt-1">Rs. {Number(dbStats.totalRevenue || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</h3>
+                      <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block">Net Doctor Earnings</span>
+                      <h3 className="text-xl font-black text-emerald-700 mt-1">
+                        Rs. {Number(dbStats.netDoctorEarnings !== undefined ? dbStats.netDoctorEarnings : dbStats.totalRevenue || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                      </h3>
+                      {dbStats.totalCommission > 0 && (
+                        <span className="text-[9px] font-semibold text-slate-400 block mt-0.5">
+                          Gross: ₹{Number(dbStats.totalRevenue || 0).toLocaleString('en-IN')} (Comm: ₹{Number(dbStats.totalCommission).toLocaleString('en-IN')})
+                        </span>
+                      )}
                     </div>
                   </div>
 

@@ -422,7 +422,8 @@ export class DoctorController {
       const onlineAppts = appointments.filter(a => a.type === 'online');
       const offlineAppts = appointments.filter(a => a.type === 'offline');
       
-      // Revenue is counted for completed appointments (or paid online ones)
+      const validAppts = appointments.filter(a => (a.type === 'online' && a.paymentStatus === 'paid' && a.status !== 'cancelled') || (a.type === 'offline' && a.status === 'completed'));
+
       const onlineRevenue = onlineAppts
         .filter(a => a.paymentStatus === 'paid' && a.status !== 'cancelled')
         .reduce((sum, a) => sum + (a.consultationFee || 0), 0);
@@ -431,7 +432,9 @@ export class DoctorController {
         .filter(a => a.status === 'completed')
         .reduce((sum, a) => sum + (a.consultationFee || 0), 0);
         
-      const totalRevenue = onlineRevenue + offlineRevenue;
+      const grossRevenue = onlineRevenue + offlineRevenue;
+      const totalCommission = validAppts.reduce((sum, a) => sum + (a.platformCommission || 0), 0);
+      const netDoctorEarnings = validAppts.reduce((sum, a) => sum + (a.doctorEarnings !== undefined ? a.doctorEarnings : ((a.consultationFee || 0) - (a.platformCommission || 0))), 0);
       const totalAppointments = appointments.length;
       
       const upcoming = appointments.filter(a => a.status === 'confirmed').length;
@@ -441,7 +444,10 @@ export class DoctorController {
       res.json({
         onlineRevenue,
         offlineRevenue,
-        totalRevenue,
+        grossRevenue,
+        totalRevenue: grossRevenue,
+        totalCommission,
+        netDoctorEarnings,
         totalAppointments,
         upcomingAppointments: upcoming,
         completedAppointments: completed,

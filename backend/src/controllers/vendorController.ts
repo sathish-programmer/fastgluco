@@ -229,15 +229,23 @@ export class VendorController {
       const vendorId = (req as any).user.id;
       const orders = await ShopOrder.find({ vendorId });
 
+      const deliveredOrders = orders.filter(o => o.deliveryStatus === 'delivered');
+      const grossSales = deliveredOrders.reduce((acc, curr) => acc + curr.totalAmount, 0);
+      const totalCommission = deliveredOrders.reduce((acc, curr) => acc + (curr.platformCommission || 0), 0);
+      const netEarnings = deliveredOrders.reduce((acc, curr) => acc + (curr.vendorEarnings !== undefined ? curr.vendorEarnings : (curr.totalAmount - (curr.platformCommission || 0))), 0);
+
       const stats = {
         totalOrders: orders.length,
         pending: orders.filter(o => o.deliveryStatus === 'assigned').length, // Assigned is pending vendor action
         processing: orders.filter(o => o.deliveryStatus === 'accepted').length,
         packed: orders.filter(o => o.deliveryStatus === 'packed').length,
         shipped: orders.filter(o => o.deliveryStatus === 'shipped').length,
-        delivered: orders.filter(o => o.deliveryStatus === 'delivered').length,
+        delivered: deliveredOrders.length,
         cancelled: orders.filter(o => o.deliveryStatus === 'cancelled').length,
-        revenue: orders.filter(o => o.deliveryStatus === 'delivered').reduce((acc, curr) => acc + curr.totalAmount, 0)
+        grossSales,
+        totalCommission,
+        netEarnings,
+        revenue: netEarnings
       };
 
       const recentOrders = await ShopOrder.find({ vendorId })

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { useAuth } from '../context/AuthContext';
 import { HabitsService } from '../services/habitsService';
 import type { HabitLog } from '../services/habitsService';
@@ -25,21 +24,22 @@ import {
   Stethoscope,
   Flame,
   Dna,
+  ShieldPlus,
   Globe,
   BrainCircuit,
   ShoppingBag,
   ArrowLeft,
   Bot,
   DownloadCloud,
-  Droplets,
-  Wind,
-  Apple,
-  Heart,
+  Utensils,
   Sparkles,
+  Filter,
   ChevronDown,
-  ChevronUp,
-  Utensils
+  Loader2
 } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 import { DailyLoggingChatbotModal } from '../components/DailyLoggingChatbotModal';
 import { AiDailyCheckinFloatingNudge } from '../components/AiDailyCheckinFloatingNudge';
 import { AiBannerQuickNudge } from '../components/AiBannerQuickNudge';
@@ -130,7 +130,6 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
   const [showAiNudgeModal, setShowAiNudgeModal] = useState<boolean>(false);
   const [showFastingDisclaimer, setShowFastingDisclaimer] = useState<boolean>(false);
   const [fastingStep, setFastingStep] = useState<number>(1);
-  const [showAllLogs, setShowAllLogs] = useState<boolean>(false);
 
   const [hasCGMData, setHasCGMData] = useState<boolean>(() => {
     return localStorage.getItem('mito_has_cgm_reports') === 'true';
@@ -326,6 +325,8 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
 
   const [timePeriod, setTimePeriod] = useState<'today' | 'weekly' | 'monthly' | 'yearly'>('today');
   const [forcesView, setForcesView] = useState<'all' | 'damage' | 'repair'>('all');
+  const [showPeriodFilter, setShowPeriodFilter] = useState(false);
+  const [isDownloadingReport, setIsDownloadingReport] = useState(false);
 
   const getFilteredPeriodHabits = (allHabits: HabitLog[], period: 'today' | 'weekly' | 'monthly' | 'yearly') => {
     const now = new Date();
@@ -448,239 +449,259 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
     return { title, subtitle, isRepair, category };
   };
 
-  const renderCategoryIcon = (category: string, isRepair: boolean) => {
-    switch (category) {
-      case 'water':
-        return <Droplets className="w-4 h-4" />;
-      case 'air':
-        return <Wind className="w-4 h-4" />;
-      case 'pesticides':
-        return <Apple className="w-4 h-4" />;
-      case 'microplastics':
-        return <ShieldCheck className="w-4 h-4" />;
-      case 'environment':
-        return <Globe className="w-4 h-4" />;
-      case 'stress':
-        return <Heart className="w-4 h-4" />;
-      case 'sleep':
-        return <Moon className="w-4 h-4" />;
-      case 'fasting':
-        return <Timer className="w-4 h-4" />;
-      case 'movement':
-        return <Activity className="w-4 h-4" />;
-      case 'stillness':
-        return <BrainCircuit className="w-4 h-4" />;
-      case 'joy':
-        return <Sparkles className="w-4 h-4" />;
-      case 'genetic':
-        return <Dna className="w-4 h-4" />;
-      case 'smoking':
-        return <Cigarette className="w-4 h-4" />;
-      case 'alcohol':
-        return <Wine className="w-4 h-4" />;
-      default:
-        return isRepair ? <Leaf className="w-4 h-4" /> : <Skull className="w-4 h-4" />;
-    }
-  };
-
-  const downloadDocumentedReport = () => {
+  const downloadDocumentedReport = async () => {
     if (periodHabits.length === 0) {
-      alert('No documented logs available for the selected timeframe to print/download.');
+      alert('No documented logs available for the selected timeframe to download.');
       return;
     }
 
-    const periodTitle = timePeriod === 'today' ? 'Daily Overview' : timePeriod === 'weekly' ? '7-Day Weekly Summary' : timePeriod === 'monthly' ? '30-Day Monthly History' : '365-Day Yearly History';
-    const reportDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-    const userName = user?.name || user?.email || 'MitoReboot Patient';
+    setIsDownloadingReport(true);
 
-    const logRowsHtml = periodHabits.map((log, idx) => {
-      const formatted = formatHabitLogItem(log);
-      const d = new Date(log.timestamp || (log as any).createdAt);
-      const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-      const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      
-      return `
-        <tr style="border-bottom: 1px solid #f1f5f9; ${idx % 2 === 0 ? 'background-color: #fafafa;' : ''}">
-          <td style="padding: 10px 14px; font-size: 11px; color: #475569; font-weight: 600;">${dateStr}<br/><span style="font-size: 10px; color: #94a3b8;">${timeStr}</span></td>
-          <td style="padding: 10px 14px; font-size: 12px; font-weight: 700; color: #0f172a;">${formatted.title}</td>
-          <td style="padding: 10px 14px;">
-            <span style="display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 800; text-transform: uppercase; ${
-              formatted.isRepair 
-                ? 'background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;' 
-                : 'background: #fff1f2; color: #be123c; border: 1px solid #fecdd3;'
-            }">
-              ${formatted.isRepair ? '+ Repair Score' : '+ Damage Score'}
-            </span>
-          </td>
-          <td style="padding: 10px 14px; font-size: 11px; color: #334155; font-weight: 600;">${formatted.subtitle || 'Logged Check-in'}</td>
-        </tr>
-      `;
-    }).join('');
-
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>MitoReboot Cellular Balance Report — ${periodTitle}</title>
-        <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet">
-        <style>
-          @page { size: A4; margin: 12mm; }
-          body { font-family: 'Sora', sans-serif; color: #0f172a; margin: 0; padding: 20px; background: #ffffff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .header-box { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 14px; margin-bottom: 20px; }
-          .logo { font-size: 24px; font-weight: 800; color: #0f172a; letter-spacing: -0.5px; }
-          .logo span { color: #2563eb; }
-          .report-tag { background: #eff6ff; color: #1d4ed8; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 800; border: 1px solid #bfdbfe; }
-          .grid-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
-          .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 12px; text-align: center; }
-          .card-val { font-size: 20px; font-weight: 800; margin-top: 2px; }
-          .card-lbl { font-size: 9.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
-          .progress-container { background: #f8fafc; border-radius: 16px; padding: 14px; margin-bottom: 20px; border: 1px solid #e2e8f0; }
-          .progress-bar-bg { height: 12px; background: #e2e8f0; border-radius: 10px; overflow: hidden; display: flex; margin: 8px 0; }
-          .progress-damage { height: 100%; background: #f43f5e; }
-          .progress-repair { height: 100%; background: #10b981; }
-          table { width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; }
-          th { background: #f1f5f9; padding: 10px 12px; text-align: left; font-size: 10.5px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; }
-          .footer { margin-top: 24px; padding-top: 14px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 9.5px; color: #94a3b8; font-weight: 600; }
-        </style>
-      </head>
-      <body>
-        <div class="header-box">
-          <div>
-            <div class="logo">Mito<span>Reboot</span></div>
-            <div style="font-size: 11px; color: #64748b; font-weight: 600; margin-top: 2px;">Cellular Health & Lifestyle Balance Audit Report</div>
-          </div>
-          <div style="text-align: right;">
-            <div class="report-tag">${periodTitle}</div>
-            <div style="font-size: 10px; color: #64748b; margin-top: 6px; font-weight: 600;">Patient: <strong>${userName}</strong></div>
-            <div style="font-size: 10px; color: #94a3b8; font-weight: 600;">Generated: ${reportDate}</div>
-          </div>
-        </div>
-
-        <div class="grid-summary">
-          <div class="card">
-            <div class="card-lbl">Total Documented Logs</div>
-            <div class="card-val" style="color: #0f172a;">${periodHabits.length}</div>
-          </div>
-          <div class="card" style="background: #fff1f2; border-color: #fecdd3;">
-            <div class="card-lbl" style="color: #9f1239;">Active Damage Score</div>
-            <div class="card-val" style="color: #e11d48;">${damageCount}</div>
-          </div>
-          <div class="card" style="background: #ecfdf5; border-color: #a7f3d0;">
-            <div class="card-lbl" style="color: #065f46;">Active Repair Score</div>
-            <div class="card-val" style="color: #059669;">${repairCount}</div>
-          </div>
-          <div class="card" style="background: #eff6ff; border-color: #bfdbfe;">
-            <div class="card-lbl" style="color: #1e40af;">Cellular Repair Ratio</div>
-            <div class="card-val" style="color: #2563eb;">${repairPct.toFixed(0)}%</div>
-          </div>
-        </div>
-
-        <div class="progress-container">
-          <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 800;">
-            <span style="color: #e11d48;">💀 Damage Balance (${damagePct.toFixed(1)}%)</span>
-            <span style="color: #059669;">🌿 Repair Balance (${repairPct.toFixed(1)}%)</span>
-          </div>
-          <div class="progress-bar-bg">
-            <div class="progress-damage" style="width: ${damagePct}%;"></div>
-            <div class="progress-repair" style="width: ${repairPct}%;"></div>
-          </div>
-          <div style="font-size: 10px; color: #64748b; text-align: center; font-weight: 600; margin-top: 4px;">
-            ${repairPct >= 50 ? '✅ Cellular repair signals are active and dominating damage factors.' : '⚠️ Elevated damage factors detected. Prioritise stillness, sleep, and antioxidant protocols.'}
-          </div>
-        </div>
-
-        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 16px; padding: 14px; margin-bottom: 20px;">
-          <div style="font-size: 12px; font-weight: 800; color: #166534; margin-bottom: 6px;">
-            💡 Personalized MitoReboot Cellular Action Plan (Repair Score Ratio: ${repairPct.toFixed(0)}%)
-          </div>
-          <p style="font-size: 10.5px; color: #15803d; font-weight: 600; margin: 0 0 8px 0; line-height: 1.4;">
-            ${repairPct >= 70
-              ? '🌟 <strong>Optimal Repair State</strong>: Your cellular signaling is strongly tilted toward repair and antioxidant protection. Follow these tips to sustain peak cellular energy:'
-              : repairPct >= 40
-                ? '⚖️ <strong>Moderate Balance</strong>: Your repair signals are active, but stress and environmental factors create periodic damage spikes. Follow these targeted habits:'
-                : '⚠️ <strong>High Damage Load Alert</strong>: Elevated stress, poor sleep, or environmental toxins are overwhelming your repair pathways. Priority intervention recommended:'}
-          </p>
-          <ul style="margin: 0; padding-left: 16px; font-size: 10.5px; color: #166534; font-weight: 600; line-height: 1.5;">
-            ${repairPct >= 70 ? `
-              <li><strong>Maintain Autophagy Window</strong>: Stick to a 14:10 or 16:8 overnight fasting routine to clear damaged mitochondrial proteins.</li>
-              <li><strong>Deep Rest Recovery</strong>: Protect your 7-8 hour sleep window for nighttime microglial brain cleansing.</li>
-              <li><strong>Antioxidant Protection</strong>: Consume daily berries, green tea, and 85%+ dark chocolate to neutralize ROS.</li>
-            ` : repairPct >= 40 ? `
-              <li><strong>Add 5-Min Stillness Routine</strong>: Practice 4-7-8 deep breathing twice daily to lower elevated cortisol.</li>
-              <li><strong>Post-Meal Light Walking</strong>: Take a 15-minute walk after lunch/dinner to blunt glucose spikes and limit cellular strain.</li>
-              <li><strong>Pure Water Protocol</strong>: Use dual water filtration (<strong>RO + Activated Carbon</strong>) to eliminate pesticides & heavy metals. Avoid plastic water bottles.</li>
-            ` : `
-              <li><strong>Immediate Stress Shield (Mia AI)</strong>: Use 4-7-8 breathing and 5-4-3-2-1 grounding exercises daily to calm your nervous system.</li>
-              <li><strong>Environmental Audit</strong>: Eliminate plastic drinking containers (prevents microplastics) and install RO + Activated Carbon filtration.</li>
-              <li><strong>Strict Sleep Hygiene</strong>: Turn off all screens 45 minutes before bed and sleep in a cool, pitch-dark room.</li>
-              <li><strong>Specialist Guidance</strong>: Consider booking a consultation with a certified counselor or specialist via MitoReboot Care.</li>
-            `}
-          </ul>
-        </div>
-
-        <div style="font-size: 12px; font-weight: 800; color: #0f172a; margin-bottom: 8px;">📋 Documented Check-in History Logs</div>
-        <table>
-          <thead>
-            <tr>
-              <th>Date & Time</th>
-              <th>Habit Category</th>
-              <th>Score Impact</th>
-              <th>Documented Details</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${logRowsHtml}
-          </tbody>
-        </table>
-
-        <div class="footer">
-          MitoReboot Cellular Health Protocol • Official Documented Lifestyle Audit • Confidential Medical Record
-        </div>
-      </body>
-      </html>
-    `;
-
-    // Try hidden printable iframe first (works natively inside iOS WKWebView & Android WebView without popups!)
     try {
-      const oldIframe = document.getElementById('mr_pdf_print_iframe');
-      if (oldIframe) oldIframe.remove();
+      const periodTitle = timePeriod === 'today' ? 'Daily Overview' : timePeriod === 'weekly' ? '7-Day Weekly Summary' : timePeriod === 'monthly' ? '30-Day Monthly History' : '365-Day Yearly History';
+      const reportDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      const userName = user?.name || user?.email || 'MitoReboot Patient';
 
-      const iframe = document.createElement('iframe');
-      iframe.id = 'mr_pdf_print_iframe';
-      iframe.style.position = 'fixed';
-      iframe.style.right = '0';
-      iframe.style.bottom = '0';
-      iframe.style.width = '0';
-      iframe.style.height = '0';
-      iframe.style.border = '0';
-      document.body.appendChild(iframe);
+      const logRowsHtml = periodHabits.map((log, idx) => {
+        const formatted = formatHabitLogItem(log);
+        const d = new Date(log.timestamp || (log as any).createdAt);
+        const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
+        return `
+          <tr style="border-bottom: 1px solid #f1f5f9; ${idx % 2 === 0 ? 'background-color: #fafafa;' : ''}">
+            <td style="padding: 10px 14px; font-size: 11px; color: #475569; font-weight: 600;">${dateStr}<br/><span style="font-size: 10px; color: #94a3b8;">${timeStr}</span></td>
+            <td style="padding: 10px 14px; font-size: 12px; font-weight: 700; color: #0f172a;">${formatted.title}</td>
+            <td style="padding: 10px 14px;">
+              <span style="display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 800; text-transform: uppercase; ${
+                formatted.isRepair 
+                  ? 'background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;' 
+                  : 'background: #fff1f2; color: #be123c; border: 1px solid #fecdd3;'
+              }">
+                ${formatted.isRepair ? '+ Repair Score' : '+ Damage Score'}
+              </span>
+            </td>
+            <td style="padding: 10px 14px; font-size: 11px; color: #334155; font-weight: 600;">${formatted.subtitle || 'Logged Check-in'}</td>
+          </tr>
+        `;
+      }).join('');
 
-      const doc = iframe.contentWindow?.document || iframe.contentDocument;
-      if (doc) {
-        doc.open();
-        doc.write(htmlContent);
-        doc.close();
+      const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MitoReboot Cellular Balance Report — ${periodTitle}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    @page { size: A4; margin: 12mm; }
+    body { font-family: 'Sora', sans-serif; color: #0f172a; margin: 0; padding: 20px; background: #ffffff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .header-box { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 14px; margin-bottom: 20px; }
+    .logo { font-size: 24px; font-weight: 800; color: #0f172a; letter-spacing: -0.5px; }
+    .logo span { color: #2563eb; }
+    .report-tag { background: #eff6ff; color: #1d4ed8; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 800; border: 1px solid #bfdbfe; }
+    .grid-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+    .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 12px; text-align: center; }
+    .card-val { font-size: 20px; font-weight: 800; margin-top: 2px; }
+    .card-lbl { font-size: 9.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+    .progress-container { background: #f8fafc; border-radius: 16px; padding: 14px; margin-bottom: 20px; border: 1px solid #e2e8f0; }
+    .progress-bar-bg { height: 12px; background: #e2e8f0; border-radius: 10px; overflow: hidden; display: flex; margin: 8px 0; }
+    .progress-damage { height: 100%; background: #f43f5e; }
+    .progress-repair { height: 100%; background: #10b981; }
+    table { width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; }
+    th { background: #f1f5f9; padding: 10px 12px; text-align: left; font-size: 10.5px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; }
+    .footer { margin-top: 24px; padding-top: 14px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 9.5px; color: #94a3b8; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="header-box">
+    <div>
+      <div class="logo">Mito<span>Reboot</span></div>
+      <div style="font-size: 11px; color: #64748b; font-weight: 600; margin-top: 2px;">Cellular Health & Lifestyle Balance Audit Report</div>
+    </div>
+    <div style="text-align: right;">
+      <div class="report-tag">${periodTitle}</div>
+      <div style="font-size: 10px; color: #64748b; margin-top: 6px; font-weight: 600;">Patient: <strong>${userName}</strong></div>
+      <div style="font-size: 10px; color: #94a3b8; font-weight: 600;">Generated: ${reportDate}</div>
+    </div>
+  </div>
 
-        setTimeout(() => {
-          try {
-            iframe.contentWindow?.focus();
-            iframe.contentWindow?.print();
-          } catch (e) {
-            console.error('Iframe print error:', e);
-          }
-        }, 500);
-        return;
+  <div class="grid-summary">
+    <div class="card">
+      <div class="card-lbl">Total Documented Logs</div>
+      <div class="card-val" style="color: #0f172a;">${periodHabits.length}</div>
+    </div>
+    <div class="card" style="background: #fff1f2; border-color: #fecdd3;">
+      <div class="card-lbl" style="color: #9f1239;">Active Damage Score</div>
+      <div class="card-val" style="color: #e11d48;">${damageCount}</div>
+    </div>
+    <div class="card" style="background: #ecfdf5; border-color: #a7f3d0;">
+      <div class="card-lbl" style="color: #065f46;">Active Repair Score</div>
+      <div class="card-val" style="color: #059669;">${repairCount}</div>
+    </div>
+    <div class="card" style="background: #eff6ff; border-color: #bfdbfe;">
+      <div class="card-lbl" style="color: #1e40af;">Cellular Repair Ratio</div>
+      <div class="card-val" style="color: #2563eb;">${repairPct.toFixed(0)}%</div>
+    </div>
+  </div>
+
+  <div class="progress-container">
+    <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 800;">
+      <span style="color: #e11d48;">💀 Damage Balance (${damagePct.toFixed(1)}%)</span>
+      <span style="color: #059669;">🌿 Repair Balance (${repairPct.toFixed(1)}%)</span>
+    </div>
+    <div class="progress-bar-bg">
+      <div class="progress-damage" style="width: ${damagePct}%;"></div>
+      <div class="progress-repair" style="width: ${repairPct}%;"></div>
+    </div>
+    <div style="font-size: 10px; color: #64748b; text-align: center; font-weight: 600; margin-top: 4px;">
+      ${repairPct >= 50 ? '✅ Cellular repair signals are active and dominating damage factors.' : '⚠️ Elevated damage factors detected. Prioritise stillness, sleep, and antioxidant protocols.'}
+    </div>
+  </div>
+
+  <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 16px; padding: 14px; margin-bottom: 20px;">
+    <div style="font-size: 12px; font-weight: 800; color: #166534; margin-bottom: 6px;">
+      💡 Personalized MitoReboot Cellular Action Plan (Repair Score Ratio: ${repairPct.toFixed(0)}%)
+    </div>
+    <p style="font-size: 10.5px; color: #15803d; font-weight: 600; margin: 0 0 8px 0; line-height: 1.4;">
+      ${repairPct >= 70
+        ? '🌟 <strong>Optimal Repair State</strong>: Your cellular signaling is strongly tilted toward repair and antioxidant protection. Follow these tips to sustain peak cellular energy:'
+        : repairPct >= 40
+          ? '⚖️ <strong>Moderate Balance</strong>: Your repair signals are active, but stress and environmental factors create periodic damage spikes. Follow these targeted habits:'
+          : '⚠️ <strong>High Damage Load Alert</strong>: Elevated stress, poor sleep, or environmental toxins are overwhelming your repair pathways. Priority intervention recommended:'}
+    </p>
+    <ul style="margin: 0; padding-left: 16px; font-size: 10.5px; color: #166534; font-weight: 600; line-height: 1.5;">
+      ${repairPct >= 70 ? `
+        <li><strong>Maintain Autophagy Window</strong>: Stick to a 14:10 or 16:8 overnight fasting routine to clear damaged mitochondrial proteins.</li>
+        <li><strong>Deep Rest Recovery</strong>: Protect your 7-8 hour sleep window for nighttime microglial brain cleansing.</li>
+        <li><strong>Antioxidant Protection</strong>: Consume daily berries, green tea, and 85%+ dark chocolate to neutralize ROS.</li>
+      ` : repairPct >= 40 ? `
+        <li><strong>Add 5-Min Stillness Routine</strong>: Practice 4-7-8 deep breathing twice daily to lower elevated cortisol.</li>
+        <li><strong>Post-Meal Light Walking</strong>: Take a 15-minute walk after lunch/dinner to blunt glucose spikes and limit cellular strain.</li>
+        <li><strong>Pure Water Protocol</strong>: Use dual water filtration (<strong>RO + Activated Carbon</strong>) to eliminate pesticides & heavy metals. Avoid plastic water bottles.</li>
+      ` : `
+        <li><strong>Immediate Stress Shield (Mia AI)</strong>: Use 4-7-8 breathing and 5-4-3-2-1 grounding exercises daily to calm your nervous system.</li>
+        <li><strong>Environmental Audit</strong>: Eliminate plastic drinking containers (prevents microplastics) and install RO + Activated Carbon filtration.</li>
+        <li><strong>Strict Sleep Hygiene</strong>: Turn off all screens 45 minutes before bed and sleep in a cool, pitch-dark room.</li>
+        <li><strong>Specialist Guidance</strong>: Consider booking a consultation with a certified counselor or specialist via MitoReboot Care.</li>
+      `}
+    </ul>
+  </div>
+
+  <div style="font-size: 12px; font-weight: 800; color: #0f172a; margin-bottom: 8px;">📋 Documented Check-in History Logs</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Date & Time</th>
+        <th>Habit Category</th>
+        <th>Score Impact</th>
+        <th>Documented Details</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${logRowsHtml}
+    </tbody>
+  </table>
+
+  <div class="footer">
+    MitoReboot Cellular Health Protocol • Official Documented Lifestyle Audit • Confidential Medical Record
+  </div>
+</body>
+</html>`;
+
+      const dateStamp = new Date().toISOString().split('T')[0];
+      const fileName = `MitoReboot_Cellular_Balance_${timePeriod}_${dateStamp}.html`;
+
+      // 1. Native iOS & Android handling via Capacitor Filesystem + Share plugin
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const writtenFile = await Filesystem.writeFile({
+            path: fileName,
+            data: htmlContent,
+            directory: Directory.Cache,
+            encoding: Encoding.UTF8,
+          });
+
+          await Share.share({
+            title: `MitoReboot Cellular Balance (${periodTitle})`,
+            text: `Cellular Balance Report for ${userName} (${periodTitle})`,
+            url: writtenFile.uri,
+            dialogTitle: 'Download / Share Cellular Report',
+          });
+          return;
+        } catch (nativeErr) {
+          console.error('Capacitor native share error, trying web fallback:', nativeErr);
+        }
       }
-    } catch (e) {
-      console.error('Error creating print iframe, fallback to window.open:', e);
-    }
 
-    // Fallback: window.open popup
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.open();
-      printWindow.document.write(htmlContent + `<script>setTimeout(()=>{window.print();},600);</script>`);
-      printWindow.document.close();
+      // 2. Mobile Browser Navigator Share (iOS Safari / Android Chrome)
+      if (navigator.canShare) {
+        try {
+          const file = new File([htmlContent], fileName, { type: 'text/html' });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: `Cellular Balance Report — ${periodTitle}`,
+              text: `MitoReboot Cellular Balance Report for ${userName}`,
+            });
+            return;
+          }
+        } catch (shareErr) {
+          console.log('navigator.share aborted or unsupported:', shareErr);
+        }
+      }
+
+      // 3. Web Download fallback via Blob and anchor tag
+      const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1500);
+
+      // 4. Desktop Print Fallback (allows instant Print to PDF)
+      if (!Capacitor.isNativePlatform()) {
+        try {
+          const oldIframe = document.getElementById('mr_pdf_print_iframe');
+          if (oldIframe) oldIframe.remove();
+
+          const iframe = document.createElement('iframe');
+          iframe.id = 'mr_pdf_print_iframe';
+          iframe.style.position = 'fixed';
+          iframe.style.right = '0';
+          iframe.style.bottom = '0';
+          iframe.style.width = '0';
+          iframe.style.height = '0';
+          iframe.style.border = '0';
+          document.body.appendChild(iframe);
+
+          const doc = iframe.contentWindow?.document || iframe.contentDocument;
+          if (doc) {
+            doc.open();
+            doc.write(htmlContent);
+            doc.close();
+
+            setTimeout(() => {
+              try {
+                iframe.contentWindow?.focus();
+                iframe.contentWindow?.print();
+              } catch (e) {
+                console.error('Iframe print error:', e);
+              }
+            }, 600);
+          }
+        } catch (e) {
+          console.error('Print iframe creation error:', e);
+        }
+      }
+    } catch (err) {
+      console.error('Error generating report:', err);
+      alert('Unable to generate report. Please try again.');
+    } finally {
+      setIsDownloadingReport(false);
     }
   };
 
@@ -806,7 +827,6 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
 
   const damageCount = calculateDamageCount();
   const repairCount = calculateRepairCount();
-  const totalLogs = periodHabits.length;
 
   // Calculate Streak
   let streak = 0;
@@ -983,20 +1003,11 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
     return 0;
   };
 
-  // Calculate percentages for the tug-of-war bar
-  const damagePct = totalLogs === 0 ? 50 : (damageCount / totalLogs) * 100;
-  const repairPct = totalLogs === 0 ? 50 : (repairCount / totalLogs) * 100;
-
-  const neutralCount = Math.max(0, totalLogs - damageCount - repairCount);
-
-  // Pie chart data
-  const chartData = totalLogs === 0
-    ? [{ name: 'Empty', value: 1, color: '#f1f5f9' }]
-    : [
-      ...(damageCount > 0 ? [{ name: 'Damage', value: damageCount, color: '#f43f5e' }] : []),
-      ...(repairCount > 0 ? [{ name: 'Repair', value: repairCount, color: '#10b981' }] : []),
-      ...(neutralCount > 0 ? [{ name: 'Neutral', value: neutralCount, color: '#94a3b8' }] : [])
-    ];
+  // Calculate percentages and metrics for the Two-Force Cellular Balance
+  const totalForces = damageCount + repairCount;
+  const damagePct = totalForces === 0 ? 50 : Math.round((damageCount / totalForces) * 100);
+  const repairPct = totalForces === 0 ? 50 : 100 - damagePct;
+  const netBalance = repairCount - damageCount;
 
   const { setPendingRecommendationId } = useConsultation();
 
@@ -1333,221 +1344,225 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
           </button>
         </div>
       )}
+
       {!isCancerPatient && (
-        <div className="bg-gradient-to-b from-white via-slate-50/40 to-white dark:from-slate-900 dark:via-slate-900/90 dark:to-slate-900 backdrop-blur-xl border border-slate-200/70 dark:border-slate-800/80 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.04)] dark:shadow-none rounded-3xl p-4 sm:p-5 mb-4 transition-all duration-300">
-          {/* Header Row: Title with Glow Dot on Left, Timeframe Pills on RIGHT (Single Line Always) */}
-          <div className="flex items-center justify-between gap-2 mb-3.5 pb-2.5 border-b border-slate-100/80 dark:border-slate-800/60">
-            <div className="flex items-center gap-2 shrink-0">
-              <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-indigo-500 to-violet-600 text-white flex items-center justify-center shadow-xs shadow-indigo-500/20">
-                <Dna className="w-3.5 h-3.5 stroke-[2.5]" />
+        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800 rounded-3xl p-4 sm:p-5 mb-5 shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-none transition-all duration-300">
+          {/* Header Row: Title & Streak on Left, Date Filter Popover & Download on Right (Single line, no wrap!) */}
+          <div className="flex items-center justify-between gap-2 mb-3.5 pb-2.5 border-b border-slate-100 dark:border-slate-800/80 relative">
+            <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-rose-500 via-indigo-600 to-emerald-500 text-white flex items-center justify-center shadow-md shadow-indigo-500/25 shrink-0" title="Health Defense (Shield) & Cellular Repair (+)">
+                <ShieldPlus className="w-4.5 h-4.5 stroke-[2.4]" />
               </div>
-              <span className="text-xs font-black tracking-wider text-slate-800 dark:text-slate-100 uppercase">
-                Cellular Balance
-              </span>
-            </div>
-
-            {/* Timeframe Selector Pills (Moved strictly to Right Side of Header) */}
-            <div className="flex items-center bg-slate-100/90 dark:bg-slate-800/90 p-0.5 rounded-full border border-slate-200/50 dark:border-slate-700/50 shrink-0">
-              <button
-                type="button"
-                onClick={() => setTimePeriod('today')}
-                className={`px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full font-bold text-[8.5px] sm:text-[9.5px] uppercase tracking-wider transition-all duration-200 ${
-                  timePeriod === 'today'
-                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-2xs font-black scale-[1.02]'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                }`}
-              >
-                Today
-              </button>
-              <button
-                type="button"
-                onClick={() => setTimePeriod('weekly')}
-                className={`px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full font-bold text-[8.5px] sm:text-[9.5px] uppercase tracking-wider transition-all duration-200 ${
-                  timePeriod === 'weekly'
-                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-2xs font-black scale-[1.02]'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                }`}
-              >
-                7D
-              </button>
-              <button
-                type="button"
-                onClick={() => setTimePeriod('monthly')}
-                className={`px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full font-bold text-[8.5px] sm:text-[9.5px] uppercase tracking-wider transition-all duration-200 ${
-                  timePeriod === 'monthly'
-                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-2xs font-black scale-[1.02]'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                }`}
-              >
-                30D
-              </button>
-              <button
-                type="button"
-                onClick={() => setTimePeriod('yearly')}
-                className={`px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full font-bold text-[8.5px] sm:text-[9.5px] uppercase tracking-wider transition-all duration-200 ${
-                  timePeriod === 'yearly'
-                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-2xs font-black scale-[1.02]'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                }`}
-              >
-                1Y
-              </button>
-            </div>
-          </div>
-
-          {/* Integrated Overview Row with History Toggle Button on Right */}
-          <div className="flex items-center gap-3.5 py-0.5">
-            {/* Donut Gauge Ring */}
-            <div className="relative w-12 h-12 shrink-0 flex items-center justify-center p-0.5 rounded-full bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700/50 shadow-2xs">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={chartData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={15}
-                    outerRadius={22}
-                    startAngle={180}
-                    endAngle={-180}
-                    paddingAngle={3}
-                    dataKey="value"
-                    stroke="none"
-                  >
-                    {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-xs font-black text-slate-800 dark:text-slate-100 leading-none">{totalLogs}</span>
-              </div>
-            </div>
-
-            <div className="min-w-0 flex-1 space-y-2">
-              <div className="flex items-center justify-between gap-1.5">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100">
-                    {timePeriod === 'today' ? 'Daily Overview' : timePeriod === 'weekly' ? '7-Day Summary' : timePeriod === 'monthly' ? '30-Day History' : 'Yearly History'}
-                  </span>
-                  {timePeriod === 'today' && streak > 0 && (
-                    <span className="text-[9.5px] font-extrabold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 border border-amber-200/60 dark:border-amber-800/60 px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0">
-                      <Flame className="w-3 h-3 text-amber-500 fill-amber-500/20" />
-                      <span>{streak}d streak</span>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight truncate">
+                    Cellular Balance
+                  </h3>
+                  {streak > 0 && timePeriod === 'today' && (
+                    <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
+                      <Flame className="w-2.5 h-2.5 text-amber-500 fill-amber-500" />
+                      {streak}d
                     </span>
                   )}
                 </div>
+                <p className="text-[9.5px] sm:text-[10px] text-slate-400 dark:text-slate-500 font-medium truncate">Lifestyle Stress vs Restorative Defense</p>
+              </div>
+            </div>
 
-                {/* History Toggle Button */}
-                {periodHabits.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setShowAllLogs(!showAllLogs)}
-                    className="text-[10px] sm:text-xs font-extrabold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 flex items-center gap-1 cursor-pointer shrink-0 bg-indigo-50/90 dark:bg-indigo-950/60 px-3 py-1 rounded-full border border-indigo-200/50 dark:border-indigo-800/50 transition-all shadow-2xs hover:scale-105 active:scale-95"
-                  >
-                    <span>{showAllLogs ? 'Hide History' : `Logs (${periodHabits.length})`}</span>
-                    {showAllLogs ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                  </button>
+            {/* Right Side: Date Filter Button + Download Option */}
+            <div className="flex items-center gap-1.5 shrink-0 relative">
+              {/* Date Filter Dropdown */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowPeriodFilter(!showPeriodFilter)}
+                  className={`inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 text-xs font-bold rounded-xl border transition-all cursor-pointer shadow-xs active:scale-95 ${
+                    showPeriodFilter
+                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800'
+                      : 'text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/70 dark:hover:bg-slate-700/70 border-slate-200/60 dark:border-slate-700/60'
+                  }`}
+                  title="Select Timeframe"
+                >
+                  <Filter className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                  <span className="font-extrabold text-[10.5px] sm:text-xs">
+                    {timePeriod === 'today' ? 'Today' : timePeriod === 'weekly' ? '7D' : timePeriod === 'monthly' ? '30D' : '1Y'}
+                  </span>
+                  <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform duration-200 ${showPeriodFilter ? 'rotate-180' : ''}`} />
+                </button>
+
+                {/* Dropdown Menu */}
+                {showPeriodFilter && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setShowPeriodFilter(false)}
+                    />
+                    <div className="absolute right-0 top-full mt-1.5 w-44 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200/80 dark:border-slate-800 p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+                      <div className="px-2.5 py-1 text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800/80 mb-1">
+                        Filter Time Range
+                      </div>
+                      {[
+                        { id: 'today', label: 'Today', desc: 'Live daily balance' },
+                        { id: 'weekly', label: '7 Days', desc: 'Weekly trend analysis' },
+                        { id: 'monthly', label: '30 Days', desc: 'Monthly cellular health' },
+                        { id: 'yearly', label: '1 Year', desc: 'Annual cellular history' },
+                      ].map((item) => {
+                        const active = timePeriod === item.id;
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => {
+                              setTimePeriod(item.id as any);
+                              setShowPeriodFilter(false);
+                            }}
+                            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-left transition-all cursor-pointer ${
+                              active
+                                ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold'
+                                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium'
+                            }`}
+                          >
+                            <div>
+                              <div className="text-xs">{item.label}</div>
+                              <div className="text-[9px] text-slate-400 dark:text-slate-500">{item.desc}</div>
+                            </div>
+                            {active && <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 dark:bg-indigo-400 shrink-0" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
                 )}
               </div>
 
-              {/* Dual Balance Progress Bar with Tracking Graph Puck Icon */}
-              <div className="relative w-full h-2.5 sm:h-3 bg-slate-100 dark:bg-slate-800/80 rounded-full flex overflow-hidden shadow-inner my-1.5">
-                <div className="h-full bg-gradient-to-r from-rose-500 to-rose-400 transition-all duration-500 rounded-l-full" style={{ width: `${damagePct}%` }} />
-                <div className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all duration-500 rounded-r-full" style={{ width: `${repairPct}%` }} />
-
-                {/* Tracking Graph Puck Icon */}
-                <div
-                  className="absolute top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-5 h-5 bg-white dark:bg-slate-900 border-2 border-indigo-500 dark:border-indigo-400 rounded-full shadow-md flex items-center justify-center transition-all duration-500 z-10"
-                  style={{ left: `${damagePct}%` }}
-                >
-                  <Activity className="h-3 w-3 text-indigo-600 dark:text-indigo-400 animate-pulse" />
-                </div>
-              </div>
-
-              {/* Stat Badges for Damage & Repair */}
-              <div className="flex justify-between items-center text-[9.5px] font-black uppercase tracking-wider">
-                <div className="bg-rose-50/80 dark:bg-rose-950/40 border border-rose-100 dark:border-rose-900/40 px-2.5 py-0.5 rounded-xl flex items-center gap-1.5">
-                  <Skull className="w-3 h-3 text-rose-500" />
-                  <span className="text-rose-700 dark:text-rose-300">DAMAGE: <strong className="text-rose-600 dark:text-rose-400">{damageCount}</strong></span>
-                </div>
-                <div className="bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/40 px-2.5 py-0.5 rounded-xl flex items-center gap-1.5">
-                  <span className="text-emerald-700 dark:text-emerald-300">REPAIR: <strong className="text-emerald-600 dark:text-emerald-400">{repairCount}</strong></span>
-                  <ShieldCheck className="w-3 h-3 text-emerald-500" />
-                </div>
-              </div>
+              {/* Download / Report Button */}
+              <button
+                type="button"
+                disabled={isDownloadingReport}
+                onClick={downloadDocumentedReport}
+                className="inline-flex items-center gap-1 p-1.5 sm:px-2.5 sm:py-1 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/70 dark:hover:bg-slate-700/70 rounded-xl border border-slate-200/60 dark:border-slate-700/60 transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
+                title="Download Documented Report"
+              >
+                {isDownloadingReport ? (
+                  <Loader2 className="w-3.5 h-3.5 text-indigo-500 animate-spin shrink-0" />
+                ) : (
+                  <DownloadCloud className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                )}
+                <span className="hidden sm:inline">{isDownloadingReport ? 'Preparing...' : 'Report'}</span>
+              </button>
             </div>
           </div>
 
-          {/* Borderless Documented Logs Drawer */}
-          {showAllLogs && (
-            <div className="mt-3.5 pt-3 border-t border-slate-100 dark:border-slate-800/80 space-y-2 animate-fadeIn">
-              <div className="flex items-center justify-between mb-2 px-0.5">
-                <span className="text-[10.5px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
-                  <Calendar className="h-3.5 w-3.5 text-indigo-500" />
-                  <span>Documented History ({periodHabits.length})</span>
-                </span>
+          {/* Main Section: Circular Ring Chart on LEFT, Balance Tracker on RIGHT in same section */}
+          <div className="flex items-center gap-3.5 sm:gap-5">
+            {/* LEFT: Compact Circular Ring Tracker (Explicit fixed size so it never expands!) */}
+            <div className="shrink-0" style={{ width: '84px', height: '84px' }}>
+              <div className="relative w-full h-full flex items-center justify-center">
+                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 84 84">
+                  {/* Damage / Stress Base Circle */}
+                  <circle
+                    cx="42"
+                    cy="42"
+                    r="34"
+                    stroke="#f43f5e"
+                    strokeWidth="6.5"
+                    className="opacity-80"
+                    fill="none"
+                  />
+                  {/* Active Repair Arc */}
+                  <circle
+                    cx="42"
+                    cy="42"
+                    r="34"
+                    stroke="#10b981"
+                    strokeWidth="6.5"
+                    strokeDasharray={213.63}
+                    strokeDashoffset={213.63 * (1 - (totalForces === 0 ? 0.5 : repairPct / 100))}
+                    strokeLinecap="round"
+                    className="transition-all duration-700"
+                    fill="none"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+                  <span className="text-xl font-black text-slate-900 dark:text-white leading-none tracking-tight">
+                    {totalForces === 0 ? '50%' : `${repairPct}%`}
+                  </span>
+                  <span className="text-[8px] font-extrabold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mt-0.5">
+                    Repair
+                  </span>
+                </div>
+              </div>
+            </div>
 
-                {/* Download Report Button Inside Documented History Header */}
-                <button
-                  type="button"
-                  onClick={downloadDocumentedReport}
-                  className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white border border-indigo-500 rounded-xl text-[10px] sm:text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs hover:shadow active:scale-95 cursor-pointer shrink-0"
-                  title="Download Documented Score Report"
-                >
-                  <DownloadCloud className="h-3.5 w-3.5 text-white" />
-                  <span>Download Report</span>
-                </button>
+            {/* RIGHT: Tracker Details + Tug-of-War Balance Bar */}
+            <div className="flex-1 min-w-0 space-y-1.5">
+              {/* Status Verdict & Dynamic Pill */}
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                  {timePeriod === 'today' ? 'Daily State' : timePeriod === 'weekly' ? '7-Day State' : timePeriod === 'monthly' ? '30-Day State' : 'Yearly State'}
+                </span>
+                {netBalance > 0 ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 shadow-2xs shrink-0">
+                    <Sparkles className="w-3 h-3 text-emerald-500" />
+                    +{netBalance} Net Repair
+                  </span>
+                ) : netBalance < 0 ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20 shadow-2xs shrink-0">
+                    <Skull className="w-3 h-3 text-rose-500" />
+                    +{Math.abs(netBalance)} Net Stress
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-200/60 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 shrink-0">
+                    Equilibrium
+                  </span>
+                )}
               </div>
 
-              {periodHabits.length === 0 ? (
-                <div className="py-4 text-center text-[11px] text-slate-400 font-semibold">
-                  No logs documented for this timeframe.
+              {/* Tug-of-War Balance Bar */}
+              <div className="space-y-1">
+                {/* Force Numbers Line */}
+                <div className="flex justify-between items-center text-[10.5px] font-bold">
+                  <span className="text-rose-600 dark:text-rose-400 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                    <span>{damageCount} Stress ({damagePct}%)</span>
+                  </span>
+                  <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                    <span>{repairCount} Repair ({repairPct}%)</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                  </span>
                 </div>
-              ) : (
-                <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
-                  {periodHabits.map((log, idx) => {
-                    const formatted = formatHabitLogItem(log);
-                    const logDate = new Date(log.timestamp || (log as any).createdAt);
-                    const formattedDate = `${logDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} ${logDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 
-                    return (
-                      <div
-                        key={(log as any)._id || idx}
-                        className="p-2.5 rounded-2xl hover:bg-slate-50/90 dark:hover:bg-slate-800/50 flex items-center justify-between gap-3 transition-all border border-transparent hover:border-slate-100 dark:hover:border-slate-800"
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className={`w-7 h-7 rounded-xl shrink-0 flex items-center justify-center text-xs ${
-                            formatted.isRepair
-                              ? 'bg-emerald-100/80 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400'
-                              : 'bg-rose-100/80 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400'
-                          }`}>
-                            {renderCategoryIcon(formatted.category, formatted.isRepair)}
-                          </div>
-                          <div className="min-w-0">
-                            <span className="font-bold text-slate-900 dark:text-slate-100 block truncate text-[11.5px] leading-tight">
-                              {formatted.title}
-                            </span>
-                            <span className="text-[9.5px] font-medium text-slate-400 dark:text-slate-500 block truncate leading-tight mt-0.5">
-                              {formatted.subtitle} • {formattedDate}
-                            </span>
-                          </div>
-                        </div>
+                {/* Dual Progress Track with Interactive Puck */}
+                <div className="relative w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full flex shadow-inner border border-slate-200/60 dark:border-slate-700/60">
+                  <div
+                    className="h-full bg-gradient-to-r from-rose-500 to-rose-400 transition-all duration-700 rounded-l-full"
+                    style={{ width: `${damagePct}%` }}
+                  />
+                  <div
+                    className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all duration-700 rounded-r-full"
+                    style={{ width: `${repairPct}%` }}
+                  />
 
-                        <span className={`px-2.5 py-0.5 rounded-full text-[8.5px] font-black uppercase tracking-wider shrink-0 ${
-                          formatted.isRepair
-                            ? 'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-800/50'
-                            : 'bg-rose-50 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 border border-rose-200/50 dark:border-rose-800/50'
-                        }`}>
-                          {formatted.isRepair ? '+ Repair' : '+ Damage'}
-                        </span>
-                      </div>
-                    );
-                  })}
+                  {/* Tracking Puck */}
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-5 h-5 bg-white dark:bg-slate-900 border-2 border-indigo-600 dark:border-indigo-400 rounded-full shadow-md flex items-center justify-center transition-all duration-700 z-10 ring-2 ring-indigo-500/10"
+                    style={{ left: `${Math.min(94, Math.max(6, damagePct))}%` }}
+                  >
+                    <Activity className="h-2.5 w-2.5 text-indigo-600 dark:text-indigo-400 animate-pulse" />
+                  </div>
                 </div>
-              )}
+              </div>
+
+              {/* Actionable Subtext */}
+              <p className="text-[10px] sm:text-[10.5px] text-slate-400 dark:text-slate-500 leading-tight truncate">
+                {netBalance > 0
+                  ? 'Restorative defense habits outpace daily stress.'
+                  : netBalance < 0
+                  ? 'Active stress factors outweigh restorative habits.'
+                  : 'Cellular forces in dynamic equilibrium.'}
+              </p>
             </div>
-          )}
+          </div>
         </div>
       )}
 
