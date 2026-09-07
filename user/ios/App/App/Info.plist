@@ -76,10 +76,10 @@
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>We need access to save photos of your meals to your photo library.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Mito Reboot requires access to your location to recommend nearby health centers, specialists, and pharmacies.</string>
+	<string>Mito Reboot requires access to your location for real-time live local air quality tracking (AQI), environmental pollution alerts, and nearby health centers.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Mito Reboot requires access to your location to recommend nearby health centers, specialists, and pharmacies.</string>
+	<string>Mito Reboot requires access to your location for real-time live local air quality tracking (AQI), environmental pollution alerts, and nearby health centers.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
-	<string>Mito Reboot requires access to your location to recommend nearby health centers, specialists, and pharmacies.</string>
+	<string>Mito Reboot requires access to your location for real-time live local air quality tracking (AQI), environmental pollution alerts, and nearby health centers.</string>
 </dict>
 </plist>

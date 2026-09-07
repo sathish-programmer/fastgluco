@@ -192,11 +192,11 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
   const [productReviews, setProductReviews] = useState<any[]>([]);
 
   useEffect(() => {
-    if (selectedProduct) {
+    if (selectedProduct && selectedProduct.id && selectedProduct.id !== 'undefined') {
       fetch(`${apiUrl}/shop/products/${selectedProduct.id}/reviews`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
-        .then(res => res.json())
+        .then(res => res.ok ? res.json() : [])
         .then(data => setProductReviews(Array.isArray(data) ? data : []))
         .catch(err => console.error(err));
     } else {
@@ -204,69 +204,67 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
     }
   }, [selectedProduct, apiUrl, token]);
 
-  // Always reset selectedProduct when screen mounts/unmounts or when category type changes
-  useEffect(() => {
-    setSelectedProduct(null);
-    return () => {
-      setSelectedProduct(null);
-      if (window.location.search.includes('product=')) {
-        const url = new URL(window.location.href);
-        url.searchParams.delete('product');
-        window.history.replaceState({}, '', url.pathname + url.search);
-      }
-    };
-  }, [type, defaultSearch]);
-
   useEffect(() => {
     fetchCategories();
     fetchProducts();
   }, [selectedCategory, selectedBrand, onlyDoctorRecommended, onlyAvailable, sortBy]);
 
-  // Only load product details if product query param was present BEFORE user interaction
+  // Load product details if product query param is in URL or changes via popstate
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const prodId = params.get('product');
-    if (prodId && !selectedProduct) {
-      fetch(`${apiUrl}/shop/products/${prodId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (data) {
-          const item: ShopItem = {
-            id: data._id,
-            name: data.name,
-            desc: data.description,
-            price: data.price,
-            image: data.image,
-            category: data.category,
-            brand: data.brand,
-            images: data.images,
-            shortDescription: data.shortDescription,
-            detailedDescription: data.detailedDescription,
-            keyBenefits: data.keyBenefits,
-            healthBenefits: data.healthBenefits,
-            ingredients: data.ingredients,
-            usageInstructions: data.usageInstructions,
-            suitableFor: data.suitableFor,
-            warnings: data.warnings,
-            storageInstructions: data.storageInstructions,
-            doctorRecommended: data.doctorRecommended,
-            prescriptionRequired: data.prescriptionRequired,
-            variants: data.variants,
-            stock: data.stock,
-            discountPercent: data.discountPercent,
-            offerPrice: data.offerPrice,
-            regularPrice: data.regularPrice
-          };
-          setSelectedProduct(item);
-          if (item.variants && item.variants.length > 0) {
-            setSelectedVariant(item.variants[0]);
+    const loadProductFromUrl = () => {
+      const params = new URLSearchParams(window.location.search);
+      const prodId = params.get('product');
+      if (prodId) {
+        fetch(`${apiUrl}/shop/products/${prodId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data) {
+            const p = data.product || data;
+            if (p && (p._id || p.id)) {
+              const item: ShopItem = {
+                id: p._id || p.id,
+                name: p.name || 'Product',
+                desc: p.description || p.desc || '',
+                price: p.price || 0,
+                image: p.image || '',
+                category: p.category || 'General',
+                brand: p.brand || '',
+                images: p.images || [],
+                shortDescription: p.shortDescription || '',
+                detailedDescription: p.detailedDescription || '',
+                keyBenefits: p.keyBenefits || [],
+                healthBenefits: p.healthBenefits || [],
+                ingredients: p.ingredients || [],
+                usageInstructions: p.usageInstructions || '',
+                suitableFor: p.suitableFor || [],
+                warnings: p.warnings || '',
+                storageInstructions: p.storageInstructions || '',
+                doctorRecommended: p.doctorRecommended || false,
+                prescriptionRequired: p.prescriptionRequired || false,
+                variants: p.variants || [],
+                stock: p.stock ?? 10,
+                discountPercent: p.discountPercent || 0,
+                offerPrice: p.offerPrice || 0,
+                regularPrice: p.regularPrice || p.price || 0
+              };
+              setSelectedProduct(item);
+              if (item.variants && item.variants.length > 0) {
+                setSelectedVariant(item.variants[0]);
+              } else {
+                setSelectedVariant(null);
+              }
+            }
           }
-        }
-      })
-      .catch(console.error);
-    }
+        })
+        .catch(console.error);
+      }
+    };
+
+    loadProductFromUrl();
+    window.addEventListener('popstate', loadProductFromUrl);
+    return () => window.removeEventListener('popstate', loadProductFromUrl);
   }, [apiUrl, token]);
 
   const fetchCategories = async () => {
@@ -493,50 +491,67 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
       : selectedProduct.image;
     
     return (
-      <div 
-        className="pb-24 px-4 max-w-5xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 animate-in fade-in slide-in-from-bottom duration-300"
-        style={{ paddingTop: 'calc(env(safe-area-inset-top, 24px) + 14px)' }}
-      >
-        {/* Back Button, Share & Basket Controls with Safe Notch Clearance */}
-        <div className="flex items-center justify-between mb-6 gap-2 flex-wrap">
-          <button 
-            onClick={closeProductDetails}
-            className="h-10 px-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-xs transition-all cursor-pointer"
-          >
-            <ArrowLeft className="h-4 w-4" /> Back to Store
-          </button>
-          
-          <div className="flex items-center gap-2">
+      <div className="pb-24 bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 animate-in fade-in slide-in-from-bottom duration-300">
+        
+        {/* Sticky Notch-Safe Header Bar */}
+        <div 
+          className="sticky top-0 z-50 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 px-4 pb-3 shadow-xs"
+          style={{ paddingTop: 'calc(env(safe-area-inset-top, 24px) + 12px)' }}
+        >
+          <div className="max-w-5xl mx-auto flex items-center justify-between gap-2">
             <button 
-              onClick={() => {
-                const url = `${window.location.origin}${window.location.pathname}?product=${selectedProduct.id}`;
-                navigator.clipboard.writeText(url);
-                showToast('Link copied to clipboard! You can share it now.', 'success');
-              }}
-              className="h-10 px-3.5 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-800 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-100 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all shadow-xs"
+              onClick={closeProductDetails}
+              className="h-10 px-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center gap-2 text-xs font-extrabold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 shadow-2xs transition-all cursor-pointer shrink-0"
             >
-              🔗 Share Link
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">Back to Store</span>
+              <span className="sm:hidden">Back</span>
             </button>
 
-            {branding.enableExternalPayments !== false && (
+            <div className="min-w-0 flex-1 px-2 text-center">
+              <span className="text-[10px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 block truncate">
+                {selectedProduct.category}
+              </span>
+              <p className="text-xs font-extrabold text-slate-800 dark:text-slate-100 truncate leading-tight">
+                {selectedProduct.name}
+              </p>
+            </div>
+            
+            <div className="flex items-center gap-1.5 shrink-0">
               <button 
-                onClick={() => setShowBasket(true)}
-                className="relative h-10 px-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-center gap-1.5 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-xs transition-all cursor-pointer"
+                onClick={() => {
+                  const url = `${window.location.origin}${window.location.pathname}?product=${selectedProduct.id}`;
+                  navigator.clipboard.writeText(url);
+                  showToast('Link copied to clipboard! You can share it now.', 'success');
+                }}
+                className="h-10 px-3 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-800 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-100 rounded-xl flex items-center gap-1 text-xs font-bold transition-all shadow-2xs cursor-pointer"
+                title="Share Link"
               >
-                <ShoppingCart className="h-4 w-4 text-indigo-500" />
-                <span className="text-xs font-bold hidden sm:inline">Cart</span>
-                {totalItems > 0 && (
-                  <span className="bg-indigo-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                    {totalItems}
-                  </span>
-                )}
+                <span>🔗</span>
+                <span className="hidden sm:inline">Share</span>
               </button>
-            )}
+
+              {branding.enableExternalPayments !== false && (
+                <button 
+                  onClick={() => setShowBasket(true)}
+                  className="relative h-10 px-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-center gap-1.5 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-2xs transition-all cursor-pointer"
+                >
+                  <ShoppingCart className="h-4 w-4 text-indigo-500" />
+                  <span className="text-xs font-bold hidden sm:inline">Cart</span>
+                  {totalItems > 0 && (
+                    <span className="bg-indigo-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                      {totalItems}
+                    </span>
+                  )}
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Product Details Section */}
-        <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-[0_12px_40px_rgba(0,0,0,0.03)] p-6 md:p-10 flex flex-col md:flex-row gap-10">
+        <div className="px-4 max-w-5xl mx-auto pt-4">
+          {/* Product Details Section */}
+          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-[0_12px_40px_rgba(0,0,0,0.03)] p-6 md:p-10 flex flex-col md:flex-row gap-10">
           {/* Left Column: Image Gallery & Details */}
           <div className="md:w-2/5 flex flex-col items-center">
             <div className="w-full aspect-square bg-slate-50/70 dark:bg-slate-950/70 border border-slate-100 dark:border-slate-800 rounded-[2rem] flex items-center justify-center overflow-hidden mb-3 relative shadow-inner">
@@ -865,6 +880,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
               ))}
             </div>
           )}
+        </div>
         </div>
       </div>
     );

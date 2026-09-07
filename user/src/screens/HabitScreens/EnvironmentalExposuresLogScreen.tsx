@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Info, ShieldAlert, Award, ShoppingBag, ExternalLink } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ArrowLeft, Info, ShieldAlert, Award, ShoppingBag, ExternalLink, RotateCcw } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { HabitsService } from '../../services/habitsService';
 import { ConsultationBanner } from '../../components/ConsultationBanner';
@@ -32,8 +32,11 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
   const [showWaterInfo, setShowWaterInfo] = useState(true);
   const [showAirModal, setShowAirModal] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [todayLogId, setTodayLogId] = useState<string | null>(null);
 
-  const hasLoadedRef = React.useRef(false);
+  const hasLoadedRef = useRef(false);
+  const isLoadedRef = useRef(false);
+  const isUserInteractingRef = useRef(false);
 
   // Restore from localStorage or load latest habit log once
   useEffect(() => {
@@ -53,23 +56,37 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
     if (!user?.id) return;
     try {
       const logs = await HabitsService.getRecentHabits(apiUrl, token, 'Environmental', 7);
+      const todayStr = new Date().toDateString();
+      // Daily Reset: strictly only prefill if logged TODAY!
+      const todayLog = logs.find(l => new Date(l.timestamp || (l as any).createdAt).toDateString() === todayStr);
       
-      // Prefill with today's/latest answers if available
-      if (logs.length > 0) {
-        const latest = logs[0].value;
-        if (latest && latest.answers) {
-          setAirQ1(latest.answers.airQ1 ?? null);
-          setAirQ2(latest.answers.airQ2 ?? null);
-          setWaterQ1(latest.answers.waterQ1 ?? null);
-          setPesticidesQ1(latest.answers.pesticidesQ1 ?? null);
-          setMicroplasticsQ1(latest.answers.microplasticsQ1 ?? null);
-          setKitchenQ1(latest.answers.kitchenQ1 ?? null);
-          setKitchenQ2(latest.answers.kitchenQ2 ?? null);
-          setKitchenQ3(latest.answers.kitchenQ3 ?? null);
-        }
+      if (todayLog && todayLog.value && todayLog.value.answers) {
+        setTodayLogId(todayLog.id || (todayLog as any)._id || null);
+        const ans = todayLog.value.answers;
+        setAirQ1(ans.airQ1 ?? null);
+        setAirQ2(ans.airQ2 ?? null);
+        setWaterQ1(ans.waterQ1 ?? null);
+        setPesticidesQ1(ans.pesticidesQ1 ?? null);
+        setMicroplasticsQ1(ans.microplasticsQ1 ?? null);
+        setKitchenQ1(ans.kitchenQ1 ?? null);
+        setKitchenQ2(ans.kitchenQ2 ?? null);
+        setKitchenQ3(ans.kitchenQ3 ?? null);
+      } else {
+        // Daily reset: Nothing logged today yet!
+        setTodayLogId(null);
+        setAirQ1(null);
+        setAirQ2(null);
+        setWaterQ1(null);
+        setPesticidesQ1(null);
+        setMicroplasticsQ1(null);
+        setKitchenQ1(null);
+        setKitchenQ2(null);
+        setKitchenQ3(null);
       }
     } catch (err) {
       console.error(err);
+    } finally {
+      isLoadedRef.current = true;
     }
   };
 
@@ -127,11 +144,9 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
 
   const overallScore = getOverallScore();
 
-  // Auto-save to DB whenever answers change
-  const isInitialMount = React.useRef(true);
+  // Auto-save to DB whenever answers change intentionally by user
   useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
+    if (!isLoadedRef.current || !isUserInteractingRef.current) {
       return;
     }
     if (hasAnyAnswer && user?.id && token) {
@@ -150,6 +165,38 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
       }).catch(err => console.error('Environmental habit auto-save error', err));
     }
   }, [airQ1, airQ2, waterQ1, pesticidesQ1, microplasticsQ1, kitchenQ1, kitchenQ2, kitchenQ3, overallScore, hasAnyAnswer, apiUrl, token, user?.id]);
+
+  const handleResetLog = async () => {
+    isUserInteractingRef.current = false;
+    setAirQ1(null);
+    setAirQ2(null);
+    setWaterQ1(null);
+    setPesticidesQ1(null);
+    setMicroplasticsQ1(null);
+    setKitchenQ1(null);
+    setKitchenQ2(null);
+    setKitchenQ3(null);
+    if (todayLogId && token) {
+      setLoading(true);
+      try {
+        await HabitsService.deleteHabit(apiUrl, token, todayLogId);
+        setTodayLogId(null);
+      } catch (err) {
+        console.error('Failed to reset environmental habit', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleAnswerAirQ1 = (val: boolean) => { isUserInteractingRef.current = true; setAirQ1(val); };
+  const handleAnswerAirQ2 = (val: boolean) => { isUserInteractingRef.current = true; setAirQ2(val); };
+  const handleAnswerWaterQ1 = (val: boolean) => { isUserInteractingRef.current = true; setWaterQ1(val); };
+  const handleAnswerPesticidesQ1 = (val: boolean) => { isUserInteractingRef.current = true; setPesticidesQ1(val); };
+  const handleAnswerMicroplasticsQ1 = (val: boolean) => { isUserInteractingRef.current = true; setMicroplasticsQ1(val); };
+  const handleAnswerKitchenQ1 = (val: boolean) => { isUserInteractingRef.current = true; setKitchenQ1(val); };
+  const handleAnswerKitchenQ2 = (val: boolean) => { isUserInteractingRef.current = true; setKitchenQ2(val); };
+  const handleAnswerKitchenQ3 = (val: boolean) => { isUserInteractingRef.current = true; setKitchenQ3(val); };
 
   const handleSaveLogs = async () => {
     if (!user?.id) return;
@@ -190,22 +237,43 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
     >
       
       {/* HEADER */}
-      <div className="flex items-center gap-4 mb-8 sub-page-internal-header px-1">
-        <button 
-          onClick={currentView === 'hub' ? onBack : () => setCurrentView('hub')}
-          className="h-10 w-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
-        <div>
-          <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Damage · Environment</span>
-          <h2 className="text-2xl font-sans font-bold text-slate-800 dark:text-slate-50 leading-none mt-1">
-            {currentView === 'hub' && 'Environment'}
-            {currentView === 'air' && 'Air Pollution'}
-            {currentView === 'water' && 'Water Carcinogens'}
-            {currentView === 'pesticides' && 'Pesticide Exposure'}
-            {currentView === 'microplastics' && 'Microplastics Exposure'}
-          </h2>
+      <div className="flex items-center justify-between gap-4 mb-8 sub-page-internal-header px-1">
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={currentView === 'hub' ? onBack : () => setCurrentView('hub')}
+            className="h-10 w-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all cursor-pointer"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <div>
+            <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Damage · Environment</span>
+            <h2 className="text-2xl font-sans font-bold text-slate-800 dark:text-slate-50 leading-none mt-1">
+              {currentView === 'hub' && 'Environment'}
+              {currentView === 'air' && 'Air Pollution'}
+              {currentView === 'water' && 'Water Carcinogens'}
+              {currentView === 'pesticides' && 'Pesticide Exposure'}
+              {currentView === 'microplastics' && 'Microplastics Exposure'}
+            </h2>
+          </div>
+        </div>
+
+        {/* Daily Status & Reset Button */}
+        <div className="flex items-center gap-2">
+          {hasAnyAnswer && (
+            <button
+              type="button"
+              onClick={handleResetLog}
+              disabled={loading}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 bg-white dark:bg-slate-900 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer shadow-2xs active:scale-95"
+              title="Reset answers for today"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span className="hidden xs:inline">Reset Today</span>
+            </button>
+          )}
+          <span className={`text-[10px] font-extrabold uppercase px-2 py-1 rounded-lg border ${todayLogId || hasAnyAnswer ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border-emerald-200/60 dark:border-emerald-800/50' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200/60 dark:border-slate-700/60'}`}>
+            {todayLogId || hasAnyAnswer ? 'Logged (Today)' : 'Daily Check-in'}
+          </span>
         </div>
       </div>
 
@@ -372,13 +440,13 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
                 </p>
                 <div className="flex gap-3">
                   <button 
-                    onClick={() => setAirQ1(true)}
+                    onClick={() => handleAnswerAirQ1(true)}
                     className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${airQ1 === true ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
                   >
                     Yes (-1)
                   </button>
                   <button 
-                    onClick={() => setAirQ1(false)}
+                    onClick={() => handleAnswerAirQ1(false)}
                     className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${airQ1 === false ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
                   >
                     No (0)
@@ -395,13 +463,13 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
                   </p>
                   <div className="flex gap-3">
                     <button 
-                      onClick={() => setAirQ2(true)}
+                      onClick={() => handleAnswerAirQ2(true)}
                       className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${airQ2 === true ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
                     >
                       Yes (-1)
                     </button>
                     <button 
-                      onClick={() => setAirQ2(false)}
+                      onClick={() => handleAnswerAirQ2(false)}
                       className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${airQ2 === false ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
                     >
                       No (0)
@@ -478,13 +546,13 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
               </p>
               <div className="flex gap-3 mb-5">
                 <button 
-                  onClick={() => setWaterQ1(true)}
+                  onClick={() => handleAnswerWaterQ1(true)}
                   className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${waterQ1 === true ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
                 >
                   Yes, it is free (0)
                 </button>
                 <button 
-                  onClick={() => setWaterQ1(false)}
+                  onClick={() => handleAnswerWaterQ1(false)}
                   className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${waterQ1 === false ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
                 >
                   No / Not sure (-1)
@@ -638,13 +706,13 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
             </p>
             <div className="flex gap-3 mb-6">
               <button 
-                onClick={() => setPesticidesQ1(true)}
+                onClick={() => handleAnswerPesticidesQ1(true)}
                 className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${pesticidesQ1 === true ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
               >
                 Yes, I consume without steps (-1)
               </button>
               <button 
-                onClick={() => setPesticidesQ1(false)}
+                onClick={() => handleAnswerPesticidesQ1(false)}
                 className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${pesticidesQ1 === false ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
               >
                 No, I wash or choose organic (0)
@@ -698,13 +766,13 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
             </p>
             <div className="flex gap-3 mb-6">
               <button 
-                onClick={() => setMicroplasticsQ1(true)}
+                onClick={() => handleAnswerMicroplasticsQ1(true)}
                 className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${microplasticsQ1 === true ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
               >
                 Yes, regularly (-1)
               </button>
               <button 
-                onClick={() => setMicroplasticsQ1(false)}
+                onClick={() => handleAnswerMicroplasticsQ1(false)}
                 className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${microplasticsQ1 === false ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
               >
                 No, I avoid plastic containers (0)
@@ -759,7 +827,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
           <div className="border-b border-slate-100 dark:border-slate-800 pb-4">
             <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Kitchen Microplastics & Utensils Audit</span>
             <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100 mt-0.5">Check Your Kitchen</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Audit water cans, cookware Teflon exposure, and plastic commodity storage.</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Audit water cans, synthetic non-stick cookware exposure, and plastic commodity storage.</p>
           </div>
 
           <div className="space-y-6">
@@ -771,13 +839,13 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
               </p>
               <div className="flex gap-3">
                 <button 
-                  onClick={() => setKitchenQ1(true)}
+                  onClick={() => handleAnswerKitchenQ1(true)}
                   className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${kitchenQ1 === true ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
                 >
                   Yes (Safe - 0)
                 </button>
                 <button 
-                  onClick={() => setKitchenQ1(false)}
+                  onClick={() => handleAnswerKitchenQ1(false)}
                   className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${kitchenQ1 === false ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
                 >
                   No (Risk -1)
@@ -789,17 +857,17 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
             <div className="pt-5 border-t border-slate-100 dark:border-slate-800">
               <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-2">Question 2</p>
               <p className="text-sm font-semibold text-slate-850 dark:text-slate-100 leading-relaxed mb-3.5">
-                Are utensils like <strong>Tava and pan made of natural substances</strong> like iron, brass, or aluminum (avoiding synthetic Teflon non-stick coatings)?
+                Are utensils like <strong>Tava and pan made of natural materials</strong> like iron, brass, or clay (avoiding synthetic non-stick coatings)?
               </p>
               <div className="flex gap-3">
                 <button 
-                  onClick={() => setKitchenQ2(true)}
+                  onClick={() => handleAnswerKitchenQ2(true)}
                   className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${kitchenQ2 === true ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
                 >
                   Yes (Safe - 0)
                 </button>
                 <button 
-                  onClick={() => setKitchenQ2(false)}
+                  onClick={() => handleAnswerKitchenQ2(false)}
                   className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${kitchenQ2 === false ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
                 >
                   No (Risk -1)
@@ -815,13 +883,13 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
               </p>
               <div className="flex gap-3">
                 <button 
-                  onClick={() => setKitchenQ3(true)}
+                  onClick={() => handleAnswerKitchenQ3(true)}
                   className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${kitchenQ3 === true ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
                 >
                   Yes (Safe - 0)
                 </button>
                 <button 
-                  onClick={() => setKitchenQ3(false)}
+                  onClick={() => handleAnswerKitchenQ3(false)}
                   className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${kitchenQ3 === false ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
                 >
                   No (Risk -1)
@@ -836,7 +904,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
               🍳 Natural Kitchen & Utensil Guidelines
             </h4>
             <ul className="text-xs text-emerald-700 dark:text-emerald-400 space-y-2 list-disc pl-4 font-semibold leading-relaxed">
-              <li><strong>Cast Iron & Brass Tava</strong>: Natural iron cookware infuses dietary bioavailable iron while preventing toxic PFOA/PTFE Teflon breakdown fumes.</li>
+              <li><strong>Cast Iron & Brass Tava</strong>: Natural iron cookware infuses dietary bioavailable minerals while avoiding synthetic non-stick coating breakdown fumes.</li>
               <li><strong>Non-Plastic Water Storage</strong>: Store drinking water in copper, clay, or food-grade stainless steel pitchers instead of plastic cans.</li>
               <li><strong>Glass & Stainless Jars</strong>: Store dry spices, pulses, and commodities in glass or stainless steel containers to eliminate plasticizer leaching.</li>
             </ul>

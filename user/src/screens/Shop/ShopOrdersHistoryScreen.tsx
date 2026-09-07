@@ -179,21 +179,30 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
   };
 
   return (
-    <div 
-      className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 transition-colors duration-300"
-      style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
-    >
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">MitoReboot</span>
-          <h2 className="text-2xl font-sans font-bold text-slate-850 dark:text-slate-100 leading-none mt-1">My Orders & History</h2>
+    <div className="pb-24 bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 transition-colors duration-300">
+      
+      {/* Sticky Header with Safe Notch Clearance */}
+      <div 
+        className="sticky top-0 z-50 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 px-4 pb-3 shadow-xs"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top, 24px) + 12px)' }}
+      >
+        <div className="max-w-5xl mx-auto flex justify-between items-center">
+          <div>
+            <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 tracking-[0.2em] uppercase block">MitoReboot Store</span>
+            <h2 className="text-xl sm:text-2xl font-sans font-black text-slate-850 dark:text-slate-100 leading-none mt-0.5">My Orders & History</h2>
+          </div>
+          {onBack && (
+            <button 
+              onClick={onBack} 
+              className="h-10 w-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 shadow-2xs transition-all cursor-pointer"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+          )}
         </div>
-        {onBack && (
-          <button onClick={onBack} className="h-10 w-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all">
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-        )}
       </div>
+
+      <div className="px-4 max-w-5xl mx-auto pt-4">
 
       <div className="flex bg-slate-200/50 dark:bg-slate-800/50 p-1 rounded-xl mb-6 shadow-inner">
         <button
@@ -573,6 +582,7 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };

@@ -9,6 +9,7 @@ export const FASTING_WINDOW_NOTIFICATION_ID = 1005;
 export const MIDDAY_STRESS_RESET_NOTIFICATION_ID = 1006;
 export const EVENING_SLEEP_WINDDOWN_NOTIFICATION_ID = 1007;
 export const INACTIVE_DAY_NOTIFICATION_ID = 1008;
+export const BREATHWORK_NOTIFICATION_ID = 1009;
 
 export const CHECKIN_CHANNEL_ID = 'mito_daily_checkin_channel';
 export const REPORTS_CHANNEL_ID = 'mito_reports_channel';

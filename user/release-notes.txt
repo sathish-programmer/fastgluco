@@ -1,14 +1,14 @@
 <en-US>
-- Meet Mia: Mental Health AI Expert for stress & sleep care.
-- Meet Gia: Genetic AI Counselor for NCCN-guided screening.
-- Added quick tools for 4-7-8 breathing & worry journaling.
-- Live AQI tracking & Dual Water Filtration (RO + Carbon) tips.
-- UI enhancements, theme updates, and bug fixes.
+- Redesigned Cellular Balance: Sleek side-by-side view tracking stress forces vs. restorative repair.
+- Interactive Timeframe Filter: Easily toggle between Today, 7-Day, 30-Day, and 1-Year trends.
+- Cellular Health Reports: Download & share comprehensive health audit reports on Android & iOS.
+- Health Defense & Repair Indicators: Enhanced visual tracking for daily cellular balance.
+- Performance improvements and smoother dashboard navigation.
 </en-US>
 <en-IN>
-- Meet Mia: Mental Health AI Expert for stress & sleep care.
-- Meet Gia: Genetic AI Counselor for NCCN-guided screening.
-- Added quick tools for 4-7-8 breathing & worry journaling.
-- Live AQI tracking & Dual Water Filtration (RO + Carbon) tips.
-- UI enhancements, theme updates, and bug fixes.
+- Redesigned Cellular Balance: Sleek side-by-side view tracking stress forces vs. restorative repair.
+- Interactive Timeframe Filter: Easily toggle between Today, 7-Day, 30-Day, and 1-Year trends.
+- Cellular Health Reports: Download & share comprehensive health audit reports on Android & iOS.
+- Health Defense & Repair Indicators: Enhanced visual tracking for daily cellular balance.
+- Performance improvements and smoother dashboard navigation.
 </en-IN>

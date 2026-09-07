@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, RefreshCw, AlertTriangle, Info, Wind, Clock, TrendingUp, Search, ShieldAlert, ShoppingBag, ExternalLink } from 'lucide-react';
+import { MapPin, RefreshCw, AlertTriangle, Info, Wind, Clock, TrendingUp, Search, ShieldAlert, ShoppingBag, ExternalLink, MapPinOff, Navigation } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, ReferenceLine } from 'recharts';
+
+import { getDeviceLocation } from '../utils/geolocationHelper';
 
 interface LiveAQIWidgetProps {
   className?: string;
@@ -76,6 +78,8 @@ export const LiveAQIWidget: React.FC<LiveAQIWidgetProps> = ({ className = '', co
   const [searching, setSearching] = useState<boolean>(false);
   const [standard, setStandard] = useState<'IN' | 'US'>('IN');
 
+  const [isLocationGranted, setIsLocationGranted] = useState<boolean>(true);
+
   // Preset Indian cities
   const presetCities = [
     { name: 'Bangalore', lat: 12.9716, lon: 77.5946 },
@@ -99,30 +103,23 @@ export const LiveAQIWidget: React.FC<LiveAQIWidgetProps> = ({ className = '', co
     return () => clearInterval(interval);
   }, []);
 
-  const detectLocationAndFetchAQI = () => {
+  const detectLocationAndFetchAQI = async () => {
     setLoading(true);
     setError(null);
 
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const lat = position.coords.latitude;
-          const lon = position.coords.longitude;
-          const livePlaceName = await fetchCityNameFromCoords(lat, lon);
-          await fetchAQIByCoords(lat, lon, livePlaceName);
-        },
-        async (geoErr) => {
-          console.warn('Geolocation fallback to Bangalore:', geoErr);
-          await fetchAQIByCoords(12.9716, 77.5946, 'Bangalore, Karnataka');
-        },
-        { timeout: 8000 }
-      );
+    const loc = await getDeviceLocation();
+    if (loc) {
+      setIsLocationGranted(true);
+      const livePlaceName = await fetchCityNameFromCoords(loc.lat, loc.lon);
+      await fetchAQIByCoords(loc.lat, loc.lon, livePlaceName, false, false);
     } else {
-      fetchAQIByCoords(12.9716, 77.5946, 'Bangalore, Karnataka');
+      console.warn('Geolocation unavailable/denied, falling back to default city');
+      setIsLocationGranted(false);
+      await fetchAQIByCoords(12.9716, 77.5946, 'Bangalore, Karnataka', false, true);
     }
   };
 
-  const fetchAQIByCoords = async (lat: number, lon: number, locationLabel: string, isAutoReload = false) => {
+  const fetchAQIByCoords = async (lat: number, lon: number, locationLabel: string, isAutoReload = false, isFallback = false) => {
     if (!isAutoReload) setLoading(true);
     else setRefreshing(true);
     setError(null);
@@ -209,6 +206,7 @@ export const LiveAQIWidget: React.FC<LiveAQIWidgetProps> = ({ className = '', co
           pm25: currentPM25,
           cityName: locationLabel,
           status: aqiCategory,
+          isFallback: isFallback,
           updatedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }));
       } catch (e) {}
@@ -427,6 +425,33 @@ export const LiveAQIWidget: React.FC<LiveAQIWidgetProps> = ({ className = '', co
       ) : aqiData ? (
         <div className="space-y-4">
           
+          {/* Location Access Prompt Banner if GPS is not enabled / denied */}
+          {!isLocationGranted && (
+            <div className="bg-amber-500/10 border border-amber-300/80 dark:border-amber-700/60 rounded-2xl p-3 sm:p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
+              <div className="flex items-start gap-2.5">
+                <div className="p-2 bg-amber-500/20 text-amber-700 dark:text-amber-300 rounded-xl shrink-0 mt-0.5">
+                  <MapPinOff className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-xs font-black text-amber-900 dark:text-amber-200">
+                    Location Access Disabled • Showing Default ({aqiData.cityName})
+                  </p>
+                  <p className="text-[11px] text-amber-700 dark:text-amber-300 font-medium leading-tight mt-0.5">
+                    Enable device location to track live real-time AQI and pollution exposure for your exact area.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={detectLocationAndFetchAQI}
+                className="w-full sm:w-auto px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shrink-0 flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer transition-all"
+              >
+                <Navigation className="h-3.5 w-3.5" />
+                <span>Enable Live Location</span>
+              </button>
+            </div>
+          )}
+
           {/* Main Hero Card */}
           <div className="bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3.5 space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">

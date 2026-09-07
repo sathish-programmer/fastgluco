@@ -479,14 +479,17 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
   }
 
   return (
-    <div className={`pb-32 ${isBlocking ? 'pt-0' : 'pt-2'} px-6 md:px-10 lg:px-16 max-w-3xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-full h-full overflow-y-auto w-full`}>
-      {/* Sleek Non-Overlapping Header */}
-      <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-200/80 dark:border-slate-800/80 pt-2">
+    <div className="pb-32 px-4 sm:px-6 md:px-10 lg:px-16 max-w-3xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-full h-full overflow-y-auto w-full">
+      {/* Sleek Sticky Notch-Safe Header */}
+      <div 
+        className="sticky top-0 z-40 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 -mx-4 sm:-mx-6 md:-mx-10 lg:-mx-16 px-4 sm:px-6 md:px-10 lg:px-16 pb-3 mb-6 shadow-xs flex items-center justify-between"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top, 24px) + 12px)' }}
+      >
         <div className="flex items-center space-x-3">
           {!isBlocking && (
             <button 
               onClick={onBack} 
-              className="p-2 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all shadow-xs cursor-pointer"
+              className="p-2 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all shadow-2xs cursor-pointer"
               title="Go Back"
             >
               <ArrowLeft className="h-5 w-5" />

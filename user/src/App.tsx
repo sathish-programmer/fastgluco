@@ -111,8 +111,10 @@ const MainAppContent: React.FC = () => {
     if (isAuthenticated) {
       _setActiveTab('Home');
       setNavigationHistory(['Home']);
+      const params = new URLSearchParams(window.location.search);
+      const isViewingSharedProduct = !!params.get('product');
       const completed = localStorage.getItem('mito_welcome_onboarding_completed') || localStorage.getItem('fastgluco_onboarding_completed');
-      if (!completed) {
+      if (!completed && !isViewingSharedProduct) {
         setShowOnboarding(true);
       }
     }

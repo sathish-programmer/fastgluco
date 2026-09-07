@@ -344,6 +344,15 @@
   display: none !important;
 }
 
+/* Eliminate excessive gap between AI banner / header and sub-page screen content */
+.sub-page-safe-wrapper:not(.is-shop) > .sub-page-body > div {
+  padding-top: 0.5rem !important;
+}
+
+.sub-page-body > div > .sub-page-internal-header + * {
+  margin-top: 0px !important;
+}
+
 /* For Shop screens, adjust their sticky header to clear safe area top notch */
 .sub-page-safe-wrapper.is-shop .sticky.top-0 {
   padding-top: calc(env(safe-area-inset-top, 0px) + 12px) !important;

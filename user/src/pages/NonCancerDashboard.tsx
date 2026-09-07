@@ -35,7 +35,8 @@ import {
   Sparkles,
   Filter,
   ChevronDown,
-  Loader2
+  Loader2,
+  Wind
 } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
@@ -63,6 +64,7 @@ import { GastritisLogScreen } from '../screens/HabitScreens/GastritisLogScreen';
 import { GeneticLogScreen } from '../screens/HabitScreens/GeneticLogScreen';
 import { AntioxidantLogScreen } from '../screens/HabitScreens/AntioxidantLogScreen';
 import { EnvironmentalExposuresLogScreen } from '../screens/HabitScreens/EnvironmentalExposuresLogScreen';
+import { BreathLogScreen } from '../screens/HabitScreens/BreathLogScreen';
 import { KitchenLogScreen } from '../screens/HabitScreens/KitchenLogScreen';
 import { ModeSwitcher } from '../components/ModeSwitcher';
 import { Dashboard } from './Dashboard';
@@ -87,12 +89,30 @@ interface NonCancerDashboardProps {
 
 export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNavigateToTab, onGoToCGMDashboard }) => {
   // Navigation State for Habit Screens
-  const [activeScreen, _setActiveScreen] = useState<string | null>(null);
+  const [activeScreen, _setActiveScreen] = useState<string | null>(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('product') || params.get('shop')) {
+      return 'Shop';
+    }
+    return null;
+  });
   const setActiveScreen = (val: string | null) => {
     _setActiveScreen(val);
     (window as any).activeSubScreen = val;
     window.dispatchEvent(new CustomEvent('subScreenChange', { detail: val }));
   };
+
+  useEffect(() => {
+    const checkProductParam = () => {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('product') || params.get('shop')) {
+        _setActiveScreen('Shop');
+      }
+    };
+    checkProductParam();
+    window.addEventListener('popstate', checkProductParam);
+    return () => window.removeEventListener('popstate', checkProductParam);
+  }, []);
 
   useEffect(() => {
     const handleBack = (e: Event) => {
@@ -199,6 +219,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
         if (s === 'fasting') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'FASTING');
         if (s === 'movement') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'MOVEMENT');
         if (s === 'stillness') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'STILLNESS');
+        if (s === 'breath' || s === 'power_of_breath' || s === 'breathwork') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'BREATH');
         if (s === 'joy') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'JOY');
         if (s === 'smoking') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'SMOKING');
         if (s === 'alcohol') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'ALCOHOL');
@@ -364,7 +385,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
       title = 'Check Your Kitchen Audit';
       const answers = val?.answers || {};
       const isSafe = (val?.score === 0) || (answers.kitchenQ1 === true && answers.kitchenQ2 === true && answers.kitchenQ3 === true);
-      subtitle = isSafe ? 'Non-plastic water, natural iron/brass utensils & glass storage' : 'Plastic container / Teflon cookware risk flagged';
+      subtitle = isSafe ? 'Non-plastic water, natural utensils & glass storage' : 'Plastic container / synthetic non-stick cookware risk flagged';
       isRepair = isSafe;
       category = 'microplastics';
     } else if (t.includes('ENVIRONMENT')) {
@@ -392,7 +413,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
       } else if (answers.kitchenQ1 !== undefined || answers.kitchenQ2 !== undefined || answers.kitchenQ3 !== undefined) {
         title = 'Check Your Kitchen Audit';
         const isSafe = answers.kitchenQ1 === true && answers.kitchenQ2 === true && answers.kitchenQ3 === true;
-        subtitle = isSafe ? 'Non-plastic water, natural iron/brass utensils & glass storage' : 'Plastic container / Teflon cookware risk flagged';
+        subtitle = isSafe ? 'Non-plastic water, natural utensils & glass storage' : 'Plastic container / synthetic non-stick cookware risk flagged';
         isRepair = isSafe;
         category = 'microplastics';
       } else {
@@ -422,10 +443,15 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
       isRepair = true;
       category = 'movement';
     } else if (t.includes('STILLNESS')) {
-      title = 'Stillness & Breathwork';
-      subtitle = optStr || '4-7-8 Breathing / Meditation';
+      title = 'Stillness & Meditation';
+      subtitle = optStr || 'Quiet Meditation Check-in';
       isRepair = true;
       category = 'stillness';
+    } else if (t.includes('BREATH')) {
+      title = 'Power of Breath (Cellular Oxygenation)';
+      subtitle = optStr || (val?.minutes ? `${val.minutes} Mins Breathwork (${val?.technique || 'Box'})` : 'Cellular Breath Practice');
+      isRepair = true;
+      category = 'breath';
     } else if (t.includes('JOY')) {
       title = 'Joy & Gratitude Check';
       subtitle = optStr || 'Positive Emotional Check-in';
@@ -714,7 +740,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
     todaysHabits.forEach(h => {
       if (h.type === 'Fasting') fastingLogged = true;
       if (h.type === 'Movement' && h.value?.minutes >= 20) movementLogged = true;
-      if (h.type === 'Stillness' && h.value?.sat === true) stillnessLogged = true;
+      if ((h.type === 'Stillness' && h.value?.sat === true) || h.type === 'Breath') stillnessLogged = true;
       if (h.type === 'Joy' && h.value?.done !== false) joyLogged = true;
     });
 
@@ -747,24 +773,55 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
     if (val === undefined || val === null) return null;
 
     if (typeof val === 'number') {
-      return val < 0 ? -1 : 0;
+      return val < 0 ? -1 : (val === 0 ? 0 : null);
     }
 
     if (typeof val === 'object') {
-      if (typeof val.score === 'number') {
-        return val.score < 0 ? -1 : 0;
-      }
       const ans = val.answers || val;
-      if (ans.kitchenQ1 === false || ans.kitchenQ2 === false || ans.kitchenQ3 === false || ans.kitchenQ1 === 'no' || ans.kitchenQ2 === 'no' || ans.kitchenQ3 === 'no') {
-        return -1;
+      const hasQ1 = ans.kitchenQ1 !== undefined && ans.kitchenQ1 !== null;
+      const hasQ2 = ans.kitchenQ2 !== undefined && ans.kitchenQ2 !== null;
+      const hasQ3 = ans.kitchenQ3 !== undefined && ans.kitchenQ3 !== null;
+
+      if (hasQ1 || hasQ2 || hasQ3) {
+        if (ans.kitchenQ1 === false || ans.kitchenQ2 === false || ans.kitchenQ3 === false || 
+            ans.kitchenQ1 === 'no' || ans.kitchenQ2 === 'no' || ans.kitchenQ3 === 'no') {
+          return -1;
+        }
+        if (ans.kitchenQ1 === true || ans.kitchenQ2 === true || ans.kitchenQ3 === true || 
+            ans.kitchenQ1 === 'yes' || ans.kitchenQ2 === 'yes' || ans.kitchenQ3 === 'yes') {
+          return 0;
+        }
       }
-      if (ans.kitchenQ1 === true || ans.kitchenQ2 === true || ans.kitchenQ3 === true || ans.kitchenQ1 === 'yes' || ans.kitchenQ2 === 'yes' || ans.kitchenQ3 === 'yes') {
-        return 0;
+
+      // If all questions are explicitly null, user has not answered / has reset
+      if (ans.kitchenQ1 === null && ans.kitchenQ2 === null && ans.kitchenQ3 === null) {
+        return null;
+      }
+
+      if (typeof val.score === 'number') {
+        return val.score < 0 ? -1 : (val.score === 0 ? 0 : null);
       }
     }
     const optStr = (typeof val === 'object' ? (val.option || val.notes || '') : `${val}`).toLowerCase();
-    if (optStr.includes('risk') || optStr.includes('plastic') || optStr.includes('teflon')) return -1;
-    return 0;
+    if (optStr.includes('risk') || optStr.includes('plastic') || optStr.includes('non-stick') || optStr.includes('teflon')) return -1;
+    if (optStr.includes('safe') || optStr.includes('clean') || optStr.includes('natural')) return 0;
+    return null;
+  };
+
+  const getObesityScore = () => {
+    const latest = getLatestLogForTypes('OBESITY', 'WEIGHT');
+    if (latest) {
+      const val = latest.value;
+      if (typeof val === 'number') return val < 0 ? -1 : null;
+      if (val?.bmi && parseFloat(val.bmi) >= 25) return -1;
+      if (val?.difficultyLosing === true) return -1;
+      return null;
+    }
+    if (user?.height && user?.weight) {
+      const bmi = user.weight / Math.pow(user.height / 100, 2);
+      if (bmi >= 25) return -1;
+    }
+    return null;
   };
 
   const calculateDamageCount = () => {
@@ -791,18 +848,20 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
         if (kScore !== null && kScore < 0) count += 1;
       }
     });
+    const obScore = getObesityScore();
+    if (obScore !== null && obScore < 0) count += 1;
     return count;
   };
 
   const calculateRepairCount = () => {
     let count = 0;
-    const categories = ['STRESS', 'SLEEP', 'SMOKING', 'ALCOHOL', 'SUBSTANCES', 'FASTING', 'ANTIOXIDANTS', 'MOVEMENT', 'STILLNESS', 'JOY', 'SAFERPRODUCTS', 'CANCERSCREENING', 'INTIMACY', 'ENVIRONMENT', 'KITCHEN'];
+    const categories = ['STRESS', 'SLEEP', 'SMOKING', 'ALCOHOL', 'SUBSTANCES', 'FASTING', 'ANTIOXIDANTS', 'MOVEMENT', 'STILLNESS', 'BREATH', 'JOY', 'SAFERPRODUCTS', 'CANCERSCREENING', 'INTIMACY', 'ENVIRONMENT', 'KITCHEN'];
     categories.forEach(cat => {
       const latest = getLatestLogForTypes(cat);
       if (!latest) return;
       const typeUpper = (latest.type || '').toUpperCase();
       const val = latest.value;
-      const optStr = (typeof val === 'object' ? (val.option || val.notes || val.faceId || '') : `${val}`).toLowerCase();
+      const optStr = (typeof val === 'object' ? (val.option || val.notes || val.faceId || val.technique || '') : `${val}`).toLowerCase();
 
       if (typeUpper.includes('STRESS') && (optStr.includes('calm') || optStr.includes('steady') || optStr.includes('no stress') || val === 1 || val?.faceId === 'calm')) count += 1;
       if (typeUpper.includes('SLEEP') && ((typeof val === 'number' && val >= 6) || (val?.hours >= 6 && val?.quality !== 'poor'))) count += 1;
@@ -812,6 +871,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
       if (typeUpper.includes('ANTIOXIDANTS') && (val === 1 || val?.consumed === true || optStr.includes('yes') || optStr.includes('consumed'))) count += 1;
       if (typeUpper.includes('MOVEMENT') && (val === 1 || val?.minutes >= 20 || typeof val === 'number' || optStr.includes('walk') || optStr.includes('run') || optStr.includes('30+') || optStr.includes('yoga'))) count += 1;
       if (typeUpper.includes('STILLNESS') && (val === 1 || val?.sat === true || optStr.includes('yes') || optStr.includes('practiced'))) count += 1;
+      if (typeUpper.includes('BREATH') && (val === 1 || val?.minutes > 0 || val?.isCompleted === true || val?.done !== false || optStr.includes('yes') || optStr.includes('practiced') || optStr.includes('box') || optStr.includes('breath'))) count += 1;
       if ((typeUpper.includes('JOY') || typeUpper.includes('REPAIR')) && (val === 1 || val?.done !== false || val?.isCompleted === true || optStr.includes('yes'))) count += 1;
       if (typeUpper.includes('SAFERPRODUCTS') && (val === 1 || typeof val === 'object')) count += 1;
       if (typeUpper.includes('CANCERSCREENING') && (val === 1 || typeof val === 'object')) count += 1;
@@ -936,13 +996,6 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
     return 0;
   };
 
-  const getObesityScore = () => {
-    if (!user?.height || !user?.weight) return null;
-    const bmi = user.weight / Math.pow(user.height / 100, 2);
-    if (bmi >= 25) return -1;
-    return 0;
-  };
-
   const getFastingScore = () => {
     const latest = getLatestLogForTypes('FASTING', 'REPAIR');
     if (!latest) return null;
@@ -976,6 +1029,15 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
     const val = latest.value;
     const optStr = (typeof val === 'object' ? (val.option || val.notes || '') : `${val}`).toLowerCase();
     if (val === 1 || val?.sat === true || optStr.includes('yes') || optStr.includes('practiced')) return 1;
+    return 0;
+  };
+
+  const getBreathScore = () => {
+    const latest = getLatestLogForTypes('BREATH');
+    if (!latest) return null;
+    const val = latest.value;
+    const optStr = (typeof val === 'object' ? (val.option || val.notes || val.technique || '') : `${val}`).toLowerCase();
+    if (val === 1 || val?.minutes > 0 || val?.isCompleted === true || val?.done !== false || optStr.includes('yes') || optStr.includes('practiced') || optStr.includes('box') || optStr.includes('breath')) return 1;
     return 0;
   };
 
@@ -1018,43 +1080,50 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
     onNavigateToTab('Book Appointment');
   };
 
+  const handleCloseActiveScreen = () => {
+    setActiveScreen(null);
+    fetchHabitsAndAppointments();
+  };
+
   const renderActiveScreen = () => {
-    if (activeScreen === 'Stress') return <StressLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} onNavigateToIntimacy={() => setActiveScreen('Intimacy')} />;
-    if (activeScreen === 'Smoking') return <SmokingLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
-    if (activeScreen === 'Substances') return <SubstancesLogScreen onBack={() => setActiveScreen(null)} />;
-    if (activeScreen === 'Intimacy') return <IntimacyCheckScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
-    if (activeScreen === 'Environmental') return <EnvironmentalExposuresLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} onNavigateToShop={(query) => { setShopQuery(query); setActiveScreen('EnvironmentalShop'); }} />;
-    if (activeScreen === 'Kitchen') return <KitchenLogScreen onBack={() => setActiveScreen(null)} onNavigateToShop={(query) => { setShopQuery(query); setActiveScreen('EnvironmentalShop'); }} />;
+    if (activeScreen === 'Stress') return <StressLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} onNavigateToIntimacy={() => setActiveScreen('Intimacy')} />;
+    if (activeScreen === 'Smoking') return <SmokingLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} />;
+    if (activeScreen === 'Substances') return <SubstancesLogScreen onBack={handleCloseActiveScreen} />;
+    if (activeScreen === 'Intimacy') return <IntimacyCheckScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} />;
+    if (activeScreen === 'Environmental') return <EnvironmentalExposuresLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} onNavigateToShop={(query) => { setShopQuery(query); setActiveScreen('EnvironmentalShop'); }} />;
+    if (activeScreen === 'Kitchen') return <KitchenLogScreen onBack={handleCloseActiveScreen} onNavigateToShop={(query) => { setShopQuery(query); setActiveScreen('EnvironmentalShop'); }} />;
     if (activeScreen === 'EnvironmentalShop') {
       if (shopQuery === 'SaferProducts') {
         return <ShopScreen type="SaferProducts" onBack={() => setActiveScreen('Environmental')} />;
       }
       return <ShopScreen type="All" defaultSearch={shopQuery} onBack={() => setActiveScreen('Environmental')} />;
     }
-    if (activeScreen === 'Sleep') return <SleepLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
-    if (activeScreen === 'Movement') return <MovementLogScreen onBack={() => setActiveScreen(null)} />;
-    if (activeScreen === 'Alcohol') return <AlcoholLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
-    if (activeScreen === 'Fasting') return <FastingLogScreen onBack={() => setActiveScreen(null)} />;
-    if (activeScreen === 'Stillness') return <StillnessLogScreen onBack={() => setActiveScreen(null)} />;
-    if (activeScreen === 'Joy') return <JoyLogScreen onBack={() => setActiveScreen(null)} />;
-    if (activeScreen === 'Antioxidants') return <AntioxidantLogScreen onBack={() => setActiveScreen(null)} onViewShop={() => setActiveScreen('AntioxidantsShop')} onNavigateToDiagnostics={() => setActiveScreen('CancerScreening')} />;
+    if (activeScreen === 'Sleep') return <SleepLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} />;
+    if (activeScreen === 'Movement') return <MovementLogScreen onBack={handleCloseActiveScreen} />;
+    if (activeScreen === 'Alcohol') return <AlcoholLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} />;
+    if (activeScreen === 'Fasting') return <FastingLogScreen onBack={handleCloseActiveScreen} />;
+    if (activeScreen === 'Stillness') return <StillnessLogScreen onBack={handleCloseActiveScreen} />;
+    if (activeScreen === 'Breath') return <BreathLogScreen onBack={handleCloseActiveScreen} />;
+    if (activeScreen === 'Joy') return <JoyLogScreen onBack={handleCloseActiveScreen} />;
+    if (activeScreen === 'Antioxidants') return <AntioxidantLogScreen onBack={handleCloseActiveScreen} onViewShop={() => setActiveScreen('AntioxidantsShop')} onNavigateToDiagnostics={() => setActiveScreen('CancerScreening')} />;
     if (activeScreen === 'AntioxidantsShop') return <ShopScreen type="Antioxidants" onBack={() => setActiveScreen('Antioxidants')} />;
-    if (activeScreen === 'SaferProducts') return <ShopScreen type="SaferProducts" onBack={() => setActiveScreen(null)} />;
-    if (activeScreen === 'CancerScreening') return <CancerScreeningScreen onBack={() => setActiveScreen(null)} />;
-    if (activeScreen === 'IndianCancers') return <IndianCancersScreen onBack={() => setActiveScreen(null)} />;
-    if (activeScreen === 'Obesity') return <ObesityLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
-    if (activeScreen === 'Dental') return <DentalLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} />;
-    if (activeScreen === 'Gastritis') return <GastritisLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} onNavigateToShop={(query) => { setShopQuery(query); setActiveScreen('GastritisShop'); }} />;
+    if (activeScreen === 'SaferProducts') return <ShopScreen type="SaferProducts" onBack={handleCloseActiveScreen} />;
+    if (activeScreen === 'CancerScreening') return <CancerScreeningScreen onBack={handleCloseActiveScreen} />;
+    if (activeScreen === 'IndianCancers') return <IndianCancersScreen onBack={handleCloseActiveScreen} />;
+    if (activeScreen === 'Obesity') return <ObesityLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} />;
+    if (activeScreen === 'Dental') return <DentalLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} />;
+    if (activeScreen === 'Gastritis') return <GastritisLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} onNavigateToShop={(query) => { setShopQuery(query); setActiveScreen('GastritisShop'); }} />;
     if (activeScreen === 'GastritisShop') return <ShopScreen type="All" defaultSearch={shopQuery} onBack={() => setActiveScreen('Gastritis')} />;
-    if (activeScreen === 'Genetic') return <GeneticLogScreen onBack={() => setActiveScreen(null)} onBookAppointment={handleBookAppt} onNavigateToShop={(query) => { setShopQuery(query); setActiveScreen('GeneticShop'); }} />;
+    if (activeScreen === 'Genetic') return <GeneticLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} onNavigateToShop={(query) => { setShopQuery(query); setActiveScreen('GeneticShop'); }} />;
     if (activeScreen === 'GeneticShop') return <ShopScreen type="All" defaultSearch={shopQuery} onBack={() => setActiveScreen('Genetic')} />;
-    if (activeScreen === 'WigShop') return <ShopScreen type="All" defaultSearch="wig" onBack={() => setActiveScreen(null)} />;
+    if (activeScreen === 'WigShop') return <ShopScreen type="All" defaultSearch="wig" onBack={handleCloseActiveScreen} />;
+    if (activeScreen === 'Shop') return <ShopScreen type="All" onBack={handleCloseActiveScreen} />;
     return null;
   };
 
   const activeScreenComponent = renderActiveScreen();
   if (activeScreenComponent) {
-    const isShopScreen = activeScreen === 'AntioxidantsShop' || activeScreen === 'SaferProducts' || activeScreen === 'GastritisShop' || activeScreen === 'GeneticShop' || activeScreen === 'WigShop' || activeScreen === 'EnvironmentalShop';
+    const isShopScreen = activeScreen === 'Shop' || activeScreen === 'AntioxidantsShop' || activeScreen === 'SaferProducts' || activeScreen === 'GastritisShop' || activeScreen === 'GeneticShop' || activeScreen === 'WigShop' || activeScreen === 'EnvironmentalShop';
 
     const getScreenTitle = (screen: string | null) => {
       switch (screen) {
@@ -1068,6 +1137,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
         case 'Alcohol': return 'Alcohol';
         case 'Fasting': return 'Intermittent Fasting';
         case 'Stillness': return 'Stillness';
+        case 'Breath': return 'Power of Breath';
         case 'Joy': return 'Things You Love';
         case 'Antioxidants': return 'Antioxidants';
         case 'CancerScreening': return 'Cancer Screening';
@@ -1086,8 +1156,8 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
         {!isShopScreen && (
           <header className="sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 z-50 px-4 pt-[calc(env(safe-area-inset-top,24px)+12px)] pb-3 w-full flex items-center gap-4 transition-colors duration-300">
             <button
-              onClick={() => setActiveScreen(null)}
-              className="h-10 w-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all"
+              onClick={handleCloseActiveScreen}
+              className="h-10 w-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all cursor-pointer"
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
@@ -1666,6 +1736,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
                   <HabitItem icon={<Timer className="h-3.5 w-3.5 text-sky-500" />} label="INTERMITTENT FASTING" onClick={() => handleOpenHabit('Fasting')} score={getFastingScore()} />
                   <HabitItem icon={<User className="h-3.5 w-3.5 text-amber-500" />} label="MOVEMENT" onClick={() => handleOpenHabit('Movement')} score={getMovementScore()} />
                   <HabitItem icon={<User className="h-3.5 w-3.5 text-amber-600" />} label="Stillness" onClick={() => handleOpenHabit('Stillness')} score={getStillnessScore()} />
+                  <HabitItem icon={<Wind className="h-3.5 w-3.5 text-cyan-500" />} label="POWER OF BREATH" onClick={() => handleOpenHabit('Breath')} score={getBreathScore()} />
                   <HabitItem icon={<Palette className="h-3.5 w-3.5 text-indigo-400" />} label="THINGS YOU LOVE" onClick={() => handleOpenHabit('Joy')} score={getJoyScore()} />
                   <HabitItem icon={<BrainCircuit className="h-3.5 w-3.5 text-rose-500" />} label="ARE YOU STRESSED/WORRIED?" onClick={() => setShowStressedModal(true)} />
                   <HabitItem icon={<User className="h-3.5 w-3.5 text-teal-500" />} label="CAREGIVER STRESS" onClick={() => setShowCaregiverModal(true)} />
@@ -1677,6 +1748,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
                   <HabitItem icon={<Cherry className="h-3.5 w-3.5 text-rose-400" />} label="Antioxidants" onClick={() => handleOpenHabit('Antioxidants')} score={getAntioxidantsScore()} />
                   <HabitItem icon={<User className="h-3.5 w-3.5 text-amber-500" />} label="Exercise" onClick={() => handleOpenHabit('Movement')} score={getMovementScore()} />
                   <HabitItem icon={<User className="h-3.5 w-3.5 text-amber-600" />} label="Stillness" onClick={() => handleOpenHabit('Stillness')} score={getStillnessScore()} />
+                  <HabitItem icon={<Wind className="h-3.5 w-3.5 text-cyan-500" />} label="Power of breath" onClick={() => handleOpenHabit('Breath')} score={getBreathScore()} />
                   <HabitItem icon={<Palette className="h-3.5 w-3.5 text-indigo-400" />} label="Things you love" onClick={() => handleOpenHabit('Joy')} score={getJoyScore()} />
                   <HabitItem icon={<ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />} label="Safer products" onClick={() => handleOpenHabit('SaferProducts')} score={getSaferProductsScore()} />
                 </>

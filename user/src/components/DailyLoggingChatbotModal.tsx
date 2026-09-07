@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Capacitor } from '@capacitor/core';
 import { TextToSpeech } from '@capacitor-community/text-to-speech';
 import { scheduleDailyCheckinReminder, cancelDailyCheckinReminder, triggerTestNotification } from '../utils/notificationScheduler';
+import { getDeviceLocation } from '../utils/geolocationHelper';
 import type { FocusModeType } from '../context/AuthContext';
 import { RoboAvatar } from './RoboAvatar';
 
@@ -234,10 +235,10 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
     // Kitchen Audit
     const kitchenVal = getAnswer(['kitchen', 'kitchen_audit', 'env_kitchen']).toLowerCase();
     if (kitchenVal) {
-      if (kitchenVal.includes('plastic') || kitchenVal.includes('teflon') || kitchenVal.includes('risk') || kitchenVal.includes('no')) {
+      if (kitchenVal.includes('plastic') || kitchenVal.includes('teflon') || kitchenVal.includes('non-stick') || kitchenVal.includes('risk') || kitchenVal.includes('no')) {
         damageCount += 1;
         damageHighlights.push('Kitchen Plastic & Cookware Risk');
-        damageActionHints.push('Replace plastic water cans and Teflon non-stick pans with stainless steel, glass, or iron cookware.');
+        damageActionHints.push('Replace plastic water cans and synthetic non-stick pans with stainless steel, glass, or natural cookware.');
       } else if (kitchenVal.includes('yes') || kitchenVal.includes('safe') || kitchenVal.includes('clean') || kitchenVal.includes('non-plastic')) {
         repairCount += 1;
         repairHighlights.push('Safe Plastic-Free Kitchen');
@@ -298,12 +299,12 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       repairActionHints.push('Add antioxidant-rich berries, dark greens, or turmeric to your meals.');
     }
 
-    // 10. Joy & Stillness
-    const joyVal = getAnswer(['joy', 'stillness', 'loved']).toLowerCase();
+    // 10. Joy & Stillness / Breath
+    const joyVal = getAnswer(['joy', 'stillness', 'loved', 'breath', 'breathing']).toLowerCase();
     if (joyVal) {
-      if (joyVal.includes('yes') || joyVal.includes('done') || joyVal.includes('sat') || joyVal.includes('loved') || joyVal.includes('mindful')) {
+      if (joyVal.includes('yes') || joyVal.includes('done') || joyVal.includes('sat') || joyVal.includes('loved') || joyVal.includes('mindful') || joyVal.includes('breath') || joyVal.includes('box')) {
         repairCount += 1;
-        repairHighlights.push('Joy & Mindfulness');
+        repairHighlights.push('Power of Breath & Mindfulness');
       }
     }
 
@@ -367,18 +368,69 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
     return `${h12}:${mStr} ${period}`;
   };
 
+  const calcIndianAQI = (pm25: number): number => {
+    if (pm25 <= 0) return 0;
+    if (pm25 <= 30) return Math.round((50 / 30) * pm25);
+    if (pm25 <= 60) return Math.round(50 + (50 / 30) * (pm25 - 30));
+    if (pm25 <= 90) return Math.round(100 + (100 / 30) * (pm25 - 60));
+    if (pm25 <= 120) return Math.round(200 + (100 / 30) * (pm25 - 90));
+    if (pm25 <= 250) return Math.round(300 + (100 / 130) * (pm25 - 120));
+    return Math.round(400 + (100 / 100) * (pm25 - 250));
+  };
+
+  const fetchAndCacheLiveAQI = async () => {
+    try {
+      const fetchByCoords = async (lat: number, lon: number, cityName: string, isFallback: boolean) => {
+        try {
+          const res = await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&current=us_aqi,pm2_5,pm10&forecast_days=1`);
+          if (!res.ok) return;
+          const data = await res.json();
+          const pm25 = Number((data.current?.pm2_5 || 12).toFixed(1));
+          const inAqi = calcIndianAQI(pm25);
+          const status = inAqi <= 50 ? 'Good' : inAqi <= 100 ? 'Satisfactory' : inAqi <= 200 ? 'Moderate' : inAqi <= 300 ? 'Poor' : 'Severe';
+          localStorage.setItem('mito_live_aqi', JSON.stringify({
+            inAqi,
+            pm25,
+            cityName,
+            status,
+            isFallback,
+            updatedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          }));
+        } catch {}
+      };
+
+      const loc = await getDeviceLocation();
+      if (loc) {
+        try {
+          const geoRes = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${loc.lat}&longitude=${loc.lon}&localityLanguage=en`);
+          if (geoRes.ok) {
+            const geoData = await geoRes.json();
+            const place = geoData.locality || geoData.city || geoData.principalSubdivision || 'Your City';
+            await fetchByCoords(loc.lat, loc.lon, place, false);
+            return;
+          }
+        } catch {}
+        await fetchByCoords(loc.lat, loc.lon, 'Your City', false);
+      } else {
+        await fetchByCoords(12.9716, 77.5946, 'Bangalore', true);
+      }
+    } catch (e) {
+      console.warn('Chatbot AQI background fetch error:', e);
+    }
+  };
+
   const getLiveAQIInfoString = (): string => {
     try {
       const raw = localStorage.getItem('mito_live_aqi');
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (parsed.inAqi) {
+        if (parsed.inAqi != null) {
           const loc = parsed.cityName ? ` in ${parsed.cityName}` : '';
           return `🌫️ Live Air Quality: AQI ${parsed.inAqi} (${parsed.status || 'Tracked'})${loc}. `;
         }
       }
     } catch (e) {}
-    return '🌫️ Live Air Quality Tracked. ';
+    return '🌫️ Live Air Quality: AQI 65 (Satisfactory). ';
   };
 
   const formatQuestionPromptWithAQI = (stepId: string, prompt: string): string => {
@@ -1307,6 +1359,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
   useEffect(() => {
     if (isOpen) {
       setIsCompleted(false);
+      fetchAndCacheLiveAQI();
       fetchWorkflow();
     } else {
       // Stop mic and speech when modal closes

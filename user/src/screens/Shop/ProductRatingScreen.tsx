@@ -129,23 +129,27 @@ export const ProductRatingScreen: React.FC<ProductRatingScreenProps> = ({ orderI
   }
 
   return (
-    <div 
-      className="pb-24 pt-6 px-4 max-w-2xl mx-auto bg-slate-50 min-h-screen font-sans antialiased text-slate-800 animate-in fade-in duration-300"
-      style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
-    >
+    <div className="pb-24 bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 animate-in fade-in duration-300">
       
-      {/* Header Banner */}
-      <div className="flex items-center justify-between mb-8">
-        <button 
-          onClick={onBack}
-          className="h-10 px-4 bg-white border border-slate-200 rounded-xl flex items-center gap-2 text-xs font-bold text-slate-600 hover:bg-slate-50 shadow-sm transition-all"
-        >
-          <ArrowLeft className="h-4 w-4" /> Back
-        </button>
-        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-          Delivered Order Feedback
-        </span>
+      {/* Sticky Header Banner */}
+      <div 
+        className="sticky top-0 z-50 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 px-4 pb-3 shadow-xs"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top, 24px) + 12px)' }}
+      >
+        <div className="max-w-2xl mx-auto flex items-center justify-between">
+          <button 
+            onClick={onBack}
+            className="h-10 px-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 shadow-2xs transition-all cursor-pointer"
+          >
+            <ArrowLeft className="h-4 w-4" /> Back
+          </button>
+          <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">
+            Delivered Order Feedback
+          </span>
+        </div>
       </div>
+
+      <div className="px-4 max-w-2xl mx-auto pt-4">
 
       {/* Main Card */}
       <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-[0_12px_40px_rgba(0,0,0,0.02)] p-6 mb-6">
@@ -247,6 +251,7 @@ export const ProductRatingScreen: React.FC<ProductRatingScreenProps> = ({ orderI
             </div>
           );
         })}
+      </div>
       </div>
 
     </div>
