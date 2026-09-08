@@ -23,3 +23,17 @@
 -keep class com.capacitorjs.plugins.camera.** { *; }
 -keep class com.capacitorjs.plugins.toast.** { *; }
 -keep class com.capacitorjs.plugins.filesystem.** { *; }
+
+# R8 Optimization Configuration
+-repackageclasses
+-allowaccessmodification
+-dontwarn com.google.android.gms.**
+-dontwarn com.google.firebase.**
+-keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod,SourceFile,LineNumberTable
+
+# Strip debug logging in production to reduce binary size and memory
+-assumenosideeffects class android.util.Log {
+    public static boolean isLoggable(java.lang.String, int);
+    public static int v(...);
+    public static int d(...);
+}

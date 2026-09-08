@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Message;
+import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.CookieManager;
 import android.webkit.WebChromeClient;
@@ -12,6 +13,7 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import androidx.core.view.WindowCompat;
 import com.getcapacitor.Bridge;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.BridgeWebChromeClient;
@@ -21,11 +23,21 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
+        // Enable modern Edge-to-Edge display (compatible with Android 15/API 35+)
+        try {
+            WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
         try {
             Bridge bridge = getBridge();
             if (bridge != null) {
                 WebView webView = bridge.getWebView();
                 if (webView != null) {
+                    // Enable hardware acceleration for smooth bitmap rendering
+                    webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+
                     // Configure Cookies for Razorpay cross-origin iframe
                     CookieManager cookieManager = CookieManager.getInstance();
                     cookieManager.setAcceptCookie(true);
@@ -37,6 +49,8 @@ public class MainActivity extends BridgeActivity {
                     settings.setDatabaseEnabled(true);
                     settings.setAllowFileAccess(true);
                     settings.setAllowContentAccess(true);
+                    settings.setLoadsImagesAutomatically(true);
+                    settings.setBlockNetworkImage(false);
                     settings.setJavaScriptCanOpenWindowsAutomatically(true);
                     settings.setSupportMultipleWindows(true);
                     settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
