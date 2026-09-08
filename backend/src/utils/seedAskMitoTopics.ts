@@ -121,13 +121,13 @@ const DEFAULT_ASK_MITO_TOPICS = [
   {
     title: 'Environmental Toxin Defense',
     category: 'Environment',
-    keywords: ['environment', 'toxin', 'pollution', 'microplastic', 'air', 'water', 'chemical', 'heavy metal', 'bpa'],
-    suggestedPrompt: 'How do environmental toxins affect cellular health?',
+    keywords: ['environment', 'toxin', 'pollution', 'passive smoke', 'second-hand smoke', 'microplastic', 'air', 'water', 'chemical', 'heavy metal', 'bpa'],
+    suggestedPrompt: 'How do environmental toxins and passive smoke affect cellular health?',
     icon: '🛡️',
     answer: 'Reducing environmental toxic load:\n\n' +
-      '• Air Quality: Airborne particulate matter (PM2.5) increases systemic inflammation. Consider HEPA air filtration indoors.\n' +
+      '• Air Quality & Passive Smoke: Particulate matter (PM2.5) and second-hand tobacco smoke drive cellular DNA damage and inflammation. Use N95 masks in high AQI areas and HEPA air filtration indoors.\n' +
       '• Endocrine Disruptors: Minimize plastics (BPA/phthalates) when storing or heating food; use glass or stainless steel.\n' +
-      '• Pure Water: Use multi-stage water filtration to remove heavy metals, chlorine, and micro-contaminants.',
+      '• Pure Water: Use multi-stage water filtration (Activated Carbon + RO) to remove heavy metals, chlorine, and micro-contaminants.',
     order: 9,
     isActive: true
   },

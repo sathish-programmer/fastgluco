@@ -525,25 +525,29 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
 
         {/* Custom date range */}
         {exportRange === 'custom' && (
-          <div className="flex items-center gap-2 mb-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2.5">
-            <Calendar className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">From</span>
-            <input
-              type="date"
-              value={exportCustomFrom}
-              max={exportCustomTo || getTodayStr()}
-              onChange={(e) => setExportCustomFrom(e.target.value)}
-              className="text-xs font-bold text-slate-600 dark:text-slate-300 bg-transparent focus:outline-none border-none cursor-pointer flex-1"
-            />
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">To</span>
-            <input
-              type="date"
-              value={exportCustomTo}
-              min={exportCustomFrom}
-              max={getTodayStr()}
-              onChange={(e) => setExportCustomTo(e.target.value)}
-              className="text-xs font-bold text-slate-600 dark:text-slate-300 bg-transparent focus:outline-none border-none cursor-pointer flex-1"
-            />
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 mb-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-2.5">
+            <div className="flex items-center gap-1.5 flex-1 min-w-[120px]">
+              <Calendar className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">From</span>
+              <input
+                type="date"
+                value={exportCustomFrom}
+                max={exportCustomTo || getTodayStr()}
+                onChange={(e) => setExportCustomFrom(e.target.value)}
+                className="text-xs font-bold text-slate-600 dark:text-slate-300 bg-transparent focus:outline-none border-none cursor-pointer flex-1 min-w-0"
+              />
+            </div>
+            <div className="flex items-center gap-1.5 flex-1 min-w-[120px]">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">To</span>
+              <input
+                type="date"
+                value={exportCustomTo}
+                min={exportCustomFrom}
+                max={getTodayStr()}
+                onChange={(e) => setExportCustomTo(e.target.value)}
+                className="text-xs font-bold text-slate-600 dark:text-slate-300 bg-transparent focus:outline-none border-none cursor-pointer flex-1 min-w-0"
+              />
+            </div>
           </div>
         )}
 

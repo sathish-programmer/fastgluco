@@ -225,7 +225,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
         if (s === 'alcohol') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'ALCOHOL');
         if (s === 'antioxidants') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'ANTIOXIDANTS');
         if (s === 'report_upload' || s.includes('report')) return reportsLoggedToday || todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('REPORT'));
-        if (s === 'env_air') return envAnswers.airQ1 !== undefined && envAnswers.airQ1 !== null;
+        if (s === 'env_air') return (envAnswers.airQ1 !== undefined && envAnswers.airQ1 !== null) || (envAnswers.airQ2 !== undefined && envAnswers.airQ2 !== null) || (envAnswers.airQ3 !== undefined && envAnswers.airQ3 !== null);
         if (s === 'env_water') return envAnswers.waterQ1 !== undefined && envAnswers.waterQ1 !== null;
         if (s === 'env_pesticides') return envAnswers.pesticidesQ1 !== undefined && envAnswers.pesticidesQ1 !== null;
         if (s === 'env_microplastics') return envAnswers.microplasticsQ1 !== undefined && envAnswers.microplasticsQ1 !== null;
@@ -328,8 +328,8 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
       setShowRecommendation(true);
       return;
     }
-    // Smoking: count >= 5
-    if (checkDangerForType('Smoking', (val) => val.count >= 5)) {
+    // Smoking & Tobacco: count >= 5 or chewingCount >= 3
+    if (checkDangerForType('Smoking', (val) => val.count >= 5 || val.chewingCount >= 3 || val.cigarettesCount >= 5)) {
       setRecommendationReason('Smoking');
       setShowRecommendation(true);
       return;
@@ -836,7 +836,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
 
       if (typeUpper.includes('STRESS') && (optStr.includes('tense') || optStr.includes('high') || optStr.includes('stressed') || optStr.includes('maxed') || val === 3 || val?.faceId === 'tense' || val?.faceId === 'stressed' || val?.faceId === 'maxed')) count += 1;
       if (typeUpper.includes('SLEEP') && ((typeof val === 'number' && val < 6) || val?.hours < 6 || val?.quality === 'poor' || optStr.includes('poor'))) count += 1;
-      if ((typeUpper.includes('SMOKING') || typeUpper.includes('ALCOHOL')) && ((typeof val === 'number' && val > 0) || val?.count > 0 || val?.drinks > 0 || optStr.includes('smoke') || optStr.includes('drink') || optStr.includes('both'))) count += 1;
+      if ((typeUpper.includes('SMOKING') || typeUpper.includes('ALCOHOL')) && ((typeof val === 'number' && val > 0) || val?.count > 0 || val?.chewingCount > 0 || val?.drinks > 0 || optStr.includes('smoke') || optStr.includes('chew') || optStr.includes('tobacco') || optStr.includes('gutkha') || optStr.includes('khaini') || optStr.includes('drink') || optStr.includes('both'))) count += 1;
       if (typeUpper.includes('SUBSTANCES') && (val === 1 || val?.used === true || optStr.includes('exposure'))) count += 1;
       if (typeUpper.includes('INTIMACY') && (val?.happy === false)) count += 1;
       if (typeUpper.includes('DENTAL') && (val?.sharpTooth === true || val?.tobacco === true || val?.illFittingDenture === true || optStr.includes('discomfort'))) count += 1;
@@ -865,7 +865,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
 
       if (typeUpper.includes('STRESS') && (optStr.includes('calm') || optStr.includes('steady') || optStr.includes('no stress') || val === 1 || val?.faceId === 'calm')) count += 1;
       if (typeUpper.includes('SLEEP') && ((typeof val === 'number' && val >= 6) || (val?.hours >= 6 && val?.quality !== 'poor'))) count += 1;
-      if ((typeUpper.includes('SMOKING') || typeUpper.includes('ALCOHOL')) && ((typeof val === 'number' && val === 0) || val?.count === 0 || val?.drinks === 0 || optStr.includes('clean') || optStr.includes('no alcohol') || optStr.includes('no (clean'))) count += 1;
+      if ((typeUpper.includes('SMOKING') || typeUpper.includes('ALCOHOL')) && ((typeof val === 'number' && val === 0) || ((val?.count === 0 || val?.count === undefined) && (val?.chewingCount === 0 || val?.chewingCount === undefined)) || val?.drinks === 0 || optStr.includes('clean') || optStr.includes('no alcohol') || optStr.includes('no (clean'))) count += 1;
       if (typeUpper.includes('SUBSTANCES') && (val === 0 || val?.used === false || optStr.includes('clean'))) count += 1;
       if (typeUpper.includes('FASTING') && (val === 1 || val?.hours >= 12 || typeof val === 'object' || optStr.includes('yes') || optStr.includes('16') || optStr.includes('12'))) count += 1;
       if (typeUpper.includes('ANTIOXIDANTS') && (val === 1 || val?.consumed === true || optStr.includes('yes') || optStr.includes('consumed'))) count += 1;
@@ -974,7 +974,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
     if (!latest) return null;
     const val = latest.value;
     const optStr = (typeof val === 'object' ? (val.option || val.notes || '') : `${val}`).toLowerCase();
-    if ((typeof val === 'number' && val > 0) || val?.count > 0 || optStr.includes('smoke') || optStr.includes('yes')) return -1;
+    if ((typeof val === 'number' && val > 0) || val?.count > 0 || val?.chewingCount > 0 || optStr.includes('smoke') || optStr.includes('chew') || optStr.includes('tobacco') || optStr.includes('gutkha') || optStr.includes('khaini') || optStr.includes('yes')) return -1;
     return 0;
   };
 
@@ -1591,7 +1591,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
               {/* Tug-of-War Balance Bar */}
               <div className="space-y-1">
                 {/* Force Numbers Line */}
-                <div className="flex justify-between items-center text-[10.5px] font-bold">
+                <div className="flex justify-between items-center text-[9.5px] sm:text-[10.5px] font-bold">
                   <span className="text-rose-600 dark:text-rose-400 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
                     <span>{damageCount} Stress ({damagePct}%)</span>
@@ -1613,10 +1613,10 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
                     style={{ width: `${repairPct}%` }}
                   />
 
-                  {/* Tracking Puck */}
+                  {/* Puck Indicator */}
                   <div
-                    className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-5 h-5 bg-white dark:bg-slate-900 border-2 border-indigo-600 dark:border-indigo-400 rounded-full shadow-md flex items-center justify-center transition-all duration-700 z-10 ring-2 ring-indigo-500/10"
-                    style={{ left: `${Math.min(94, Math.max(6, damagePct))}%` }}
+                    className="absolute top-1/2 -translate-y-1/2 w-4.5 h-4.5 rounded-full bg-white dark:bg-slate-900 border-2 border-indigo-500 shadow-md flex items-center justify-center -ml-2.25 transition-all duration-700 z-10"
+                    style={{ left: `${damagePct}%` }}
                   >
                     <Activity className="h-2.5 w-2.5 text-indigo-600 dark:text-indigo-400 animate-pulse" />
                   </div>
@@ -1650,7 +1650,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
             <button
               type="button"
               onClick={() => setForcesView('all')}
-              className={`px-2.5 py-1 rounded-lg font-extrabold text-[10px] uppercase tracking-wider transition-all ${forcesView === 'all'
+              className={`px-2 sm:px-2.5 py-1 rounded-lg font-extrabold text-[9.5px] sm:text-[10px] uppercase tracking-wider transition-all cursor-pointer ${forcesView === 'all'
                 ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                 }`}
@@ -1660,7 +1660,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
             <button
               type="button"
               onClick={() => setForcesView('damage')}
-              className={`px-2.5 py-1 rounded-lg font-extrabold text-[10px] uppercase tracking-wider transition-all ${forcesView === 'damage'
+              className={`px-2 sm:px-2.5 py-1 rounded-lg font-extrabold text-[9.5px] sm:text-[10px] uppercase tracking-wider transition-all cursor-pointer ${forcesView === 'damage'
                 ? 'bg-rose-500 text-white shadow-xs'
                 : 'text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40'
                 }`}
@@ -1670,7 +1670,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
             <button
               type="button"
               onClick={() => setForcesView('repair')}
-              className={`px-2.5 py-1 rounded-lg font-extrabold text-[10px] uppercase tracking-wider transition-all ${forcesView === 'repair'
+              className={`px-2 sm:px-2.5 py-1 rounded-lg font-extrabold text-[9.5px] sm:text-[10px] uppercase tracking-wider transition-all cursor-pointer ${forcesView === 'repair'
                 ? 'bg-emerald-500 text-white shadow-xs'
                 : 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
                 }`}
@@ -1700,7 +1700,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
             <div className="flex flex-col gap-1 sm:gap-1.5">
               <HabitItem icon={<Frown className="h-3.5 w-3.5 text-amber-500" />} label="Stress" onClick={() => handleOpenHabit('Stress')} score={getStressScore()} />
               <HabitItem icon={<Moon className="h-3.5 w-3.5 text-indigo-400" />} label="Sleep debt" onClick={() => handleOpenHabit('Sleep')} score={getSleepScore()} />
-              <HabitItem icon={<Cigarette className="h-3.5 w-3.5 text-slate-400" />} label="Smoking" onClick={() => handleOpenHabit('Smoking')} score={getSmokingScore()} />
+              <HabitItem icon={<Cigarette className="h-3.5 w-3.5 text-slate-400" />} label="Smoking & Chewing" onClick={() => handleOpenHabit('Smoking')} score={getSmokingScore()} />
               <HabitItem icon={<Wine className="h-3.5 w-3.5 text-rose-600" />} label="Alcohol" onClick={() => handleOpenHabit('Alcohol')} score={getAlcoholScore()} />
               <HabitItem icon={<Pill className="h-3.5 w-3.5 text-amber-500" />} label="Substances" onClick={() => handleOpenHabit('Substances')} score={getSubstancesScore()} />
               <HabitItem icon={<Globe className="h-3.5 w-3.5 text-cyan-500" />} label="Environment" onClick={() => handleOpenHabit('Environmental')} score={getEnvironmentalScore()} />

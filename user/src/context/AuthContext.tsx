@@ -11,6 +11,20 @@ export type FocusModeType =
   | 'PARKINSON'
   | 'CARDIAC';
 
+export interface NotificationChannelPreferences {
+  dailyCheckin: boolean;
+  habitReminders: boolean;
+  healthInsights: boolean;
+  reportUpload: boolean;
+  orderUpdates: boolean;
+}
+
+export interface UserNotificationPreferences {
+  push: NotificationChannelPreferences;
+  email: NotificationChannelPreferences;
+  sms: NotificationChannelPreferences;
+}
+
 export interface UserProfile {
   id: string;
   name?: string;
@@ -41,6 +55,7 @@ export interface UserProfile {
   addressCity?: string;
   addressState?: string;
   addressPinCode?: string;
+  notificationPreferences?: UserNotificationPreferences;
 }
 
 export interface AppBranding {

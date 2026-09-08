@@ -20,6 +20,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
   // Answers state
   const [airQ1, setAirQ1] = useState<boolean | null>(null);
   const [airQ2, setAirQ2] = useState<boolean | null>(null);
+  const [airQ3, setAirQ3] = useState<boolean | null>(null); // Passive smoking (true = Yes, false = No)
   const [waterQ1, setWaterQ1] = useState<boolean | null>(null); // true = Yes, false = No/Not sure
   const [pesticidesQ1, setPesticidesQ1] = useState<boolean | null>(null); // true = Yes, false = No
   const [microplasticsQ1, setMicroplasticsQ1] = useState<boolean | null>(null); // true = Yes, false = No
@@ -47,10 +48,10 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
   }, [user]);
 
   useEffect(() => {
-    if (airQ1 !== null && airQ2 !== null && currentView === 'air') {
+    if (airQ1 !== null && airQ2 !== null && airQ3 !== null && currentView === 'air') {
       setShowAirModal(true);
     }
-  }, [airQ1, airQ2, currentView]);
+  }, [airQ1, airQ2, airQ3, currentView]);
 
   const loadHistory = async () => {
     if (!user?.id) return;
@@ -65,6 +66,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
         const ans = todayLog.value.answers;
         setAirQ1(ans.airQ1 ?? null);
         setAirQ2(ans.airQ2 ?? null);
+        setAirQ3(ans.airQ3 ?? null);
         setWaterQ1(ans.waterQ1 ?? null);
         setPesticidesQ1(ans.pesticidesQ1 ?? null);
         setMicroplasticsQ1(ans.microplasticsQ1 ?? null);
@@ -76,6 +78,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
         setTodayLogId(null);
         setAirQ1(null);
         setAirQ2(null);
+        setAirQ3(null);
         setWaterQ1(null);
         setPesticidesQ1(null);
         setMicroplasticsQ1(null);
@@ -92,10 +95,11 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
 
   // Scores calculation
   const getAirScore = () => {
-    if (airQ1 === null && airQ2 === null) return null;
+    if (airQ1 === null && airQ2 === null && airQ3 === null) return null;
     let score = 0;
     if (airQ1 === true) score -= 1;
     if (airQ2 === true) score -= 1;
+    if (airQ3 === true) score -= 1;
     return score;
   };
 
@@ -130,7 +134,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
   const microplasticsScore = getMicroplasticsScore();
   const kitchenScore = getKitchenScore();
 
-  const hasAnyAnswer = airQ1 !== null || airQ2 !== null || waterQ1 !== null || pesticidesQ1 !== null || microplasticsQ1 !== null || kitchenQ1 !== null || kitchenQ2 !== null || kitchenQ3 !== null;
+  const hasAnyAnswer = airQ1 !== null || airQ2 !== null || airQ3 !== null || waterQ1 !== null || pesticidesQ1 !== null || microplasticsQ1 !== null || kitchenQ1 !== null || kitchenQ2 !== null || kitchenQ3 !== null;
 
   const getOverallScore = () => {
     let score = 0;
@@ -155,6 +159,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
         answers: {
           airQ1,
           airQ2,
+          airQ3,
           waterQ1,
           pesticidesQ1,
           microplasticsQ1,
@@ -164,12 +169,13 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
         }
       }).catch(err => console.error('Environmental habit auto-save error', err));
     }
-  }, [airQ1, airQ2, waterQ1, pesticidesQ1, microplasticsQ1, kitchenQ1, kitchenQ2, kitchenQ3, overallScore, hasAnyAnswer, apiUrl, token, user?.id]);
+  }, [airQ1, airQ2, airQ3, waterQ1, pesticidesQ1, microplasticsQ1, kitchenQ1, kitchenQ2, kitchenQ3, overallScore, hasAnyAnswer, apiUrl, token, user?.id]);
 
   const handleResetLog = async () => {
     isUserInteractingRef.current = false;
     setAirQ1(null);
     setAirQ2(null);
+    setAirQ3(null);
     setWaterQ1(null);
     setPesticidesQ1(null);
     setMicroplasticsQ1(null);
@@ -191,6 +197,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
 
   const handleAnswerAirQ1 = (val: boolean) => { isUserInteractingRef.current = true; setAirQ1(val); };
   const handleAnswerAirQ2 = (val: boolean) => { isUserInteractingRef.current = true; setAirQ2(val); };
+  const handleAnswerAirQ3 = (val: boolean) => { isUserInteractingRef.current = true; setAirQ3(val); };
   const handleAnswerWaterQ1 = (val: boolean) => { isUserInteractingRef.current = true; setWaterQ1(val); };
   const handleAnswerPesticidesQ1 = (val: boolean) => { isUserInteractingRef.current = true; setPesticidesQ1(val); };
   const handleAnswerMicroplasticsQ1 = (val: boolean) => { isUserInteractingRef.current = true; setMicroplasticsQ1(val); };
@@ -207,6 +214,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
         answers: {
           airQ1,
           airQ2,
+          airQ3,
           waterQ1,
           pesticidesQ1,
           microplasticsQ1,
@@ -349,13 +357,13 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
             >
               <div className="space-y-1.5">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block flex items-center gap-1.5">
-                  01 · Outdoor Air & Fumes
+                  01 · Outdoor Air, Smoke & Fumes
                   <span className="text-[9px] bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-md font-extrabold">AQI Tracked</span>
                 </span>
-                <span className="font-bold text-slate-800 dark:text-slate-200 text-base block group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Air Pollution</span>
-                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium block">Live AQI widget & smog exposure test</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200 text-base block group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Air Pollution & Passive Smoke</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium block">Live AQI widget, second-hand smoke & smog test</span>
               </div>
-              {getStatusBadge(airScore, airQ1 !== null || airQ2 !== null)}
+              {getStatusBadge(airScore, airQ1 !== null || airQ2 !== null || airQ3 !== null)}
             </button>
 
             {/* Water Pollution */}
@@ -428,7 +436,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
           <div className="space-y-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 sm:p-8 shadow-sm">
             <div className="border-b border-slate-100 dark:border-slate-800 pb-4">
               <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Personalized Risk Questionnaire</span>
-              <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100 mt-0.5">Air Exposure Lifestyle Assessment</h3>
+              <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100 mt-0.5">Air & Passive Smoke Exposure Assessment</h3>
             </div>
 
             <div className="space-y-5">
@@ -481,27 +489,55 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
                   Answer Question 1 to unlock Question 2...
                 </div>
               )}
+
+              {/* Q3: Passive Smoking (unlocked after Q2 answered) */}
+              {airQ2 !== null ? (
+                <div className="pt-5 border-t border-slate-100 dark:border-slate-800 animate-in fade-in duration-200">
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-2">Question 3</p>
+                  <p className="text-sm font-semibold text-slate-850 dark:text-slate-100 leading-relaxed mb-3.5">
+                    Are you regularly exposed to passive smoking (second-hand smoke from cigarettes or bidis at home, work, or public spaces)?
+                  </p>
+                  <div className="flex gap-3">
+                    <button 
+                      onClick={() => handleAnswerAirQ3(true)}
+                      className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${airQ3 === true ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+                    >
+                      Yes (-1)
+                    </button>
+                    <button 
+                      onClick={() => handleAnswerAirQ3(false)}
+                      className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${airQ3 === false ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+                    >
+                      No (0)
+                    </button>
+                  </div>
+                </div>
+              ) : airQ1 !== null ? (
+                <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl text-center text-xs text-slate-400 font-bold italic">
+                  Answer Question 2 to unlock Question 3...
+                </div>
+              ) : null}
             </div>
 
-            {/* Referral banner if airScore is -2 */}
-            {airScore === -2 && onBookAppointment && (
+            {/* Referral banner if airScore is <= -2 */}
+            {airScore !== null && airScore <= -2 && onBookAppointment && (
               <ConsultationBanner
                 sourceModule="Environmental"
                 reason="Pulmonologist Consultation"
-                triggerCondition="Severe air exposure risks"
+                triggerCondition="Severe air & smoke inhalation risks"
                 riskLevel="High"
                 recommendedSpecialty="Pulmonologist"
                 title="Pulmonologist Consultation"
-                description="Your score flags high particulate & chemical inhalation risks. Consider speaking to a pulmonologist to check lung health."
+                description="Your score flags significant particulate, chemical, or passive smoke inhalation risks. Consider speaking to a pulmonologist to check lung health."
                 colorTheme="rose"
                 onBookAppointment={onBookAppointment}
               />
             )}
 
-            {airQ1 !== null && airQ2 !== null && (
+            {airQ1 !== null && airQ2 !== null && airQ3 !== null && (
               <div className="bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 rounded-2xl p-5 space-y-4 animate-in fade-in duration-300">
                 <p className="text-xs text-indigo-750 dark:text-indigo-400 font-semibold leading-relaxed">
-                  ℹ️ <strong>Recommendation:</strong> Reduce your exposure to air pollution where possible. Use an N95 mask and an air purifier when appropriate.
+                  ℹ️ <strong>Recommendation:</strong> Reduce your exposure to air pollution and passive second-hand smoke where possible. Use an N95 mask and an air purifier when appropriate.
                 </p>
                 <div className="grid grid-cols-2 gap-3.5">
                   <button 
@@ -526,8 +562,8 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
 
             <button 
               onClick={() => setCurrentView('hub')}
-              disabled={airQ1 === null || airQ2 === null}
-              className={`w-full py-4 rounded-2xl font-bold text-xs transition-all text-white ${airQ1 !== null && airQ2 !== null ? 'bg-indigo-600 hover:bg-indigo-700 cursor-pointer shadow-sm' : 'bg-slate-200 dark:bg-slate-800 cursor-not-allowed opacity-60'}`}
+              disabled={airQ1 === null || airQ2 === null || airQ3 === null}
+              className={`w-full py-4 rounded-2xl font-bold text-xs transition-all text-white ${airQ1 !== null && airQ2 !== null && airQ3 !== null ? 'bg-indigo-600 hover:bg-indigo-700 cursor-pointer shadow-sm' : 'bg-slate-200 dark:bg-slate-800 cursor-not-allowed opacity-60'}`}
             >
               Done with Air Exposure Category
             </button>

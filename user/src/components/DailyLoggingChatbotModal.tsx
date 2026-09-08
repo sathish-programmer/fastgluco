@@ -191,17 +191,17 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       }
     }
 
-    // 3. Smoking
-    const smokingVal = getAnswer(['smoking', 'tobacco']).toLowerCase();
+    // 3. Smoking & Tobacco Chewing
+    const smokingVal = getAnswer(['smoking', 'tobacco', 'chewing', 'gutkha', 'khaini']).toLowerCase();
     if (smokingVal) {
       const numSmk = parseFloat(smokingVal);
-      if (smokingVal.includes('yes') || smokingVal.includes('smoke') || (!isNaN(numSmk) && numSmk > 0)) {
+      if (smokingVal.includes('yes') || smokingVal.includes('smoke') || smokingVal.includes('chew') || smokingVal.includes('tobacco') || smokingVal.includes('gutkha') || smokingVal.includes('khaini') || (!isNaN(numSmk) && numSmk > 0)) {
         damageCount += 1;
-        damageHighlights.push('Tobacco / Smoking');
-        damageActionHints.push('Avoid smoking triggers tomorrow to prevent oxidative cellular stress.');
+        damageHighlights.push('Tobacco (Smoking / Chewing)');
+        damageActionHints.push('Avoid smoking and chewing tobacco triggers tomorrow to prevent oral and systemic oncogenic stress.');
       } else if (smokingVal.includes('no') || smokingVal.includes('clean') || smokingVal === '0' || smokingVal.includes('none')) {
         repairCount += 1;
-        repairHighlights.push('Smoke-Free Clean Lungs');
+        repairHighlights.push('Tobacco & Smoke-Free Day');
       }
     }
 
@@ -1188,7 +1188,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
             if (envHabits.length === 0) return false;
 
             if (s === 'env_air') {
-              return envHabits.some(h => h.value?.stepId === 'env_air' || h.value?.answers?.airQ1 !== undefined || (h.value?.option && (h.value.option.toLowerCase().includes('air') || h.value.option.toLowerCase().includes('smog') || h.value.option.toLowerCase().includes('clean'))));
+              return envHabits.some(h => h.value?.stepId === 'env_air' || h.value?.answers?.airQ1 !== undefined || h.value?.answers?.airQ3 !== undefined || (h.value?.option && (h.value.option.toLowerCase().includes('air') || h.value.option.toLowerCase().includes('smog') || h.value.option.toLowerCase().includes('smoke') || h.value.option.toLowerCase().includes('clean'))));
             }
             if (s === 'env_water') {
               return envHabits.some(h => h.value?.stepId === 'env_water' || h.value?.answers?.waterQ1 !== undefined || (h.value?.option && (h.value.option.toLowerCase().includes('water') || h.value.option.toLowerCase().includes('tap') || h.value.option.toLowerCase().includes('filter'))));
@@ -1400,7 +1400,13 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
         habitValue = { minutes: mins, done: mins >= 20, activity: valueStr };
       } else if (stepId === 'smoking') {
         habitType = 'Smoking';
-        habitValue = { count: isYes ? 1 : 0 };
+        const isClean = lowerVal.includes('no') || lowerVal.includes('clean');
+        habitValue = { 
+          count: isClean ? 0 : 1,
+          cigarettesCount: isClean ? 0 : (lowerVal.includes('chew') || lowerVal.includes('gutkha') || lowerVal.includes('khaini') ? 0 : 1),
+          chewingCount: (lowerVal.includes('chew') || lowerVal.includes('gutkha') || lowerVal.includes('khaini')) ? 1 : 0,
+          option: valueStr 
+        };
       } else if (stepId === 'damage_habits') {
         habitType = 'DAMAGE_HABIT';
         habitValue = { isExposure: !lowerVal.includes('clean'), score: lowerVal.includes('clean') ? 0 : -1, notes: valueStr };
@@ -1441,6 +1447,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
           const isClean = lowerVal.includes('no') || lowerVal.includes('clean');
           updatedAnswers.airQ1 = !isClean;
           updatedAnswers.airQ2 = !isClean;
+          updatedAnswers.airQ3 = !isClean;
         } else if (stepId === 'env_water') {
           updatedAnswers.waterQ1 = lowerVal.includes('yes') || lowerVal.includes('safe') || lowerVal.includes('filtered');
         } else if (stepId === 'env_pesticides') {
@@ -1452,7 +1459,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
         }
 
         let calcScore = 0;
-        if (updatedAnswers.airQ1 === true || updatedAnswers.airQ2 === true) calcScore -= 1;
+        if (updatedAnswers.airQ1 === true || updatedAnswers.airQ2 === true || updatedAnswers.airQ3 === true) calcScore -= 1;
         if (updatedAnswers.waterQ1 === false) calcScore -= 1;
         if (updatedAnswers.pesticidesQ1 === true) calcScore -= 1;
         if (updatedAnswers.microplasticsQ1 === true) calcScore -= 1;
@@ -1677,11 +1684,11 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       detected.push({ stepId: 'stress', valueStr: 'Mild Stress', name: 'Stress (Mild)' });
     }
 
-    // Smoking
-    if (text.includes('no smoke') || text.includes('no smoking') || text.includes('didnt smoke') || text.includes('clean day')) {
-      detected.push({ stepId: 'smoking', valueStr: 'No (Clean Day)', name: 'Smoking (Clean Day)' });
-    } else if (text.includes('smoked') || text.includes('cigarettes')) {
-      detected.push({ stepId: 'smoking', valueStr: 'Yes (Smoke / Exposed)', name: 'Smoking (Exposed)' });
+    // Smoking & Chewing Tobacco
+    if (text.includes('no smoke') || text.includes('no smoking') || text.includes('didnt smoke') || text.includes('no tobacco') || text.includes('no gutkha') || text.includes('clean day')) {
+      detected.push({ stepId: 'smoking', valueStr: 'No (Clean Day)', name: 'Tobacco (Clean Day)' });
+    } else if (text.includes('smoked') || text.includes('cigarettes') || text.includes('chewed') || text.includes('gutkha') || text.includes('khaini') || text.includes('tobacco')) {
+      detected.push({ stepId: 'smoking', valueStr: 'Yes (Smoked / Chewed Tobacco)', name: 'Tobacco (Exposed)' });
     }
 
     // Alcohol
@@ -1909,41 +1916,42 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
           style={{ maxHeight: '100dvh' }}
         >
           {/* ── HEADER ── */}
-          <div className="bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 px-4 pt-[max(env(safe-area-inset-top),12px)] pb-3.5 text-white flex-shrink-0">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center shadow-inner overflow-hidden p-0.5">
-                  <RoboAvatar isSpeaking={isSpeaking} size={36} />
+          <div className="bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 px-3.5 sm:px-4 pt-[max(env(safe-area-inset-top),12px)] pb-3 text-white flex-shrink-0">
+            <div className="flex items-center justify-between gap-2 mb-2.5">
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center shadow-inner overflow-hidden p-0.5 shrink-0">
+                  <RoboAvatar isSpeaking={isSpeaking} size={32} />
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-black text-sm text-white tracking-tight">AI Assistant</span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="font-black text-xs sm:text-sm text-white tracking-tight">AI Assistant</span>
                     {isSpeaking ? (
-                      <span className="flex items-center gap-1.5 text-[9px] font-black bg-amber-400/30 text-amber-200 px-2 py-0.5 rounded-full border border-amber-300/40">
+                      <span className="inline-flex items-center gap-1 text-[8.5px] font-black bg-amber-400/30 text-amber-200 px-1.5 py-0.5 rounded-full border border-amber-300/40">
                         <span className="flex items-center gap-0.5">
                           <span className="h-2 w-0.5 bg-amber-300 rounded-full animate-bounce" />
-                          <span className="h-3 w-0.5 bg-amber-300 rounded-full animate-bounce [animation-delay:150ms]" />
-                          <span className="h-2 w-0.5 bg-amber-300 rounded-full animate-bounce [animation-delay:300ms]" />
+                          <span className="h-2.5 w-0.5 bg-amber-300 rounded-full animate-bounce [animation-delay:150ms]" />
                         </span>
                         SPEAKING
                       </span>
                     ) : (
-                      <span className="flex items-center gap-1 text-[9px] font-black bg-emerald-400/25 text-emerald-200 px-2 py-0.5 rounded-full border border-emerald-400/30">
+                      <span className="inline-flex items-center gap-1 text-[8.5px] font-black bg-emerald-400/25 text-emerald-200 px-1.5 py-0.5 rounded-full border border-emerald-400/30">
                         <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                         ONLINE
                       </span>
                     )}
                   </div>
-                  <p className="text-[10px] font-medium text-blue-100/80 mt-0.5">
+                  <p className="text-[9.5px] sm:text-[10px] font-medium text-blue-100/80 truncate mt-0.5">
                     {userMode === 'TREATMENT' ? 'Oncology Care & Recovery Check-in' : userMode === 'SECONDARY_PREVENTION' ? 'Survivor Recovery Daily Check-in' : 'Cancer Prevention Daily Check-in'}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-1.5">
+
+              {/* Header Action Buttons */}
+              <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowReminderSettings(prev => !prev)}
-                  className={`h-8 px-2.5 rounded-full border flex items-center gap-1.5 transition-all cursor-pointer ${
+                  className={`h-8 px-2 sm:px-2.5 rounded-full border flex items-center gap-1 transition-all cursor-pointer ${
                     showReminderSettings
                       ? 'bg-white text-blue-600 border-white shadow-xs font-black'
                       : reminderEnabled && reminderTime
@@ -1954,20 +1962,23 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                 >
                   {reminderEnabled && reminderTime ? (
                     <>
-                      <Bell className="h-3.5 w-3.5 text-amber-300" />
-                      <span className="text-[9px] uppercase tracking-wider font-black">{formatDisplayTime(reminderTime)}</span>
+                      <Bell className="h-3.5 w-3.5 text-amber-300 shrink-0" />
+                      <span className="text-[8.5px] sm:text-[9px] uppercase tracking-wider font-black whitespace-nowrap">
+                        {formatDisplayTime(reminderTime)}
+                      </span>
                     </>
                   ) : (
                     <>
-                      <BellOff className="h-3.5 w-3.5 opacity-80" />
-                      <span className="text-[9px] uppercase tracking-wider font-bold opacity-80">Off</span>
+                      <BellOff className="h-3.5 w-3.5 opacity-80 shrink-0" />
+                      <span className="text-[8.5px] sm:text-[9px] uppercase tracking-wider font-bold opacity-80">Off</span>
                     </>
                   )}
                 </button>
+
                 <button
                   type="button"
                   onClick={toggleVoiceMute}
-                  className={`h-8 px-2.5 rounded-full border flex items-center gap-1.5 transition-all cursor-pointer ${
+                  className={`h-8 px-2 sm:px-2.5 rounded-full border flex items-center gap-1 transition-all cursor-pointer ${
                     isSpeaking
                       ? 'bg-amber-400 text-slate-900 border-amber-300 shadow-md shadow-amber-400/30 font-black animate-pulse'
                       : isVoiceMuted
@@ -1978,22 +1989,23 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                 >
                   {isSpeaking ? (
                     <>
-                      <Volume2 className="h-3.5 w-3.5" />
-                      <span className="text-[9px] font-black uppercase tracking-wider">Stop</span>
+                      <Volume2 className="h-3.5 w-3.5 shrink-0" />
+                      <span className="text-[8.5px] sm:text-[9px] font-black uppercase tracking-wider">Stop</span>
                     </>
                   ) : isVoiceMuted ? (
                     <>
-                      <VolumeX className="h-3.5 w-3.5" />
-                      <span className="text-[9px] font-bold uppercase tracking-wider opacity-80">Muted</span>
+                      <VolumeX className="h-3.5 w-3.5 shrink-0 text-rose-300" />
+                      <span className="text-[8.5px] sm:text-[9px] font-bold uppercase tracking-wider opacity-90 hidden min-[360px]:inline">Muted</span>
                     </>
                   ) : (
                     <>
-                      <Volume2 className="h-3.5 w-3.5" />
-                      <span className="text-[9px] font-bold uppercase tracking-wider opacity-80">Voice</span>
+                      <Volume2 className="h-3.5 w-3.5 shrink-0" />
+                      <span className="text-[8.5px] sm:text-[9px] font-bold uppercase tracking-wider opacity-90 hidden min-[360px]:inline">Voice</span>
                     </>
                   )}
                 </button>
-                <button onClick={onClose} className="h-8 w-8 rounded-full bg-white/15 hover:bg-white/25 border border-white/20 flex items-center justify-center transition-all cursor-pointer">
+
+                <button onClick={onClose} className="h-8 w-8 rounded-full bg-white/15 hover:bg-white/25 border border-white/20 flex items-center justify-center transition-all cursor-pointer shrink-0" aria-label="Close">
                   <X className="h-4 w-4 text-white" />
                 </button>
               </div>

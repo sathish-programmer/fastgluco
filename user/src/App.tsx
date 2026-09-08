@@ -392,27 +392,27 @@ const MainAppContent: React.FC = () => {
       />
       {/* Dynamic Header with safe area padding for mobile notches */}
       {!isSubScreenActive && activeTab !== 'Subscription' && (
-        <header className="sticky top-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-100 dark:border-slate-800/80 z-20 px-3.5 sm:px-4 pt-[calc(env(safe-area-inset-top)+10px)] pb-2.5 max-w-5xl w-full mx-auto flex items-center justify-between gap-1.5 transition-all duration-300">
+        <header className="sticky top-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-100 dark:border-slate-800/80 z-20 px-3 sm:px-4 pt-[calc(env(safe-area-inset-top)+8px)] pb-2 max-w-5xl w-full mx-auto flex items-center justify-between gap-1 sm:gap-2 transition-all duration-300">
           {/* Brand Identity */}
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
             {branding.appLogoUrl ? (
               <img
                 src={branding.appLogoUrl.startsWith('http') ? branding.appLogoUrl : `${apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl}${branding.appLogoUrl.startsWith('/') ? '' : '/'}${branding.appLogoUrl}`}
                 alt={branding.appName}
-                className="h-6 w-auto object-contain max-w-[36px] shrink-0"
+                className="h-5.5 sm:h-6 w-auto object-contain max-w-[32px] sm:max-w-[36px] shrink-0"
               />
             ) : (
-              <Heart className="h-5 w-5 fill-primary text-primary shrink-0" />
+              <Heart className="h-4.5 w-4.5 sm:h-5 sm:w-5 fill-primary text-primary shrink-0" />
             )}
             <div className="flex flex-col justify-center min-w-0">
-              <div className="flex items-center gap-1.5 leading-none">
-                <span className="text-[13.5px] sm:text-sm font-black text-slate-900 dark:text-white tracking-tight leading-none whitespace-nowrap">
+              <div className="flex items-center gap-1 sm:gap-1.5 leading-none">
+                <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white tracking-tight leading-none truncate">
                   {branding.appName ? branding.appName.replace(/_/g, ' ') : 'Mito Reboot'}
                 </span>
                 {branding.enableSubscriptions !== false && (
                   <button
                     onClick={() => setActiveTab('Subscription')}
-                    className={`text-[8.5px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full inline-flex items-center gap-1 border shadow-2xs shrink-0 leading-none -translate-y-[2px] cursor-pointer hover:opacity-95 active:scale-95 transition-all ${
+                    className={`text-[8px] sm:text-[8.5px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full inline-flex items-center gap-0.5 sm:gap-1 border shadow-2xs shrink-0 leading-none -translate-y-[1px] cursor-pointer hover:opacity-95 active:scale-95 transition-all ${
                       /premium|pro/i.test(basicPlan)
                         ? 'bg-gradient-to-r from-amber-500/15 via-amber-400/20 to-yellow-500/15 dark:from-amber-500/25 dark:via-amber-400/30 dark:to-yellow-500/25 text-amber-700 dark:text-amber-300 border-amber-300/80 dark:border-amber-600/70 shadow-amber-500/10'
                         : 'bg-gradient-to-r from-emerald-500/15 via-teal-500/20 to-emerald-500/15 dark:from-emerald-500/25 dark:via-teal-500/30 dark:to-emerald-500/25 text-emerald-700 dark:text-emerald-300 border-emerald-300/80 dark:border-emerald-600/70 shadow-emerald-500/10'
@@ -420,16 +420,16 @@ const MainAppContent: React.FC = () => {
                     title="View / Upgrade Plan"
                   >
                     {/premium|pro/i.test(basicPlan) ? (
-                      <Crown className="h-2.5 w-2.5 text-amber-500 fill-amber-400 shrink-0" />
+                      <Crown className="h-2 w-2 sm:h-2.5 sm:w-2.5 text-amber-500 fill-amber-400 shrink-0" />
                     ) : (
-                      <ShieldCheck className="h-2.5 w-2.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <ShieldCheck className="h-2 w-2 sm:h-2.5 sm:w-2.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                     )}
-                    <span className="translate-y-[0.5px]">{basicPlan}</span>
+                    <span className="translate-y-[0.5px] whitespace-nowrap">{basicPlan}</span>
                   </button>
                 )}
               </div>
               {branding.appTagline && (
-                <span className="text-[9px] text-slate-400 dark:text-slate-500 font-medium leading-none truncate max-w-[120px] sm:max-w-[180px] mt-1.5">
+                <span className="text-[8.5px] sm:text-[9px] text-slate-400 dark:text-slate-500 font-medium leading-none truncate max-w-[110px] min-[380px]:max-w-[160px] sm:max-w-[200px] mt-1">
                   {branding.appTagline}
                 </span>
               )}
@@ -441,21 +441,21 @@ const MainAppContent: React.FC = () => {
             {/* Ask Mito Button */}
             <button
               onClick={() => setShowAskMitoDrawer(true)}
-              className="px-2.5 py-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:opacity-95 active:scale-95 text-white rounded-xl text-[11px] font-extrabold transition-all flex items-center gap-1.5 shadow-xs border border-white/20 cursor-pointer"
+              className="px-2 sm:px-2.5 py-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:opacity-95 active:scale-95 text-white rounded-xl text-[10.5px] sm:text-[11px] font-extrabold transition-all flex items-center gap-1 sm:gap-1.5 shadow-xs border border-white/20 cursor-pointer shrink-0"
               title="Ask Mito • Doctor Consultation"
             >
-              <Sparkles className="h-3 w-3 text-amber-300 fill-amber-300" />
+              <Sparkles className="h-3 w-3 text-amber-300 fill-amber-300 shrink-0" />
               <span>Ask Mito</span>
             </button>
 
             {/* Support / Help */}
             <button
               onClick={() => setShowHelpModal(true)}
-              className="p-1.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              className="p-1.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
               title="Help & Support"
               aria-label="Help & Support"
             >
-              <Headphones className="h-4.5 w-4.5" />
+              <Headphones className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
             </button>
 
             {/* Notification Bell */}

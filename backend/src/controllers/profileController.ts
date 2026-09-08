@@ -33,7 +33,8 @@ export class ProfileController {
         name, email, mobile, mobileNumber, gender, age, height, weight, activityLevel, goal, fcmToken, spikeThreshold, currency,
         libreEmail, librePassword, libreRegion, libreActive,
         cancerJourney, cancerDisclaimerAccepted, cancerDisclaimerAcceptedAt,
-        addressLine1, addressCity, addressState, addressPinCode
+        addressLine1, addressCity, addressState, addressPinCode,
+        notificationPreferences
       } = req.body;
 
       const user = await User.findById(userId);
@@ -80,6 +81,7 @@ export class ProfileController {
       if (addressCity !== undefined) user.addressCity = addressCity;
       if (addressState !== undefined) user.addressState = addressState;
       if (addressPinCode !== undefined) user.addressPinCode = addressPinCode;
+      if (notificationPreferences !== undefined) user.notificationPreferences = notificationPreferences;
 
       if (libreEmail !== undefined) user.libreEmail = libreEmail;
       if (librePassword !== undefined) user.librePassword = librePassword;

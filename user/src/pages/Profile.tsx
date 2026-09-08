@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth, type FocusModeType } from '../context/AuthContext';
+import { useAuth, type FocusModeType, type UserNotificationPreferences, type NotificationChannelPreferences } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useTheme } from '../context/ThemeContext';
 import {
   ChevronRight,
+  ArrowLeft,
   LogOut,
   Sliders,
   Calculator,
@@ -17,12 +18,42 @@ import {
   Trash2,
   Moon,
   Sun,
-  ShieldCheck
+  ShieldCheck,
+  Bell,
+  Mail,
+  MessageSquare,
+  Smartphone,
+  Volume2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Educational } from './Educational'; // import the sub-view
 import { Subscription } from './Subscription';
 import { Capacitor } from '@capacitor/core';
+import { triggerTestNotification, scheduleDailyCheckinReminder, cancelDailyCheckinReminder } from '../utils/notificationScheduler';
+
+const defaultNotifPrefs: UserNotificationPreferences = {
+  push: {
+    dailyCheckin: true,
+    habitReminders: true,
+    healthInsights: true,
+    reportUpload: false,
+    orderUpdates: true
+  },
+  email: {
+    dailyCheckin: false,
+    habitReminders: false,
+    healthInsights: true,
+    reportUpload: true,
+    orderUpdates: true
+  },
+  sms: {
+    dailyCheckin: false,
+    habitReminders: false,
+    healthInsights: false,
+    reportUpload: false,
+    orderUpdates: true
+  }
+};
 
 export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({ onNavigateToTab }) => {
   const { user, token, apiUrl, logout, updateProfile, isLoading, error, branding, setActiveMode } = useAuth();
@@ -30,8 +61,8 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
   const { setTheme, isDark } = useTheme();
   const isIOSAppStoreBlocked = Capacitor.getPlatform() === 'ios';
 
-  // Tabs for profile section: 'settings' or 'education' or 'subscription'
-  const [subView, setSubView] = useState<'settings' | 'education' | 'subscription'>('settings');
+  // Tabs for profile section: 'settings' or 'education' or 'subscription' or 'notifications'
+  const [subView, setSubView] = useState<'settings' | 'education' | 'subscription' | 'notifications'>('settings');
 
   // Input states
   const [name, setName] = useState(user?.name || '');
@@ -48,6 +79,34 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
   const [addressCity, setAddressCity] = useState(user?.addressCity || '');
   const [addressState, setAddressState] = useState(user?.addressState || '');
   const [addressPinCode, setAddressPinCode] = useState(user?.addressPinCode || '');
+
+  // Dynamic Notification Preferences states
+  const [notifPrefs, setNotifPrefs] = useState<UserNotificationPreferences>(() => {
+    if (user?.notificationPreferences?.push) {
+      return {
+        push: { ...defaultNotifPrefs.push, ...user.notificationPreferences.push },
+        email: { ...defaultNotifPrefs.email, ...user.notificationPreferences.email },
+        sms: { ...defaultNotifPrefs.sms, ...user.notificationPreferences.sms }
+      };
+    }
+    const saved = localStorage.getItem('mito_notification_preferences');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return {
+          push: { ...defaultNotifPrefs.push, ...(parsed.push || {}) },
+          email: { ...defaultNotifPrefs.email, ...(parsed.email || {}) },
+          sms: { ...defaultNotifPrefs.sms, ...(parsed.sms || {}) }
+        };
+      } catch (e) {}
+    }
+    return defaultNotifPrefs;
+  });
+
+  const [checkinReminderTime, setCheckinReminderTime] = useState<string>(() => {
+    return localStorage.getItem('mito_checkin_reminder_time') || '20:00';
+  });
+  const [isTestingNotif, setIsTestingNotif] = useState(false);
 
   // Health Care Journey states
   const [cancerJourney, setCancerJourney] = useState<FocusModeType>(user?.cancerJourney || 'PREVENTION');
@@ -90,6 +149,91 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
     };
   }, [subView]);
 
+  const toggleChannelPref = (channel: 'push' | 'email' | 'sms', key: keyof NotificationChannelPreferences) => {
+    setNotifPrefs(prev => ({
+      ...prev,
+      [channel]: {
+        ...prev[channel],
+        [key]: !prev[channel][key]
+      }
+    }));
+  };
+
+  const setAllChannelStatus = (channel: 'push' | 'email' | 'sms', enabled: boolean) => {
+    setNotifPrefs(prev => ({
+      ...prev,
+      [channel]: {
+        dailyCheckin: enabled,
+        habitReminders: enabled,
+        healthInsights: enabled,
+        reportUpload: enabled,
+        orderUpdates: enabled
+      }
+    }));
+  };
+
+  const setOnlyChannel = (onlyChannel: 'push' | 'email' | 'sms') => {
+    setNotifPrefs({
+      push: {
+        dailyCheckin: onlyChannel === 'push',
+        habitReminders: onlyChannel === 'push',
+        healthInsights: onlyChannel === 'push',
+        reportUpload: onlyChannel === 'push',
+        orderUpdates: onlyChannel === 'push'
+      },
+      email: {
+        dailyCheckin: onlyChannel === 'email',
+        habitReminders: onlyChannel === 'email',
+        healthInsights: onlyChannel === 'email',
+        reportUpload: onlyChannel === 'email',
+        orderUpdates: onlyChannel === 'email'
+      },
+      sms: {
+        dailyCheckin: onlyChannel === 'sms',
+        habitReminders: onlyChannel === 'sms',
+        healthInsights: onlyChannel === 'sms',
+        reportUpload: onlyChannel === 'sms',
+        orderUpdates: onlyChannel === 'sms'
+      }
+    });
+    showToast(`Set alerts to ${onlyChannel === 'push' ? 'Push Notifications' : onlyChannel.toUpperCase()} only.`, 'info');
+  };
+
+  const setEverywhereStatus = (enabled: boolean) => {
+    setNotifPrefs({
+      push: { dailyCheckin: enabled, habitReminders: enabled, healthInsights: enabled, reportUpload: enabled, orderUpdates: enabled },
+      email: { dailyCheckin: enabled, habitReminders: enabled, healthInsights: enabled, reportUpload: enabled, orderUpdates: enabled },
+      sms: { dailyCheckin: enabled, habitReminders: enabled, healthInsights: enabled, reportUpload: enabled, orderUpdates: enabled }
+    });
+    showToast(enabled ? 'All notification channels enabled.' : 'All alerts muted.', 'info');
+  };
+
+  const isChannelFullyActive = (channel: 'push' | 'email' | 'sms') => {
+    return Object.values(notifPrefs[channel]).every(Boolean);
+  };
+
+  const isOnlyActiveChannel = (channel: 'push' | 'email' | 'sms') => {
+    const isPushOn = Object.values(notifPrefs.push).some(Boolean);
+    const isEmailOn = Object.values(notifPrefs.email).some(Boolean);
+    const isSmsOn = Object.values(notifPrefs.sms).some(Boolean);
+    if (channel === 'push') return isPushOn && !isEmailOn && !isSmsOn;
+    if (channel === 'email') return isEmailOn && !isPushOn && !isSmsOn;
+    if (channel === 'sms') return isSmsOn && !isPushOn && !isEmailOn;
+    return false;
+  };
+
+  const handleTestNotification = async () => {
+    setIsTestingNotif(true);
+    try {
+      await triggerTestNotification();
+      showToast('Sent test notification! Sound & alert verified.', 'success');
+    } catch (e) {
+      showToast('Could not trigger test notification.', 'error');
+    } finally {
+      setTimeout(() => setIsTestingNotif(false), 800);
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!disclaimerAccepted) {
@@ -97,6 +241,19 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
       return;
     }
     setSaveSuccess(false);
+
+    // Save notification preferences locally and sync scheduler
+    localStorage.setItem('mito_notification_preferences', JSON.stringify(notifPrefs));
+    localStorage.setItem('mito_checkin_reminder_enabled', notifPrefs.push.dailyCheckin ? 'true' : 'false');
+    localStorage.setItem('mito_checkin_reminder_time', checkinReminderTime);
+    localStorage.setItem('mito_report_reminder_enabled', notifPrefs.push.reportUpload ? 'true' : 'false');
+
+    if (notifPrefs.push.dailyCheckin) {
+      scheduleDailyCheckinReminder(checkinReminderTime);
+    } else {
+      cancelDailyCheckinReminder();
+    }
+
     const success = await updateProfile({
       name,
       email,
@@ -118,7 +275,8 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
       libreActive,
       cancerJourney,
       cancerDisclaimerAccepted: disclaimerAccepted,
-      cancerDisclaimerAcceptedAt: disclaimerAccepted ? new Date().toISOString() : undefined
+      cancerDisclaimerAcceptedAt: disclaimerAccepted ? new Date().toISOString() : undefined,
+      notificationPreferences: notifPrefs
     });
     if (success) {
       if (setActiveMode) {
@@ -208,6 +366,398 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
   if (subView === 'subscription') {
     return (
       <Subscription onBack={() => setSubView('settings')} />
+    );
+  }
+
+  if (subView === 'notifications') {
+    return (
+      <div 
+        className="pb-24 pt-4 px-4 max-w-4xl mx-auto bg-slate-50/70 dark:bg-slate-950/70 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100"
+        style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
+      >
+        {/* Modern Subpage Top Header */}
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setSubView('settings')}
+              className="h-10 w-10 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 shadow-xs transition-all active:scale-95 cursor-pointer"
+              aria-label="Back to Profile"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+            <div>
+              <h1 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-tight">
+                Notification Preferences
+              </h1>
+              <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                Manage alerts across Push, Email & SMS
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleTestNotification}
+            disabled={isTestingNotif}
+            className="px-3.5 py-2 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800 rounded-2xl text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
+          >
+            <Volume2 className="h-4 w-4 text-primary" />
+            <span className="hidden sm:inline">{isTestingNotif ? 'Testing...' : 'Test Audio'}</span>
+          </button>
+        </div>
+
+        {/* Quick Channel Selection Presets */}
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800 shadow-soft mb-4 transition-colors">
+          <div className="mb-3">
+            <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+              Preferred Delivery Mode
+            </span>
+            <p className="text-xs text-slate-600 dark:text-slate-300 font-medium mt-0.5">
+              Select a 1-click delivery preset, or fine-tune individual alerts below:
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+            <button
+              type="button"
+              onClick={() => setOnlyChannel('push')}
+              className={`p-2.5 rounded-2xl border text-xs font-bold flex flex-col items-center justify-center gap-1 transition-all cursor-pointer active:scale-95 ${
+                isOnlyActiveChannel('push')
+                  ? 'bg-primary/10 border-primary text-primary dark:text-primary-light shadow-xs ring-1 ring-primary'
+                  : 'bg-slate-50/80 dark:bg-slate-800/60 border-slate-200/70 dark:border-slate-700/60 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+              }`}
+            >
+              <Smartphone className="w-4 h-4 text-primary" />
+              <span>Push Only</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setOnlyChannel('email')}
+              className={`p-2.5 rounded-2xl border text-xs font-bold flex flex-col items-center justify-center gap-1 transition-all cursor-pointer active:scale-95 ${
+                isOnlyActiveChannel('email')
+                  ? 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-500 text-indigo-600 dark:text-indigo-400 shadow-xs ring-1 ring-indigo-500'
+                  : 'bg-slate-50/80 dark:bg-slate-800/60 border-slate-200/70 dark:border-slate-700/60 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+              }`}
+            >
+              <Mail className="w-4 h-4 text-indigo-500" />
+              <span>Email Only</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setOnlyChannel('sms')}
+              className={`p-2.5 rounded-2xl border text-xs font-bold flex flex-col items-center justify-center gap-1 transition-all cursor-pointer active:scale-95 ${
+                isOnlyActiveChannel('sms')
+                  ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-500 text-emerald-600 dark:text-emerald-400 shadow-xs ring-1 ring-emerald-500'
+                  : 'bg-slate-50/80 dark:bg-slate-800/60 border-slate-200/70 dark:border-slate-700/60 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+              }`}
+            >
+              <MessageSquare className="w-4 h-4 text-emerald-500" />
+              <span>SMS Only</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setEverywhereStatus(true)}
+              className={`p-2.5 rounded-2xl border text-xs font-bold flex flex-col items-center justify-center gap-1 transition-all cursor-pointer active:scale-95 ${
+                isChannelFullyActive('push') && isChannelFullyActive('email') && isChannelFullyActive('sms')
+                  ? 'bg-amber-50 dark:bg-amber-950/60 border-amber-500 text-amber-600 dark:text-amber-400 shadow-xs ring-1 ring-amber-500'
+                  : 'bg-slate-50/80 dark:bg-slate-800/60 border-slate-200/70 dark:border-slate-700/60 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+              }`}
+            >
+              <Sparkles className="w-4 h-4 text-amber-500" />
+              <span>All Channels</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setEverywhereStatus(false)}
+              className="col-span-2 sm:col-span-1 p-2.5 rounded-2xl border border-slate-200/70 dark:border-slate-700/60 bg-slate-50/80 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-rose-500 text-xs font-bold flex flex-col items-center justify-center gap-1 transition-all cursor-pointer active:scale-95"
+            >
+              <Bell className="w-4 h-4 text-slate-400" />
+              <span>Mute All</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Matrix Table Card */}
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-soft mb-5 space-y-4 transition-colors">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div>
+              <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+                Detailed Alert Matrix
+              </h2>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                Customize each category per channel. Click channel header to toggle all.
+              </p>
+            </div>
+          </div>
+          <div className="bg-slate-50/80 dark:bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-slate-200/60 dark:border-slate-700/50 space-y-3">
+            
+            {/* Header Row */}
+            <div className="grid grid-cols-12 gap-2 pb-2.5 border-b border-slate-200/60 dark:border-slate-700/50 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider items-center">
+              <span className="col-span-6 sm:col-span-6">Alert Category</span>
+              <div className="col-span-2 sm:col-span-2 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => setAllChannelStatus('push', !isChannelFullyActive('push'))}
+                  className="flex items-center justify-center gap-1 px-2 py-1 rounded-lg hover:bg-primary/10 text-primary transition-colors cursor-pointer"
+                  title="Toggle all Push notifications"
+                >
+                  <Smartphone className="h-3.5 w-3.5" />
+                  <span>Push</span>
+                </button>
+              </div>
+              <div className="col-span-2 sm:col-span-2 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => setAllChannelStatus('email', !isChannelFullyActive('email'))}
+                  className="flex items-center justify-center gap-1 px-2 py-1 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950/50 text-indigo-500 transition-colors cursor-pointer"
+                  title="Toggle all Email notifications"
+                >
+                  <Mail className="h-3.5 w-3.5" />
+                  <span>Email</span>
+                </button>
+              </div>
+              <div className="col-span-2 sm:col-span-2 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => setAllChannelStatus('sms', !isChannelFullyActive('sms'))}
+                  className="flex items-center justify-center gap-1 px-2 py-1 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950/50 text-emerald-500 transition-colors cursor-pointer"
+                  title="Toggle all SMS notifications"
+                >
+                  <MessageSquare className="h-3.5 w-3.5" />
+                  <span>SMS</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Row 1: Daily Check-in */}
+            <div className="grid grid-cols-12 gap-2 items-center py-2">
+              <div className="col-span-6 sm:col-span-6 pr-2">
+                <p className="font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm">
+                  Daily Metabolic Check-in
+                </p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
+                  Scheduled prompts for daily oncology & metabolic habit logging
+                </p>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">Time:</span>
+                  <input
+                    type="time"
+                    value={checkinReminderTime}
+                    onChange={(e) => setCheckinReminderTime(e.target.value)}
+                    className="px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-primary focus:outline-none"
+                  />
+                </div>
+              </div>
+              <div className="col-span-2 sm:col-span-2 flex justify-center">
+                <input
+                  type="checkbox"
+                  checked={notifPrefs.push.dailyCheckin}
+                  onChange={() => toggleChannelPref('push', 'dailyCheckin')}
+                  className="w-5 h-5 rounded-lg text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+                />
+              </div>
+              <div className="col-span-2 sm:col-span-2 flex justify-center">
+                <input
+                  type="checkbox"
+                  checked={notifPrefs.email.dailyCheckin}
+                  onChange={() => toggleChannelPref('email', 'dailyCheckin')}
+                  className="w-5 h-5 rounded-lg text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+                />
+              </div>
+              <div className="col-span-2 sm:col-span-2 flex justify-center">
+                <input
+                  type="checkbox"
+                  checked={notifPrefs.sms.dailyCheckin}
+                  onChange={() => toggleChannelPref('sms', 'dailyCheckin')}
+                  className="w-5 h-5 rounded-lg text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+                />
+              </div>
+            </div>
+
+            {/* Row 2: Preventive Habits & Breathwork */}
+            <div className="grid grid-cols-12 gap-2 items-center py-2.5 border-t border-slate-200/50 dark:border-slate-700/50">
+              <div className="col-span-6 sm:col-span-6 pr-2">
+                <p className="font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm">
+                  Habits & Breathwork
+                </p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
+                  Fasting windows, Box Breathing & stillness reminders
+                </p>
+              </div>
+              <div className="col-span-2 sm:col-span-2 flex justify-center">
+                <input
+                  type="checkbox"
+                  checked={notifPrefs.push.habitReminders}
+                  onChange={() => toggleChannelPref('push', 'habitReminders')}
+                  className="w-5 h-5 rounded-lg text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+                />
+              </div>
+              <div className="col-span-2 sm:col-span-2 flex justify-center">
+                <input
+                  type="checkbox"
+                  checked={notifPrefs.email.habitReminders}
+                  onChange={() => toggleChannelPref('email', 'habitReminders')}
+                  className="w-5 h-5 rounded-lg text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+                />
+              </div>
+              <div className="col-span-2 sm:col-span-2 flex justify-center">
+                <input
+                  type="checkbox"
+                  checked={notifPrefs.sms.habitReminders}
+                  onChange={() => toggleChannelPref('sms', 'habitReminders')}
+                  className="w-5 h-5 rounded-lg text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+                />
+              </div>
+            </div>
+
+            {/* Row 3: Clinical Health & Biomarkers */}
+            <div className="grid grid-cols-12 gap-2 items-center py-2.5 border-t border-slate-200/50 dark:border-slate-700/50">
+              <div className="col-span-6 sm:col-span-6 pr-2">
+                <p className="font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm">
+                  Biomarkers & Spikes
+                </p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
+                  Glucose curve spikes, blood pressure & cycle alerts
+                </p>
+              </div>
+              <div className="col-span-2 sm:col-span-2 flex justify-center">
+                <input
+                  type="checkbox"
+                  checked={notifPrefs.push.healthInsights}
+                  onChange={() => toggleChannelPref('push', 'healthInsights')}
+                  className="w-5 h-5 rounded-lg text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+                />
+              </div>
+              <div className="col-span-2 sm:col-span-2 flex justify-center">
+                <input
+                  type="checkbox"
+                  checked={notifPrefs.email.healthInsights}
+                  onChange={() => toggleChannelPref('email', 'healthInsights')}
+                  className="w-5 h-5 rounded-lg text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+                />
+              </div>
+              <div className="col-span-2 sm:col-span-2 flex justify-center">
+                <input
+                  type="checkbox"
+                  checked={notifPrefs.sms.healthInsights}
+                  onChange={() => toggleChannelPref('sms', 'healthInsights')}
+                  className="w-5 h-5 rounded-lg text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+                />
+              </div>
+            </div>
+
+            {/* Row 4: Diagnostic & Medical Reports */}
+            <div className="grid grid-cols-12 gap-2 items-center py-2.5 border-t border-slate-200/50 dark:border-slate-700/50">
+              <div className="col-span-6 sm:col-span-6 pr-2">
+                <p className="font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm">
+                  Report Upload Alerts
+                </p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
+                  Prompts to upload new blood tests & diagnostic records
+                </p>
+              </div>
+              <div className="col-span-2 sm:col-span-2 flex justify-center">
+                <input
+                  type="checkbox"
+                  checked={notifPrefs.push.reportUpload}
+                  onChange={() => toggleChannelPref('push', 'reportUpload')}
+                  className="w-5 h-5 rounded-lg text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+                />
+              </div>
+              <div className="col-span-2 sm:col-span-2 flex justify-center">
+                <input
+                  type="checkbox"
+                  checked={notifPrefs.email.reportUpload}
+                  onChange={() => toggleChannelPref('email', 'reportUpload')}
+                  className="w-5 h-5 rounded-lg text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+                />
+              </div>
+              <div className="col-span-2 sm:col-span-2 flex justify-center">
+                <input
+                  type="checkbox"
+                  checked={notifPrefs.sms.reportUpload}
+                  onChange={() => toggleChannelPref('sms', 'reportUpload')}
+                  className="w-5 h-5 rounded-lg text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+                />
+              </div>
+            </div>
+
+            {/* Row 5: Shop Orders & Deliveries */}
+            <div className="grid grid-cols-12 gap-2 items-center py-2.5 border-t border-slate-200/50 dark:border-slate-700/50">
+              <div className="col-span-6 sm:col-span-6 pr-2">
+                <p className="font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm">
+                  Orders & Deliveries
+                </p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
+                  Order confirmation, shipment tracking & receipts
+                </p>
+              </div>
+              <div className="col-span-2 sm:col-span-2 flex justify-center">
+                <input
+                  type="checkbox"
+                  checked={notifPrefs.push.orderUpdates}
+                  onChange={() => toggleChannelPref('push', 'orderUpdates')}
+                  className="w-5 h-5 rounded-lg text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+                />
+              </div>
+              <div className="col-span-2 sm:col-span-2 flex justify-center">
+                <input
+                  type="checkbox"
+                  checked={notifPrefs.email.orderUpdates}
+                  onChange={() => toggleChannelPref('email', 'orderUpdates')}
+                  className="w-5 h-5 rounded-lg text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+                />
+              </div>
+              <div className="col-span-2 sm:col-span-2 flex justify-center">
+                <input
+                  type="checkbox"
+                  checked={notifPrefs.sms.orderUpdates}
+                  onChange={() => toggleChannelPref('sms', 'orderUpdates')}
+                  className="w-5 h-5 rounded-lg text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+                />
+              </div>
+            </div>
+
+          </div>
+
+          {/* Dedicated Save Button */}
+          <button
+            type="button"
+            onClick={async () => {
+              localStorage.setItem('mito_notification_preferences', JSON.stringify(notifPrefs));
+              localStorage.setItem('mito_checkin_reminder_enabled', notifPrefs.push.dailyCheckin ? 'true' : 'false');
+              localStorage.setItem('mito_checkin_reminder_time', checkinReminderTime);
+              localStorage.setItem('mito_report_reminder_enabled', notifPrefs.push.reportUpload ? 'true' : 'false');
+
+              if (notifPrefs.push.dailyCheckin) {
+                scheduleDailyCheckinReminder(checkinReminderTime);
+              } else {
+                cancelDailyCheckinReminder();
+              }
+
+              const success = await updateProfile({
+                notificationPreferences: notifPrefs
+              });
+
+              if (success) {
+                showToast('Notification preferences saved successfully!', 'success');
+              } else {
+                showToast('Preferences saved locally.', 'info');
+              }
+            }}
+            disabled={isLoading}
+            className="w-full bg-primary hover:bg-primary/95 dark:bg-primary-dark text-white font-bold py-3.5 rounded-2xl shadow-soft flex items-center justify-center space-x-2 transition-all hover:shadow-md disabled:opacity-50 mt-4 cursor-pointer"
+          >
+            <Save className="h-4 w-4" />
+            <span>Save Notification Preferences</span>
+          </button>
+        </div>
+      </div>
     );
   }
 
@@ -376,6 +926,19 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
             <ChevronRight className="h-4 w-4 text-slate-400 dark:text-slate-500" />
           </button>
         )}
+
+        {/* Dedicated Notification Preferences Sub-view Menu Item */}
+        <button
+          type="button"
+          onClick={() => setSubView('notifications')}
+          className="w-full bg-white dark:bg-slate-900 hover:bg-slate-50/50 dark:hover:bg-slate-800 p-4 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-[0_12px_24px_rgba(0,0,0,0.02)] flex items-center justify-between transition-all text-left cursor-pointer"
+        >
+          <div className="flex items-center space-x-3">
+            <Bell className="h-4 w-4 text-primary dark:text-primary-light" />
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-200">Notification & Delivery Preferences</span>
+          </div>
+          <ChevronRight className="h-4 w-4 text-slate-400 dark:text-slate-500" />
+        </button>
       </motion.div>
 
       {/* Physical Profiling Update Form */}

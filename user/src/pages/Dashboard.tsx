@@ -614,7 +614,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
             if (s === 'alcohol') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'ALCOHOL');
             if (s === 'antioxidants') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'ANTIOXIDANTS');
             if (s === 'report_upload' || s.includes('report')) return reportsLoggedToday || todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('REPORT'));
-            if (s === 'env_air') return envAnswers.airQ1 !== undefined && envAnswers.airQ1 !== null;
+            if (s === 'env_air') return (envAnswers.airQ1 !== undefined && envAnswers.airQ1 !== null) || (envAnswers.airQ2 !== undefined && envAnswers.airQ2 !== null) || (envAnswers.airQ3 !== undefined && envAnswers.airQ3 !== null);
             if (s === 'env_water') return envAnswers.waterQ1 !== undefined && envAnswers.waterQ1 !== null;
             if (s === 'env_pesticides') return envAnswers.pesticidesQ1 !== undefined && envAnswers.pesticidesQ1 !== null;
             if (s === 'env_microplastics') return envAnswers.microplasticsQ1 !== undefined && envAnswers.microplasticsQ1 !== null;

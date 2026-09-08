@@ -37,6 +37,7 @@ export interface IUser extends Document {
   addressCity?: string;
   addressState?: string;
   addressPinCode?: string;
+  notificationPreferences?: any;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -84,7 +85,8 @@ const userSchema = new Schema<IUser>(
     addressLine1: { type: String, default: '' },
     addressCity: { type: String, default: '' },
     addressState: { type: String, default: '' },
-    addressPinCode: { type: String, default: '' }
+    addressPinCode: { type: String, default: '' },
+    notificationPreferences: { type: Object, default: {} }
   },
   {
     timestamps: true

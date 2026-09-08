@@ -62,10 +62,10 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
   },
   {
     stepId: 'smoking',
-    title: 'Smoking Exposure',
-    questionPrompt: 'Did you smoke or get exposed to tobacco smoke today?',
+    title: 'Smoking & Chewing Tobacco',
+    questionPrompt: 'Did you smoke cigarettes/bidis or chew tobacco (gutkha, khaini, paan with tobacco) today?',
     inputType: 'YES_NO',
-    options: ['No (Clean Day)', 'Yes (Smoke / Exposed)'],
+    options: ['No (Clean Day)', 'Yes (Smoked / Chewed Tobacco)'],
     order: 7,
     isEnabled: true
   },
@@ -89,10 +89,10 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
   },
   {
     stepId: 'env_air',
-    title: 'Air Pollution Exposure',
-    questionPrompt: 'Did you commute in heavy traffic (>30 min) or experience indoor smoke/incense/mosquito coil exposure today?',
+    title: 'Air Pollution & Passive Smoke',
+    questionPrompt: 'Did you commute in heavy traffic (>30 min), encounter passive smoking (second-hand smoke), or experience indoor smoke/incense exposure today?',
     inputType: 'YES_NO',
-    options: ['No (Clean Air)', 'Yes (Smog / Smoke Exposure)'],
+    options: ['No (Clean Air)', 'Yes (Smog / Smoke / Passive Smoke)'],
     order: 10,
     isEnabled: true
   },
@@ -299,10 +299,10 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
   },
   {
     stepId: 'env_air',
-    title: 'Air Pollution Exposure',
-    questionPrompt: 'Did you commute in heavy traffic (>30 min) or experience indoor smoke/incense/mosquito coil exposure today?',
+    title: 'Air Pollution & Passive Smoke',
+    questionPrompt: 'Did you commute in heavy traffic (>30 min), encounter passive smoking (second-hand smoke), or experience indoor smoke/incense/mosquito coil exposure today?',
     inputType: 'YES_NO',
-    options: ['No (Clean Air)', 'Yes (Smog / Smoke Exposure)'],
+    options: ['No (Clean Air)', 'Yes (Smog / Smoke / Passive Smoke)'],
     order: 8,
     isEnabled: true
   },

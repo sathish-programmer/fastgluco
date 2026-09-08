@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Bot } from 'lucide-react';
+import { ArrowLeft, Bot, Cigarette, Flame, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { HabitsService, type HabitLog } from '../../services/habitsService';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts';
@@ -13,9 +13,11 @@ interface SmokingLogScreenProps {
 
 export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBookAppointment, onOpenAiCheckin }) => {
   const { user, token, apiUrl } = useAuth();
-  const [count, setCount] = useState<number>(0);
+  const [count, setCount] = useState<number>(0); // Cigarettes / Bidis
+  const [chewingCount, setChewingCount] = useState<number>(0); // Chewing tobacco / Gutkha / Khaini
   const [history, setHistory] = useState<HabitLog[]>([]);
   const [loading, setLoading] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
     if (user?.id) loadHistory();
@@ -25,58 +27,96 @@ export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBo
     if (!user?.id) return;
     try {
       const logs = await HabitsService.getRecentHabits(apiUrl, token, 'Smoking', 14);
-      setHistory(logs.reverse()); // for chart
+      const sorted = logs.reverse(); // for chart
+      setHistory(sorted);
+
+      // Populate today's current counts if already logged
+      const todayStr = new Date().toDateString();
+      const todayLog = logs.find(h => new Date(h.timestamp || (h as any).createdAt).toDateString() === todayStr);
+      if (todayLog?.value) {
+        const val = todayLog.value;
+        if (val.cigarettesCount !== undefined) {
+          setCount(val.cigarettesCount);
+        } else if (typeof val.count === 'number' && val.chewingCount === undefined) {
+          setCount(val.count);
+        }
+        if (val.chewingCount !== undefined) {
+          setChewingCount(val.chewingCount);
+        }
+      }
     } catch (err) {
-      console.error(err);
-    } finally {
-      // Done fetching
+      console.error('Failed to load smoking history', err);
     }
   };
+
   const handleLog = async () => {
     if (!user?.id) return;
     setLoading(true);
     try {
-      await HabitsService.logHabit(apiUrl, token, 'Smoking', { count });
+      const totalTobacco = count + chewingCount;
+      await HabitsService.logHabit(apiUrl, token, 'Smoking', {
+        count: totalTobacco,
+        cigarettesCount: count,
+        chewingCount: chewingCount,
+        totalExposure: totalTobacco,
+        option: totalTobacco === 0 
+          ? 'No (Clean Day)' 
+          : `Smoked: ${count} sticks, Chewed: ${chewingCount} pouches`
+      });
       await loadHistory();
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2500);
     } catch (err) {
-      console.error('Failed to log smoking', err);
+      console.error('Failed to log smoking / chewing tobacco', err);
     } finally {
       setLoading(false);
     }
   };
 
   const get14DayChartData = () => {
-    const daysMap: { [dateStr: string]: number } = {};
+    const daysMap: { [dateStr: string]: { total: number; sticks: number; chewing: number } } = {};
     const now = new Date();
     
     history.forEach(h => {
       const dStr = new Date(h.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' });
-      daysMap[dStr] = h.value?.count ?? 0;
+      const val = h.value || {};
+      const sticks = val.cigarettesCount ?? (val.chewingCount === undefined ? (val.count ?? 0) : 0);
+      const chewing = val.chewingCount ?? 0;
+      const total = val.count ?? (sticks + chewing);
+      daysMap[dStr] = { total, sticks, chewing };
     });
 
     const result = [];
     for (let i = 13; i >= 0; i--) {
       const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
       const label = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
-      const countVal = daysMap[label] !== undefined ? daysMap[label] : 0;
+      const data = daysMap[label] || { total: 0, sticks: 0, chewing: 0 };
       result.push({
         date: label,
-        count: countVal
+        total: data.total,
+        sticks: data.sticks,
+        chewing: data.chewing
       });
     }
     return result;
   };
 
   const chartData = get14DayChartData();
-  const totalSticks14Days = history.reduce((sum, h) => sum + (h.value?.count || 0), 0);
-  const avgSticksPerDay = history.length > 0 ? (totalSticks14Days / history.length).toFixed(1) : '0';
-  const smokeFreeDays = history.filter(h => h.value?.count === 0).length;
+  const totalExposure14Days = history.reduce((sum, h) => sum + (h.value?.count ?? ((h.value?.cigarettesCount ?? 0) + (h.value?.chewingCount ?? 0))), 0);
+  const avgExposurePerDay = history.length > 0 ? (totalExposure14Days / history.length).toFixed(1) : '0';
+  const tobaccoFreeDays = history.filter(h => {
+    const total = h.value?.count ?? ((h.value?.cigarettesCount ?? 0) + (h.value?.chewingCount ?? 0));
+    return total === 0;
+  }).length;
+
+  const totalToday = count + chewingCount;
 
   return (
     <div 
       className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100"
       style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
     >
+      {/* Header */}
       <div className="flex items-center gap-4 mb-6 sub-page-internal-header">
         <button 
           onClick={onBack}
@@ -85,8 +125,8 @@ export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBo
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div>
-          <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Damage · Smoking</span>
-          <h2 className="text-2xl font-sans font-bold text-slate-800 dark:text-slate-50 leading-none mt-1">Count, then taper</h2>
+          <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Damage · Tobacco Exposure</span>
+          <h2 className="text-2xl font-sans font-bold text-slate-800 dark:text-slate-50 leading-none mt-1">Smoking & Chewing Tobacco</h2>
         </div>
       </div>
 
@@ -111,66 +151,155 @@ export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBo
         </div>
       )}
 
+      {/* Clinical Advisory Card */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl p-4 mb-6">
-        <h3 className="font-bold text-slate-800 dark:text-slate-200 mb-1.5">Every cigarette adds carcinogens.</h3>
-        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-          Log daily. The goal isn't perfection — it's a falling line over two weeks.
-        </p>
+        <div className="flex items-start gap-3">
+          <div className="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-500 shrink-0 mt-0.5">
+            <ShieldAlert className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="font-bold text-slate-800 dark:text-slate-200 text-sm mb-1">Combustible & Smokeless Tobacco Risks</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+              Both smoking (cigarettes, bidis) and chewing tobacco (gutkha, khaini, paan masala with zarda) release potent carcinogenic nitrosamines (NNK, NNN), accelerating cellular DNA mutations and driving oral & respiratory malignancies.
+            </p>
+          </div>
+        </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-3xl p-5 mb-8">
-        <div className="flex justify-between items-center mb-6">
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-bold">Cigarettes today</span>
-          <div className="flex items-baseline gap-1 bg-rose-50 dark:bg-rose-950/30 px-3 py-1 rounded-lg border border-rose-100 dark:border-rose-900/40">
-            <span className="text-2xl font-sans font-bold text-rose-500">{count}</span>
-            <span className="text-[10px] font-bold text-rose-400 uppercase tracking-widest">sticks</span>
+      {/* Main Logging Card */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-3xl p-5 mb-8 space-y-6">
+        
+        {/* Section 1: Cigarettes & Bidis Smoked */}
+        <div className="space-y-3">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <Cigarette className="h-4 w-4 text-slate-400" />
+              <span className="text-xs text-slate-700 dark:text-slate-300 font-bold">1. Cigarettes / Bidis Smoked</span>
+            </div>
+            <div className="flex items-baseline gap-1 bg-rose-50 dark:bg-rose-950/30 px-3 py-1 rounded-lg border border-rose-100 dark:border-rose-900/40">
+              <span className="text-xl font-sans font-bold text-rose-500">{count}</span>
+              <span className="text-[10px] font-bold text-rose-400 uppercase tracking-widest">sticks</span>
+            </div>
+          </div>
+
+          <div className="relative py-1">
+            <input 
+              type="range" 
+              min="0" 
+              max="40" 
+              value={count} 
+              onChange={(e) => setCount(parseInt(e.target.value) || 0)}
+              className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-rose-500 outline-none shadow-inner"
+              style={{
+                background: `linear-gradient(to right, #F43F5E 0%, #F43F5E ${(count / 40) * 100}%, #F1F5F9 ${(count / 40) * 100}%, #F1F5F9 100%)`
+              }}
+            />
+          </div>
+
+          {/* Quick Presets */}
+          <div className="flex gap-2">
+            {[0, 1, 3, 5, 10, 20].map(val => (
+              <button
+                key={val}
+                type="button"
+                onClick={() => setCount(val)}
+                className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] font-bold transition-all border ${count === val ? 'bg-rose-500 text-white border-rose-500 shadow-xs' : 'bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'}`}
+              >
+                {val === 0 ? '0 (Clean)' : val}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Custom Slider */}
-        <div className="mb-8 relative py-2">
-          <input 
-            type="range" 
-            min="0" 
-            max="40" 
-            value={count} 
-            onChange={(e) => setCount(parseInt(e.target.value))}
-            className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-rose-500 outline-none shadow-inner"
-            style={{
-              background: `linear-gradient(to right, #F43F5E 0%, #F43F5E ${(count / 40) * 100}%, #F1F5F9 ${(count / 40) * 100}%, #F1F5F9 100%)`
-            }}
-          />
-          <style>{`
-            input[type=range]::-webkit-slider-thumb {
-              appearance: none;
-              width: 24px;
-              height: 24px;
-              border-radius: 50%;
-              background: white;
-              border: 3px solid #F43F5E;
-              box-shadow: 0 2px 6px rgba(244, 63, 94, 0.3);
-              cursor: pointer;
-            }
-          `}</style>
+        <div className="border-t border-slate-100 dark:border-slate-800" />
+
+        {/* Section 2: Tobacco Chewed (Gutkha / Khaini / Paan) */}
+        <div className="space-y-3">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <Flame className="h-4 w-4 text-amber-500" />
+              <span className="text-xs text-slate-700 dark:text-slate-300 font-bold">2. Tobacco Chewed (Gutkha / Khaini / Paan)</span>
+            </div>
+            <div className="flex items-baseline gap-1 bg-amber-50 dark:bg-amber-950/30 px-3 py-1 rounded-lg border border-amber-100 dark:border-amber-900/40">
+              <span className="text-xl font-sans font-bold text-amber-600 dark:text-amber-400">{chewingCount}</span>
+              <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">pouches</span>
+            </div>
+          </div>
+
+          <div className="relative py-1">
+            <input 
+              type="range" 
+              min="0" 
+              max="20" 
+              value={chewingCount} 
+              onChange={(e) => setChewingCount(parseInt(e.target.value) || 0)}
+              className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500 outline-none shadow-inner"
+              style={{
+                background: `linear-gradient(to right, #D97706 0%, #D97706 ${(chewingCount / 20) * 100}%, #F1F5F9 ${(chewingCount / 20) * 100}%, #F1F5F9 100%)`
+              }}
+            />
+          </div>
+
+          {/* Quick Presets */}
+          <div className="flex gap-2">
+            {[0, 1, 2, 4, 8, 12].map(val => (
+              <button
+                key={val}
+                type="button"
+                onClick={() => setChewingCount(val)}
+                className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] font-bold transition-all border ${chewingCount === val ? 'bg-amber-500 text-white border-amber-500 shadow-xs' : 'bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'}`}
+              >
+                {val === 0 ? '0 (Clean)' : val}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Combined Daily Status */}
+        <div className={`p-4 rounded-2xl border flex items-center justify-between ${totalToday === 0 ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900/40 text-emerald-800 dark:text-emerald-300' : 'bg-rose-50 dark:bg-rose-950/20 border-rose-100 dark:border-rose-900/40 text-rose-800 dark:text-rose-300'}`}>
+          <div className="flex items-center gap-2.5">
+            {totalToday === 0 ? (
+              <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            ) : (
+              <ShieldAlert className="h-5 w-5 text-rose-600 dark:text-rose-400 shrink-0" />
+            )}
+            <div>
+              <p className="text-xs font-bold">
+                {totalToday === 0 ? 'Smoke & Tobacco-Free Clean Day' : `Total Tobacco Exposures: ${totalToday}`}
+              </p>
+              <p className="text-[10px] opacity-80">
+                {totalToday === 0 ? 'Score: 0 (No damage added)' : 'Score: -1 (Damage flag added)'}
+              </p>
+            </div>
+          </div>
+          <span className={`text-xs font-black px-2.5 py-1 rounded-xl ${totalToday === 0 ? 'bg-emerald-200/60 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-200' : 'bg-rose-200/60 dark:bg-rose-900/60 text-rose-900 dark:text-rose-200'}`}>
+            {totalToday === 0 ? '0 pts' : '-1 pt'}
+          </span>
         </div>
 
         <button 
           onClick={handleLog}
           disabled={loading}
-          className="w-full py-3.5 rounded-xl font-bold text-white shadow-sm transition-all bg-rose-500 hover:bg-rose-600 disabled:opacity-50"
+          className="w-full py-3.5 rounded-xl font-bold text-white shadow-sm transition-all bg-rose-500 hover:bg-rose-600 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
         >
-          {loading ? 'Saving...' : 'Log today'}
+          {loading ? 'Saving...' : saveSuccess ? (
+            <>
+              <CheckCircle2 className="h-4 w-4" />
+              Logged Successfully!
+            </>
+          ) : 'Log Tobacco Habits Today'}
         </button>
       </div>
 
+      {/* 14-Day Trend Section */}
       <div className="mb-8">
         <div className="flex justify-between items-center mb-3">
           <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 tracking-widest uppercase">
             14-Day Tapering Trend
           </span>
-          {smokeFreeDays > 0 && (
+          {tobaccoFreeDays > 0 && (
             <span className="text-[10px] font-extrabold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800/40">
-              {smokeFreeDays} Smoke-Free Days
+              {tobaccoFreeDays} Tobacco-Free Days
             </span>
           )}
         </div>
@@ -179,11 +308,11 @@ export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBo
         <div className="grid grid-cols-3 gap-3 mb-4">
           <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3 shadow-2xs">
             <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Total Logged</span>
-            <span className="text-lg font-black text-rose-500 mt-0.5 block">{totalSticks14Days} <span className="text-xs font-semibold text-slate-400">sticks</span></span>
+            <span className="text-lg font-black text-rose-500 mt-0.5 block">{totalExposure14Days} <span className="text-xs font-semibold text-slate-400">total</span></span>
           </div>
           <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3 shadow-2xs">
             <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Daily Avg</span>
-            <span className="text-lg font-black text-slate-800 dark:text-slate-100 mt-0.5 block">{avgSticksPerDay} <span className="text-xs font-semibold text-slate-400">/day</span></span>
+            <span className="text-lg font-black text-slate-800 dark:text-slate-100 mt-0.5 block">{avgExposurePerDay} <span className="text-xs font-semibold text-slate-400">/day</span></span>
           </div>
           <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3 shadow-2xs">
             <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Days Tracked</span>
@@ -221,9 +350,14 @@ export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBo
                     if (active && payload && payload.length) {
                       const data = payload[0].payload;
                       return (
-                        <div className="bg-slate-900 text-white p-2.5 rounded-xl text-xs shadow-xl border border-slate-800 font-sans">
-                          <p className="text-[9px] font-bold text-slate-400 uppercase mb-0.5">{data.date}</p>
-                          <p className="font-black text-rose-400">{data.count} Sticks</p>
+                        <div className="bg-slate-900 text-white p-2.5 rounded-xl text-xs shadow-xl border border-slate-800 font-sans space-y-1">
+                          <p className="text-[9px] font-bold text-slate-400 uppercase">{data.date}</p>
+                          <p className="font-black text-rose-400">{data.total} Total Exposures</p>
+                          <div className="text-[10px] text-slate-300 flex gap-2">
+                            <span>Smoked: {data.sticks} sticks</span>
+                            <span>•</span>
+                            <span>Chewed: {data.chewing} pouches</span>
+                          </div>
                         </div>
                       );
                     }
@@ -232,7 +366,7 @@ export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBo
                 />
                 <Area
                   type="monotone"
-                  dataKey="count"
+                  dataKey="total"
                   stroke="#F43F5E"
                   strokeWidth={3}
                   fillOpacity={1}
@@ -246,15 +380,15 @@ export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBo
         </div>
       </div>
 
-      {history.some(h => h.value.count > 0) && (
+      {history.some(h => (h.value?.count > 0 || (h.value?.cigarettesCount ?? 0) > 0 || (h.value?.chewingCount ?? 0) > 0)) && (
         <ConsultationBanner
           sourceModule="Smoking"
-          reason="Smoking Cessation Consultation"
-          triggerCondition="Logged > 0 cigarettes"
+          reason="Smoking & Tobacco Cessation Consultation"
+          triggerCondition="Logged active tobacco consumption (smoking / chewing)"
           riskLevel="High"
-          recommendedSpecialty="Pulmonologist/De-addiction Specialist"
-          title="Cessation Support"
-          description="Smoking significantly accelerates cellular aging. We offer specialized support to help you quit."
+          recommendedSpecialty="Preventive Oncologist / De-addiction Specialist"
+          title="Tobacco Cessation Support"
+          description="Tobacco in any form (smoking or chewing) significantly accelerates cellular oncogenesis. We offer specialized clinical support and tapering protocols to help you quit."
           colorTheme="rose"
           onBookAppointment={onBookAppointment!}
         />
@@ -262,3 +396,4 @@ export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBo
     </div>
   );
 };
+

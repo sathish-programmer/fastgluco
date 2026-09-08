@@ -401,7 +401,7 @@ export class ReportController {
       const movementCount = habitLogs.filter((h: any) => h.type === 'Movement' || h.type === 'Exercise').length;
       const stillnessCount = habitLogs.filter((h: any) => h.type === 'Stillness').length;
       const antioxidantCount = habitLogs.filter((h: any) => h.type === 'Antioxidants').length;
-      const cleanSmokingCount = habitLogs.filter((h: any) => h.type === 'Smoking' && (!h.value?.count || h.value?.count === 0)).length;
+      const cleanSmokingCount = habitLogs.filter((h: any) => h.type === 'Smoking' && (!h.value?.count || h.value?.count === 0) && (!h.value?.chewingCount || h.value?.chewingCount === 0)).length;
       const cleanAlcoholCount = habitLogs.filter((h: any) => h.type === 'Alcohol' && (!h.value?.count || h.value?.count === 0)).length;
 
       // Range text for display
