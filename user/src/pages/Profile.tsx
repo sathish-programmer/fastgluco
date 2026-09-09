@@ -1289,7 +1289,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
           <span>{branding.appName || 'Mito Reboot'}</span>
           <span className="text-[8.5px] font-black text-blue-600 dark:text-blue-400 -translate-y-0.5 select-none">™</span>
           <span className="mx-1">•</span>
-          <span>v5.4.0</span>
+          <span>v5.5.0</span>
         </p>
         <p className="text-[9px] text-slate-400/80">
           © {new Date().getFullYear()} MitoReboot Private Limited. All rights reserved.
