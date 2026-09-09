@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Send, ShoppingBag, Calendar, RefreshCw, FileText, CheckCircle2, Zap, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { HabitsService } from '../services/habitsService';
 
 interface GeneticRiskAIChatModalProps {
@@ -27,6 +28,7 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
   onNavigateToShop
 }) => {
   const { apiUrl, token, user } = useAuth();
+  const { t } = useLanguage();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState<string>('');
@@ -145,13 +147,15 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
       localStorage.removeItem(`mito_gene_ai_${user?.id || 'guest'}`);
     } catch (e) {}
 
-    const greeting = `Hello ${user?.name ? user.name.split(' ')[0] : 'there'}, I am **Gia** — your genetic AI counselor at MitoReboot Care.\n\nRoughly **10% of cancers** have an underlying hereditary genetic component. Based on **NCCN v2.2025** and **ASCO 2024 guidelines**, I can help evaluate whether germline genetic testing is recommended for you or your family.\n\nTo begin — are you here because of a **personal cancer diagnosis**, a **family history of cancer**, or **both**?`;
+    const userName = user?.name ? user.name.split(' ')[0] : 'there';
+    const rawGreeting = t('gia.greeting', `Hello {name}, I am **Gia** — your genetic AI counselor at MitoReboot Care.\n\nRoughly **10% of cancers** have an underlying hereditary genetic component. Based on **NCCN v2.2025** and **ASCO 2024 guidelines**, I can help evaluate whether germline genetic testing is recommended for you or your family.\n\nTo begin — are you here because of a **personal cancer diagnosis**, a **family history of cancer**, or **both**?`);
+    const greeting = rawGreeting.replace(/\{name\}/g, userName);
 
     const initialOptions = [
-      'Personal cancer diagnosis',
-      'Family history only',
-      'Both — personal + family history',
-      'Cancer-free but want to assess risk'
+      t('gia.optPersonal', 'Personal cancer diagnosis'),
+      t('gia.optFamily', 'Family history only'),
+      t('gia.optBoth', 'Both — personal + family history'),
+      t('gia.optCancerFree', 'Cancer-free but want to assess risk')
     ];
 
     setMessages([
@@ -262,34 +266,63 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
   const getGuidedQuickReplies = (count: number): string[] => {
     switch (count) {
       case 1:
-        return ['Breast cancer', 'Ovarian cancer', 'Colorectal cancer', 'Endometrial cancer', 'Pancreatic cancer', 'Prostate cancer', 'Multiple cancers'];
+        return [
+          t('gia.optBreast', 'Breast cancer'),
+          t('gia.optOvarian', 'Ovarian cancer'),
+          t('gia.optColorectal', 'Colorectal cancer'),
+          t('gia.optEndometrial', 'Endometrial cancer'),
+          t('gia.optPancreatic', 'Pancreatic cancer'),
+          t('gia.optProstate', 'Prostate cancer'),
+          t('gia.optMultipleCancers', 'Multiple cancers')
+        ];
       case 2:
-        return ['Under 35 years', '35–45 years', '46–50 years', '51–60 years', 'Over 60 years'];
+        return [
+          t('gia.optUnder35', 'Under 35 years'),
+          t('gia.opt35to45', '35–45 years'),
+          t('gia.opt46to50', '46–50 years'),
+          t('gia.opt51to60', '51–60 years'),
+          t('gia.optOver60', 'Over 60 years')
+        ];
       case 3:
-        return ['Mother / Sister', 'Father / Brother', 'Maternal aunt / grandmother', 'Paternal relative', 'Multiple relatives on same side'];
+        return [
+          t('gia.optMotherSister', 'Mother / Sister'),
+          t('gia.optFatherBrother', 'Father / Brother'),
+          t('gia.optMaternalAunt', 'Maternal aunt / grandmother'),
+          t('gia.optPaternalRelative', 'Paternal relative'),
+          t('gia.optMultipleRelatives', 'Multiple relatives on same side')
+        ];
       case 4:
-        return ['Ashkenazi Jewish ancestry', 'South Asian / Indian', 'Yes, family member tested positive', 'No prior testing in family'];
+        return [
+          t('gia.optAshkenazi', 'Ashkenazi Jewish ancestry'),
+          t('gia.optSouthAsian', 'South Asian / Indian'),
+          t('gia.optFamilyTestedPositive', 'Yes, family member tested positive'),
+          t('gia.optNoPriorTesting', 'No prior testing in family')
+        ];
       default:
-        return ['Tell me more about BRCA', 'What is Lynch Syndrome?', 'Book Genetic Counseling'];
+        return [
+          t('gia.optTellMeBrca', 'Tell me more about BRCA'),
+          t('gia.optWhatIsLynch', 'What is Lynch Syndrome?'),
+          t('gia.optBookCounseling', 'Book Genetic Counseling')
+        ];
     }
   };
 
   const generateGuidedOncogeneticReply = (_text: string, count: number): string => {
     if (count === 1) {
-      return `Thank you. Understanding cancer types across generations is crucial for guideline evaluations.\n\nWhich specific type(s) of cancer were diagnosed in yourself or your family members?`;
+      return t('gia.qCancerTypes', `Thank you. Understanding cancer types across generations is crucial for guideline evaluations.\n\nWhich specific type(s) of cancer were diagnosed in yourself or your family members?`);
     }
     if (count === 2) {
-      return `Thank you. Age at diagnosis is one of the strongest indicators of hereditary risk under NCCN guidelines (e.g. Breast cancer diagnosed ≤50, Colorectal ≤50, or Ovarian at any age).\n\nAt what age was the cancer first diagnosed?`;
+      return t('gia.qAge', `Thank you. Age at diagnosis is one of the strongest indicators of hereditary risk under NCCN guidelines (e.g. Breast cancer diagnosed ≤50, Colorectal ≤50, or Ovarian at any age).\n\nAt what age was the cancer first diagnosed?`);
     }
     if (count === 3) {
-      return `Got it. Next, which specific family relatives were affected, and on which side of the family (maternal or paternal)? Prompt: Think broadly across first, second, and third-degree relatives.`;
+      return t('gia.qRelatives', `Got it. Next, which specific family relatives were affected, and on which side of the family (maternal or paternal)? Prompt: Think broadly across first, second, and third-degree relatives.`);
     }
     if (count === 4) {
-      return `Understood. Are there any known genetic test results in the family (e.g. BRCA1/2 mutation positive), or Ashkenazi Jewish ancestry?`;
+      return t('gia.qAncestry', `Understood. Are there any known genetic test results in the family (e.g. BRCA1/2 mutation positive), or Ashkenazi Jewish ancestry?`);
     }
 
     // Final Assessment Output
-    return `### 🧬 NCCN v2.2025 Oncogenetic Risk Assessment\n\nBased on the history shared, **germline hereditary cancer testing is RECOMMENDED** under current NCCN & ASCO guidelines.\n\n**Candidate Syndromes & Gene Panels to Evaluate:**\n- **HBOC Panel (BRCA1, BRCA2, PALB2, ATM, CHEK2)**: Indicated for early-onset breast, ovarian, pancreatic, or high-risk prostate cancer.\n- **Lynch Syndrome Panel (MLH1, MSH2, MSH6, PMS2, EPCAM)**: Indicated for early colorectal, endometrial, or gastric clusters.\n\n**Next Steps:**\n1. Consult a certified Genetic Counselor for a comprehensive 3-generation pedigree review.\n2. Order a clinical multi-gene panel blood/saliva test as determined by your counselor.`;
+    return t('gia.assessmentSummary', `### 🧬 NCCN v2.2025 Oncogenetic Risk Assessment\n\nBased on the history shared, **germline hereditary cancer testing is RECOMMENDED** under current NCCN & ASCO guidelines.\n\n**Candidate Syndromes & Gene Panels to Evaluate:**\n- **HBOC Panel (BRCA1, BRCA2, PALB2, ATM, CHEK2)**: Indicated for early-onset breast, ovarian, pancreatic, or high-risk prostate cancer.\n- **Lynch Syndrome Panel (MLH1, MSH2, MSH6, PMS2, EPCAM)**: Indicated for early colorectal, endometrial, or gastric clusters.\n\n**Next Steps:**\n1. Consult a certified Genetic Counselor for a comprehensive 3-generation pedigree review.\n2. Order a clinical multi-gene panel blood/saliva test as determined by your counselor.`);
   };
 
   if (!isOpen) return null;
@@ -316,12 +349,12 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
                 Gia
               </h3>
               <span className="text-[10px] bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-extrabold px-2.5 py-0.5 rounded-full border border-purple-100 dark:border-purple-900/60 uppercase tracking-wider">
-                Genetic AI Counselor
+                {t('gia.badge', 'Genetic AI Counselor')}
               </span>
             </div>
             <p className="text-xs text-purple-600 dark:text-purple-400 font-semibold flex items-center gap-1.5 mt-0.5 truncate">
               <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse shrink-0"></span>
-              <span>MitoReboot Genetic AI Counselor</span>
+              <span>{t('geneticCounselorTitle')}</span>
             </p>
           </div>
         </div>
@@ -330,16 +363,16 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
           <button
             onClick={restartChatSession}
             className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-purple-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
-            title="Restart Assessment"
+            title={t('restartAssessment')}
           >
             <RefreshCw className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
-            <span className="hidden sm:inline">Restart</span>
+            <span className="hidden sm:inline">{t('common.restart', 'Restart')}</span>
           </button>
 
           <button
             onClick={onClose}
             className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
-            aria-label="Close Chat"
+            aria-label={t('closeChatAria')}
           >
             <X className="h-5 w-5" />
           </button>
@@ -349,7 +382,7 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
       {/* Guidelines Strip */}
       <div className="bg-purple-50/60 dark:bg-purple-950/30 border-b border-purple-100/60 dark:border-purple-900/40 px-4 py-2 sm:px-6 flex items-center gap-2 text-xs font-bold text-purple-900 dark:text-purple-200 shrink-0">
         <FileText className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400 shrink-0" />
-        <span className="truncate">Guidelines: NCCN v2.2025 · ASCO 2024 · SEOM Oncogenetics</span>
+        <span className="truncate">{t('gia.guidelines', 'Guidelines: NCCN v2.2025 · ASCO 2024 · SEOM Oncogenetics')}</span>
       </div>
 
       {/* Message Container - Full Screen */}
@@ -391,7 +424,7 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
                   return (
                     <div className="mt-3.5 pt-3 border-t border-purple-100 dark:border-purple-900/40 space-y-2 animate-in fade-in duration-200">
                       <p className="text-[10px] font-black uppercase tracking-wider text-purple-700 dark:text-purple-300">
-                        ⚡ Select an option to reply:
+                        ⚡ {t('gia.selectOptionToReply', 'SELECT AN OPTION TO REPLY:')}
                       </p>
                       <div className="flex flex-wrap gap-2">
                         {optionsToDisplay.map((opt, oIdx) => (
@@ -419,10 +452,10 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
                     <div className="bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/60 rounded-2xl p-3.5 space-y-2.5">
                       <h4 className="font-extrabold text-xs text-purple-900 dark:text-purple-200 flex items-center gap-1.5">
                         <CheckCircle2 className="h-4 w-4 text-purple-600 shrink-0" />
-                        <span>Recommended MitoReboot Next Steps</span>
+                        <span>{t('recommendedNextSteps')}</span>
                       </h4>
                       <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed font-semibold">
-                        A genetic counselor will review your full pedigree, order the precise multi-gene panel, and interpret findings for your family's prevention plan.
+                        {t('gia.assessmentNextStepsDesc', "A genetic counselor will review your full pedigree, order the precise multi-gene panel, and interpret findings for your family's prevention plan.")}
                       </p>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
@@ -433,7 +466,7 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
                           }}
                           className="py-2.5 px-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                         >
-                          <Calendar className="h-3.5 w-3.5" /> Book Counselor
+                          <Calendar className="h-3.5 w-3.5" /> {t('bookGeneticCounselor')}
                         </button>
 
                         <button
@@ -443,7 +476,7 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
                           }}
                           className="py-2.5 px-3 bg-white dark:bg-slate-800 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-950/50 rounded-xl text-xs font-black shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                         >
-                          <ShoppingBag className="h-3.5 w-3.5" /> Browse Gene Tests
+                          <ShoppingBag className="h-3.5 w-3.5" /> {t('browseGeneTestingKits')}
                         </button>
                       </div>
                     </div>
@@ -452,9 +485,9 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
                     <div className="bg-amber-50/90 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-2xl p-3 text-[11px] space-y-1.5 text-amber-900 dark:text-amber-200">
                       <span className="font-extrabold block text-amber-800 dark:text-amber-300">💡 What to prepare for your consultation:</span>
                       <ul className="list-disc pl-4 space-y-1 font-semibold opacity-90">
-                        <li>Medical records & pathology reports (ER/PR/HER2, MSI/dMMR)</li>
-                        <li>3-generation family tree with cancer types and diagnosis ages</li>
-                        <li>Any prior genetic test reports from relatives</li>
+                        <li>{t('nextStepsItem1')}</li>
+                        <li>{t('nextStepsItem2')}</li>
+                        <li>{t('nextStepsItem3')}</li>
                       </ul>
                     </div>
                   </div>
@@ -495,7 +528,7 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
                 onClick={() => setShowQuickShortcuts(false)}
                 className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-bold px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800"
               >
-                Close
+                {t('common.close')}
               </button>
             </div>
 
@@ -512,7 +545,7 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
                     className="p-2.5 bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 dark:hover:bg-purple-900/60 border border-purple-200 dark:border-purple-800/60 rounded-xl text-left transition-all cursor-pointer group"
                   >
                     <div className="font-extrabold text-xs text-purple-900 dark:text-purple-200 flex items-center gap-1">
-                      <span>🧬 BRCA1 / BRCA2 Breast Risk</span>
+                      <span>{t('promptBrcaRisk')}</span>
                     </div>
                     <div className="text-[10px] text-purple-700 dark:text-purple-400 font-medium mt-0.5">
                       Hereditary breast & ovarian cancer red flags
@@ -525,7 +558,7 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
                     className="p-2.5 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-800/60 rounded-xl text-left transition-all cursor-pointer group"
                   >
                     <div className="font-extrabold text-xs text-indigo-900 dark:text-indigo-200 flex items-center gap-1">
-                      <span>🩸 Lynch Syndrome Check</span>
+                      <span>{t('promptLynchCheck')}</span>
                     </div>
                     <div className="text-[10px] text-indigo-700 dark:text-indigo-400 font-medium mt-0.5">
                       Colorectal & uterine hereditary risk factors
@@ -538,7 +571,7 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
                     className="p-2.5 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-200 dark:border-amber-800/60 rounded-xl text-left transition-all cursor-pointer group"
                   >
                     <div className="font-extrabold text-xs text-amber-900 dark:text-amber-200 flex items-center gap-1">
-                      <span>🌳 3-Gen Pedigree Guide</span>
+                      <span>{t('prompt3GenPedigree')}</span>
                     </div>
                     <div className="text-[10px] text-amber-700 dark:text-amber-400 font-medium mt-0.5">
                       How to prepare family medical history tree
@@ -586,7 +619,7 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
                   className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-2xs"
                 >
                   <Calendar className="h-3.5 w-3.5" />
-                  <span>Book Certified Genetic Counselor</span>
+                  <span>{t('bookGeneticCounselor')}</span>
                 </button>
 
                 <button
@@ -599,7 +632,7 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
                   className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 hover:bg-purple-50 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer"
                 >
                   <ShoppingBag className="h-3.5 w-3.5" />
-                  <span>Browse Gene Testing Kits</span>
+                  <span>{t('browseGeneTestingKits')}</span>
                 </button>
               </div>
             </div>
@@ -624,10 +657,10 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
                   ? 'bg-purple-600 text-white border-purple-600 shadow-md shadow-purple-500/25 font-black'
                   : 'bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-800/60 hover:bg-purple-100 dark:hover:bg-purple-900/60 font-bold'
               }`}
-              title="Genetic Counseling Shortcuts"
+              title={t('shortcutsTooltip')}
             >
               <Zap className={`h-4 w-4 ${showQuickShortcuts ? 'fill-current text-amber-300 animate-pulse' : 'text-purple-600 dark:text-purple-400'}`} />
-              <span className="text-[11px]">Shortcuts</span>
+              <span className="text-[11px]">{t('gia.shortcuts', 'Shortcuts')}</span>
             </button>
 
             {/* Text Input with Sparkles Icon */}
@@ -635,7 +668,7 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
               <Sparkles className="h-4 w-4 ml-3 text-purple-500 shrink-0" />
               <input
                 type="text"
-                placeholder="Tell Gia about your family history..."
+                placeholder={t('gia.askFamilyHistory', 'Ask Gia about your family history...')}
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 className="flex-1 min-w-0 bg-transparent border-none px-2.5 py-3 text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none"
@@ -652,7 +685,7 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
           </form>
 
           <p className="text-[9px] text-slate-400 dark:text-slate-500 text-center mt-2 font-semibold">
-            Gia is your educational genetic AI counselor based on NCCN guidelines. Always confirm with a certified genetic counselor.
+            {t('gia.disclaimer', 'Gia is your educational genetic AI counselor based on NCCN guidelines. Always confirm with a certified genetic counselor.')}
           </p>
         </div>
     </div>

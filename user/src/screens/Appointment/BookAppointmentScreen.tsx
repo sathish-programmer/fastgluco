@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { Calendar as CalendarIcon, Clock, ArrowLeft, Star, Sparkles, Globe, Video, Building2 } from 'lucide-react';
 import { useConsultation } from '../../context/ConsultationContext';
 import { Capacitor } from '@capacitor/core';
@@ -38,6 +39,7 @@ const formatDate = (dateStr: string | undefined | null): string => {
 };
 
 export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ onBack }) => {
+  const { t } = useLanguage();
   const { apiUrl, token, user } = useAuth();
   const { showToast } = useToast();
   const { pendingRecommendationId, setPendingRecommendationId } = useConsultation();
@@ -393,8 +395,8 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
     <div className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 transition-colors duration-300">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Consultation</span>
-          <h2 className="text-2xl font-sans font-bold text-slate-800 dark:text-slate-100 leading-none mt-1">Book Appointment</h2>
+          <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">{t('appointment.consultation', 'Consultation')}</span>
+          <h2 className="text-2xl font-sans font-bold text-slate-800 dark:text-slate-100 leading-none mt-1">{t('appointment.bookAppointment', 'Book Appointment')}</h2>
         </div>
         {onBack && (
           <button onClick={onBack} className="h-10 w-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all">
@@ -408,12 +410,12 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
         <div className="lg:col-span-2 space-y-4">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-3xl p-5 transition-colors duration-300">
             <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
-              <CalendarIcon className="h-5 w-5 text-indigo-500" /> Appointment Schedule
+              <CalendarIcon className="h-5 w-5 text-indigo-500" /> {t('appointment.appointmentSchedule', 'Appointment Schedule')}
             </h3>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Select Specialist</label>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">{t('appointment.selectSpecialist', 'Select Specialist')}</label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {doctors.map(doc => {
                     const isRec = isMatchingSpecialty(doc);
@@ -433,7 +435,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                               <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">{doc.name}</h4>
                               {isRec && (
                                 <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/80 flex items-center gap-1">
-                                  <Sparkles className="h-2.5 w-2.5 text-blue-600 dark:text-blue-400" /> Recommended
+                                  <Sparkles className="h-2.5 w-2.5 text-blue-600 dark:text-blue-400" /> {t('appointment.recommended', 'Recommended')}
                                 </span>
                               )}
                             </div>
@@ -458,18 +460,18 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                         )}
                       </div>
                       {doc.experience != null && (
-                        <p className="text-[10px] text-indigo-500 font-semibold mt-1.5">{doc.experience} yrs exp</p>
+                        <p className="text-[10px] text-indigo-500 font-semibold mt-1.5">{t('appointment.yrsExp', { count: doc.experience }, '{{count}} yrs exp')}</p>
                       )}
                       <p className="text-[10px] text-slate-400 mt-1 line-clamp-2">{doc.description}</p>
                       <div className="flex gap-3 mt-2">
                         {doc.onlineConsultationFee !== undefined && (
                           <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-1">
-                            <Video className="h-3 w-3 inline text-emerald-600" /> Online: Rs. {doc.onlineConsultationFee}
+                            <Video className="h-3 w-3 inline text-emerald-600" /> {t('appointment.onlineRs', { amount: doc.onlineConsultationFee }, 'Online: Rs. {{amount}}')}
                           </span>
                         )}
                         {doc.offlineConsultationFee !== undefined && (
                           <span className="text-[10px] font-bold text-purple-600 flex items-center gap-1">
-                            <Building2 className="h-3 w-3 inline text-purple-600" /> In-Clinic: Rs. {doc.offlineConsultationFee}
+                            <Building2 className="h-3 w-3 inline text-purple-600" /> {t('appointment.inClinicRs', { amount: doc.offlineConsultationFee }, 'In-Clinic: Rs. {{amount}}')}
                           </span>
                         )}
                       </div>
@@ -482,35 +484,38 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
               {selectedDoctor && (
                 <>
                   <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl p-4 my-2">
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Consultation Type</label>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">{t('appointment.consultationType', 'Consultation Type')}</label>
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         type="button"
                         onClick={() => setConsultationType('online')}
                         className={`p-3 rounded-xl border text-sm font-bold text-center transition-all flex flex-col items-center justify-center gap-0.5 ${consultationType === 'online' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'}`}
                       >
-                        <span className="flex items-center gap-1.5"><Video className="h-4 w-4" /> Online Consultation</span>
-                        <span className="block text-[10px] opacity-80 font-normal mt-0.5">Fee: Rs. {selectedDoctor.onlineConsultationFee || 0}</span>
+                        <span className="flex items-center gap-1.5"><Video className="h-4 w-4" /> {t('appointment.onlineConsultation', 'Online Consultation')}</span>
+                        <span className="block text-[10px] opacity-80 font-normal mt-0.5">{t('appointment.feeRs', { amount: selectedDoctor.onlineConsultationFee || 0 }, 'Fee: Rs. {{amount}}')}</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => setConsultationType('offline')}
                         className={`p-3 rounded-xl border text-sm font-bold text-center transition-all flex flex-col items-center justify-center gap-0.5 ${consultationType === 'offline' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'}`}
                       >
-                        <span className="flex items-center gap-1.5"><Building2 className="h-4 w-4" /> In-Clinic Visit</span>
-                        <span className="block text-[10px] opacity-80 font-normal mt-0.5">Fee: Rs. {selectedDoctor.offlineConsultationFee || 0}</span>
+                        <span className="flex items-center gap-1.5"><Building2 className="h-4 w-4" /> {t('appointment.inClinicVisit', 'In-Clinic Visit')}</span>
+                        <span className="block text-[10px] opacity-80 font-normal mt-0.5">{t('appointment.feeRs', { amount: selectedDoctor.offlineConsultationFee || 0 }, 'Fee: Rs. {{amount}}')}</span>
                       </button>
                     </div>
                   </div>
                   <div className="mb-4">
                     <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-                      <CalendarIcon className="h-3.5 w-3.5" /> Choose a Date
+                      <CalendarIcon className="h-3.5 w-3.5" /> {t('appointment.chooseDate', 'Choose a Date')}
                     </label>
                     <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                       {upcomingDates.map(d => {
                         const dateObj = new Date(d);
                         const isSelected = date === d;
                         const isHoliday = (selectedDoctor?.holidays || []).includes(d);
+                        const dayIdx = dateObj.getDay();
+                        const dayKey = dayIdx === 0 ? 'sun' : dayIdx === 1 ? 'mon' : dayIdx === 2 ? 'tue' : dayIdx === 3 ? 'wed' : dayIdx === 4 ? 'thu' : dayIdx === 5 ? 'fri' : 'sat';
+                        const dayLabel = t(`appointment.${dayKey}`, dateObj.toLocaleDateString('en-US', { weekday: 'short' }));
                         return (
                           <button
                             key={d}
@@ -523,7 +528,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                             }`}
                           >
                             <span className={`text-[10px] uppercase font-bold tracking-widest ${isHoliday ? 'text-rose-400' : isSelected ? 'text-indigo-200' : 'text-slate-400 dark:text-slate-500'}`}>
-                              {dateObj.toLocaleDateString('en-US', { weekday: 'short' })}
+                              {dayLabel}
                             </span>
                             <span className={`text-xl font-black mt-1 ${isHoliday ? 'text-rose-700 dark:text-rose-400' : ''}`}>
                               {dateObj.getDate()}
@@ -534,7 +539,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                     </div>
                   </div>
                   <div className="mb-4">
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Reason for Appointment</label>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">{t('appointment.reasonForAppt', 'Reason for Appointment')}</label>
                       <select
                         value={reason}
                         onChange={(e) => setReason(e.target.value)}
@@ -548,10 +553,10 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
 
                   {date && (
                     <div className="space-y-3">
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Select Consultation Time</label>
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">{t('appointment.selectTime', 'Select Consultation Time')}</label>
                       {availableSlots.length === 0 ? (
                         <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-xl p-3 text-xs text-amber-600 dark:text-amber-450 font-bold">
-                          No slots available on this day. Please pick another date.
+                          {t('appointment.noSlotsAvailable', 'No slots available on this day. Please pick another date.')}
                         </div>
                       ) : (
                         <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
@@ -585,7 +590,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                                       : 'bg-slate-50 dark:bg-slate-900 border-slate-200/60 dark:border-slate-800 text-slate-700 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-850'
                                 }`}
                               >
-                                <Clock className="w-3.5 h-3.5 opacity-65" /> {slotTime} {!isAvailable && (slotObj.isAvailable === false ? '(Booked)' : '(Past)')}
+                                <Clock className="w-3.5 h-3.5 opacity-65" /> {slotTime} {!isAvailable && (slotObj.isAvailable === false ? `(${t('appointment.booked', 'Booked')})` : `(${t('appointment.past', 'Past')})`)}
                               </button>
                             );
                           })}
@@ -598,12 +603,12 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                   {selectedSlot && (
                     <div className="border border-indigo-100 dark:border-slate-800 bg-indigo-50/40 dark:bg-slate-900/40 rounded-2xl p-4">
                       <label className="block text-xs font-bold text-indigo-400 dark:text-indigo-300 uppercase tracking-wider mb-2 flex items-center gap-1">
-                        📝 Notes to Doctor <span className="text-slate-300 dark:text-slate-500 font-normal normal-case">(optional)</span>
+                        📝 {t('appointment.notesToDoctor', 'Notes for the Doctor (Optional)')}
                       </label>
                       <textarea
                         value={patientNotes}
                         onChange={e => setPatientNotes(e.target.value)}
-                        placeholder="Share any symptoms, concerns or context the doctor should know before your visit..."
+                        placeholder={t('appointment.notesPlaceholder', 'Share any symptoms, concerns or context the doctor should know before your visit...')}
                         rows={3}
                         maxLength={500}
                         className="w-full bg-white dark:bg-slate-950 border border-indigo-100 dark:border-slate-800 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-950/50 focus:border-indigo-400 text-slate-700 dark:text-slate-200 resize-none leading-relaxed"
@@ -617,7 +622,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                     disabled={loading || !selectedSlot}
                     className="w-full py-4 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-sm disabled:opacity-50 mt-6"
                   >
-                    {loading ? 'Requesting...' : 'Confirm Request'}
+                    {loading ? t('appointment.booking', 'Booking...') : t('appointment.confirmBooking', 'Confirm & Book Appointment')}
                   </button>
 
                   {/* Pending appointment warning modal */}
@@ -627,22 +632,22 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                         <div className="h-14 w-14 rounded-full bg-amber-50 flex items-center justify-center mx-auto mb-4">
                           <span className="text-3xl">⚠️</span>
                         </div>
-                        <h3 className="text-base font-bold text-slate-800 mb-2">Pending Appointment Exists</h3>
+                        <h3 className="text-base font-bold text-slate-800 mb-2">{t('diag.pendingApptExists', 'Pending Appointment Exists')}</h3>
                         <p className="text-sm text-slate-500 mb-6 leading-relaxed">
-                          You already have a <strong className="text-amber-600">pending appointment</strong> waiting for doctor approval. Are you sure you want to book another one?
+                          {t('appt.alreadyHaveA', 'You already have a')} <strong className="text-amber-600">{t('appt.pendingApptWord', 'pending appointment')}</strong> {t('appt.waitingApprovalConfirm', 'waiting for doctor approval. Are you sure you want to book another one?')}
                         </p>
                         <div className="flex gap-3">
                           <button
                             onClick={() => setShowPendingWarning(false)}
-                            className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm font-bold text-slate-600 transition-colors"
+                            className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm font-bold text-slate-600 transition-colors cursor-pointer"
                           >
-                            Cancel
+                            {t('common.cancel', 'Cancel')}
                           </button>
                           <button
                             onClick={() => { setShowPendingWarning(false); confirmBook(); }}
-                            className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 rounded-xl text-sm font-bold text-white shadow-sm transition-colors"
+                            className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 rounded-xl text-sm font-bold text-white shadow-sm transition-colors cursor-pointer"
                           >
-                            Book Anyway
+                            {t('appt.bookAnyway', 'Book Anyway')}
                           </button>
                         </div>
                       </div>
@@ -695,7 +700,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                     </div>
                   </div>
                   
-                  <p className="text-xs text-slate-655 dark:text-slate-350"><strong className="text-slate-400">Reason:</strong> {appt.reason}</p>
+                  <p className="text-xs text-slate-655 dark:text-slate-350"><strong className="text-slate-400">{t('diag.reason', 'Reason:')}</strong> {appt.reason}</p>
 
                   {appt.patientNotes?.trim() && (
                     <div className="bg-indigo-50/40 dark:bg-indigo-950/10 border border-indigo-100/50 dark:border-indigo-900/30 rounded-xl p-3">
@@ -726,14 +731,14 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
 
                   {appt.notes && (
                     <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl p-2.5 text-xs text-slate-655 dark:text-slate-300 mt-2">
-                      <strong className="text-slate-500">Consultation Notes:</strong>
+                      <strong className="text-slate-500">{t('diag.consultationNotes', 'Consultation Notes:')}</strong>
                       <p className="mt-1 font-mono leading-relaxed">{appt.notes}</p>
                     </div>
                   )}
 
                   {appt.prescriptionText && (
                     <div className="bg-slate-100/80 dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700/60 rounded-xl p-2.5 text-xs text-slate-700 dark:text-slate-300 mt-2 font-sans leading-relaxed">
-                      <strong className="text-slate-500">Prescription Notes:</strong>
+                      <strong className="text-slate-500">{t('diag.prescriptionNotes', 'Prescription Notes:')}</strong>
                       <p className="mt-1 font-medium">{appt.prescriptionText}</p>
                     </div>
                   )}
@@ -789,7 +794,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
               ))}
 
               {appointments.length === 0 && (
-                <p className="text-xs text-slate-400 text-center py-6">No appointment history found.</p>
+                <p className="text-xs text-slate-400 text-center py-6">{t('diag.noApptHistory', 'No appointment history found.')}</p>
               )}
             </div>
           </div>
@@ -820,12 +825,12 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">Your review</label>
+                <label className="block text-xs font-bold text-slate-500 mb-1">{t('diag.yourReview', 'Your review')}</label>
                 <textarea
                   required
                   value={feedbackText}
                   onChange={(e) => setFeedbackText(e.target.value)}
-                  placeholder="Share your experience..."
+                  placeholder={t('shareExperiencePlaceholder')}
                   className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-400 font-bold"
                   rows={3}
                 ></textarea>
@@ -858,9 +863,9 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
               💳
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-800">Redirecting to Payment Gateway</h3>
+              <h3 className="text-base font-bold text-slate-800">{t('diag.redirectingPayment', 'Redirecting to Payment Gateway')}</h3>
               <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                To confirm your {consultationType} consultation with <strong>Dr. {selectedDoctor?.name}</strong>, you will be redirected to our secure payment gateway to complete the transaction of <strong>Rs. {consultationType === 'online' ? selectedDoctor?.onlineConsultationFee : selectedDoctor?.offlineConsultationFee}</strong>.
+                To confirm your {consultationType} consultation with <strong>Dr. {selectedDoctor?.name}</strong>, {t('paymentRedirectNote')} <strong>Rs. {consultationType === 'online' ? selectedDoctor?.onlineConsultationFee : selectedDoctor?.offlineConsultationFee}</strong>.
               </p>
             </div>
             <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-100 text-[10px] text-slate-400 font-medium leading-relaxed">

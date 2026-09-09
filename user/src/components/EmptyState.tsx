@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, ArrowRight } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 interface EmptyStateProps {
   title?: string;
@@ -11,12 +12,16 @@ interface EmptyStateProps {
 }
 
 export const EmptyState: React.FC<EmptyStateProps> = ({
-  title = "Your health journey starts here",
-  description = "Start logging your habits, environment exposures, or reports to unlock personalized metabolic insights.",
+  title,
+  description,
   actionLabel,
   onAction,
   icon
 }) => {
+  const { t } = useLanguage();
+  const displayTitle = title || t('emptyStateDefaultTitle', 'Your health journey starts here');
+  const displayDesc = description || t('emptyStateDefaultDesc', 'Start logging your habits, environment exposures, or reports to unlock personalized metabolic insights.');
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.98 }}
@@ -27,10 +32,10 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         {icon || <Sparkles className="h-8 w-8" />}
       </div>
       <h4 className="text-base font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">
-        {title}
+        {displayTitle}
       </h4>
       <p className="text-xs text-slate-500 dark:text-slate-400 font-medium max-w-sm leading-relaxed mt-1 mb-4">
-        {description}
+        {displayDesc}
       </p>
 
       {actionLabel && onAction && (

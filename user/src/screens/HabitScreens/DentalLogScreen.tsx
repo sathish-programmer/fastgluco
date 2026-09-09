@@ -5,6 +5,7 @@ import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianG
 import { ConsultationBanner } from '../../components/ConsultationBanner';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { HabitsService } from '../../services/habitsService';
 
 interface DentalLogScreenProps {
@@ -15,6 +16,7 @@ interface DentalLogScreenProps {
 export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBookAppointment }) => {
   const { user, token, apiUrl } = useAuth();
   const { showToast } = useToast();
+  const { t } = useLanguage();
   
   // Dental Consultation state
   const [sharpTooth, setSharpTooth] = useState<boolean | null>(null);
@@ -546,40 +548,40 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div>
-          <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Damage · Dental</span>
-          <h2 className="text-2xl font-sans font-bold text-slate-800 leading-none mt-1">Dental Health</h2>
+          <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">{t('dental.damageBreadcrumb', 'Damage · Dental')}</span>
+          <h2 className="text-2xl font-sans font-bold text-slate-800 leading-none mt-1">{t('dental.dentalHealth', 'Dental Health')}</h2>
         </div>
       </div>
 
       {/* Info check */}
       <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-4 mb-6">
-        <h3 className="font-bold text-slate-800 mb-1.5 flex items-center gap-2"><Stethoscope className="h-4 w-4" /> Oral Health Check</h3>
+        <h3 className="font-bold text-slate-800 mb-1.5 flex items-center gap-2"><Stethoscope className="h-4 w-4" /> {t('dental.oralHealthCheck', 'Oral Health Check')}</h3>
         <p className="text-xs text-slate-500 leading-relaxed">
-          Poor dental health, sharp teeth, and tobacco staining are linked to chronic inflammation and increased risk of oral cancers.
+          {t('dental.oralHealthDesc', 'Poor dental health, sharp teeth, and tobacco staining are linked to chronic inflammation and increased risk of oral cancers.')}
         </p>
       </div>
 
       {/* Consultation Questions */}
       <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-5 mb-8">
-        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-6">Self Assessment</span>
+        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-6">{t('dental.selfAssessment', 'Self Assessment')}</span>
         
         {/* Q1: Sharp Tooth */}
         <div className="mb-8">
-          <p className="font-semibold text-slate-800 text-sm mb-4">Do you have any sharp tooth?</p>
+          <p className="font-semibold text-slate-800 text-sm mb-4">{t('dental.doYouHaveSharpTooth', 'Do you have any sharp tooth?')}</p>
           <div className="flex gap-3">
             <button 
               onClick={() => handleSelectDental('sharpTooth', true)}
               disabled={loading}
               className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${sharpTooth === true ? 'bg-primary text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-transparent dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-800'} disabled:opacity-50`}
             >
-              Yes
+              {t('common.yes', 'Yes')}
             </button>
             <button 
               onClick={() => handleSelectDental('sharpTooth', false)}
               disabled={loading}
               className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${sharpTooth === false ? 'bg-primary text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-transparent dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-800'} disabled:opacity-50`}
             >
-              No
+              {t('common.no', 'No')}
             </button>
           </div>
 
@@ -590,8 +592,8 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
               triggerCondition="Has sharp tooth"
               riskLevel="Medium"
               recommendedSpecialty="Dentist"
-              title="Recommendation"
-              description="A sharp tooth can cause chronic irritation which might lead to complications over time. Please consult a dentist."
+              title={t('recommendationTitle')}
+              description={t('dental.sharpToothConsultDesc', 'A sharp tooth can cause chronic irritation which might lead to complications over time. Please consult a dentist.')}
               colorTheme="amber"
               onBookAppointment={onBookAppointment!}
             />
@@ -599,28 +601,28 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
 
           {sharpTooth === false && (
             <div className="mt-4 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
-              <p className="text-emerald-700 text-xs font-semibold">Good! Keep maintaining your oral hygiene.</p>
+              <p className="text-emerald-700 text-xs font-semibold">{t('dental.goodMaintainHygiene', 'Good! Keep maintaining your oral hygiene.')}</p>
             </div>
           )}
         </div>
 
         {/* Q2: Tobacco Staining */}
         <div className="pt-6 border-t border-slate-100 mb-8">
-          <p className="font-semibold text-slate-800 text-sm mb-4">Do you have tobacco staining on your teeth?</p>
+          <p className="font-semibold text-slate-800 text-sm mb-4">{t('dental.tobaccoStaining', 'Do you have tobacco staining on your teeth?')}</p>
           <div className="flex gap-3">
             <button 
               onClick={() => handleSelectDental('tobacco', true)}
               disabled={loading}
               className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${tobacco === true ? 'bg-primary text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-transparent dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-800'} disabled:opacity-50`}
             >
-              Yes
+              {t('common.yes', 'Yes')}
             </button>
             <button 
               onClick={() => handleSelectDental('tobacco', false)}
               disabled={loading}
               className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${tobacco === false ? 'bg-primary text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-transparent dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-800'} disabled:opacity-50`}
             >
-              No
+              {t('common.no', 'No')}
             </button>
           </div>
 
@@ -632,8 +634,8 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
                 triggerCondition="Has tobacco staining"
                 riskLevel="Medium"
                 recommendedSpecialty="Dentist"
-                title="Recommendation"
-                description="Tobacco staining requires professional cleaning and evaluation to prevent further damage."
+                title={t('recommendationTitle')}
+                description={t('dental.tobaccoConsultDesc', 'Tobacco staining requires professional cleaning and evaluation to prevent further damage.')}
                 colorTheme="amber"
                 onBookAppointment={onBookAppointment!}
               />
@@ -643,7 +645,7 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
                 <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
                   <div className="flex items-center gap-2">
                     <Sparkles className="h-5 w-5 text-teal-600 animate-pulse" />
-                    <h3 className="text-base font-bold text-slate-800 animate-fade-in">Tobacco Stain Tracker</h3>
+                    <h3 className="text-base font-bold text-slate-800 animate-fade-in">{t('dental.tobaccoStainTracker', 'Tobacco Stain Tracker')}</h3>
                   </div>
                   <span className="text-[9px] font-bold text-teal-600 bg-teal-50 border border-teal-150 px-2 py-0.5 rounded-full uppercase tracking-wider">
                     Mito Reboot
@@ -661,19 +663,19 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
                 {/* Locked / Due State Display */}
                 {!latestReading ? (
                   <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 text-center mb-6">
-                    <span className="text-[9px] font-bold text-amber-500 uppercase tracking-widest block mb-1">NO READINGS YET</span>
-                    <p className="text-xs font-bold text-amber-700">Take your first photo below</p>
+                    <span className="text-[9px] font-bold text-amber-500 uppercase tracking-widest block mb-1">{t('dental.noReadingsYet', 'NO READINGS YET')}</span>
+                    <p className="text-xs font-bold text-amber-700">{t('dental.takeFirstPhoto', 'Take your first photo below')}</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-3 gap-2.5 mb-6 text-center">
                     <div className="bg-slate-50 p-2 rounded-xl border border-slate-200/50">
-                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Last Reading</span>
+                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">{t('dental.lastReading', 'Last Reading')}</span>
                       <p className="text-xs font-bold text-slate-700">
                         {lastReadingDate ? lastReadingDate.toLocaleDateString([], { month: 'short', day: 'numeric' }) : '-'}
                       </p>
                     </div>
                     <div className="bg-slate-50 p-2 rounded-xl border border-slate-200/50">
-                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Current Score</span>
+                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">{t('dental.currentScore', 'Current Score')}</span>
                       <p className="text-xs font-bold text-slate-700">
                         {latestReading.value.score} ({latestReading.value.category})
                       </p>
@@ -766,7 +768,7 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
                     {uploading && (
                       <div className="text-center py-4">
                         <div className="w-5 h-5 border-2 border-slate-200 border-t-teal-600 rounded-full animate-spin mx-auto mb-2"></div>
-                        <span className="text-xs text-slate-500">Uploading dental photo...</span>
+                        <span className="text-xs text-slate-500">{t('dental.uploadingPhoto', 'Uploading dental photo...')}</span>
                       </div>
                     )}
 
@@ -899,10 +901,10 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
                                 />
                               </div>
                               <div className="flex justify-between text-[9px] font-bold text-slate-400 mt-2 px-1">
-                                <span>0 (Minimal)</span>
-                                <span>15 (Mild)</span>
-                                <span>35 (Mod)</span>
-                                <span>60 (Heavy)</span>
+                                <span>{t('minimalScore')}</span>
+                                <span>{t('mildScore')}</span>
+                                <span>{t('modScore')}</span>
+                                <span>{t('heavyScore')}</span>
                               </div>
                             </div>
 
@@ -927,7 +929,7 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
                 {/* Trend Chart (At least 2 readings) */}
                 {chartData.length >= 2 && (
                   <div className="mt-8">
-                    <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-3">Staining Score Trend</span>
+                    <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-3">{t('dental.stainingTrend', 'Staining Score Trend')}</span>
                     <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-4 h-48">
                       <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={chartData}>
@@ -995,7 +997,7 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
                 <div className="mt-6 p-3 bg-amber-50/50 border border-amber-100 rounded-xl flex gap-2">
                   <AlertCircle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
                   <p className="text-[10px] text-amber-700 leading-relaxed">
-                    <strong>Disclaimer:</strong> This tool gives an informal, photo-based approximation for personal tracking only, is not a validated diagnostic device, and does not replace a professional dental examination.
+                    <strong>{t('dental.disclaimer', 'Disclaimer:')}</strong> {t('dental.disclaimerText', 'This tool gives an informal, photo-based approximation for personal tracking only, is not a validated diagnostic device, and does not replace a professional dental examination.')}
                   </p>
                 </div>
               </div>
@@ -1005,21 +1007,21 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
 
         {/* Q3: Ill-fitting Dentures */}
         <div className="pt-6 border-t border-slate-100">
-          <p className="font-semibold text-slate-800 text-sm mb-4">Do you have ill fitting denture?</p>
+          <p className="font-semibold text-slate-800 text-sm mb-4">{t('dental.illFittingDentureQ', 'Do you have ill fitting denture?')}</p>
           <div className="flex gap-3">
             <button 
               onClick={() => handleSelectDental('illFittingDenture', true)}
               disabled={loading}
               className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${illFittingDenture === true ? 'bg-primary text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-650 dark:text-slate-300 border border-transparent dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-800'} disabled:opacity-50`}
             >
-              Yes
+              {t('common.yes', 'Yes')}
             </button>
             <button 
               onClick={() => handleSelectDental('illFittingDenture', false)}
               disabled={loading}
               className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${illFittingDenture === false ? 'bg-primary text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-650 dark:text-slate-300 border border-transparent dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-800'} disabled:opacity-50`}
             >
-              No
+              {t('common.no', 'No')}
             </button>
           </div>
 
@@ -1030,8 +1032,8 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
               triggerCondition="Has ill-fitting denture"
               riskLevel="Medium"
               recommendedSpecialty="Dentist"
-              title="Recommendation"
-              description="An ill-fitting denture can cause chronic mucosal irritation, ulcers, or other long-term oral health issues. Please consult a dentist."
+              title={t('recommendationTitle')}
+              description={t('dental.dentureConsultDesc', 'An ill-fitting denture can cause chronic mucosal irritation, ulcers, or other long-term oral health issues. Please consult a dentist.')}
               colorTheme="amber"
               onBookAppointment={onBookAppointment!}
             />
@@ -1039,7 +1041,7 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
 
           {illFittingDenture === false && (
             <div className="mt-4 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
-              <p className="text-emerald-700 text-xs font-semibold">Good! Well-fitting dentures ensure chewing comfort and oral health.</p>
+              <p className="text-emerald-700 text-xs font-semibold">{t('dental.goodDentures', 'Good! Well-fitting dentures ensure chewing comfort and oral health.')}</p>
             </div>
           )}
         </div>
@@ -1068,7 +1070,7 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
                   src={selectedHistoryItem.value.imageUrl.startsWith('http') 
                     ? selectedHistoryItem.value.imageUrl 
                     : `${apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl}${selectedHistoryItem.value.imageUrl}`}
-                  alt="Saved dental check" 
+                  alt={t('savedDentalCheck')} 
                   className="max-w-full h-auto rounded-xl border border-slate-200"
                   style={{ width: `${selectedHistoryItem.value.canvasWidth || 300}px` }}
                 />
@@ -1162,7 +1164,7 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
             <div className="mx-auto w-12 h-12 bg-rose-50 dark:bg-rose-950/30 text-rose-500 rounded-2xl flex items-center justify-center mb-3">
               <Trash2 className="h-6 w-6" />
             </div>
-            <h3 className="text-base font-black text-slate-900 dark:text-slate-100 mb-1">Delete Reading?</h3>
+            <h3 className="text-base font-black text-slate-900 dark:text-slate-100 mb-1">{t('dental.deleteReadingQ', 'Delete Reading?')}</h3>
             <p className="text-xs text-slate-400 font-semibold leading-relaxed mb-5">
               Are you sure you want to delete this stain reading? This action cannot be undone.
             </p>

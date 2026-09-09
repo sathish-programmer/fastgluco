@@ -3,6 +3,7 @@ import { Capacitor } from '@capacitor/core';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { ConsultationProvider } from './context/ConsultationContext';
 import { Login } from './pages/Login';
 import { RecommendedFoodsScreen } from './screens/RecommendedFoodsScreen';
@@ -46,6 +47,7 @@ import { initNotificationScheduler } from './utils/notificationScheduler';
 
 const MainAppContent: React.FC = () => {
   const { isAuthenticated, isLoading, token, apiUrl, logout, branding, user, activeMode } = useAuth();
+  const { t } = useLanguage();
   // Theme toggle moved to Profile settings
 
   // Navigation tabs: 'Home' | 'Reports' | 'Food Log' | 'Analysis' | 'Profile'
@@ -348,7 +350,7 @@ const MainAppContent: React.FC = () => {
           <div className="p-4 bg-primary-light text-primary rounded-[2.5rem] shadow-soft animate-pulse">
             <img 
               src={logoSrc} 
-              alt="Logo" 
+              alt={t('logoAlt')} 
               className="h-24 w-24 object-contain rounded-3xl" 
             />
           </div>
@@ -406,8 +408,11 @@ const MainAppContent: React.FC = () => {
             )}
             <div className="flex flex-col justify-center min-w-0">
               <div className="flex items-center gap-1 sm:gap-1.5 leading-none">
-                <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white tracking-tight leading-none truncate">
+                <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white tracking-tight leading-none truncate flex items-center">
                   {branding.appName ? branding.appName.replace(/_/g, ' ') : 'Mito Reboot'}
+                  <span className="text-[8.5px] font-black text-blue-600 dark:text-blue-400 -translate-y-1 ml-0.5 select-none shrink-0">
+                    ™
+                  </span>
                 </span>
                 {branding.enableSubscriptions !== false && (
                   <button
@@ -417,7 +422,7 @@ const MainAppContent: React.FC = () => {
                         ? 'bg-gradient-to-r from-amber-500/15 via-amber-400/20 to-yellow-500/15 dark:from-amber-500/25 dark:via-amber-400/30 dark:to-yellow-500/25 text-amber-700 dark:text-amber-300 border-amber-300/80 dark:border-amber-600/70 shadow-amber-500/10'
                         : 'bg-gradient-to-r from-emerald-500/15 via-teal-500/20 to-emerald-500/15 dark:from-emerald-500/25 dark:via-teal-500/30 dark:to-emerald-500/25 text-emerald-700 dark:text-emerald-300 border-emerald-300/80 dark:border-emerald-600/70 shadow-emerald-500/10'
                     }`}
-                    title="View / Upgrade Plan"
+                    title={t('viewUpgradePlanTitle')}
                   >
                     {/premium|pro/i.test(basicPlan) ? (
                       <Crown className="h-2 w-2 sm:h-2.5 sm:w-2.5 text-amber-500 fill-amber-400 shrink-0" />
@@ -442,18 +447,18 @@ const MainAppContent: React.FC = () => {
             <button
               onClick={() => setShowAskMitoDrawer(true)}
               className="px-2 sm:px-2.5 py-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:opacity-95 active:scale-95 text-white rounded-xl text-[10.5px] sm:text-[11px] font-extrabold transition-all flex items-center gap-1 sm:gap-1.5 shadow-xs border border-white/20 cursor-pointer shrink-0"
-              title="Ask Mito • Doctor Consultation"
+              title={`${t('nav.askMito', 'Ask Mito')} • ${t('nav.consultation', 'Doctor Consultation')}`}
             >
               <Sparkles className="h-3 w-3 text-amber-300 fill-amber-300 shrink-0" />
-              <span>Ask Mito</span>
+              <span>{t('nav.askMito', 'Ask Mito')}</span>
             </button>
 
             {/* Support / Help */}
             <button
               onClick={() => setShowHelpModal(true)}
               className="p-1.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
-              title="Help & Support"
-              aria-label="Help & Support"
+              title={t('modals.helpSupport', 'Help & Support')}
+              aria-label={t('modals.helpSupport', 'Help & Support')}
             >
               <Headphones className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
             </button>
@@ -523,7 +528,7 @@ const MainAppContent: React.FC = () => {
             className={`flex-1 flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Home' ? 'text-primary' : 'text-slate-400'}`}
           >
             <Home className="h-5.5 w-5.5" />
-            <span className="text-[9px] font-extrabold uppercase tracking-wide">Home</span>
+            <span className="text-[9px] font-extrabold uppercase tracking-wide">{t('nav.home')}</span>
           </button>
 
           {/* Reports Tab */}
@@ -533,7 +538,7 @@ const MainAppContent: React.FC = () => {
               className={`flex-1 flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Reports' ? 'text-primary' : 'text-slate-400'}`}
             >
               <FileText className="h-5.5 w-5.5" />
-              <span className="text-[9px] font-extrabold uppercase tracking-wide">Reports</span>
+              <span className="text-[9px] font-extrabold uppercase tracking-wide">{t('nav.reports')}</span>
             </button>
           )}
 
@@ -544,7 +549,7 @@ const MainAppContent: React.FC = () => {
               className={`flex-1 flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Food Log' ? 'text-primary' : 'text-slate-400'}`}
             >
               <Utensils className="h-5.5 w-5.5" />
-              <span className="text-[9px] font-extrabold uppercase tracking-wide">Food Log</span>
+              <span className="text-[9px] font-extrabold uppercase tracking-wide">{t('nav.foodLog')}</span>
             </button>
           )}
 
@@ -555,7 +560,7 @@ const MainAppContent: React.FC = () => {
               className={`flex-1 flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Analysis' ? 'text-primary' : 'text-slate-400'}`}
             >
               <Activity className="h-5.5 w-5.5" />
-              <span className="text-[9px] font-extrabold uppercase tracking-wide">Analysis</span>
+              <span className="text-[9px] font-extrabold uppercase tracking-wide">{t('nav.analysis')}</span>
             </button>
           )}
 
@@ -566,7 +571,7 @@ const MainAppContent: React.FC = () => {
               className={`flex-1 flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Educational' ? 'text-primary' : 'text-slate-400'}`}
             >
               <BookOpen className="h-5.5 w-5.5" />
-              <span className="text-[9px] font-extrabold uppercase tracking-wide">Learn</span>
+              <span className="text-[9px] font-extrabold uppercase tracking-wide">{t('nav.learn')}</span>
             </button>
           )}
 
@@ -577,7 +582,7 @@ const MainAppContent: React.FC = () => {
               className={`flex-1 flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Book Appointment' ? 'text-primary' : 'text-slate-400'}`}
             >
               <Calendar className="h-5.5 w-5.5" />
-              <span className="text-[9px] font-extrabold uppercase tracking-wide">Book Appt</span>
+              <span className="text-[9px] font-extrabold uppercase tracking-wide">{t('nav.bookAppt')}</span>
             </button>
           )}
 
@@ -588,7 +593,7 @@ const MainAppContent: React.FC = () => {
               className={`flex-1 flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Shop Orders' ? 'text-primary' : 'text-slate-400'}`}
             >
               <Activity className="h-5.5 w-5.5" />
-              <span className="text-[9px] font-extrabold uppercase tracking-wide">My Orders</span>
+              <span className="text-[9px] font-extrabold uppercase tracking-wide">{t('nav.myOrders')}</span>
             </button>
           )}
 
@@ -598,7 +603,7 @@ const MainAppContent: React.FC = () => {
             className={`flex-1 flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Profile' ? 'text-primary' : 'text-slate-400'}`}
           >
             <UserCircle2 className="h-5.5 w-5.5" />
-            <span className="text-[9px] font-extrabold uppercase tracking-wide">Profile</span>
+            <span className="text-[9px] font-extrabold uppercase tracking-wide">{t('nav.profile')}</span>
           </button>
         </div>
       </nav>
@@ -664,13 +669,15 @@ export default function App() {
 
   return (
     <ThemeProvider>
-      <AuthProvider>
-        <ConsultationProvider>
-          <ToastProvider>
-            <MainAppContent />
-          </ToastProvider>
-        </ConsultationProvider>
-      </AuthProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <ConsultationProvider>
+            <ToastProvider>
+              <MainAppContent />
+            </ToastProvider>
+          </ConsultationProvider>
+        </AuthProvider>
+      </LanguageProvider>
     </ThemeProvider>
   );
 }

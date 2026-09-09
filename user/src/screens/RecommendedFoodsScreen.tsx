@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useLanguage } from '../context/LanguageContext';
 import { ChevronLeft, Info, ShieldCheck, Sparkles, Stethoscope, Leaf } from 'lucide-react';
 
 interface RecommendedFood {
@@ -22,6 +23,7 @@ interface Props {
 export const RecommendedFoodsScreen: React.FC<Props> = ({ onBack }) => {
   const { apiUrl, token } = useAuth();
   const { showToast } = useToast();
+  const { t } = useLanguage();
   const [foods, setFoods] = useState<RecommendedFood[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -62,7 +64,7 @@ export const RecommendedFoodsScreen: React.FC<Props> = ({ onBack }) => {
           <button 
             onClick={onBack}
             className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2 rounded-xl shadow-2xs hover:bg-slate-100 dark:hover:bg-slate-700/80 active:scale-95 transition-all cursor-pointer"
-            title="Back"
+            title={t('common.back')}
           >
             <ChevronLeft className="h-4.5 w-4.5 text-slate-700 dark:text-slate-300" />
           </button>
@@ -86,14 +88,14 @@ export const RecommendedFoodsScreen: React.FC<Props> = ({ onBack }) => {
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-3">
           <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
-          <span className="text-xs text-slate-400 font-semibold">Loading recommended foods...</span>
+          <span className="text-xs text-slate-400 font-semibold">{t('recFoods.loading', 'Loading recommended foods...')}</span>
         </div>
       ) : foods.length === 0 ? (
         <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-8 shadow-xs">
           <div className="h-14 w-14 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto mb-3">
             <Leaf className="h-7 w-7" />
           </div>
-          <h4 className="text-base font-black text-slate-900 dark:text-white">No Recommendations Yet</h4>
+          <h4 className="text-base font-black text-slate-900 dark:text-white">{t('recFoods.noRecs', 'No Recommendations Yet')}</h4>
           <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-sm mx-auto">
             Our clinical nutrition specialists will publish verified genuine foods for your profile soon.
           </p>
@@ -142,15 +144,15 @@ export const RecommendedFoodsScreen: React.FC<Props> = ({ onBack }) => {
                   
                   <div className="space-y-1.5 text-xs bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800">
                     <div className="flex items-start gap-2">
-                      <span className="font-bold text-slate-500 dark:text-slate-400 w-24 shrink-0">Nutrition:</span>
+                      <span className="font-bold text-slate-500 dark:text-slate-400 w-24 shrink-0">{t('recFoods.nutrition', 'Nutrition:')}</span>
                       <span className="text-slate-800 dark:text-slate-200 font-medium flex-1">{food.nutritionDetails}</span>
                     </div>
                     <div className="flex items-start gap-2">
-                      <span className="font-bold text-slate-500 dark:text-slate-400 w-24 shrink-0">Ingredients:</span>
+                      <span className="font-bold text-slate-500 dark:text-slate-400 w-24 shrink-0">{t('recFoods.ingredients', 'Ingredients:')}</span>
                       <span className="text-slate-800 dark:text-slate-200 font-medium flex-1">{food.ingredients}</span>
                     </div>
                     <div className="flex items-start gap-2">
-                      <span className="font-bold text-slate-500 dark:text-slate-400 w-24 shrink-0">Cultivation:</span>
+                      <span className="font-bold text-slate-500 dark:text-slate-400 w-24 shrink-0">{t('recFoods.cultivation', 'Cultivation:')}</span>
                       <span className="text-slate-800 dark:text-slate-200 font-medium flex-1">{food.pesticideInfo}</span>
                     </div>
                   </div>
@@ -159,7 +161,7 @@ export const RecommendedFoodsScreen: React.FC<Props> = ({ onBack }) => {
                     <div className="p-3 bg-blue-50/70 dark:bg-blue-950/40 rounded-2xl border border-blue-100 dark:border-blue-800/60 flex items-start gap-2.5">
                       <Stethoscope className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                       <p className="text-xs text-blue-950 dark:text-blue-200 font-medium leading-relaxed">
-                        <span className="font-black">Doctor's Note:</span> {food.doctorNotes}
+                        <span className="font-black">{t('recFoods.doctorsNote', "Doctor's Note:")}</span> {food.doctorNotes}
                       </p>
                     </div>
                   )}

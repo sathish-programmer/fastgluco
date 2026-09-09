@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Send, Sparkles, HeartHandshake, Calendar, RefreshCw, Moon, PhoneCall, Zap } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { HabitsService } from '../services/habitsService';
 
 interface DeStressAIChatModalProps {
@@ -104,6 +105,7 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
   onBookAppointment
 }) => {
   const { apiUrl, token, user } = useAuth();
+  const { t } = useLanguage();
 
   const [mode, setMode] = useState<'stress' | 'sleep'>(initialMode);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -179,14 +181,14 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
     setShowQuickShortcuts(false);
 
     if (currentMode === 'stress') {
-      const greeting = `Hello 💙 I'm **Mia**, your Mental Health AI Expert at Mito Reboot. I can see you're going through a tough time. I want to really understand what's going on for you — not give you generic advice.\n\nWhich of these is weighing on you most right now?`;
+      const greeting = t('mia.greetingStress', `Hello 💙 I'm **Mia**, your Mental Health AI Expert at Mito Reboot. I can see you're going through a tough time. I want to really understand what's going on for you — not give you generic advice.\n\nWhich of these is weighing on you most right now?`);
       const options = [
-        'Work-life balance & burnout',
-        'Relationship conflict',
-        'Loss of a loved one',
-        'Premenstrual / hormonal mood swings',
-        'Sexual health concerns',
-        'Something else entirely'
+        t('mia.worklifeBurnout', 'Work-life balance & burnout'),
+        t('mia.relationshipConflict', 'Relationship conflict'),
+        t('mia.lossOfLovedOne', 'Loss of a loved one'),
+        t('mia.hormonalMoodSwings', 'Premenstrual / hormonal mood swings'),
+        t('mia.sexualHealthConcerns', 'Sexual health concerns'),
+        t('mia.somethingElse', 'Something else entirely')
       ];
       setMessages([
         {
@@ -198,13 +200,13 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
       ]);
       setActiveQuickReplies(options);
     } else {
-      const greeting = `Hello 🌙 I'm **Mia**, your Sleep Health & Mental Wellbeing expert. I'm going to ask a few questions to understand exactly what's affecting your sleep — and then give you targeted advice based on your specific situation.\n\nTo start: how long have you been struggling with sleep, and what happens when you try to sleep?`;
+      const greeting = t('mia.greetingSleep', `Hello 🌙 I'm **Mia**, your Sleep Health & Mental Wellbeing expert. I'm going to ask a few questions to understand exactly what's affecting your sleep — and then give you targeted advice based on your specific situation.\n\nTo start: how long have you been struggling with sleep, and what happens when you try to sleep?`);
       const options = [
-        'Trouble falling asleep for weeks',
-        'I fall asleep but wake up at 3-4am',
-        'I wake too early and can\'t go back',
-        'All of the above — just poor sleep',
-        'Started recently — last few days'
+        t('mia.troubleFallingAsleep', 'Trouble falling asleep for weeks'),
+        t('mia.fallAsleepWake34am', 'I fall asleep but wake up at 3-4am'),
+        t('mia.wakeTooEarly', "I wake too early and can't go back"),
+        t('mia.allPoorSleep', 'All of the above — just poor sleep'),
+        t('mia.startedRecently', 'Started recently — last few days')
       ];
       setMessages([
         {
@@ -595,7 +597,7 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-semibold'
             }`}
           >
-            <span>Stress Support</span>
+            <span>{t('mia.stressSupport', 'Stress Support')}</span>
           </button>
 
           <button
@@ -606,7 +608,7 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-semibold'
             }`}
           >
-            <span>Sleep Assessment</span>
+            <span>{t('mia.sleepAssessment', 'Sleep Assessment')}</span>
           </button>
         </div>
 
@@ -627,12 +629,12 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
                     ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-100 dark:border-rose-900/60'
                     : 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-100 dark:border-blue-900/60'
                 }`}>
-                  Mental Health AI Expert
+                  {t('mia.mentalHealthAiExpert', 'Mental Health AI Expert')}
                 </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold flex items-center gap-1.5 mt-0.5 truncate">
                 <span className={`w-2 h-2 rounded-full animate-pulse shrink-0 ${mode === 'stress' ? 'bg-rose-500' : 'bg-blue-500'}`}></span>
-                <span>Mito Reboot Care · Always Here</span>
+                <span>{t('mia.alwaysHere', 'Mito Reboot Care · Always Here')}</span>
               </p>
             </div>
           </div>
@@ -641,16 +643,16 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
             <button
               onClick={restartChatSession}
               className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
-              title="Restart Conversation"
+              title={t('mia.restart', 'Restart')}
             >
               <RefreshCw className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
-              <span className="hidden sm:inline">Restart</span>
+              <span className="hidden sm:inline">{t('mia.restart', 'Restart')}</span>
             </button>
 
             <button
               onClick={onClose}
               className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
-              aria-label="Close Chat"
+              aria-label={t('common.close', 'Close')}
             >
               <X className="h-5 w-5" />
             </button>
@@ -698,7 +700,7 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
                 return (
                   <div className="mt-3.5 pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2 animate-in fade-in duration-200">
                     <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-                      ⚡ Select an option to reply:
+                      {t('mia.selectOptionToReply', '⚡ SELECT AN OPTION TO REPLY:')}
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {optionsToDisplay.map((opt, oIdx) => (
@@ -758,7 +760,7 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
                 <div className="bg-amber-50/90 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-2xl p-4 space-y-3 mt-3">
                   <div className="flex items-center gap-2 font-black text-xs text-amber-800 dark:text-amber-300">
                     <Calendar className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                    <span>📅 Follow-Up Check-In</span>
+                    <span>{t('followUpCheckInTitle')}</span>
                   </div>
                   <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
                     I've saved your personalised 4-step plan. Please try these steps today and return tomorrow to check in with me. We'll decide your next steps together!
@@ -836,7 +838,7 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
                       className="w-full py-2.5 px-3 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all block text-center"
                     >
                       <PhoneCall className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                      <span>iCall Free Counselling — 9152987821</span>
+                      <span>{t('mia.freeHelpline', 'iCall Free Helpline: 9152987821')}</span>
                     </a>
                   </div>
                 </div>
@@ -871,7 +873,7 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
             <div className="flex items-center gap-1.5">
               <Zap className="h-4 w-4 text-amber-500 fill-current" />
               <span className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">
-                Mia's Quick Tools & Relief Shortcuts
+                {t('mia.quickToolsTitle', "Mia's Quick Tools & Relief Shortcuts")}
               </span>
             </div>
             <button
@@ -879,7 +881,7 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
               onClick={() => setShowQuickShortcuts(false)}
               className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-bold px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800"
             >
-              Close
+              {t('common.close', 'Close')}
             </button>
           </div>
 
@@ -887,7 +889,7 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
             {/* Section 1: Instant Micro-Relief Exercises */}
             <div>
               <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block mb-1.5">
-                🧘 Instant Calm & Mind Exercises
+                🧘 {t('mia.instantCalmTitle', 'Instant Calm & Mind Exercises')}
               </span>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <button
@@ -896,10 +898,10 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
                   className="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800/60 rounded-xl text-left transition-all cursor-pointer group"
                 >
                   <div className="font-extrabold text-xs text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
-                    <span>🫁 4-7-8 Breathing Guide</span>
+                    <span>🫁 {t('mia.breathingGuide', '4-7-8 Breathing Guide')}</span>
                   </div>
                   <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-medium mt-0.5">
-                    2-min guided breathwork for instant calm
+                    {t('mia.breathingDesc', '2-min guided breathwork for instant calm')}
                   </div>
                 </button>
 
@@ -909,10 +911,10 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
                   className="p-2.5 bg-teal-50 dark:bg-teal-950/40 hover:bg-teal-100 dark:hover:bg-teal-900/60 border border-teal-200 dark:border-teal-800/60 rounded-xl text-left transition-all cursor-pointer group"
                 >
                   <div className="font-extrabold text-xs text-teal-900 dark:text-teal-200 flex items-center gap-1.5">
-                    <span>🌿 5-4-3-2-1 Grounding</span>
+                    <span>🌿 {t('mia.groundingGuide', '5-4-3-2-1 Grounding')}</span>
                   </div>
                   <div className="text-[10px] text-teal-700 dark:text-teal-400 font-medium mt-0.5">
-                    Quick sensory reset for panic & racing mind
+                    {t('mia.groundingDesc', 'Quick sensory reset for panic & racing mind')}
                   </div>
                 </button>
 
@@ -922,10 +924,10 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
                   className="p-2.5 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-800/60 rounded-xl text-left transition-all cursor-pointer group"
                 >
                   <div className="font-extrabold text-xs text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5">
-                    <span>📓 10-Min Worry Dump</span>
+                    <span>📓 {t('mia.worryDumpGuide', '10-Min Worry Dump')}</span>
                   </div>
                   <div className="text-[10px] text-indigo-700 dark:text-indigo-400 font-medium mt-0.5">
-                    Structured journal exercise to quiet thoughts
+                    {t('mia.worryDumpDesc', 'Structured journal exercise to quiet thoughts')}
                   </div>
                 </button>
               </div>
@@ -934,7 +936,7 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
             {/* Section 2: Fast Topic Jumps */}
             <div>
               <span className="text-[10px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 block mb-1.5">
-                ⚡ Jump to Specific Wellness Topic
+                ⚡ {t('mia.jumpToTopic', 'Jump to Specific Wellness Topic')}
               </span>
               <div className="flex flex-wrap gap-1.5">
                 {[
@@ -976,7 +978,7 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
                 className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-2xs"
               >
                 <Calendar className="h-3.5 w-3.5" />
-                <span>Book Specialist Consultation</span>
+                <span>{t('mia.bookSpecialistConsultation', 'Book Specialist Consultation')}</span>
               </button>
 
               <a
@@ -986,7 +988,7 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
                 className="px-3 py-1.5 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 rounded-xl text-xs font-black flex items-center gap-1.5 hover:bg-rose-100 transition-all"
               >
                 <PhoneCall className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
-                <span>iCall Free Helpline: 9152987821</span>
+                <span>{t('mia.freeHelpline', 'iCall Free Helpline: 9152987821')}</span>
               </a>
             </div>
           </div>
@@ -1015,10 +1017,10 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
                   ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 font-bold'
                   : 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 font-bold'
             }`}
-            title="Quick Answer Shortcuts"
+            title={t('mia.shortcuts', 'Shortcuts')}
           >
             <Zap className={`h-4 w-4 ${showQuickShortcuts ? 'fill-current text-amber-300 animate-pulse' : mode === 'stress' ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'}`} />
-            <span className="text-[11px]">Shortcuts</span>
+            <span className="text-[11px]">{t('mia.shortcuts', 'Shortcuts')}</span>
           </button>
 
           {/* Text Input with Left Sparkles Icon */}
@@ -1026,7 +1028,7 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
             <Sparkles className={`h-4 w-4 ml-3 shrink-0 ${mode === 'stress' ? 'text-rose-500' : 'text-blue-500'}`} />
             <input
               type="text"
-              placeholder={mode === 'stress' ? "Share what's on your mind with Mia..." : "Describe your sleep difficulty with Mia..."}
+              placeholder={mode === 'stress' ? t('mia.shareWithMia', "Share what's on your mind with Mia...") : t('mia.describeSleepDifficulty', "Describe your sleep difficulty with Mia...")}
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               className="flex-1 min-w-0 bg-transparent border-none px-2.5 py-3 text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none"
@@ -1045,7 +1047,7 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
         </form>
 
         <p className="text-[9px] text-slate-400 dark:text-slate-500 text-center mt-2 font-semibold">
-          Mia is an AI companion — not a substitute for professional care · iCall Free Counselling: 9152987821
+          {t('mia.disclaimer', 'Mia is an AI companion — not a substitute for professional care · iCall Free Counselling: 9152987821')}
         </p>
       </div>
     </div>

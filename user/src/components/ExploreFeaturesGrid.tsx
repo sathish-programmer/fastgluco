@@ -13,6 +13,7 @@ import {
   Activity,
   Sparkles
 } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 interface ExploreFeaturesGridProps {
   activeMode: 'PREVENTION' | 'TREATMENT' | 'SECONDARY_PREVENTION';
@@ -23,39 +24,40 @@ export const ExploreFeaturesGrid: React.FC<ExploreFeaturesGridProps> = ({
   activeMode,
   onSelectFeature
 }) => {
+  const { t } = useLanguage();
   const [isExpanded, setIsExpanded] = useState(false);
 
   const getFeatures = () => {
     if (activeMode === 'TREATMENT') {
       return [
-        { key: 'Reports', label: 'CGM & Diagnostics', icon: <FileText className="h-4 w-4 text-indigo-500" />, desc: 'Review glucose spike charts' },
-        { key: 'Book Appointment', label: 'Doctor Appointments', icon: <Calendar className="h-4 w-4 text-cyan-500" />, desc: 'Consult oncologists & dietitians' },
-        { key: 'stress', label: 'Caregiver & Symptoms', icon: <Heart className="h-4 w-4 text-rose-500" />, desc: 'Log treatment side-effects' },
-        { key: 'shop_wigs', label: 'Hair Loss Wigs', icon: <Sparkles className="h-4 w-4 text-amber-500" />, desc: 'Comfortable head coverings', params: { search: 'Wig' } },
-        { key: 'Food Log', label: 'Glycemic Food Log', icon: <Utensils className="h-4 w-4 text-emerald-500" />, desc: 'Track nutritional response' },
-        { key: 'shop_all', label: 'Wellness Shop', icon: <ShoppingBag className="h-4 w-4 text-violet-500" />, desc: 'Browse health support products' }
+        { key: 'Reports', label: t('explore.cgmDiagnostics', 'CGM & Diagnostics'), icon: <FileText className="h-4 w-4 text-indigo-500" />, desc: t('explore.cgmDiagnosticsDesc', 'Review glucose spike charts') },
+        { key: 'Book Appointment', label: t('explore.doctorAppointments', 'Doctor Appointments'), icon: <Calendar className="h-4 w-4 text-cyan-500" />, desc: t('explore.doctorAppointmentsDesc', 'Consult oncologists & dietitians') },
+        { key: 'stress', label: t('explore.caregiverSymptoms', 'Caregiver & Symptoms'), icon: <Heart className="h-4 w-4 text-rose-500" />, desc: t('explore.caregiverSymptomsDesc', 'Log treatment side-effects') },
+        { key: 'shop_wigs', label: t('explore.hairLossWigsExplore', 'Hair Loss Wigs'), icon: <Sparkles className="h-4 w-4 text-amber-500" />, desc: t('explore.hairLossWigsExploreDesc', 'Comfortable head coverings'), params: { search: 'Wig' } },
+        { key: 'Food Log', label: t('explore.glycemicFoodLog', 'Glycemic Food Log'), icon: <Utensils className="h-4 w-4 text-emerald-500" />, desc: t('explore.glycemicFoodLogDesc', 'Track nutritional response') },
+        { key: 'shop_all', label: t('explore.wellnessShop', 'Wellness Shop'), icon: <ShoppingBag className="h-4 w-4 text-violet-500" />, desc: t('explore.wellnessShopDesc', 'Browse health support products') }
       ];
     }
 
     if (activeMode === 'SECONDARY_PREVENTION') {
       return [
-        { key: 'cancer_screening', label: 'Surveillance & Recovery', icon: <ShieldCheck className="h-4 w-4 text-rose-500" />, desc: 'Long-term recurrence checks' },
-        { key: 'environmental_exposures', label: 'Environment Risk Audit', icon: <Wind className="h-4 w-4 text-sky-500" />, desc: 'Air particulates & toxins' },
-        { key: 'antioxidants', label: 'Bioactive Antioxidants', icon: <Sparkles className="h-4 w-4 text-emerald-500" />, desc: 'Cellular protection tracking' },
-        { key: 'fasting', label: 'Circadian Metabolic Fasting', icon: <Activity className="h-4 w-4 text-amber-500" />, desc: 'Autophagy & mitochondrial health' },
-        { key: 'Book Appointment', label: 'Follow-up Doctor Visits', icon: <Calendar className="h-4 w-4 text-cyan-500" />, desc: 'Schedule specialist checkups' },
-        { key: 'shop_all', label: 'Recovery Products', icon: <ShoppingBag className="h-4 w-4 text-indigo-500" />, desc: 'Air purifiers & water filters' }
+        { key: 'cancer_screening', label: t('explore.surveillanceRecovery', 'Surveillance & Recovery'), icon: <ShieldCheck className="h-4 w-4 text-rose-500" />, desc: t('explore.surveillanceRecoveryDesc', 'Long-term recurrence checks') },
+        { key: 'environmental_exposures', label: t('explore.envRiskAudit', 'Environment Risk Audit'), icon: <Wind className="h-4 w-4 text-sky-500" />, desc: t('explore.envRiskAuditDesc', 'Air particulates & toxins') },
+        { key: 'antioxidants', label: t('explore.bioactiveAntioxidants', 'Bioactive Antioxidants'), icon: <Sparkles className="h-4 w-4 text-emerald-500" />, desc: t('explore.bioactiveAntioxidantsDesc', 'Nutrient-dense cell protection') },
+        { key: 'fasting', label: t('explore.circadianFasting', 'Circadian Metabolic Fasting'), icon: <Activity className="h-4 w-4 text-amber-500" />, desc: t('explore.circadianFastingDesc', 'Autophagy & mitochondrial health') },
+        { key: 'Book Appointment', label: t('explore.followupVisits', 'Follow-up Doctor Visits'), icon: <Calendar className="h-4 w-4 text-cyan-500" />, desc: t('explore.followupVisitsDesc', 'Schedule specialist checkups') },
+        { key: 'shop_all', label: t('explore.recoveryProducts', 'Recovery Products'), icon: <ShoppingBag className="h-4 w-4 text-indigo-500" />, desc: t('explore.recoveryProductsDesc', 'Air purifiers & water filters') }
       ];
     }
 
     // Default Prevention
     return [
-      { key: 'environmental_exposures', label: 'Environment & Toxins', icon: <Wind className="h-4 w-4 text-sky-500" />, desc: 'AQI, air toxins & water safety' },
-      { key: 'genetics', label: 'Genetic Susceptibility', icon: <Dna className="h-4 w-4 text-violet-500" />, desc: 'Hereditary risk reduction' },
-      { key: 'antioxidants', label: 'Bioactive Antioxidants', icon: <Sparkles className="h-4 w-4 text-emerald-500" />, desc: 'Nutrient-dense cell protection' },
-      { key: 'fasting', label: 'Lifestyle & Fasting', icon: <Activity className="h-4 w-4 text-amber-500" />, desc: 'Circadian rhythm alignment' },
-      { key: 'Book Appointment', label: 'Preventive Appointments', icon: <Calendar className="h-4 w-4 text-cyan-500" />, desc: 'Book physician consultations' },
-      { key: 'shop_all', label: 'Healthcare Shop', icon: <ShoppingBag className="h-4 w-4 text-rose-500" />, desc: 'Non-toxic daily essentials' }
+      { key: 'environmental_exposures', label: t('explore.environmentToxins', 'Environment & Toxins'), icon: <Wind className="h-4 w-4 text-sky-500" />, desc: t('explore.environmentToxinsDesc', 'AQI, air toxins & water safety') },
+      { key: 'genetics', label: t('explore.geneticSusceptibility', 'Genetic Susceptibility'), icon: <Dna className="h-4 w-4 text-violet-500" />, desc: t('explore.geneticSusceptibilityDesc', 'Hereditary risk reduction') },
+      { key: 'antioxidants', label: t('explore.bioactiveAntioxidants', 'Bioactive Antioxidants'), icon: <Sparkles className="h-4 w-4 text-emerald-500" />, desc: t('explore.bioactiveAntioxidantsDesc', 'Nutrient-dense cell protection') },
+      { key: 'fasting', label: t('explore.lifestyleFasting', 'Lifestyle & Fasting'), icon: <Activity className="h-4 w-4 text-amber-500" />, desc: t('explore.lifestyleFastingDesc', 'Circadian rhythm alignment') },
+      { key: 'Book Appointment', label: t('explore.preventiveAppointments', 'Preventive Appointments'), icon: <Calendar className="h-4 w-4 text-cyan-500" />, desc: t('explore.preventiveAppointmentsDesc', 'Book physician consultations') },
+      { key: 'shop_all', label: t('explore.healthcareShop', 'Healthcare Shop'), icon: <ShoppingBag className="h-4 w-4 text-rose-500" />, desc: t('explore.healthcareShopDesc', 'Non-toxic daily essentials') }
     ];
   };
 
@@ -67,13 +69,13 @@ export const ExploreFeaturesGrid: React.FC<ExploreFeaturesGridProps> = ({
       <div className="flex items-center justify-between mb-2.5">
         <h4 className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center space-x-1.5">
           <Compass className="h-3.5 w-3.5 text-primary" />
-          <span>Explore Mito_Reboot Features</span>
+          <span>{t('explore.exploreFeatures', 'Explore Mito Reboot Features')}</span>
         </h4>
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className="text-[11px] font-bold text-primary hover:underline"
         >
-          {isExpanded ? 'Show Less' : 'Show All'}
+          {isExpanded ? t('common.showLess', 'Show Less') : t('explore.showAll', 'Show All')}
         </button>
       </div>
 

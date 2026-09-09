@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Heart, Sparkles, FileUp, Utensils, ChevronRight, ChevronLeft, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 interface OnboardingTourProps {
   onComplete: () => void;
@@ -16,12 +17,13 @@ interface Slide {
 
 export const OnboardingTour: React.FC<OnboardingTourProps> = ({ onComplete }) => {
   const { branding } = useAuth();
+  const { t } = useLanguage();
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const slides: Slide[] = [
     {
-      title: `Welcome to ${branding.appName}!`,
-      description: `Your premium ${branding.appTagline || 'Preventive Lifestyle App'}. We help you monitor glucose spikes, log meals, and get intelligent clinical recommendations to optimize your metabolic health.`,
+      title: t('tourWelcomeTitle', 'Welcome to {appName}!').replace('{appName}', branding.appName),
+      description: t('tourWelcomeDesc', 'Your premium {appTagline}. We help you monitor glucose spikes, log meals, and get intelligent clinical recommendations to optimize your metabolic health.').replace('{appTagline}', branding.appTagline || 'Preventive Lifestyle App'),
       icon: branding.appLogoUrl ? (
         <img src={branding.appLogoUrl} alt={branding.appName} className="h-16 w-auto object-contain max-w-[100px]" />
       ) : (
@@ -31,22 +33,22 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ onComplete }) =>
       accentColor: 'bg-rose-500'
     },
     {
-      title: 'CGM Report Analysis',
-      description: 'Upload your Abbott CGM export CSV or PDF reports. Our parsing algorithms immediately digitize your historical readings and generate comprehensive visual charts.',
+      title: t('tourCgmTitle', 'CGM Report Analysis'),
+      description: t('tourCgmDesc', 'Upload your Abbott CGM export CSV or PDF reports. Our parsing algorithms immediately digitize your historical readings and generate comprehensive visual charts.'),
       icon: <FileUp className="h-16 w-16 text-blue-500 animate-bounce" />,
       bgGradient: 'from-blue-500/10 to-indigo-500/10',
       accentColor: 'bg-blue-500'
     },
     {
-      title: 'Glycemic Food Log',
-      description: 'Track your meals and search through a rich food master. Log quantity and discover how specific foods impact your personal glucose spike thresholds.',
+      title: t('tourFoodTitle', 'Glycemic Food Log'),
+      description: t('tourFoodDesc', 'Track your meals and search through a rich food master. Log quantity and discover how specific foods impact your personal glucose spike thresholds.'),
       icon: <Utensils className="h-16 w-16 text-emerald-500 animate-pulse" />,
       bgGradient: 'from-emerald-500/10 to-teal-500/10',
       accentColor: 'bg-emerald-500'
     },
     {
-      title: 'AI Health Coach',
-      description: 'Interact with our integrated AI Coach for personalized feedback on your metrics. Receive advice tailored to your activity level, demographics, and health goals.',
+      title: t('tourAiTitle', 'AI Health Coach'),
+      description: t('tourAiDesc', 'Interact with our integrated AI Coach for personalized feedback on your metrics. Receive advice tailored to your activity level, demographics, and health goals.'),
       icon: <Sparkles className="h-16 w-16 text-violet-500" />,
       bgGradient: 'from-violet-500/10 to-fuchsia-500/10',
       accentColor: 'bg-violet-500'
@@ -115,7 +117,7 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ onComplete }) =>
               onClick={onComplete}
               className="text-xs font-black text-slate-400 hover:text-slate-600 px-4 py-3"
             >
-              Skip
+              {t('common.skip', 'Skip')}
             </button>
 
             <div className="flex space-x-2">
@@ -131,7 +133,7 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ onComplete }) =>
                 onClick={handleNext}
                 className={`px-5 py-3 ${activeSlide.accentColor} hover:opacity-95 text-white font-extrabold text-xs rounded-full shadow-md transition-all flex items-center space-x-1.5`}
               >
-                <span>{currentSlide === slides.length - 1 ? 'Get Started' : 'Next'}</span>
+                <span>{currentSlide === slides.length - 1 ? t('getStarted', 'Get Started') : t('common.next', 'Next')}</span>
                 <ChevronRight className="h-4 w-4" />
               </button>
             </div>

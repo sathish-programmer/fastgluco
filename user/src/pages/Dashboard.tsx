@@ -30,6 +30,7 @@ import { motion } from 'framer-motion';
 import { DailyLoggingChatbotModal } from '../components/DailyLoggingChatbotModal';
 import { AiDailyCheckinFloatingNudge } from '../components/AiDailyCheckinFloatingNudge';
 import { AskMitoDrawer } from '../components/AskMitoDrawer';
+import { useLanguage } from '../context/LanguageContext';
 
 interface DashboardProps {
   onNavigateToTab: (tab: string) => void;
@@ -89,6 +90,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
   const { token, user, apiUrl, branding, activeMode } = useAuth();
   const { showToast } = useToast();
   const { setPendingRecommendationId } = useConsultation();
+  const { t } = useLanguage();
 
   const getTodayDateStr = () => {
     const d = new Date();
@@ -1014,7 +1016,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
           {/* Meal details if logged */}
           {data.meal && (
             <div className="pt-2 border-t border-slate-800 mt-2">
-              <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Logged Meal</span>
+              <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block mb-1">{t('dash.loggedMeal', 'Logged Meal')}</span>
               <p className="text-xs font-bold text-rose-400 truncate mb-1.5" title={data.meal.name}>🍴 {data.meal.name}</p>
               <div className="grid grid-cols-2 gap-1.5 text-[9px] text-slate-300 bg-slate-950/60 p-2 rounded-xl border border-slate-800">
                 <div>Calories: <span className="font-bold text-white">{data.meal.calories ?? 0} kcal</span></div>
@@ -1054,10 +1056,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
       >
         <div className="min-w-0 flex-1 pr-2">
           <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 tracking-widest uppercase block">
-            Overview
+            {t('dashboard.todaysFocus', 'Overview')}
           </span>
           <h2 className="text-xl sm:text-2xl font-black text-slate-850 dark:text-slate-50 mt-0.5 tracking-tight truncate leading-snug">
-            Good day,{' '}
+            {t('dashboard.goodMorning', 'Hello')},{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
               {user?.name || 'Patient'}
             </span>
@@ -1095,7 +1097,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mb-0.5">
-                <span className="text-xs md:text-sm font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">Cellular Defense Strength</span>
+                <span className="text-xs md:text-sm font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">{t('dash.cellularDefenseStrength', 'Cellular Defense Strength')}</span>
                 <span className="flex items-center gap-1 text-[8.5px] font-black bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800/60 shrink-0">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                   LIVE
@@ -1148,7 +1150,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
               <Calendar className="h-6 w-6" />
             </div>
             <div>
-              <h4 className="font-extrabold text-emerald-850 dark:text-emerald-300 text-xs">Upcoming Consultation Scheduled</h4>
+              <h4 className="font-extrabold text-emerald-850 dark:text-emerald-300 text-xs">{t('dash.upcomingApptScheduled', 'Upcoming Consultation Scheduled')}</h4>
               <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-1 leading-relaxed">
                 Your appointment with <strong>Dr. {upcomingAppt.doctorId?.name || 'Specialist'}</strong> is scheduled on <strong>{upcomingAppt.date}</strong> at <strong>{upcomingAppt.time}</strong>.
               </p>
@@ -1202,7 +1204,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
           {/* Details */}
           <div className="flex flex-col justify-between flex-grow text-left py-0.5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Stability Score</span>
+              <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{t('dash.stabilityScore', 'Stability Score')}</span>
               <span className={`inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full border shadow-sm ${
                   stability.status === 'Goal Achieved'
                     ? 'bg-emerald-50 text-emerald-600 border-emerald-100/50 dark:bg-emerald-950/30 dark:text-emerald-400'
@@ -1326,7 +1328,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
             return (
               <motion.div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-4 rounded-3xl border border-white/80 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,0,0,0.015)] flex flex-col justify-between transition-all hover:scale-[1.01]">
                 <div className="flex justify-between items-center text-slate-400">
-                  <span className="text-[10px] font-bold uppercase tracking-wider">In Range</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider">{t('dash.inRange', 'In Range')}</span>
                   <TrendingUp className="h-3.5 w-3.5 text-secondary" />
                 </div>
 
@@ -1471,12 +1473,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
                       {chartFitMode === 'fit' ? (
                         <>
                           <Minimize2 className="h-3 w-3" />
-                          <span>Fit</span>
+                          <span>{t('fitView')}</span>
                         </>
                       ) : (
                         <>
                           <Maximize2 className="h-3 w-3" />
-                          <span>Zoom</span>
+                          <span>{t('zoomView')}</span>
                         </>
                       )}
                     </button>
@@ -1484,7 +1486,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
                     <button
                       onClick={() => setIsChartExpanded(true)}
                       className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl transition-all border border-slate-200/80 dark:border-slate-700 active:scale-95 cursor-pointer shadow-2xs"
-                      title="Expand Full View"
+                      title={t('expandFullView')}
                     >
                       <Maximize2 className="h-3.5 w-3.5" />
                     </button>
@@ -1572,13 +1574,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
                   <p className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
                     No Data Available for {dateRange === 'day' ? (selectedDate === getTodayDateStr() ? 'Today' : `Selected Date (${selectedDate})`) : dateRange === 'week' ? 'This Week' : 'This Month'}
                   </p>
-                  <p className="text-[10px] text-slate-400 mt-0.5 text-center max-w-[220px] mb-3">Upload a CGM CSV or PDF report to view continuous glucose insights.</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5 text-center max-w-[220px] mb-3">{t('dash.uploadCgmPrompt', 'Upload a CGM CSV or PDF report to view continuous glucose insights.')}</p>
                   <button
                     onClick={() => onNavigateToTab('Reports')}
                     className="px-3.5 py-1.5 bg-primary hover:bg-primary-dark text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
                   >
                     <FileUp className="h-3.5 w-3.5" />
-                    <span>Upload CGM Report</span>
+                    <span>{t('uploadCgmReport')}</span>
                   </button>
                 </div>
               ) : (
@@ -1660,7 +1662,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
           <div className="flex justify-between items-center mb-3.5">
             <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center space-x-1.5">
               <span>🍳</span>
-              <span>Calories Tracker</span>
+              <span>{t('caloriesTracker')}</span>
             </h4>
             <span className="text-xs font-extrabold text-slate-800 dark:text-slate-100">
               {todayCalories} <span className="text-slate-400 font-bold">/ {user?.dailyCalorieTarget || 2000} kcal</span>
@@ -1673,7 +1675,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
             />
           </div>
           <p className="text-[10px] text-slate-400 mt-3 font-semibold leading-relaxed">
-            * Calorie targets are estimated using the standard Mifflin-St Jeor equation. These are estimates only; please consult a physician for personalized medical advice.{' '}
+            {t('dashboard.mifflinDisclaimer', '* Calorie targets are estimated using the standard Mifflin-St Jeor equation. These are estimates only; please consult a physician for personalized medical advice.')}{' '}
             <a href="https://pubmed.ncbi.nlm.nih.gov/15883556/" target="_blank" rel="noreferrer" className="text-primary hover:underline" onClick={(e) => e.stopPropagation()}>[Source]</a>
           </p>
         </div>
@@ -1684,7 +1686,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
             <div className="flex justify-between items-center mb-3.5">
               <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center space-x-1.5">
                 <span>💧</span>
-                <span>Hydration Progress</span>
+                <span>{t('hydrationProgress')}</span>
               </h4>
               <span className="text-xs font-extrabold text-blue-600">
                 {todayWater} <span className="text-slate-450 font-bold">/ {hydrationGoal} ml</span>
@@ -1718,7 +1720,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
                 }}
                 className="px-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-2xl transition-all text-xs font-bold active:scale-95"
               >
-                Reset
+                {t('common.reset', 'Reset')}
               </button>
             </div>
           </div>
@@ -1731,16 +1733,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
           <div className="flex items-center justify-between mb-3.5">
             <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center space-x-1.5">
               <span>🤝</span>
-              <span>Caregiver Stress Support</span>
+              <span>{t('caregiverStressSupport')}</span>
             </h4>
             <span className="text-[9px] font-bold uppercase tracking-wider text-teal-600 bg-teal-50 dark:bg-teal-950/20 px-2.5 py-0.5 rounded-full border border-teal-100/50">
-              Mental Health
+              {t('dashboard.mentalHealthBadge', 'Mental Health')}
             </span>
           </div>
           <div className="bg-gradient-to-r from-slate-50 to-slate-100/50 dark:from-slate-800/50 dark:to-slate-900/50 border border-slate-200/30 dark:border-slate-800 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex-1">
               <p className="text-xs text-slate-650 dark:text-slate-300 leading-relaxed font-semibold">
-                Caring for a loved one with cancer can be challenging. Connect with a psycho-oncologist to support your mental well-being and get professional guidance.
+                {t('dashboard.caregiverStressDesc', 'Caring for a loved one with cancer can be challenging. Connect with a psycho-oncologist to support your mental well-being and get professional guidance.')}
               </p>
             </div>
             <button
@@ -1750,7 +1752,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
               }}
               className="bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm shrink-0 whitespace-nowrap"
             >
-              Consult & Connect to a Psycho-Oncologist
+              {t('dashboard.consultPsychoOncologist', 'Consult & Connect to a Psycho-Oncologist')}
             </button>
           </div>
         </motion.div>
@@ -1762,11 +1764,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
           <div className="flex items-center justify-between mb-3.5">
             <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center space-x-1.5">
               <Lightbulb className="h-3.5 w-3.5 text-amber-500 fill-amber-100" />
-              <span>Lifestyle Insight</span>
+              <span>{t('lifestyleInsight')}</span>
             </h4>
             <span className="text-[9px] font-bold uppercase tracking-wider text-primary bg-primary-light px-2.5 py-0.5 rounded-full flex items-center space-x-1">
               <Sparkles className="h-2.5 w-2.5 text-primary fill-primary/10" />
-              <span>AI Coach</span>
+              <span>{t('aiCoach')}</span>
             </span>
           </div>
           <div className="bg-gradient-to-r from-slate-50 to-slate-100/50 dark:from-slate-800/50 dark:to-slate-900/50 border border-slate-200/30 dark:border-slate-800 p-4 rounded-2xl">
@@ -1774,7 +1776,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
               {healthInsight}
             </p>
             <p className="text-[9px] text-slate-400 mt-3 pt-2 border-t border-slate-200/50 dark:border-slate-700 italic leading-relaxed">
-              * Insights are generated by a third-party AI provider (Google Gemini) based on your input. Do not use this as a substitute for professional medical advice. Always consult a doctor before making medical decisions.
+              {t('dashboard.geminiAiDisclaimer', '* Insights are generated by a third-party AI provider (Google Gemini) based on your input. Do not use this as a substitute for professional medical advice. Always consult a doctor before making medical decisions.')}
             </p>
           </div>
         </motion.div>
@@ -1789,7 +1791,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
           <div className="p-2 bg-primary-light rounded-xl text-primary">
             <Plus className="h-4 w-4" />
           </div>
-          <span>Add Food</span>
+          <span>{t('addFoodBtn')}</span>
         </button>
 
         <button
@@ -1799,7 +1801,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
           <div className="p-2 bg-rose-50 rounded-xl text-rose-500">
             <Activity className="h-4 w-4" />
           </div>
-          <span>Log Glucose</span>
+          <span>{t('logGlucoseBtn')}</span>
         </button>
 
         {enableWorkout && (
@@ -1810,7 +1812,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
             <div className="p-2 bg-amber-50 rounded-xl text-amber-550">
               <span className="text-base leading-none">🏃</span>
             </div>
-            <span>Workout</span>
+            <span>{t('workoutBtn')}</span>
           </button>
         )}
 
@@ -1821,7 +1823,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
           <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-slate-500 dark:text-slate-400">
             <FileUp className="h-4 w-4" />
           </div>
-          <span>CGM CSV</span>
+          <span>{t('cgmCsvBtn')}</span>
         </button>
       </div>
 
@@ -1838,7 +1840,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
             </span>
           </div>
           <div>
-            <h4 className="text-sm font-extrabold text-slate-800 dark:text-slate-100">Uploaded Reports</h4>
+            <h4 className="text-sm font-extrabold text-slate-800 dark:text-slate-100">{t('dash.uploadedReports', 'Uploaded Reports')}</h4>
             <p className="text-xs text-slate-400 font-semibold mt-0.5">CGM history & sync details</p>
           </div>
         </div>
@@ -1854,7 +1856,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
       {showGlucoseModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-fadeIn">
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 w-full max-w-sm border border-slate-150 dark:border-slate-800 shadow-2xl animate-scaleIn text-slate-800 dark:text-slate-100">
-            <h3 className="text-lg font-black text-slate-900 mb-1">Log Glucose Reading</h3>
+            <h3 className="text-lg font-black text-slate-900 mb-1">{t('dash.logGlucoseReading', 'Log Glucose Reading')}</h3>
             <p className="text-xs text-slate-400 font-semibold mb-5">
               Enter a manual blood glucose reading from your glucometer.
             </p>
@@ -1917,7 +1919,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
             <div className="mx-auto w-12 h-12 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center mb-3">
               <span className="text-2xl">🥗</span>
             </div>
-            <h3 className="text-lg font-black text-slate-900 mb-1">Consult a Dietician</h3>
+            <h3 className="text-lg font-black text-slate-900 mb-1">{t('dash.consultDietician', 'Consult a Dietician')}</h3>
             <p className="text-xs text-slate-500 leading-relaxed mb-5">
               Your CGM data shows you are not able to achieve a blood sugar level of &lt;90 mg/dL for at least 14 hours. We highly recommend consulting a dietician.
             </p>
@@ -1954,8 +1956,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
                 <Calendar className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="text-base font-black text-slate-900 dark:text-slate-100">Select Date Range</h3>
-                <p className="text-xs text-slate-400 font-semibold">Choose start and end dates to filter your glucose readings.</p>
+                <h3 className="text-base font-black text-slate-900 dark:text-slate-100">{t('dash.selectDateRange', 'Select Date Range')}</h3>
+                <p className="text-xs text-slate-400 font-semibold">{t('dash.chooseDatesFilter', 'Choose start and end dates to filter your glucose readings.')}</p>
               </div>
             </div>
 
@@ -2033,7 +2035,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
       {showActivityModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-fadeIn">
           <div className="bg-white rounded-3xl p-6 w-full max-w-sm border border-slate-150 shadow-2xl animate-scaleIn text-slate-800">
-            <h3 className="text-lg font-black text-slate-900 mb-1">Log Workout / Steps</h3>
+            <h3 className="text-lg font-black text-slate-900 mb-1">{t('dash.logWorkoutSteps', 'Log Workout / Steps')}</h3>
             <p className="text-xs text-slate-400 font-semibold mb-5">
               Record physical activity to correlate with your glucose response curve.
             </p>
@@ -2048,13 +2050,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
                   onChange={(e) => setActivityType(e.target.value)}
                   className="w-full text-sm font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 >
-                  <option value="Walk">Walk 🚶</option>
-                  <option value="Run">Run 🏃</option>
-                  <option value="Cycling">Cycling 🚴</option>
-                  <option value="Gym">Gym / Strength 🏋️</option>
-                  <option value="Yoga">Yoga 🧘</option>
-                  <option value="Swimming">Swimming 🏊</option>
-                  <option value="Other">Other Workout ⚡</option>
+                  <option value="Walk">{t('workoutWalk')}</option>
+                  <option value="Run">{t('workoutRun')}</option>
+                  <option value="Cycling">{t('workoutCycling')}</option>
+                  <option value="Gym">{t('workoutGym')}</option>
+                  <option value="Yoga">{t('workoutYoga')}</option>
+                  <option value="Swimming">{t('workoutSwimming')}</option>
+                  <option value="Other">{t('workoutOther')}</option>
                 </select>
               </div>
 
@@ -2122,7 +2124,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
                   disabled={submittingActivity}
                   className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-150 text-xs font-extrabold py-3 rounded-2xl transition-all flex items-center justify-center space-x-2 active:scale-98"
                 >
-                  <span>📲 Sync from Apple Health & Google Fit</span>
+                  <span>📲 {t('syncWearablesTitle')}</span>
                 </button>
               </div>
 
@@ -2132,14 +2134,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
                   onClick={() => setShowActivityModal(false)}
                   className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-655 text-xs font-extrabold py-3.5 rounded-2xl transition-all"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={submittingActivity}
                   className="flex-1 bg-primary hover:bg-primary-dark text-white text-xs font-extrabold py-3.5 rounded-2xl transition-all shadow-md shadow-primary/20 flex items-center justify-center disabled:opacity-50"
                 >
-                  {submittingActivity ? 'Saving...' : 'Save Activity'}
+                  {submittingActivity ? t('common.saving') : t('saveActivity')}
                 </button>
               </div>
             </form>
@@ -2164,21 +2166,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
           <div className="flex justify-between items-center mb-4">
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base sm:text-lg font-black text-white">Glucose Profile (Full View)</h3>
+                <h3 className="text-base sm:text-lg font-black text-white">{t('dash.glucoseProfileFullView', 'Glucose Profile (Full View)')}</h3>
                 <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-primary/20 text-primary-light border border-primary/30">
                   {dateRange === 'day' ? selectedDate : dateRange === 'week' ? '7-Day AGP' : dateRange === 'month' ? '30-Day AGP' : 'Custom Period'}
                 </span>
               </div>
-              <p className="text-xs text-slate-400 font-semibold mt-0.5">Continuous glucose trend curve with target zone reference.</p>
+              <p className="text-xs text-slate-400 font-semibold mt-0.5">{t('dash.cgmTrendCurveDesc', 'Continuous glucose trend curve with target zone reference.')}</p>
             </div>
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => setIsLandscape(!isLandscape)}
                 className="p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white rounded-xl transition-all flex items-center space-x-1.5 active:scale-95 cursor-pointer"
-                title="Rotate View"
+                title={t('rotateViewTitle')}
               >
                 <RotateCw className="h-4 w-4" />
-                <span className="text-xs font-extrabold hidden sm:inline">Rotate</span>
+                <span className="text-xs font-extrabold hidden sm:inline">{t('rotateViewTitle')}</span>
               </button>
               <button
                 onClick={() => {
@@ -2186,7 +2188,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
                   setIsLandscape(false);
                 }}
                 className="p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white rounded-xl transition-all active:scale-95 cursor-pointer"
-                title="Close Full View"
+                title={t('closeFullViewTitle')}
               >
                 <X className="h-4 w-4" />
               </button>
@@ -2201,7 +2203,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
               if (!hasFullData) {
                 return (
                   <div className="text-center text-slate-500 py-12 font-bold uppercase tracking-wider">
-                    No readings available for this period.
+                    {t('common.noDataFound')}
                   </div>
                 );
               }
@@ -2277,7 +2279,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
         title="Open AI Daily Check-in Assistant"
       >
         <Bot className="h-6 w-6 text-white" />
-        <span className="text-xs font-black tracking-wide pr-1 hidden sm:inline">AI Check-in</span>
+        <span className="text-xs font-black tracking-wide pr-1 hidden sm:inline">{t('dash.aiCheckIn', 'AI Check-in')}</span>
       </button>
 
       {/* AI Daily Check-in Modern Floating Pop-up Nudge (Only if habits are pending) */}

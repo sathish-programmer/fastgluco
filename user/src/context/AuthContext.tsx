@@ -56,6 +56,7 @@ export interface UserProfile {
   addressState?: string;
   addressPinCode?: string;
   notificationPreferences?: UserNotificationPreferences;
+  language?: 'en' | 'ta' | 'kn' | 'hi';
 }
 
 export interface AppBranding {

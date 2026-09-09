@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth, type FocusModeType } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useLanguage } from '../context/LanguageContext';
 import {
   ShieldCheck, Heart, Sparkles, Check, ChevronRight, X, ShieldAlert,
   Brain, Droplets, HeartPulse, Flower2, Gauge, Hourglass
@@ -10,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 export const ModeSwitcher: React.FC = () => {
   const { activeMode, setActiveMode, updateProfile, branding } = useAuth();
   const { showToast } = useToast();
+  const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [pendingMode, setPendingMode] = useState<FocusModeType | null>(null);
@@ -30,9 +32,9 @@ export const ModeSwitcher: React.FC = () => {
   }[] = [
     {
       key: 'PREVENTION',
-      title: 'Cancer Prevention',
-      shortLabel: 'Prevention',
-      description: 'Preventive lifestyle habits, toxin avoidance, and screening compliance.',
+      title: t('modes.preventionTitle', 'Cancer Prevention'),
+      shortLabel: t('modes.preventionShort', 'Prevention'),
+      description: t('modes.preventionDesc', 'Preventive lifestyle habits, toxin avoidance, and screening compliance.'),
       icon: ShieldCheck,
       accentColor: '#10B981',
       cardTheme: 'border-emerald-500/80 dark:border-emerald-500/70 bg-emerald-50/50 dark:bg-emerald-950/30 shadow-xs shadow-emerald-500/5',
@@ -43,9 +45,9 @@ export const ModeSwitcher: React.FC = () => {
     },
     {
       key: 'TREATMENT',
-      title: 'Cancer Treatment',
-      shortLabel: 'Treatment',
-      description: 'Treatment tracking, symptom management, medication logging, and clinical monitoring.',
+      title: t('modes.treatmentTitle', 'Cancer Treatment'),
+      shortLabel: t('modes.treatmentShort', 'Treatment'),
+      description: t('modes.treatmentDesc', 'Treatment tracking, symptom management, medication logging, and clinical monitoring.'),
       icon: Heart,
       accentColor: '#3B82F6',
       cardTheme: 'border-blue-500/80 dark:border-blue-500/70 bg-blue-50/50 dark:bg-blue-950/30 shadow-xs shadow-blue-500/5',
@@ -56,9 +58,9 @@ export const ModeSwitcher: React.FC = () => {
     },
     {
       key: 'SECONDARY_PREVENTION',
-      title: 'Secondary Prevention',
-      shortLabel: 'Recurrence Care',
-      description: 'Long-term survivorship habits, antioxidant support, and recurrence protection.',
+      title: t('modes.secondaryPreventionTitle', 'Secondary Prevention'),
+      shortLabel: t('modes.secondaryPreventionShort', 'Recurrence Care'),
+      description: t('modes.secondaryPreventionDesc', 'Long-term survivorship habits, antioxidant support, and recurrence protection.'),
       icon: Sparkles,
       accentColor: '#14B8A6',
       cardTheme: 'border-teal-500/80 dark:border-teal-500/70 bg-teal-50/50 dark:bg-teal-950/30 shadow-xs shadow-teal-500/5',
@@ -69,9 +71,9 @@ export const ModeSwitcher: React.FC = () => {
     },
     {
       key: 'AGEING',
-      title: 'Ageing & Longevity',
-      shortLabel: 'Ageing',
-      description: 'Decade-based organ defense (Eyes, Dental, Bone, Cardiac, Brain, Metabolic).',
+      title: t('modes.ageingTitle', 'Ageing & Longevity'),
+      shortLabel: t('modes.ageingShort', 'Ageing'),
+      description: t('modes.ageingDesc', 'Decade-based organ defense (Eyes, Dental, Bone, Cardiac, Brain, Metabolic).'),
       icon: Hourglass,
       accentColor: '#8B5CF6',
       cardTheme: 'border-purple-500/80 dark:border-purple-500/70 bg-purple-50/50 dark:bg-purple-950/30 shadow-xs shadow-purple-500/5',
@@ -82,9 +84,9 @@ export const ModeSwitcher: React.FC = () => {
     },
     {
       key: 'PCOD',
-      title: 'PCOD / PCOS Care',
-      shortLabel: 'PCOD',
-      description: 'Menstrual cycle predictor, androgen/hirsutism monitoring, and metabolic habits.',
+      title: t('modes.pcodTitle', 'PCOD / PCOS Care'),
+      shortLabel: t('modes.pcodShort', 'PCOD'),
+      description: t('modes.pcodDesc', 'Menstrual cycle predictor, androgen/hirsutism monitoring, and metabolic habits.'),
       icon: Flower2,
       accentColor: '#EC4899',
       cardTheme: 'border-pink-500/80 dark:border-pink-500/70 bg-pink-50/50 dark:bg-pink-950/30 shadow-xs shadow-pink-500/5',
@@ -95,9 +97,9 @@ export const ModeSwitcher: React.FC = () => {
     },
     {
       key: 'DIABETES',
-      title: 'Diabetes & Glucose',
-      shortLabel: 'Diabetes',
-      description: 'Glycemic control, quarterly HbA1c curves, and yearly podiatry/retina checks.',
+      title: t('modes.diabetesTitle', 'Diabetes & Glucose'),
+      shortLabel: t('modes.diabetesShort', 'Diabetes'),
+      description: t('modes.diabetesDesc', 'Glycemic control, quarterly HbA1c curves, and yearly podiatry/retina checks.'),
       icon: Droplets,
       accentColor: '#059669',
       cardTheme: 'border-emerald-600/80 dark:border-emerald-600/70 bg-emerald-50/50 dark:bg-emerald-950/30 shadow-xs shadow-emerald-600/5',
@@ -108,9 +110,9 @@ export const ModeSwitcher: React.FC = () => {
     },
     {
       key: 'HYPERTENSION',
-      title: 'Hypertension (HTN)',
-      shortLabel: 'Hypertension',
-      description: 'Morning & evening blood pressure logs, low-salt DASH tracking, and relaxation.',
+      title: t('modes.hypertensionTitle', 'Hypertension (HTN)'),
+      shortLabel: t('modes.hypertensionShort', 'Hypertension'),
+      description: t('modes.hypertensionDesc', 'Morning & evening blood pressure logs, low-salt DASH tracking, and relaxation.'),
       icon: Gauge,
       accentColor: '#EF4444',
       cardTheme: 'border-rose-500/80 dark:border-rose-500/70 bg-rose-50/50 dark:bg-rose-950/30 shadow-xs shadow-rose-500/5',
@@ -121,9 +123,9 @@ export const ModeSwitcher: React.FC = () => {
     },
     {
       key: 'PARKINSON',
-      title: "Parkinson's Care",
-      shortLabel: "Parkinson's",
-      description: 'Motor symptom severity curves (Tremor/Rigidity/Bradykinesia) and dopamine habits.',
+      title: t('modes.parkinsonTitle', "Parkinson's Care"),
+      shortLabel: t('modes.parkinsonShort', "Parkinson's"),
+      description: t('modes.parkinsonDesc', 'Motor symptom severity curves (Tremor/Rigidity/Bradykinesia) and dopamine habits.'),
       icon: Brain,
       accentColor: '#7C3AED',
       cardTheme: 'border-violet-500/80 dark:border-violet-500/70 bg-violet-50/50 dark:bg-violet-950/30 shadow-xs shadow-violet-500/5',
@@ -134,9 +136,9 @@ export const ModeSwitcher: React.FC = () => {
     },
     {
       key: 'CARDIAC',
-      title: 'Cardiac Health',
-      shortLabel: 'Cardiac',
-      description: 'Arterial protection, lipid defense, BMI management, and gentle cardiac recovery.',
+      title: t('modes.cardiacTitle', 'Cardiac Health'),
+      shortLabel: t('modes.cardiacShort', 'Cardiac'),
+      description: t('modes.cardiacDesc', 'Arterial protection, lipid defense, BMI management, and gentle cardiac recovery.'),
       icon: HeartPulse,
       accentColor: '#DC2626',
       cardTheme: 'border-red-500/80 dark:border-red-500/70 bg-red-50/50 dark:bg-red-950/30 shadow-xs shadow-red-500/5',
@@ -228,7 +230,7 @@ This module is intended to support your personal daily lifestyle habits, nutriti
               <div className="flex items-center gap-1.5 leading-none">
                 <span className={`h-1.5 w-1.5 rounded-full ${currentDetails.badgeDot} animate-pulse`} />
                 <span className={`text-[9px] font-black uppercase tracking-wider ${currentDetails.badgeText}`}>
-                  Active Focus
+                  {t('dashboard.activeFocus', 'Active Focus')}
                 </span>
               </div>
               <h2 className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-slate-100 truncate mt-0.5 leading-tight">
@@ -242,7 +244,7 @@ This module is intended to support your personal daily lifestyle habits, nutriti
             onClick={() => setIsOpen(true)}
             className={`px-2.5 py-1 rounded-xl text-[10px] sm:text-[11px] font-extrabold border transition-all cursor-pointer flex items-center gap-0.5 shrink-0 active:scale-95 ${currentDetails.changeBtn}`}
           >
-            Change <ChevronRight className="h-3 w-3" />
+            {t('dashboard.change', 'Change')} <ChevronRight className="h-3 w-3" />
           </button>
         </div>
       </div>
@@ -261,10 +263,10 @@ This module is intended to support your personal daily lifestyle habits, nutriti
               <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
                 <div>
                   <h3 className="text-base font-black text-slate-900 dark:text-slate-100">
-                    Select Your Health Focus
+                    {t('modes.selectHealthFocus', 'Select Your Health Focus')}
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Customize your dashboard, habit trackers, and AI assistant.
+                    {t('modes.selectHealthFocusDesc', 'Customize your dashboard, habit trackers, and AI assistant.')}
                   </p>
                 </div>
                 <button

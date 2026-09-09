@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface PaymentScreenProps {
   bookingData: any;
@@ -13,6 +14,7 @@ interface PaymentScreenProps {
 
 export const PaymentScreen: React.FC<PaymentScreenProps> = ({ bookingData, testPrice, lab, testId, onBack, onSuccess }) => {
   const { apiUrl, token } = useAuth();
+  const { t } = useLanguage();
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
   const [promoCode, setPromoCode] = useState('');
@@ -130,7 +132,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ bookingData, testP
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div>
-          <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Step 3 of 3</span>
+          <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">{t('diag.step3of3', 'Step 3 of 3')}</span>
           <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 leading-none mt-1">Checkout & Pay</h2>
         </div>
       </div>
@@ -144,7 +146,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ bookingData, testP
           <div className="flex gap-2">
             <input 
               type="text" 
-              placeholder="Enter code" 
+              placeholder={t('enterCodePlaceholder')} 
               value={promoCode} 
               onChange={e => setPromoCode(e.target.value)} 
               className="bg-white/10 border border-white/25 placeholder-white/60 text-white rounded-xl px-4 py-2 text-xs font-bold focus:outline-none focus:border-white/50 flex-1"
@@ -157,12 +159,12 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ bookingData, testP
       )}
 
       <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm mb-6">
-        <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-4 text-sm uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 pb-3">Booking Summary</h3>
+        <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-4 text-sm uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 pb-3">{t('diag.bookingSummary', 'Booking Summary')}</h3>
         
         <div className="space-y-4 mb-6">
           <div className="flex justify-between items-start">
             <div>
-              <p className="font-bold text-slate-700 dark:text-slate-300 text-sm">Diagnostic Center</p>
+              <p className="font-bold text-slate-700 dark:text-slate-300 text-sm">{t('diag.diagnosticCenter', 'Diagnostic Center')}</p>
               <p className="text-xs text-slate-500">{lab.name}</p>
             </div>
             <span className="text-xs font-bold bg-slate-100 dark:bg-slate-950 px-2 py-1 rounded-lg text-slate-600 dark:text-slate-400">₹{testPrice}</span>
@@ -170,7 +172,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ bookingData, testP
 
           <div className="flex justify-between items-start">
             <div>
-              <p className="font-bold text-slate-700 dark:text-slate-300 text-sm">Collection Method</p>
+              <p className="font-bold text-slate-700 dark:text-slate-300 text-sm">{t('diag.collectionMethod', 'Collection Method')}</p>
               <p className="text-xs text-slate-500">{bookingData.collectionType === 'HOME' ? 'Home Visit' : 'Lab Visit'}</p>
             </div>
             {bookingData.collectionType === 'HOME' && (
@@ -181,7 +183,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ bookingData, testP
           {promoApplied && (
             <div className="flex justify-between items-start text-emerald-600 dark:text-emerald-400">
               <div>
-                <p className="font-bold text-sm">Promo Code (free100)</p>
+                <p className="font-bold text-sm">{t('diag.promoCode', 'Promo Code (free100)')}</p>
                 <p className="text-xs text-emerald-500">100% discount applied</p>
               </div>
               <span className="text-xs font-bold bg-emerald-50 dark:bg-emerald-950/20 px-2 py-1 rounded-lg">-₹{discountAmount}</span>
@@ -197,7 +199,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ bookingData, testP
         </div>
 
         <div className="border-t border-slate-200 dark:border-slate-800 pt-4 flex justify-between items-center">
-          <span className="font-bold text-slate-800 dark:text-slate-150">Total to Pay</span>
+          <span className="font-bold text-slate-800 dark:text-slate-150">{t('diag.totalToPay', 'Total to Pay')}</span>
           <span className="text-2xl font-black text-indigo-650 dark:text-indigo-400">₹{totalAmount}</span>
         </div>
       </div>
@@ -206,8 +208,8 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ bookingData, testP
         <div className="bg-green-50 dark:bg-green-955/20 border border-green-200 dark:border-green-900/30 rounded-2xl p-4 flex items-start gap-3 mb-6">
           <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
           <div>
-            <h4 className="font-bold text-green-800 dark:text-green-300 text-sm">Secure Payment</h4>
-            <p className="text-xs text-green-700 dark:text-green-450 mt-1">Your payment is processed securely via Razorpay. HealthApp does not store your card details.</p>
+            <h4 className="font-bold text-green-800 dark:text-green-300 text-sm">{t('diag.securePayment', 'Secure Payment')}</h4>
+            <p className="text-xs text-green-700 dark:text-green-450 mt-1">{t('diag.paymentProcessedVia', 'Your payment is processed securely via Razorpay. HealthApp does not store your card details.')}</p>
           </div>
         </div>
       )}

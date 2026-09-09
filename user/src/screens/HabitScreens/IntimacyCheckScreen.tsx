@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Heart } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { HabitsService } from '../../services/habitsService';
 import { ConsultationBanner } from '../../components/ConsultationBanner';
 
@@ -11,6 +12,7 @@ interface IntimacyCheckScreenProps {
 
 export const IntimacyCheckScreen: React.FC<IntimacyCheckScreenProps> = ({ onBack, onBookAppointment }) => {
   const { user, apiUrl, token } = useAuth();
+  const { t } = useLanguage();
   const [selected, setSelected] = useState<'yes' | 'no' | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -57,8 +59,8 @@ export const IntimacyCheckScreen: React.FC<IntimacyCheckScreenProps> = ({ onBack
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div>
-          <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Whole Health · Intimacy</span>
-          <h2 className="text-2xl font-sans font-bold text-slate-800 leading-none mt-1">A private check-in</h2>
+          <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">{t('intimacyHeader', 'Whole Health · Intimacy')}</span>
+          <h2 className="text-2xl font-sans font-bold text-slate-800 leading-none mt-1">{t('healthyIntimacyTitle', 'A private check-in')}</h2>
         </div>
       </div>
 
@@ -67,10 +69,10 @@ export const IntimacyCheckScreen: React.FC<IntimacyCheckScreenProps> = ({ onBack
           <Heart className="h-6 w-6 text-rose-500 fill-rose-50" />
         </div>
         <h3 className="text-2xl font-sans text-slate-800 font-bold mb-4 px-8 leading-tight">
-          Are you happy with your sex life?
+          {t('intimacyQuestion', 'Are you happy with your sex life?')}
         </h3>
         <p className="text-xs text-slate-500 leading-relaxed px-6">
-          One honest tap — kept on this device, never shared. Intimacy is a quiet window into circulation, hormones and mood.
+          {t('intimacyEducationNote', 'One honest tap — kept on this device, never shared. Intimacy is a quiet window into circulation, hormones and mood.')}
         </p>
       </div>
 
@@ -81,7 +83,7 @@ export const IntimacyCheckScreen: React.FC<IntimacyCheckScreenProps> = ({ onBack
           className={`p-5 rounded-2xl border transition-all flex flex-col items-center gap-3 shadow-sm disabled:opacity-70 ${selected === 'yes' ? 'border-emerald-400 bg-emerald-50' : 'border-slate-200 bg-white hover:border-emerald-200'}`}
         >
           <span className="text-3xl">😌</span>
-          <span className="font-bold text-slate-700 text-sm">Yes, I'm good</span>
+          <span className="font-bold text-slate-700 text-sm">{t('yesSafeHappy', "Yes, I'm good")}</span>
         </button>
         <button 
           onClick={() => handleSelect('no')}
@@ -89,7 +91,7 @@ export const IntimacyCheckScreen: React.FC<IntimacyCheckScreenProps> = ({ onBack
           className={`p-5 rounded-2xl border transition-all flex flex-col items-center gap-3 shadow-sm disabled:opacity-70 ${selected === 'no' ? 'border-amber-400 bg-amber-50' : 'border-slate-200 bg-white hover:border-amber-200'}`}
         >
           <span className="text-3xl">😐</span>
-          <span className="font-bold text-slate-700 text-sm">Not really</span>
+          <span className="font-bold text-slate-700 text-sm">{t('noOrDiscomfort', 'Not really')}</span>
         </button>
       </div>
 
@@ -97,10 +99,10 @@ export const IntimacyCheckScreen: React.FC<IntimacyCheckScreenProps> = ({ onBack
         <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 animate-fade-in shadow-sm">
           <h4 className="font-bold text-emerald-800 mb-2 flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]"></span>
-            That's worth protecting
+            {t('common.confirmed', "That's worth protecting")}
           </h4>
           <p className="text-xs text-emerald-700 leading-relaxed">
-            A satisfying sex life tracks with healthy circulation, balanced hormones and steady mood — keep nurturing it.
+            {t('intimacyEducationNote', 'A satisfying sex life tracks with healthy circulation, balanced hormones and steady mood — keep nurturing it.')}
           </p>
         </div>
       )}

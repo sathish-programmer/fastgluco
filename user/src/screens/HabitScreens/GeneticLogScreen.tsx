@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Dna, Sparkles } from 'lucide-react';
 import { ConsultationBanner } from '../../components/ConsultationBanner';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { HabitsService } from '../../services/habitsService';
 import { GeneticRiskAIChatModal } from '../../components/GeneticRiskAIChatModal';
  
@@ -13,6 +14,7 @@ interface GeneticLogScreenProps {
  
 export const GeneticLogScreen: React.FC<GeneticLogScreenProps> = ({ onBack, onBookAppointment, onNavigateToShop }) => {
   const { user, token, apiUrl } = useAuth();
+  const { t } = useLanguage();
   const [geneticLink, setGeneticLink] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(false);
   // Auto-opens Gene AI modal when visiting the Genetic Risk page
@@ -61,8 +63,8 @@ export const GeneticLogScreen: React.FC<GeneticLogScreenProps> = ({ onBack, onBo
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div>
-          <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Damage · Genetics</span>
-          <h2 className="text-2xl font-sans font-bold text-slate-800 dark:text-slate-100 leading-none mt-1">Genetic Link</h2>
+          <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">{t('genetic.damageBreadcrumb', 'Damage · Genetics')}</span>
+          <h2 className="text-2xl font-sans font-bold text-slate-800 dark:text-slate-100 leading-none mt-1">{t('genetic.geneticLink', 'Genetic Link')}</h2>
         </div>
       </div>
 
@@ -71,13 +73,13 @@ export const GeneticLogScreen: React.FC<GeneticLogScreenProps> = ({ onBack, onBo
         <div className="space-y-1.5 max-w-xl">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[10px] font-black uppercase tracking-widest text-purple-700 dark:text-purple-300 bg-purple-100/80 dark:bg-purple-950/60 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 border border-purple-200/60 dark:border-purple-800">
-              <Sparkles className="h-3 w-3 text-purple-600" /> Genetic AI Counselor
+              <Sparkles className="h-3 w-3 text-purple-600" /> {t('gia.badge', 'GENETIC AI COUNSELOR')}
             </span>
-            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">NCCN v2.2025 & ASCO 2024 Guidelines</span>
+            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{t('gia.guidelines', 'NCCN v2.2025 & ASCO 2024 Guidelines')}</span>
           </div>
-          <h3 className="text-base font-extrabold text-slate-900 dark:text-white leading-tight">Roughly 10% of cancers have a genetic risk.</h3>
+          <h3 className="text-base font-extrabold text-slate-900 dark:text-white leading-tight">{t('genetic.tenPercentRisk', 'Roughly 10% of cancers have a genetic risk.')}</h3>
           <p className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
-            Chat with <strong>Gia</strong>, your genetic AI counselor at MitoReboot Care, to evaluate your personal & family cancer history and see if multi-gene testing is recommended.
+            {t('genetic.evaluateRisk', 'Evaluate your germline genetic risk based on NCCN & ASCO guidelines.')}
           </p>
         </div>
 
@@ -85,38 +87,38 @@ export const GeneticLogScreen: React.FC<GeneticLogScreenProps> = ({ onBack, onBo
           onClick={() => setShowGeneAIModal(true)}
           className="bg-purple-600 hover:bg-purple-700 text-white font-black text-xs px-4 py-3 rounded-2xl transition-all shadow-sm shrink-0 whitespace-nowrap cursor-pointer flex items-center gap-2 active:scale-95"
         >
-          <Dna className="h-4 w-4" /> Chat with Gia AI Counselor
+          <Dna className="h-4 w-4" /> {t('genetic.chatWithGia', 'Chat with Gia')}
         </button>
       </div>
 
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl p-4 mb-6">
-        <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-1.5 flex items-center gap-2"><Dna className="h-4 w-4 text-purple-500" /> Family History</h3>
+        <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-1.5 flex items-center gap-2"><Dna className="h-4 w-4 text-purple-500" /> {t('genetic.familyHistory', 'Family History')}</h3>
         <p className="text-xs text-slate-550 dark:text-slate-400 leading-relaxed">
-          Understanding your genetic background can help identify predispositions to certain conditions and allow for early preventative screening.
+          {t('genetic.familyHistoryDesc', 'Understanding your genetic background can help identify predispositions to certain conditions and allow for early preventative screening.')}
         </p>
       </div>
 
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl p-4 mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h3 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">🔍 Check Genetic Tendency</h3>
+          <h3 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">🔍 {t('genetic.checkGeneticTendency', 'Check Genetic Tendency')}</h3>
           <p className="text-xs text-slate-550 dark:text-slate-400 leading-relaxed">
-            Order a clinical-grade blood test to screen for hereditary gene mutations and disease susceptibilities.
+            {t('genetic.checkGeneticDesc', 'Order a clinical-grade blood test to screen for hereditary gene mutations and disease susceptibilities.')}
           </p>
         </div>
         <button 
           onClick={() => onNavigateToShop?.('Genetic')}
           className="bg-purple-600 hover:bg-purple-750 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm shrink-0 whitespace-nowrap text-center cursor-pointer"
         >
-          Blood Test
+          {t('genetic.bloodTest', 'Blood Test')}
         </button>
       </div>
 
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-3xl p-5 mb-8">
-        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-6">Self Assessment</span>
+        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-6">{t('genetic.selfAssessment', 'Self Assessment')}</span>
         
         <div className="mb-8">
           <p className="font-semibold text-slate-800 dark:text-slate-100 text-sm mb-4 leading-relaxed">
-            Do you have anybody in your family with cancer, or a self-diagnosis of cancer?
+            {t('genetic.familyCancerQuestion', 'Do you have anybody in your family with cancer, or a self-diagnosis of cancer?')}
           </p>
           <div className="flex gap-3">
             <button 
@@ -124,14 +126,14 @@ export const GeneticLogScreen: React.FC<GeneticLogScreenProps> = ({ onBack, onBo
               disabled={loading}
               className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${geneticLink === true ? 'bg-primary text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-655 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'} disabled:opacity-50`}
             >
-              Yes
+              {t('common.yes', 'Yes')}
             </button>
             <button 
               onClick={() => handleSelectGenetic(false)}
               disabled={loading}
               className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${geneticLink === false ? 'bg-primary text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-655 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'} disabled:opacity-50`}
             >
-              No
+              {t('common.no', 'No')}
             </button>
           </div>
 
@@ -142,8 +144,8 @@ export const GeneticLogScreen: React.FC<GeneticLogScreenProps> = ({ onBack, onBo
               triggerCondition="Family history of cancer"
               riskLevel="High"
               recommendedSpecialty="Genetic Counselor"
-              title="Recommendation"
-              description="Based on your history, we recommend consulting a genetic counselor to assess potential risks."
+              title={t('recommendationTitle')}
+              description={t('genetic.consultRecommendDesc', 'Based on your history, we recommend consulting a genetic counselor to assess potential risks.')}
               colorTheme="purple"
               onBookAppointment={onBookAppointment!}
             />
@@ -151,8 +153,8 @@ export const GeneticLogScreen: React.FC<GeneticLogScreenProps> = ({ onBack, onBo
 
           {geneticLink === false && (
             <div className="mt-5 p-4 bg-emerald-50 rounded-xl border border-emerald-100 animate-in fade-in duration-300">
-              <p className="text-emerald-700 text-sm font-bold mb-1">Thank you for sharing.</p>
-              <p className="text-emerald-600/90 text-xs font-medium">Regular general checkups are still recommended for overall health.</p>
+              <p className="text-emerald-700 text-sm font-bold mb-1">{t('genetic.thankYouSharing', 'Thank you for sharing.')}</p>
+              <p className="text-emerald-600/90 text-xs font-medium">{t('genetic.regularCheckupsRecommended', 'Regular general checkups are still recommended for overall health.')}</p>
             </div>
           )}
         </div>

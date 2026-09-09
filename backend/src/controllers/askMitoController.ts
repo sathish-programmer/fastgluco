@@ -83,9 +83,10 @@ export const deleteAskMitoTopic = async (req: Request, res: Response) => {
 // ─── MAIN ASK MITO CONTROLLER ──────────────────────────────────────────────
 export const askMito = async (req: Request, res: Response) => {
   try {
-    const { message, history } = req.body as {
+    const { message, history, language = 'en' } = req.body as {
       message: string;
       history?: Array<{ role: 'user' | 'model'; parts: string }>;
+      language?: 'en' | 'ta' | 'kn' | 'hi';
     };
 
     if (!message?.trim()) {
@@ -119,7 +120,7 @@ export const askMito = async (req: Request, res: Response) => {
 
     // 2. If user typed a greeting or help/support query, return the pre-filled Help/Welcome workflow topic
     const isGreetingOrHelp = ['hi', 'hello', 'hey', 'help', 'support', 'topics', 'menu', 'options', 'start'].some(w => lowerMsg === w || lowerMsg.startsWith(w + ' '));
-    if (isGreetingOrHelp) {
+    if (isGreetingOrHelp && language === 'en') {
       const helpTopic = allTopics.find(t => t.keywords.includes('help') || t.keywords.includes('hi')) || allTopics[0];
       if (helpTopic) {
         return res.json({ answer: `${helpTopic.title}\n\n${helpTopic.answer}` });
@@ -142,8 +143,17 @@ export const askMito = async (req: Request, res: Response) => {
       const genAI = new GoogleGenerativeAI(apiKey);
       const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
+      let languageDirective = '';
+      if (language === 'ta') {
+        languageDirective = '\n\nLANGUAGE INSTRUCTION: You MUST respond in Tamil (தமிழ்). Use natural, empathetic conversational Tamil. Retain critical medical terms (e.g. glucose, CGM, HbA1c, mg/dL, ketones, mitochondria) in English or transliteration with English for clinical clarity.';
+      } else if (language === 'kn') {
+        languageDirective = '\n\nLANGUAGE INSTRUCTION: You MUST respond in Kannada (ಕನ್ನಡ). Use natural, empathetic conversational Kannada. Retain critical medical terms (e.g. glucose, CGM, HbA1c, mg/dL, ketones, mitochondria) in English or transliteration with English for clinical clarity.';
+      } else if (language === 'hi') {
+        languageDirective = '\n\nLANGUAGE INSTRUCTION: You MUST respond in Hindi (हिंदी). Use natural, empathetic conversational Hindi. Retain critical medical terms (e.g. glucose, CGM, HbA1c, mg/dL, ketones, mitochondria) in English or transliteration with English for clinical clarity.';
+      }
+
       const contents: any[] = [];
-      contents.push({ role: 'user', parts: [{ text: `[SYSTEM INSTRUCTIONS]\n${SYSTEM_PROMPT}\n\nAcknowledge and begin as Mito.` }] });
+      contents.push({ role: 'user', parts: [{ text: `[SYSTEM INSTRUCTIONS]\n${SYSTEM_PROMPT}${languageDirective}\n\nAcknowledge and begin as Mito.` }] });
       contents.push({ role: 'model', parts: [{ text: "Understood. I'm Mito, your health companion." }] });
 
       const safeHistory = (history || []).filter(h => h.parts?.trim());

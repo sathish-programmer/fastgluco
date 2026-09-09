@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useLanguage } from '../context/LanguageContext';
 import { Bell, Check, Loader2, Trash2 } from 'lucide-react';
 
 export const NotificationBell: React.FC = () => {
+  const { t } = useLanguage();
   const { token, apiUrl } = useAuth();
   const { showToast } = useToast();
   const [unreadCount, setUnreadCount] = useState(0);
@@ -81,20 +83,6 @@ export const NotificationBell: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const fetchUnreadCount = async () => {
-    try {
-      const res = await fetch(`${apiUrl}/notifications/unread-count`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setUnreadCount(data.unreadCount || 0);
-      }
-    } catch (e) {
-      console.error('Error fetching unread notification count:', e);
-    }
-  };
-
   const fetchNotifications = async () => {
     setLoading(true);
     try {
@@ -104,6 +92,8 @@ export const NotificationBell: React.FC = () => {
       if (res.ok) {
         const data = await res.json();
         setNotifications(data);
+        const unread = data.filter((n: any) => !n.isRead);
+        setUnreadCount(unread.length);
       }
     } catch (e) {
       console.error('Error fetching notifications:', e);
@@ -113,26 +103,22 @@ export const NotificationBell: React.FC = () => {
   };
 
   const handleToggleDropdown = () => {
-    const willShow = !showDropdown;
-    setShowDropdown(willShow);
-    if (willShow) {
+    if (!showDropdown) {
       fetchNotifications();
     }
+    setShowDropdown(!showDropdown);
   };
 
-  const handleMarkAsRead = async (id: string, event: React.MouseEvent) => {
-    event.stopPropagation();
+  const handleMarkAsRead = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     try {
       const res = await fetch(`${apiUrl}/notifications/${id}/read`, {
-        method: 'POST',
+        method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
-        // Update local state
-        setNotifications(prev =>
-          prev.map(n => n._id === id ? { ...n, isRead: true } : n)
-        );
-        fetchUnreadCount();
+        setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
+        setUnreadCount(prev => Math.max(0, prev - 1));
       }
     } catch (e) {
       console.error('Error marking notification as read:', e);
@@ -142,7 +128,7 @@ export const NotificationBell: React.FC = () => {
   const handleMarkAllAsRead = async () => {
     try {
       const res = await fetch(`${apiUrl}/notifications/read-all`, {
-        method: 'POST',
+        method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -152,20 +138,23 @@ export const NotificationBell: React.FC = () => {
         setUnreadCount(0);
       }
     } catch (e) {
-      console.error('Error marking all notifications as read:', e);
+      console.error('Error marking all as read:', e);
     }
   };
 
-  const handleDelete = async (id: string, event: React.MouseEvent) => {
-    event.stopPropagation();
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     try {
       const res = await fetch(`${apiUrl}/notifications/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
+        const deleted = notifications.find(n => n._id === id);
         setNotifications(prev => prev.filter(n => n._id !== id));
-        fetchUnreadCount();
+        if (deleted && !deleted.isRead) {
+          setUnreadCount(prev => Math.max(0, prev - 1));
+        }
       }
     } catch (e) {
       console.error('Error deleting notification:', e);
@@ -174,7 +163,7 @@ export const NotificationBell: React.FC = () => {
 
   const handleClearAll = async () => {
     try {
-      const res = await fetch(`${apiUrl}/notifications`, {
+      const res = await fetch(`${apiUrl}/notifications/clear-all`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -188,20 +177,23 @@ export const NotificationBell: React.FC = () => {
   };
 
   const formatNotificationTime = (dateStr: string) => {
+    if (!dateStr) return '';
     const date = new Date(dateStr);
     const now = new Date();
     
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
+    // Check if it is today
+    const isToday = date.toDateString() === now.toDateString();
     
-    const targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    // Check if it is yesterday
+    const yesterday = new Date();
+    yesterday.setDate(now.getDate() - 1);
+    const isYesterday = date.toDateString() === yesterday.toDateString();
     
     const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
     
-    if (targetDate.getTime() === today.getTime()) {
-      return `Today, ${timeStr}`;
-    } else if (targetDate.getTime() === yesterday.getTime()) {
+    if (isToday) {
+      return `${t('dashboard.today')}, ${timeStr}`;
+    } else if (isYesterday) {
       return `Yesterday, ${timeStr}`;
     } else {
       const dateStrFormatted = date.toLocaleDateString([], { month: 'short', day: 'numeric' });
@@ -214,8 +206,8 @@ export const NotificationBell: React.FC = () => {
       <button
         onClick={handleToggleDropdown}
         className="p-1.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer relative focus:outline-none"
-        title="Notifications"
-        aria-label="Notifications"
+        title={t('navigation.notifications')}
+        aria-label={t('navigation.notifications')}
       >
         <Bell className="h-4.5 w-4.5" />
         {unreadCount > 0 && (
@@ -228,14 +220,14 @@ export const NotificationBell: React.FC = () => {
       {showDropdown && (
         <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xl z-50 overflow-hidden">
           <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-950/50">
-            <span className="text-xs font-black text-slate-800 dark:text-slate-200">Notifications</span>
+            <span className="text-xs font-black text-slate-800 dark:text-slate-200">{t('navigation.notifications')}</span>
             <div className="flex items-center space-x-2">
               {unreadCount > 0 && (
                 <button
                   onClick={handleMarkAllAsRead}
                   className="text-[10px] font-bold text-primary dark:text-indigo-400 hover:underline focus:outline-none"
                 >
-                  Mark all as read
+                  {t('common.save')}
                 </button>
               )}
               {notifications.length > 0 && (
@@ -245,7 +237,7 @@ export const NotificationBell: React.FC = () => {
                     onClick={handleClearAll}
                     className="text-[10px] font-bold text-rose-600 dark:text-rose-400 hover:underline focus:outline-none"
                   >
-                    Clear all
+                    {t('common.delete')}
                   </button>
                 </>
               )}
@@ -256,11 +248,11 @@ export const NotificationBell: React.FC = () => {
             {loading ? (
               <div className="p-4 flex items-center justify-center text-slate-400 dark:text-slate-500 text-xs">
                 <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
-                <span>Loading...</span>
+                <span>{t('common.loading')}</span>
               </div>
             ) : notifications.length === 0 ? (
               <div className="p-6 text-center text-slate-400 dark:text-slate-500 text-xs">
-                No notifications yet.
+                {t('common.noData')}
               </div>
             ) : (
               notifications.map((n) => (
@@ -285,7 +277,7 @@ export const NotificationBell: React.FC = () => {
                         <button
                           onClick={(e) => handleMarkAsRead(n._id, e)}
                           className="p-1 hover:bg-slate-200/60 dark:hover:bg-slate-850 rounded-full text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-350 transition-all"
-                          title="Mark as read"
+                          title={t('markAsReadTitle')}
                         >
                           <Check className="h-3.5 w-3.5" />
                         </button>
@@ -293,7 +285,7 @@ export const NotificationBell: React.FC = () => {
                       <button
                         onClick={(e) => handleDelete(n._id, e)}
                         className="p-1 hover:bg-rose-100 dark:hover:bg-rose-950/30 rounded-full text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-450 transition-all"
-                        title="Delete notification"
+                        title={t('common.delete')}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>

@@ -4,6 +4,7 @@ import { BasketScreen } from './BasketScreen';
 import { PincodeDeliveryChecker } from '../../components/PincodeDeliveryChecker';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface ShopScreenProps {
   onBack: () => void;
@@ -35,12 +36,13 @@ export const ProductImage: React.FC<{ src: string; apiUrl: string; className?: s
     );
   }
 
+  const { t } = useLanguage();
   const baseUrl = apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl;
   const fullUrl = src.startsWith('http') ? src : `${baseUrl}${src}`;
   return (
     <img 
       src={fullUrl} 
-      alt="Product" 
+      alt={t('productAlt')} 
       className={className} 
       onError={() => setError(true)}
     />
@@ -80,6 +82,7 @@ export interface ShopItem {
 }
 
 export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSearch }) => {
+  const { t } = useLanguage();
   const { apiUrl, token, user, branding } = useAuth();
   const { showToast } = useToast();
   const curr = user?.currency === 'INR' ? '₹' : '$';
@@ -504,7 +507,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
               className="h-10 px-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center gap-2 text-xs font-extrabold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 shadow-2xs transition-all cursor-pointer shrink-0"
             >
               <ArrowLeft className="h-4 w-4" />
-              <span className="hidden sm:inline">Back to Store</span>
+              <span className="hidden sm:inline">{t('shop.backToStore', 'Back to Store')}</span>
               <span className="sm:hidden">Back</span>
             </button>
 
@@ -525,10 +528,10 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
                   showToast('Link copied to clipboard! You can share it now.', 'success');
                 }}
                 className="h-10 px-3 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-800 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-100 rounded-xl flex items-center gap-1 text-xs font-bold transition-all shadow-2xs cursor-pointer"
-                title="Share Link"
+                title={t('shareLink')}
               >
                 <span>🔗</span>
-                <span className="hidden sm:inline">Share</span>
+                <span className="hidden sm:inline">{t('share')}</span>
               </button>
 
               {branding.enableExternalPayments !== false && (
@@ -537,7 +540,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
                   className="relative h-10 px-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-center gap-1.5 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-2xs transition-all cursor-pointer"
                 >
                   <ShoppingCart className="h-4 w-4 text-indigo-500" />
-                  <span className="text-xs font-bold hidden sm:inline">Cart</span>
+                  <span className="text-xs font-bold hidden sm:inline">{t('shop.cart', 'Cart')}</span>
                   {totalItems > 0 && (
                     <span className="bg-indigo-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
                       {totalItems}
@@ -580,18 +583,18 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
             
             <div className="bg-slate-50/60 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800 rounded-3xl p-5 w-full space-y-3.5 text-slate-700 dark:text-slate-300">
               <div className="flex justify-between items-center text-xs">
-                <span className="font-bold text-slate-400 uppercase tracking-widest text-[9px]">Category</span>
+                <span className="font-bold text-slate-400 uppercase tracking-widest text-[9px]">{t('shop.category', 'Category')}</span>
                 <span className="font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-wide">{selectedProduct.category}</span>
               </div>
               {selectedProduct.brand && (
                 <div className="flex justify-between items-center text-xs border-t border-slate-100 dark:border-slate-800 pt-3">
-                  <span className="font-bold text-slate-400 uppercase tracking-widest text-[9px]">Brand</span>
+                  <span className="font-bold text-slate-400 uppercase tracking-widest text-[9px]">{t('shop.brand', 'Brand')}</span>
                   <span className="font-extrabold text-slate-700 dark:text-slate-200">{selectedProduct.brand}</span>
                 </div>
               )}
               {selectedProduct.manufacturer && (
                 <div className="flex justify-between items-center text-xs border-t border-slate-100 pt-3">
-                  <span className="font-bold text-slate-400 uppercase tracking-widest text-[9px]">Manufacturer</span>
+                  <span className="font-bold text-slate-400 uppercase tracking-widest text-[9px]">{t('shop.manufacturer', 'Manufacturer')}</span>
                   <span className="font-semibold text-slate-500">{selectedProduct.manufacturer}</span>
                 </div>
               )}
@@ -637,14 +640,14 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
                     dangerouslySetInnerHTML={{ __html: selectedProduct.shortDescription }}
                   />
                 ) : (
-                  <p className="text-xs text-slate-400 mt-2 italic">High quality therapeutic grade health formulation.</p>
+                  <p className="text-xs text-slate-400 mt-2 italic">{t('shop.highQualityDesc', 'High quality therapeutic grade health formulation.')}</p>
                 )}
               </div>
 
               {/* Price & Variant Selection Box */}
               <div className="bg-slate-50/80 dark:bg-slate-950/80 border border-slate-100 dark:border-slate-800 p-6 rounded-[2rem] space-y-4">
                 <div className="flex justify-between items-end">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest block pb-1">Fulfillment Price</span>
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest block pb-1">{t('shop.fulfillmentPrice', 'Fulfillment Price')}</span>
                   <div className="flex items-baseline gap-2">
                     <span className="text-3xl font-black text-slate-900 dark:text-white leading-none">
                       {curr}
@@ -663,7 +666,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
 
                 {selectedProduct.variants && selectedProduct.variants.length > 0 && (
                   <div className="space-y-2 border-t border-slate-200/50 pt-4">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Select Size / Pack Type</label>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">{t('shop.selectSizePack', 'Select Size / Pack Type')}</label>
                     <div className="flex flex-wrap gap-2.5">
                       {selectedProduct.variants.map((v, idx) => (
                         <button
@@ -695,7 +698,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
               <div className="space-y-4 max-h-80 overflow-y-auto pr-2 text-xs text-slate-600 scrollbar-thin">
                 {selectedProduct.detailedDescription && (
                   <div className="space-y-1">
-                    <span className="font-extrabold text-slate-800 uppercase tracking-wider text-[9px] block">Product Details</span>
+                    <span className="font-extrabold text-slate-800 uppercase tracking-wider text-[9px] block">{t('shop.productDetails', 'Product Details')}</span>
                     <div 
                       className="leading-relaxed text-slate-500 [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:font-bold [&_em]:italic [&_ul]:list-disc [&_ul]:ml-4 [&_ol]:list-decimal [&_ol]:ml-4 [&_h1]:text-lg [&_h1]:font-bold [&_h1]:mt-4 [&_h1]:mb-2 [&_h2]:text-base [&_h2]:font-bold [&_h2]:mt-3 [&_h2]:mb-2 [&_h3]:text-sm [&_h3]:font-bold [&_h3]:mt-2 [&_h3]:mb-1 [&_a]:text-primary [&_a]:underline"
                       dangerouslySetInnerHTML={{ __html: selectedProduct.detailedDescription }}
@@ -705,7 +708,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
 
                 {selectedProduct.keyBenefits && selectedProduct.keyBenefits.length > 0 && (
                   <div className="space-y-1">
-                    <span className="font-extrabold text-slate-800 uppercase tracking-wider text-[9px] block">Key Benefits</span>
+                    <span className="font-extrabold text-slate-800 uppercase tracking-wider text-[9px] block">{t('shop.keyBenefits', 'Key Benefits')}</span>
                     <ul className="list-disc pl-4 space-y-1 text-slate-500 leading-relaxed">
                       {selectedProduct.keyBenefits.map((b, i) => <li key={i}>{b}</li>)}
                     </ul>
@@ -714,14 +717,14 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
 
                 {selectedProduct.ingredients && selectedProduct.ingredients.length > 0 && (
                   <div className="space-y-1">
-                    <span className="font-extrabold text-slate-800 uppercase tracking-wider text-[9px] block">Active Ingredients</span>
+                    <span className="font-extrabold text-slate-800 uppercase tracking-wider text-[9px] block">{t('shop.activeIngredients', 'Active Ingredients')}</span>
                     <p className="text-slate-500 leading-relaxed font-semibold">{selectedProduct.ingredients.join(', ')}</p>
                   </div>
                 )}
 
                 {selectedProduct.usageInstructions && (
                   <div className="space-y-1">
-                    <span className="font-extrabold text-slate-800 uppercase tracking-wider text-[9px] block">Directions for Use</span>
+                    <span className="font-extrabold text-slate-800 uppercase tracking-wider text-[9px] block">{t('shop.directionsForUse', 'Directions for Use')}</span>
                     <p className="text-slate-500 leading-relaxed">{selectedProduct.usageInstructions}</p>
                   </div>
                 )}
@@ -730,7 +733,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
                   <div className="bg-red-50/50 p-4 rounded-2xl border border-red-100/60 text-red-700 flex items-start gap-2.5">
                     <AlertCircle className="h-5 w-5 shrink-0 text-red-500 mt-0.5" />
                     <div>
-                      <span className="font-bold text-[10px] uppercase tracking-wider block mb-1">Safety Precautions</span>
+                      <span className="font-bold text-[10px] uppercase tracking-wider block mb-1">{t('shop.safetyPrecautions', 'Safety Precautions')}</span>
                       <p className="text-[10px] leading-relaxed text-red-650">{selectedProduct.warnings}</p>
                     </div>
                   </div>
@@ -740,7 +743,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
 
             {/* Delivery Pincode Checker inside Product Details View */}
             <div className="pt-4 border-t border-slate-100 space-y-2">
-              <span className="font-extrabold text-slate-800 uppercase tracking-wider text-[10px] block">Check Delivery Serviceability</span>
+              <span className="font-extrabold text-slate-800 uppercase tracking-wider text-[10px] block">{t('shop.checkDelivery', 'Check Delivery Serviceability')}</span>
               <PincodeDeliveryChecker
                 apiUrl={apiUrl}
                 token={token}
@@ -784,7 +787,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
                   }}
                   className="flex-1 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-2xl text-xs font-black transition-all shadow-md flex items-center justify-center gap-2 transform active:scale-98 cursor-pointer"
                 >
-                  <span>⚡ Buy Now</span>
+                  <span>{t('buyNow')}</span>
                 </button>
               </div>
             )}
@@ -795,7 +798,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
         {branding.enableExternalPayments !== false && (
           <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 p-3 md:hidden shadow-2xl flex items-center justify-between gap-2">
             <div>
-              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Total Price</span>
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">{t('shop.totalPrice', 'Total Price')}</span>
               <span className="text-lg font-black text-slate-900 dark:text-white leading-none">
                 {curr}{selectedVariant ? selectedVariant.price.toFixed(2) : finalPrice.toFixed(2)}
               </span>
@@ -846,8 +849,8 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
           {productReviews.length === 0 ? (
             <div className="text-center py-10 bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
               <span className="text-2xl block mb-2">⭐</span>
-              <p className="text-xs font-bold text-slate-400">No approved reviews yet</p>
-              <p className="text-[10px] text-slate-400 mt-0.5">Purchased this item? Click the rating link in your delivery confirmation invoice email or order page to review it!</p>
+              <p className="text-xs font-bold text-slate-400">{t('shop.noReviewsYet', 'No approved reviews yet')}</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">{t('shop.reviewPurchasedItem', 'Purchased this item? Click the rating link in your delivery confirmation invoice email or order page to review it!')}</p>
             </div>
           ) : (
             <div className="space-y-4 divide-y divide-slate-100">
@@ -902,7 +905,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div className="min-w-0 flex-1">
-            <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 tracking-[0.15em] sm:tracking-[0.2em] uppercase block truncate">MitoReboot Health</span>
+            <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 tracking-[0.15em] sm:tracking-[0.2em] uppercase block truncate">{t('shop.mitoRebootHealth', 'MitoReboot Health')}</span>
             <h2 className="text-base sm:text-2xl font-sans font-bold text-slate-850 dark:text-slate-100 leading-none mt-0.5 flex items-center gap-1 sm:gap-2 truncate">
               <span className="shrink-0">🩺</span>
               <span className="truncate">Medical & Health Store</span>
@@ -916,7 +919,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
             className="relative shrink-0 h-10 px-3 sm:h-12 sm:px-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl sm:rounded-2xl flex items-center justify-center gap-1.5 sm:gap-2 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-xs transition-all cursor-pointer"
           >
             <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-500" />
-            <span className="text-[11px] sm:text-xs font-bold hidden sm:inline">My Basket</span>
+            <span className="text-[11px] sm:text-xs font-bold hidden sm:inline">{t('shop.myBasket', 'My Basket')}</span>
             {totalItems > 0 && (
               <span className="bg-indigo-600 text-white text-[9px] sm:text-[10px] font-bold w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center shadow-xs">
                 {totalItems}
@@ -935,22 +938,22 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 text-[11px] font-bold">
-                <span>Deliver to:</span>
+                <span>{t('deliverTo')}</span>
                 <span className="font-extrabold text-indigo-950 dark:text-white truncate">
-                  {userDeliveryPincode ? `${userDeliveryPincode}${deliveryLocality ? ` (${deliveryLocality})` : ''}` : 'Select Pincode'}
+                  {userDeliveryPincode ? `${userDeliveryPincode}${deliveryLocality ? ` (${deliveryLocality})` : ''}` : t('selectPincode')}
                 </span>
               </div>
               <div className="flex items-center gap-2 text-[11px] mt-0.5 font-bold">
                 {isDeliveryServiceable === false ? (
                   <span className="text-rose-600 dark:text-rose-400 flex items-center gap-1">
-                    <XCircle className="h-3.5 w-3.5" /> Delivery Unavailable for this pincode
+                    <XCircle className="h-3.5 w-3.5" /> {t('deliveryUnavailableThisPincode')}
                   </span>
                 ) : deliveryEstimate ? (
                   <span className="text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
-                    <Truck className="h-3.5 w-3.5 text-emerald-600" /> {deliveryEstimate} • <span className="font-black">{deliveryFee === 0 ? 'FREE Shipping' : `₹${deliveryFee} Shipping`}</span>
+                    <Truck className="h-3.5 w-3.5 text-emerald-600" /> {deliveryEstimate} • <span className="font-black">{deliveryFee === 0 ? t('freeShipping') : `₹${deliveryFee} ${t('shippingFee')}`}</span>
                   </span>
                 ) : (
-                  <span className="text-slate-400">Enter pincode for delivery estimate</span>
+                  <span className="text-slate-400">{t('enterPincodeEstimate')}</span>
                 )}
               </div>
             </div>
@@ -964,7 +967,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
               }}
               className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black transition-all shadow-xs cursor-pointer flex items-center gap-1"
             >
-              <span>{isEditingPincode ? 'Cancel' : 'Change Pincode'}</span>
+              <span>{isEditingPincode ? t('common.cancel') : t('changePincode')}</span>
             </button>
           </div>
         </div>
@@ -976,7 +979,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
               <input
                 type="text"
                 maxLength={6}
-                placeholder="Enter 6-digit Pincode"
+                placeholder={t('enterPincodePlaceholder')}
                 value={tempPincodeInput}
                 onChange={(e) => setTempPincodeInput(e.target.value.replace(/\D/g, ''))}
                 className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500"
@@ -988,7 +991,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
               disabled={checkingPincode || tempPincodeInput.length < 6}
               className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-xs cursor-pointer disabled:opacity-50"
             >
-              {checkingPincode ? 'Checking...' : 'Apply'}
+              {checkingPincode ? t('common.loading') : t('apply')}
             </button>
 
             <button
@@ -1023,13 +1026,13 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
           </div>
           {/* Categories Filter */}
           <div className="space-y-2">
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Category</label>
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">{t('shop.category', 'Category')}</label>
             <select 
               value={selectedCategory} 
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-xs text-slate-700 dark:text-slate-200 font-bold focus:outline-none focus:border-indigo-400 cursor-pointer"
             >
-              <option value="All">All Categories</option>
+              <option value="All">{t('allCategories')}</option>
               {categories.map((cat, idx) => (
                 <option key={idx} value={cat.name}>{cat.name}</option>
               ))}
@@ -1039,13 +1042,13 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
           {/* Brands Filter */}
           {distinctBrands.length > 0 && (
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Brand</label>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">{t('shop.brand', 'Brand')}</label>
               <select 
                 value={selectedBrand} 
                 onChange={(e) => setSelectedBrand(e.target.value)}
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-xs text-slate-700 dark:text-slate-200 font-bold focus:outline-none focus:border-indigo-400 cursor-pointer"
               >
-                <option value="All">All Brands</option>
+                <option value="All">{t('allBrands')}</option>
                 {distinctBrands.map((b, idx) => (
                   <option key={idx} value={b}>{b}</option>
                 ))}
@@ -1060,7 +1063,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
               <input 
                 type="number" 
                 step="any"
-                placeholder="Min" 
+                placeholder={t('minPlaceholder')} 
                 value={minPrice} 
                 onChange={(e) => setMinPrice(e.target.value)}
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-xs text-slate-700 dark:text-slate-200 font-bold focus:outline-none"
@@ -1068,7 +1071,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
               <input 
                 type="number" 
                 step="any"
-                placeholder="Max" 
+                placeholder={t('maxPlaceholder')} 
                 value={maxPrice} 
                 onChange={(e) => setMaxPrice(e.target.value)}
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-xs text-slate-700 dark:text-slate-200 font-bold focus:outline-none"
@@ -1078,7 +1081,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
               onClick={fetchProducts} 
               className="w-full py-2 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded-xl text-xs font-bold transition-all mt-1"
             >
-              Apply Price Filter
+              {t('applyPriceFilter')}
             </button>
           </div>
 
@@ -1091,7 +1094,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
                 onChange={(e) => setOnlyDoctorRecommended(e.target.checked)}
                 className="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4"
               />
-              <span>Doctor Recommended</span>
+              <span>{t('doctorRecommended')}</span>
             </label>
             
             <label className="flex items-center space-x-2 text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
@@ -1101,7 +1104,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
                 onChange={(e) => setOnlyAvailable(e.target.checked)}
                 className="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4"
               />
-              <span>In Stock Only</span>
+              <span>{t('inStockOnly')}</span>
             </label>
           </div>
         </div>
@@ -1115,7 +1118,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
               <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
               <input 
                 type="text" 
-                placeholder="Search medical products..." 
+                placeholder={t('searchProductsPlaceholder')} 
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-700 dark:text-slate-200 font-medium focus:outline-none focus:border-indigo-400"
@@ -1135,9 +1138,9 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
                 onChange={(e) => setSortBy(e.target.value)}
                 className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-700 dark:text-slate-350 font-bold focus:outline-none focus:border-indigo-400 cursor-pointer"
               >
-                <option value="newest">Sort: Newest</option>
-                <option value="price_asc">Price: Low to High</option>
-                <option value="price_desc">Price: High to Low</option>
+                <option value="newest">{t('sortNewest')}</option>
+                <option value="price_asc">{t('priceLowHigh')}</option>
+                <option value="price_desc">{t('priceHighLow')}</option>
               </select>
             </div>
           </div>
@@ -1163,13 +1166,13 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
           {loading ? (
             <div className="text-center py-20 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-xs">
               <div className="w-8 h-8 border-4 border-slate-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-xs text-slate-450 font-bold">Refreshing products feed...</p>
+              <p className="text-xs text-slate-450 font-bold">{t('shop.refreshingProducts', 'Refreshing products feed...')}</p>
             </div>
           ) : products.length === 0 ? (
             <div className="text-center py-20 bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-800 rounded-3xl shadow-xs">
               <AlertCircle className="h-10 w-10 text-slate-300 mx-auto mb-4" />
-              <h3 className="font-bold text-slate-700 dark:text-slate-200">No items available</h3>
-              <p className="text-xs text-slate-450 mt-1">Try resetting filters or checking for alternative items.</p>
+              <h3 className="font-bold text-slate-700 dark:text-slate-200">{t('shop.noItemsAvailable', 'No items available')}</h3>
+              <p className="text-xs text-slate-450 mt-1">{t('shop.tryResettingFilters', 'Try resetting filters or checking for alternative items.')}</p>
               <button 
                 onClick={() => { setSelectedCategory('All'); setSelectedBrand('All'); setSearch(''); setOnlyDoctorRecommended(false); setOnlyAvailable(false); }}
                 className="mt-4 px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer"
@@ -1237,7 +1240,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
                     <div className="flex items-end justify-between gap-2 pt-3 border-t border-slate-100 dark:border-slate-800/80 mt-1">
                       <div>
                         {hasVariants && (
-                          <span className="text-[8px] text-slate-400 dark:text-slate-500 block font-bold uppercase tracking-wider">Starts From</span>
+                          <span className="text-[8px] text-slate-400 dark:text-slate-500 block font-bold uppercase tracking-wider">{t('shop.startsFrom', 'Starts From')}</span>
                         )}
                         <div className="flex items-baseline gap-1.5 flex-wrap">
                           <span className="font-black text-slate-900 dark:text-slate-100 text-lg leading-none">{curr}{finalPrice.toFixed(2)}</span>
@@ -1253,7 +1256,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
                       </div>
                       
                       {isOutOfStock ? (
-                        <span className="text-[9px] font-black text-rose-500 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/40 px-2.5 py-1.5 rounded-xl uppercase">Sold Out</span>
+                        <span className="text-[9px] font-black text-rose-500 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/40 px-2.5 py-1.5 rounded-xl uppercase">{t('shop.soldOut', 'Sold Out')}</span>
                       ) : branding.enableExternalPayments !== false ? (
                         hasVariants ? (
                           <button 
@@ -1263,7 +1266,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
                             }}
                             className="text-[11px] font-extrabold text-indigo-600 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900 px-3 py-2 rounded-xl shadow-2xs transition-all cursor-pointer flex items-center gap-1"
                           >
-                            <span>Options</span>
+                            <span>{t('productOptions')}</span>
                             <ChevronRight className="h-3 w-3" />
                           </button>
                         ) : itemQty > 0 ? (
@@ -1291,11 +1294,11 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
                             className="text-[11px] font-extrabold text-white bg-indigo-600 hover:bg-indigo-700 px-3.5 py-2 rounded-xl shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer active:scale-95 flex items-center gap-1"
                           >
                             <Plus className="h-3.5 w-3.5" />
-                            <span>Add</span>
+                            <span>{t('common.add')}</span>
                           </button>
                         )
                       ) : (
-                        <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 px-3 py-1.5 rounded-xl">View Info</span>
+                        <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 px-3 py-1.5 rounded-xl">{t('viewInfo')}</span>
                       )}
                     </div>
                   </div>

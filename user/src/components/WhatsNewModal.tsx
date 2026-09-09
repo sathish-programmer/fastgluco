@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, X, ChevronRight, Wind, Droplets, Dna, ShoppingBag, Heart, LayoutDashboard, Camera } from 'lucide-react';
+import { Sparkles, X, ChevronRight, Wind, ShoppingBag, Activity, AlertCircle } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export const LATEST_RELEASE_VERSION = 'v4.8.7';
+const CURRENT_APP_VERSION = '2.4.0';
 
 interface WhatsNewModalProps {
   isOpen: boolean;
@@ -15,90 +18,81 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
   onClose,
   onExploreFeature
 }) => {
-  if (!isOpen) return null;
+  const { branding } = useAuth();
+  const { t } = useLanguage();
+  const [shouldShow, setShouldShow] = useState(false);
 
-  const features = [
-    {
-      key: 'DASHBOARD',
-      icon: <LayoutDashboard className="h-6 w-6 text-indigo-500" />,
-      bg: 'bg-indigo-500/10 border-indigo-500/20',
-      title: '📊 Modular Dashboard & Focus Cards',
-      description: 'Interactive health focus cards, damage vs. repair metrics, and streamlined action modals.',
-      actionLabel: 'View Dashboard'
-    },
-    {
-      key: 'CAMERA',
-      icon: <Camera className="h-6 w-6 text-amber-500" />,
-      bg: 'bg-amber-500/10 border-amber-500/20',
-      title: '📷 Webcam & Smart Meal Scanner',
-      description: 'Webcam photo capture, improved camera stability, and image retake controls for meal logs.',
-      actionLabel: 'Scan Meal'
-    },
-    {
-      key: 'ENVIRONMENT',
-      icon: <Wind className="h-6 w-6 text-sky-500" />,
-      bg: 'bg-sky-500/10 border-sky-500/20',
-      title: '🫁 Environmental Air & Exposure Audit',
-      description: 'Check local AQI, PM2.5 levels, indoor air toxins, and receive protective guidance.',
-      actionLabel: 'Check Environment'
-    },
-    {
-      key: 'WATER',
-      icon: <Droplets className="h-6 w-6 text-blue-500" />,
-      bg: 'bg-blue-500/10 border-blue-500/20',
-      title: '💧 Water Safety & Contaminants',
-      description: 'Assess municipal water purity, heavy metals, microplastics, and filter recommendations.',
-      actionLabel: 'Check Water'
-    },
-    {
-      key: 'GENETICS',
-      icon: <Dna className="h-6 w-6 text-violet-500" />,
-      bg: 'bg-violet-500/10 border-violet-500/20',
-      title: '🧬 Genetic Susceptibility & Lifestyle',
-      description: 'Understand hereditary predisposition factors and protective dietary antioxidants.',
-      actionLabel: 'View Genetics'
-    },
-    {
-      key: 'RECOMMENDED_PRODUCTS',
-      icon: <ShoppingBag className="h-6 w-6 text-emerald-500" />,
-      bg: 'bg-emerald-500/10 border-emerald-500/20',
-      title: '🛍️ Verified Healthcare Products',
-      description: 'Air purifiers, N95 masks, water filters, and organic non-toxic daily essentials.',
-      actionLabel: 'Browse Products'
-    },
-    {
-      key: 'WIGS',
-      icon: <Heart className="h-6 w-6 text-rose-500" />,
-      bg: 'bg-rose-500/10 border-rose-500/20',
-      title: '💇 Wigs for Treatment-Related Hair Loss',
-      description: 'Comfortable, medical-grade wigs and soft head coverings curated for treatment support.',
-      actionLabel: 'Explore Wigs'
+  useEffect(() => {
+    if (isOpen) {
+      setShouldShow(true);
+      return;
     }
-  ];
+
+    const lastSeenVersion = localStorage.getItem('mito_last_seen_version');
+    if (lastSeenVersion !== CURRENT_APP_VERSION) {
+      setShouldShow(true);
+    }
+  }, [isOpen]);
 
   const handleDismiss = () => {
-    localStorage.setItem(`mito_whats_new_dismissed_${LATEST_RELEASE_VERSION}`, 'true');
+    localStorage.setItem('mito_last_seen_version', CURRENT_APP_VERSION);
+    setShouldShow(false);
     onClose();
   };
 
+  if (!isOpen && !shouldShow) return null;
+
+  const features = [
+    {
+      key: 'cancer_care',
+      title: t('whatsNew.cancerCare.title', 'Active Cancer Care Support Mode'),
+      description: t('whatsNew.cancerCare.desc', 'Specialized protocols for chemotherapy tolerance, organ protection, and secondary recurrence defense.'),
+      icon: <Activity className="h-5 w-5 text-pink-500" />,
+      bg: 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20'
+    },
+    {
+      key: 'breath',
+      title: t('whatsNew.breath.title', 'Vagus Nerve Stimulating Breathwork'),
+      description: t('whatsNew.breath.desc', 'Interactive animated timer with Box breathing, 4-7-8 relaxing breath, and Coherent resonance.'),
+      icon: <Wind className="h-5 w-5 text-indigo-500" />,
+      bg: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20'
+    },
+    {
+      key: 'environmental',
+      title: t('whatsNew.environmental.title', 'Environmental Carcinogen & Cookware Hub'),
+      description: t('whatsNew.environmental.desc', 'Comprehensive audit for PM2.5 air toxins, water contaminants, microplastics, and teflon cookware.'),
+      icon: <AlertCircle className="h-5 w-5 text-emerald-500" />,
+      bg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+    },
+    {
+      key: 'shop',
+      title: t('whatsNew.shop.title', 'Curated Wellness Products & Safe Living Store'),
+      description: t('whatsNew.shop.desc', 'HEPA air purifiers, water filtration devices, toxin-free kitchenware, and targeted antioxidants.'),
+      icon: <ShoppingBag className="h-5 w-5 text-amber-500" />,
+      bg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+    }
+  ];
+
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-200">
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
+        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 10 }}
+        transition={{ duration: 0.2 }}
         className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[88vh]"
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-slate-100 dark:border-slate-800">
-          <div className="flex items-center space-x-2.5">
-            <div className="p-2.5 bg-gradient-to-r from-amber-500 to-rose-500 rounded-2xl text-white shadow-sm">
-              <Sparkles className="h-5 w-5" />
+        <div className="p-6 pb-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="p-2.5 bg-primary/10 rounded-2xl">
+              <Sparkles className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <span className="text-[9px] font-black uppercase tracking-widest text-amber-500 block">Release {LATEST_RELEASE_VERSION}</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-primary block">
+                {t('whatsNew.version', 'Version')} {CURRENT_APP_VERSION} {t('whatsNew.updates', 'Updates')}
+              </span>
               <h3 className="text-base font-black text-slate-900 dark:text-slate-100 tracking-tight leading-none mt-0.5">
-                What’s New in Mito_Reboot
+                {t('whatsNew.title', 'What’s New in')} {branding.appName}
               </h3>
             </div>
           </div>
@@ -110,7 +104,6 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
           </button>
         </div>
 
-        {/* Feature Cards Stack */}
         <div className="p-6 overflow-y-auto space-y-3 flex-1">
           {features.map(f => (
             <div
@@ -138,23 +131,22 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
                 }}
                 className="shrink-0 px-3 py-2 bg-primary/10 hover:bg-primary/20 text-primary dark:text-primary-light rounded-xl text-[11px] font-bold transition-all flex items-center space-x-1 mt-1"
               >
-                <span>Explore</span>
+                <span>{t('common.explore', 'Explore')}</span>
                 <ChevronRight className="h-3 w-3" />
               </button>
             </div>
           ))}
         </div>
 
-        {/* Footer */}
         <div className="p-5 bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
           <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
-            Check back anytime from your profile settings
+            {t('whatsNew.footer', 'Check back anytime from your profile settings')}
           </span>
           <button
             onClick={handleDismiss}
             className="px-5 py-2.5 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 font-extrabold text-xs rounded-xl shadow-xs transition-all hover:opacity-90"
           >
-            Got It
+            {t('common.confirm', 'Got It')}
           </button>
         </div>
       </motion.div>

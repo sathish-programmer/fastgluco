@@ -2,8 +2,10 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Sparkles, Calendar, Activity, Scale, AlertCircle, Plus, History, ChevronRight, X } from 'lucide-react';
 import { Card, SectionTitle, YesNoToggle, TalkToDoctorCard, StressTracker } from './shared/ConditionUI';
 import { triggerHealthInsightNotification } from '../utils/notificationScheduler';
+import { useLanguage } from '../context/LanguageContext';
 
 export const PCODModule: React.FC = () => {
+  const { t } = useLanguage();
   const [showHistoryModal, setShowHistoryModal] = useState<boolean>(false);
   const [height, setHeight] = useState<string>(() => localStorage.getItem('mito_pcod_height') || '');
   const [weight, setWeight] = useState<string>(() => localStorage.getItem('mito_pcod_weight') || '');
@@ -53,10 +55,10 @@ export const PCODModule: React.FC = () => {
 
   const bmiCategory = (b: number | null) => {
     if (b == null) return { label: 'Enter details', color: '#94A3B8', bg: 'bg-slate-100 dark:bg-slate-800' };
-    if (b < 18.5) return { label: 'Underweight', color: '#F59E0B', bg: 'bg-amber-50 dark:bg-amber-950/40 text-amber-600' };
-    if (b < 25) return { label: 'Optimal BMI', color: '#10B981', bg: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600' };
-    if (b < 30) return { label: 'Overweight', color: '#F59E0B', bg: 'bg-amber-50 dark:bg-amber-950/40 text-amber-600' };
-    return { label: 'Obese range', color: '#EF4444', bg: 'bg-rose-50 dark:bg-rose-950/40 text-rose-600' };
+    if (b < 18.5) return { label: t('protocols.underweight'), color: '#F59E0B', bg: 'bg-amber-50 dark:bg-amber-950/40 text-amber-600' };
+    if (b < 25) return { label: t('protocols.optimalBmi'), color: '#10B981', bg: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600' };
+    if (b < 30) return { label: t('protocols.overweight'), color: '#F59E0B', bg: 'bg-amber-50 dark:bg-amber-950/40 text-amber-600' };
+    return { label: t('protocols.obese'), color: '#EF4444', bg: 'bg-rose-50 dark:bg-rose-950/40 text-rose-600' };
   };
   const bmiCat = bmiCategory(bmi);
 
@@ -118,16 +120,16 @@ export const PCODModule: React.FC = () => {
       <div className="bg-gradient-to-r from-pink-600 via-rose-600 to-purple-600 rounded-3xl p-6 text-white shadow-xl">
         <div className="flex items-center gap-2 mb-1.5">
           <Sparkles className="h-5 w-5 text-pink-200" />
-          <span className="text-xs font-black uppercase tracking-widest text-pink-100">Hormonal & Cycle Defense</span>
+          <span className="text-xs font-black uppercase tracking-widest text-pink-100">{t('protocols.hormonalCycleDefense')}</span>
         </div>
-        <h1 className="text-xl font-black tracking-tight text-white">PCOD / PCOS Care Protocol</h1>
+        <h1 className="text-xl font-black tracking-tight text-white">{t('protocols.pcodProtocol')}</h1>
         <p className="text-xs text-pink-100/90 mt-1 leading-relaxed max-w-xl">
-          Daily habit tracking, menstrual cycle predictor, and symptom check-ins.
+          {t('protocols.pcodSubtitle')}
         </p>
 
         {/* Daily Score Indicator */}
         <div className="mt-4 pt-4 border-t border-white/20 flex items-center justify-between">
-          <span className="text-xs font-bold text-pink-100">Today's Hormonal Balance Score:</span>
+          <span className="text-xs font-bold text-pink-100">{t('protocols.pcodScoreLabel')}</span>
           <span className="text-lg font-black bg-white/20 px-3.5 py-1 rounded-xl backdrop-blur-md">
             {dailyScore > 0 ? `+${dailyScore}` : dailyScore}
           </span>
@@ -136,10 +138,10 @@ export const PCODModule: React.FC = () => {
 
       {/* Height, Weight & BMI */}
       <Card>
-        <SectionTitle icon={Scale}>Height, Weight & Metabolic BMI</SectionTitle>
+        <SectionTitle icon={Scale}>{t('protocols.metabolicBMI')}</SectionTitle>
         <div className="grid grid-cols-2 gap-3 mb-3">
           <div>
-            <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block mb-1">Height (cm)</label>
+            <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block mb-1">{t('protocols.heightCm')}</label>
             <input
               type="number"
               value={height}
@@ -149,7 +151,7 @@ export const PCODModule: React.FC = () => {
             />
           </div>
           <div>
-            <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block mb-1">Weight (kg)</label>
+            <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block mb-1">{t('protocols.weightKg')}</label>
             <input
               type="number"
               value={weight}
@@ -161,7 +163,7 @@ export const PCODModule: React.FC = () => {
         </div>
         {bmi !== null && (
           <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-600 dark:text-slate-400">Calculated BMI:</span>
+            <span className="text-xs font-bold text-slate-600 dark:text-slate-400">{t('protocols.cardiovascularBMI')}:</span>
             <span className={`text-xs font-black px-3 py-1 rounded-xl ${bmiCat.bg}`}>
               {bmi.toFixed(1)} · {bmiCat.label}
             </span>
@@ -171,10 +173,10 @@ export const PCODModule: React.FC = () => {
 
       {/* Daily Habits */}
       <Card>
-        <SectionTitle icon={Activity}>Daily Hormonal Balance Habits</SectionTitle>
-        <YesNoToggle label="Exercised 20 minutes today?" value={exercised} onChange={setExercised} goodAnswer={true} />
-        <YesNoToggle label="Ate junk / ultra-processed food today?" value={ateJunk} onChange={setAteJunk} goodAnswer={false} />
-        <YesNoToggle label="Slept 8 hours?" value={slept8} onChange={setSlept8} goodAnswer={true} />
+        <SectionTitle icon={Activity}>{t('protocols.dailyHormonalHabits')}</SectionTitle>
+        <YesNoToggle label={t('protocols.exercised20Min')} value={exercised} onChange={setExercised} goodAnswer={true} />
+        <YesNoToggle label={t('protocols.ateJunkUltra')} value={ateJunk} onChange={setAteJunk} goodAnswer={false} />
+        <YesNoToggle label={t('protocols.slept8Hours')} value={slept8} onChange={setSlept8} goodAnswer={true} />
         <div className="pt-2">
           <StressTracker value={stress} onChange={setStress} />
         </div>
@@ -182,7 +184,7 @@ export const PCODModule: React.FC = () => {
 
       {/* Menstrual Period Tracker & Cycle Predictor */}
       <Card>
-        <SectionTitle icon={Calendar}>Menstrual Cycle Tracker & Predictor</SectionTitle>
+        <SectionTitle icon={Calendar}>{t('protocols.periodTracker')}</SectionTitle>
         <div className="flex gap-2 mb-3">
           <input
             type="date"
@@ -195,7 +197,7 @@ export const PCODModule: React.FC = () => {
             onClick={logPeriod}
             className="px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white text-xs font-black rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
           >
-            <Plus className="h-4 w-4" /> Log Period
+            <Plus className="h-4 w-4" /> {t('protocols.logPeriod')}
           </button>
         </div>
 
@@ -203,18 +205,18 @@ export const PCODModule: React.FC = () => {
         {cycleStats.avgLength ? (
           <div className="p-3.5 rounded-2xl bg-gradient-to-r from-pink-50 via-rose-50 to-purple-50 dark:from-pink-950/30 dark:via-rose-950/20 dark:to-purple-950/30 border border-pink-200/80 dark:border-pink-900/40 text-xs font-bold text-pink-950 dark:text-pink-200 mb-3 flex flex-wrap items-center justify-between gap-2">
             <div>
-              <span className="text-[10px] text-pink-500 font-bold uppercase tracking-wider block">Average Cycle</span>
-              <span className="text-sm font-black text-pink-700 dark:text-pink-300">{Math.round(cycleStats.avgLength)} days</span>
+              <span className="text-[10px] text-pink-500 font-bold uppercase tracking-wider block">{t('protocols.avgCycle')}</span>
+              <span className="text-sm font-black text-pink-700 dark:text-pink-300">{Math.round(cycleStats.avgLength)} {t('habits.days')}</span>
             </div>
             <div className="h-7 w-[1px] bg-pink-200 dark:bg-pink-800/60 hidden sm:block"></div>
             <div>
-              <span className="text-[10px] text-purple-500 font-bold uppercase tracking-wider block">Next Predicted Period</span>
+              <span className="text-[10px] text-purple-500 font-bold uppercase tracking-wider block">{t('protocols.nextPredictedPeriod')}</span>
               <span className="text-sm font-black text-purple-700 dark:text-purple-300">{cycleStats.nextPredicted?.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</span>
             </div>
           </div>
         ) : (
           <p className="text-[11px] text-slate-400 dark:text-slate-500 italic mb-3">
-            Log at least 2 period dates to calculate your average cycle length and predict future cycles.
+            {t('protocols.periodEmpty')}
           </p>
         )}
 
@@ -231,10 +233,10 @@ export const PCODModule: React.FC = () => {
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                  Period History ({periodDates.length} Logged)
+                  {t('protocols.periodHistory', { count: periodDates.length })}
                 </p>
                 <p className="text-[10.5px] text-slate-400 truncate">
-                  Latest: {new Date(periodDates.slice().sort((a,b) => new Date(b).getTime() - new Date(a).getTime())[0]).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                  {t('protocols.latest')}: {new Date(periodDates.slice().sort((a,b) => new Date(b).getTime() - new Date(a).getTime())[0]).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                 </p>
               </div>
             </div>
@@ -256,7 +258,7 @@ export const PCODModule: React.FC = () => {
                   <Calendar className="h-4 w-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-slate-800 dark:text-slate-100">Period Cycle History</h3>
+                  <h3 className="text-sm font-black text-slate-800 dark:text-slate-100">{t('protocols.periodTracker')}</h3>
                   <p className="text-[10.5px] text-slate-400">All recorded menstrual cycles & regularity</p>
                 </div>
               </div>
@@ -273,15 +275,15 @@ export const PCODModule: React.FC = () => {
             {periodDates.length >= 2 && (
               <div className="grid grid-cols-3 gap-2 my-3.5">
                 <div className="p-2.5 rounded-2xl bg-pink-50/70 dark:bg-pink-950/30 border border-pink-100 dark:border-pink-900/40 text-center">
-                  <span className="text-[9px] font-extrabold uppercase text-pink-500 block">Total Logs</span>
+                  <span className="text-[9px] font-extrabold uppercase text-pink-500 block">{t('protocols.totalLogs')}</span>
                   <span className="text-base font-black text-pink-700 dark:text-pink-300">{periodDates.length}</span>
                 </div>
                 <div className="p-2.5 rounded-2xl bg-purple-50/70 dark:bg-purple-950/30 border border-purple-100 dark:border-purple-900/40 text-center">
-                  <span className="text-[9px] font-extrabold uppercase text-purple-500 block">Avg Duration</span>
+                  <span className="text-[9px] font-extrabold uppercase text-purple-500 block">{t('protocols.avgDuration')}</span>
                   <span className="text-base font-black text-purple-700 dark:text-purple-300">{Math.round(cycleStats.avgLength || 0)}d</span>
                 </div>
                 <div className="p-2.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/40 text-center">
-                  <span className="text-[9px] font-extrabold uppercase text-indigo-500 block">Next Cycle</span>
+                  <span className="text-[9px] font-extrabold uppercase text-indigo-500 block">{t('protocols.nextPredictedPeriod')}</span>
                   <span className="text-xs font-black text-indigo-700 dark:text-indigo-300 mt-1 block">
                     {cycleStats.nextPredicted ? cycleStats.nextPredicted.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '--'}
                   </span>
@@ -317,17 +319,17 @@ export const PCODModule: React.FC = () => {
                           </p>
                           {cycleDays !== null ? (
                             <p className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1.5">
-                              <span>Cycle gap: <strong className="text-pink-600 dark:text-pink-400">{cycleDays} days</strong></span>
+                              <span>{t('protocols.cycleGap', { days: cycleDays })}</span>
                               <span className={`text-[9.5px] font-black px-2 py-0.5 rounded-md ${
                                 cycleDays >= 21 && cycleDays <= 35
                                   ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300'
                                   : 'bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300'
                               }`}>
-                                {cycleDays >= 21 && cycleDays <= 35 ? 'Regular' : 'Varied'}
+                                {cycleDays >= 21 && cycleDays <= 35 ? t('protocols.regular') : t('protocols.varied')}
                               </span>
                             </p>
                           ) : (
-                            <p className="text-[10px] text-slate-400 italic mt-0.5">Initial baseline cycle recorded</p>
+                            <p className="text-[10px] text-slate-400 italic mt-0.5">{t('protocols.baselineRecorded')}</p>
                           )}
                         </div>
                       </div>
@@ -352,7 +354,7 @@ export const PCODModule: React.FC = () => {
                 onClick={() => setShowHistoryModal(false)}
                 className="w-full py-2.5 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-black rounded-xl cursor-pointer hover:opacity-95 transition-opacity"
               >
-                Close History
+                {t('protocols.closeHistory')}
               </button>
             </div>
           </div>
@@ -361,10 +363,10 @@ export const PCODModule: React.FC = () => {
 
       {/* Symptom Check-in */}
       <Card>
-        <SectionTitle icon={AlertCircle}>Symptom Check-in</SectionTitle>
+        <SectionTitle icon={AlertCircle}>{t('protocols.symptomCheckIn')}</SectionTitle>
         <YesNoToggle
-          label="Noticing excess facial / body hair growth (hirsutism)?"
-          sublabel="A common androgen marker in PCOD to monitor with your physician"
+          label={t('protocols.hirsutismLabel')}
+          sublabel={t('protocols.hirsutismSub')}
           value={hirsutism}
           onChange={setHirsutism}
           goodAnswer={false}
@@ -373,8 +375,8 @@ export const PCODModule: React.FC = () => {
 
       {/* Doctor Advice Card */}
       <TalkToDoctorCard
-        specialty="Gynaecologist / Endocrinologist"
-        note="Irregular cycles, hirsutism, or a rising BMI trend are critical markers to review at your next clinical consultation."
+        specialty={t('protocols.gynaecologist')}
+        note={t('protocols.pcodDoctorNote')}
       />
     </div>
   );

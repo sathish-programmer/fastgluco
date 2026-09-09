@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Bot, Send, Loader2, User as UserIcon, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { RoboAvatar } from './RoboAvatar';
 
 const formatMessageContent = (content: string) => {
@@ -16,6 +17,7 @@ const formatMessageContent = (content: string) => {
 
 export const GlobalAICoachPopup: React.FC = () => {
   const { isAuthenticated, token, apiUrl } = useAuth();
+  const { t, language } = useLanguage();
 
   const [activeSession, setActiveSession] = useState<any | null>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -92,7 +94,7 @@ export const GlobalAICoachPopup: React.FC = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ content: replyText })
+        body: JSON.stringify({ content: replyText, language })
       });
 
       if (response.ok) {
@@ -122,16 +124,16 @@ export const GlobalAICoachPopup: React.FC = () => {
       <div className="bg-primary px-4 py-3 flex justify-between items-center text-white">
         <div className="flex items-center space-x-2">
           <RoboAvatar size={28} isSpeaking={false} />
-          <span className="font-bold text-sm">AI Assistant</span>
+          <span className="font-bold text-sm">{t('coaching.title', 'AI Assistant')}</span>
         </div>
-        <button onClick={handleDismiss} title="Dismiss this session" className="hover:bg-white/20 p-1 rounded-full transition-colors">
+        <button onClick={handleDismiss} title={t('dismissSessionTitle')} className="hover:bg-white/20 p-1 rounded-full transition-colors">
           <X className="h-4 w-4" />
         </button>
       </div>
 
       <div className="bg-slate-50 px-4 py-2 border-b border-slate-100 flex justify-between items-center">
         <div>
-          <span className="block text-[9px] uppercase font-bold text-slate-400">Triggered By</span>
+          <span className="block text-[9px] uppercase font-bold text-slate-400">{t('common.details', 'Triggered By')}</span>
           <span className="text-xs font-bold text-slate-700">{activeSession.foodName || activeSession.foodLogId?.name || 'Meal Log'}</span>
         </div>
         <div className="text-right">
@@ -174,7 +176,7 @@ export const GlobalAICoachPopup: React.FC = () => {
           type="text"
           value={replyText}
           onChange={(e) => setReplyText(e.target.value)}
-          placeholder="Type response..."
+          placeholder={t('common.typeMessage', 'Type response...')}
           className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
           onKeyDown={(e) => e.key === 'Enter' && handleReply()}
         />

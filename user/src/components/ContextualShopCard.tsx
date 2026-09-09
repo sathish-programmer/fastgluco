@@ -1,5 +1,6 @@
 import React from 'react';
 import { ShoppingBag, ChevronRight, Wind, Droplets, Heart, Sparkles } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 interface ContextualShopCardProps {
   activeMode: 'PREVENTION' | 'TREATMENT' | 'SECONDARY_PREVENTION';
@@ -10,35 +11,37 @@ export const ContextualShopCard: React.FC<ContextualShopCardProps> = ({
   activeMode,
   onOpenShop
 }) => {
+  const { t } = useLanguage();
+
   const shopItems = [
     {
       id: 'air_purifier',
-      title: 'Air Purifiers & N95 Masks',
-      subtitle: 'PM2.5 particulate defense',
+      title: t('explore.airPurifiers', 'Air Purifiers & N95 Masks'),
+      subtitle: t('explore.airPurifiersDesc', 'PM2.5 particulate defense'),
       query: 'Air purifier',
       icon: <Wind className="h-4 w-4 text-sky-500" />,
       modes: ['PREVENTION', 'SECONDARY_PREVENTION']
     },
     {
       id: 'water_filter',
-      title: 'Water Filtration Systems',
-      subtitle: 'Remove heavy metals & microplastics',
+      title: t('explore.waterFilters', 'Water Filtration Systems'),
+      subtitle: t('explore.waterFiltersDesc', 'Remove heavy metals & microplastics'),
       query: 'Water filter',
       icon: <Droplets className="h-4 w-4 text-blue-500" />,
       modes: ['PREVENTION', 'SECONDARY_PREVENTION']
     },
     {
       id: 'wigs',
-      title: 'Treatment Hair Loss Wigs',
-      subtitle: 'Soft medical-grade head coverings',
+      title: t('explore.hairlossWigs', 'Treatment Hair Loss Wigs'),
+      subtitle: t('explore.hairlossWigsDesc', 'Soft medical-grade head coverings'),
       query: 'Wig',
       icon: <Heart className="h-4 w-4 text-rose-500" />,
       modes: ['TREATMENT']
     },
     {
       id: 'organic',
-      title: 'Pesticide-Free Organic Foods',
-      subtitle: 'Clean bio-fortified nutrition',
+      title: t('explore.organicFoods', 'Pesticide-Free Organic Foods'),
+      subtitle: t('explore.organicFoodsDesc', 'Clean bio-fortified nutrition'),
       query: 'Organic',
       icon: <Sparkles className="h-4 w-4 text-emerald-500" />,
       modes: ['PREVENTION', 'TREATMENT', 'SECONDARY_PREVENTION']
@@ -54,7 +57,7 @@ export const ContextualShopCard: React.FC<ContextualShopCardProps> = ({
       <div className="flex items-center justify-between mb-2">
         <h4 className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center space-x-1.5">
           <ShoppingBag className="h-3.5 w-3.5 text-primary" />
-          <span>Recommended Healthcare Support Products</span>
+          <span>{t('explore.recommendedProducts', 'Recommended Healthcare Support Products')}</span>
         </h4>
       </div>
 

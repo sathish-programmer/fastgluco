@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Play, ChevronRight, Wind, FileText, Calendar, Utensils, Heart, ShieldCheck, Dna, Sparkles } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 export interface UnfinishedJourney {
   id: string;
@@ -27,6 +28,7 @@ export const ContinueWhereLeftOff: React.FC<ContinueWhereLeftOffProps> = ({
   hasCGMData,
   onContinue
 }) => {
+  const { t } = useLanguage();
   const journeys: UnfinishedJourney[] = [];
   const todayStr = new Date().toDateString();
 
@@ -161,9 +163,9 @@ export const ContinueWhereLeftOff: React.FC<ContinueWhereLeftOffProps> = ({
     if (upcomingAppt) {
       journeys.push({
         id: 'upcoming_appt',
-        title: `Appt with ${upcomingAppt.doctorId?.name || upcomingAppt.doctorName || 'Doctor'}`,
-        subtitle: `${upcomingAppt.date} at ${upcomingAppt.time}`,
-        progressText: 'Upcoming',
+        title: `${t('dashboard.apptWith', 'Appt with')} ${upcomingAppt.doctorId?.name || upcomingAppt.doctorName || t('dashboard.doctor', 'Doctor')}`,
+        subtitle: `${upcomingAppt.date} ${t('dashboard.at', 'at')} ${upcomingAppt.time}`,
+        progressText: t('dashboard.upcoming', 'Upcoming'),
         icon: <Calendar className="h-4 w-4 text-cyan-500" />,
         actionKey: 'Book Appointment',
         accentBg: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400'
@@ -174,9 +176,9 @@ export const ContinueWhereLeftOff: React.FC<ContinueWhereLeftOffProps> = ({
     if (!fastingToday) {
       journeys.push({
         id: 'fasting_log',
-        title: 'Circadian Metabolic Fasting',
-        subtitle: 'Autophagy & cellular alignment',
-        progressText: 'Log today',
+        title: t('dashboard.metabolicFasting', 'Circadian Metabolic Fasting'),
+        subtitle: t('dashboard.autophagy', 'Autophagy & cellular alignment'),
+        progressText: t('dashboard.logToday', 'Log today'),
         icon: <Utensils className="h-4 w-4 text-amber-500" />,
         actionKey: 'fasting',
         accentBg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
@@ -191,7 +193,7 @@ export const ContinueWhereLeftOff: React.FC<ContinueWhereLeftOffProps> = ({
       <div className="flex items-center justify-between mb-2">
         <h4 className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center space-x-1.5">
           <Play className="h-3 w-3 text-primary fill-primary" />
-          <span>Continue Where You Left Off</span>
+          <span>{t('dashboard.continueHeader', 'Continue Where You Left Off')}</span>
         </h4>
       </div>
 

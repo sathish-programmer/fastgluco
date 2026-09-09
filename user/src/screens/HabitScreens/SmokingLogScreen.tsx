@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Bot, Cigarette, Flame, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, Cigarette, Flame, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { HabitsService, type HabitLog } from '../../services/habitsService';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts';
 import { ConsultationBanner } from '../../components/ConsultationBanner';
+import { AiBannerQuickNudge } from '../../components/AiBannerQuickNudge';
 
 interface SmokingLogScreenProps {
   onBack: () => void;
@@ -13,6 +15,7 @@ interface SmokingLogScreenProps {
 
 export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBookAppointment, onOpenAiCheckin }) => {
   const { user, token, apiUrl } = useAuth();
+  const { t } = useLanguage();
   const [count, setCount] = useState<number>(0); // Cigarettes / Bidis
   const [chewingCount, setChewingCount] = useState<number>(0); // Chewing tobacco / Gutkha / Khaini
   const [history, setHistory] = useState<HabitLog[]>([]);
@@ -125,42 +128,24 @@ export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBo
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div>
-          <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Damage · Tobacco Exposure</span>
-          <h2 className="text-2xl font-sans font-bold text-slate-800 dark:text-slate-50 leading-none mt-1">Smoking & Chewing Tobacco</h2>
+          <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">{t('habits.tobaccoHeader', 'Damage · Tobacco Exposure')}</span>
+          <h2 className="text-2xl font-sans font-bold text-slate-800 dark:text-slate-50 leading-none mt-1">{t('habits.smokingAndTobacco', 'Smoking & Chewing Tobacco')}</h2>
         </div>
       </div>
 
       {/* AI Assistant Quick Banner */}
-      {onOpenAiCheckin && (
-        <div className="mb-5 p-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl shadow-md flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-xl bg-white/20 border border-white/30 flex items-center justify-center text-white shrink-0">
-              <Bot className="h-4.5 w-4.5 animate-pulse" />
-            </div>
-            <div>
-              <p className="text-xs font-black">Want to log all habits 10x faster?</p>
-              <p className="text-[10px] text-blue-100 font-medium">Log habits & upload reports in 60s via AI voice</p>
-            </div>
-          </div>
-          <button
-            onClick={onOpenAiCheckin}
-            className="px-3 py-1.5 bg-white text-blue-700 hover:bg-blue-50 font-extrabold text-[11px] rounded-xl shadow-xs transition-all shrink-0 cursor-pointer"
-          >
-            Try AI →
-          </button>
-        </div>
-      )}
+      <AiBannerQuickNudge onOpenAiCheckin={onOpenAiCheckin} />
 
       {/* Clinical Advisory Card */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl p-4 mb-6">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl p-4 my-6">
         <div className="flex items-start gap-3">
           <div className="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-500 shrink-0 mt-0.5">
             <ShieldAlert className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="font-bold text-slate-800 dark:text-slate-200 text-sm mb-1">Combustible & Smokeless Tobacco Risks</h3>
+            <h3 className="font-bold text-slate-800 dark:text-slate-200 text-sm mb-1">{t('habits.tobaccoAdvisoryTitle', 'Combustible & Smokeless Tobacco Risks')}</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              Both smoking (cigarettes, bidis) and chewing tobacco (gutkha, khaini, paan masala with zarda) release potent carcinogenic nitrosamines (NNK, NNN), accelerating cellular DNA mutations and driving oral & respiratory malignancies.
+              {t('habits.tobaccoAdvisoryDesc', 'Both smoking (cigarettes, bidis) and chewing tobacco (gutkha, khaini, paan masala with zarda) release potent carcinogenic nitrosamines (NNK, NNN), accelerating cellular DNA mutations and driving oral & respiratory malignancies.')}
             </p>
           </div>
         </div>
@@ -174,11 +159,11 @@ export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBo
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
               <Cigarette className="h-4 w-4 text-slate-400" />
-              <span className="text-xs text-slate-700 dark:text-slate-300 font-bold">1. Cigarettes / Bidis Smoked</span>
+              <span className="text-xs text-slate-700 dark:text-slate-300 font-bold">{t('habits.cigarettesSmoked', '1. Cigarettes / Bidis Smoked')}</span>
             </div>
             <div className="flex items-baseline gap-1 bg-rose-50 dark:bg-rose-950/30 px-3 py-1 rounded-lg border border-rose-100 dark:border-rose-900/40">
               <span className="text-xl font-sans font-bold text-rose-500">{count}</span>
-              <span className="text-[10px] font-bold text-rose-400 uppercase tracking-widest">sticks</span>
+              <span className="text-[10px] font-bold text-rose-400 uppercase tracking-widest">{t('habits.sticks', 'sticks')}</span>
             </div>
           </div>
 
@@ -205,7 +190,7 @@ export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBo
                 onClick={() => setCount(val)}
                 className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] font-bold transition-all border ${count === val ? 'bg-rose-500 text-white border-rose-500 shadow-xs' : 'bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'}`}
               >
-                {val === 0 ? '0 (Clean)' : val}
+                {val === 0 ? t('habits.cleanPreset', '0 (Clean)') : val}
               </button>
             ))}
           </div>
@@ -218,11 +203,11 @@ export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBo
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
               <Flame className="h-4 w-4 text-amber-500" />
-              <span className="text-xs text-slate-700 dark:text-slate-300 font-bold">2. Tobacco Chewed (Gutkha / Khaini / Paan)</span>
+              <span className="text-xs text-slate-700 dark:text-slate-300 font-bold">{t('habits.tobaccoChewed', '2. Tobacco Chewed (Gutkha / Khaini / Paan)')}</span>
             </div>
             <div className="flex items-baseline gap-1 bg-amber-50 dark:bg-amber-950/30 px-3 py-1 rounded-lg border border-amber-100 dark:border-amber-900/40">
               <span className="text-xl font-sans font-bold text-amber-600 dark:text-amber-400">{chewingCount}</span>
-              <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">pouches</span>
+              <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">{t('habits.pouches', 'pouches')}</span>
             </div>
           </div>
 
@@ -249,7 +234,7 @@ export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBo
                 onClick={() => setChewingCount(val)}
                 className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] font-bold transition-all border ${chewingCount === val ? 'bg-amber-500 text-white border-amber-500 shadow-xs' : 'bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'}`}
               >
-                {val === 0 ? '0 (Clean)' : val}
+                {val === 0 ? t('habits.cleanPreset', '0 (Clean)') : val}
               </button>
             ))}
           </div>
@@ -265,15 +250,15 @@ export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBo
             )}
             <div>
               <p className="text-xs font-bold">
-                {totalToday === 0 ? 'Smoke & Tobacco-Free Clean Day' : `Total Tobacco Exposures: ${totalToday}`}
+                {totalToday === 0 ? t('habits.smokeFreeDay', 'Smoke & Tobacco-Free Clean Day') : t('habits.totalTobaccoExposures', { count: totalToday }, `Total Tobacco Exposures: ${totalToday}`)}
               </p>
               <p className="text-[10px] opacity-80">
-                {totalToday === 0 ? 'Score: 0 (No damage added)' : 'Score: -1 (Damage flag added)'}
+                {totalToday === 0 ? t('habits.scoreNoDamage', 'Score: 0 (No damage added)') : t('habits.scoreDamageAdded', 'Score: -1 (Damage flag added)')}
               </p>
             </div>
           </div>
           <span className={`text-xs font-black px-2.5 py-1 rounded-xl ${totalToday === 0 ? 'bg-emerald-200/60 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-200' : 'bg-rose-200/60 dark:bg-rose-900/60 text-rose-900 dark:text-rose-200'}`}>
-            {totalToday === 0 ? '0 pts' : '-1 pt'}
+            {totalToday === 0 ? t('habits.pts0', '0 pts') : t('habits.ptsMinus1', '-1 pt')}
           </span>
         </div>
 
@@ -282,12 +267,12 @@ export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBo
           disabled={loading}
           className="w-full py-3.5 rounded-xl font-bold text-white shadow-sm transition-all bg-rose-500 hover:bg-rose-600 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
         >
-          {loading ? 'Saving...' : saveSuccess ? (
+          {loading ? t('habits.saving', 'Saving...') : saveSuccess ? (
             <>
               <CheckCircle2 className="h-4 w-4" />
-              Logged Successfully!
+              {t('habits.loggedSuccessfully', 'Logged Successfully!')}
             </>
-          ) : 'Log Tobacco Habits Today'}
+          ) : t('habits.logTobaccoHabitsToday', 'Log Tobacco Habits Today')}
         </button>
       </div>
 
@@ -295,11 +280,11 @@ export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBo
       <div className="mb-8">
         <div className="flex justify-between items-center mb-3">
           <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 tracking-widest uppercase">
-            14-Day Tapering Trend
+            {t('habits.fourteenDayTrendTapering', '14-Day Tapering Trend')}
           </span>
           {tobaccoFreeDays > 0 && (
             <span className="text-[10px] font-extrabold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800/40">
-              {tobaccoFreeDays} Tobacco-Free Days
+              {t('habits.tobaccoFreeDaysCount', { count: tobaccoFreeDays }, `${tobaccoFreeDays} Tobacco-Free Days`)}
             </span>
           )}
         </div>
@@ -307,15 +292,15 @@ export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBo
         {/* Quick Stats Grid */}
         <div className="grid grid-cols-3 gap-3 mb-4">
           <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3 shadow-2xs">
-            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Total Logged</span>
+            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">{t('habits.totalLogged', 'Total Logged')}</span>
             <span className="text-lg font-black text-rose-500 mt-0.5 block">{totalExposure14Days} <span className="text-xs font-semibold text-slate-400">total</span></span>
           </div>
           <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3 shadow-2xs">
-            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Daily Avg</span>
+            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">{t('habits.dailyAvg', 'Daily Avg')}</span>
             <span className="text-lg font-black text-slate-800 dark:text-slate-100 mt-0.5 block">{avgExposurePerDay} <span className="text-xs font-semibold text-slate-400">/day</span></span>
           </div>
           <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3 shadow-2xs">
-            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Days Tracked</span>
+            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">{t('habits.daysTracked', 'Days Tracked')}</span>
             <span className="text-lg font-black text-emerald-500 mt-0.5 block">{history.length} <span className="text-xs font-semibold text-slate-400">/14</span></span>
           </div>
         </div>
@@ -387,7 +372,7 @@ export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBo
           triggerCondition="Logged active tobacco consumption (smoking / chewing)"
           riskLevel="High"
           recommendedSpecialty="Preventive Oncologist / De-addiction Specialist"
-          title="Tobacco Cessation Support"
+          title={t('tobaccoCessationSupport')}
           description="Tobacco in any form (smoking or chewing) significantly accelerates cellular oncogenesis. We offer specialized clinical support and tapering protocols to help you quit."
           colorTheme="rose"
           onBookAppointment={onBookAppointment!}

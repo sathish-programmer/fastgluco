@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { AlertCircle, Smartphone, ChevronDown, Search, ArrowLeft, RefreshCw, Mail } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
+import { useLanguage } from '../context/LanguageContext';
+import { LanguageSelector } from '../components/LanguageSelector';
+import { AlertCircle, Smartphone, ChevronDown, Search, ArrowLeft, RefreshCw, Mail } from 'lucide-react';
 
 
 interface LoginProps {
@@ -78,9 +80,10 @@ function detectCountryFromTimezone(): Country {
 }
 
 
-export const Login: React.FC<LoginProps> = () => {
+export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearResetToken: _onClearResetToken }) => {
   const { verifyOtp, error, clearError, isLoading: authLoading, branding, apiUrl } = useAuth();
   const { showToast } = useToast();
+  const { t } = useLanguage();
 
   const [screen, setScreen] = useState<'phone' | 'otp'>('phone');
   const [loading, setLoading] = useState(false);
@@ -161,12 +164,12 @@ export const Login: React.FC<LoginProps> = () => {
 
     const e164 = buildE164(mobileNumber);
     if (!e164) {
-      setPhoneError('Please enter a valid mobile number (digits only, no country code).');
+      setPhoneError(t('auth.validMobilePrompt', 'Please enter a valid mobile number (digits only, no country code).'));
       return;
     }
     
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setEmailError('Please enter a valid email address.');
+      setEmailError(t('auth.validEmailPrompt', 'Please enter a valid email address.'));
       return;
     }
 
@@ -196,11 +199,11 @@ export const Login: React.FC<LoginProps> = () => {
       setScreen('otp');
       setTimer(30); // 30 second cooldown
       
-      let toastMsg = `Verification code sent to ${email}`;
+      let toastMsg = t('auth.codeSentToEmail', { email }, `Verification code sent to ${email}`);
       if (data.method === 'sms') {
-        toastMsg = `Verification code sent to ${mobileNumber}`;
+        toastMsg = t('auth.codeSentToMobile', { mobileNumber }, `Verification code sent to ${mobileNumber}`);
       } else if (data.method === 'sms_and_email' || data.method === 'mock') {
-        toastMsg = 'Verification code sent to your Mobile & Email';
+        toastMsg = t('auth.codeSentToBoth', 'Verification code sent to your Mobile & Email');
       }
       showToast(toastMsg, 'success');
       setTimeout(() => otpInputRef.current?.focus(), 100);
@@ -215,7 +218,7 @@ export const Login: React.FC<LoginProps> = () => {
   // ─── VERIFY OTP ──────────────────────────────────────────────────────────────
   const submitOtp = async (code: string) => {
     if (code.length !== 6) {
-      setOtpError('Enter the 6-digit code from your SMS.');
+      setOtpError(t('auth.enter6DigitsFromSms', 'Enter the 6-digit code from your SMS.'));
       return;
     }
 
@@ -229,7 +232,7 @@ export const Login: React.FC<LoginProps> = () => {
 
       const ok = await verifyOtp(e164, code, email);
       if (ok) {
-        showToast('Authenticated successfully! Welcome.', 'success');
+        showToast(t('auth.authSuccessWelcome', 'Authenticated successfully! Welcome.'), 'success');
       } else {
         // verifyOtp sets its own global error
       }
@@ -266,26 +269,38 @@ export const Login: React.FC<LoginProps> = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white px-4 py-8 relative">
+      {/* Top Header Language Selector */}
+      <div className="absolute top-4 sm:top-6 right-4 sm:right-6 z-30">
+        <LanguageSelector variant="dropdown" />
+      </div>
+
       <div className="w-full max-w-md">
         {/* Brand Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center p-4 bg-primary-light text-primary rounded-[2rem] mb-4 shadow-soft">
             {branding.appLogoUrl ? (
               <img 
                 src={branding.appLogoUrl.startsWith('http') ? branding.appLogoUrl : `${apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl}${branding.appLogoUrl.startsWith('/') ? '' : '/'}${branding.appLogoUrl}`} 
-                alt="Logo" 
+                alt={t('logoAlt')} 
                 className="h-20 w-20 object-contain rounded-2xl" 
               />
             ) : (
               <img 
                 src="/icon.png" 
-                alt="Logo" 
+                alt={t('logoAlt')} 
                 className="h-20 w-20 object-contain rounded-2xl" 
               />
             )}
           </div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">{branding.appName}</h1>
-          <p className="text-slate-500 mt-2 font-medium text-sm">{branding.appTagline}</p>
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center justify-center gap-0.5">
+            <span>{branding.appName || 'Mito Reboot'}</span>
+            <span className="text-xs font-bold text-primary -translate-y-2 select-none">
+              ™
+            </span>
+          </h1>
+          <p className="text-slate-500 mt-2 font-medium text-sm">
+            {branding.appTagline || 'Preventive Lifestyle App'}
+          </p>
         </div>
 
         {/* Global Auth Error */}
@@ -294,7 +309,7 @@ export const Login: React.FC<LoginProps> = () => {
             <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
             <div className="flex-1">
               <span>{error}</span>
-              <button onClick={clearError} className="block mt-1 underline hover:text-red-700 text-xs">Dismiss</button>
+              <button onClick={clearError} className="block mt-1 underline hover:text-red-700 text-xs">{t('auth.dismiss', 'Dismiss')}</button>
             </div>
           </div>
         )}
@@ -303,7 +318,7 @@ export const Login: React.FC<LoginProps> = () => {
           /* ── SCREEN 1: Phone Number ─────────────────────────────────────── */
           <form className="space-y-6" noValidate onSubmit={handleSendOtp}>
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">Mobile Number</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">{t('auth.mobileNumber', 'Mobile Number')}</label>
 
               <div className="flex space-x-2 relative" ref={dropdownRef}>
                 {/* Country Code Button */}
@@ -326,7 +341,7 @@ export const Login: React.FC<LoginProps> = () => {
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search country / code..."
+                        placeholder={t('searchCountryCodePlaceholder')}
                         className="w-full text-xs py-1 focus:outline-none text-slate-700"
                         autoFocus
                       />
@@ -347,7 +362,7 @@ export const Login: React.FC<LoginProps> = () => {
                         </button>
                       ))}
                       {filteredCountries.length === 0 && (
-                        <div className="px-3 py-4 text-center text-xs text-slate-400">No country found</div>
+                        <div className="px-3 py-4 text-center text-xs text-slate-400">{t('auth.noCountryFound', 'No country found')}</div>
                       )}
                     </div>
                   </div>
@@ -365,7 +380,7 @@ export const Login: React.FC<LoginProps> = () => {
                     required
                     value={mobileNumber}
                     onChange={(e) => { setMobileNumber(e.target.value.replace(/[^0-9]/g, '')); setPhoneError(''); }}
-                    placeholder="Enter mobile number"
+                    placeholder={t('enterMobileNumberPlaceholder')}
                     className={`w-full pl-11 pr-4 py-3.5 rounded-2xl border focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-slate-800 placeholder:text-slate-400 font-bold tracking-wide ${phoneError ? 'border-red-400 bg-red-50' : 'border-slate-200'}`}
                   />
                 </div>
@@ -379,12 +394,12 @@ export const Login: React.FC<LoginProps> = () => {
               )}
 
               <p className="text-xs text-slate-500 mt-1">
-                Enter digits only — no country code prefix.
+                {t('auth.enterDigitsOnly', 'Enter digits only — no country code prefix.')}
               </p>
             </div>
             
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">Email Address</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">{t('auth.emailAddress', 'Email Address')}</label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
                   <Mail className="h-5 w-5" />
@@ -395,7 +410,7 @@ export const Login: React.FC<LoginProps> = () => {
                   required
                   value={email}
                   onChange={(e) => { setEmail(e.target.value.trim()); setEmailError(''); }}
-                  placeholder="Enter your email"
+                  placeholder={t('enterYourEmailPlaceholder')}
                   className={`w-full pl-11 pr-4 py-3.5 rounded-2xl border focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-slate-800 placeholder:text-slate-400 font-bold tracking-wide ${emailError ? 'border-red-400 bg-red-50' : 'border-slate-200'}`}
                 />
               </div>
@@ -411,12 +426,12 @@ export const Login: React.FC<LoginProps> = () => {
               id="send-otp-btn"
               type="submit"
               disabled={loading || authLoading}
-              className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 px-4 rounded-2xl shadow-lg shadow-primary-light transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 px-4 rounded-2xl shadow-lg shadow-primary-light transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed text-sm cursor-pointer"
             >
               {loading || authLoading ? (
-                <><RefreshCw className="h-5 w-5 animate-spin mr-2" />Sending Code...</>
+                <><RefreshCw className="h-5 w-5 animate-spin mr-2" />{t('common.loading')}</>
               ) : (
-                'Send Verification Code'
+                t('auth.getOtp')
               )}
             </button>
           </form>
@@ -434,23 +449,23 @@ export const Login: React.FC<LoginProps> = () => {
                 className="text-sm font-semibold text-indigo-600 flex items-center hover:text-indigo-700 mb-6 transition-colors"
               >
                 <ArrowLeft className="h-4 w-4 mr-1" />
-                Change Contact Details
+                {t('auth.changeContactDetails', 'Change Contact Details')}
               </button>
 
-              <h2 className="text-2xl font-bold text-slate-800 mb-3 tracking-tight">Verification Code</h2>
+              <h2 className="text-2xl font-bold text-slate-800 mb-3 tracking-tight">{t('auth.verificationCode', 'Verification Code')}</h2>
               <div className="text-sm text-slate-600 leading-relaxed">
-                Enter the 6-digit code we just sent to:
+                {t('auth.enterCodeSentTo', 'Enter the 6-digit code we just sent to:')}
                 <div className="mt-3 bg-indigo-50/80 px-4 py-3 rounded-xl border border-indigo-100 font-medium text-indigo-700 flex items-center break-all shadow-sm">
                   {deliveryMethod === 'sms' && <span>{mobileNumber}</span>}
                   {deliveryMethod === 'email' && <span>{email}</span>}
                   {(deliveryMethod === 'sms_and_email' || deliveryMethod === 'mock') && (
                     <div className="flex flex-col w-full text-left space-y-1.5">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-indigo-400 font-bold uppercase mr-4">Mobile</span>
+                        <span className="text-xs text-indigo-400 font-bold uppercase mr-4">{t('auth.mobile', 'Mobile')}</span>
                         <span className="text-sm font-semibold">{mobileNumber}</span>
                       </div>
                       <div className="border-t border-indigo-100 pt-1.5 flex items-center justify-between">
-                        <span className="text-xs text-indigo-400 font-bold uppercase mr-4">Email</span>
+                        <span className="text-xs text-indigo-400 font-bold uppercase mr-4">{t('auth.email', 'Email')}</span>
                         <span className="text-sm font-semibold">{email}</span>
                       </div>
                     </div>
@@ -483,7 +498,7 @@ export const Login: React.FC<LoginProps> = () => {
               )}
 
               <p className="text-[11px] text-slate-400 mt-2 font-medium text-center">
-                Enter the 6-digit code delivered to your Email or SMS.
+                {t('auth.enterCodeDeliveredTo', 'Enter the 6-digit code delivered to your Email or SMS.')}
               </p>
             </div>
 
@@ -491,27 +506,27 @@ export const Login: React.FC<LoginProps> = () => {
               id="verify-otp-btn"
               type="submit"
               disabled={loading || authLoading || otpCode.length < 6}
-              className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 px-4 rounded-2xl shadow-lg shadow-primary-light transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 px-4 rounded-2xl shadow-lg shadow-primary-light transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed text-sm cursor-pointer"
             >
               {loading || authLoading ? (
-                <><RefreshCw className="h-5 w-5 animate-spin mr-2" />Verifying...</>
+                <><RefreshCw className="h-5 w-5 animate-spin mr-2" />{t('auth.verifying', 'Verifying...')}</>
               ) : (
-                'Verify & Sign In'
+                t('auth.verifyAndSignIn', 'Verify & Sign In')
               )}
             </button>
 
             <div className="text-center">
               {timer > 0 ? (
                 <span className="text-xs text-slate-400 font-semibold">
-                  Resend code in {timer}s
+                  {t('auth.resendCodeIn', { timer }, `Resend code in ${timer}s`)}
                 </span>
               ) : (
                 <button
                   type="button"
                   onClick={handleResend}
-                  className="text-xs text-primary font-bold hover:underline"
+                  className="text-xs text-primary font-bold hover:underline cursor-pointer"
                 >
-                  Resend verification code
+                  {t('auth.resendVerificationCode', 'Resend verification code')}
                 </button>
               )}
             </div>

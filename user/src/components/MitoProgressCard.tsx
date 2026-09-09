@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronRight, X } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 interface MitoProgressCardProps {
   activeMode: 'PREVENTION' | 'TREATMENT' | 'SECONDARY_PREVENTION';
@@ -17,6 +18,7 @@ export const MitoProgressCard: React.FC<MitoProgressCardProps> = ({
   upcomingAppt,
   onTakeImprovementAction
 }) => {
+  const { t } = useLanguage();
   const [showBreakdown, setShowBreakdown] = useState(false);
 
   // Dynamic Calculation strictly based on available user modules
@@ -154,7 +156,7 @@ export const MitoProgressCard: React.FC<MitoProgressCardProps> = ({
           onClick={() => setShowBreakdown(true)}
           className="shrink-0 px-3.5 py-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-2xl text-xs font-bold transition-all flex items-center space-x-1"
         >
-          <span>Breakdown</span>
+          <span>{t('breakdownTitle')}</span>
           <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
         </button>
       </div>
@@ -214,7 +216,7 @@ export const MitoProgressCard: React.FC<MitoProgressCardProps> = ({
                       }}
                       className="mt-2 text-[10px] font-bold text-primary hover:underline flex items-center space-x-1"
                     >
-                      <span>Improve Score</span>
+                      <span>{t('improveScoreBtn')}</span>
                       <ChevronRight className="h-3 w-3" />
                     </button>
                   )}

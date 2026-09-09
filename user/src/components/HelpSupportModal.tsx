@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Star, MessageSquare, Heart, Code2, Headphones, Send, Mail, Edit3, Trash2, Sparkles, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useLanguage } from '../context/LanguageContext';
 
 interface HelpSupportModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ interface SubmittedFeedback {
 export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onClose }) => {
   const { user, token, apiUrl, branding } = useAuth();
   const { showToast } = useToast();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'FEEDBACK' | 'FOUNDER' | 'DEVELOPER' | 'CONTACT'>('FEEDBACK');
 
   // Feedback form state
@@ -68,7 +70,7 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
   };
 
   const handleDeleteReview = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this review?')) return;
+    if (!window.confirm(t('confirmDeleteReview'))) return;
     try {
       const res = await fetch(`${apiUrl}/user/feedback/${id}`, {
         method: 'DELETE',
@@ -147,10 +149,10 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
             </div>
             <div>
               <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-slate-100 tracking-tight leading-none">
-                Help, Support & Feedback
+                {t('helpSupportHeader', 'Help, Support & Feedback')}
               </h2>
               <p className="text-[10px] sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-1">
-                Your voice helps shape the future of {branding?.appName || 'Mito_Reboot'}
+                {t('helpSupportSub', 'Your voice helps shape the future of')} {branding?.appName || 'Mito_Reboot'}
               </p>
             </div>
           </div>
@@ -176,7 +178,7 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
               }`}
             >
               <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400 shrink-0" />
-              <span>Review</span>
+              <span>{t('roleReview')}</span>
             </button>
 
             <button
@@ -188,7 +190,7 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
               }`}
             >
               <Heart className="h-3.5 w-3.5 text-rose-500 fill-rose-500 shrink-0" />
-              <span>Founder</span>
+              <span>{t('roleFounder')}</span>
             </button>
 
             <button
@@ -200,7 +202,7 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
               }`}
             >
               <Code2 className="h-3.5 w-3.5 text-blue-500 shrink-0" />
-              <span>Developer</span>
+              <span>{t('roleDeveloper')}</span>
             </button>
 
             <button
@@ -212,7 +214,7 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
               }`}
             >
               <Mail className="h-3.5 w-3.5 text-slate-500 shrink-0" />
-              <span>Support</span>
+              <span>{t('roleSupport')}</span>
             </button>
 
           </div>
@@ -235,22 +237,22 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
                   {editingFeedbackId && (
                     <div className="flex items-center justify-between mb-1 pb-2 border-b border-amber-200 dark:border-amber-800/80">
                       <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-300 flex items-center gap-1">
-                        <Edit3 className="h-3 w-3" /> Editing Review
+                        <Edit3 className="h-3 w-3" /> {t('editingReview', 'Editing Review')}
                       </span>
                       <button
                         type="button"
                         onClick={handleCancelEdit}
                         className="text-[10px] font-extrabold text-slate-500 hover:text-slate-800 dark:text-slate-400 underline cursor-pointer"
                       >
-                        Cancel Editing
+                        {t('cancelEditing', 'Cancel Editing')}
                       </button>
                     </div>
                   )}
 
                   <h3 className="font-black text-sm text-slate-900 dark:text-slate-100 tracking-tight">
-                    {editingFeedbackId ? 'Update Your Rating & Review' : `How is your experience with ${branding?.appName || 'Mito_Reboot'}?`}
+                    {editingFeedbackId ? t('updateReview', 'Update Review') : (t('experienceRatingTitle') ? t('experienceRatingTitle').replace('{appName}', branding?.appName || 'Mito_Reboot') : `How is your experience with ${branding?.appName || 'Mito_Reboot'}?`)}
                   </h3>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Tap a star to rate your satisfaction</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">{t('tapStarSatisfaction', 'Tap a star to rate your satisfaction')}</p>
 
                   {/* Glowing 5-Star Interactive Component */}
                   <div className="flex items-center justify-center gap-2 pt-1 pb-1">
@@ -279,35 +281,35 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
 
                   <div className="pt-1">
                     <span className="bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-[10px] sm:text-[11px] font-black px-3.5 py-1 rounded-full inline-block shadow-2xs">
-                      {rating === 5 ? '⭐⭐⭐⭐⭐ Outstanding!' : rating === 4 ? '⭐⭐⭐⭐ Great Experience' : rating === 3 ? '⭐⭐⭐ Good' : rating === 2 ? '⭐⭐ Needs Improvement' : '⭐ Unsatisfactory'}
+                      {rating === 5 ? t('outstanding', '⭐⭐⭐⭐⭐ Outstanding!') : rating === 4 ? t('greatExperience', '⭐⭐⭐⭐ Great Experience') : rating === 3 ? t('goodExperience', '⭐⭐⭐ Good') : rating === 2 ? t('needsImprovement', '⭐⭐ Needs Improvement') : t('unsatisfactory', '⭐ Unsatisfactory')}
                     </span>
                   </div>
                 </div>
 
                 {/* Category Selection */}
                 <div className="space-y-1.5 pt-1">
-                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 block">Feedback Category</label>
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 block">{t('feedbackCategory', 'Feedback Category')}</label>
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
                     className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-3.5 py-2.5 text-xs font-extrabold text-slate-800 dark:text-slate-200 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:outline-none cursor-pointer transition-all shadow-2xs"
                   >
-                    <option value="App Experience">📱 App Experience & Design</option>
-                    <option value="Metabolic Results">🩺 Metabolic Health Results</option>
-                    <option value="Feature Request">💡 Feature Request & Suggestion</option>
-                    <option value="Bug Report">🛠️ Usability & Bug Report</option>
-                    <option value="General Feedback">💬 General Feedback</option>
+                    <option value="App Experience">{t('categoryAppExperience')}</option>
+                    <option value="Metabolic Results">{t('categoryMetabolicHealth')}</option>
+                    <option value="Feature Request">{t('categoryFeatureRequest')}</option>
+                    <option value="Bug Report">{t('categoryUsabilityBug')}</option>
+                    <option value="General Feedback">{t('categoryGeneralFeedback')}</option>
                   </select>
                 </div>
 
                 {/* Comments Textarea */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 block">Your Comments & Suggestions</label>
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 block">{t('commentsSuggestions', 'Your Comments & Suggestions')}</label>
                   <textarea
                     rows={3}
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
-                    placeholder="Share how Mito_Reboot has helped your metabolic journey or suggest enhancements..."
+                    placeholder={t('shareFeedbackPlaceholder')}
                     className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3.5 text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:outline-none font-medium leading-relaxed resize-none shadow-2xs"
                   />
                 </div>
@@ -320,7 +322,7 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
                       onClick={handleCancelEdit}
                       className="py-3 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-2xl text-xs font-bold transition-all cursor-pointer"
                     >
-                      Cancel
+                      {t('cancelEditing', 'Cancel Editing')}
                     </button>
                   )}
                   <button
@@ -331,12 +333,12 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
                     {submitting ? (
                       <>
                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                        <span>{editingFeedbackId ? 'Updating...' : 'Submitting...'}</span>
+                        <span>{editingFeedbackId ? t('updating', 'Updating...') : t('common.submitting', 'Submitting...')}</span>
                       </>
                     ) : (
                       <>
                         <Send className="h-4 w-4" />
-                        <span>{editingFeedbackId ? 'Update Review' : 'Submit Review'}</span>
+                        <span>{editingFeedbackId ? t('updateReview', 'Update Review') : t('submitReview', 'Submit Review')}</span>
                       </>
                     )}
                   </button>
@@ -347,7 +349,7 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
               {myFeedbacks.length > 0 && (
                 <div className="space-y-3 pt-1">
                   <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
-                    <MessageSquare className="h-3.5 w-3.5 text-indigo-500" /> My Submitted Reviews ({myFeedbacks.length})
+                    <MessageSquare className="h-3.5 w-3.5 text-indigo-500" /> {t('mySubmittedReviews', 'My Submitted Reviews')} ({myFeedbacks.length})
                   </h4>
                   <div className="space-y-3">
                     {myFeedbacks.map((fb) => (
@@ -375,7 +377,7 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
                           <div className="bg-indigo-50/90 dark:bg-indigo-950/60 border border-indigo-200/90 dark:border-indigo-800/80 rounded-2xl p-3.5 space-y-1 shadow-2xs">
                             <div className="flex items-center gap-1.5 text-indigo-700 dark:text-indigo-300 font-black text-[10px] uppercase tracking-wider">
                               <MessageSquare className="h-3.5 w-3.5 text-indigo-500 fill-indigo-500 shrink-0" />
-                              <span>Mito_Reboot Team Reply</span>
+                              <span>{t('teamReply')}</span>
                             </div>
                             <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 leading-relaxed">
                               {fb.adminNotes}
@@ -389,13 +391,13 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
                             onClick={() => handleEditReview(fb)}
                             className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 rounded-xl text-[11px] font-extrabold transition-all flex items-center gap-1.5 border border-indigo-100 dark:border-indigo-900/40 cursor-pointer shadow-2xs"
                           >
-                            <Edit3 className="h-3 w-3" /> Edit Review
+                            <Edit3 className="h-3 w-3" /> {t('editReview', 'Edit Review')}
                           </button>
                           <button
                             onClick={() => handleDeleteReview(fb._id)}
                             className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 rounded-xl text-[11px] font-extrabold transition-all flex items-center gap-1.5 border border-rose-100 dark:border-rose-900/40 cursor-pointer shadow-2xs"
                           >
-                            <Trash2 className="h-3 w-3" /> Delete
+                            <Trash2 className="h-3 w-3" /> {t('deleteReview', 'Delete')}
                           </button>
                         </div>
                       </div>
@@ -416,29 +418,31 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
                   </div>
                   <div>
                     <span className="bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-300/40 text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                      Founder's Vision
+                      {t('founderVision', "Founder's Vision")}
                     </span>
-                    <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-slate-100 mt-0.5">A Message from Our Founders</h3>
+                    <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-slate-100 mt-0.5">
+                      {t('founderMessageTitle', 'A Message from Our Founders')}
+                    </h3>
                   </div>
                 </div>
 
                 <div className="space-y-3 text-xs text-slate-700 dark:text-slate-300 leading-relaxed italic border-l-2 border-rose-400 pl-3.5 py-0.5">
                   <p>
-                    "Welcome to {branding?.appName || 'Mito_Reboot'}. Our vision was born out of a deep passion to solve chronic lifestyle conditions naturally by harnessing the power of circadian biology, smart nutrition, and continuous glucose monitoring."
+                    "{t('founderPara1', 'Welcome to Mito_Reboot. Our vision was born out of a deep passion to solve chronic lifestyle conditions naturally by harnessing the power of circadian biology, smart nutrition, and continuous glucose monitoring.').replace('{appName}', branding?.appName || 'Mito_Reboot')}"
                   </p>
                   <p>
-                    "We built this platform so you have evidence-backed lifestyle protocols, personalized food spike scores, and real-time clinical guidance at your fingertips. Your health journey is personal, and our entire mission is dedicated to helping you live a vibrant, disease-free, and energized life."
+                    "{t('founderPara2', 'We built this platform so you have evidence-backed lifestyle protocols, personalized food spike scores, and real-time clinical guidance at your fingertips. Your health journey is personal, and our entire mission is dedicated to helping you live a vibrant, disease-free, and energized life.')}"
                   </p>
                   <p>
-                    "Thank you for placing your trust in our platform and being a part of this preventive health movement."
+                    "{t('founderPara3', 'Thank you for placing your trust in our platform and being a part of this preventive health movement.')}"
                   </p>
                 </div>
 
                 <div className="pt-3 border-t border-rose-200/60 dark:border-rose-900/40 flex items-center justify-between">
                   <span className="text-[11px] font-black text-slate-900 dark:text-slate-100 flex items-center gap-1">
-                    <ShieldCheck className="h-3.5 w-3.5 text-rose-500" /> The Founders Team
+                    <ShieldCheck className="h-3.5 w-3.5 text-rose-500" /> {t('theFoundersTeam', 'The Founders Team')}
                   </span>
-                  <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400">Mito_Reboot Health</span>
+                  <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400">{branding?.appName || 'Mito_Reboot Health'}</span>
                 </div>
               </div>
             </div>
@@ -454,29 +458,31 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
                   </div>
                   <div>
                     <span className="bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-300/40 text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                      Developer's Note
+                      {t('developerNote', "Developer's Note")}
                     </span>
-                    <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-slate-100 mt-0.5">Behind Engineering & AI Platform</h3>
+                    <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-slate-100 mt-0.5">
+                      {t('behindEngineeringTitle', 'Behind Engineering & AI Platform')}
+                    </h3>
                   </div>
                 </div>
 
                 <div className="space-y-3 text-xs text-slate-700 dark:text-slate-300 leading-relaxed italic border-l-2 border-blue-500 pl-3.5 py-0.5">
                   <p>
-                    "Building {branding?.appName || 'Mito_Reboot'} has been an extraordinary journey of engineering passion, technical precision, and care. Every feature—from continuous glucose sensor integration and automated meal spike algorithms to seamless clinical consultation workflows—was designed to feel intuitive, fast, and empowering."
+                    "{t('developerPara1', 'Building Mito_Reboot has been an extraordinary journey of engineering passion, technical precision, and care. Every feature—from continuous glucose sensor integration and automated meal spike algorithms to seamless clinical consultation workflows—was designed to feel intuitive, fast, and empowering.').replace('{appName}', branding?.appName || 'Mito_Reboot')}"
                   </p>
                   <p>
-                    "As developers, knowing that our code directly helps individuals monitor their health, avoid glucose spikes, and build healthy daily habits gives our work immense purpose. We continuously refine the app architecture to ensure maximum security, speed, and responsiveness."
+                    "{t('developerPara2', 'As developers, knowing that our code directly helps individuals monitor their health, avoid glucose spikes, and build healthy daily habits gives our work immense purpose. We continuously refine the app architecture to ensure maximum security, speed, and responsiveness.')}"
                   </p>
                   <p>
-                    "If you ever have suggestions, find a bug, or want a feature added, please drop a rating & feedback. We read every single note!"
+                    "{t('developerPara3', 'If you ever have suggestions, find a bug, or want a feature added, please drop a rating & feedback. We read every single note!')}"
                   </p>
                 </div>
 
                 <div className="pt-3 border-t border-blue-200/60 dark:border-blue-900/40 flex items-center justify-between">
                   <span className="text-[11px] font-black text-slate-900 dark:text-slate-100 flex items-center gap-1">
-                    <Sparkles className="h-3.5 w-3.5 text-blue-500" /> Engineering & AI Team
+                    <Sparkles className="h-3.5 w-3.5 text-blue-500" /> {t('engineeringAITeam', 'Engineering & AI Team')}
                   </span>
-                  <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400">Crafted for Wellness</span>
+                  <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400">{t('craftedForWellness', 'Crafted for Wellness')}</span>
                 </div>
               </div>
             </div>
@@ -490,9 +496,9 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
                   <Mail className="h-6 w-6 sm:h-7 sm:w-7" />
                 </div>
                 <div>
-                  <h3 className="text-base font-black text-slate-900 dark:text-slate-100">Need Dedicated Help?</h3>
+                  <h3 className="text-base font-black text-slate-900 dark:text-slate-100">{t('needDedicatedHelp', 'Need Dedicated Help?')}</h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed max-w-md mx-auto font-medium">
-                    Our medical support desk and technical team are available to assist with sensor pairing, subscriptions, order tracking, and app guidance.
+                    {t('dedicatedHelpDesc', 'Our medical support desk and technical team are available to assist with sensor pairing, subscriptions, order tracking, and app guidance.')}
                   </p>
                 </div>
 
@@ -501,12 +507,12 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
                   className="inline-flex items-center gap-2 px-6 py-3.5 bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-800 hover:to-slate-700 dark:from-slate-100 dark:to-white text-white dark:text-slate-900 rounded-2xl text-xs font-black shadow-md transition-all cursor-pointer"
                 >
                   <Mail className="h-4 w-4" />
-                  <span>Email support@mitoreboot.in</span>
+                  <span>{t('supportEmailLabel')}</span>
                 </a>
 
                 <div className="pt-4 border-t border-slate-200/80 dark:border-slate-800 text-[11px] text-slate-400 space-y-1 font-medium">
-                  <p>Response Time: Typically within 24–48 hours</p>
-                  <p>Available: Monday to Saturday (9:00 AM – 7:00 PM IST)</p>
+                  <p>{t('responseTimeLabel')}</p>
+                  <p>{t('availableHoursLabel')}</p>
                 </div>
               </div>
             </div>

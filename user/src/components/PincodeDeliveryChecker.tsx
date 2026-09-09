@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, Navigation, CheckCircle, XCircle, Clock, Truck, RefreshCw } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 interface PincodeCheckResult {
   serviceable: boolean;
@@ -26,6 +27,7 @@ export const PincodeDeliveryChecker: React.FC<PincodeDeliveryCheckerProps> = ({
   onShippingFeeCalculated,
   className = ''
 }) => {
+  const { t } = useLanguage();
   const [pincode, setPincode] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [detectingGps, setDetectingGps] = useState<boolean>(false);
@@ -82,7 +84,7 @@ export const PincodeDeliveryChecker: React.FC<PincodeDeliveryCheckerProps> = ({
 
   const handleUseGpsLocation = () => {
     if (!('geolocation' in navigator)) {
-      alert('Geolocation is not supported by your device.');
+      alert(t('geolocationNotSupported'));
       return;
     }
 
@@ -110,7 +112,7 @@ export const PincodeDeliveryChecker: React.FC<PincodeDeliveryCheckerProps> = ({
       (err) => {
         console.warn('GPS location error:', err);
         setDetectingGps(false);
-        alert('Unable to detect GPS location. Please type your 6-digit pincode.');
+        alert(t('unableToDetectGps'));
       },
       { timeout: 8000 }
     );
@@ -121,7 +123,7 @@ export const PincodeDeliveryChecker: React.FC<PincodeDeliveryCheckerProps> = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
           <Truck className="h-3.5 w-3.5 text-indigo-500" />
-          <span>Delivery & Shipping Pincode</span>
+          <span>{t('deliveryShippingPincode')}</span>
         </div>
         <button
           type="button"
@@ -130,7 +132,7 @@ export const PincodeDeliveryChecker: React.FC<PincodeDeliveryCheckerProps> = ({
           className="text-[10px] font-extrabold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50"
         >
           <Navigation className={`h-3 w-3 ${detectingGps ? 'animate-spin' : ''}`} />
-          <span>{detectingGps ? 'Locating...' : 'Use GPS Location'}</span>
+          <span>{detectingGps ? t('common.loading') : t('useGpsLocation')}</span>
         </button>
       </div>
 
@@ -140,7 +142,7 @@ export const PincodeDeliveryChecker: React.FC<PincodeDeliveryCheckerProps> = ({
           <input
             type="text"
             maxLength={6}
-            placeholder="Enter 6-digit Pincode (e.g. 560001)"
+            placeholder={t('enterPincodePlaceholder')}
             value={pincode}
             onChange={(e) => setPincode(e.target.value.replace(/\D/g, ''))}
             className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-9 pr-3 py-1.5 text-xs font-bold text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-indigo-500"
@@ -151,7 +153,7 @@ export const PincodeDeliveryChecker: React.FC<PincodeDeliveryCheckerProps> = ({
           disabled={loading || pincode.trim().length < 6}
           className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black transition-all cursor-pointer disabled:opacity-50 shrink-0 flex items-center gap-1"
         >
-          {loading ? <RefreshCw className="h-3 w-3 animate-spin" /> : 'Check'}
+          {loading ? <RefreshCw className="h-3 w-3 animate-spin" /> : t('checkButton')}
         </button>
       </form>
 

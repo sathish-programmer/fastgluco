@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { Bot, Send, User as UserIcon, Loader2 } from 'lucide-react';
 
 interface CoachingProps {
@@ -20,6 +21,7 @@ const formatMessageContent = (content: string) => {
 
 export const Coaching: React.FC<CoachingProps> = () => {
   const { token, apiUrl } = useAuth();
+  const { t, language } = useLanguage();
   const [sessions, setSessions] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [replyText, setReplyText] = useState<{ [key: string]: string }>({});
@@ -58,7 +60,7 @@ export const Coaching: React.FC<CoachingProps> = () => {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ content })
+        body: JSON.stringify({ content, language })
       });
 
       if (response.ok) {
@@ -77,7 +79,7 @@ export const Coaching: React.FC<CoachingProps> = () => {
     return (
       <div className="flex justify-center items-center h-64 text-slate-400">
         <Loader2 className="h-6 w-6 animate-spin mr-2" />
-        <span className="font-semibold text-xs">Loading Coaching Sessions...</span>
+        <span className="font-semibold text-xs">{t('common.loading', 'Loading Coaching Sessions...')}</span>
       </div>
     );
   }
@@ -90,9 +92,9 @@ export const Coaching: React.FC<CoachingProps> = () => {
           <Bot className="h-7 w-7 text-primary" />
         </div>
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">AI Assistant</h2>
+          <h2 className="text-2xl font-bold text-slate-800">{t('coaching.title', 'AI Assistant')}</h2>
           <p className="text-sm text-slate-500 font-medium mt-1">
-            Personalized coaching based on your meal spikes
+            {t('coaching.medicalDisclaimer', 'Personalized coaching based on your meal spikes')}
           </p>
         </div>
       </div>
@@ -101,15 +103,15 @@ export const Coaching: React.FC<CoachingProps> = () => {
         {sessions.length === 0 ? (
           <div className="bg-slate-50 p-6 rounded-3xl text-center border border-slate-100 shadow-sm">
             <Bot className="h-10 w-10 text-slate-300 mx-auto mb-3" />
-            <h3 className="font-bold text-slate-700 mb-1">No Active Coaching</h3>
-            <p className="text-xs text-slate-500 font-medium">Your glucose levels are looking great! If you log a meal that causes a high spike, the AI Assistant will reach out to help.</p>
+            <h3 className="font-bold text-slate-700 mb-1">{t('coaching.aiCoachActive', 'No Active Coaching')}</h3>
+            <p className="text-xs text-slate-500 font-medium">{t('common.noDataFound', 'Your glucose levels are looking great! If you log a meal that causes a high spike, the AI Assistant will reach out to help.')}</p>
           </div>
         ) : (
           sessions.map((session) => (
             <div key={session._id} className="bg-cardBg rounded-3xl border border-slate-100 shadow-soft overflow-hidden">
               <div className="bg-slate-50 px-4 py-3 border-b border-slate-100 flex justify-between items-center">
                 <div>
-                  <span className="block text-[10px] uppercase font-bold text-slate-400">Triggered By</span>
+                  <span className="block text-[10px] uppercase font-bold text-slate-400">{t('common.details', 'Triggered By')}</span>
                   <span className="text-xs font-bold text-slate-700">{session.foodName || session.foodLogId?.name || 'Meal Log'}</span>
                 </div>
                 <div className="text-right">
@@ -152,7 +154,7 @@ export const Coaching: React.FC<CoachingProps> = () => {
                     type="text"
                     value={replyText[session._id] || ''}
                     onChange={(e) => setReplyText({ ...replyText, [session._id]: e.target.value })}
-                    placeholder="Type your response..."
+                    placeholder={t('common.typeMessage', 'Type your response...')}
                     className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all shadow-inner"
                     onKeyDown={(e) => e.key === 'Enter' && handleReply(session._id)}
                   />

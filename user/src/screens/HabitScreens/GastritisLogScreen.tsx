@@ -2,16 +2,18 @@ import React, { useState } from 'react';
 import { ArrowLeft, Flame, ShoppingBag } from 'lucide-react';
 import { ConsultationBanner } from '../../components/ConsultationBanner';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { HabitsService } from '../../services/habitsService';
- 
+
 interface GastritisLogScreenProps {
   onBack: () => void;
   onBookAppointment?: (recommendationId: string) => void;
   onNavigateToShop?: (query: string) => void;
 }
- 
+
 export const GastritisLogScreen: React.FC<GastritisLogScreenProps> = ({ onBack, onBookAppointment, onNavigateToShop }) => {
   const { user, token, apiUrl } = useAuth();
+  const { t } = useLanguage();
   const [gastritis, setGastritis] = useState<boolean | null>(null);
   const [showHpyPopup, setShowHpyPopup] = useState<boolean>(false);
   const [loading, setLoading] = useState(false);
@@ -42,76 +44,86 @@ export const GastritisLogScreen: React.FC<GastritisLogScreenProps> = ({ onBack, 
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div>
-          <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Damage · Gastritis</span>
-          <h2 className="text-2xl font-sans font-bold text-slate-800 leading-none mt-1">Gut Health Tracker</h2>
+          <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">
+            {t('gastritis.damageBreadcrumb', 'Damage · Gastritis')}
+          </span>
+          <h2 className="text-2xl font-sans font-bold text-slate-800 leading-none mt-1">
+            {t('gastritis.gutHealthTracker', 'Gut Health Tracker')}
+          </h2>
         </div>
       </div>
 
       <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-4 mb-6">
-        <h3 className="font-bold text-slate-800 mb-1.5 flex items-center gap-2"><Flame className="h-4 w-4 text-orange-500" /> Track Acidity</h3>
+        <h3 className="font-bold text-slate-800 mb-1.5 flex items-center gap-2">
+          <Flame className="h-4 w-4 text-orange-500" /> {t('gastritis.trackAcidity', 'Track Acidity')}
+        </h3>
         <p className="text-xs text-slate-500 leading-relaxed">
-          Frequent gastritis or acidity can be a sign of underlying issues like H. Pylori, which increases the risk of stomach ulcers and cancer.
+          {t('gastritis.trackAcidityDesc', 'Frequent gastritis or acidity can be a sign of underlying issues like H. Pylori, which increases the risk of stomach ulcers and cancer.')}
         </p>
       </div>
 
       <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-5 mb-8">
-        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-6">Assessment</span>
+        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-6">
+          {t('gastritis.assessment', 'Assessment')}
+        </span>
         
-        <p className="font-semibold text-slate-800 text-sm mb-4">Do you feel gastritis or acidity often?</p>
+        <p className="font-semibold text-slate-800 text-sm mb-4">
+          {t('gastritis.doYouFeelAcidityOften', 'Do you feel gastritis or acidity often?')}
+        </p>
         <div className="flex gap-3 mb-6">
           <button 
             onClick={() => handleSelectGastritis(true)}
             disabled={loading}
             className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${gastritis === true ? 'bg-primary text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'} disabled:opacity-50`}
           >
-            Yes
+            {t('common.yes', 'Yes')}
           </button>
           <button 
             onClick={() => handleSelectGastritis(false)}
             disabled={loading}
             className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${gastritis === false ? 'bg-primary text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'} disabled:opacity-50`}
           >
-            No
+            {t('common.no', 'No')}
           </button>
         </div>
 
         {gastritis === true && (
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="p-4 bg-orange-50 rounded-xl border border-orange-200 mb-4">
-              <p className="text-orange-800 text-sm font-semibold">Frequent gastritis requires evaluation.</p>
-              <p className="text-orange-700/80 text-xs mt-1">Please choose one of the following recommended options:</p>
+              <p className="text-orange-800 text-sm font-semibold">{t('gastritis.frequentRequiresEvaluation', 'Frequent gastritis requires evaluation.')}</p>
+              <p className="text-orange-700/80 text-xs mt-1">{t('gastritis.chooseOption', 'Please choose one of the following recommended options:')}</p>
             </div>
 
             <div className="bg-white border border-slate-200 rounded-xl p-4 mb-3 hover:border-primary/50 transition-colors shadow-sm">
-              <h4 className="font-bold text-slate-800 text-sm mb-1">Option 1: H. Pylori Test</h4>
+              <h4 className="font-bold text-slate-800 text-sm mb-1">{t('gastritis.option1HpyTest', 'Option 1: H. Pylori Test')}</h4>
               <p className="text-xs text-slate-500 leading-relaxed mb-4">
-                Take an H. Pylori blood test at home. After the test results arrive, consult a gastric specialist.
+                {t('gastritis.option1Desc', 'Take an H. Pylori blood test at home. After the test results arrive, consult a gastric specialist.')}
               </p>
               <button onClick={() => {
                 setShowHpyPopup(true);
               }} className="inline-flex items-center justify-center w-full gap-2 bg-primary hover:bg-primary-dark text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all">
-                <ShoppingBag className="h-4 w-4" /> Buy H. Pylori Test
+                <ShoppingBag className="h-4 w-4" /> {t('gastritis.buyHpyTest', 'Buy H. Pylori Test')}
               </button>
             </div>
- 
+
             <ConsultationBanner
               sourceModule="Gastritis"
               reason="Gastric Specialist Consultation"
               triggerCondition="Has frequent gastritis"
               riskLevel="Medium"
               recommendedSpecialty="Gastroenterologist"
-              title="Option 2: Direct Consultation"
-              description="Directly consult a gastric specialist for advice and diagnosis."
+              title={t('directConsultation')}
+              description={t('gastritis.consultDesc', 'Directly consult a gastric specialist for advice and diagnosis.')}
               colorTheme="amber"
               onBookAppointment={onBookAppointment!}
             />
           </div>
         )}
- 
+
         {gastritis === false && (
           <div className="mt-4 p-4 bg-emerald-50 rounded-xl border border-emerald-100 animate-in fade-in duration-300">
-            <p className="text-emerald-700 text-sm font-bold mb-1">That's great!</p>
-            <p className="text-emerald-600/90 text-xs font-medium">Maintain a healthy diet to keep your gut happy and inflammation low.</p>
+            <p className="text-emerald-700 text-sm font-bold mb-1">{t('gastritis.thatsGreat', "That's great!")}</p>
+            <p className="text-emerald-600/90 text-xs font-medium">{t('gastritis.thatsGreatDesc', 'Maintain a healthy diet to keep your gut happy and inflammation low.')}</p>
           </div>
         )}
       </div>
@@ -123,9 +135,9 @@ export const GastritisLogScreen: React.FC<GastritisLogScreenProps> = ({ onBack, 
             <div className="mx-auto w-12 h-12 bg-indigo-50 text-primary rounded-2xl flex items-center justify-center mb-2">
               <ShoppingBag className="h-6 w-6" />
             </div>
-            <h3 className="text-base font-bold text-slate-800">Testing & Consultation Advisory</h3>
+            <h3 className="text-base font-bold text-slate-800">{t('gastritis.advisoryTitle', 'Testing & Consultation Advisory')}</h3>
             <p className="text-xs text-slate-500 leading-relaxed">
-              After complete testing, you must <strong>BOOK CONSULTATION</strong> if you have any results (like a positive test or persistent symptoms). We want to help guide you and inform you of the next steps.
+              {t('gastritis.advisoryDesc', 'After complete testing, you must BOOK CONSULTATION if you have any results (like a positive test or persistent symptoms). We want to help guide you and inform you of the next steps.')}
             </p>
             <div className="flex flex-col gap-2 pt-2">
               <button 
@@ -135,7 +147,7 @@ export const GastritisLogScreen: React.FC<GastritisLogScreenProps> = ({ onBack, 
                 }}
                 className="w-full py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl text-xs font-bold transition-all shadow-sm"
               >
-                Proceed to Buy Test
+                {t('gastritis.proceedToBuyTest', 'Proceed to Buy Test')}
               </button>
               {onBookAppointment && (
                 <button 
@@ -145,14 +157,14 @@ export const GastritisLogScreen: React.FC<GastritisLogScreenProps> = ({ onBack, 
                   }}
                   className="w-full py-2.5 bg-indigo-50 hover:bg-indigo-100 text-primary rounded-xl text-xs font-bold transition-all border border-indigo-100"
                 >
-                  Book Consultation First
+                  {t('gastritis.bookConsultationFirst', 'Book Consultation First')}
                 </button>
               )}
               <button 
                 onClick={() => setShowHpyPopup(false)}
                 className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition-all"
               >
-                Cancel
+                {t('common.cancel', 'Cancel')}
               </button>
             </div>
           </div>
@@ -161,4 +173,4 @@ export const GastritisLogScreen: React.FC<GastritisLogScreenProps> = ({ onBack, 
 
     </div>
   );
-};
+};;

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useLanguage } from '../context/LanguageContext';
 import { triggerHealthInsightNotification } from '../utils/notificationScheduler';
 import { 
   FileUp, 
@@ -30,6 +31,7 @@ import { Capacitor } from '@capacitor/core';
 
 export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) => {
   const { token, apiUrl, branding } = useAuth();
+  const { t } = useLanguage();
   const isIOSAppStoreBlocked = Capacitor.getPlatform() === 'ios' && !branding.enableIOSExternalPayments;
   const { showToast } = useToast();
   
@@ -352,15 +354,15 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
         className="mb-6 flex items-center justify-between"
       >
         <div>
-          <h2 className="text-xl font-bold text-slate-850 dark:text-slate-100">Glucose Reports</h2>
+          <h2 className="text-xl font-bold text-slate-850 dark:text-slate-100">{t('reports.title')}</h2>
           <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-1">
-            Upload LibreView CSVs to sync data
+            {t('reports.uploadHint')}
           </p>
         </div>
         <button
           onClick={fetchHistory}
           className="p-2 bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800 rounded-2xl transition-all text-slate-500 shadow-sm hover:bg-slate-50"
-          title="Refresh"
+          title={t('common.refresh')}
         >
           <RefreshCw className="h-4 w-4" />
         </button>
@@ -392,7 +394,7 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
             </div>
           </div>
         )}
-        <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Upload CSV / PDF Data</h3>
+        <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">{t('reports.uploadCgmData')}</h3>
         
         <form onSubmit={handleUploadSubmit} className="space-y-4">
           <div className="relative group cursor-pointer border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50/50 dark:bg-slate-800/50 p-6 transition-all hover:bg-slate-100/50 dark:hover:bg-slate-800 hover:border-primary/50 text-center flex flex-col items-center justify-center">
@@ -412,7 +414,7 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
                 </div>
               ) : (
                 <>
-                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Choose file or drag here</span>
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{t('reports.dragAndDrop')}</span>
                   <span className="text-[10px] text-slate-400 font-semibold mt-1">Supports CSV & PDF exports</span>
                 </>
               )}
@@ -437,15 +439,15 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
           <button
             type="submit"
             disabled={!file || uploading}
-            className="w-full bg-primary hover:bg-primary/95 dark:bg-primary-dark text-white font-bold text-xs py-3 rounded-2xl transition-all shadow-soft flex items-center justify-center disabled:opacity-50"
+            className="w-full bg-primary hover:bg-primary/95 dark:bg-primary-dark text-white font-bold text-xs py-3 rounded-2xl transition-all shadow-soft flex items-center justify-center disabled:opacity-50 cursor-pointer"
           >
             {uploading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                Processing...
+                {t('common.loading')}
               </>
             ) : (
-              'Upload Report'
+              t('reports.uploadCgmData')
             )}
           </button>
         </form>
@@ -462,15 +464,15 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
         <div className="flex items-center justify-between mb-2">
           <span className="text-[10px] font-black uppercase tracking-wider text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/50 px-2.5 py-0.5 rounded-full flex items-center gap-1">
             <Sparkles className="h-3 w-3 fill-current" />
-            Clinical Export
+            {t('reports.clinicalExport', 'Clinical Export')}
           </span>
-          <span className="text-[10px] font-bold text-slate-400">1-Page PDF</span>
+          <span className="text-[10px] font-bold text-slate-400">{t('reports.onePagePdf', '1-Page PDF')}</span>
         </div>
         <h3 className="text-sm font-black text-slate-900 dark:text-slate-100 tracking-tight mb-1">
-          Doctor & Dietician Consultation Summary
+          {t('reports.doctorSummaryTitle', 'Doctor & Dietician Consultation Summary')}
         </h3>
         <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mb-4 leading-relaxed">
-          One-click clinical overview combining 14-day Time-in-Range (TIR), average blood glucose, and daily habit defense adherence.
+          {t('reports.doctorSummaryDesc', 'One-click clinical overview combining 14-day Time-in-Range (TIR), average blood glucose, and daily habit defense adherence.')}
         </p>
         <button
           onClick={() => {
@@ -480,7 +482,7 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
           className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-black py-3 px-4 rounded-2xl shadow-md shadow-blue-600/20 transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer"
         >
           <FileText className="h-4 w-4" />
-          <span>Export 1-Page Doctor Summary PDF</span>
+          <span>{t('reports.exportDoctorSummaryPdf', 'Export 1-Page Doctor Summary PDF')}</span>
           <ArrowRight className="h-3.5 w-3.5" />
         </button>
       </motion.div>
@@ -494,19 +496,19 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
       >
         <h3 className="text-[10px] font-bold text-slate-450 dark:text-slate-400 uppercase tracking-wider mb-2 flex items-center space-x-1.5">
           <DownloadCloud className="h-4 w-4 text-primary dark:text-primary-light" />
-          <span>Export Custom Health Summary PDF</span>
+          <span>{t('reports.exportCustomPdf', 'Export Custom Health Summary PDF')}</span>
         </h3>
         <p className="text-xs text-slate-400 font-semibold mb-4">
-          Generate a comprehensive PDF report with your matched food and glucose trends over custom date ranges.
+          {t('reports.exportCustomDesc', 'Generate a comprehensive PDF report with your matched food and glucose trends over custom date ranges.')}
         </p>
         {/* Quick range pills */}
         <div className="flex flex-wrap gap-2 mb-3">
           {[
-            { label: 'Today', value: 'day' },
-            { label: 'Last 7 Days', value: 'week' },
-            { label: 'Last 30 Days', value: 'month' },
-            { label: 'All Time', value: 'all' },
-            { label: 'Custom', value: 'custom' },
+            { label: t('reports.todayPill', 'Today'), value: 'day' },
+            { label: t('reports.last7Days', 'Last 7 Days'), value: 'week' },
+            { label: t('reports.last30Days', 'Last 30 Days'), value: 'month' },
+            { label: t('reports.allTime', 'All Time'), value: 'all' },
+            { label: t('reports.custom', 'Custom'), value: 'custom' },
           ].map(({ label, value }) => (
             <button
               key={value}
@@ -528,7 +530,7 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
           <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 mb-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-2.5">
             <div className="flex items-center gap-1.5 flex-1 min-w-[120px]">
               <Calendar className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">From</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">{t('reports.from', 'From')}</span>
               <input
                 type="date"
                 value={exportCustomFrom}
@@ -538,7 +540,7 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
               />
             </div>
             <div className="flex items-center gap-1.5 flex-1 min-w-[120px]">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">To</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">{t('reports.to', 'To')}</span>
               <input
                 type="date"
                 value={exportCustomTo}
@@ -556,7 +558,7 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
           className="w-full bg-primary hover:bg-primary/95 dark:bg-primary-dark text-white text-xs font-bold px-5 py-2.5 rounded-2xl shadow-soft transition-all flex items-center justify-center gap-1.5"
         >
           <FileText className="h-3.5 w-3.5" />
-          Download PDF
+          {t('reports.downloadPdf', 'Download PDF')}
         </button>
       </motion.div>
 
@@ -568,13 +570,13 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
       >
         <div className="flex items-center space-x-2 mb-4">
           <History className="h-4 w-4 text-slate-400" />
-          <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">Report History</h3>
+          <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">{t('reports.reportHistory', 'Report History')}</h3>
         </div>
 
         <div className="space-y-3.5">
           {history.length === 0 ? (
             <div className="text-center p-8 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl text-xs font-semibold text-slate-400 shadow-[0_12px_24px_rgba(0,0,0,0.02)]">
-              No reports uploaded yet.
+              {t('reports.noReportsYet', 'No reports uploaded yet.')}
             </div>
           ) : (
             history.map((report) => (
@@ -600,21 +602,21 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
                           {report.parsedReadingsCount > 0 ? (
                             <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-2.5 py-0.5 rounded-full">
                               <CheckCircle2 className="h-3 w-3 mr-1 shrink-0 text-emerald-500 dark:text-emerald-400" />
-                              {report.parsedReadingsCount} readings
+                              {report.parsedReadingsCount} {t('reports.readingsCount', 'readings')}
                             </span>
                           ) : (
                             <span className="text-[9px] font-bold text-blue-600 dark:text-blue-400 flex items-center bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-800 px-2.5 py-0.5 rounded-full">
                               <CheckCircle2 className="h-3 w-3 mr-1 shrink-0 text-blue-500 dark:text-blue-400" />
                               {report.hourlyPatternSummaries && report.hourlyPatternSummaries.length > 0
-                                ? `${report.hourlyPatternSummaries.length} median points`
+                                ? `${report.hourlyPatternSummaries.length} ${t('reports.medianPoints', 'median points')}`
                                 : report.dailySummaries && report.dailySummaries.length > 0
-                                  ? `${report.dailySummaries.length} daily summaries`
-                                  : 'AGP Summary Data'}
+                                  ? `${report.dailySummaries.length} ${t('reports.dailySummariesCount', 'daily summaries')}`
+                                  : t('reports.agpSummaryData', 'AGP Summary Data')}
                             </span>
                           )}
                           {report.detectedReportType && (
                             <span className="text-[8px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
-                              {report.detectedReportType === 'LIBRE_WEBSITE_AGP_DAILY_LOG' ? 'LibreView PDF' : 'Scanned Daily Log'}
+                              {report.detectedReportType === 'LIBRE_WEBSITE_AGP_DAILY_LOG' ? t('reports.libreViewPdf', 'LibreView PDF') : t('reports.scannedDailyLog', 'Scanned Daily Log')}
                             </span>
                           )}
                         </div>
@@ -622,13 +624,13 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
                       {report.status === 'Processing' && (
                         <span className="text-[9px] font-bold text-primary dark:text-primary-light flex items-center bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-2.5 py-0.5 rounded-full">
                           <Loader2 className="h-3 w-3 mr-1 shrink-0 animate-spin" />
-                          Processing
+                          {t('reports.processing', 'Processing')}
                         </span>
                       )}
                       {report.status === 'Failed' && (
                         <span className="text-[9px] font-bold text-rose-600 dark:text-rose-400 flex items-center bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-2.5 py-0.5 rounded-full" title={report.errorMessage}>
                           <XCircle className="h-3 w-3 mr-1 shrink-0 text-rose-500 dark:text-rose-400" />
-                          Failed
+                          {t('reports.failed', 'Failed')}
                         </span>
                       )}
                     </div>
@@ -640,7 +642,7 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
                     <button
                       onClick={() => handleDownloadReport(report._id)}
                       className="p-2 rounded-xl text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-primary dark:hover:text-primary-light transition-all"
-                      title="Download Original CSV/PDF"
+                      title={t('downloadOriginalReport')}
                     >
                       <DownloadCloud className="h-4 w-4" />
                     </button>
@@ -649,7 +651,7 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
                     onClick={() => handleReprocess(report._id)}
                     disabled={reprocessingId === report._id || report.status === 'Processing'}
                     className="p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-all text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 disabled:opacity-50 shrink-0"
-                    title="Reprocess"
+                    title={t('reprocessReport')}
                   >
                     <RefreshCw className={`h-4 w-4 ${reprocessingId === report._id ? 'animate-spin' : ''}`} />
                   </button>
@@ -657,7 +659,7 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
                     onClick={() => setReportToDelete({ id: report._id, name: report.fileName })}
                     disabled={deletingId === report._id}
                     className="p-2 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 disabled:opacity-50 shrink-0"
-                    title="Delete Report"
+                    title={t('deleteReportAction')}
                   >
                     {deletingId === report._id
                       ? <Loader2 className="h-4 w-4 animate-spin" />
@@ -677,9 +679,9 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
             <div className="mx-auto w-12 h-12 bg-rose-50 dark:bg-rose-950/30 text-rose-500 rounded-2xl flex items-center justify-center mb-3">
               <Trash2 className="h-6 w-6" />
             </div>
-            <h3 className="text-base font-black text-slate-900 dark:text-slate-100 mb-1">Delete Report?</h3>
+            <h3 className="text-base font-black text-slate-900 dark:text-slate-100 mb-1">{t('reports.deleteReportConfirmTitle', 'Delete Report?')}</h3>
             <p className="text-xs text-slate-400 font-semibold leading-relaxed mb-5">
-              Are you sure you want to delete <strong className="text-slate-700 dark:text-slate-200">{reportToDelete.name}</strong>? This action cannot be undone.
+              {t('reports.deleteReportConfirmDesc', 'Are you sure you want to delete {{name}}? This action cannot be undone.').replace('{{name}}', reportToDelete.name)}
             </p>
             <div className="flex space-x-3">
               <button
@@ -687,14 +689,14 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
                 onClick={() => setReportToDelete(null)}
                 className="flex-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-extrabold py-3 rounded-2xl transition-all"
               >
-                Cancel
+                {t('common.cancel', 'Cancel')}
               </button>
               <button
                 type="button"
                 onClick={confirmDeleteReport}
                 className="flex-1 bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold py-3 rounded-2xl transition-all shadow-md shadow-rose-600/20"
               >
-                Yes, Delete
+                {t('reports.yesDelete', 'Yes, Delete')}
               </button>
             </div>
           </div>

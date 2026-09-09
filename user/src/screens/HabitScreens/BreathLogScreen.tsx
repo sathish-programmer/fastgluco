@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { HabitsService, type HabitLog } from '../../services/habitsService';
 import { scheduleHabitReminder, BREATHWORK_NOTIFICATION_ID, playNotificationChime } from '../../utils/notificationScheduler';
 
@@ -36,68 +37,69 @@ interface Technique {
   recommendedMinutes: number;
 }
 
-const TECHNIQUES: Technique[] = [
-  {
-    id: 'box',
-    name: 'Box Breathing',
-    tagline: '4-4-4-4 Navy SEAL Focus',
-    badge: 'Cellular Calm',
-    description: 'Equal duration for inhale, hold, exhale, hold. Balances autonomic nervous system and clears mental brain fog.',
-    phases: [
-      { name: 'Inhale', duration: 4, instruction: 'Breathe in slowly through your nose into the abdomen' },
-      { name: 'Hold', duration: 4, instruction: 'Hold gently with lungs comfortably full' },
-      { name: 'Exhale', duration: 4, instruction: 'Smoothly release breath through nose or mouth' },
-      { name: 'Hold', duration: 4, instruction: 'Rest quietly before the next breath' }
-    ],
-    benefit: 'Lowers acute sympathetic surge & cortisol spike within 3 minutes.',
-    recommendedMinutes: 5
-  },
-  {
-    id: 'relax478',
-    name: '4-7-8 Relaxing Breath',
-    tagline: 'Dr. Weil Parasympathetic Brake',
-    badge: 'Deep Rest',
-    description: 'Extended hold and slow exhalation triggers strong vagal nerve stimulation and slows rapid pulse.',
-    phases: [
-      { name: 'Inhale', duration: 4, instruction: 'Inhale quietly through nose' },
-      { name: 'Hold', duration: 7, instruction: 'Retain oxygen gently without straining' },
-      { name: 'Exhale', duration: 8, instruction: 'Exhale completely with a gentle whoosh sound' }
-    ],
-    benefit: 'Boosts melatonin readiness, lowers blood pressure, ideal for sleep & evening wind-down.',
-    recommendedMinutes: 4
-  },
-  {
-    id: 'coherent',
-    name: 'Coherent Resonant (5.5s)',
-    tagline: 'Optimal HRV & Vascular Tone',
-    badge: 'Heart Coherence',
-    description: 'Breathe at roughly 5.5 to 6 breaths per minute to align heart rate variability (HRV) with respiratory rhythm.',
-    phases: [
-      { name: 'Inhale', duration: 5.5, instruction: 'Smooth continuous diaphragmatic inhale' },
-      { name: 'Exhale', duration: 5.5, instruction: 'Smooth effortless release without pauses' }
-    ],
-    benefit: 'Maximizes nitric oxide absorption & cellular perfusion.',
-    recommendedMinutes: 10
-  },
-  {
-    id: 'energizing',
-    name: 'Diaphragmatic Belly Reset',
-    tagline: 'Deep Lymphatic & Lung Oxygenation',
-    badge: 'Vitality',
-    description: 'Deep abdominal expansion that massages internal organs and engages lower lung lobes where capillary density is highest.',
-    phases: [
-      { name: 'Deep Inhale', duration: 4, instruction: 'Expand belly first, then ribcage, then upper chest' },
-      { name: 'Pause', duration: 2, instruction: 'Brief mindful pause' },
-      { name: 'Full Exhale', duration: 6, instruction: 'Draw navel gently back toward the spine' }
-    ],
-    benefit: 'Expels stagnant air in lung bases and improves mitochondrial respiration.',
-    recommendedMinutes: 5
-  }
-];
-
 export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack }) => {
   const { user, token, apiUrl } = useAuth();
   const { showToast } = useToast();
+  const { t } = useLanguage();
+
+  const TECHNIQUES: Technique[] = [
+    {
+      id: 'box',
+      name: t('breath.techniques.box.name', 'Box Breathing'),
+      tagline: t('breath.techniques.box.tagline', '4-4-4-4 Navy SEAL Focus'),
+      badge: t('breath.techniques.box.badge', 'Cellular Calm'),
+      description: t('breath.techniques.box.description', 'Equal duration for inhale, hold, exhale, hold. Balances autonomic nervous system and clears mental brain fog.'),
+      phases: [
+        { name: t('breath.phaseNameInhale', 'Inhale'), duration: 4, instruction: t('breath.techniques.box.phaseInhale', 'Breathe in slowly through your nose into the abdomen') },
+        { name: t('breath.phaseNameHold', 'Hold'), duration: 4, instruction: t('breath.techniques.box.phaseHold', 'Hold gently with lungs comfortably full') },
+        { name: t('breath.phaseNameExhale', 'Exhale'), duration: 4, instruction: t('breath.techniques.box.phaseExhale', 'Smoothly release breath through nose or mouth') },
+        { name: t('breath.phaseNameHold', 'Hold'), duration: 4, instruction: t('breath.techniques.box.phaseHoldEmpty', 'Rest quietly before the next breath') }
+      ],
+      benefit: t('breath.techniques.box.benefit', 'Lowers acute sympathetic surge & cortisol spike within 3 minutes.'),
+      recommendedMinutes: 5
+    },
+    {
+      id: 'relax478',
+      name: t('breath.techniques.relax478.name', '4-7-8 Relaxing Breath'),
+      tagline: t('breath.techniques.relax478.tagline', 'Dr. Weil Parasympathetic Brake'),
+      badge: t('breath.techniques.relax478.badge', 'Deep Rest'),
+      description: t('breath.techniques.relax478.description', 'Extended hold and slow exhalation triggers strong vagal nerve stimulation and slows rapid pulse.'),
+      phases: [
+        { name: t('breath.phaseNameInhale', 'Inhale'), duration: 4, instruction: t('breath.techniques.relax478.phaseInhale', 'Inhale quietly through nose') },
+        { name: t('breath.phaseNameHold', 'Hold'), duration: 7, instruction: t('breath.techniques.relax478.phaseHold', 'Retain oxygen gently without straining') },
+        { name: t('breath.phaseNameExhale', 'Exhale'), duration: 8, instruction: t('breath.techniques.relax478.phaseExhale', 'Exhale completely with a gentle whoosh sound') }
+      ],
+      benefit: t('breath.techniques.relax478.benefit', 'Boosts melatonin readiness, lowers blood pressure, ideal for sleep & evening wind-down.'),
+      recommendedMinutes: 4
+    },
+    {
+      id: 'coherent',
+      name: t('breath.techniques.coherent.name', 'Coherent Resonant (5.5s)'),
+      tagline: t('breath.techniques.coherent.tagline', 'Optimal HRV & Vascular Tone'),
+      badge: t('breath.techniques.coherent.badge', 'Heart Coherence'),
+      description: t('breath.techniques.coherent.description', 'Breathe at roughly 5.5 to 6 breaths per minute to align heart rate variability (HRV) with respiratory rhythm.'),
+      phases: [
+        { name: t('breath.phaseNameInhale', 'Inhale'), duration: 5.5, instruction: t('breath.techniques.coherent.phaseInhale', 'Smooth continuous diaphragmatic inhale') },
+        { name: t('breath.phaseNameExhale', 'Exhale'), duration: 5.5, instruction: t('breath.techniques.coherent.phaseExhale', 'Smooth effortless release without pauses') }
+      ],
+      benefit: t('breath.techniques.coherent.benefit', 'Maximizes nitric oxide absorption & cellular perfusion.'),
+      recommendedMinutes: 10
+    },
+    {
+      id: 'energizing',
+      name: t('breath.techniques.energizing.name', 'Diaphragmatic Belly Reset'),
+      tagline: t('breath.techniques.energizing.tagline', 'Deep Lymphatic & Lung Oxygenation'),
+      badge: t('breath.techniques.energizing.badge', 'Vitality'),
+      description: t('breath.techniques.energizing.description', 'Deep abdominal expansion that massages internal organs and engages lower lung lobes where capillary density is highest.'),
+      phases: [
+        { name: t('breath.phaseNameInhale', 'Deep Inhale'), duration: 4, instruction: t('breath.techniques.energizing.phaseInhale', 'Expand belly first, then ribcage, then upper chest') },
+        { name: t('breath.phaseNamePause', 'Pause'), duration: 2, instruction: t('breath.techniques.energizing.phasePause', 'Brief mindful pause') },
+        { name: t('breath.phaseNameExhale', 'Full Exhale'), duration: 6, instruction: t('breath.techniques.energizing.phaseExhale', 'Draw navel gently back toward the spine') }
+      ],
+      benefit: t('breath.techniques.energizing.benefit', 'Expels stagnant air in lung bases and improves mitochondrial respiration.'),
+      recommendedMinutes: 5
+    }
+  ];
 
   const [selectedTech, setSelectedTech] = useState<TechniqueId>('box');
   const [isActive, setIsActive] = useState(false);
@@ -210,7 +212,7 @@ export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack }) => {
         cycles: completedCycles > 0 ? completedCycles : Math.round(minutesToLog * 60 / currentTechnique.phases.reduce((acc, p) => acc + p.duration, 0))
       });
       playNotificationChime();
-      showToast(`Logged ${minutesToLog} minutes of ${currentTechnique.name}! Repair force boosted. 🫁✨`, 'success');
+      showToast(`${t('common.logged', 'Logged')} ${minutesToLog} ${t('common.minutes', 'Minutes')} ${currentTechnique.name}! ${t('breath.repairForceBreadcrumb', 'Repair Force · Cellular Breath')}`, 'success');
       await loadHistory();
     } catch (err) {
       console.error('Failed to log breathwork', err);
@@ -242,7 +244,7 @@ export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack }) => {
         reminderTime
       );
       playNotificationChime();
-      showToast(`Daily breath reminder set for ${reminderTime}`, 'success');
+      showToast(`${t('breath.notificationTitle', 'Daily Breathwork Notification')}: ${reminderTime}`, 'success');
     } catch (err) {
       console.error('Failed to schedule reminder', err);
       showToast('Failed to schedule reminder.', 'error');
@@ -284,14 +286,14 @@ export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack }) => {
         <div>
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] font-bold text-cyan-600 dark:text-cyan-400 tracking-[0.2em] uppercase">
-              Repair Force · Cellular Breath
+              {t('breath.repairForceBreadcrumb', 'Repair Force · Cellular Breath')}
             </span>
             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-cyan-100 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 border border-cyan-200/60 dark:border-cyan-800/40">
-              <Wind className="w-2.5 h-2.5 mr-1" /> Active Repair
+              <Wind className="w-2.5 h-2.5 mr-1" /> {t('breath.activeRepair', 'Active Repair')}
             </span>
           </div>
           <h1 className="text-xl sm:text-2xl font-sans font-extrabold text-slate-900 dark:text-white leading-tight mt-0.5">
-            Power of Breath
+            {t('breath.powerOfBreath', 'Power of Breath')}
           </h1>
         </div>
       </div>
@@ -302,31 +304,31 @@ export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack }) => {
           <div className="max-w-xl">
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-[11px] font-semibold tracking-wide text-cyan-50 mb-2.5">
               <Sparkles className="w-3.5 h-3.5 text-cyan-200" />
-              Mitochondrial ATP & Vagal Tone
+              {t('breath.mitochondrialAtpBadge', 'Mitochondrial ATP & Vagal Tone')}
             </div>
             <h2 className="text-lg sm:text-xl font-bold tracking-tight mb-1 text-white">
-              Breathe intentionally to reset cellular stress
+              {t('breath.heroTitle', 'Breathe intentionally to reset cellular stress')}
             </h2>
             <p className="text-xs sm:text-sm text-cyan-50/90 leading-relaxed font-normal">
-              Slow nasal breathing releases sinus <strong>nitric oxide</strong>, dilates micro-vessels, and activates the parasympathetic brake to halt cellular oxidation.
+              {t('breath.heroDesc', 'Slow nasal breathing releases sinus nitric oxide, dilates micro-vessels, and activates the parasympathetic brake to halt cellular oxidation.')}
             </p>
           </div>
 
           <div className="grid grid-cols-3 gap-2 bg-white/10 backdrop-blur-md rounded-2xl p-2.5 border border-white/15 shrink-0 text-center">
             <div className="px-1.5 py-1">
-              <p className="text-[9px] uppercase tracking-wider text-cyan-100 font-bold">Sinus NO</p>
+              <p className="text-[9px] uppercase tracking-wider text-cyan-100 font-bold">{t('breath.sinusNo', 'Sinus NO')}</p>
               <p className="text-sm font-extrabold text-white mt-0.5">+15x</p>
-              <p className="text-[8px] text-cyan-200">via Nasal</p>
+              <p className="text-[8px] text-cyan-200">{t('breath.viaNasal', 'via Nasal')}</p>
             </div>
             <div className="px-1.5 py-1 border-x border-white/15">
-              <p className="text-[9px] uppercase tracking-wider text-cyan-100 font-bold">HRV</p>
+              <p className="text-[9px] uppercase tracking-wider text-cyan-100 font-bold">{t('breath.hrv', 'HRV')}</p>
               <p className="text-sm font-extrabold text-white mt-0.5">+42%</p>
-              <p className="text-[8px] text-cyan-200">Coherence</p>
+              <p className="text-[8px] text-cyan-200">{t('breath.coherence', 'Coherence')}</p>
             </div>
             <div className="px-1.5 py-1">
-              <p className="text-[9px] uppercase tracking-wider text-cyan-100 font-bold">Cortisol</p>
+              <p className="text-[9px] uppercase tracking-wider text-cyan-100 font-bold">{t('breath.cortisol', 'Cortisol')}</p>
               <p className="text-sm font-extrabold text-white mt-0.5">-35%</p>
-              <p className="text-[8px] text-cyan-200">5 min session</p>
+              <p className="text-[8px] text-cyan-200">{t('breath.fiveMinSession', '5 min session')}</p>
             </div>
           </div>
         </div>
@@ -336,10 +338,10 @@ export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack }) => {
       <div className="mb-4">
         <div className="flex items-center justify-between mb-2">
           <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-            Choose Breathing Exercise
+            {t('breath.chooseExercise', 'Choose Breathing Exercise')}
           </span>
           <span className="text-[11px] font-medium text-cyan-600 dark:text-cyan-400">
-            {TECHNIQUES.length} Protocols Available
+            {TECHNIQUES.length} {t('breath.protocolsAvailable', 'Protocols Available')}
           </span>
         </div>
 
@@ -409,13 +411,13 @@ export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack }) => {
               >
                 <div className="relative z-10 text-white px-2">
                   <span className="text-[10px] font-bold uppercase tracking-widest text-cyan-100 opacity-90 block">
-                    {isActive ? activePhase.name : 'Ready'}
+                    {isActive ? activePhase.name : t('breath.ready', 'Ready')}
                   </span>
                   <span className="text-3xl font-mono font-extrabold tracking-tight">
                     {isActive ? `${Math.ceil(phaseSecondsLeft)}s` : `${currentTechnique.phases[0].duration}s`}
                   </span>
                   <span className="text-[9px] text-white/80 font-medium block mt-0.5">
-                    {isActive ? `Cycle #${completedCycles + 1}` : currentTechnique.name}
+                    {isActive ? `${t('breath.cycleNum', 'Cycle #')}${completedCycles + 1}` : currentTechnique.name}
                   </span>
                 </div>
               </div>
@@ -440,11 +442,11 @@ export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack }) => {
               >
                 {isActive ? (
                   <>
-                    <Pause className="w-4 h-4" /> Pause Session
+                    <Pause className="w-4 h-4" /> {t('breath.pauseSession', 'Pause Session')}
                   </>
                 ) : (
                   <>
-                    <Play className="w-4 h-4 fill-current" /> Start Practice
+                    <Play className="w-4 h-4 fill-current" /> {t('breath.startPractice', 'Start Practice')}
                   </>
                 )}
               </button>
@@ -452,7 +454,7 @@ export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack }) => {
               <button
                 onClick={resetTrainer}
                 className="p-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
-                title="Reset session"
+                title={t('resetSession')}
               >
                 <RotateCcw className="w-4 h-4" />
               </button>
@@ -464,10 +466,10 @@ export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack }) => {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] font-extrabold uppercase tracking-widest text-cyan-600 dark:text-cyan-400">
-                  Cadence Breakdown
+                  {t('breath.cadenceBreakdown', 'Cadence Breakdown')}
                 </span>
                 <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
-                  {currentTechnique.phases.reduce((acc, p) => acc + p.duration, 0)}s per cycle
+                  {currentTechnique.phases.reduce((acc, p) => acc + p.duration, 0)}{t('breath.sPerCycle', 's per cycle')}
                 </span>
               </div>
 
@@ -507,7 +509,7 @@ export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack }) => {
               <div className="bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-800/40 rounded-xl p-3 text-emerald-900 dark:text-emerald-200 text-xs">
                 <p className="font-bold flex items-center gap-1.5 mb-0.5">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                  Physiological Benefit:
+                  {t('breath.physioBenefit', 'Physiological Benefit:')}
                 </p>
                 <p className="text-[11px] leading-relaxed text-emerald-800 dark:text-emerald-300">
                   {currentTechnique.benefit}
@@ -518,8 +520,8 @@ export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack }) => {
             {/* Quick Session Counter */}
             {totalSecondsTrained > 2 && (
               <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                <span>Practiced just now: <strong className="text-slate-800 dark:text-slate-200">{Math.round(totalSecondsTrained)}s</strong></span>
-                <span>Completed: <strong className="text-slate-800 dark:text-slate-200">{completedCycles} cycles</strong></span>
+                <span>{t('breath.practicedJustNow', 'Practiced just now:')} <strong className="text-slate-800 dark:text-slate-200">{Math.round(totalSecondsTrained)}s</strong></span>
+                <span>{t('breath.completedCycles', 'Completed:')} <strong className="text-slate-800 dark:text-slate-200">{completedCycles} {t('breath.cycles', 'cycles')}</strong></span>
               </div>
             )}
           </div>
@@ -532,19 +534,19 @@ export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack }) => {
         <div className="flex items-center justify-between mb-3">
           <div>
             <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
-              Daily Habit Logger
+              {t('breath.dailyHabitLogger', 'Daily Habit Logger')}
             </span>
             <h3 className="font-bold text-base text-slate-900 dark:text-white">
-              Log Today's Breathwork Session
+              {t('breath.logTodaysSession', "Log Today's Breathwork Session")}
             </h3>
           </div>
           <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-900/30">
-            +1 Repair Score
+            {t('breath.plusRepairScore', '+1 Repair Score')}
           </span>
         </div>
 
         <p className="text-xs text-slate-600 dark:text-slate-400 mb-4">
-          Record your daily practice to strengthen your Cellular Repair Defence and keep your streak active.
+          {t('breath.recordDesc', 'Record your daily practice to strengthen your Cellular Repair Defence and keep your streak active.')}
         </p>
 
         {/* Quick Log Presets */}
@@ -557,8 +559,8 @@ export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack }) => {
               className="py-3 px-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 hover:bg-cyan-50 dark:hover:bg-cyan-950/40 border border-slate-200 dark:border-slate-700 hover:border-cyan-300 dark:hover:border-cyan-700 text-slate-800 dark:text-slate-200 font-bold text-xs flex flex-col items-center gap-1 transition-all active:scale-95 disabled:opacity-50"
             >
               <Clock className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-              <span>{mins} Minutes</span>
-              <span className="text-[9px] font-normal text-slate-400">{mins === 5 ? 'Standard' : mins === 10 ? 'Optimal' : mins > 10 ? 'Deep' : 'Quick'}</span>
+              <span>{mins} {t('common.minutes', 'Minutes')}</span>
+              <span className="text-[9px] font-normal text-slate-400">{mins === 5 ? t('breath.standard', 'Standard') : mins === 10 ? t('breath.optimal', 'Optimal') : mins > 10 ? t('breath.deep', 'Deep') : t('breath.quick', 'Quick')}</span>
             </button>
           ))}
         </div>
@@ -566,7 +568,7 @@ export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack }) => {
         {/* Custom Input Logger */}
         <div className="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
           <div className="flex-1 flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 rounded-xl px-3 py-2 border border-slate-200 dark:border-slate-700">
-            <span className="text-xs text-slate-500 font-medium whitespace-nowrap">Custom Duration:</span>
+            <span className="text-xs text-slate-500 font-medium whitespace-nowrap">{t('breath.customDuration', 'Custom Duration:')}</span>
             <input
               type="number"
               min={1}
@@ -575,7 +577,7 @@ export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack }) => {
               onChange={(e) => setCustomMinutes(Math.max(1, parseInt(e.target.value) || 1))}
               className="w-16 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-xs font-bold text-center focus:outline-none focus:ring-1 focus:ring-cyan-500 text-slate-800 dark:text-slate-100"
             />
-            <span className="text-xs text-slate-500 font-medium">mins</span>
+            <span className="text-xs text-slate-500 font-medium">{t('breath.mins', 'mins')}</span>
           </div>
 
           <button
@@ -583,7 +585,7 @@ export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack }) => {
             disabled={logging}
             className="px-5 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs shadow-sm transition-all active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
           >
-            {logging ? 'Saving...' : 'Save Log'}
+            {logging ? t('common.saving') : t('breath.saveLog', 'Save Log')}
           </button>
         </div>
       </div>
@@ -593,7 +595,7 @@ export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack }) => {
         <div className="flex items-center gap-2 mb-3">
           <Brain className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
           <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white">
-            Health & Cellular Science Notes
+            {t('breath.scienceNotesTitle', 'Health & Cellular Science Notes')}
           </h3>
         </div>
 
@@ -606,10 +608,10 @@ export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack }) => {
               </div>
               <div>
                 <h4 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white mb-1">
-                  Nasal Breathing & Nitric Oxide (NO)
+                  {t('breath.card1Title', 'Nasal Breathing & Nitric Oxide (NO)')}
                 </h4>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Your paranasal sinuses continuously produce nitric oxide gas. Breathing strictly in and out through the nose carries NO into the lower lungs, expanding alveolar capillaries and increasing arterial oxygen saturation by up to <strong>10–18%</strong>.
+                  {t('breath.card1Desc', 'Your paranasal sinuses continuously produce nitric oxide gas. Breathing strictly in and out through the nose carries NO into the lower lungs, expanding alveolar capillaries and increasing arterial oxygen saturation by up to 10–18%.')}
                 </p>
               </div>
             </div>
@@ -623,10 +625,10 @@ export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack }) => {
               </div>
               <div>
                 <h4 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white mb-1">
-                  Vagus Nerve Anti-Inflammatory Reflex
+                  {t('breath.card2Title', 'Vagus Nerve Anti-Inflammatory Reflex')}
                 </h4>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  When exhalations are slower than inhalations (as in 4-7-8 and Box breathing), the vagal nerve releases acetylcholine on the sinoatrial node, calming heart rate and downregulating inflammatory cytokines (TNF-α and IL-6).
+                  {t('breath.card2Desc', 'When exhalations are slower than inhalations (as in 4-7-8 and Box breathing), the vagal nerve releases acetylcholine on the sinoatrial node, calming heart rate and downregulating inflammatory cytokines (TNF-α and IL-6).')}
                 </p>
               </div>
             </div>
@@ -640,10 +642,10 @@ export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack }) => {
               </div>
               <div>
                 <h4 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white mb-1">
-                  The Bohr Effect & Cellular Oxygen Delivery
+                  {t('breath.card3Title', 'The Bohr Effect & Cellular Oxygen Delivery')}
                 </h4>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Over-breathing or shallow mouth breathing expels too much CO₂, preventing hemoglobin from unbinding and releasing oxygen into your vital organs and brain. Gentle, slow breathing optimizes tissue oxygen delivery.
+                  {t('breath.card3Desc', 'Over-breathing or shallow mouth breathing expels too much CO₂, preventing hemoglobin from unbinding and releasing oxygen into your vital organs and brain. Gentle, slow breathing optimizes tissue oxygen delivery.')}
                 </p>
               </div>
             </div>
@@ -657,12 +659,12 @@ export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack }) => {
               </div>
               <div>
                 <h4 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white mb-1">
-                  Daily Rhythm Protocols
+                  {t('breath.card4Title', 'Daily Rhythm Protocols')}
                 </h4>
                 <ul className="text-xs text-slate-600 dark:text-slate-400 space-y-1 mt-1">
-                  <li>• <strong>Morning:</strong> 5 min Coherent breathing to prime HRV.</li>
-                  <li>• <strong>Pre-Meal:</strong> 2 min Box breathing to activate digestion.</li>
-                  <li>• <strong>Bedtime:</strong> 4 min of 4-7-8 breathing to induce restorative sleep.</li>
+                  <li>• {t('morningHRVBreathing')}</li>
+                  <li>• {t('preMealBoxBreathing')}</li>
+                  <li>• {t('bedtimeSleepBreathing')}</li>
                 </ul>
               </div>
             </div>
@@ -679,10 +681,10 @@ export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack }) => {
             </div>
             <div>
               <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100">
-                Daily Breathwork Notification
+                {t('breath.notificationTitle', 'Daily Breathwork Notification')}
               </h4>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Get a timely chime to pause and practice for 5 minutes.
+                {t('breath.notificationDesc', 'Get a timely chime to pause and practice for 5 minutes.')}
               </p>
             </div>
           </div>
@@ -699,7 +701,7 @@ export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack }) => {
               disabled={savingReminder}
               className="px-4 py-1.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 text-xs font-bold rounded-xl shadow-xs transition-all disabled:opacity-50"
             >
-              {savingReminder ? 'Saving...' : 'Set Reminder'}
+              {savingReminder ? t('common.saving') : t('breath.setReminder', 'Set Reminder')}
             </button>
           </div>
         </div>
@@ -708,15 +710,15 @@ export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack }) => {
       {/* 7-Day History Card */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl p-4 transition-colors">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Recent Breath Sessions</span>
-          <span className="text-[11px] font-bold text-cyan-600 dark:text-cyan-400">Last 7 Days</span>
+          <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">{t('breath.recentSessions', 'Recent Breath Sessions')}</span>
+          <span className="text-[11px] font-bold text-cyan-600 dark:text-cyan-400">{t('breath.last7Days', 'Last 7 Days')}</span>
         </div>
 
         {loadingHistory ? (
-          <div className="py-6 text-center text-xs text-slate-400">Loading history...</div>
+          <div className="py-6 text-center text-xs text-slate-400">{t('common.loading')}</div>
         ) : history.length === 0 ? (
           <div className="py-6 text-center text-xs text-slate-400">
-            No breath sessions logged in the last 7 days. Start your first session above!
+            {t('breath.noSessionsDesc', 'No breath sessions logged in the last 7 days. Start your first session above!')}
           </div>
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
@@ -739,18 +741,18 @@ export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack }) => {
                     </div>
                     <div>
                       <span className="font-bold text-slate-700 dark:text-slate-200 block">{tech}</span>
-                      <span className="text-[10px] text-slate-400">{dateStr} · {mins} minutes</span>
+                      <span className="text-[10px] text-slate-400">{dateStr} · {mins} {t('common.minutes', 'minutes')}</span>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] font-extrabold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full border border-emerald-200/40">
-                      Logged
+                      {t('common.logged', 'Logged')}
                     </span>
                     <button 
                       onClick={() => handleDelete(logId)}
                       className="text-slate-300 hover:text-rose-500 p-1 rounded-md transition-colors"
-                      title="Delete log"
+                      title={t('deleteLog')}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>

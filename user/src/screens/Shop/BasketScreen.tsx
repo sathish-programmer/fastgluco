@@ -3,6 +3,7 @@ import { ArrowLeft, Minus, Plus, Trash2, ShieldCheck, Tag, Landmark, User, Mail,
 import type { ShopItem } from './ShopScreen';
 import { ProductImage } from './ShopScreen';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { useToast } from '../../context/ToastContext';
 import { HabitsService } from '../../services/habitsService';
 import { PincodeDeliveryChecker } from '../../components/PincodeDeliveryChecker';
@@ -15,6 +16,7 @@ interface BasketScreenProps {
 
 export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setBasket }) => {
   const { user, apiUrl, token, branding } = useAuth();
+  const { t } = useLanguage();
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [ordered, setOrdered] = useState(false);
@@ -298,15 +300,15 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
         <div className="w-16 h-16 rounded-full bg-emerald-100 border border-emerald-250 flex items-center justify-center mb-6">
           <ShieldCheck className="h-8 w-8 text-emerald-500" />
         </div>
-        <h2 className="text-2xl font-sans font-bold text-slate-800 mb-2">Order Confirmed!</h2>
+        <h2 className="text-2xl font-sans font-bold text-slate-800 mb-2">{t('orderConfirmed')}</h2>
         <p className="text-sm text-slate-500 text-center mb-8 px-6">
-          Your order has been submitted successfully. An invoice has been scheduled and will be emailed once our medical partner confirms delivery.
+          {t('orderSubmittedDesc')}
         </p>
         <button 
           onClick={onBack}
           className="px-6 py-3.5 bg-slate-800 hover:bg-slate-900 text-white rounded-2xl font-bold shadow-sm transition-all"
         >
-          Return to Health Store
+          {t('returnToHealthStore')}
         </button>
       </div>
     );
@@ -327,9 +329,9 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div className="min-w-0 flex-1">
-            <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 tracking-[0.2em] uppercase block truncate">Checkout & Fulfillment</span>
+            <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 tracking-[0.2em] uppercase block truncate">{t('checkoutFulfillment')}</span>
             <h2 className="text-lg sm:text-2xl font-sans font-black text-slate-850 dark:text-slate-100 leading-tight mt-0.5 truncate">
-              Fulfillment Cart {basket.length > 0 ? `(${basket.reduce((acc, p) => acc + p.qty, 0)} items)` : ''}
+              {t('fulfillmentCart')} {basket.length > 0 ? t('itemsCount', { count: basket.reduce((acc, p) => acc + p.qty, 0) }) : ''}
             </h2>
           </div>
         </div>
@@ -346,7 +348,7 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
       {basket.length === 0 ? (
         <div className="text-center py-16 bg-white border border-slate-200 rounded-3xl shadow-sm">
           <span className="text-4xl mb-4 block opacity-50">🛒</span>
-          <p className="text-sm text-slate-400 font-bold">Your cart is empty</p>
+          <p className="text-sm text-slate-400 font-bold">{t('shop.emptyCart')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -356,7 +358,7 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
             
             {/* Cart Items list */}
             <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-4">
-              <h3 className="font-bold text-sm text-slate-850">Selected Medical Supplies</h3>
+              <h3 className="font-bold text-sm text-slate-850">{t('selectedMedicalSupplies')}</h3>
               <div className="divide-y divide-slate-100">
                 {basket.map((p, idx) => {
                   let price = p.item.price;
@@ -374,7 +376,7 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
                         <h4 className="font-bold text-slate-800 text-xs leading-tight mb-1">{p.item.name}</h4>
                         {p.variantName && (
                           <span className="bg-slate-100 text-slate-500 text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide inline-block mb-1">
-                            Size: {p.variantName}
+                            {t('sizePrefix', { size: p.variantName })}
                           </span>
                         )}
                         <p className="font-black text-indigo-650 text-xs">{curr}{(price * p.qty).toFixed(2)}</p>
@@ -397,17 +399,17 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
             {/* Billing / Shipping Details Form */}
             <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-4">
               <h3 className="font-bold text-sm text-slate-850 flex items-center gap-1.5">
-                <MapPin className="h-4 w-4 text-indigo-500" /> Patient Contact & Shipping Details
+                <MapPin className="h-4 w-4 text-indigo-500" /> {t('patientContactShipping')}
               </h3>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Recipient Name</label>
+                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">{t('recipientName')}</label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
                     <input 
                       type="text" 
-                      placeholder="Full Name" 
+                      placeholder={t('fullNamePlaceholder')} 
                       value={patientName} 
                       onChange={(e) => setPatientName(e.target.value)}
                       className="w-full bg-slate-55 border border-slate-200 rounded-xl py-2 pl-9 pr-3 text-xs focus:outline-none"
@@ -416,12 +418,12 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Phone Number</label>
+                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">{t('phoneLabel')}</label>
                   <div className="relative">
                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
                     <input 
                       type="tel" 
-                      placeholder="Mobile Number" 
+                      placeholder={t('mobileNumberPlaceholder')} 
                       value={patientPhone} 
                       onChange={(e) => setPatientPhone(e.target.value)}
                       className="w-full bg-slate-55 border border-slate-200 rounded-xl py-2 pl-9 pr-3 text-xs focus:outline-none"
@@ -430,12 +432,12 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
                 </div>
 
                 <div className="space-y-1 sm:col-span-2">
-                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Email Address</label>
+                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">{t('auth.email')}</label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
                     <input 
                       type="email" 
-                      placeholder="Email Address" 
+                      placeholder={t('emailAddressPlaceholder')} 
                       value={patientEmail} 
                       onChange={(e) => setPatientEmail(e.target.value)}
                       className="w-full bg-slate-55 border border-slate-200 rounded-xl py-2 pl-9 pr-3 text-xs focus:outline-none"
@@ -444,10 +446,10 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
                 </div>
 
                 <div className="space-y-1 sm:col-span-2">
-                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Delivery Street Address</label>
+                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">{t('deliveryStreetLabel')}</label>
                   <input 
                     type="text" 
-                    placeholder="House No, Apartment, Street Name" 
+                    placeholder={t('streetAddressPlaceholder')} 
                     value={line1} 
                     onChange={(e) => setLine1(e.target.value)}
                     className="w-full bg-slate-55 border border-slate-200 rounded-xl py-2 px-3 text-xs focus:outline-none"
@@ -455,10 +457,10 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">City</label>
+                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">{t('cityLabel')}</label>
                   <input 
                     type="text" 
-                    placeholder="City" 
+                    placeholder={t('cityPlaceholder')} 
                     value={city} 
                     onChange={(e) => setCity(e.target.value)}
                     className="w-full bg-slate-55 border border-slate-200 rounded-xl py-2 px-3 text-xs focus:outline-none"
@@ -466,10 +468,10 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">State</label>
+                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">{t('stateLabel')}</label>
                   <input 
                     type="text" 
-                    placeholder="State" 
+                    placeholder={t('statePlaceholder')} 
                     value={state} 
                     onChange={(e) => setState(e.target.value)}
                     className="w-full bg-slate-55 border border-slate-200 rounded-xl py-2 px-3 text-xs focus:outline-none"
@@ -477,10 +479,10 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Postal Code</label>
+                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">{t('postalCodeLabel')}</label>
                   <input 
                     type="text" 
-                    placeholder="PIN / Postal Code" 
+                    placeholder={t('postalCodePlaceholder')} 
                     value={postalCode} 
                     onChange={(e) => setPostalCode(e.target.value)}
                     className="w-full bg-slate-55 border border-slate-200 rounded-xl py-2 px-3 text-xs focus:outline-none"
@@ -488,10 +490,10 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Country</label>
+                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">{t('countryLabel')}</label>
                   <input 
                     type="text" 
-                    placeholder="Country" 
+                    placeholder={t('countryPlaceholder')} 
                     value={country} 
                     onChange={(e) => setCountry(e.target.value)}
                     className="w-full bg-slate-55 border border-slate-200 rounded-xl py-2 px-3 text-xs focus:outline-none"
@@ -513,7 +515,7 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
                     <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
                     <input
                       type="text"
-                      placeholder="Coupon Code"
+                      placeholder={t('couponCodePlaceholder')}
                       value={couponCode}
                       onChange={(e) => setCouponCode(e.target.value)}
                       disabled={!!appliedCoupon}
@@ -526,7 +528,7 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
                       disabled={validatingCoupon || !couponCode}
                       className="px-4 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl shadow-sm transition-all disabled:opacity-50"
                     >
-                      Apply
+                      {t('apply')}
                     </button>
                   ) : (
                     <button
@@ -537,14 +539,14 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
                       }}
                       className="px-3 border border-red-200 bg-red-50 text-red-700 text-xs font-bold rounded-xl hover:bg-red-100 transition-all"
                     >
-                      Remove
+                      {t('remove')}
                     </button>
                   )}
                 </div>
 
                 {availableCoupons.length > 0 && !appliedCoupon && (
                   <div className="mt-4 pt-4 border-t border-slate-100 space-y-2">
-                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest block">Applicable Coupons</span>
+                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest block">{t('applicableCoupons')}</span>
                     <div className="flex flex-wrap gap-1.5">
                       {availableCoupons.map(c => (
                         <button 
@@ -563,7 +565,7 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
 
             {/* Pricing totals card */}
             <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-4">
-              <h3 className="font-bold text-sm text-slate-850">Billing Breakdown</h3>
+              <h3 className="font-bold text-sm text-slate-850">{t('billingBreakdown')}</h3>
               
               {/* Delivery Pincode & Distance Checker */}
               <PincodeDeliveryChecker
@@ -574,42 +576,42 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
 
               <div className="space-y-2.5 text-xs">
                 <div className="flex justify-between text-slate-500">
-                  <span>Cart Subtotal</span>
+                  <span>{t('cartSubtotal')}</span>
                   <span className="font-bold text-slate-700">{curr}{subtotal.toFixed(2)}</span>
                 </div>
                 
                 {discountAmount > 0 && (
                   <div className="flex justify-between text-indigo-600 font-medium">
-                    <span>Discount Code</span>
+                    <span>{t('discountCode')}</span>
                     <span>-{curr}{discountAmount.toFixed(2)}</span>
                   </div>
                 )}
 
                 {gstAmount > 0 && (
                   <div className="flex justify-between text-slate-500">
-                    <span>GST Tax</span>
+                    <span>{t('gstTax')}</span>
                     <span className="font-bold text-slate-700">+{curr}{gstAmount.toFixed(2)}</span>
                   </div>
                 )}
 
                 <div className="flex justify-between text-slate-500 pb-3 border-b border-slate-100">
-                  <span>Shipping Fee</span>
+                  <span>{t('shippingFee')}</span>
                   {shippingFee > 0 ? (
                     <span className="font-bold text-slate-700">+{curr}{shippingFee.toFixed(2)}</span>
                   ) : (
-                    <span className="font-bold text-emerald-500">Free</span>
+                    <span className="font-bold text-emerald-500">{t('freeShipping')}</span>
                   )}
                 </div>
 
                 <div className="flex justify-between items-center text-sm pt-2">
-                  <span className="font-bold text-slate-800 uppercase tracking-wider">Payable Total</span>
+                  <span className="font-bold text-slate-800 uppercase tracking-wider">{t('payableTotal')}</span>
                   <span className="text-xl font-black text-slate-850">{curr}{finalTotal.toFixed(2)}</span>
                 </div>
               </div>
 
               {!isPincodeServiceable && (
                 <div className="p-2.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold rounded-xl text-center">
-                  ⚠️ Cannot checkout: Delivery is unavailable for the selected pincode.
+                  {t('deliveryUnavailablePincode')}
                 </div>
               )}
 
@@ -618,7 +620,7 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
                 disabled={loading || !isPincodeServiceable}
                 className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-xs cursor-pointer"
               >
-                <Landmark className="h-4 w-4" /> {loading ? 'Processing Checkout...' : 'Confirm Shipment & Pay'}
+                <Landmark className="h-4 w-4" /> {loading ? t('processingCheckout') : t('confirmShipmentPay')}
               </button>
             </div>
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import {
   ThumbsUp,
   ThumbsDown,
@@ -20,6 +21,7 @@ import { Capacitor } from '@capacitor/core';
 
 export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
   const { token, apiUrl, branding } = useAuth();
+  const { t } = useLanguage();
   const isIOSAppStoreBlocked = Capacitor.getPlatform() === 'ios' && !branding.enableIOSExternalPayments;
 
   const [spikeLogs, setSpikeLogs] = useState<any[]>([]);
@@ -151,9 +153,9 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
         transition={{ delay: 0.1, duration: 0.4 }}
         className="mb-6"
       >
-        <h2 className="text-xl font-bold text-slate-850 dark:text-slate-100">AI Food Analysis</h2>
+        <h2 className="text-xl font-bold text-slate-850 dark:text-slate-100">{t('analysis.title', 'Food Analysis & Spike Intelligence')}</h2>
         <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-1">
-          Machine learning correlation between your meals and glucose spikes.
+          {t('analysis.subtitle', 'Machine learning correlation between your meals and glucose spikes.')}
         </p>
       </motion.div>
 
@@ -167,7 +169,7 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
           <div className="h-16 w-16 bg-gradient-to-br from-indigo-100 to-indigo-50 dark:from-indigo-900/50 dark:to-indigo-800/30 rounded-2xl mx-auto flex items-center justify-center mb-4">
             <AlertTriangle className="h-8 w-8 text-indigo-500 dark:text-indigo-400" />
           </div>
-          <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-2">Premium Feature</h3>
+          <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-2">{t('analysis.premiumFeature', 'Premium Feature')}</h3>
           <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 max-w-sm mx-auto">
             AI Food Analysis requires a premium subscription. Upgrade to see which exact foods are spiking your glucose.
           </p>
@@ -186,7 +188,7 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
         </motion.div>
       ) : loading ? (
         <div className="text-center py-12 text-slate-400 font-semibold animate-pulse">
-          Analyzing meal metrics...
+          {t('common.loading')}
         </div>
       ) : (
         <div className="space-y-6">
@@ -194,10 +196,10 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
             {/* Modern Filter Tabs */}
             <div className="flex bg-slate-200/60 dark:bg-slate-900/90 border border-slate-200/50 dark:border-slate-800 rounded-2xl p-1.5 mb-4 backdrop-blur-md shadow-inner">
               {[
-                { id: 'day', label: 'Today' },
-                { id: 'week', label: '7 Days' },
-                { id: 'month', label: '30 Days' },
-                { id: 'custom', label: 'Custom Range' }
+                { id: 'day', label: t('common.today', 'Today') },
+                { id: 'week', label: t('common.7Days', '7 Days') },
+                { id: 'month', label: t('common.30Days', '30 Days') },
+                { id: 'custom', label: t('common.customRange', 'Custom Range') }
               ].map(({ id, label }) => {
                 const isActive = range === id;
                 return (
@@ -229,7 +231,7 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
               <div className="flex items-center justify-between bg-primary/10 border border-primary/20 rounded-2xl p-3 mb-5">
                 <div className="flex items-center gap-2 text-primary font-bold text-xs">
                   <Calendar className="h-4 w-4" />
-                  <span>Filtered Range: <strong>{new Date(customFrom).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })} – {new Date(customTo).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}</strong></span>
+                  <span>{t('filteredRangeLabel')} <strong>{new Date(customFrom).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })} – {new Date(customTo).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}</strong></span>
                 </div>
                 <button
                   onClick={() => setShowAnalysisRangeModal(true)}
@@ -252,7 +254,7 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
                   <span>Top Safe Foods (Peak ≤ {topFoods.safeThreshold ?? 90} mg/dL)</span>
                 </h4>
                 {topFoods.safe.length === 0 ? (
-                  <p className="text-xs text-slate-400 font-medium pl-5">No foods registered as safe yet.</p>
+                  <p className="text-xs text-slate-400 font-medium pl-5">{t('analysis.noFoodsSafe', 'No foods registered as safe yet.')}</p>
                 ) : (
                   <div className="space-y-2.5 pl-5">
                     {topFoods.safe.slice(0, 5).map((food, i) => (
@@ -273,7 +275,7 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
                   <span>Top Moderate Foods ({(topFoods.safeThreshold ?? 90) + 1} - {topFoods.moderateThreshold ?? 110} mg/dL)</span>
                 </h4>
                 {topFoods.moderate.length === 0 ? (
-                  <p className="text-xs text-slate-400 font-medium pl-5">No foods registered as moderate yet.</p>
+                  <p className="text-xs text-slate-400 font-medium pl-5">{t('analysis.noFoodsModerate', 'No foods registered as moderate yet.')}</p>
                 ) : (
                   <div className="space-y-2.5 pl-5">
                     {topFoods.moderate.slice(0, 5).map((food, i) => (
@@ -295,7 +297,7 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
                   <span>Top Avoid Foods (Peak &gt; {topFoods.moderateThreshold ?? 110} mg/dL)</span>
                 </h4>
                 {topFoods.avoid.length === 0 ? (
-                  <p className="text-xs text-slate-400 font-medium pl-5">No foods registered to avoid yet.</p>
+                  <p className="text-xs text-slate-400 font-medium pl-5">{t('analysis.noFoodsAvoid', 'No foods registered to avoid yet.')}</p>
                 ) : (
                   <div className="space-y-2.5 pl-5">
                     {topFoods.avoid.slice(0, 5).map((food, i) => (
@@ -318,12 +320,12 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.4 }}
           >
-            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Meal Spike Analyzer</h3>
+            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">{t('analysis.mealSpikeAnalyzer', 'Meal Spike Analyzer')}</h3>
 
             <div className="space-y-4">
               {spikeLogs.length === 0 ? (
                 <div className="text-center p-8 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl text-sm font-semibold text-slate-400 shadow-[0_12px_24px_rgba(0,0,0,0.02)]">
-                  No meal analysis available. Upload a report and log food to view spikes.
+                  {t('analysis.noMealAnalysisAvailable', 'No meal analysis available. Upload a report and log food to view spikes.')}
                 </div>
               ) : (
                 spikeLogs.map((log) => {
@@ -353,15 +355,15 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
                       {/* Detail Metrics */}
                       <div className="grid grid-cols-3 gap-2 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-100/70 dark:border-slate-700/70 rounded-2xl text-center mb-3">
                         <div>
-                          <span className="text-[9px] font-bold text-slate-400 block uppercase">Before Meal</span>
+                          <span className="text-[9px] font-bold text-slate-400 block uppercase">{t('analysis.beforeMeal', 'Before Meal')}</span>
                           <span className="text-sm font-extrabold text-slate-700 dark:text-slate-200">{analysis.beforeGlucose} <span className="text-[8px] text-slate-400">mg/dL</span></span>
                         </div>
                         <div>
-                          <span className="text-[9px] font-bold text-slate-400 block uppercase">Post Peak</span>
+                          <span className="text-[9px] font-bold text-slate-400 block uppercase">{t('analysis.postPeak', 'Post Peak')}</span>
                           <span className="text-sm font-extrabold text-slate-700 dark:text-slate-200">{analysis.peakGlucose} <span className="text-[8px] text-slate-400">mg/dL</span></span>
                         </div>
                         <div>
-                          <span className="text-[9px] font-bold text-slate-400 block uppercase">Difference</span>
+                          <span className="text-[9px] font-bold text-slate-400 block uppercase">{t('analysis.difference', 'Difference')}</span>
                           <span className={`text-sm font-extrabold ${analysis.difference < 0 ? 'text-emerald-600 dark:text-emerald-400' : analysis.difference > 20 ? 'text-red-500 dark:text-red-400' : 'text-slate-700 dark:text-slate-300'}`}>
                             {analysis.difference > 0 ? '+' : ''}{analysis.difference} <span className="text-[8px] text-slate-400">mg/dL</span>
                           </span>
@@ -370,12 +372,12 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
 
                       {/* User Feedback Panel */}
                       <div className="flex items-center justify-between pt-2.5 border-t border-slate-100 dark:border-slate-800">
-                        <span className="text-[9px] font-bold text-slate-400 uppercase">Was this spike accurate?</span>
+                        <span className="text-[9px] font-bold text-slate-400 uppercase">{t('analysis.spikeAccurateQ', 'Was this spike accurate?')}</span>
 
                         {log.feedback ? (
                           <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center space-x-1">
-                            <span>User response:</span>
-                            <span className="font-bold text-primary dark:text-primary-light">{log.feedback.isAccurate ? '👍 Yes' : '👎 No'}</span>
+                            <span>{t('userResponseLabel')}</span>
+                            <span className="font-bold text-primary dark:text-primary-light">{log.feedback.isAccurate ? `👍 ${t('yesLabel')}` : `👎 ${t('noLabel')}`}</span>
                           </span>
                         ) : (
                           <div className="flex items-center space-x-2">
@@ -385,7 +387,7 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
                               className="px-3 py-1 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200/60 dark:border-slate-700 text-slate-650 dark:text-slate-300 text-xs font-bold rounded-xl flex items-center space-x-1 transition-all shadow-sm"
                             >
                               <ThumbsUp className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
-                              <span>Yes</span>
+                              <span>{t('yesLabel')}</span>
                             </button>
                             <button
                               onClick={() => handleFeedback(log._id, false)}
@@ -393,7 +395,7 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
                               className="px-3 py-1 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200/60 dark:border-slate-700 text-slate-655 dark:text-slate-300 text-xs font-bold rounded-xl flex items-center space-x-1 transition-all shadow-sm"
                             >
                               <ThumbsDown className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
-                              <span>No</span>
+                              <span>{t('noLabel')}</span>
                             </button>
                           </div>
                         )}
@@ -415,8 +417,8 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
                 <Calendar className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="text-base font-black text-slate-900 dark:text-slate-100">Select Food Analysis Range</h3>
-                <p className="text-xs text-slate-400 font-semibold">Choose dates to analyze top safe/avoid foods and meal spikes.</p>
+                <h3 className="text-base font-black text-slate-900 dark:text-slate-100">{t('analysis.selectFoodRange', 'Select Food Analysis Range')}</h3>
+                <p className="text-xs text-slate-400 font-semibold">{t('analysis.chooseDatesDesc', 'Choose dates to analyze top safe/avoid foods and meal spikes.')}</p>
               </div>
             </div>
 

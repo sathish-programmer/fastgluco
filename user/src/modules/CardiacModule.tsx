@@ -1,8 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Heart, Scale, Sparkles } from 'lucide-react';
 import { Card, SectionTitle, YesNoToggle, ModeTabs, StressTracker, TalkToDoctorCard } from './shared/ConditionUI';
+import { useLanguage } from '../context/LanguageContext';
 
 export const CardiacModule: React.FC = () => {
+  const { t } = useLanguage();
   const [mode, setMode] = useState<string>('Prevention');
 
   // Prevention State
@@ -114,11 +116,11 @@ export const CardiacModule: React.FC = () => {
       <div className="bg-gradient-to-r from-red-600 via-rose-600 to-pink-600 rounded-3xl p-6 text-white shadow-xl">
         <div className="flex items-center gap-2 mb-1.5">
           <Sparkles className="h-5 w-5 text-amber-200" />
-          <span className="text-xs font-black uppercase tracking-widest text-rose-100">Cardiovascular Protection</span>
+          <span className="text-xs font-black uppercase tracking-widest text-rose-100">{t('protocols.cardiovascularProtection')}</span>
         </div>
-        <h1 className="text-xl font-black tracking-tight text-white">Cardiac Health Protocol</h1>
+        <h1 className="text-xl font-black tracking-tight text-white">{t('protocols.cardiacProtocol')}</h1>
         <p className="text-xs text-rose-100/90 mt-1 leading-relaxed max-w-xl">
-          Arterial defense, weight management, and post-cardiac event gentle recovery lifestyle.
+          {t('protocols.cardiacSubtitle')}
         </p>
       </div>
 
@@ -128,21 +130,21 @@ export const CardiacModule: React.FC = () => {
         <>
           <Card className="flex items-center justify-between">
             <div>
-              <p className="text-[10.5px] text-slate-400 font-bold uppercase tracking-wider">Today's Cardiac Prevention Score</p>
+              <p className="text-[10.5px] text-slate-400 font-bold uppercase tracking-wider">{t('protocols.cardiacPreventionScore')}</p>
               <p className="text-2xl font-black" style={{ color: preventionScore >= 0 ? '#10B981' : '#EF4444' }}>
                 {preventionScore > 0 ? `+${preventionScore}` : preventionScore}
               </p>
             </div>
             <span className="text-xs font-bold text-slate-400 text-right">
-              Cardio, low-salt/sugar, zero alcohol & sleep
+              {t('protocols.cardiacSummary')}
             </span>
           </Card>
 
           <Card>
-            <SectionTitle icon={Scale}>Weight & Cardiovascular BMI</SectionTitle>
+            <SectionTitle icon={Scale}>{t('protocols.cardiacBMI')}</SectionTitle>
             <div className="grid grid-cols-2 gap-3 mb-2">
               <div>
-                <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block mb-1">Height (cm)</label>
+                <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block mb-1">{t('protocols.heightCm')}</label>
                 <input
                   type="number"
                   value={height}
@@ -152,7 +154,7 @@ export const CardiacModule: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block mb-1">Weight (kg)</label>
+                <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block mb-1">{t('protocols.weightKg')}</label>
                 <input
                   type="number"
                   value={weight}
@@ -164,18 +166,18 @@ export const CardiacModule: React.FC = () => {
             </div>
             {bmi !== null && (
               <p className="text-xs font-bold text-slate-600 dark:text-slate-400 mt-2">
-                Cardiovascular BMI: <span className="font-black text-rose-600 dark:text-rose-400">{bmi.toFixed(1)}</span>
+                {t('protocols.cardiovascularBMI')}: <span className="font-black text-rose-600 dark:text-rose-400">{bmi.toFixed(1)}</span>
               </p>
             )}
           </Card>
 
           <Card>
-            <SectionTitle icon={Heart}>Daily Habits (Cardiac Defense)</SectionTitle>
-            <YesNoToggle label="Exercised 20 minutes today?" value={exercised} onChange={setExercised} goodAnswer={true} />
-            <YesNoToggle label="Ate low-salt foods today?" value={lowSalt} onChange={setLowSalt} goodAnswer={true} />
-            <YesNoToggle label="Ate low-sugar / low-junk food today?" value={lowSugarJunk} onChange={setLowSugarJunk} goodAnswer={true} />
-            <YesNoToggle label="Had alcohol today?" value={alcohol} onChange={setAlcohol} goodAnswer={false} />
-            <YesNoToggle label="Slept 8 hours?" value={slept8} onChange={setSlept8} goodAnswer={true} />
+            <SectionTitle icon={Heart}>{t('protocols.dailyCardiacDefense')}</SectionTitle>
+            <YesNoToggle label={t('protocols.exercised20Min')} value={exercised} onChange={setExercised} goodAnswer={true} />
+            <YesNoToggle label={t('protocols.ateLowSalt')} value={lowSalt} onChange={setLowSalt} goodAnswer={true} />
+            <YesNoToggle label={t('protocols.ateLowSugarJunk')} value={lowSugarJunk} onChange={setLowSugarJunk} goodAnswer={true} />
+            <YesNoToggle label={t('protocols.hadAlcohol')} value={alcohol} onChange={setAlcohol} goodAnswer={false} />
+            <YesNoToggle label={t('protocols.slept8Hours')} value={slept8} onChange={setSlept8} goodAnswer={true} />
             <div className="pt-2">
               <StressTracker value={stress} onChange={setStress} />
             </div>
@@ -187,37 +189,37 @@ export const CardiacModule: React.FC = () => {
         <>
           <Card className="flex items-center justify-between">
             <div>
-              <p className="text-[10.5px] text-slate-400 font-bold uppercase tracking-wider">Today's Treatment Protocol Score</p>
+              <p className="text-[10.5px] text-slate-400 font-bold uppercase tracking-wider">{t('protocols.cardiacTreatmentScore')}</p>
               <p className="text-2xl font-black" style={{ color: treatmentScore >= 0 ? '#10B981' : '#EF4444' }}>
                 {treatmentScore > 0 ? `+${treatmentScore}` : treatmentScore}
               </p>
             </div>
             <span className="text-xs font-bold text-slate-400 text-right">
-              Non-strenuous movement, meditation & low-fat diet
+              {t('protocols.treatmentSummary')}
             </span>
           </Card>
 
           <Card>
-            <SectionTitle icon={Heart}>Gentle Daily Cardiac Recovery Protocol</SectionTitle>
+            <SectionTitle icon={Heart}>{t('protocols.gentleCardiacRecovery')}</SectionTitle>
             <YesNoToggle
-              label="Non-strenuous exercise 20 minutes?"
-              sublabel="Light walking, gentle yoga, or cardiac rehab movement"
+              label={t('protocols.nonStrenuous20Min')}
+              sublabel={t('protocols.nonStrenuousSub')}
               value={nonStrenuous}
               onChange={setNonStrenuous}
               goodAnswer={true}
             />
-            <YesNoToggle label="Meditated today?" value={meditated} onChange={setMeditated} goodAnswer={true} />
-            <YesNoToggle label="Ate low-salt food today?" value={lowSaltTx} onChange={setLowSaltTx} goodAnswer={true} />
-            <YesNoToggle label="Ate low-fat / whole food today?" value={lowFatTx} onChange={setLowFatTx} goodAnswer={true} />
-            <YesNoToggle label="Slept 8 hours?" value={slept8Tx} onChange={setSlept8Tx} goodAnswer={true} />
+            <YesNoToggle label={t('protocols.meditatedToday')} value={meditated} onChange={setMeditated} goodAnswer={true} />
+            <YesNoToggle label={t('protocols.ateLowSalt')} value={lowSaltTx} onChange={setLowSaltTx} goodAnswer={true} />
+            <YesNoToggle label={t('protocols.ateLowFatWhole')} value={lowFatTx} onChange={setLowFatTx} goodAnswer={true} />
+            <YesNoToggle label={t('protocols.slept8Hours')} value={slept8Tx} onChange={setSlept8Tx} goodAnswer={true} />
             <div className="pt-2">
               <StressTracker value={stressTx} onChange={setStressTx} />
             </div>
           </Card>
 
           <TalkToDoctorCard
-            specialty="Cardiologist"
-            note="Consult your cardiologist before progressing exercise intensity, especially post-angioplasty, bypass, or cardiac events."
+            specialty={t('protocols.cardiologist')}
+            note={t('protocols.cardiologistNote')}
           />
         </>
       )}

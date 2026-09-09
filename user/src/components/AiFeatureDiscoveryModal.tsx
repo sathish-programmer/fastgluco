@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, Sparkles, X, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 interface AiFeatureDiscoveryModalProps {
   isOpen: boolean;
@@ -17,6 +18,7 @@ export const AiFeatureDiscoveryModal: React.FC<AiFeatureDiscoveryModalProps> = (
   onContinueManually,
   targetFeatureName = 'Habit Logging'
 }) => {
+  const { t } = useLanguage();
   if (!isOpen) return null;
 
   return (
@@ -47,7 +49,7 @@ export const AiFeatureDiscoveryModal: React.FC<AiFeatureDiscoveryModalProps> = (
 
           <div className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 px-3 py-1 rounded-full mb-2">
             <Sparkles className="h-3 w-3 text-amber-400 fill-amber-400" />
-            <span>Faster AI Experience</span>
+            <span>{t('fasterAiExperience')}</span>
           </div>
 
           <h3 className="text-lg font-black text-slate-900 dark:text-slate-100 tracking-tight leading-snug">
@@ -62,11 +64,11 @@ export const AiFeatureDiscoveryModal: React.FC<AiFeatureDiscoveryModalProps> = (
           <div className="mt-4 p-3 bg-slate-50 dark:bg-slate-950/60 rounded-2xl border border-slate-100 dark:border-slate-800 text-left space-y-2">
             <div className="flex items-center gap-2 text-[11px] font-bold text-slate-700 dark:text-slate-300">
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-              <span>Voice recognition auto-logs your habits</span>
+              <span>{t('voiceAutoLogsHabits')}</span>
             </div>
             <div className="flex items-center gap-2 text-[11px] font-bold text-slate-700 dark:text-slate-300">
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-              <span>Instant report parsing & dashboard updates</span>
+              <span>{t('instantReportParsing')}</span>
             </div>
           </div>
 
@@ -79,7 +81,7 @@ export const AiFeatureDiscoveryModal: React.FC<AiFeatureDiscoveryModalProps> = (
               }}
               className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold rounded-2xl text-xs tracking-wide shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
             >
-              <span>🤖 Try AI Check-in Now</span>
+              <span>{t('tryAiCheckinNow')}</span>
               <ArrowRight className="h-4 w-4" />
             </button>
 

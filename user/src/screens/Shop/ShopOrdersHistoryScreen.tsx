@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { ArrowLeft, Package, Truck, Download, Calendar, Star, Beaker, FileText, HelpCircle } from 'lucide-react';
 import { ProductImage } from './ShopScreen';
 import { Capacitor } from '@capacitor/core';
@@ -11,6 +12,7 @@ interface ShopOrdersHistoryScreenProps {
 }
 
 export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = ({ onBack, onRateOrder }) => {
+  const { t } = useLanguage();
   const { apiUrl, token } = useAuth();
   const { showToast } = useToast();
   const [orders, setOrders] = useState<any[]>([]);
@@ -92,12 +94,12 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
 
   const getFulfillmentSteps = (currentStatus?: string) => {
     const steps = [
-      { key: 'placed', label: 'Order Placed' },
-      { key: 'assigned', label: 'Vendor Assigned' },
-      { key: 'accepted', label: 'Accepted' },
-      { key: 'packed', label: 'Packed' },
-      { key: 'shipped', label: 'Shipped' },
-      { key: 'delivered', label: 'Delivered' }
+      { key: 'placed', label: t('shop.stepOrderPlaced', 'Order Placed') },
+      { key: 'assigned', label: t('shop.stepVendorAssigned', 'Vendor Assigned') },
+      { key: 'accepted', label: t('shop.stepAccepted', 'Accepted') },
+      { key: 'packed', label: t('shop.stepPacked', 'Packed') },
+      { key: 'shipped', label: t('shop.stepShipped', 'Shipped') },
+      { key: 'delivered', label: t('shop.stepDelivered', 'Delivered') }
     ];
 
     const statusMap: Record<string, number> = {
@@ -188,8 +190,8 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
       >
         <div className="max-w-5xl mx-auto flex justify-between items-center">
           <div>
-            <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 tracking-[0.2em] uppercase block">MitoReboot Store</span>
-            <h2 className="text-xl sm:text-2xl font-sans font-black text-slate-850 dark:text-slate-100 leading-none mt-0.5">My Orders & History</h2>
+            <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 tracking-[0.2em] uppercase block">{t('shop.storeTitle', 'MitoReboot Store')}</span>
+            <h2 className="text-xl sm:text-2xl font-sans font-black text-slate-850 dark:text-slate-100 leading-none mt-0.5">{t('shop.myOrdersHistory', 'My Orders & History')}</h2>
           </div>
           {onBack && (
             <button 
@@ -209,27 +211,27 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
           onClick={() => setActiveTab('products')}
           className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${activeTab === 'products' ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
         >
-          <Package className="h-4 w-4" /> Products
+          <Package className="h-4 w-4" /> {t('shop.productsTab', 'Products')}
         </button>
         <button
           onClick={() => setActiveTab('tests')}
           className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${activeTab === 'tests' ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
         >
-          <Beaker className="h-4 w-4" /> Test History
+          <Beaker className="h-4 w-4" /> {t('shop.testsTab', 'Test History')}
         </button>
       </div>
 
       {loading ? (
         <div className="text-center py-16">
           <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-650/0 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-sm font-bold text-slate-450">Loading history...</p>
+          <p className="text-sm font-bold text-slate-450">{t('shop.loadingHistory', 'Loading history...')}</p>
         </div>
       ) : activeTab === 'products' ?
         orders.length === 0 ? (
         <div className="text-center py-16 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm">
           <Package className="h-12 w-12 text-slate-355 mx-auto mb-4" />
-          <h3 className="font-bold text-slate-700 dark:text-slate-200">No orders placed yet</h3>
-          <p className="text-xs text-slate-450 mt-1">Navigate to the Health Store to place your first order.</p>
+          <h3 className="font-bold text-slate-700 dark:text-slate-200">{t('shop.noOrdersYet', 'No orders placed yet')}</h3>
+          <p className="text-xs text-slate-450 mt-1">{t('shop.firstOrderHelp', 'Navigate to the Health Store to place your first order.')}</p>
         </div>
       ) : (
         <div className="space-y-6">
@@ -245,23 +247,23 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
                 {/* Header Row */}
                 <div className="flex flex-wrap justify-between items-center gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
                   <div className="space-y-1">
-                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Order ID</span>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">{t('shop.orderId', 'Order ID')}</span>
                     <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-200">{order._id}</span>
                   </div>
                   
                   <div className="flex flex-wrap gap-2">
                     <span className={`text-[9px] font-bold px-2.5 py-1 rounded-xl border uppercase tracking-wider ${getStatusColor(order.deliveryStatus)}`}>
-                      Status: {order.deliveryStatus || 'pending'}
+                      {order.deliveryStatus === 'delivered' ? t('shop.statusDelivered', 'Status: Delivered') : order.deliveryStatus === 'shipped' ? t('shop.statusShipped', 'Status: Shipped') : order.deliveryStatus === 'completed' ? t('shop.statusCompleted', 'Status: Completed') : t('shop.statusPending', 'Status: Pending')}
                     </span>
                     <span className={`text-[9px] font-bold px-2.5 py-1 rounded-xl border uppercase tracking-wider ${order.status === 'completed' ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-405 border-emerald-100 dark:border-emerald-900/30' : 'bg-rose-50 dark:bg-rose-955/20 text-rose-600 dark:text-rose-405 border-rose-100 dark:border-rose-900/30'}`}>
-                      Payment: {order.status}
+                      {order.status === 'completed' ? t('shop.paymentCompleted', 'Payment: Completed') : t('shop.paymentPending', 'Payment: Pending')}
                     </span>
                   </div>
                 </div>
 
                 {/* Products Summary */}
                 <div className="space-y-3 pt-1">
-                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Ordered Supplies</h4>
+                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">{t('shop.orderedSupplies', 'Ordered Supplies')}</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {order.products.map((p: any, idx: number) => (
                       <div key={idx} className="flex items-center gap-3 bg-slate-50 dark:bg-slate-950 border border-slate-100/80 dark:border-slate-800 rounded-2xl p-3">
@@ -276,7 +278,7 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
                                 {p.variantName}
                               </span>
                             )}
-                            <span className="text-[10px] text-slate-450 dark:text-slate-500 font-semibold">Qty: {p.qty}</span>
+                            <span className="text-[10px] text-slate-450 dark:text-slate-500 font-semibold">{t('shop.qty', { count: p.qty }, 'Qty: {{count}}')}</span>
                           </div>
                         </div>
                         <span className="font-black text-slate-800 dark:text-slate-105 text-xs shrink-0">{currencySymbol}{(p.price * p.qty).toFixed(2)}</span>
@@ -306,11 +308,11 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
                     
                     <div className="grid grid-cols-2 gap-4 text-xs pt-1">
                       <div className="bg-white/80 dark:bg-slate-900/80 p-2.5 rounded-xl border border-indigo-50/50 dark:border-indigo-900/30">
-                        <span className="text-[8px] text-slate-400 block font-bold uppercase tracking-wider">Courier Partner</span>
+                        <span className="text-[8px] text-slate-400 block font-bold uppercase tracking-wider">{t('shop.courierPartner', 'Courier Partner')}</span>
                         <span className="font-extrabold text-slate-800 dark:text-slate-200 text-xs mt-0.5 block">{order.trackingDetails.courierName}</span>
                       </div>
                       <div className="bg-white/80 dark:bg-slate-900/80 p-2.5 rounded-xl border border-indigo-50/50 dark:border-indigo-900/30">
-                        <span className="text-[8px] text-slate-400 block font-bold uppercase tracking-wider">Tracking ID</span>
+                        <span className="text-[8px] text-slate-400 block font-bold uppercase tracking-wider">{t('shop.trackingId', 'Tracking ID')}</span>
                         <span className="font-mono font-bold text-slate-800 dark:text-slate-200 text-xs mt-0.5 block">{order.trackingDetails.trackingId}</span>
                       </div>
                     </div>
@@ -320,7 +322,7 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
                 {/* Timeline Visual Tracker */}
                 {!isCancelled ? (
                   <div className="py-3 bg-slate-50/60 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl p-4">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-4">Delivery Timeline</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-4">{t('shop.deliveryTimeline', 'Delivery Timeline')}</span>
                     
                     <div className="relative flex justify-between items-center px-2">
                       {/* Connector Line */}
@@ -376,7 +378,7 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
                       }}
                       className="py-2 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl text-xs font-bold text-slate-650 dark:text-slate-300 flex items-center gap-1.5 transition-all shadow-sm"
                     >
-                      <HelpCircle className="h-3.5 w-3.5 text-slate-500" /> Need Help?
+                      <HelpCircle className="h-3.5 w-3.5 text-slate-500" /> {t('shop.needHelp', 'Need Help?')}
                     </button>
                     {invoiceDownloadLink && (
                       <button 
@@ -416,7 +418,7 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
                   </div>
 
                   <div className="text-right">
-                    <span className="text-[9px] text-slate-400 block font-bold">Total Amount Paid</span>
+                    <span className="text-[9px] text-slate-400 block font-bold">{t('shop.totalAmountPaid', 'Total Amount Paid')}</span>
                     <span className="text-lg font-black text-slate-850 dark:text-slate-100">{currencySymbol}{order.totalAmount.toFixed(2)}</span>
                   </div>
                 </div>
@@ -427,8 +429,8 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
       ) : labBookings.length === 0 ? (
           <div className="text-center py-16 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm">
             <Beaker className="h-12 w-12 text-slate-355 mx-auto mb-4" />
-            <h3 className="font-bold text-slate-700 dark:text-slate-200">No test history</h3>
-            <p className="text-xs text-slate-450 mt-1">Book a lab test to see your history here.</p>
+            <h3 className="font-bold text-slate-700 dark:text-slate-200">{t('shop.noTestHistory', 'No test history')}</h3>
+            <p className="text-xs text-slate-450 mt-1">{t('shop.bookTestHelp', 'Book a lab test to see your history here.')}</p>
           </div>
         ) : (
           <div className="space-y-6">
@@ -438,7 +440,7 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
                 <div key={booking._id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-3xl p-5 space-y-4 hover:shadow-md transition-all">
                   <div className="flex flex-wrap justify-between items-center gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
                     <div className="space-y-1">
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Booking ID</span>
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">{t('shop.bookingId', 'Booking ID')}</span>
                       <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-200">{booking._id}</span>
                     </div>
                     
@@ -464,7 +466,7 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <span className="text-[9px] text-slate-400 block font-bold">Total Paid</span>
+                        <span className="text-[9px] text-slate-400 block font-bold">{t('shop.totalPaid', 'Total Paid')}</span>
                         <span className="font-black text-slate-800 dark:text-slate-100 text-sm block">₹{booking.totalAmount.toFixed(2)}</span>
                       </div>
                     </div>
@@ -536,29 +538,29 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
                     value={supportForm.name}
                     onChange={e => setSupportForm({ ...supportForm, name: e.target.value })}
                     className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-medium focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-950/30 text-slate-800 dark:text-slate-150 transition-all"
-                    placeholder="John Doe"
+                    placeholder={t('fullNamePlaceholder')}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-450 mb-1">Email Address</label>
+                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-450 mb-1">{t('auth.email')}</label>
                   <input
                     type="email"
                     required
                     value={supportForm.email}
                     onChange={e => setSupportForm({ ...supportForm, email: e.target.value })}
                     className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-medium focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-950/30 text-slate-800 dark:text-slate-150 transition-all"
-                    placeholder="john@example.com"
+                    placeholder={t('emailAddressPlaceholder')}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-450 mb-1">Issue / Question</label>
+                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-450 mb-1">{t('faqTitle')}</label>
                   <textarea
                     required
                     rows={4}
                     value={supportForm.question}
                     onChange={e => setSupportForm({ ...supportForm, question: e.target.value })}
                     className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-medium focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-950/30 text-slate-800 dark:text-slate-150 transition-all resize-none"
-                    placeholder="Please describe your issue in detail..."
+                    placeholder={t('describeIssuePlaceholder')}
                   ></textarea>
                 </div>
                 <div className="pt-2 flex gap-3">

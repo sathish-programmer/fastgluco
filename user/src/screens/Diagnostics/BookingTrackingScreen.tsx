@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, TestTube2, Check } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface BookingTrackingScreenProps {
   bookingId: string;
@@ -10,6 +11,7 @@ interface BookingTrackingScreenProps {
 
 export const BookingTrackingScreen: React.FC<BookingTrackingScreenProps> = ({ bookingId, onBack, onViewReport }) => {
   const { apiUrl, token } = useAuth();
+  const { t } = useLanguage();
   const [timelines, setTimelines] = useState<any[]>([]);
   const [booking, setBooking] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -20,8 +22,6 @@ export const BookingTrackingScreen: React.FC<BookingTrackingScreenProps> = ({ bo
 
   const fetchData = async () => {
     try {
-      // Assuming we have an endpoint that returns the booking details + timeline in one go, or we fetch separately.
-      // For this demo, let's fetch user bookings and filter, and fetch timelines.
       const [historyRes, timelineRes] = await Promise.all([
         fetch(`${apiUrl}/labs/booking/history`, { headers: { Authorization: `Bearer ${token}` } }),
         fetch(`${apiUrl}/labs/booking/${bookingId}/timeline`, { headers: { Authorization: `Bearer ${token}` } })
@@ -40,16 +40,16 @@ export const BookingTrackingScreen: React.FC<BookingTrackingScreenProps> = ({ bo
     }
   };
 
-  if (loading) return <div className="p-10 text-center text-slate-400 font-bold animate-pulse">Loading tracking details...</div>;
-  if (!booking) return <div className="p-10 text-center text-slate-500">Booking not found.</div>;
+  if (loading) return <div className="p-10 text-center text-slate-400 font-bold animate-pulse">{t('common.loading', 'Loading tracking details...')}</div>;
+  if (!booking) return <div className="p-10 text-center text-slate-500">{t('reportNotFound', 'Booking not found.')}</div>;
 
   const STATUS_STEPS = [
-    { status: 'PENDING', label: 'Booking Initiated' },
-    { status: 'CONFIRMED', label: 'Confirmed by Lab' },
-    { status: 'SAMPLE_ASSIGNED', label: 'Agent Assigned' },
-    { status: 'SAMPLE_COLLECTED', label: 'Sample Collected' },
-    { status: 'IN_PROCESSING', label: 'Processing in Lab' },
-    { status: 'REPORT_READY', label: 'Report Generated' }
+    { status: 'PENDING', label: t('bookingInitiated', 'Booking Initiated') },
+    { status: 'CONFIRMED', label: t('confirmedByLab', 'Confirmed by Lab') },
+    { status: 'SAMPLE_ASSIGNED', label: t('agentAssigned', 'Phlebotomist Assigned') },
+    { status: 'SAMPLE_COLLECTED', label: t('sampleCollected', 'Sample Collected') },
+    { status: 'IN_PROCESSING', label: t('processingInLab', 'Processing in Lab') },
+    { status: 'REPORT_READY', label: t('reportGenerated', 'Report Generated') }
   ];
 
   const currentStatusIndex = STATUS_STEPS.findIndex(s => s.status === booking.status);
@@ -64,7 +64,7 @@ export const BookingTrackingScreen: React.FC<BookingTrackingScreenProps> = ({ bo
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div>
-          <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Tracking</span>
+          <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">{t('status', 'Tracking')}</span>
           <h2 className="text-2xl font-bold text-slate-800 leading-none mt-1">Booking #{booking._id.slice(-6).toUpperCase()}</h2>
         </div>
       </div>
@@ -83,7 +83,7 @@ export const BookingTrackingScreen: React.FC<BookingTrackingScreenProps> = ({ bo
         <div className="relative pl-6 border-l-2 border-slate-100 ml-4 py-2 space-y-8">
           {STATUS_STEPS.map((step, idx) => {
             const isCompleted = currentStatusIndex >= idx;
-            const timelineRecord = timelines.find(t => t.status === step.status);
+            const timelineRecord = timelines.find(tItem => tItem.status === step.status);
 
             return (
               <div key={step.status} className="relative">
@@ -117,17 +117,17 @@ export const BookingTrackingScreen: React.FC<BookingTrackingScreenProps> = ({ bo
         <div className="space-y-4">
           <div className="bg-green-50 border border-green-200 p-4 rounded-2xl">
             <h4 className="font-bold text-green-800 text-sm mb-1 flex items-center gap-2">
-              <Check className="h-4 w-4" /> Report is Ready!
+              <Check className="h-4 w-4" /> {t('reportGenerated', 'Report is Ready!')}
             </h4>
             <p className="text-xs text-green-700 leading-relaxed">
-              Your test report has been finalized. If you requested a physical copy, please collect it from <strong>{booking.laboratoryId?.name || 'the lab center'}</strong>. An email notification has also been sent to you.
+              {t('reportReadyCollection', 'Your test report has been finalized and is ready for download.')}
             </p>
           </div>
           <button 
             onClick={() => onViewReport(booking._id)}
             className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
           >
-            <TestTube2 className="h-5 w-5" /> View Digital Report
+            <TestTube2 className="h-5 w-5" /> {t('viewLabReport', 'View Digital Report')}
           </button>
         </div>
       )}

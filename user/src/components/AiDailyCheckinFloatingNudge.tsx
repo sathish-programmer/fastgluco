@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, X, ArrowRight, CheckCircle2, Mic, Bell, Clock, Check } from 'lucide-react';
 import { scheduleDailyCheckinReminder, triggerTestNotification } from '../utils/notificationScheduler';
 import { RoboAvatar } from './RoboAvatar';
+import { useLanguage } from '../context/LanguageContext';
 
 interface AiDailyCheckinFloatingNudgeProps {
   pendingHabitsCount: number;
@@ -14,6 +15,7 @@ export const AiDailyCheckinFloatingNudge: React.FC<AiDailyCheckinFloatingNudgePr
   pendingHabitsCount,
   onOpenCheckin
 }) => {
+  const { t } = useLanguage();
   const [isVisible, setIsVisible] = useState<boolean>(false);
   const [showReminderSettings, setShowReminderSettings] = useState<boolean>(false);
   const [reminderTime, setReminderTime] = useState<string>(() => localStorage.getItem('mito_checkin_reminder_time') || '20:30');
@@ -81,7 +83,7 @@ export const AiDailyCheckinFloatingNudge: React.FC<AiDailyCheckinFloatingNudgePr
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-black text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
                     <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                    Daily Check-in Reminder Time
+                    {t('nudge.dailyCheckinReminderTime', 'Daily Check-in Reminder Time')}
                   </span>
                   <button
                     onClick={() => setShowReminderSettings(false)}
@@ -91,30 +93,30 @@ export const AiDailyCheckinFloatingNudge: React.FC<AiDailyCheckinFloatingNudgePr
                   </button>
                 </div>
                 <p className="text-[10.5px] text-slate-600 dark:text-slate-400 mb-2.5 font-medium">
-                  Select a quick time or pick any custom reminder time:
+                  {t('nudge.selectQuickTime', 'Select a quick time or pick any custom reminder time:')}
                 </p>
 
                 {/* Quick Presets */}
                 <div className="grid grid-cols-4 gap-1.5 mb-2.5">
-                  {['20:00', '20:30', '21:00', '21:30'].map(t => (
+                  {['20:00', '20:30', '21:00', '21:30'].map(tVal => (
                     <button
-                      key={t}
+                      key={tVal}
                       type="button"
-                      onClick={() => handleSaveReminder(t)}
+                      onClick={() => handleSaveReminder(tVal)}
                       className={`py-1.5 rounded-xl text-[10px] font-bold border transition-all cursor-pointer ${
-                        reminderTime === t
+                        reminderTime === tVal
                           ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
                           : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-blue-400'
                       }`}
                     >
-                      {formatDisplayTime(t)}
+                      {formatDisplayTime(tVal)}
                     </button>
                   ))}
                 </div>
 
                 {/* Custom Time Picker */}
                 <div className="flex items-center gap-2 bg-white dark:bg-slate-900 p-2 rounded-xl border border-slate-200 dark:border-slate-700">
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider shrink-0">Custom Time:</span>
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider shrink-0">{t('nudge.customTime', 'Custom Time:')}</span>
                   <input
                     type="time"
                     value={customTimeInput}
@@ -126,13 +128,13 @@ export const AiDailyCheckinFloatingNudge: React.FC<AiDailyCheckinFloatingNudgePr
                     onClick={() => handleSaveReminder(customTimeInput)}
                     className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-[10.5px] font-black rounded-lg shadow-xs transition-all cursor-pointer shrink-0"
                   >
-                    Set Time
+                    {t('nudge.setTime', 'Set Time')}
                   </button>
                 </div>
 
                 {reminderSaved && (
                   <p className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mt-2 flex items-center gap-1">
-                    <Check className="h-3.5 w-3.5" /> Reminder scheduled for {formatDisplayTime(reminderTime)}!
+                    <Check className="h-3.5 w-3.5" /> {t('nudge.reminderScheduledFor', 'Reminder scheduled for {{time}}!').replace('{{time}}', formatDisplayTime(reminderTime))}
                   </p>
                 )}
 
@@ -140,9 +142,9 @@ export const AiDailyCheckinFloatingNudge: React.FC<AiDailyCheckinFloatingNudgePr
                 <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 mt-2.5">
                   <span className="text-[9.5px] text-slate-400 font-semibold">
                     {typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'denied' ? (
-                      <span className="text-rose-500 font-bold">Blocked in browser settings</span>
+                      <span className="text-rose-500 font-bold">{t('nudge.blockedInBrowser', 'Blocked in browser settings')}</span>
                     ) : (
-                      <span className="flex items-center gap-1"><Bell className="h-3 w-3 inline text-indigo-500" /> Active Alert Channel</span>
+                      <span className="flex items-center gap-1"><Bell className="h-3 w-3 inline text-indigo-500" /> {t('nudge.activeAlertChannel', 'Active Alert Channel')}</span>
                     )}
                   </span>
                   <button
@@ -150,7 +152,7 @@ export const AiDailyCheckinFloatingNudge: React.FC<AiDailyCheckinFloatingNudgePr
                     onClick={() => triggerTestNotification()}
                     className="text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer"
                   >
-                    <Bell className="h-3 w-3" /> Test Alert Now
+                    <Bell className="h-3 w-3" /> {t('nudge.testAlertNow', 'Test Alert Now')}
                   </button>
                 </div>
               </motion.div>
@@ -175,7 +177,7 @@ export const AiDailyCheckinFloatingNudge: React.FC<AiDailyCheckinFloatingNudgePr
                   <div className="flex items-center gap-1">
                     <span className={`text-[8.5px] sm:text-[9px] font-black uppercase tracking-wider ${isAllDone ? 'text-emerald-700 dark:text-emerald-400' : 'text-blue-700 dark:text-blue-400'} flex items-center gap-1 leading-none`}>
                       <Sparkles className="h-2 w-2 sm:h-2.5 sm:w-2.5 fill-current shrink-0" />
-                      <span>{isAllDone ? 'Check-in Done' : 'Daily AI Check-in'}</span>
+                      <span>{isAllDone ? t('nudge.checkinDone', 'Check-in Done') : t('nudge.dailyAiCheckin', 'Daily AI Check-in')}</span>
                     </span>
                     {!isAllDone && (
                       <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400 animate-pulse shrink-0" />
@@ -183,8 +185,8 @@ export const AiDailyCheckinFloatingNudge: React.FC<AiDailyCheckinFloatingNudgePr
                   </div>
                   <h4 className="text-[11px] sm:text-xs font-black text-slate-900 dark:text-slate-100 tracking-tight truncate leading-tight mt-0.5">
                     {isAllDone
-                      ? 'All habits logged today'
-                      : `${pendingHabitsCount} habits remaining`}
+                      ? t('nudge.allHabitsLoggedToday', 'All habits logged today')
+                      : t('nudge.habitsRemaining', '{{count}} habits remaining').replace('{{count}}', String(pendingHabitsCount))}
                   </h4>
                 </div>
               </div>
@@ -195,7 +197,7 @@ export const AiDailyCheckinFloatingNudge: React.FC<AiDailyCheckinFloatingNudgePr
                   type="button"
                   onClick={() => setShowReminderSettings(prev => !prev)}
                   className="h-7.5 w-7.5 sm:h-8 sm:w-8 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 flex items-center justify-center transition-colors cursor-pointer"
-                  title="Schedule Reminder Time"
+                  title={t('nudge.dailyCheckinReminderTime', 'Daily Check-in Reminder Time')}
                 >
                   <Bell className="h-3.5 w-3.5" />
                 </button>
@@ -210,7 +212,7 @@ export const AiDailyCheckinFloatingNudge: React.FC<AiDailyCheckinFloatingNudgePr
                   }`}
                 >
                   {!isAllDone && <Mic className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />}
-                  <span>{isAllDone ? 'Review' : 'Check-in'}</span>
+                  <span>{isAllDone ? t('nudge.review', 'Review') : t('nudge.checkin', 'Check-in')}</span>
                   <ArrowRight className="h-3 w-3 shrink-0" />
                 </button>
 
@@ -218,7 +220,7 @@ export const AiDailyCheckinFloatingNudge: React.FC<AiDailyCheckinFloatingNudgePr
                   type="button"
                   onClick={handleDismiss}
                   className="h-7.5 w-7.5 sm:h-8 sm:w-8 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 flex items-center justify-center transition-colors cursor-pointer"
-                  title="Dismiss"
+                  title={t('common.close', 'Close')}
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -230,3 +232,4 @@ export const AiDailyCheckinFloatingNudge: React.FC<AiDailyCheckinFloatingNudgePr
     </AnimatePresence>
   );
 };
+

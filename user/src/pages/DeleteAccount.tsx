@@ -1,7 +1,9 @@
 import React from 'react';
 import { Trash2, AlertTriangle, Smartphone, ArrowLeft } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 export const DeleteAccount: React.FC = () => {
+  const { t } = useLanguage();
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="bg-white max-w-5xl w-full rounded-3xl p-6 md:p-8 shadow-xl border border-slate-100">
@@ -11,8 +13,8 @@ export const DeleteAccount: React.FC = () => {
             <Trash2 className="h-6 w-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Account Deletion</h1>
-            <p className="text-sm text-slate-500 font-semibold mt-1">Request to permanently delete your data.</p>
+            <h1 className="text-2xl font-bold text-slate-900">{t('auth.deleteAccount')}</h1>
+            <p className="text-sm text-slate-500 font-semibold mt-1">{t('auth.confirmDeleteAccount')}</p>
           </div>
         </div>
 
@@ -24,18 +26,18 @@ export const DeleteAccount: React.FC = () => {
         </div>
 
         <div className="space-y-6">
-          <h2 className="text-base font-bold text-slate-800">How to delete your account:</h2>
+          <h2 className="text-base font-bold text-slate-800">{t('delAcc.howToDelete', 'How to delete your account:')}</h2>
 
           <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
             <div className="flex items-center space-x-3 mb-3">
               <Smartphone className="h-5 w-5 text-primary" />
-              <h3 className="text-sm font-bold text-slate-800">Method 1: Inside the App (Fastest)</h3>
+              <h3 className="text-sm font-bold text-slate-800">{t('delAcc.method1InsideApp', 'Method 1: Inside the App (Fastest)')}</h3>
             </div>
             <ol className="list-decimal pl-5 space-y-2 text-xs font-semibold text-slate-600">
-              <li>Open the Mito Reboot app on your device.</li>
-              <li>Go to the <strong>Profile</strong> tab in the bottom navigation.</li>
-              <li>Tap on the <strong>Request Account Deletion</strong> button near the bottom.</li>
-              <li>Follow the prompts to send the deletion request.</li>
+              <li>{t('deleteStep1')}</li>
+              <li>{t('deleteStep2Part1')}<strong>{t('nav.profile')}</strong>{t('deleteStep2Part2')}</li>
+              <li>{t('deleteStep3Part1')}<strong>{t('profile.requestAccountDeletion', 'Request Account Deletion')}</strong>{t('deleteStep3Part2')}</li>
+              <li>{t('deleteStep4')}</li>
             </ol>
           </div>
 
@@ -45,7 +47,7 @@ export const DeleteAccount: React.FC = () => {
         <div className="mt-8 pt-6 border-t border-slate-100 text-center">
           <a href="/" className="inline-flex items-center space-x-2 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors">
             <ArrowLeft className="h-4 w-4" />
-            <span>Return to App</span>
+            <span>{t('returnToAppBtn')}</span>
           </a>
         </div>
 

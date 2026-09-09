@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { HabitsService } from '../services/habitsService';
 import type { HabitLog } from '../services/habitsService';
 import {
@@ -87,7 +88,13 @@ interface NonCancerDashboardProps {
   onGoToCGMDashboard?: () => void;
 }
 
-export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNavigateToTab, onGoToCGMDashboard }) => {
+export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
+  onNavigateToTab,
+  onGoToCGMDashboard
+}) => {
+  const { apiUrl, token, user, activeMode } = useAuth();
+  const { t } = useLanguage();
+
   // Navigation State for Habit Screens
   const [activeScreen, _setActiveScreen] = useState<string | null>(() => {
     const params = new URLSearchParams(window.location.search);
@@ -126,8 +133,6 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
       window.removeEventListener('appBackButton', handleBack);
     };
   }, [activeScreen]);
-
-  const { apiUrl, token, user, activeMode } = useAuth();
 
   const [habits, setHabits] = useState<HabitLog[]>([]);
   const [shopQuery, setShopQuery] = useState<string>('');
@@ -477,7 +482,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
 
   const downloadDocumentedReport = async () => {
     if (periodHabits.length === 0) {
-      alert('No documented logs available for the selected timeframe to download.');
+      alert(t('noLogsForTimeframe'));
       return;
     }
 
@@ -543,30 +548,30 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
   <div class="header-box">
     <div>
       <div class="logo">Mito<span>Reboot</span></div>
-      <div style="font-size: 11px; color: #64748b; font-weight: 600; margin-top: 2px;">Cellular Health & Lifestyle Balance Audit Report</div>
+      <div style="font-size: 11px; color: #64748b; font-weight: 600; margin-top: 2px;">${t('cellularAuditReportTitle')}</div>
     </div>
     <div style="text-align: right;">
       <div class="report-tag">${periodTitle}</div>
-      <div style="font-size: 10px; color: #64748b; margin-top: 6px; font-weight: 600;">Patient: <strong>${userName}</strong></div>
+      <div style="font-size: 10px; color: #64748b; margin-top: 6px; font-weight: 600;">${t('patientLabel')} <strong>${userName}</strong></div>
       <div style="font-size: 10px; color: #94a3b8; font-weight: 600;">Generated: ${reportDate}</div>
     </div>
   </div>
 
   <div class="grid-summary">
     <div class="card">
-      <div class="card-lbl">Total Documented Logs</div>
+      <div class="card-lbl">{t('dash.totalDocumentedLogs', 'Total Documented Logs')}</div>
       <div class="card-val" style="color: #0f172a;">${periodHabits.length}</div>
     </div>
     <div class="card" style="background: #fff1f2; border-color: #fecdd3;">
-      <div class="card-lbl" style="color: #9f1239;">Active Damage Score</div>
+      <div class="card-lbl" style="color: #9f1239;">{t('dash.activeDamageScore', 'Active Damage Score')}</div>
       <div class="card-val" style="color: #e11d48;">${damageCount}</div>
     </div>
     <div class="card" style="background: #ecfdf5; border-color: #a7f3d0;">
-      <div class="card-lbl" style="color: #065f46;">Active Repair Score</div>
+      <div class="card-lbl" style="color: #065f46;">{t('dash.activeRepairScore', 'Active Repair Score')}</div>
       <div class="card-val" style="color: #059669;">${repairCount}</div>
     </div>
     <div class="card" style="background: #eff6ff; border-color: #bfdbfe;">
-      <div class="card-lbl" style="color: #1e40af;">Cellular Repair Ratio</div>
+      <div class="card-lbl" style="color: #1e40af;">{t('dash.cellularRepairRatio', 'Cellular Repair Ratio')}</div>
       <div class="card-val" style="color: #2563eb;">${repairPct.toFixed(0)}%</div>
     </div>
   </div>
@@ -591,37 +596,37 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
     </div>
     <p style="font-size: 10.5px; color: #15803d; font-weight: 600; margin: 0 0 8px 0; line-height: 1.4;">
       ${repairPct >= 70
-        ? '🌟 <strong>Optimal Repair State</strong>: Your cellular signaling is strongly tilted toward repair and antioxidant protection. Follow these tips to sustain peak cellular energy:'
+        ? `🌟 <strong>${t('optimalRepairState')}</strong>: Your cellular signaling is strongly tilted toward repair and antioxidant protection. Follow these tips to sustain peak cellular energy:`
         : repairPct >= 40
-          ? '⚖️ <strong>Moderate Balance</strong>: Your repair signals are active, but stress and environmental factors create periodic damage spikes. Follow these targeted habits:'
-          : '⚠️ <strong>High Damage Load Alert</strong>: Elevated stress, poor sleep, or environmental toxins are overwhelming your repair pathways. Priority intervention recommended:'}
+          ? `⚖️ <strong>${t('moderateBalance')}</strong>: Your repair signals are active, but stress and environmental factors create periodic damage spikes. Follow these targeted habits:`
+          : `⚠️ <strong>${t('highDamageLoadAlert')}</strong>: Elevated stress, poor sleep, or environmental toxins are overwhelming your repair pathways. Priority intervention recommended:`}
     </p>
     <ul style="margin: 0; padding-left: 16px; font-size: 10.5px; color: #166534; font-weight: 600; line-height: 1.5;">
       ${repairPct >= 70 ? `
-        <li><strong>Maintain Autophagy Window</strong>: Stick to a 14:10 or 16:8 overnight fasting routine to clear damaged mitochondrial proteins.</li>
-        <li><strong>Deep Rest Recovery</strong>: Protect your 7-8 hour sleep window for nighttime microglial brain cleansing.</li>
-        <li><strong>Antioxidant Protection</strong>: Consume daily berries, green tea, and 85%+ dark chocolate to neutralize ROS.</li>
+        <li><strong>${t('maintainAutophagyWindow')}</strong>${t('maintainAutophagyWindowDesc')}</li>
+        <li><strong>${t('deepRestRecovery')}</strong>${t('deepRestRecoveryDesc')}</li>
+        <li><strong>${t('antioxidantProtection')}</strong>${t('antioxidantProtectionDesc')}</li>
       ` : repairPct >= 40 ? `
-        <li><strong>Add 5-Min Stillness Routine</strong>: Practice 4-7-8 deep breathing twice daily to lower elevated cortisol.</li>
-        <li><strong>Post-Meal Light Walking</strong>: Take a 15-minute walk after lunch/dinner to blunt glucose spikes and limit cellular strain.</li>
-        <li><strong>Pure Water Protocol</strong>: Use dual water filtration (<strong>RO + Activated Carbon</strong>) to eliminate pesticides & heavy metals. Avoid plastic water bottles.</li>
+        <li><strong>${t('addStillnessRoutine')}</strong>${t('addStillnessRoutineDesc')}</li>
+        <li><strong>${t('postMealWalking')}</strong>${t('postMealWalkingDesc')}</li>
+        <li><strong>${t('pureWaterProtocol')}</strong>${t('pureWaterProtocolDesc')}</li>
       ` : `
-        <li><strong>Immediate Stress Shield (Mia AI)</strong>: Use 4-7-8 breathing and 5-4-3-2-1 grounding exercises daily to calm your nervous system.</li>
-        <li><strong>Environmental Audit</strong>: Eliminate plastic drinking containers (prevents microplastics) and install RO + Activated Carbon filtration.</li>
-        <li><strong>Strict Sleep Hygiene</strong>: Turn off all screens 45 minutes before bed and sleep in a cool, pitch-dark room.</li>
-        <li><strong>Specialist Guidance</strong>: Consider booking a consultation with a certified counselor or specialist via MitoReboot Care.</li>
+        <li><strong>${t('immediateStressShield')}</strong>${t('immediateStressShieldDesc')}</li>
+        <li><strong>${t('environmentalAudit')}</strong>${t('environmentalAuditDesc')}</li>
+        <li><strong>${t('strictSleepHygiene')}</strong>${t('strictSleepHygieneDesc')}</li>
+        <li><strong>${t('specialistGuidance')}</strong>${t('specialistGuidanceDesc')}</li>
       `}
     </ul>
   </div>
 
-  <div style="font-size: 12px; font-weight: 800; color: #0f172a; margin-bottom: 8px;">📋 Documented Check-in History Logs</div>
+  <div style="font-size: 12px; font-weight: 800; color: #0f172a; margin-bottom: 8px;">${t('documentedCheckinHistory')}</div>
   <table>
     <thead>
       <tr>
-        <th>Date & Time</th>
-        <th>Habit Category</th>
-        <th>Score Impact</th>
-        <th>Documented Details</th>
+        <th>${t('colDateTime')}</th>
+        <th>${t('colHabitCategory')}</th>
+        <th>${t('colScoreImpact')}</th>
+        <th>${t('colDocumentedDetails')}</th>
       </tr>
     </thead>
     <tbody>
@@ -723,9 +728,9 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
           console.error('Print iframe creation error:', e);
         }
       }
-    } catch (err) {
-      console.error('Error generating report:', err);
-      alert('Unable to generate report. Please try again.');
+    } catch (e) {
+      console.error('Failed to generate HTML report', e);
+      alert(t('unableToGenerateReport'));
     } finally {
       setIsDownloadingReport(false);
     }
@@ -1127,26 +1132,26 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
 
     const getScreenTitle = (screen: string | null) => {
       switch (screen) {
-        case 'Stress': return 'Stress';
-        case 'Smoking': return 'Smoking';
-        case 'Substances': return 'Substances';
-        case 'Intimacy': return 'Intimacy';
-        case 'Environmental': return 'Environment';
-        case 'Sleep': return 'Sleep Debt';
-        case 'Movement': return 'Movement';
-        case 'Alcohol': return 'Alcohol';
-        case 'Fasting': return 'Intermittent Fasting';
-        case 'Stillness': return 'Stillness';
-        case 'Breath': return 'Power of Breath';
-        case 'Joy': return 'Things You Love';
-        case 'Antioxidants': return 'Antioxidants';
-        case 'CancerScreening': return 'Cancer Screening';
-        case 'IndianCancers': return 'Indian Cancers & Risks';
-        case 'Obesity': return 'Obesity';
-        case 'Dental': return 'Dental Health';
-        case 'Gastritis': return 'Gastritis';
-        case 'Genetic': return 'Genetic Link';
-        case 'Kitchen': return 'Check Your Kitchen';
+        case 'Stress': return t('habits.stress');
+        case 'Smoking': return t('habits.smoking');
+        case 'Substances': return t('habits.substances');
+        case 'Intimacy': return t('habits.intimacy');
+        case 'Environmental': return t('habits.exposures');
+        case 'Sleep': return t('habits.sleep');
+        case 'Movement': return t('habits.movement');
+        case 'Alcohol': return t('habits.alcohol');
+        case 'Fasting': return t('habits.fasting');
+        case 'Stillness': return t('habits.stillness');
+        case 'Breath': return t('habits.breath');
+        case 'Joy': return t('habits.joy');
+        case 'Antioxidants': return t('habits.antioxidants');
+        case 'CancerScreening': return t('habits.screening');
+        case 'IndianCancers': return t('habits.indianCancers');
+        case 'Obesity': return t('habits.obesity');
+        case 'Dental': return t('habits.dental');
+        case 'Gastritis': return t('habits.gastritis');
+        case 'Genetic': return t('habits.geneticRisk');
+        case 'Kitchen': return t('habits.kitchen');
         default: return '';
       }
     };
@@ -1163,7 +1168,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
             </button>
             <div>
               <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase block">
-                {activeScreen === 'IndianCancers' ? 'Cancer Awareness' : 'Track Habit'}
+                {activeScreen === 'IndianCancers' ? t('habits.cancerAwareness', 'Cancer Awareness') : t('habits.trackHabit', 'Track Habit')}
               </span>
               <h2 className="text-xl font-sans font-bold text-slate-800 dark:text-slate-100 leading-none mt-0.5">
                 {getScreenTitle(activeScreen)}
@@ -1281,10 +1286,10 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
       {/* Top Greeting & Action Bar */}
       <div className="mb-4">
         <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
-          Welcome back
+          {t('dashboard.welcomeBack', 'Welcome back')}
         </span>
         <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight leading-tight mt-0.5">
-          Hello, {user?.name || 'Friend'}
+          {t('dashboard.helloUser', { name: user?.name || 'Friend' }, `Hello, ${user?.name || 'Friend'}`)}
         </h2>
       </div>
 
@@ -1362,7 +1367,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
       {showRecommendation && (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4 animate-bounce">
           <div className="flex-1">
-            <h4 className="font-bold text-amber-800 text-sm">Action Recommended</h4>
+            <h4 className="font-bold text-amber-800 text-sm">{t('dash.actionRecommended', 'Action Recommended')}</h4>
             <p className="text-xs text-amber-700 mt-1">
               Based on your recent health records for {recommendationReason}, we recommend consulting a doctor. Would you like to book an appointment?
             </p>
@@ -1384,9 +1389,9 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
               <Calendar className="h-5 w-5" />
             </div>
             <div>
-              <h4 className="font-bold text-emerald-800 dark:text-emerald-300 text-xs">Upcoming Consultation Scheduled</h4>
+              <h4 className="font-bold text-emerald-800 dark:text-emerald-300 text-xs">{t('dash.upcomingApptScheduled', 'Upcoming Consultation Scheduled')}</h4>
               <p className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-0.5">
-                Appointment with <strong>Dr. {upcomingAppt.doctorId?.name || 'Specialist'}</strong> is scheduled on <strong>{upcomingAppt.date}</strong> at <strong>{upcomingAppt.time}</strong>.
+                Appointment with <strong>Dr. {upcomingAppt.doctorId?.name || 'Specialist'}</strong> {t('appointmentScheduledOn')} <strong>{upcomingAppt.date}</strong> {t('appointmentAtTime')} <strong>{upcomingAppt.time}</strong>.
               </p>
               {upcomingAppt.meetingLink && (
                 <a
@@ -1408,7 +1413,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
               setIsApptDismissed(true);
             }}
             className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-slate-650 dark:hover:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all shrink-0"
-            title="Dismiss Alert"
+            title={t('dismissAlertTitle')}
           >
             <X className="h-4 w-4" />
           </button>
@@ -1420,13 +1425,13 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
           {/* Header Row: Title & Streak on Left, Date Filter Popover & Download on Right (Single line, no wrap!) */}
           <div className="flex items-center justify-between gap-2 mb-3.5 pb-2.5 border-b border-slate-100 dark:border-slate-800/80 relative">
             <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-rose-500 via-indigo-600 to-emerald-500 text-white flex items-center justify-center shadow-md shadow-indigo-500/25 shrink-0" title="Health Defense (Shield) & Cellular Repair (+)">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-rose-500 via-indigo-600 to-emerald-500 text-white flex items-center justify-center shadow-md shadow-indigo-500/25 shrink-0" title={t('healthDefenseTitle')}>
                 <ShieldPlus className="w-4.5 h-4.5 stroke-[2.4]" />
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 sm:gap-2">
                   <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight truncate">
-                    Cellular Balance
+                    {t('dashboard.cellularBalance', 'Cellular Balance')}
                   </h3>
                   {streak > 0 && timePeriod === 'today' && (
                     <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
@@ -1435,7 +1440,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
                     </span>
                   )}
                 </div>
-                <p className="text-[9.5px] sm:text-[10px] text-slate-400 dark:text-slate-500 font-medium truncate">Lifestyle Stress vs Restorative Defense</p>
+                <p className="text-[9.5px] sm:text-[10px] text-slate-400 dark:text-slate-500 font-medium truncate">{t('dashboard.lifestyleVsDefense', 'Lifestyle Stress vs Restorative Defense')}</p>
               </div>
             </div>
 
@@ -1451,11 +1456,11 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
                       ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800'
                       : 'text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/70 dark:hover:bg-slate-700/70 border-slate-200/60 dark:border-slate-700/60'
                   }`}
-                  title="Select Timeframe"
+                  title={t('selectTimeframeTitle')}
                 >
                   <Filter className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
                   <span className="font-extrabold text-[10.5px] sm:text-xs">
-                    {timePeriod === 'today' ? 'Today' : timePeriod === 'weekly' ? '7D' : timePeriod === 'monthly' ? '30D' : '1Y'}
+                    {timePeriod === 'today' ? t('dashboard.today', 'Today') : timePeriod === 'weekly' ? '7D' : timePeriod === 'monthly' ? '30D' : '1Y'}
                   </span>
                   <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform duration-200 ${showPeriodFilter ? 'rotate-180' : ''}`} />
                 </button>
@@ -1469,13 +1474,13 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
                     />
                     <div className="absolute right-0 top-full mt-1.5 w-44 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200/80 dark:border-slate-800 p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
                       <div className="px-2.5 py-1 text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800/80 mb-1">
-                        Filter Time Range
+                        {t('common.filter', 'Filter Time Range')}
                       </div>
                       {[
-                        { id: 'today', label: 'Today', desc: 'Live daily balance' },
-                        { id: 'weekly', label: '7 Days', desc: 'Weekly trend analysis' },
-                        { id: 'monthly', label: '30 Days', desc: 'Monthly cellular health' },
-                        { id: 'yearly', label: '1 Year', desc: 'Annual cellular history' },
+                        { id: 'today', label: t('dashboard.today', 'Today'), desc: 'Live daily balance' },
+                        { id: 'weekly', label: t('reports.last7Days', '7 Days'), desc: 'Weekly trend analysis' },
+                        { id: 'monthly', label: t('reports.last30Days', '30 Days'), desc: 'Monthly cellular health' },
+                        { id: 'yearly', label: t('reports.allTime', '1 Year'), desc: 'Annual cellular history' },
                       ].map((item) => {
                         const active = timePeriod === item.id;
                         return (
@@ -1511,14 +1516,14 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
                 disabled={isDownloadingReport}
                 onClick={downloadDocumentedReport}
                 className="inline-flex items-center gap-1 p-1.5 sm:px-2.5 sm:py-1 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/70 dark:hover:bg-slate-700/70 rounded-xl border border-slate-200/60 dark:border-slate-700/60 transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
-                title="Download Documented Report"
+                title={t('downloadDocumentedReportTitle')}
               >
                 {isDownloadingReport ? (
                   <Loader2 className="w-3.5 h-3.5 text-indigo-500 animate-spin shrink-0" />
                 ) : (
                   <DownloadCloud className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
                 )}
-                <span className="hidden sm:inline">{isDownloadingReport ? 'Preparing...' : 'Report'}</span>
+                <span className="hidden sm:inline">{isDownloadingReport ? t('dashboard.preparing', 'Preparing...') : t('dashboard.reportButton', 'Report')}</span>
               </button>
             </div>
           </div>
@@ -1558,7 +1563,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
                     {totalForces === 0 ? '50%' : `${repairPct}%`}
                   </span>
                   <span className="text-[8px] font-extrabold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mt-0.5">
-                    Repair
+                    {t('dashboard.repairLabel', 'Repair')}
                   </span>
                 </div>
               </div>
@@ -1569,21 +1574,21 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
               {/* Status Verdict & Dynamic Pill */}
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
-                  {timePeriod === 'today' ? 'Daily State' : timePeriod === 'weekly' ? '7-Day State' : timePeriod === 'monthly' ? '30-Day State' : 'Yearly State'}
+                  {timePeriod === 'today' ? t('dashboard.dailyState', 'Daily State') : timePeriod === 'weekly' ? t('dashboard.weeklyState', '7-Day State') : timePeriod === 'monthly' ? t('dashboard.monthlyState', '30-Day State') : t('dashboard.yearlyState', 'Yearly State')}
                 </span>
                 {netBalance > 0 ? (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 shadow-2xs shrink-0">
                     <Sparkles className="w-3 h-3 text-emerald-500" />
-                    +{netBalance} Net Repair
+                    {t('dashboard.netRepair', { count: netBalance }, `+${netBalance} Net Repair`)}
                   </span>
                 ) : netBalance < 0 ? (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20 shadow-2xs shrink-0">
                     <Skull className="w-3 h-3 text-rose-500" />
-                    +{Math.abs(netBalance)} Net Stress
+                    {t('dashboard.netStress', { count: Math.abs(netBalance) }, `+${Math.abs(netBalance)} Net Stress`)}
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-200/60 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 shrink-0">
-                    Equilibrium
+                    {t('dashboard.equilibrium', 'Equilibrium')}
                   </span>
                 )}
               </div>
@@ -1594,10 +1599,10 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
                 <div className="flex justify-between items-center text-[9.5px] sm:text-[10.5px] font-bold">
                   <span className="text-rose-600 dark:text-rose-400 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
-                    <span>{damageCount} Stress ({damagePct}%)</span>
+                    <span>{damageCount} {t('dashboard.stressLabel', 'Stress')} ({damagePct}%)</span>
                   </span>
                   <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                    <span>{repairCount} Repair ({repairPct}%)</span>
+                    <span>{repairCount} {t('dashboard.repairLabel', 'Repair')} ({repairPct}%)</span>
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
                   </span>
                 </div>
@@ -1626,10 +1631,10 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
               {/* Actionable Subtext */}
               <p className="text-[10px] sm:text-[10.5px] text-slate-400 dark:text-slate-500 leading-tight truncate">
                 {netBalance > 0
-                  ? 'Restorative defense habits outpace daily stress.'
+                  ? t('dashboard.restorativeOutpaces', 'Restorative defense habits outpace daily stress.')
                   : netBalance < 0
-                  ? 'Active stress factors outweigh restorative habits.'
-                  : 'Cellular forces in dynamic equilibrium.'}
+                  ? t('dashboard.stressOutweighs', 'Active stress factors outweigh restorative habits.')
+                  : t('dashboard.forcesEquilibrium', 'Cellular forces in dynamic equilibrium.')}
               </p>
             </div>
           </div>
@@ -1641,7 +1646,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
           <div className="flex items-center gap-2">
             <span className="text-xs text-slate-400 font-mono font-bold">01</span>
             <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">
-              Track the two forces ({timePeriod === 'today' ? 'Today' : timePeriod === 'weekly' ? 'This Week' : 'This Month'})
+              {t('dashboard.trackTwoForces', { period: timePeriod === 'today' ? t('dashboard.today', 'Today') : timePeriod === 'weekly' ? t('dashboard.thisWeek', 'This Week') : t('dashboard.thisMonth', 'This Month') }, `Track the two forces (${timePeriod === 'today' ? 'Today' : timePeriod === 'weekly' ? 'This Week' : 'This Month'})`)}
             </span>
           </div>
 
@@ -1655,7 +1660,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                 }`}
             >
-              All
+              {t('dashboard.all', 'All')}
             </button>
             <button
               type="button"
@@ -1665,7 +1670,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
                 : 'text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40'
                 }`}
             >
-              Damage ({damageCount})
+              {t('dashboard.damage', 'Damage')} ({damageCount})
             </button>
             <button
               type="button"
@@ -1675,7 +1680,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
                 : 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
                 }`}
             >
-              Repair ({repairCount})
+              {t('dashboard.repairLabel', 'Repair')} ({repairCount})
             </button>
           </div>
         </div>
@@ -1688,27 +1693,27 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
             <div className="px-1 pt-1 pb-2 flex items-center justify-between">
               <div>
                 <h3 className="text-rose-500 font-sans text-xs sm:text-base font-bold flex items-center gap-1 mb-0.5">
-                  <Skull className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Damage
+                  <Skull className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> {t('dashboard.damage', 'Damage')}
                 </h3>
-                <p className="text-[7px] sm:text-[8px] text-slate-400 font-bold uppercase tracking-widest">Reduce the load</p>
+                <p className="text-[7px] sm:text-[8px] text-slate-400 font-bold uppercase tracking-widest">{t('dashboard.reduceLoad', 'Reduce the load')}</p>
               </div>
               <span className="text-[8px] sm:text-[9px] font-extrabold text-rose-500 bg-rose-50 dark:bg-rose-950/40 px-1.5 sm:px-2 py-0.5 rounded-full border border-rose-200/50 dark:border-rose-900/40 shrink-0">
-                {damageCount} active
+                {damageCount} {t('dashboard.active', 'active')}
               </span>
             </div>
 
             <div className="flex flex-col gap-1 sm:gap-1.5">
-              <HabitItem icon={<Frown className="h-3.5 w-3.5 text-amber-500" />} label="Stress" onClick={() => handleOpenHabit('Stress')} score={getStressScore()} />
-              <HabitItem icon={<Moon className="h-3.5 w-3.5 text-indigo-400" />} label="Sleep debt" onClick={() => handleOpenHabit('Sleep')} score={getSleepScore()} />
-              <HabitItem icon={<Cigarette className="h-3.5 w-3.5 text-slate-400" />} label="Smoking & Chewing" onClick={() => handleOpenHabit('Smoking')} score={getSmokingScore()} />
-              <HabitItem icon={<Wine className="h-3.5 w-3.5 text-rose-600" />} label="Alcohol" onClick={() => handleOpenHabit('Alcohol')} score={getAlcoholScore()} />
-              <HabitItem icon={<Pill className="h-3.5 w-3.5 text-amber-500" />} label="Substances" onClick={() => handleOpenHabit('Substances')} score={getSubstancesScore()} />
-              <HabitItem icon={<Globe className="h-3.5 w-3.5 text-cyan-500" />} label="Environment" onClick={() => handleOpenHabit('Environmental')} score={getEnvironmentalScore()} />
-              <HabitItem icon={<Utensils className="h-3.5 w-3.5 text-amber-600" />} label="Check your kitchen" onClick={() => handleOpenHabit('Kitchen')} score={getKitchenScore()} />
-              <HabitItem icon={<Scale className="h-3.5 w-3.5 text-rose-500" />} label="Obesity" onClick={() => handleOpenHabit('Obesity')} score={getObesityScore()} />
-              <HabitItem icon={<Stethoscope className="h-3.5 w-3.5 text-slate-500" />} label="Dental health" onClick={() => handleOpenHabit('Dental')} score={getDentalScore()} />
-              <HabitItem icon={<Flame className="h-3.5 w-3.5 text-orange-500" />} label="Gastritis" onClick={() => handleOpenHabit('Gastritis')} score={getGastritisScore()} />
-              <HabitItem icon={<Dna className="h-3.5 w-3.5 text-purple-500" />} label="Genetic risk" onClick={() => handleOpenHabit('Genetic')} score={getGeneticScore()} />
+              <HabitItem icon={<Frown className="h-3.5 w-3.5 text-amber-500" />} label={t('habits.stress', 'Stress')} onClick={() => handleOpenHabit('Stress')} score={getStressScore()} />
+              <HabitItem icon={<Moon className="h-3.5 w-3.5 text-indigo-400" />} label={t('habits.sleepDebt', 'Sleep debt')} onClick={() => handleOpenHabit('Sleep')} score={getSleepScore()} />
+              <HabitItem icon={<Cigarette className="h-3.5 w-3.5 text-slate-400" />} label={t('habits.smokingChewing', 'Smoking & Chewing')} onClick={() => handleOpenHabit('Smoking')} score={getSmokingScore()} />
+              <HabitItem icon={<Wine className="h-3.5 w-3.5 text-rose-600" />} label={t('habits.alcohol', 'Alcohol')} onClick={() => handleOpenHabit('Alcohol')} score={getAlcoholScore()} />
+              <HabitItem icon={<Pill className="h-3.5 w-3.5 text-amber-500" />} label={t('habits.substances', 'Substances')} onClick={() => handleOpenHabit('Substances')} score={getSubstancesScore()} />
+              <HabitItem icon={<Globe className="h-3.5 w-3.5 text-cyan-500" />} label={t('habits.environment', 'Environment')} onClick={() => handleOpenHabit('Environmental')} score={getEnvironmentalScore()} />
+              <HabitItem icon={<Utensils className="h-3.5 w-3.5 text-amber-600" />} label={t('habits.checkKitchen', 'Check your kitchen')} onClick={() => handleOpenHabit('Kitchen')} score={getKitchenScore()} />
+              <HabitItem icon={<Scale className="h-3.5 w-3.5 text-rose-500" />} label={t('habits.obesity', 'Obesity')} onClick={() => handleOpenHabit('Obesity')} score={getObesityScore()} />
+              <HabitItem icon={<Stethoscope className="h-3.5 w-3.5 text-slate-500" />} label={t('habits.dentalHealth', 'Dental health')} onClick={() => handleOpenHabit('Dental')} score={getDentalScore()} />
+              <HabitItem icon={<Flame className="h-3.5 w-3.5 text-orange-500" />} label={t('habits.gastritis', 'Gastritis')} onClick={() => handleOpenHabit('Gastritis')} score={getGastritisScore()} />
+              <HabitItem icon={<Dna className="h-3.5 w-3.5 text-purple-500" />} label={t('habits.geneticRisk', 'Genetic risk')} onClick={() => handleOpenHabit('Genetic')} score={getGeneticScore()} />
             </div>
           </div>
         )}
@@ -1720,12 +1725,12 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
               <div className="px-1 pt-1 pb-2 flex items-center justify-between">
                 <div>
                   <h3 className="text-emerald-500 font-sans text-xs sm:text-base font-bold flex items-center gap-1 mb-0.5">
-                    <Leaf className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Repair
+                    <Leaf className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> {t('dashboard.repairLabel', 'Repair')}
                   </h3>
-                  <p className="text-[7px] sm:text-[8px] text-slate-400 font-bold uppercase tracking-widest">Build the defence</p>
+                  <p className="text-[7px] sm:text-[8px] text-slate-400 font-bold uppercase tracking-widest">{t('dashboard.buildDefence', 'Build the defence')}</p>
                 </div>
                 <span className="text-[8px] sm:text-[9px] font-extrabold text-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 sm:px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-900/40 shrink-0">
-                  {repairCount} active
+                  {repairCount} {t('dashboard.active', 'active')}
                 </span>
               </div>
             )}
@@ -1733,24 +1738,24 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
             <div className="flex flex-col gap-1 sm:gap-1.5">
               {isCancerPatient ? (
                 <>
-                  <HabitItem icon={<Timer className="h-3.5 w-3.5 text-sky-500" />} label="INTERMITTENT FASTING" onClick={() => handleOpenHabit('Fasting')} score={getFastingScore()} />
-                  <HabitItem icon={<User className="h-3.5 w-3.5 text-amber-500" />} label="MOVEMENT" onClick={() => handleOpenHabit('Movement')} score={getMovementScore()} />
-                  <HabitItem icon={<User className="h-3.5 w-3.5 text-amber-600" />} label="Stillness" onClick={() => handleOpenHabit('Stillness')} score={getStillnessScore()} />
-                  <HabitItem icon={<Wind className="h-3.5 w-3.5 text-cyan-500" />} label="POWER OF BREATH" onClick={() => handleOpenHabit('Breath')} score={getBreathScore()} />
-                  <HabitItem icon={<Palette className="h-3.5 w-3.5 text-indigo-400" />} label="THINGS YOU LOVE" onClick={() => handleOpenHabit('Joy')} score={getJoyScore()} />
-                  <HabitItem icon={<BrainCircuit className="h-3.5 w-3.5 text-rose-500" />} label="ARE YOU STRESSED/WORRIED?" onClick={() => setShowStressedModal(true)} />
-                  <HabitItem icon={<User className="h-3.5 w-3.5 text-teal-500" />} label="CAREGIVER STRESS" onClick={() => setShowCaregiverModal(true)} />
-                  <HabitItem icon={<ShoppingBag className="h-3.5 w-3.5 text-pink-500" />} label="Explore wigs for hairloss" onClick={() => setActiveScreen('WigShop')} />
+                  <HabitItem icon={<Timer className="h-3.5 w-3.5 text-sky-500" />} label={t('habits.intermittentFasting', 'INTERMITTENT FASTING')} onClick={() => handleOpenHabit('Fasting')} score={getFastingScore()} />
+                  <HabitItem icon={<User className="h-3.5 w-3.5 text-amber-500" />} label={t('habits.movement', 'MOVEMENT')} onClick={() => handleOpenHabit('Movement')} score={getMovementScore()} />
+                  <HabitItem icon={<User className="h-3.5 w-3.5 text-amber-600" />} label={t('habits.stillness', 'Stillness')} onClick={() => handleOpenHabit('Stillness')} score={getStillnessScore()} />
+                  <HabitItem icon={<Wind className="h-3.5 w-3.5 text-cyan-500" />} label={t('habits.powerOfBreath', 'POWER OF BREATH')} onClick={() => handleOpenHabit('Breath')} score={getBreathScore()} />
+                  <HabitItem icon={<Palette className="h-3.5 w-3.5 text-indigo-400" />} label={t('habits.thingsYouLove', 'THINGS YOU LOVE')} onClick={() => handleOpenHabit('Joy')} score={getJoyScore()} />
+                  <HabitItem icon={<BrainCircuit className="h-3.5 w-3.5 text-rose-500" />} label={t('habits.areYouStressed', 'ARE YOU STRESSED/WORRIED?')} onClick={() => setShowStressedModal(true)} />
+                  <HabitItem icon={<User className="h-3.5 w-3.5 text-teal-500" />} label={t('habits.caregiverStress', 'CAREGIVER STRESS')} onClick={() => setShowCaregiverModal(true)} />
+                  <HabitItem icon={<ShoppingBag className="h-3.5 w-3.5 text-pink-500" />} label={t('habits.wigsHairloss', 'Explore wigs for hairloss')} onClick={() => setActiveScreen('WigShop')} />
                 </>
               ) : (
                 <>
-                  <HabitItem icon={<Timer className="h-3.5 w-3.5 text-sky-500" />} label="Fasting" onClick={() => handleOpenHabit('Fasting')} score={getFastingScore()} />
-                  <HabitItem icon={<Cherry className="h-3.5 w-3.5 text-rose-400" />} label="Antioxidants" onClick={() => handleOpenHabit('Antioxidants')} score={getAntioxidantsScore()} />
-                  <HabitItem icon={<User className="h-3.5 w-3.5 text-amber-500" />} label="Exercise" onClick={() => handleOpenHabit('Movement')} score={getMovementScore()} />
-                  <HabitItem icon={<User className="h-3.5 w-3.5 text-amber-600" />} label="Stillness" onClick={() => handleOpenHabit('Stillness')} score={getStillnessScore()} />
-                  <HabitItem icon={<Wind className="h-3.5 w-3.5 text-cyan-500" />} label="Power of breath" onClick={() => handleOpenHabit('Breath')} score={getBreathScore()} />
-                  <HabitItem icon={<Palette className="h-3.5 w-3.5 text-indigo-400" />} label="Things you love" onClick={() => handleOpenHabit('Joy')} score={getJoyScore()} />
-                  <HabitItem icon={<ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />} label="Safer products" onClick={() => handleOpenHabit('SaferProducts')} score={getSaferProductsScore()} />
+                  <HabitItem icon={<Timer className="h-3.5 w-3.5 text-sky-500" />} label={t('habits.fasting', 'Fasting')} onClick={() => handleOpenHabit('Fasting')} score={getFastingScore()} />
+                  <HabitItem icon={<Cherry className="h-3.5 w-3.5 text-rose-400" />} label={t('habits.antioxidants', 'Antioxidants')} onClick={() => handleOpenHabit('Antioxidants')} score={getAntioxidantsScore()} />
+                  <HabitItem icon={<User className="h-3.5 w-3.5 text-amber-500" />} label={t('habits.exercise', 'Exercise')} onClick={() => handleOpenHabit('Movement')} score={getMovementScore()} />
+                  <HabitItem icon={<User className="h-3.5 w-3.5 text-amber-600" />} label={t('habits.stillness', 'Stillness')} onClick={() => handleOpenHabit('Stillness')} score={getStillnessScore()} />
+                  <HabitItem icon={<Wind className="h-3.5 w-3.5 text-cyan-500" />} label={t('habits.powerOfBreath', 'Power of breath')} onClick={() => handleOpenHabit('Breath')} score={getBreathScore()} />
+                  <HabitItem icon={<Palette className="h-3.5 w-3.5 text-indigo-400" />} label={t('habits.thingsYouLove', 'Things you love')} onClick={() => handleOpenHabit('Joy')} score={getJoyScore()} />
+                  <HabitItem icon={<ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />} label={t('habits.saferProducts', 'Safer products')} onClick={() => handleOpenHabit('SaferProducts')} score={getSaferProductsScore()} />
                 </>
               )}
             </div>
@@ -1762,22 +1767,22 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
         <>
           <div className="flex items-center gap-3 mb-4">
             <span className="text-xs text-slate-400 font-mono font-bold">02</span>
-            <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Catch it early</span>
+            <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">{t('dashboard.catchItEarly', 'Catch it early')}</span>
             <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800"></div>
           </div>
 
           {/* Cancer Screening Card */}
           <button
             onClick={() => handleOpenHabit('CancerScreening')}
-            className="w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-emerald-100 dark:border-emerald-950/20 shadow-[0_8px_30px_rgba(16,185,129,0.04)] rounded-2xl p-4 flex items-center gap-4 text-left transition-all active:scale-95 hover:shadow-md"
+            className="w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-emerald-100 dark:border-emerald-950/20 shadow-[0_8px_30px_rgba(16,185,129,0.04)] rounded-2xl p-4 flex items-center gap-4 text-left transition-all active:scale-95 hover:shadow-md cursor-pointer"
           >
             <div className="h-10 w-10 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center shrink-0">
               <Microscope className="h-5 w-5 text-emerald-500" />
             </div>
             <div className="flex-1">
-              <h4 className="text-emerald-600 dark:text-emerald-400 font-sans font-bold text-lg leading-tight">Cancer Screening</h4>
+              <h4 className="text-emerald-600 dark:text-emerald-400 font-sans font-bold text-lg leading-tight">{t('dashboard.cancerScreening', 'Cancer Screening')}</h4>
               <p className="text-[9px] text-slate-500 dark:text-slate-400 leading-snug mt-1">
-                PSA · CEA · CA-125 · Pap · Mammogram · Whole-Body MRI · Genetic & liquid biopsy
+                {t('dashboard.cancerScreeningDesc', 'PSA · CEA · CA-125 · Pap · Mammogram · Whole-Body MRI · Genetic & liquid biopsy')}
               </p>
             </div>
             <ArrowRight className="h-4 w-4 text-slate-300" />
@@ -1786,15 +1791,15 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
           {/* Indian Cancers & Risks Card */}
           <button
             onClick={() => handleOpenHabit('IndianCancers')}
-            className="w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-purple-100 dark:border-purple-900/30 shadow-[0_8px_30px_rgba(168,85,247,0.04)] rounded-2xl p-4 flex items-center gap-4 text-left transition-all active:scale-95 hover:shadow-md mt-4"
+            className="w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-purple-100 dark:border-purple-900/30 shadow-[0_8px_30px_rgba(168,85,247,0.04)] rounded-2xl p-4 flex items-center gap-4 text-left transition-all active:scale-95 hover:shadow-md mt-4 cursor-pointer"
           >
             <div className="h-10 w-10 rounded-xl bg-purple-50 dark:bg-purple-500/10 flex items-center justify-center shrink-0">
               <Activity className="h-5 w-5 text-purple-500" />
             </div>
             <div className="flex-1">
-              <h4 className="text-purple-600 dark:text-purple-400 font-sans font-bold text-lg leading-tight">Indian Cancers & Risks</h4>
+              <h4 className="text-purple-600 dark:text-purple-400 font-sans font-bold text-lg leading-tight">{t('dashboard.indianCancers', 'Indian Cancers & Risks')}</h4>
               <p className="text-[9px] text-slate-500 dark:text-slate-400 leading-snug mt-1">
-                Understand common cancers in India and their associated risk factors.
+                {t('dashboard.indianCancersDesc', 'Regional cancer risk factors, tobacco exposures & targeted guidelines')}
               </p>
             </div>
             <ArrowRight className="h-4 w-4 text-slate-300" />
@@ -1831,7 +1836,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
               </div>
             </div>
             <div className="flex-1">
-              <h4 className="font-sans font-bold text-slate-800 dark:text-slate-100 text-sm leading-snug">Cellular Defense Strength</h4>
+              <h4 className="font-sans font-bold text-slate-800 dark:text-slate-100 text-sm leading-snug">{t('dash.cellularDefenseStrength', 'Cellular Defense Strength')}</h4>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                 {cancerGuidelines.count === 0 && "Shield is currently offline. Log a guideline above to activate cellular repair pathways."}
                 {cancerGuidelines.count === 1 && "Activating. Your cell repair signalling is starting to warm up."}
@@ -1853,13 +1858,13 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
           >
             <div className="flex-1">
               <span className="text-[9px] font-black bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 uppercase tracking-widest px-2.5 py-0.5 rounded-full inline-block mb-2 border border-blue-200/60 dark:border-blue-800/60">
-                Glucose & Food
+                {t('dashboard.glucoseAndFoodBadge', 'Glucose & Food')}
               </span>
               <h4 className="font-sans font-black text-slate-900 dark:text-slate-100 text-base leading-tight">
-                Continuous Glucose & Insights 📊
+                {t('dashboard.continuousGlucoseInsights', 'Continuous Glucose & Insights 📊')}
               </h4>
               <p className="text-[11.5px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                Upload your CGM report, view metabolic stability graphs, log meals, and coordinate doctor consults.
+                {t('dashboard.continuousGlucoseDesc', 'Upload your CGM report, view metabolic stability graphs, log meals, and coordinate doctor consults.')}
               </p>
             </div>
             <div className="h-10 w-10 bg-slate-100 group-hover:bg-slate-200 dark:bg-slate-800 dark:group-hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-2xl flex items-center justify-center shrink-0 transition-transform">
@@ -1894,10 +1899,10 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
         <button
           onClick={() => setShowChatbotModal(true)}
           className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white p-3.5 rounded-full shadow-2xl flex items-center gap-2 border-2 border-white/80 active:scale-95 transition-all cursor-pointer"
-          title="Open AI Daily Check-in Assistant"
+          title={t('openDailyCheckinTitle')}
         >
           <Bot className="h-6 w-6 text-white" />
-          <span className="text-xs font-black tracking-wide pr-1 hidden sm:inline">AI Check-in</span>
+          <span className="text-xs font-black tracking-wide pr-1 hidden sm:inline">{t('dash.aiCheckIn', 'AI Check-in')}</span>
         </button>
       </div>
 
@@ -1940,9 +1945,9 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
             <div className="h-12 w-12 rounded-full bg-rose-50 dark:bg-rose-950/30 flex items-center justify-center mx-auto text-2xl">
               🧠
             </div>
-            <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">Talk to our mental health expert</h3>
+            <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">{t('dash.talkMentalHealthExpert', 'Talk to our mental health expert')}</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              Facing cancer can be overwhelming. We recommend speaking to our supportive mental health professionals to help you navigate your emotions.
+              {t('dashboard.facingCancerOverwhelming', 'Facing cancer can be overwhelming. We recommend speaking to our supportive mental health professionals to help you navigate your emotions.')}
             </p>
             <div className="flex flex-col gap-2 pt-2">
               <button
@@ -1951,9 +1956,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
                   handleBookAppt('Mental Health Specialist Consultation');
                 }}
                 className="w-full py-3 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs uppercase shadow-sm transition-all"
-              >
-                Talk to expert
-              </button>
+              >{t('dashboard.talkToExpert', 'Talk to expert')}</button>
               <button
                 onClick={() => setShowStressedModal(false)}
                 className="w-full py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-350 font-bold rounded-xl text-xs transition-all"
@@ -1971,9 +1974,9 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
             <div className="h-12 w-12 rounded-full bg-teal-50 dark:bg-teal-950/30 flex items-center justify-center mx-auto text-2xl">
               🤝
             </div>
-            <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">Caregiver Stress</h3>
+            <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">{t('dash.caregiverStress', 'Caregiver Stress')}</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              Caring for a loved one with cancer can be challenging. Connect with a psycho-oncologist to support your mental well-being.
+              {t('dashboard.caregiverStressDescNonCancer', 'Caring for a loved one with cancer can be challenging. Connect with a psycho-oncologist to support your mental well-being.')}
             </p>
             <div className="flex flex-col gap-2 pt-2">
               <button
@@ -1982,9 +1985,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
                   handleBookAppt('Psycho-Oncologist Consultation');
                 }}
                 className="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl text-xs uppercase shadow-sm transition-all"
-              >
-                Consult & Connect
-              </button>
+              >{t('dashboard.consultAndConnect', 'Consult & Connect')}</button>
               <button
                 onClick={() => setShowCaregiverModal(false)}
                 className="w-full py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-350 font-bold rounded-xl text-xs transition-all"
@@ -2003,15 +2004,15 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
                 <div className="h-12 w-12 rounded-full bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center mx-auto text-2xl text-amber-500">
                   ⚠️
                 </div>
-                <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">Medical Disclaimer</h3>
+                <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">{t('fasting.medicalDisclaimerTitle', 'Medical Disclaimer')}</h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                  Intermittent fasting during cancer treatment is experimental. Please consult an expert and intimate your treating medical team.
+                  {t('fasting.medicalDisclaimerDesc', 'Intermittent fasting during cancer treatment is experimental. Please consult an expert and intimate your treating medical team.')}
                 </p>
                 <button
                   onClick={() => setFastingStep(2)}
                   className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs uppercase shadow-sm transition-all"
                 >
-                  Next
+                  {t('common.next', 'Next')}
                 </button>
               </>
             ) : (
@@ -2019,9 +2020,9 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
                 <div className="h-12 w-12 rounded-full bg-indigo-50 dark:bg-indigo-950/30 flex items-center justify-center mx-auto text-2xl text-indigo-500">
                   🩺
                 </div>
-                <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">Consult Our Expert</h3>
+                <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">{t('fasting.consultExpertTitle', 'Consult Our Expert')}</h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                  We highly recommend consulting our medical expert before initiating any fasting regimen during active cancer treatment.
+                  {t('fasting.cancerWarningDesc', 'We highly recommend consulting our medical expert before initiating any fasting regimen during active cancer treatment.')}
                 </p>
 
                 {/* Expert Profile Card */}
@@ -2030,8 +2031,8 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
                     MR
                   </div>
                   <div>
-                    <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200">MitoReboot Medical Team</h5>
-                    <p className="text-[10px] text-slate-400">Oncology & Metabolic Nutrition Experts</p>
+                    <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200">{t('fasting.medicalTeam', 'MitoReboot Medical Team')}</h5>
+                    <p className="text-[10px] text-slate-400">{t('fasting.medicalTeamDesc', 'Oncology & Metabolic Nutrition Experts')}</p>
                   </div>
                 </div>
 
@@ -2043,7 +2044,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
                     }}
                     className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs uppercase shadow-sm transition-all"
                   >
-                    Consult Expert
+                    {t('fasting.btnConsultExpert', 'CONSULT EXPERT')}
                   </button>
                   <button
                     onClick={() => {
@@ -2052,13 +2053,13 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({ onNaviga
                     }}
                     className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs uppercase shadow-sm transition-all"
                   >
-                    Start Fasting
+                    {t('fasting.btnStartFasting', 'START FASTING')}
                   </button>
                   <button
                     onClick={() => setShowFastingDisclaimer(false)}
                     className="w-full py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-350 font-bold rounded-xl text-xs transition-all"
                   >
-                    Cancel
+                    {t('common.cancel', 'Cancel')}
                   </button>
                 </div>
               </>

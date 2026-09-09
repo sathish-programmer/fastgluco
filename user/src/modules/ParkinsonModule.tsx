@@ -2,12 +2,13 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Brain, Activity, Plus, Pill, Sparkles, Heart, History, ChevronRight, X, CheckCircle2 } from 'lucide-react';
 import { Card, SectionTitle, Slider1to10, YesNoToggle, TalkToDoctorCard } from './shared/ConditionUI';
+import { useLanguage } from '../context/LanguageContext';
 
 const TIME_SLOTS = ['9:00 AM', '2:00 PM', '6:00 PM', '10:00 PM'];
 const SYMPTOMS = [
-  { key: 'tremor', label: 'Tremor Severity' },
-  { key: 'rigidity', label: 'Muscle Rigidity / Stiffness' },
-  { key: 'bradykinesia', label: 'Bradykinesia (Slowness of Movement)' }
+  { key: 'tremor', labelKey: 'protocols.tremorSeverity', defaultLabel: 'Tremor Severity' },
+  { key: 'rigidity', labelKey: 'protocols.rigiditySeverity', defaultLabel: 'Muscle Rigidity / Stiffness' },
+  { key: 'bradykinesia', labelKey: 'protocols.bradykinesiaSeverity', defaultLabel: 'Bradykinesia (Slowness of Movement)' }
 ];
 
 const DOPAMINE_BOOSTERS = [
@@ -20,6 +21,7 @@ const DOPAMINE_BOOSTERS = [
 ];
 
 export const ParkinsonModule: React.FC = () => {
+  const { t } = useLanguage();
   const [showMedModal, setShowMedModal] = useState<boolean>(false);
   const [saveToast, setSaveToast] = useState<string | null>(null);
 
@@ -123,7 +125,7 @@ export const ParkinsonModule: React.FC = () => {
 
   const removeDrug = (id: number) => {
     setDrugLog(prev => prev.filter(d => d.id !== id));
-    showFeedback('Medication dose removed');
+    showFeedback(t('protocols.medicationDoseRemoved'));
   };
 
   const toggleBooster = (b: string) => {
@@ -171,19 +173,19 @@ export const ParkinsonModule: React.FC = () => {
       <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 rounded-3xl p-6 text-white shadow-xl">
         <div className="flex items-center gap-2 mb-1.5">
           <Sparkles className="h-5 w-5 text-amber-200" />
-          <span className="text-xs font-black uppercase tracking-widest text-violet-100">Neuroprotective Care</span>
+          <span className="text-xs font-black uppercase tracking-widest text-violet-100">{t('protocols.neuroprotectiveCare')}</span>
         </div>
-        <h1 className="text-xl font-black tracking-tight text-white">Parkinson's Disease Management</h1>
+        <h1 className="text-xl font-black tracking-tight text-white">{t('protocols.parkinsonProtocol')}</h1>
         <p className="text-xs text-violet-100/90 mt-1 leading-relaxed max-w-xl">
-          Track motor symptom patterns throughout the day, log medication timings, and boost dopamine habits.
+          {t('protocols.parkinsonSubtitle')}
         </p>
 
         {/* Live Dopamine Counter & Progress */}
         <div className="mt-4 pt-4 border-t border-white/20">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-violet-100">Dopamine & Mood Boosters Today:</span>
+            <span className="text-xs font-bold text-violet-100">{t('protocols.dopamineBoostersToday')}</span>
             <span className="text-xs font-black bg-white/20 px-3 py-1 rounded-xl backdrop-blur-md">
-              {boosterCount} / 9 Active
+              {t('protocols.activeBoosters', { count: boosterCount })}
             </span>
           </div>
           <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
@@ -197,9 +199,9 @@ export const ParkinsonModule: React.FC = () => {
 
       {/* Symptom Severity by Time of Day */}
       <Card>
-        <SectionTitle icon={Brain}>Motor Symptom Severity by Time of Day</SectionTitle>
+        <SectionTitle icon={Brain}>{t('protocols.symptomSeverityByTime')}</SectionTitle>
         <p className="text-[11px] text-slate-400 dark:text-slate-500 mb-3">
-          Rate each symptom from 1 (minimal) to 10 (worst) at each scheduled daily checkpoint.
+          {t('protocols.symptomSeverityDesc')}
         </p>
         <div className="space-y-4">
           {TIME_SLOTS.map(slot => {
@@ -213,7 +215,7 @@ export const ParkinsonModule: React.FC = () => {
                   <span className="text-xs font-black text-violet-600 dark:text-violet-400">{slot}</span>
                   {avgSlotScore && (
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-300 border border-violet-200/50 dark:border-violet-900/40">
-                      Avg Severity: {avgSlotScore} / 10
+                      {t('protocols.avgSeverity', { score: avgSlotScore })}
                     </span>
                   )}
                 </div>
@@ -221,7 +223,7 @@ export const ParkinsonModule: React.FC = () => {
                   {SYMPTOMS.map(s => (
                     <Slider1to10
                       key={s.key}
-                      label={s.label}
+                      label={t(s.labelKey, s.defaultLabel)}
                       value={symptomScores[slot]?.[s.key]}
                       onChange={(v) => setScore(slot, s.key, v)}
                     />
@@ -236,7 +238,7 @@ export const ParkinsonModule: React.FC = () => {
       {/* Today's Motor Fluctuation Pattern */}
       {hasAnyScore && (
         <Card>
-          <SectionTitle icon={Activity}>Today's Motor Fluctuation Curve</SectionTitle>
+          <SectionTitle icon={Activity}>{t('protocols.motorFluctuationCurve')}</SectionTitle>
           <div style={{ width: '100%', height: 230 }}>
             <ResponsiveContainer>
               <LineChart data={chartData}>
@@ -256,18 +258,18 @@ export const ParkinsonModule: React.FC = () => {
 
       {/* Medication Tracker */}
       <Card>
-        <SectionTitle icon={Pill}>Medication Schedule Log</SectionTitle>
+        <SectionTitle icon={Pill}>{t('protocols.medicationSchedule')}</SectionTitle>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
           <input
             type="text"
-            placeholder="Drug name (e.g. Levodopa)"
+            placeholder={t('protocols.drugNamePlaceholder')}
             value={drugName}
             onChange={(e) => setDrugName(e.target.value)}
             className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-violet-500"
           />
           <input
             type="text"
-            placeholder="Dose (e.g. 100mg)"
+            placeholder={t('protocols.dosePlaceholder')}
             value={drugDose}
             onChange={(e) => setDrugDose(e.target.value)}
             className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-violet-500"
@@ -284,7 +286,7 @@ export const ParkinsonModule: React.FC = () => {
           onClick={addDrug}
           className="w-full py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-xs font-black rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 mb-3"
         >
-          <Plus className="h-4 w-4" /> Log Dose Timing
+          <Plus className="h-4 w-4" /> {t('protocols.logDoseTiming')}
         </button>
 
         {drugLog.length > 0 ? (
@@ -340,7 +342,7 @@ export const ParkinsonModule: React.FC = () => {
             >
               <span className="flex items-center gap-1.5">
                 <History className="h-3.5 w-3.5 text-violet-500" />
-                Medication Schedule ({drugLog.length} Recorded)
+                {t('protocols.medicationSchedule')} ({drugLog.length} Recorded)
               </span>
               <span className="text-violet-600 dark:text-violet-400 flex items-center gap-0.5 text-[11px]">
                 Manage <ChevronRight className="h-3.5 w-3.5" />
@@ -363,7 +365,7 @@ export const ParkinsonModule: React.FC = () => {
                   <Pill className="h-4 w-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-slate-800 dark:text-slate-100">Medication Schedule</h3>
+                  <h3 className="text-sm font-black text-slate-800 dark:text-slate-100">{t('protocols.medicationSchedule')}</h3>
                   <p className="text-[10.5px] text-slate-400">Daily dose timings & adherence</p>
                 </div>
               </div>
@@ -433,9 +435,9 @@ export const ParkinsonModule: React.FC = () => {
       {/* Mood & Dopamine Boosters */}
       <Card>
         <SectionTitle icon={Heart}>Mood & Dopamine Support</SectionTitle>
-        <YesNoToggle label="Slept 8 hours?" value={slept8} onChange={setSlept8} goodAnswer={true} />
+        <YesNoToggle label={t('protocols.slept8Hours')} value={slept8} onChange={setSlept8} goodAnswer={true} />
         <YesNoToggle
-          label="Did something you love today?"
+          label={t('protocols.lovedActivity')}
           sublabel="Singing, drawing, gardening, or hobbies"
           value={lovedActivity}
           onChange={setLovedActivity}
@@ -476,8 +478,8 @@ export const ParkinsonModule: React.FC = () => {
       </Card>
 
       <TalkToDoctorCard
-        specialty="Neurologist / Movement Disorder Specialist"
-        note="Bring your daily symptom severity curve and dose log to your clinical visit to optimize on/off motor fluctuations."
+        specialty={t('protocols.neurologist')}
+        note={t('protocols.parkinsonDoctorNote')}
       />
     </div>
   );

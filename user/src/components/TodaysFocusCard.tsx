@@ -11,6 +11,7 @@ import {
   Heart,
   Dna
 } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 export interface FocusAction {
   id: string;
@@ -38,6 +39,8 @@ export const TodaysFocusCard: React.FC<TodaysFocusCardProps> = ({
   upcomingAppt,
   onTakeAction
 }) => {
+  const { t } = useLanguage();
+
   // Logic to determine the ONE best unfulfilled priority action dynamically
   const determineBestAction = (): FocusAction | null => {
     const loggedKeysEver = new Set(habits.map(h => (h.type || h.habitType)));
@@ -77,9 +80,9 @@ export const TodaysFocusCard: React.FC<TodaysFocusCardProps> = ({
       if (!loggedToday.has('Stress') && !loggedToday.has('stress')) {
         return {
           id: 'caregiver_stress',
-          title: 'Log Today’s Symptom & Caregiver Stress Assessment',
+          title: t('habits.caregiverStress', 'Log Today’s Symptom & Caregiver Stress Assessment'),
           reason: 'Monitoring emotional strain and physical recovery provides holistic treatment clarity.',
-          category: 'Treatment Support',
+          category: t('modes.treatmentShort', 'Treatment Support'),
           icon: <Heart className="h-6 w-6 text-rose-500" />,
           gradient: 'from-rose-500/10 via-pink-500/5 to-transparent',
           badgeBg: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
@@ -89,7 +92,7 @@ export const TodaysFocusCard: React.FC<TodaysFocusCardProps> = ({
       if (!loggedToday.has('Fasting') && !loggedToday.has('fasting')) {
         return {
           id: 'treatment_fasting',
-          title: 'Log Today’s Intermittent Fasting Window',
+          title: t('habits.intermittentFasting', 'Log Today’s Intermittent Fasting Window'),
           reason: 'Aligning therapeutic fasting windows supports mitochondrial resilience during treatment.',
           category: 'Metabolic Health',
           icon: <Activity className="h-6 w-6 text-amber-500" />,
@@ -116,7 +119,7 @@ export const TodaysFocusCard: React.FC<TodaysFocusCardProps> = ({
       if (!loggedToday.has('Antioxidants') && !loggedToday.has('antioxidants')) {
         return {
           id: 'secondary_antioxidant',
-          title: 'Check Bioactive Antioxidant Protective Intake',
+          title: t('habits.antioxidants', 'Check Bioactive Antioxidant Protective Intake'),
           reason: 'Consuming phytochemicals and polyphenols reduces cellular oxidative stress during recovery.',
           category: 'Cellular Health',
           icon: <ShieldCheck className="h-6 w-6 text-rose-500" />,
@@ -144,7 +147,7 @@ export const TodaysFocusCard: React.FC<TodaysFocusCardProps> = ({
     if (!loggedToday.has('Fasting') && !loggedToday.has('fasting')) {
       return {
         id: 'prev_fasting',
-        title: 'Log Today’s Fasting Window',
+        title: t('habits.fasting', 'Log Today’s Fasting Window'),
         reason: 'Circadian metabolic fasting promotes cellular autophagy and mitochondrial renewal.',
         category: 'Circadian Health',
         icon: <Activity className="h-6 w-6 text-amber-500" />,
@@ -157,7 +160,7 @@ export const TodaysFocusCard: React.FC<TodaysFocusCardProps> = ({
     if (!loggedToday.has('Sleep') && !loggedToday.has('sleep')) {
       return {
         id: 'prev_sleep',
-        title: 'Log Today’s Sleep Quality & Duration',
+        title: t('habits.sleep', 'Log Today’s Sleep Quality & Duration'),
         reason: 'Consistent rest prevents sleep debt accumulation and supports systemic repair.',
         category: 'Rest & Recovery',
         icon: <Activity className="h-6 w-6 text-indigo-500" />,
@@ -170,7 +173,7 @@ export const TodaysFocusCard: React.FC<TodaysFocusCardProps> = ({
     if (!loggedToday.has('Stress') && !loggedToday.has('stress')) {
       return {
         id: 'prev_stress',
-        title: 'Log Today’s Stress Level',
+        title: t('habits.stress', 'Log Today’s Stress Level'),
         reason: 'Managing acute stress prevents cortisol elevation and cellular inflammatory load.',
         category: 'Mental Balance',
         icon: <Heart className="h-6 w-6 text-rose-500" />,
@@ -183,7 +186,7 @@ export const TodaysFocusCard: React.FC<TodaysFocusCardProps> = ({
     if (!loggedToday.has('Movement') && !loggedToday.has('movement')) {
       return {
         id: 'prev_movement',
-        title: 'Log Today’s Exercise & Movement',
+        title: t('habits.movement', 'Log Today’s Exercise & Movement'),
         reason: 'Physical activity enhances insulin sensitivity and cardiovascular resilience.',
         category: 'Physical Activity',
         icon: <Activity className="h-6 w-6 text-emerald-500" />,
@@ -224,7 +227,7 @@ export const TodaysFocusCard: React.FC<TodaysFocusCardProps> = ({
         <div className="flex items-center space-x-1.5">
           <Sparkles className="h-3.5 w-3.5 text-indigo-500 animate-pulse" />
           <span className="text-[9.5px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
-            Today’s Focus
+            {t('dashboard.todaysFocus', 'Today’s Focus')}
           </span>
         </div>
         <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${action.badgeBg}`}>
@@ -242,7 +245,7 @@ export const TodaysFocusCard: React.FC<TodaysFocusCardProps> = ({
               {action.title}
             </h3>
             <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-medium leading-tight truncate mt-0.5">
-              <span className="font-semibold text-slate-600 dark:text-slate-300">Why: </span>
+              <span className="font-semibold text-slate-600 dark:text-slate-300">{t('dashboard.why', 'Why')}: </span>
               {action.reason}
             </p>
           </div>
@@ -253,7 +256,7 @@ export const TodaysFocusCard: React.FC<TodaysFocusCardProps> = ({
           onClick={() => onTakeAction(action.actionKey)}
           className="px-3 py-1.5 sm:px-3.5 sm:py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] sm:text-xs font-extrabold rounded-xl shadow-xs transition-all flex items-center gap-1 active:scale-95 shrink-0 cursor-pointer"
         >
-          <span>Take Action</span>
+          <span>{t('dashboard.takeAction', 'Take Action')}</span>
           <ArrowRight className="h-3 w-3 stroke-[2.5px]" />
         </button>
       </div>

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth, type FocusModeType, type UserNotificationPreferences, type NotificationChannelPreferences } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
+import { LanguageSelector } from '../components/LanguageSelector';
 import {
   ChevronRight,
   ArrowLeft,
@@ -59,6 +61,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
   const { user, token, apiUrl, logout, updateProfile, isLoading, error, branding, setActiveMode } = useAuth();
   const { showToast } = useToast();
   const { setTheme, isDark } = useTheme();
+  const { t, language } = useLanguage();
   const isIOSAppStoreBlocked = Capacitor.getPlatform() === 'ios';
 
   // Tabs for profile section: 'settings' or 'education' or 'subscription' or 'notifications'
@@ -276,13 +279,14 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
       cancerJourney,
       cancerDisclaimerAccepted: disclaimerAccepted,
       cancerDisclaimerAcceptedAt: disclaimerAccepted ? new Date().toISOString() : undefined,
-      notificationPreferences: notifPrefs
+      notificationPreferences: notifPrefs,
+      language
     });
     if (success) {
       if (setActiveMode) {
         await setActiveMode(cancerJourney);
       }
-      showToast('Profile updated successfully!', 'success');
+      showToast(t('profile.savedSuccessfully'), 'success');
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
       return true;
@@ -353,9 +357,9 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
             onClick={() => setSubView('settings')}
             className="text-sm font-semibold text-primary"
           >
-            ← Back to Profile
+            ← {t('backToProfileAria')}
           </button>
-          <span className="font-bold text-slate-800 text-sm">Education Center</span>
+          <span className="font-bold text-slate-800 text-sm">{t('profile.educationCenter', 'Education Center')}</span>
           <div className="w-12"></div>
         </div>
         <Educational />
@@ -429,7 +433,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
               }`}
             >
               <Smartphone className="w-4 h-4 text-primary" />
-              <span>Push Only</span>
+              <span>{t('pushOnly')}</span>
             </button>
 
             <button
@@ -442,7 +446,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
               }`}
             >
               <Mail className="w-4 h-4 text-indigo-500" />
-              <span>Email Only</span>
+              <span>{t('emailOnly')}</span>
             </button>
 
             <button
@@ -455,7 +459,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
               }`}
             >
               <MessageSquare className="w-4 h-4 text-emerald-500" />
-              <span>SMS Only</span>
+              <span>{t('smsOnly')}</span>
             </button>
 
             <button
@@ -468,7 +472,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
               }`}
             >
               <Sparkles className="w-4 h-4 text-amber-500" />
-              <span>All Channels</span>
+              <span>{t('allChannels')}</span>
             </button>
 
             <button
@@ -477,7 +481,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
               className="col-span-2 sm:col-span-1 p-2.5 rounded-2xl border border-slate-200/70 dark:border-slate-700/60 bg-slate-50/80 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-rose-500 text-xs font-bold flex flex-col items-center justify-center gap-1 transition-all cursor-pointer active:scale-95"
             >
               <Bell className="w-4 h-4 text-slate-400" />
-              <span>Mute All</span>
+              <span>{t('muteAll')}</span>
             </button>
           </div>
         </div>
@@ -498,16 +502,16 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
             
             {/* Header Row */}
             <div className="grid grid-cols-12 gap-2 pb-2.5 border-b border-slate-200/60 dark:border-slate-700/50 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider items-center">
-              <span className="col-span-6 sm:col-span-6">Alert Category</span>
+              <span className="col-span-6 sm:col-span-6">{t('profile.alertCategory', 'Alert Category')}</span>
               <div className="col-span-2 sm:col-span-2 flex justify-center">
                 <button
                   type="button"
                   onClick={() => setAllChannelStatus('push', !isChannelFullyActive('push'))}
                   className="flex items-center justify-center gap-1 px-2 py-1 rounded-lg hover:bg-primary/10 text-primary transition-colors cursor-pointer"
-                  title="Toggle all Push notifications"
+                  title={t('togglePushTitle')}
                 >
                   <Smartphone className="h-3.5 w-3.5" />
-                  <span>Push</span>
+                  <span>{t('pushLabel')}</span>
                 </button>
               </div>
               <div className="col-span-2 sm:col-span-2 flex justify-center">
@@ -515,10 +519,10 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
                   type="button"
                   onClick={() => setAllChannelStatus('email', !isChannelFullyActive('email'))}
                   className="flex items-center justify-center gap-1 px-2 py-1 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950/50 text-indigo-500 transition-colors cursor-pointer"
-                  title="Toggle all Email notifications"
+                  title={t('toggleEmailTitle')}
                 >
                   <Mail className="h-3.5 w-3.5" />
-                  <span>Email</span>
+                  <span>{t('emailLabel')}</span>
                 </button>
               </div>
               <div className="col-span-2 sm:col-span-2 flex justify-center">
@@ -526,10 +530,10 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
                   type="button"
                   onClick={() => setAllChannelStatus('sms', !isChannelFullyActive('sms'))}
                   className="flex items-center justify-center gap-1 px-2 py-1 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950/50 text-emerald-500 transition-colors cursor-pointer"
-                  title="Toggle all SMS notifications"
+                  title={t('toggleSmsTitle')}
                 >
                   <MessageSquare className="h-3.5 w-3.5" />
-                  <span>SMS</span>
+                  <span>{t('smsLabel')}</span>
                 </button>
               </div>
             </div>
@@ -544,7 +548,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
                   Scheduled prompts for daily oncology & metabolic habit logging
                 </p>
                 <div className="flex items-center gap-2 mt-2">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">Time:</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">{t('profile.timeLabel', 'Time:')}</span>
                   <input
                     type="time"
                     value={checkinReminderTime}
@@ -754,7 +758,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
             className="w-full bg-primary hover:bg-primary/95 dark:bg-primary-dark text-white font-bold py-3.5 rounded-2xl shadow-soft flex items-center justify-center space-x-2 transition-all hover:shadow-md disabled:opacity-50 mt-4 cursor-pointer"
           >
             <Save className="h-4 w-4" />
-            <span>Save Notification Preferences</span>
+            <span>{t('saveNotificationPrefs')}</span>
           </button>
         </div>
       </div>
@@ -783,9 +787,15 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
         {user?.cancerJourney && (
           <div className="mt-2">
             <span className="inline-block px-3 py-0.5 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-800/50 rounded-full text-[9px] font-extrabold uppercase tracking-wider">
-              {user.cancerJourney === 'PREVENTION' && 'Cancer Prevention'}
-              {user.cancerJourney === 'TREATMENT' && 'Active Cancer Treatment'}
-              {user.cancerJourney === 'SECONDARY_PREVENTION' && 'Cancer Secondary Prevention'}
+              {user.cancerJourney === 'PREVENTION' && t('modes.preventionTitle', 'Cancer Prevention')}
+              {user.cancerJourney === 'TREATMENT' && t('modes.treatmentTitle', 'Cancer Treatment')}
+              {user.cancerJourney === 'SECONDARY_PREVENTION' && t('modes.secondaryPreventionTitle', 'Secondary Prevention')}
+              {user.cancerJourney === 'AGEING' && t('modes.ageingTitle', 'Ageing & Longevity')}
+              {user.cancerJourney === 'PCOD' && t('modes.pcodTitle', 'PCOD / PCOS Care')}
+              {user.cancerJourney === 'DIABETES' && t('modes.diabetesTitle', 'Diabetes & Glucose')}
+              {user.cancerJourney === 'HYPERTENSION' && t('modes.hypertensionTitle', 'Hypertension (HTN)')}
+              {user.cancerJourney === 'PARKINSON' && t('modes.parkinsonTitle', "Parkinson's Care")}
+              {user.cancerJourney === 'CARDIAC' && t('modes.cardiacTitle', 'Cardiac Health')}
             </span>
           </div>
         )}
@@ -810,24 +820,24 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
               </div>
               <div>
                 <h4 className="text-sm font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                  Live CGM Tracking
+                  {t('profile.liveCgmTracking', 'Live CGM Tracking')}
                 </h4>
-                <p className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400">Abbott Libre & Sugarfit Direct API</p>
+                <p className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400">{t('profile.cgmSubtext', 'Abbott Libre & Sugarfit Direct API')}</p>
               </div>
             </div>
             <span className="px-2.5 py-1 bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/50 text-[9px] font-extrabold uppercase tracking-wider rounded-full shadow-2xs">
-              Coming Soon
+              {t('common.comingSoon', 'Coming Soon')}
             </span>
           </div>
 
           <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed mb-4 relative z-10">
-            Direct live continuous sensor syncing will be launching soon. In the meantime, you can seamlessly upload your CGM reports (CSV/PDF) to track glucose curves and meal spikes!
+            {t('profile.cgmComingSoonDesc', 'Direct live continuous sensor syncing will be launching soon. In the meantime, you can seamlessly upload your CGM reports (CSV/PDF) to track glucose curves and meal spikes!')}
           </p>
 
           <div className="p-3 bg-slate-50/80 dark:bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-100 dark:border-slate-800 flex items-center justify-between relative z-10">
             <div className="flex items-center space-x-2.5">
               <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
-              <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-200">Use Manual Report Upload</span>
+              <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-200">{t('profile.useManualReport', 'Use Manual Report Upload')}</span>
             </div>
             <button
               type="button"
@@ -836,9 +846,9 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
                   onNavigateToTab('Reports');
                 }
               }}
-              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white text-xs font-bold rounded-xl transition-all shadow-sm active:scale-95 shrink-0"
+              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white text-xs font-bold rounded-xl transition-all shadow-sm active:scale-95 shrink-0 cursor-pointer"
             >
-              Upload CSV/PDF
+              {t('profile.uploadCsvPdf', 'Upload CSV/PDF')}
             </button>
           </div>
         </div>
@@ -857,9 +867,9 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
             </svg>
           </div>
           <div>
-            <h4 className="text-xs font-bold text-amber-800 dark:text-amber-300">Pending Review</h4>
+            <h4 className="text-xs font-bold text-amber-800 dark:text-amber-300">{t('profile.pendingReview', 'Pending Review')}</h4>
             <p className="text-[10px] text-amber-700 dark:text-amber-400/80 font-semibold mt-0.5 leading-relaxed">
-              Your recent profile updates are under review by our team. They will be applied once approved.
+              {t('profile.pendingReview')}
             </p>
           </div>
         </motion.div>
@@ -867,7 +877,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
 
       {saveSuccess && (
         <div className="mb-4 p-3 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 text-xs font-bold rounded-2xl border border-emerald-100 dark:border-emerald-800/50 shadow-sm animate-in fade-in duration-200">
-          Profile changes submitted for admin review successfully.
+          {t('profile.savedSuccessfully')}
         </div>
       )}
 
@@ -886,12 +896,13 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
       >
         <Sparkles className="h-5 w-5 text-primary dark:text-primary-light shrink-0 mt-0.5" />
         <div>
-          <h4 className="text-[10px] font-bold text-primary dark:text-primary-light uppercase tracking-wider mb-0.5">My Calorie Recommendation</h4>
+          <h4 className="text-[10px] font-bold text-primary dark:text-primary-light uppercase tracking-wider mb-0.5">{t('profile.calorieRecommendation', 'My Calorie Recommendation')}</h4>
           <span className="text-base font-bold text-slate-800 dark:text-slate-100 block">
-            {user?.dailyCalorieTarget || 2000} kcal / day
+            {t('profile.kcalPerDay', { count: user?.dailyCalorieTarget || 2000 }, `${user?.dailyCalorieTarget || 2000} kcal / day`)}
           </span>
           <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold mt-1 leading-relaxed">
-            Mifflin-St Jeor target calculated from your height, weight, and activity. <a href="https://pubmed.ncbi.nlm.nih.gov/15883556/" target="_blank" rel="noreferrer" className="text-primary dark:text-primary-light hover:underline" onClick={(e) => e.stopPropagation()}>[Source]</a>
+            {t('profile.calorieRecommendationHint', 'Mifflin-St Jeor target calculated from your height, weight, and activity.')}{' '}
+            <a href="https://pubmed.ncbi.nlm.nih.gov/15883556/" target="_blank" rel="noreferrer" className="text-primary dark:text-primary-light hover:underline" onClick={(e) => e.stopPropagation()}>{t('profile.source', '[Source]')}</a>
           </p>
         </div>
       </motion.div>
@@ -905,11 +916,11 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
       >
         <button
           onClick={() => setSubView('education')}
-          className="w-full bg-white dark:bg-slate-900 hover:bg-slate-50/50 dark:hover:bg-slate-800 p-4 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-[0_12px_24px_rgba(0,0,0,0.02)] flex items-center justify-between transition-all"
+          className="w-full bg-white dark:bg-slate-900 hover:bg-slate-50/50 dark:hover:bg-slate-800 p-4 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-[0_12px_24px_rgba(0,0,0,0.02)] flex items-center justify-between transition-all cursor-pointer"
         >
           <div className="flex items-center space-x-3">
             <BookOpen className="h-4 w-4 text-primary dark:text-primary-light" />
-            <span className="text-xs font-bold text-slate-700 dark:text-slate-200">Educational Guides & Videos</span>
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{t('profile.educationCenter', 'Educational Guides & Videos')}</span>
           </div>
           <ChevronRight className="h-4 w-4 text-slate-400 dark:text-slate-500" />
         </button>
@@ -917,11 +928,11 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
         {branding.enableSubscriptions !== false && !isIOSAppStoreBlocked && (
           <button
             onClick={() => setSubView('subscription')}
-            className="w-full bg-white dark:bg-slate-900 hover:bg-slate-50/50 dark:hover:bg-slate-800 p-4 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-[0_12px_24px_rgba(0,0,0,0.02)] flex items-center justify-between transition-all"
+            className="w-full bg-white dark:bg-slate-900 hover:bg-slate-50/50 dark:hover:bg-slate-800 p-4 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-[0_12px_24px_rgba(0,0,0,0.02)] flex items-center justify-between transition-all cursor-pointer"
           >
             <div className="flex items-center space-x-3">
               <CreditCard className="h-4 w-4 text-primary dark:text-primary-light" />
-              <span className="text-xs font-bold text-slate-700 dark:text-slate-200">My Subscription & Billing</span>
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{t('profile.subscriptionBilling', 'My Subscription & Billing')}</span>
             </div>
             <ChevronRight className="h-4 w-4 text-slate-400 dark:text-slate-500" />
           </button>
@@ -935,7 +946,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
         >
           <div className="flex items-center space-x-3">
             <Bell className="h-4 w-4 text-primary dark:text-primary-light" />
-            <span className="text-xs font-bold text-slate-700 dark:text-slate-200">Notification & Delivery Preferences</span>
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{t('profile.notificationPreferences', 'Notification & Delivery Preferences')}</span>
           </div>
           <ChevronRight className="h-4 w-4 text-slate-400 dark:text-slate-500" />
         </button>
@@ -951,11 +962,11 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
         <form onSubmit={handleSave} className="space-y-4">
           <h3 className="text-[10px] font-bold text-slate-450 dark:text-slate-400 uppercase tracking-wider flex items-center space-x-1.5 mb-2">
             <Sliders className="h-4 w-4 text-primary dark:text-primary-light" />
-            <span>Profile Configuration</span>
+            <span>{t('profile.profileConfig', 'Profile Configuration')}</span>
           </h3>
 
           <div>
-            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Full Name</label>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('profile.fullName', 'Full Name')}</label>
             <input
               type="text"
               required
@@ -966,7 +977,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Email Address</label>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('profile.emailAddress', 'Email Address')}</label>
             <input
               type="email"
               required
@@ -977,7 +988,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Mobile Number</label>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('profile.mobileNumber', 'Mobile Number')}</label>
             <input
               type="tel"
               required
@@ -987,11 +998,10 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
             />
           </div>
 
-
           <div>
             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center space-x-1">
               <Activity className="h-3.5 w-3.5 text-primary dark:text-primary-light" />
-              <span>Cancer Care Journey</span>
+              <span>{t('profile.cancerJourney', 'Cancer Care Journey')}</span>
             </label>
             <select
               value={cancerJourney}
@@ -1003,40 +1013,45 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
               }}
               className="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 cursor-pointer transition-all"
             >
-              <option value="PREVENTION">CANCER PREVENTION [NO HISTORY OF CANCER]</option>
-              <option value="TREATMENT">CANCER TREATMENT</option>
-              <option value="SECONDARY_PREVENTION">CANCER SECONDARY PREVENTION [PREVIOUS HISTORY OF CANCER]</option>
+              <option value="PREVENTION">{t('modes.preventionTitle', 'Cancer Prevention')}</option>
+              <option value="TREATMENT">{t('modes.treatmentTitle', 'Cancer Treatment')}</option>
+              <option value="SECONDARY_PREVENTION">{t('modes.secondaryPreventionTitle', 'Secondary Prevention')}</option>
+              <option value="AGEING">{t('modes.ageingTitle', 'Ageing & Longevity')}</option>
+              <option value="PCOD">{t('modes.pcodTitle', 'PCOD / PCOS Care')}</option>
+              <option value="DIABETES">{t('modes.diabetesTitle', 'Diabetes & Glucose')}</option>
+              <option value="HYPERTENSION">{t('modes.hypertensionTitle', 'Hypertension (HTN)')}</option>
+              <option value="PARKINSON">{t('modes.parkinsonTitle', "Parkinson's Care")}</option>
+              <option value="CARDIAC">{t('modes.cardiacTitle', 'Cardiac Health')}</option>
             </select>
             <div className="mt-1.5 flex items-center justify-between text-[10px] font-bold">
               <span className={disclaimerAccepted ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}>
-                {disclaimerAccepted ? '✓ Disclaimer Accepted' : '✗ Disclaimer Declined / Not Accepted'}
+                {disclaimerAccepted ? `✓ ${t('profile.disclaimerAccepted', 'Disclaimer Accepted')}` : `✗ ${t('profile.disclaimerNotAccepted', 'Disclaimer Declined / Not Accepted')}`}
               </span>
               <button
                 type="button"
                 onClick={() => setShowDisclaimer(true)}
-                className="text-primary dark:text-primary-light hover:underline"
+                className="text-primary dark:text-primary-light hover:underline cursor-pointer"
               >
-                Read Disclaimer
+                {t('profile.readDisclaimer', 'Read Disclaimer')}
               </button>
             </div>
           </div>
 
-
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Gender</label>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('profile.gender', 'Gender')}</label>
               <select
                 value={gender}
                 onChange={(e: any) => setGender(e.target.value)}
                 className="w-full px-3 py-2 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-xs font-semibold text-slate-705 dark:text-slate-200 bg-white dark:bg-slate-800 cursor-pointer transition-all"
               >
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Other</option>
+                <option value="Male">{t('profile.male', 'Male')}</option>
+                <option value="Female">{t('profile.female', 'Female')}</option>
+                <option value="Other">{t('profile.other', 'Other')}</option>
               </select>
             </div>
             <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Age</label>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('profile.age', 'Age')}</label>
               <input
                 type="number"
                 step="any"
@@ -1050,7 +1065,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Height (cm)</label>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('profile.height', 'Height (cm)')}</label>
               <input
                 type="number"
                 step="any"
@@ -1061,7 +1076,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
               />
             </div>
             <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Weight (kg)</label>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('profile.weight', 'Weight (kg)')}</label>
               <input
                 type="number"
                 step="any"
@@ -1074,24 +1089,23 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Activity Level</label>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('profile.activityLevel', 'Activity Level')}</label>
             <select
               value={activityLevel}
               onChange={(e: any) => setActivityLevel(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 cursor-pointer transition-all"
             >
-              <option value="Sedentary">Sedentary (no exercise)</option>
-              <option value="Lightly active">Lightly active (1-2 days/wk)</option>
-              <option value="Moderately active">Moderately active (3-5 days/wk)</option>
-              <option value="Very active">Very active (6-7 days/wk)</option>
+              <option value="Sedentary">{t('profile.sedentary', 'Sedentary (no exercise)')}</option>
+              <option value="Lightly active">{t('profile.lightlyActive', 'Lightly active (1-2 days/wk)')}</option>
+              <option value="Moderately active">{t('profile.moderatelyActive', 'Moderately active (3-5 days/wk)')}</option>
+              <option value="Very active">{t('profile.veryActive', 'Very active (6-7 days/wk)')}</option>
             </select>
           </div>
-
 
           <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center space-x-1">
               <Calculator className="h-3.5 w-3.5 text-primary dark:text-primary-light" />
-              <span>Spike Threshold (mg/dL)</span>
+              <span>{t('profile.spikeThreshold', 'Spike Threshold (mg/dL)')}</span>
             </label>
             <input
               type="number"
@@ -1102,19 +1116,19 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
               className="w-full px-3.5 py-2 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 transition-all"
             />
             <p className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold mt-1 leading-relaxed">
-              Values above this peak will mark meals as "Moderate" or "Avoid". Default is 90 mg/dL.
+              {t('profile.spikeThresholdHint', 'Values above this peak will mark meals as Moderate or Avoid. Default is 90 mg/dL.')}
             </p>
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Currency Preference</label>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('profile.currencyPreference', 'Currency Preference')}</label>
             <select
               value={currency}
               onChange={(e: any) => setCurrency(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 cursor-pointer transition-all"
             >
-              <option value="INR">INR (₹)</option>
-              <option value="USD">USD ($)</option>
+              <option value="INR">{t('currencyInr')}</option>
+              <option value="USD">{t('currencyUsd')}</option>
             </select>
           </div>
 
@@ -1122,60 +1136,69 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
             <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-3">
               <h4 className="text-[10px] font-bold text-slate-450 dark:text-slate-400 uppercase tracking-wider flex items-center space-x-1.5">
                 <Globe className="h-4 w-4 text-primary dark:text-primary-light" />
-                <span>Default Shipping Address</span>
+                <span>{t('profile.shippingAddress', 'Default Shipping Address')}</span>
               </h4>
 
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Street Address</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('profile.streetAddress', 'Street Address')}</label>
                 <input
                   type="text"
                   value={addressLine1}
                   onChange={(e) => setAddressLine1(e.target.value)}
-                  placeholder="e.g. Apartment, Suit, Road number"
+                  placeholder={t('profile.streetAddressPlaceholder', 'e.g. Apartment, Suite, Road number')}
                   className="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 transition-all"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">City</label>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('profile.city', 'City')}</label>
                   <input
                     type="text"
                     value={addressCity}
                     onChange={(e) => setAddressCity(e.target.value)}
-                    placeholder="e.g. Bangalore"
+                    placeholder={t('profile.cityPlaceholder', 'e.g. Bangalore')}
                     className="w-full px-3.5 py-2 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 transition-all"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">State</label>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('profile.state', 'State')}</label>
                   <input
                     type="text"
                     value={addressState}
                     onChange={(e) => setAddressState(e.target.value)}
-                    placeholder="e.g. Karnataka"
+                    placeholder={t('profile.statePlaceholder', 'e.g. Karnataka')}
                     className="w-full px-3.5 py-2 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 transition-all"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Postal Code (PIN/ZIP)</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('profile.postalCode', 'Postal Code (PIN/ZIP)')}</label>
                 <input
                   type="text"
                   value={addressPinCode}
                   onChange={(e) => setAddressPinCode(e.target.value)}
-                  placeholder="e.g. 560001"
+                  placeholder={t('profile.postalCodePlaceholder', 'e.g. 560001')}
                   className="w-full px-3.5 py-2 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 transition-all"
                 />
               </div>
             </div>
           )}
 
+          {/* App Language Section */}
+          <div className="pt-4 mt-2 border-t border-slate-100 dark:border-slate-800 space-y-3">
+            <h4 className="text-[10px] font-bold text-slate-450 dark:text-slate-400 uppercase tracking-wider flex items-center space-x-1.5">
+              <Globe className="h-4 w-4 text-primary dark:text-primary-light" />
+              <span>{t('profile.appLanguage')}</span>
+            </h4>
+            <LanguageSelector variant="cards" />
+          </div>
+
           <div className="pt-4 mt-2 border-t border-slate-100 dark:border-slate-800 space-y-4">
             <h4 className="text-[10px] font-bold text-slate-450 dark:text-slate-400 uppercase tracking-wider flex items-center space-x-1.5">
               {isDark ? <Moon className="h-4 w-4 text-primary dark:text-primary-light" /> : <Sun className="h-4 w-4 text-primary dark:text-primary-light" />}
-              <span>App Appearance</span>
+              <span>{t('profile.appAppearance')}</span>
             </h4>
             <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl">
               <button
@@ -1183,14 +1206,14 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
                 onClick={() => setTheme('light')}
                 className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${!isDark ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}
               >
-                Light
+                {t('profile.light')}
               </button>
               <button
                 type="button"
                 onClick={() => setTheme('dark')}
                 className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${isDark ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-500'}`}
               >
-                Dark
+                {t('profile.dark')}
               </button>
             </div>
           </div>
@@ -1198,10 +1221,10 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-primary hover:bg-primary/95 dark:bg-primary-dark text-white font-bold py-3 rounded-2xl shadow-soft flex items-center justify-center space-x-2 transition-all hover:shadow-md disabled:opacity-50"
+            className="w-full bg-primary hover:bg-primary/95 dark:bg-primary-dark text-white font-bold py-3 rounded-2xl shadow-soft flex items-center justify-center space-x-2 transition-all hover:shadow-md disabled:opacity-50 cursor-pointer"
           >
             <Save className="h-4 w-4" />
-            <span>Update</span>
+            <span>{t('common.update')}</span>
           </button>
         </form>
       </motion.div>
@@ -1215,23 +1238,23 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
       >
         <h4 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center space-x-1.5">
           <ShieldCheck className="h-4 w-4 text-primary dark:text-primary-light" />
-          <span>Legal & Agreement</span>
+          <span>{t('profile.legalAgreements', 'Legal & Agreement')}</span>
         </h4>
         <div className="space-y-2">
           <button
             type="button"
             onClick={() => onNavigateToTab?.('Terms of Service')}
-            className="w-full flex items-center justify-between p-3 rounded-2xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 transition-all border border-slate-200/60 dark:border-slate-700/60 text-left"
+            className="w-full flex items-center justify-between p-3 rounded-2xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 transition-all border border-slate-200/60 dark:border-slate-700/60 text-left cursor-pointer"
           >
             <div className="flex items-center space-x-2.5">
               <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
-              <span>Master Disclaimer, Privacy Notice & Terms of Use</span>
+              <span>{t('profile.masterDisclaimer', 'Master Disclaimer, Privacy Notice & Terms of Use')}</span>
             </div>
             <ChevronRight className="h-4 w-4 text-slate-400 shrink-0" />
           </button>
           {user?.termsAccepted && (
             <p className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 px-1 flex items-center space-x-1">
-              <span>✓ Accepted on {user.termsAcceptedAt ? new Date(user.termsAcceptedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'File'} (v{user.acceptedTermsVersion || '1.0'})</span>
+              <span>✓ {t('profile.termsAcceptedOn', { date: user.termsAcceptedAt ? new Date(user.termsAcceptedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'File' })} (v{user.acceptedTermsVersion || '1.0'})</span>
             </p>
           )}
         </div>
@@ -1243,10 +1266,10 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5, duration: 0.4 }}
         onClick={logout}
-        className="w-full border border-rose-250 dark:border-rose-900/50 hover:bg-rose-50/50 dark:hover:bg-rose-900/30 text-rose-600 dark:text-rose-400 font-bold py-3 px-4 rounded-3xl flex items-center justify-center space-x-2 transition-all mb-4"
+        className="w-full border border-rose-250 dark:border-rose-900/50 hover:bg-rose-50/50 dark:hover:bg-rose-900/30 text-rose-600 dark:text-rose-400 font-bold py-3 px-4 rounded-3xl flex items-center justify-center space-x-2 transition-all mb-4 cursor-pointer"
       >
         <LogOut className="h-4 w-4" />
-        <span>Sign Out Account</span>
+        <span>{t('auth.signOut')}</span>
       </motion.button>
 
       {/* Delete Account button */}
@@ -1255,10 +1278,23 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6, duration: 0.4 }}
         onClick={() => setShowDeleteModal(true)}
-        className="w-full text-slate-400 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400 font-bold py-3 px-4 rounded-3xl flex items-center justify-center space-x-2 transition-all mb-6 text-xs hover:bg-slate-50 dark:hover:bg-slate-900/50"
+        className="w-full text-slate-400 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400 font-bold py-3 px-4 rounded-3xl flex items-center justify-center space-x-2 transition-all mb-4 text-xs hover:bg-slate-50 dark:hover:bg-slate-900/50 cursor-pointer"
       >
-        <span>Request Account Deletion</span>
+        <span>{t('profile.requestAccountDeletion', 'Request Account Deletion')}</span>
       </motion.button>
+
+      {/* Trademark & Copyright Footer */}
+      <div className="text-center py-3 mb-6 text-[10px] text-slate-400 dark:text-slate-500 space-y-0.5">
+        <p className="font-bold flex items-center justify-center gap-0.5">
+          <span>{branding.appName || 'Mito Reboot'}</span>
+          <span className="text-[8.5px] font-black text-blue-600 dark:text-blue-400 -translate-y-0.5 select-none">™</span>
+          <span className="mx-1">•</span>
+          <span>v5.4.0</span>
+        </p>
+        <p className="text-[9px] text-slate-400/80">
+          © {new Date().getFullYear()} MitoReboot Private Limited. All rights reserved.
+        </p>
+      </div>
 
       {/* Disclaimer Modal Overlay */}
       {showDisclaimer && (
@@ -1270,7 +1306,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
           >
             <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-3 flex items-center space-x-2">
               <Heart className="h-5 w-5 text-rose-500 dark:text-rose-400 fill-rose-500 dark:fill-rose-400/20" />
-              <span>Medical Disclaimer</span>
+              <span>{t('profile.readDisclaimer', 'Medical Disclaimer')}</span>
             </h3>
             <div
               className="max-h-60 overflow-y-auto pr-1 text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed mb-6 whitespace-pre-line"
@@ -1290,9 +1326,9 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
                   setShowDisclaimer(false);
                   setCancerJourney(user?.cancerJourney || 'PREVENTION');
                 }}
-                className="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold"
+                className="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold cursor-pointer"
               >
-                Decline
+                {t('common.cancel', 'Decline')}
               </button>
               <button
                 type="button"
@@ -1300,9 +1336,9 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
                   setDisclaimerAccepted(true);
                   setShowDisclaimer(false);
                 }}
-                className="flex-1 py-2.5 bg-primary hover:bg-primary/90 dark:bg-primary-dark text-white rounded-xl text-xs font-semibold shadow-soft"
+                className="flex-1 py-2.5 bg-primary hover:bg-primary/90 dark:bg-primary-dark text-white rounded-xl text-xs font-semibold shadow-soft cursor-pointer"
               >
-                I Understand & Accept
+                {t('common.confirm', 'I Understand & Accept')}
               </button>
             </div>
           </motion.div>
@@ -1319,27 +1355,27 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
           >
             <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-3 flex items-center space-x-2">
               <Trash2 className="h-5 w-5 text-rose-500 dark:text-rose-400" />
-              <span>Delete Account</span>
+              <span>{t('profile.deleteAccountConfirmTitle', 'Delete Account')}</span>
             </h3>
             <p className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed mb-6">
-              Are you sure you want to permanently delete your account? All your food logs, CGM reports, subscriptions, and health analysis data will be permanently erased. This action cannot be undone.
+              {t('profile.deleteAccountConfirmDesc', 'Are you sure you want to permanently delete your account? All your food logs, CGM reports, subscriptions, and health analysis data will be permanently erased. This action cannot be undone.')}
             </p>
             <div className="flex space-x-3">
               <button
                 type="button"
                 onClick={() => setShowDeleteModal(false)}
                 disabled={isDeletingAccount}
-                className="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold"
+                className="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold cursor-pointer"
               >
-                Cancel
+                {t('common.cancel', 'Cancel')}
               </button>
               <button
                 type="button"
                 onClick={handleDeleteAccount}
                 disabled={isDeletingAccount}
-                className="flex-1 py-2.5 bg-rose-500 dark:bg-rose-600 hover:bg-rose-600 dark:hover:bg-rose-700 text-white rounded-xl text-xs font-semibold shadow-soft disabled:opacity-50"
+                className="flex-1 py-2.5 bg-rose-500 dark:bg-rose-600 hover:bg-rose-600 dark:hover:bg-rose-700 text-white rounded-xl text-xs font-semibold shadow-soft disabled:opacity-50 cursor-pointer"
               >
-                {isDeletingAccount ? 'Deleting...' : 'Delete Account'}
+                {isDeletingAccount ? t('profile.deleting', 'Deleting...') : t('auth.deleteAccount', 'Delete Account')}
               </button>
             </div>
           </motion.div>

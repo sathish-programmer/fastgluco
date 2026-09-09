@@ -1,5 +1,6 @@
 import React from 'react';
 import { HeartHandshake, Calendar } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 /** Colour scale used everywhere a 0-100% score is shown */
 export function pctColor(pct: number): string {
@@ -48,6 +49,7 @@ export function YesNoToggle({
   goodAnswer?: boolean;
   sublabel?: string;
 }) {
+  const { t } = useLanguage();
   return (
     <div className="flex items-center justify-between gap-3 py-2.5 border-b border-slate-100 dark:border-slate-800/60 last:border-none">
       <div className="min-w-0 flex-1">
@@ -66,7 +68,7 @@ export function YesNoToggle({
               : 'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300'
           }`}
         >
-          Yes
+          {t('common.yes', 'Yes')}
         </button>
         <button
           type="button"
@@ -79,7 +81,7 @@ export function YesNoToggle({
               : 'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300'
           }`}
         >
-          No
+          {t('common.no', 'No')}
         </button>
       </div>
     </div>
@@ -111,6 +113,13 @@ export function ModeTabs({
   active: string;
   onChange: (m: string) => void;
 }) {
+  const { t } = useLanguage();
+  const getModeLabel = (m: string) => {
+    if (m === 'Prevention') return t('modes.preventionShort', 'Prevention');
+    if (m === 'Treatment') return t('modes.treatmentShort', 'Treatment');
+    if (m === 'Secondary Prevention' || m === 'Recurrence') return t('modes.secondaryPreventionShort', 'Recurrence Care');
+    return m;
+  };
   return (
     <div className="grid gap-2 mb-4" style={{ gridTemplateColumns: `repeat(${modes.length}, minmax(0,1fr))` }}>
       {modes.map((m) => (
@@ -124,7 +133,7 @@ export function ModeTabs({
               : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-blue-300'
           }`}
         >
-          {m}
+          {getModeLabel(m)}
         </button>
       ))}
     </div>
@@ -135,8 +144,8 @@ export function Slider1to10({
   label,
   value,
   onChange,
-  worstLabel = 'Severe',
-  bestLabel = 'Minimal'
+  worstLabel,
+  bestLabel
 }: {
   label: string;
   value?: number;
@@ -144,8 +153,11 @@ export function Slider1to10({
   worstLabel?: string;
   bestLabel?: string;
 }) {
+  const { t } = useLanguage();
   const v = value ?? 1;
   const col = severityColor(v);
+  const best = bestLabel || t('habits.minimal', 'Minimal');
+  const worst = worstLabel || t('habits.severe', 'Severe');
   return (
     <div className="py-2">
       <div className="flex justify-between items-center text-xs mb-1.5 font-bold">
@@ -164,20 +176,21 @@ export function Slider1to10({
         className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-600"
       />
       <div className="flex justify-between text-[10px] text-slate-400 font-semibold mt-1">
-        <span>1 · {bestLabel}</span>
-        <span>10 · {worstLabel}</span>
+        <span>1 · {best}</span>
+        <span>10 · {worst}</span>
       </div>
     </div>
   );
 }
 
 export function StressTracker({ value, onChange }: { value?: number; onChange: (v: number) => void }) {
+  const { t } = useLanguage();
   const v = value ?? 5;
   const col = severityColor(v);
   return (
     <div className="py-2">
       <div className="flex justify-between items-center text-xs mb-1.5 font-bold">
-        <span className="text-slate-800 dark:text-slate-200">Stress level today</span>
+        <span className="text-slate-800 dark:text-slate-200">{t('habits.stressLevelToday', 'Stress level today')}</span>
         <span className="font-black px-2 py-0.5 rounded-md text-[11px]" style={{ color: col, backgroundColor: `${col}15` }}>
           {v}/10
         </span>
@@ -192,8 +205,8 @@ export function StressTracker({ value, onChange }: { value?: number; onChange: (
         className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-600"
       />
       <div className="flex justify-between text-[10px] text-slate-400 font-semibold mt-1">
-        <span>1 · Calm / Relaxed</span>
-        <span>10 · Overwhelmed</span>
+        <span>1 · {t('habits.calmRelaxed', 'Calm / Relaxed')}</span>
+        <span>10 · {t('habits.overwhelmed', 'Overwhelmed')}</span>
       </div>
     </div>
   );
@@ -208,6 +221,7 @@ export function TalkToDoctorCard({
   note: string;
   onBook?: () => void;
 }) {
+  const { t } = useLanguage();
   const handleBookClick = () => {
     sessionStorage.setItem('mito_target_specialty', specialty);
     if (onBook) {
@@ -226,7 +240,7 @@ export function TalkToDoctorCard({
         <div className="flex-1 min-w-0">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-1.5">
             <p className="text-xs font-black text-blue-950 dark:text-blue-200">
-              Consult Your {specialty}
+              {t('appointment.consultSpecialist', { specialty }, `Consult Your ${specialty}`)}
             </p>
             <button
               type="button"
@@ -234,14 +248,14 @@ export function TalkToDoctorCard({
               className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-black rounded-xl shadow-xs hover:shadow-md transition-all cursor-pointer flex items-center gap-1.5 self-start sm:self-auto shrink-0"
             >
               <Calendar className="h-3.5 w-3.5" />
-              <span>Book Appointment</span>
+              <span>{t('appointment.bookAppointment', 'Book Appointment')}</span>
             </button>
           </div>
           <p className="text-[11.5px] text-slate-600 dark:text-slate-400 leading-relaxed">
             {note}
           </p>
           <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium mt-2">
-            This tracker supports your daily lifestyle habits and does not replace professional clinical diagnosis.
+            {t('disclaimer.lifestyleSupportNote', 'This tracker supports your daily lifestyle habits and does not replace professional clinical diagnosis.')}
           </p>
         </div>
       </div>

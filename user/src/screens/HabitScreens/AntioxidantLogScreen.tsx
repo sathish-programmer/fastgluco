@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Check, X, Info, ChevronDown, ChevronUp, Trash2, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { HabitsService, type HabitLog } from '../../services/habitsService';
+
 interface AntioxidantLogScreenProps {
   onBack: () => void;
   onViewShop?: () => void;
@@ -73,6 +75,7 @@ const antioxidantColors: Record<string, string> = {
 
 export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({ onBack, onViewShop, onNavigateToDiagnostics }) => {
   const { user, token, apiUrl } = useAuth();
+  const { t } = useLanguage();
   const [answer, setAnswer] = useState<'yes' | 'no' | null>(null);
   const [history, setHistory] = useState<HabitLog[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
@@ -135,8 +138,8 @@ export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({ onBa
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div>
-          <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Repair · Antioxidants</span>
-          <h2 className="text-2xl font-sans font-bold text-slate-800 dark:text-slate-50 leading-none mt-1">Daily Antioxidant Log</h2>
+          <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">{t('antioxidantsHeader', 'Repair · Antioxidants')}</span>
+          <h2 className="text-2xl font-sans font-bold text-slate-800 dark:text-slate-50 leading-none mt-1">{t('dailyAntioxidantLog', 'Daily Antioxidant Log')}</h2>
         </div>
       </div>
 
@@ -145,9 +148,9 @@ export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({ onBa
         <div className="flex items-start gap-3">
           <span className="text-2xl shrink-0">🫐</span>
           <div>
-            <h3 className="font-bold text-emerald-800 dark:text-emerald-300 text-sm mb-1">Why antioxidants matter</h3>
+            <h3 className="font-bold text-emerald-800 dark:text-emerald-300 text-sm mb-1">{t('whyAntioxidantsMatter', 'Why antioxidants matter')}</h3>
             <p className="text-xs text-emerald-700 dark:text-emerald-400 leading-relaxed">
-              Antioxidants neutralise free radicals that damage DNA and accelerate ageing. Daily intake through food or supplements helps your cells repair and defend against chronic disease.
+              {t('antioxidantsDesc', 'Antioxidants neutralise free radicals that damage DNA and accelerate ageing. Daily intake through food or supplements helps your cells repair and defend against chronic disease.')}
             </p>
           </div>
         </div>
@@ -158,27 +161,27 @@ export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({ onBa
 
         {/* Question with underlined antioxidant-rich food + info icon */}
         <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 leading-relaxed mb-5">
-          Do you consume{' '}
+          {t('doYouConsume', 'Do you consume')}{' '}
           <button
             onClick={() => setShowFoodTable(v => !v)}
             className="inline-flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400 underline underline-offset-2 decoration-dashed font-bold hover:text-emerald-700 transition-colors"
           >
-            antioxidant-rich foods
+            {t('antioxidantRichFoods', 'antioxidant-rich foods')}
             <Info className="h-3.5 w-3.5 ml-0.5 text-emerald-500" />
           </button>
-          {' '}or take antioxidant supplements{' '}
+          {' '}{t('orTakeSupplements', 'or take antioxidant supplements')}{' '}
           {onViewShop ? (
             <button
               onClick={onViewShop}
               className="text-indigo-600 dark:text-indigo-400 font-bold hover:underline transition-all"
             >
-              [TABLETS]
+              {t('tablets', '[TABLETS]')}
             </button>
           ) : (
-            <span className="text-slate-400 font-medium">[TABLETS]</span>
+            <span className="text-slate-400 font-medium">{t('tablets', '[TABLETS]')}</span>
           )}
-          {' '}to support your body's repair mechanisms{' '}
-          <span className="font-bold text-slate-800 dark:text-slate-50">EVERYDAY?</span>
+          {' '}{t('toSupportRepair', "to support your body's repair mechanisms")}{' '}
+          <span className="font-bold text-slate-800 dark:text-slate-50">{t('everyday', 'EVERYDAY?')}</span>
         </p>
 
         {/* Collapsible Food Table */}
@@ -188,7 +191,7 @@ export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({ onBa
             <div className="bg-emerald-600 px-4 py-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-base">🌿</span>
-                <span className="text-xs font-extrabold text-white tracking-wide uppercase">Antioxidant Food Sources</span>
+                <span className="text-xs font-extrabold text-white tracking-wide uppercase">{t('antioxidantFoodSources', 'Antioxidant Food Sources')}</span>
               </div>
               <button
                 onClick={() => setShowFoodTable(false)}
@@ -200,9 +203,9 @@ export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({ onBa
 
             {/* Column Headers */}
             <div className="grid grid-cols-3 bg-emerald-50 dark:bg-emerald-950/30 px-4 py-2 border-b border-emerald-100 dark:border-emerald-900/40">
-              <span className="text-[9px] font-extrabold text-emerald-700 dark:text-emerald-400 uppercase tracking-widest">Antioxidant</span>
-              <span className="text-[9px] font-extrabold text-emerald-700 dark:text-emerald-400 uppercase tracking-widest">Food Source</span>
-              <span className="text-[9px] font-extrabold text-emerald-700 dark:text-emerald-400 uppercase tracking-widest text-right">One Serving</span>
+              <span className="text-[9px] font-extrabold text-emerald-700 dark:text-emerald-400 uppercase tracking-widest">{t('antioxidant', 'Antioxidant')}</span>
+              <span className="text-[9px] font-extrabold text-emerald-700 dark:text-emerald-400 uppercase tracking-widest">{t('foodSource', 'Food Source')}</span>
+              <span className="text-[9px] font-extrabold text-emerald-700 dark:text-emerald-400 uppercase tracking-widest text-right">{t('oneServing', 'One Serving')}</span>
             </div>
 
             {/* Grouped Rows */}
@@ -236,7 +239,7 @@ export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({ onBa
             className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 mb-4 hover:text-emerald-700 transition-colors"
           >
             <ChevronDown className="h-3.5 w-3.5" />
-            View antioxidant-rich food sources
+            {t('viewAntioxidantFoodSources', 'View antioxidant-rich food sources')}
           </button>
         )}
 
@@ -251,7 +254,7 @@ export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({ onBa
             }`}
           >
             <Check className="h-4 w-4" />
-            Yes, I did
+            {t('yesIDid', 'Yes, I did')}
           </button>
           <button
             onClick={() => setAnswer('no')}
@@ -262,7 +265,7 @@ export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({ onBa
             }`}
           >
             <X className="h-4 w-4" />
-            Not today
+            {t('notToday', 'Not today')}
           </button>
         </div>
 
@@ -273,21 +276,21 @@ export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({ onBa
             disabled={loading}
             className="w-full mt-4 py-3.5 rounded-2xl font-bold text-sm text-white transition-all shadow-sm disabled:opacity-50 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600"
           >
-            {loading ? 'Saving…' : `Save — ${answer === 'yes' ? '✅ Consumed today' : '❌ Skipped today'}`}
+            {loading ? t('common.loading', 'Saving…') : `${t('common.save', 'Save')} — ${answer === 'yes' ? `✅ ${t('consumedAntioxidants', 'Consumed antioxidants')}` : `❌ ${t('notConsumed', 'Not consumed')}`}`}
           </button>
         )}
       </div>
 
       {/* 7-Day History */}
       <div>
-        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-widest uppercase block mb-3">7-Day Trend</span>
+        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-widest uppercase block mb-3">{t('sevenDayTrend', '7-Day Trend')}</span>
         {loadingHistory ? (
           <div className="text-center py-8">
             <div className="w-6 h-6 border-2 border-slate-200 border-t-emerald-500 rounded-full animate-spin mx-auto mb-3" />
           </div>
         ) : history.length === 0 ? (
           <div className="text-center py-8 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700">
-            <p className="text-xs text-slate-400">No days logged yet. Start your streak today!</p>
+            <p className="text-xs text-slate-400">{t('noDaysLogged', 'No days logged yet. Start your streak today!')}</p>
           </div>
         ) : (
           <div className="flex flex-col gap-2">
@@ -301,7 +304,7 @@ export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({ onBa
                     </div>
                     <div>
                       <span className={`text-sm font-bold ${consumed ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                        {consumed ? 'Consumed antioxidants' : 'Not consumed'}
+                        {consumed ? t('consumedAntioxidants', 'Consumed antioxidants') : t('notConsumed', 'Not consumed')}
                       </span>
                       <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 block">
                         {new Date(h.timestamp).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}
@@ -329,7 +332,7 @@ export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({ onBa
       {/* Check Vitamin Levels (Lab Testing) */}
       {onNavigateToDiagnostics && (
         <div className="mt-6">
-          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-widest uppercase block mb-3">Want to check your actual levels?</span>
+          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-widest uppercase block mb-3">{t('wantToCheckActualLevels', 'Want to check your actual levels?')}</span>
           <button
             onClick={onNavigateToDiagnostics}
             className="w-full relative overflow-hidden rounded-3xl p-5 flex items-center justify-between gap-4 text-left shadow-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 transition-colors hover:shadow-lg active:scale-[0.99]"
@@ -339,8 +342,8 @@ export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({ onBa
                 🧪
               </div>
               <div>
-                <p className="text-sm font-extrabold text-slate-800 dark:text-slate-100">Check Vitamin Levels</p>
-                <p className="text-xs text-slate-400 dark:text-slate-400 mt-0.5 font-medium">Book a lab test with our partner diagnostics vendors</p>
+                <p className="text-sm font-extrabold text-slate-800 dark:text-slate-100">{t('checkVitaminLevels', 'Check Vitamin Levels')}</p>
+                <p className="text-xs text-slate-400 dark:text-slate-400 mt-0.5 font-medium">{t('bookLabTestPartner', 'Book a lab test with our partner diagnostics vendors')}</p>
               </div>
             </div>
             <div className="relative z-10 h-9 w-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-100 dark:border-indigo-800/50 flex items-center justify-center shrink-0">
@@ -352,7 +355,7 @@ export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({ onBa
       {/* Shop for Supplements */}
       {onViewShop && (
         <div className="mt-6">
-          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-widest uppercase block mb-3">Can't get enough from food?</span>
+          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-widest uppercase block mb-3">{t('cantGetEnoughFromFood', "Can't get enough from food?")}</span>
           <button
             onClick={onViewShop}
             className="w-full relative overflow-hidden rounded-3xl p-5 flex items-center justify-between gap-4 text-left shadow-md"
@@ -365,8 +368,8 @@ export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({ onBa
                 💊
               </div>
               <div>
-                <p className="text-sm font-extrabold text-white">Shop Antioxidant Supplements</p>
-                <p className="text-xs text-emerald-100 mt-0.5">Vitamin C, E, Curcumin, Omega-3 & more</p>
+                <p className="text-sm font-extrabold text-white">{t('shopAntioxidantSupplements', 'Shop Antioxidant Supplements')}</p>
+                <p className="text-xs text-emerald-100 mt-0.5">{t('vitaminCECurcumin', 'Vitamin C, E, Curcumin, Omega-3 & more')}</p>
               </div>
             </div>
             <div className="relative z-10 h-9 w-9 rounded-xl bg-white/20 border border-white/20 flex items-center justify-center shrink-0">

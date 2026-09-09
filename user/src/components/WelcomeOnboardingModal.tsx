@@ -12,6 +12,7 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 interface WelcomeOnboardingModalProps {
   isOpen: boolean;
@@ -32,6 +33,7 @@ interface OnboardingStep {
 
 export const WelcomeOnboardingModal: React.FC<WelcomeOnboardingModalProps> = ({ isOpen, onClose }) => {
   const { branding } = useAuth();
+  const { t } = useLanguage();
   const [currentStep, setCurrentStep] = useState(0);
 
   const steps: OnboardingStep[] = [
@@ -156,7 +158,7 @@ export const WelcomeOnboardingModal: React.FC<WelcomeOnboardingModalProps> = ({ 
           <button
             onClick={handleComplete}
             className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 dark:text-slate-300 rounded-full transition-colors"
-            aria-label="Close Onboarding"
+            aria-label={t('closeOnboarding')}
           >
             <X className="h-4 w-4" />
           </button>
@@ -214,13 +216,13 @@ export const WelcomeOnboardingModal: React.FC<WelcomeOnboardingModalProps> = ({ 
           {currentStep === steps.length - 1 ? (
             <div className="flex flex-col space-y-2 text-center">
               <p className="text-xs font-black text-slate-800 dark:text-slate-100">
-                Your Mito_Reboot journey starts here
+                Your {branding.appName} journey starts here
               </p>
               <button
                 onClick={handleComplete}
                 className="w-full py-3.5 bg-primary hover:bg-primary/95 text-white text-xs font-extrabold rounded-2xl shadow-lg shadow-primary/20 transition-all flex items-center justify-center space-x-2 transform active:scale-[0.99]"
               >
-                <span>Explore Mito_Reboot</span>
+                <span>{t('exploreMitoReboot')}</span>
                 <ChevronRight className="h-4 w-4 stroke-[3px]" />
               </button>
             </div>
@@ -236,14 +238,14 @@ export const WelcomeOnboardingModal: React.FC<WelcomeOnboardingModalProps> = ({ 
                 }`}
               >
                 <ChevronLeft className="h-4 w-4" />
-                <span>Back</span>
+                <span>{t('common.back')}</span>
               </button>
 
               <button
                 onClick={handleNext}
                 className={`px-6 py-3 rounded-2xl text-xs font-extrabold transition-all flex items-center space-x-2 shadow-md ${activeStep.accent}`}
               >
-                <span>Next</span>
+                <span>{t('common.next')}</span>
                 <ChevronRight className="h-4 w-4" />
               </button>
             </div>

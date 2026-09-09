@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { ShieldCheck } from 'lucide-react';
 import { CURRENT_TERMS_VERSION } from '../components/TermsAndConditionsAcceptancePage';
 
@@ -10,6 +11,7 @@ interface LegalProps {
 
 export const Legal: React.FC<LegalProps> = ({ type, onBack }) => {
   const { apiUrl, user } = useAuth();
+  const { t } = useLanguage();
   const [content, setContent] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -127,7 +129,7 @@ export const Legal: React.FC<LegalProps> = ({ type, onBack }) => {
             <button 
               onClick={onBack} 
               className="p-1.5 rounded-xl text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 bg-slate-100 dark:bg-slate-800 transition-all shrink-0"
-              aria-label="Back"
+              aria-label={t('backAria')}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
             </button>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Check, Minus, Moon, Trash2, Sparkles, MessageSquare } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { HabitsService, type HabitLog } from '../../services/habitsService';
 import { ConsultationBanner } from '../../components/ConsultationBanner';
 import { DeStressAIChatModal } from '../../components/DeStressAIChatModal';
@@ -11,6 +12,7 @@ interface SleepLogScreenProps {
 }
 
 export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAppointment }) => {
+  const { t } = useLanguage();
   const { user, token, apiUrl } = useAuth();
   const [hours, setHours] = useState<number>(7);
   const [quality, setQuality] = useState<string>('good');
@@ -76,8 +78,8 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div>
-          <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Damage · Sleep Debt</span>
-          <h2 className="text-2xl font-sans font-bold text-slate-800 dark:text-slate-100 leading-none mt-1">Catch up on rest</h2>
+          <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">{t('habits.sleepDebtSub', 'Damage · Sleep Debt')}</span>
+          <h2 className="text-2xl font-sans font-bold text-slate-800 dark:text-slate-100 leading-none mt-1">{t('habits.catchUpRest', 'Catch up on rest')}</h2>
         </div>
       </div>
 
@@ -85,32 +87,32 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
       <div className="bg-gradient-to-r from-blue-50/90 via-indigo-50/80 to-slate-50 dark:from-slate-900 dark:to-slate-900/90 rounded-3xl p-5 mb-6 shadow-xs border border-blue-100 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="space-y-1.5 max-w-xl">
           <span className="text-[10px] font-black uppercase tracking-widest text-blue-700 dark:text-blue-300 bg-blue-100/80 dark:bg-blue-950/60 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 border border-blue-200/60 dark:border-blue-800">
-            <Sparkles className="h-3 w-3 text-blue-600" /> Sleep Health & Mental AI
+            <Sparkles className="h-3 w-3 text-blue-600" /> {t('mia.sleepAssessment', 'Sleep Health & Mental AI')}
           </span>
-          <h3 className="text-base font-extrabold text-slate-900 dark:text-white leading-tight">Having trouble sleeping or staying asleep?</h3>
+          <h3 className="text-base font-extrabold text-slate-900 dark:text-white leading-tight">{t('habits.troubleSleepingTitle', 'Having trouble sleeping or staying asleep?')}</h3>
           <p className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
-            Chat with <strong>Mia</strong>, your Mental Health & Sleep AI Expert, for root-cause diagnosis and 4 personalized sleep steps.
+            {t('habits.troubleSleepingDesc', 'Chat with Mia, your Mental Health & Sleep AI Expert, for root-cause diagnosis and 4 personalized sleep steps.')}
           </p>
         </div>
         <button
           onClick={() => setShowMiaSleepModal(true)}
           className="bg-blue-600 hover:bg-blue-700 text-white font-black text-xs px-4 py-3 rounded-2xl transition-all shadow-sm shrink-0 whitespace-nowrap cursor-pointer flex items-center gap-2 active:scale-95"
         >
-          <MessageSquare className="h-4 w-4" /> Start Sleep Assessment
+          <MessageSquare className="h-4 w-4" /> {t('habits.startSleepAssessment', 'Start Sleep Assessment')}
         </button>
       </div>
 
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl p-4 mb-6">
         <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-1.5 flex items-center gap-2">
-          <Moon className="h-4 w-4 text-indigo-400" /> Sleep clears the brain.
+          <Moon className="h-4 w-4 text-indigo-400" /> {t('habits.sleepClearsBrain', 'Sleep clears the brain.')}
         </h3>
         <p className="text-xs text-slate-555 dark:text-slate-450 leading-relaxed">
-          Deep sleep triggers the glymphatic system to wash away metabolic waste. Aim for 7-9 hours.
+          {t('habits.sleepClearsBrainDesc', 'Deep sleep triggers the glymphatic system to wash away metabolic waste. Aim for 7-9 hours.')}
         </p>
       </div>
 
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-3xl p-5 mb-8">
-        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-6">Hours slept last night</span>
+        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-6">{t('habits.hoursSleptLastNight', 'Hours slept last night')}</span>
         
         <div className="flex items-center justify-between mb-8">
           <button 
@@ -121,7 +123,7 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
           </button>
           <div className="text-center">
             <span className="text-5xl font-sans font-bold text-indigo-500">{hours}</span>
-            <span className="text-sm font-bold text-slate-400 ml-1">hrs</span>
+            <span className="text-sm font-bold text-slate-400 ml-1">{t('habits.hrs', 'hrs')}</span>
           </div>
           <button 
             onClick={() => setHours(Math.min(24, hours + 0.5))}
@@ -131,13 +133,13 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
           </button>
         </div>
 
-        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-3">Sleep Quality</span>
+        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-3">{t('habits.sleepQuality', 'Sleep Quality')}</span>
         <div className="grid grid-cols-4 gap-2 mb-6">
           {[
-            { value: 'poor', label: 'Poor', emoji: '🥱' },
-            { value: 'fair', label: 'Fair', emoji: '😴' },
-            { value: 'good', label: 'Good', emoji: '😊' },
-            { value: 'excellent', label: 'Excellent', emoji: '🌟' }
+            { value: 'poor', label: t('habits.poor', 'Poor'), emoji: '🥱' },
+            { value: 'fair', label: t('habits.fair', 'Fair'), emoji: '😴' },
+            { value: 'good', label: t('habits.good', 'Good'), emoji: '😊' },
+            { value: 'excellent', label: t('habits.excellent', 'Excellent'), emoji: '🌟' }
           ].map(q => (
             <button
               key={q.value}
@@ -160,7 +162,7 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
           disabled={loading}
           className="w-full py-4 rounded-xl font-bold transition-all shadow-sm bg-indigo-500 hover:bg-indigo-600 text-white disabled:opacity-50"
         >
-          Log sleep
+          {t('habits.logHabit', { habit: t('habits.sleep', 'Sleep') }, 'Log sleep')}
         </button>
       </div>
 
@@ -172,7 +174,7 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
           </div>
         ) : history.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-xs text-slate-400 dark:text-slate-500">No days logged yet</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500">{t('common.noDaysLogged', 'No days logged yet')}</p>
           </div>
         ) : (
           <div className="flex flex-col gap-2">
@@ -206,7 +208,7 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
           triggerCondition="Logged <= 5 hours of sleep"
           riskLevel="Medium"
           recommendedSpecialty="Sleep Specialist"
-          title="Sleep Quality Support"
+          title={t('sleepQualitySupport')}
           description="You've logged less than 5 hours of sleep recently. Chronic sleep deprivation can accelerate cellular aging. Consider consulting a specialist."
           colorTheme="indigo"
           onBookAppointment={onBookAppointment!}
@@ -221,9 +223,9 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
               <div className="mx-auto w-12 h-12 bg-indigo-50 text-indigo-500 rounded-2xl flex items-center justify-center mb-3">
                 <Moon className="h-6 w-6" />
               </div>
-              <h3 className="text-base font-bold text-slate-800">Sleep Advisory Alert</h3>
+              <h3 className="text-base font-bold text-slate-800">{t('sleep.sleepAdvisoryAlert', 'Sleep Advisory Alert')}</h3>
               <p className="text-xs text-slate-500 leading-relaxed mt-2">
-                Your sleep quality is poor or duration is less than 6 hours. Please select the option that best describes your situation:
+                {t('sleep.advisoryDesc', 'Your sleep quality is poor or duration is less than 6 hours. Please select the option that best describes your situation:')}
               </p>
             </div>
 
@@ -235,9 +237,9 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
                 }}
                 className="w-full text-left p-3.5 bg-rose-50/50 hover:bg-rose-50 border border-rose-100 hover:border-rose-200 rounded-2xl text-xs transition-all flex flex-col gap-1"
               >
-                <span className="font-bold text-rose-800 uppercase tracking-wide text-[9px]">Option 1</span>
-                <span className="font-bold text-slate-750">Stressed and hence sleep issue</span>
-                <span className="text-[10px] text-slate-500 font-semibold">Consult a Mental Health Specialist</span>
+                <span className="font-bold text-rose-800 uppercase tracking-wide text-[9px]">{t('sleep.option1', 'Option 1')}</span>
+                <span className="font-bold text-slate-750">{t('sleep.stressedHenceSleepIssue', 'Stressed and hence sleep issue')}</span>
+                <span className="text-[10px] text-slate-500 font-semibold">{t('sleep.consultMentalHealth', 'Consult a Mental Health Specialist')}</span>
               </button>
 
               <button 
@@ -247,16 +249,16 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
                 }}
                 className="w-full text-left p-3.5 bg-indigo-50/50 hover:bg-indigo-100 border border-indigo-100 hover:border-indigo-200 rounded-2xl text-xs transition-all flex flex-col gap-1"
               >
-                <span className="font-bold text-indigo-850 uppercase tracking-wide text-[9px]">Option 2</span>
-                <span className="font-bold text-slate-750">Not stressed</span>
-                <span className="text-[10px] text-slate-500 font-semibold">Book a Sleep Specialist Consult</span>
+                <span className="font-bold text-indigo-850 uppercase tracking-wide text-[9px]">{t('sleep.option2', 'Option 2')}</span>
+                <span className="font-bold text-slate-750">{t('sleep.notStressed', 'Not stressed')}</span>
+                <span className="text-[10px] text-slate-500 font-semibold">{t('sleep.bookSleepSpecialist', 'Book a Sleep Specialist Consult')}</span>
               </button>
 
               <button 
                 onClick={() => setShowSleepPopup(false)}
                 className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition-all text-center mt-2"
               >
-                Cancel
+                {t('common.cancel', 'Cancel')}
               </button>
             </div>
           </div>

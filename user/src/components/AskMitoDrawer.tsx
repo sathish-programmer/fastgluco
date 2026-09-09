@@ -7,6 +7,7 @@ import {
   AlertTriangle, UploadCloud
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 interface PatientQuery {
   _id: string;
@@ -58,6 +59,7 @@ const QUESTION_CATEGORIES = [
 
 export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose }) => {
   const { token, user } = useAuth();
+  const { language, t } = useLanguage();
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
   // State
@@ -82,7 +84,7 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
     if (!file) return;
 
     if (file.size > 8 * 1024 * 1024) {
-      alert('File size exceeds 8MB limit. Please choose a smaller image.');
+      alert(t('fileSizeExceedsLimit'));
       return;
     }
 
@@ -94,7 +96,7 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
     };
     reader.onerror = () => {
       setImageUploading(false);
-      alert('Failed to read image file.');
+      alert(t('failedToReadImage'));
     };
     reader.readAsDataURL(file);
   };
@@ -165,7 +167,8 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
           userName: (user as any)?.name || 'Patient',
           userEmail: (user as any)?.email || '',
           patientImageUrl: patientImageUrl || undefined,
-          paymentDetails
+          paymentDetails,
+          language: language || 'en'
         })
       });
 
@@ -185,7 +188,7 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
       }
     } catch (err) {
       console.error('Error submitting question:', err);
-      alert('Error submitting question. Please check your network connection.');
+      alert(t('errorSubmittingQuestion'));
     } finally {
       setSubmittingQuestion(false);
     }
@@ -197,7 +200,7 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
     if (!newSubject.trim() || !newQuestion.trim() || !token) return;
 
     if (newCategory === 'Others' && !customCategory.trim()) {
-      alert('Please specify your health topic or category.');
+      alert(t('specifyHealthCategory'));
       return;
     }
 
@@ -324,7 +327,7 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                   Doctor Consultation
                 </h3>
                 <div className="text-xs text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">
-                  <span>Clinical Team Active • Reply &lt;48h</span>
+                  <span>{t('clinicalTeamActive')}</span>
                 </div>
               </div>
             </div>
@@ -336,7 +339,7 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                   fetchQuotaStatus();
                 }}
                 className="h-8.5 w-8.5 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 flex items-center justify-center text-slate-600 dark:text-slate-300 transition-all cursor-pointer"
-                title="Refresh"
+                title={t('common.refresh')}
               >
                 <RefreshCw className="h-4 w-4" />
               </button>
@@ -423,7 +426,7 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
           {loadingQueries ? (
             <div className="py-24 text-center text-xs font-semibold text-slate-400 flex flex-col items-center justify-center gap-2">
               <Loader2 className="h-7 w-7 animate-spin text-blue-600" />
-              <span>Loading consultations...</span>
+              <span>{t('loadingConsultations')}</span>
             </div>
           ) : queries.length === 0 ? (
             /* Empty State */
@@ -505,7 +508,7 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                             <a href={q.patientImageUrl} target="_blank" rel="noopener noreferrer">
                               <img 
                                 src={q.patientImageUrl} 
-                                alt="Attached patient report" 
+                                alt={t('attachedPatientReport')} 
                                 className="h-36 max-w-xs object-cover rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs hover:opacity-90 transition-opacity" 
                               />
                             </a>
@@ -542,7 +545,7 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                     ) : (
                       <div className="flex items-center gap-3 text-xs text-amber-800 dark:text-amber-300 font-semibold bg-amber-50/80 dark:bg-amber-950/30 p-3.5 rounded-2xl border border-amber-200/80 dark:border-amber-900/50">
                         <Clock className="h-4 w-4 text-amber-600 shrink-0" />
-                        <span>Doctor is reviewing your health parameters. Reply will appear here within 48 hours.</span>
+                        <span>{t('doctorReviewingParams')}</span>
                       </div>
                     )}
                   </div>
@@ -595,8 +598,8 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                       <Sparkles className="h-5 w-5" />
                     </div>
                     <div>
-                      <h4 className="text-base font-black text-slate-900 dark:text-white">Ask Doctor</h4>
-                      <p className="text-xs text-slate-400">Guaranteed clinical reply within 48 hours</p>
+                      <h4 className="text-base font-black text-slate-900 dark:text-white">{t('askMito.doctor', 'Ask Doctor')}</h4>
+                      <p className="text-xs text-slate-400">{t('askMito.clinicalReply48h', 'Guaranteed clinical reply within 48 hours')}</p>
                     </div>
                   </div>
                   <button
@@ -678,7 +681,7 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                       type="text"
                       value={customCategory}
                       onChange={e => setCustomCategory(e.target.value)}
-                      placeholder="e.g. Thyroid, Gut Microbiome, Fatty Liver..."
+                      placeholder={t('categoryPlaceholder')}
                       required={newCategory === 'Others'}
                       className="w-full bg-slate-50 dark:bg-slate-800 border border-blue-200 dark:border-blue-800 rounded-2xl px-4 py-3 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
                     />
@@ -693,7 +696,7 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                     type="text"
                     value={newSubject}
                     onChange={e => setNewSubject(e.target.value)}
-                    placeholder="e.g. Glucose spike after lunch"
+                    placeholder={t('queryTitlePlaceholder')}
                     required
                     className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                   />
@@ -707,7 +710,7 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                     rows={4}
                     value={newQuestion}
                     onChange={e => setNewQuestion(e.target.value)}
-                    placeholder="Describe your health question, symptoms, food habits, or lab report numbers..."
+                    placeholder={t('describeHealthQuestionPlaceholder')}
                     required
                     className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-3.5 text-xs font-medium text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 leading-relaxed"
                   />
@@ -717,7 +720,7 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                 {quotaStatus?.enableGlobalImageUpload === false ? (
                   <div className="p-3 bg-slate-100 dark:bg-slate-800/60 rounded-2xl border border-slate-200/80 dark:border-slate-700 text-xs text-slate-500 font-medium flex items-center gap-2">
                     <AlertTriangle className="h-4 w-4 text-slate-400 shrink-0" />
-                    <span>Image attachments are currently disabled by the system administrator.</span>
+                    <span>{t('imageAttachmentsDisabled')}</span>
                   </div>
                 ) : (
                   <div className="space-y-2.5 pt-1">
@@ -750,7 +753,7 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                           type="button"
                           onClick={() => setPatientImageUrl('')}
                           className="absolute -top-2 -right-2 p-1.5 bg-rose-600 text-white rounded-full hover:bg-rose-700 shadow-sm"
-                          title="Remove image"
+                          title={t('removeImage')}
                         >
                           <X className="h-3.5 w-3.5" />
                         </button>
@@ -760,12 +763,12 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                         {imageUploading ? (
                           <>
                             <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                            <span>Processing Image...</span>
+                            <span>{t('processingImage')}</span>
                           </>
                         ) : (
                           <>
                             <UploadCloud className="h-4 w-4 text-blue-600" />
-                            <span>Choose Diagnostic Image / Report Photo</span>
+                            <span>{t('chooseDiagnosticImage')}</span>
                           </>
                         )}
                         <input 

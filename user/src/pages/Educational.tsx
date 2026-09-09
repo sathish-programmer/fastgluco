@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useLanguage } from '../context/LanguageContext';
 import { BookOpen, Video, Eye, HelpCircle, MessageSquare, Send } from 'lucide-react';
 
 const getEmbedUrl = (url: string) => {
@@ -16,6 +17,7 @@ const getEmbedUrl = (url: string) => {
 export const Educational: React.FC = () => {
   const { token, apiUrl } = useAuth();
   const { showToast } = useToast();
+  const { t } = useLanguage();
   
   const [guides, setGuides] = useState<any[]>([]);
   const [videos, setVideos] = useState<any[]>([]);
@@ -104,7 +106,7 @@ export const Educational: React.FC = () => {
             activeCategory === 'all' && !activeGuideId ? 'bg-primary text-white border-primary shadow-soft' : 'bg-cardBg dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-800'
           }`}
         >
-          All Resources
+          {t('common.viewAll')}
         </button>
         <button
           onClick={() => { setActiveCategory('guides'); setActiveGuideId(null); }}
@@ -112,7 +114,7 @@ export const Educational: React.FC = () => {
             activeCategory === 'guides' && !activeGuideId ? 'bg-primary text-white border-primary shadow-soft' : 'bg-cardBg dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-800'
           }`}
         >
-          Guides
+          {t('learn.guides', 'Guides')}
         </button>
         <button
           onClick={() => { setActiveCategory('videos'); setActiveGuideId(null); }}
@@ -120,7 +122,7 @@ export const Educational: React.FC = () => {
             activeCategory === 'videos' && !activeGuideId ? 'bg-primary text-white border-primary shadow-soft' : 'bg-cardBg dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-800'
           }`}
         >
-          Videos
+          {t('learn.videos', 'Videos')}
         </button>
         <button
           onClick={() => { setActiveCategory('faqs'); setActiveGuideId(null); }}
@@ -128,7 +130,7 @@ export const Educational: React.FC = () => {
             activeCategory === 'faqs' && !activeGuideId ? 'bg-primary text-white border-primary shadow-soft' : 'bg-cardBg dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-800'
           }`}
         >
-          FAQs
+          {t('modals.faq', 'FAQs')}
         </button>
         <button
           onClick={() => { setActiveCategory('support'); setActiveGuideId(null); }}
@@ -136,7 +138,7 @@ export const Educational: React.FC = () => {
             activeCategory === 'support' && !activeGuideId ? 'bg-primary text-white border-primary shadow-soft' : 'bg-cardBg dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-800'
           }`}
         >
-          Support
+          {t('modals.helpSupport', 'Support')}
         </button>
       </div>
 
@@ -147,7 +149,7 @@ export const Educational: React.FC = () => {
             onClick={() => setActiveGuideId(null)}
             className="text-xs font-bold text-primary hover:underline mb-4 block"
           >
-            ← Back to List
+            ← {t('nav.back')}
           </button>
           <span className="text-[10px] font-bold text-secondary uppercase tracking-wider bg-secondary-light/50 px-2.5 py-0.5 rounded-full">
             {activeGuideContent.category} • {activeGuideContent.readTime} min read
@@ -166,12 +168,12 @@ export const Educational: React.FC = () => {
             <div>
               <h3 className="text-sm font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-4 flex items-center space-x-1.5">
                 <BookOpen className="h-4.5 w-4.5 text-primary" />
-                <span>Health & Diet Guides</span>
+                <span>{t('profile.educationCenter', 'Health & Diet Guides')}</span>
               </h3>
               
               <div className="space-y-3">
                 {guides.length === 0 ? (
-                  <p className="text-xs text-slate-400 font-semibold pl-2">No guide documents available.</p>
+                  <p className="text-xs text-slate-400 font-semibold pl-2">{t('common.noDataFound', 'No guide documents available.')}</p>
                 ) : (
                   guides.map((guide) => (
                     <div 
@@ -198,12 +200,12 @@ export const Educational: React.FC = () => {
             <div>
               <h3 className="text-sm font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-4 flex items-center space-x-1.5">
                 <Video className="h-4.5 w-4.5 text-secondary" />
-                <span>Video Tutorials</span>
+                <span>{t('learn.videos', 'Video Tutorials')}</span>
               </h3>
 
               <div className="space-y-4">
                 {videos.length === 0 ? (
-                  <p className="text-xs text-slate-400 font-semibold pl-2">No video tutorials available.</p>
+                  <p className="text-xs text-slate-400 font-semibold pl-2">{t('common.noDataFound', 'No video tutorials available.')}</p>
                 ) : (
                   videos.map((video) => (
                     <div 
@@ -240,11 +242,11 @@ export const Educational: React.FC = () => {
             <div>
               <h3 className="text-sm font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-4 flex items-center space-x-1.5">
                 <HelpCircle className="h-4.5 w-4.5 text-blue-500" />
-                <span>Frequently Asked Questions</span>
+                <span>{t('modals.faq', 'Frequently Asked Questions')}</span>
               </h3>
               <div className="space-y-3">
                 {faqs.length === 0 ? (
-                  <p className="text-xs text-slate-400 font-semibold pl-2">No FAQs available.</p>
+                  <p className="text-xs text-slate-400 font-semibold pl-2">{t('common.noDataFound', 'No FAQs available.')}</p>
                 ) : (
                   faqs.map((faq) => {
                     const isOpen = openFaqId === faq._id;
@@ -278,7 +280,7 @@ export const Educational: React.FC = () => {
             <div className="bg-cardBg p-5 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-soft">
               <h3 className="text-sm font-bold text-slate-655 dark:text-slate-200 uppercase tracking-wider mb-4 flex items-center space-x-1.5">
                 <MessageSquare className="h-4.5 w-4.5 text-primary" />
-                <span>Ask Support</span>
+                <span>{t('modals.helpSupport', 'Ask Support')}</span>
               </h3>
               {supportStatus && (
                 <div className="mb-4 p-3 bg-green-50 dark:bg-green-950/20 text-success text-xs font-bold rounded-xl border border-green-100 dark:border-green-900/35">
@@ -287,20 +289,20 @@ export const Educational: React.FC = () => {
               )}
               <form onSubmit={handleSupportSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Your Name</label>
+                  <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">{t('profile.fullName', 'Your Name')}</label>
                   <input type="text" required value={supportForm.name} onChange={e => setSupportForm({...supportForm, name: e.target.value})} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 rounded-xl text-sm bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-150 focus:outline-none focus:ring-1 focus:ring-primary" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Email</label>
+                  <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">{t('profile.emailAddress', 'Email')}</label>
                   <input type="email" required value={supportForm.email} onChange={e => setSupportForm({...supportForm, email: e.target.value})} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 rounded-xl text-sm bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-150 focus:outline-none focus:ring-1 focus:ring-primary" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Question</label>
+                  <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">{t('common.details', 'Question')}</label>
                   <textarea required value={supportForm.question} onChange={e => setSupportForm({...supportForm, question: e.target.value})} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 rounded-xl text-sm h-32 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-150 focus:outline-none focus:ring-1 focus:ring-primary" />
                 </div>
                 <button type="submit" className="w-full bg-primary text-white font-bold py-3 rounded-xl shadow-soft flex justify-center items-center space-x-2">
                   <Send className="h-4.5 w-4.5" />
-                  <span>Submit Question</span>
+                  <span>{t('common.submit', 'Submit Question')}</span>
                 </button>
               </form>
             </div>

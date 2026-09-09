@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, BrainCircuit, HeartHandshake, MessageSquare, Sparkles } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { HabitsService, type HabitLog } from '../../services/habitsService';
 import { ConsultationBanner } from '../../components/ConsultationBanner';
 import { DeStressAIChatModal } from '../../components/DeStressAIChatModal';
@@ -29,16 +30,14 @@ const STRESS_SUB_OPTIONS = [
 ];
 
 export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBookAppointment, onNavigateToIntimacy }) => {
+  const { t } = useLanguage();
   const { user, token, apiUrl } = useAuth();
   const [selectedFace, setSelectedFace] = useState<string | null>(null);
   const [history, setHistory] = useState<HabitLog[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [loading, setLoading] = useState(false);
   
-  // Stressed sub-options state
   const [selectedSubOption, setSelectedSubOption] = useState<string | null>(null);
-
-  // De-Stress AI Modal State - Auto-opens when visiting module page
   const [showDeStressModal, setShowDeStressModal] = useState(true);
   const [initialCategory, setInitialCategory] = useState('general');
 
@@ -52,7 +51,6 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
       setLoadingHistory(true);
       const rawLogs = await HabitsService.getRecentHabits(apiUrl, token, 'Stress', 7);
       
-      // Deduplicate logs by date (keep latest log per day)
       const uniqueMap = new Map<string, HabitLog>();
       rawLogs.forEach(log => {
         const dateKey = new Date(log.timestamp).toDateString();
@@ -64,13 +62,11 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
       const deduplicated = Array.from(uniqueMap.values());
       setHistory(deduplicated);
 
-      // Auto-highlight face & subOption from today's log (if logged manually or via AI chat)
       const todayStr = new Date().toDateString();
       const todayLog = deduplicated.find(l => new Date(l.timestamp).toDateString() === todayStr);
       if (todayLog && todayLog.value) {
         if (todayLog.value.faceId) setSelectedFace(todayLog.value.faceId);
         
-        // Map category/subOption
         const sub = todayLog.value.subOption || todayLog.value.label || '';
         if (sub.includes('work') || sub.includes('Work-Life')) setSelectedSubOption('work_life');
         else if (sub.includes('relation') || sub.includes('Relationship')) setSelectedSubOption('relationship');
@@ -94,7 +90,6 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
       const faceData = faces.find(f => f.id === selectedFace);
       await HabitsService.logHabit(apiUrl, token, 'Stress', { faceId: selectedFace, label: faceData?.label, emoji: faceData?.emoji });
       await loadHistory();
-      // Keep selectedFace set to show sub-options if they just logged a sad/stressed face
     } catch (err) {
       console.error('Failed to log stress', err);
     } finally {
@@ -102,10 +97,8 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
     }
   };
 
-  // Count sad/stressed days in the last 7 days
   const sadDaysCount = history.filter(h => h.value.faceId === 'tense' || h.value.faceId === 'stressed' || h.value.faceId === 'maxed').length;
   
-  // Show contributing factors options if they have >= 3 sad days in history, OR if they selected a tense/stressed face today
   const showSubOptions = sadDaysCount >= 3 || (selectedFace === 'tense' || selectedFace === 'stressed' || selectedFace === 'maxed');
 
   return (
@@ -114,7 +107,6 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
       style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
     >
       
-      {/* Header */}
       <div className="flex items-center gap-4 mb-6 sub-page-internal-header">
         <button 
           onClick={onBack}
@@ -123,22 +115,19 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div>
-          <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Damage · Stress</span>
-          <h2 className="text-2xl font-sans font-bold text-slate-800 dark:text-slate-50 leading-none mt-1">How heavy is today?</h2>
+          <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">{t('habits.stress', 'Damage · Stress')}</span>
+          <h2 className="text-2xl font-sans font-bold text-slate-800 dark:text-slate-50 leading-none mt-1">{t('habits.areYouStressed', 'How heavy is today?')}</h2>
         </div>
       </div>
 
-
-
-      {/* Mia AI De-Stress Hero Banner */}
       <div className="bg-gradient-to-r from-indigo-50/90 via-purple-50/80 to-slate-50 dark:from-slate-900 dark:to-slate-900/90 rounded-3xl p-5 mb-6 shadow-xs border border-indigo-100 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="space-y-1.5 max-w-xl">
           <span className="text-[10px] font-black uppercase tracking-widest text-indigo-700 dark:text-indigo-300 bg-indigo-100/80 dark:bg-indigo-950/60 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 border border-indigo-200/60 dark:border-indigo-800">
-            <Sparkles className="h-3 w-3 text-indigo-600" /> Mental Health AI Expert
+            <Sparkles className="h-3 w-3 text-indigo-600" /> {t('mia.mentalHealthAiExpert', 'Mental Health AI Expert')}
           </span>
-          <h3 className="text-base font-extrabold text-slate-900 dark:text-white leading-tight">Feeling stressed, anxious, or struggling with sleep?</h3>
+          <h3 className="text-base font-extrabold text-slate-900 dark:text-white leading-tight">{t('mia.stressHeading', 'Feeling stressed, anxious, or struggling with sleep?')}</h3>
           <p className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
-            Chat with <strong>Mia</strong>, your Mental Health AI Expert for 4 personalized lifestyle steps, sleep assessments, and dedicated support.
+            {t('mia.greetingStress', 'Chat with Mia, your Mental Health AI Expert for 4 personalized lifestyle steps, sleep assessments, and dedicated support.')}
           </p>
         </div>
         <button
@@ -148,23 +137,22 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
           }}
           className="bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs px-4 py-3 rounded-2xl transition-all shadow-sm shrink-0 whitespace-nowrap cursor-pointer flex items-center gap-2 active:scale-95"
         >
-          <MessageSquare className="h-4 w-4" /> Chat with Mia AI Expert
+          <MessageSquare className="h-4 w-4" /> {t('mia.stressSupport', 'Chat with Mia AI Expert')}
         </button>
       </div>
 
-      {/* Intro Card */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm rounded-2xl p-4 mb-6">
         <h3 className="font-bold text-slate-800 dark:text-slate-200 mb-1.5 flex items-center gap-2">
-          <BrainCircuit className="h-4 w-4 text-amber-500" /> Chronic stress wears cells down.
+          <BrainCircuit className="h-4 w-4 text-amber-500" /> {t('habits.stressImpact', 'Chronic stress wears cells down.')}
         </h3>
         <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-          Tap how today feels. A run of hard days is your cue to lean on support — we'll flag it.
+          {t('stress.stressSubtext', "Tap how today feels. A run of hard days is your cue to lean on support — we'll flag it.")}
         </p>
       </div>
 
       {/* Face Selector Card */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm rounded-3xl p-5 mb-8">
-        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-6">Today's Load</span>
+        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-6">{t('stress.todaysLoad', "Today's Load")}</span>
         
         <div className="flex justify-between items-center mb-8">
           {faces.map((f) => (
@@ -180,7 +168,7 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
                 {f.emoji}
               </div>
               <span className={`text-[10px] ${selectedFace === f.id ? 'text-amber-500 font-bold' : 'text-slate-400'}`}>
-                {f.label}
+                {t(`stress.${f.id}`, f.label)}
               </span>
             </button>
           ))}
@@ -188,7 +176,7 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
 
         <div className="text-center mb-6">
           <h3 className="text-2xl font-sans text-amber-500 font-bold">
-            {selectedFace ? faces.find(f => f.id === selectedFace)?.label : 'Tap a face'}
+            {selectedFace ? t(`stress.${selectedFace}`, faces.find(f => f.id === selectedFace)?.label || '') : t('stress.tapAFace', 'Tap a face')}
           </h3>
         </div>
 
@@ -197,7 +185,7 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
           disabled={!selectedFace || loading}
           className={`w-full py-3.5 rounded-xl font-bold transition-all shadow-sm ${selectedFace ? 'bg-amber-400 hover:bg-amber-500 text-slate-900' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 cursor-not-allowed'}`}
         >
-          {loading ? 'Saving...' : 'Log today'}
+          {loading ? t('common.saving') : t('stress.logToday', 'Log today')}
         </button>
       </div>
 
@@ -207,8 +195,8 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
           <div className="flex items-center gap-2 mb-3">
             <span className="text-lg">🎯</span>
             <div>
-              <h4 className="font-extrabold text-sm text-slate-800 dark:text-slate-200">What is contributing to your stress?</h4>
-              <p className="text-[10px] text-slate-450 uppercase font-bold tracking-wider mt-0.5">Select a factor to receive specialized guidance</p>
+              <h4 className="font-extrabold text-sm text-slate-800 dark:text-slate-200">{t('stress.whatIsContributing', 'What is contributing to your stress?')}</h4>
+              <p className="text-[10px] text-slate-450 uppercase font-bold tracking-wider mt-0.5">{t('stress.selectFactor', 'Select a factor to receive specialized guidance')}</p>
             </div>
           </div>
 
@@ -237,9 +225,9 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
                   🤍
                 </div>
                 <div>
-                  <h5 className="text-xs font-black text-purple-950 dark:text-purple-200">Chat with Mito AI or Consult Specialist</h5>
+                  <h5 className="text-xs font-black text-purple-950 dark:text-purple-200">{t('stress.chatOrConsult', 'Chat with Mito AI or Consult Specialist')}</h5>
                   <p className="text-xs text-purple-800 dark:text-purple-300 leading-relaxed mt-0.5 font-medium">
-                    Our AI de-stress companion Mito AI can guide you through tailored relaxation exercises, or you can book a direct session with a counselor.
+                    {t('stress.chatOrConsultDesc', 'Our AI de-stress companion Mito AI can guide you through tailored relaxation exercises, or you can book a direct session with a counselor.')}
                   </p>
                 </div>
               </div>
@@ -260,7 +248,7 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
                   }}
                   className="w-full bg-purple-600 hover:bg-purple-700 text-white font-black text-xs py-3 px-3 rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
-                  <MessageSquare className="h-4 w-4" /> Chat with Mito AI
+                  <MessageSquare className="h-4 w-4" /> {t('stress.chatWithMito', 'Chat with Mito AI')}
                 </button>
 
                 {onBookAppointment && (
@@ -268,7 +256,7 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
                     onClick={() => onBookAppointment(`Stress Management: ${STRESS_SUB_OPTIONS.find(o => o.id === selectedSubOption)?.label}`)}
                     className="w-full bg-white dark:bg-slate-800 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 hover:bg-purple-50 font-black text-xs py-3 px-3 rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                   >
-                    <HeartHandshake className="h-4 w-4" /> Book Specialist
+                    <HeartHandshake className="h-4 w-4" /> {t('stress.bookSpecialist', 'Book Specialist')}
                   </button>
                 )}
               </div>
@@ -279,7 +267,7 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
 
       {/* History */}
       <div>
-        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-3">Last 7 Days</span>
+        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-3">{t('common.last7Days', 'Last 7 Days')}</span>
         
         <div className="flex flex-col gap-2">
           {loadingHistory ? (
@@ -288,13 +276,22 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
             </div>
           ) : history.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-xs text-slate-400">No days logged yet</p>
+              <p className="text-xs text-slate-400">{t('common.noDaysLogged', 'No days logged yet')}</p>
             </div>
           ) : (
             history.map((h) => {
               const emojiMap: Record<string, string> = { calm: '😁', steady: '🙂', tense: '😐', stressed: '☹️', maxed: '😫' };
               const displayEmoji = h.value?.emoji || (h.value?.faceId ? emojiMap[h.value.faceId] : '😫');
-              const displayLabel = h.value?.label || h.value?.option || (h.value?.faceId ? h.value.faceId.charAt(0).toUpperCase() + h.value.faceId.slice(1) : 'Stress Logged');
+              const rawLabel = h.value?.label || h.value?.option || (h.value?.faceId ? h.value.faceId.charAt(0).toUpperCase() + h.value.faceId.slice(1) : 'Stress Logged');
+              const lowerLabel = String(rawLabel).toLowerCase();
+              let displayLabel = rawLabel;
+              if (lowerLabel.includes('calm')) displayLabel = t('stress.calm', 'Calm');
+              else if (lowerLabel.includes('steady')) displayLabel = t('stress.steady', 'Steady');
+              else if (lowerLabel.includes('mild')) displayLabel = t('stress.mildStress', 'Mild Stress');
+              else if (lowerLabel.includes('tense')) displayLabel = t('stress.tense', 'Tense');
+              else if (lowerLabel.includes('moderate')) displayLabel = t('stress.moderateStress', 'Moderate Stress');
+              else if (lowerLabel.includes('maxed') || lowerLabel.includes('high')) displayLabel = t('stress.maxed', 'Maxed');
+              else if (lowerLabel.includes('stress')) displayLabel = t('stress.stressed', 'Stressed');
               const isAi = h.value?.source === 'ai_mia';
 
               return (
@@ -328,7 +325,7 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
             triggerCondition="Logged high stress"
             riskLevel="High"
             recommendedSpecialty="Psychologist/Counselor"
-            title="Stress Management Support"
+            title={t('stressManagementSupport')}
             description="You've logged high stress levels recently. Consider talking to a professional to help manage it effectively."
             colorTheme="amber"
             onBookAppointment={onBookAppointment!}

@@ -3,8 +3,10 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { Heart, Activity, Sparkles, Plus, History, ChevronRight, X } from 'lucide-react';
 import { Card, SectionTitle, YesNoToggle, ModeTabs, StressTracker, TalkToDoctorCard } from './shared/ConditionUI';
 import { triggerHealthInsightNotification } from '../utils/notificationScheduler';
+import { useLanguage } from '../context/LanguageContext';
 
 export const HypertensionModule: React.FC = () => {
+  const { t } = useLanguage();
   const [mode, setMode] = useState<string>('Prevention');
   const [showBpHistoryModal, setShowBpHistoryModal] = useState<boolean>(false);
 
@@ -156,11 +158,11 @@ export const HypertensionModule: React.FC = () => {
       <div className="bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 rounded-3xl p-6 text-white shadow-xl">
         <div className="flex items-center gap-2 mb-1.5">
           <Sparkles className="h-5 w-5 text-amber-200" />
-          <span className="text-xs font-black uppercase tracking-widest text-rose-100">Cardiovascular Pressure Control</span>
+          <span className="text-xs font-black uppercase tracking-widest text-rose-100">{t('protocols.cardioPressureControl')}</span>
         </div>
-        <h1 className="text-xl font-black tracking-tight text-white">Hypertension & BP Protocol</h1>
+        <h1 className="text-xl font-black tracking-tight text-white">{t('protocols.hypertensionProtocol')}</h1>
         <p className="text-xs text-rose-100/90 mt-1 leading-relaxed max-w-xl">
-          Preventive vascular health habits, low-salt adherence, and daily AM/PM blood pressure charting.
+          {t('protocols.hypertensionSubtitle')}
         </p>
       </div>
 
@@ -170,22 +172,22 @@ export const HypertensionModule: React.FC = () => {
         <>
           <Card className="flex items-center justify-between">
             <div>
-              <p className="text-[10.5px] text-slate-400 font-bold uppercase tracking-wider">Today's Vascular Defense Score</p>
+              <p className="text-[10.5px] text-slate-400 font-bold uppercase tracking-wider">{t('protocols.hypertensionPreventionScore')}</p>
               <p className="text-2xl font-black" style={{ color: preventionScore >= 0 ? '#10B981' : '#EF4444' }}>
                 {preventionScore > 0 ? `+${preventionScore}` : preventionScore}
               </p>
             </div>
             <span className="text-xs font-bold text-slate-400 text-right">
-              Exercise, low-salt, meditation, sleep & stress
+              {t('protocols.htnSummary')}
             </span>
           </Card>
 
           <Card>
-            <SectionTitle icon={Heart}>Daily Blood Pressure Defense Habits</SectionTitle>
-            <YesNoToggle label="Exercised today?" value={exercised} onChange={setExercised} goodAnswer={true} />
-            <YesNoToggle label="Meditated / practiced breathwork today?" value={meditated} onChange={setMeditated} goodAnswer={true} />
-            <YesNoToggle label="Ate low-salt foods today?" value={lowSalt} onChange={setLowSalt} goodAnswer={true} />
-            <YesNoToggle label="Slept 8 hours?" value={slept8} onChange={setSlept8} goodAnswer={true} />
+            <SectionTitle icon={Heart}>{t('protocols.dailyBpDefense')}</SectionTitle>
+            <YesNoToggle label={t('protocols.exercised20Min')} value={exercised} onChange={setExercised} goodAnswer={true} />
+            <YesNoToggle label={t('protocols.meditatedBreathwork')} value={meditated} onChange={setMeditated} goodAnswer={true} />
+            <YesNoToggle label={t('protocols.ateLowSalt')} value={lowSalt} onChange={setLowSalt} goodAnswer={true} />
+            <YesNoToggle label={t('protocols.slept8Hours')} value={slept8} onChange={setSlept8} goodAnswer={true} />
             <div className="pt-2">
               <StressTracker value={stress} onChange={setStress} />
             </div>
@@ -196,7 +198,7 @@ export const HypertensionModule: React.FC = () => {
       {mode === 'Treatment' && (
         <>
           <Card>
-            <SectionTitle icon={Activity}>Blood Pressure — Morning & Evening Log</SectionTitle>
+            <SectionTitle icon={Activity}>{t('protocols.bpMorningEvening')}</SectionTitle>
             <div className="grid grid-cols-2 gap-2.5 mb-3">
               <input
                 type="date"
@@ -238,7 +240,7 @@ export const HypertensionModule: React.FC = () => {
               onClick={addBpEntry}
               className="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-black rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 mb-3"
             >
-              <Plus className="h-4 w-4" /> Log BP Reading
+              <Plus className="h-4 w-4" /> {t('protocols.logBpReading')}
             </button>
 
             {chartData.length > 0 ? (
@@ -259,7 +261,7 @@ export const HypertensionModule: React.FC = () => {
               </div>
             ) : (
               <p className="text-xs text-slate-400 dark:text-slate-500 italic py-2">
-                Log morning and evening readings to track your blood pressure trend over time.
+                {t('protocols.bpEmpty')}
               </p>
             )}
 
@@ -276,7 +278,7 @@ export const HypertensionModule: React.FC = () => {
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                      Blood Pressure History ({bpLog.length} Days Logged)
+                      {t('protocols.bpHistory', { count: bpLog.length })}
                     </p>
                     <p className="text-[10.5px] text-slate-400 truncate">
                       {bpStats.avgAmSys ? `Avg AM: ${bpStats.avgAmSys}/${bpStats.avgAmDia} mmHg` : 'View recorded readings'}
@@ -301,7 +303,7 @@ export const HypertensionModule: React.FC = () => {
                       <Heart className="h-4 w-4" />
                     </div>
                     <div>
-                      <h3 className="text-sm font-black text-slate-800 dark:text-slate-100">Blood Pressure History</h3>
+                      <h3 className="text-sm font-black text-slate-800 dark:text-slate-100">{t('protocols.bpMorningEvening')}</h3>
                       <p className="text-[10.5px] text-slate-400">AM & PM longitudinal pressure logs</p>
                     </div>
                   </div>
@@ -318,13 +320,13 @@ export const HypertensionModule: React.FC = () => {
                 {bpLog.length > 0 && (
                   <div className="grid grid-cols-2 gap-2 my-3.5">
                     <div className="p-2.5 rounded-2xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-100 dark:border-rose-900/40 text-center">
-                      <span className="text-[9px] font-extrabold uppercase text-rose-500 block">Avg Morning (AM)</span>
+                      <span className="text-[9px] font-extrabold uppercase text-rose-500 block">{t('protocols.avgMorningAm')}</span>
                       <span className="text-sm font-black text-rose-700 dark:text-rose-300">
                         {bpStats.avgAmSys ? `${bpStats.avgAmSys}/${bpStats.avgAmDia} mmHg` : '--'}
                       </span>
                     </div>
                     <div className="p-2.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/40 text-center">
-                      <span className="text-[9px] font-extrabold uppercase text-indigo-500 block">Avg Evening (PM)</span>
+                      <span className="text-[9px] font-extrabold uppercase text-indigo-500 block">{t('protocols.avgEveningPm')}</span>
                       <span className="text-sm font-black text-indigo-700 dark:text-indigo-300">
                         {bpStats.avgPmSys ? `${bpStats.avgPmSys}/${bpStats.avgPmDia} mmHg` : '--'}
                       </span>
@@ -388,7 +390,7 @@ export const HypertensionModule: React.FC = () => {
                     onClick={() => setShowBpHistoryModal(false)}
                     className="w-full py-2.5 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-black rounded-xl cursor-pointer hover:opacity-95 transition-opacity"
                   >
-                    Close History
+                    {t('protocols.closeHistory')}
                   </button>
                 </div>
               </div>
@@ -396,26 +398,26 @@ export const HypertensionModule: React.FC = () => {
           )}
 
           <Card>
-            <SectionTitle icon={Heart}>Treatment Daily Habits & Stress</SectionTitle>
-            <YesNoToggle label="High-salt food today?" value={highSaltToday} onChange={setHighSaltToday} goodAnswer={false} />
-            <YesNoToggle label="Exercised 20 minutes today?" value={exercisedTx} onChange={setExercisedTx} goodAnswer={true} />
-            <YesNoToggle label="Meditated 10 minutes?" value={meditatedTx} onChange={setMeditatedTx} goodAnswer={true} />
+            <SectionTitle icon={Heart}>{t('protocols.treatmentDailyHabits')}</SectionTitle>
+            <YesNoToggle label={t('protocols.highSaltToday')} value={highSaltToday} onChange={setHighSaltToday} goodAnswer={false} />
+            <YesNoToggle label={t('protocols.exercised20Min')} value={exercisedTx} onChange={setExercisedTx} goodAnswer={true} />
+            <YesNoToggle label={t('protocols.meditatedToday')} value={meditatedTx} onChange={setMeditatedTx} goodAnswer={true} />
             <YesNoToggle
-              label="Did something you loved for 10 minutes?"
-              sublabel="Painting, dancing, singing, hobby or relaxation"
+              label={t('protocols.lovedActivity')}
+              sublabel={t('protocols.lovedActivitySub')}
               value={lovedActivity}
               onChange={setLovedActivity}
               goodAnswer={true}
             />
-            <YesNoToggle label="Slept 8 hours?" value={slept8Tx} onChange={setSlept8Tx} goodAnswer={true} />
+            <YesNoToggle label={t('protocols.slept8Hours')} value={slept8Tx} onChange={setSlept8Tx} goodAnswer={true} />
             <div className="pt-2">
               <StressTracker value={stressTx} onChange={setStressTx} />
             </div>
           </Card>
 
           <TalkToDoctorCard
-            specialty="Cardiologist / Physician"
-            note="Consistently elevated systolic (>130) or diastolic (>80) readings should be reviewed by your doctor for medication adjustment."
+            specialty={t('protocols.cardiologist')}
+            note={t('protocols.bpDoctorNote')}
           />
         </>
       )}

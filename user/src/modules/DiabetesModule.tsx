@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Activity, Sparkles, AlertTriangle, Check, Calendar, Plus, History, ChevronRight, X, FileText } from 'lucide-react';
 import { Card, SectionTitle, YesNoToggle, ModeTabs, StressTracker, TalkToDoctorCard } from './shared/ConditionUI';
+import { useLanguage } from '../context/LanguageContext';
 
 const YEARLY_CHECKS_TEMPLATE = [
   { key: 'peripheral', label: 'Peripheral Neuropathy & Foot (Podiatry) Check' },
@@ -15,6 +16,7 @@ function daysSince(dateStr: string) {
 }
 
 export const DiabetesModule: React.FC = () => {
+  const { t } = useLanguage();
   const [mode, setMode] = useState<string>('Prevention');
   const [showHba1cHistoryModal, setShowHba1cHistoryModal] = useState<boolean>(false);
 
@@ -126,11 +128,11 @@ export const DiabetesModule: React.FC = () => {
       <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 rounded-3xl p-6 text-white shadow-xl">
         <div className="flex items-center gap-2 mb-1.5">
           <Sparkles className="h-5 w-5 text-amber-300" />
-          <span className="text-xs font-black uppercase tracking-widest text-emerald-100">Glycemic & Insulin Control</span>
+          <span className="text-xs font-black uppercase tracking-widest text-emerald-100">{t('protocols.glycemicInsulinControl')}</span>
         </div>
-        <h1 className="text-xl font-black tracking-tight text-white">Diabetes Management Protocol</h1>
+        <h1 className="text-xl font-black tracking-tight text-white">{t('protocols.diabetesProtocol')}</h1>
         <p className="text-xs text-emerald-100/90 mt-1 leading-relaxed max-w-xl">
-          Preventive insulin sensitivity habits and clinical HbA1c / screening monitoring.
+          {t('protocols.diabetesSubtitle')}
         </p>
       </div>
 
@@ -140,31 +142,31 @@ export const DiabetesModule: React.FC = () => {
         <>
           <Card className="flex items-center justify-between">
             <div>
-              <p className="text-[10.5px] text-slate-400 font-bold uppercase tracking-wider">Today's Prevention Score</p>
+              <p className="text-[10.5px] text-slate-400 font-bold uppercase tracking-wider">{t('protocols.diabetesPreventionScore')}</p>
               <p className="text-2xl font-black" style={{ color: preventionScore >= 0 ? '#10B981' : '#EF4444' }}>
                 {preventionScore > 0 ? `+${preventionScore}` : preventionScore}
               </p>
             </div>
             <span className="text-xs font-bold text-slate-400 text-right">
-              Exercise, low junk, 8h sleep & calm stress
+              {t('protocols.diabetesSummary')}
             </span>
           </Card>
 
           <Card>
-            <SectionTitle icon={Activity}>Daily Glycemic Defense Habits</SectionTitle>
-            <YesNoToggle label="Exercised 20 minutes today?" value={exercised} onChange={setExercised} goodAnswer={true} />
-            <YesNoToggle label="Had alcohol today?" value={tookAlcohol} onChange={setTookAlcohol} goodAnswer={false} />
-            <YesNoToggle label="Ate junk / sugary foods today?" value={ateJunk} onChange={setAteJunk} goodAnswer={false} />
-            <YesNoToggle label="Slept 8 hours?" value={slept8} onChange={setSlept8} goodAnswer={true} />
+            <SectionTitle icon={Activity}>{t('protocols.dailyGlycemicDefense')}</SectionTitle>
+            <YesNoToggle label={t('protocols.exercised20Min')} value={exercised} onChange={setExercised} goodAnswer={true} />
+            <YesNoToggle label={t('protocols.hadAlcohol')} value={tookAlcohol} onChange={setTookAlcohol} goodAnswer={false} />
+            <YesNoToggle label={t('protocols.ateJunkUltra')} value={ateJunk} onChange={setAteJunk} goodAnswer={false} />
+            <YesNoToggle label={t('protocols.slept8Hours')} value={slept8} onChange={setSlept8} goodAnswer={true} />
             <div className="pt-2">
               <StressTracker value={stress} onChange={setStress} />
             </div>
           </Card>
 
           <Card>
-            <SectionTitle icon={Calendar}>Yearly Preventive Screening</SectionTitle>
+            <SectionTitle icon={Calendar}>{t('protocols.yearlyScreening')}</SectionTitle>
             <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block mb-1">
-              Last Fasting (FBS) / Postprandial (PPBS) Check Date:
+              {t('protocols.lastFbsPpbs')}
             </label>
             <input
               type="date"
@@ -179,7 +181,7 @@ export const DiabetesModule: React.FC = () => {
                   : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/60'
               }`}>
                 {fbsDue ? <AlertTriangle className="h-4 w-4 shrink-0" /> : <Check className="h-4 w-4 shrink-0" />}
-                <span>{fbsDue ? 'Overdue for screening — it has been more than 12 months.' : 'Up to date with annual screening.'}</span>
+                <span>{fbsDue ? t('protocols.overdueScreening') : t('protocols.upToDateScreening')}</span>
               </div>
             )}
           </Card>
@@ -189,7 +191,7 @@ export const DiabetesModule: React.FC = () => {
       {mode === 'Treatment' && (
         <>
           <Card>
-            <SectionTitle icon={Activity}>Quarterly HbA1c Log (Every 3 Months)</SectionTitle>
+            <SectionTitle icon={Activity}>{t('protocols.quarterlyHba1c')}</SectionTitle>
             <div className="flex gap-2 mb-3">
               <input
                 type="date"
@@ -210,7 +212,7 @@ export const DiabetesModule: React.FC = () => {
                 onClick={addHba1c}
                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1 shrink-0"
               >
-                <Plus className="h-4 w-4" /> Add
+                <Plus className="h-4 w-4" /> {t('protocols.addReading')}
               </button>
             </div>
 
@@ -228,7 +230,7 @@ export const DiabetesModule: React.FC = () => {
               </div>
             ) : (
               <p className="text-xs text-slate-400 dark:text-slate-500 italic py-2">
-                Add HbA1c test readings to view your longitudinal glycemic trends.
+                {t('protocols.hba1cEmpty')}
               </p>
             )}
 
@@ -245,10 +247,10 @@ export const DiabetesModule: React.FC = () => {
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                      HbA1c Lab History ({hba1cLog.length} Tests Logged)
+                      {t('protocols.hba1cHistory', { count: hba1cLog.length })}
                     </p>
                     <p className="text-[10.5px] text-slate-400 truncate">
-                      Latest: {hba1cStats.latest}% · Avg: {hba1cStats.avg}%
+                      {t('protocols.latest')}: {hba1cStats.latest}% · {t('protocols.average')}: {hba1cStats.avg}%
                     </p>
                   </div>
                 </div>
@@ -270,8 +272,8 @@ export const DiabetesModule: React.FC = () => {
                       <FileText className="h-4 w-4" />
                     </div>
                     <div>
-                      <h3 className="text-sm font-black text-slate-800 dark:text-slate-100">HbA1c Glycemic Records</h3>
-                      <p className="text-[10.5px] text-slate-400">Quarterly blood test logs & clinical ranges</p>
+                      <h3 className="text-sm font-black text-slate-800 dark:text-slate-100">{t('protocols.hba1cRecords')}</h3>
+                      <p className="text-[10.5px] text-slate-400">{t('protocols.hba1cQuarterly')}</p>
                     </div>
                   </div>
                   <button
@@ -287,15 +289,15 @@ export const DiabetesModule: React.FC = () => {
                 {hba1cLog.length > 0 && (
                   <div className="grid grid-cols-3 gap-2 my-3.5">
                     <div className="p-2.5 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/40 text-center">
-                      <span className="text-[9px] font-extrabold uppercase text-emerald-600 block">Latest</span>
+                      <span className="text-[9px] font-extrabold uppercase text-emerald-600 block">{t('protocols.latest')}</span>
                       <span className="text-sm font-black text-emerald-700 dark:text-emerald-300">{hba1cStats.latest}%</span>
                     </div>
                     <div className="p-2.5 rounded-2xl bg-teal-50/70 dark:bg-teal-950/30 border border-teal-100 dark:border-teal-900/40 text-center">
-                      <span className="text-[9px] font-extrabold uppercase text-teal-600 block">Lowest (Best)</span>
+                      <span className="text-[9px] font-extrabold uppercase text-teal-600 block">{t('protocols.lowestBest')}</span>
                       <span className="text-sm font-black text-teal-700 dark:text-teal-300">{hba1cStats.min}%</span>
                     </div>
                     <div className="p-2.5 rounded-2xl bg-cyan-50/70 dark:bg-cyan-950/30 border border-cyan-100 dark:border-cyan-900/40 text-center">
-                      <span className="text-[9px] font-extrabold uppercase text-cyan-600 block">Average</span>
+                      <span className="text-[9px] font-extrabold uppercase text-cyan-600 block">{t('protocols.average')}</span>
                       <span className="text-sm font-black text-cyan-700 dark:text-cyan-300">{hba1cStats.avg}%</span>
                     </div>
                   </div>
@@ -336,7 +338,7 @@ export const DiabetesModule: React.FC = () => {
                                     ? 'bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300'
                                     : 'bg-rose-100 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300'
                                 }`}>
-                                  {isNormal ? 'Normal (<5.7%)' : isPrediabetic ? 'Prediabetic (5.7-6.4%)' : 'Diabetic (>=6.5%)'}
+                                  {isNormal ? t('protocols.normal') : isPrediabetic ? t('protocols.prediabetic') : t('protocols.diabetic')}
                                 </span>
                               </div>
                             </div>
@@ -362,7 +364,7 @@ export const DiabetesModule: React.FC = () => {
                     onClick={() => setShowHba1cHistoryModal(false)}
                     className="w-full py-2.5 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-black rounded-xl cursor-pointer hover:opacity-95 transition-opacity"
                   >
-                    Close History
+                    {t('protocols.closeHistory')}
                   </button>
                 </div>
               </div>
@@ -370,7 +372,7 @@ export const DiabetesModule: React.FC = () => {
           )}
 
           <Card>
-            <SectionTitle icon={Calendar}>Annual Organ Protection Checks</SectionTitle>
+            <SectionTitle icon={Calendar}>{t('protocols.annualOrganProtection')}</SectionTitle>
             <div className="space-y-3">
               {YEARLY_CHECKS_TEMPLATE.map(c => {
                 const dateVal = yearlyChecks[c.key] || '';
@@ -401,13 +403,13 @@ export const DiabetesModule: React.FC = () => {
           </Card>
 
           <Card>
-            <SectionTitle icon={Activity}>Daily Dietary Glycemic Check-in</SectionTitle>
-            <YesNoToggle label="Ate high-carb / refined sugar foods today?" value={ateHighCarb} onChange={setAteHighCarb} goodAnswer={false} />
+            <SectionTitle icon={Activity}>{t('protocols.dailyDietaryGlycemic')}</SectionTitle>
+            <YesNoToggle label={t('protocols.highCarbRefined')} value={ateHighCarb} onChange={setAteHighCarb} goodAnswer={false} />
           </Card>
 
           <TalkToDoctorCard
-            specialty="Diabetologist / Endocrinologist"
-            note="Maintain regular checks for retinopathy, nephropathy, and neuropathy. Pair your diet with low-GI foods and portion control."
+            specialty={t('protocols.diabetologist')}
+            note={t('protocols.diabetologistNote')}
           />
         </>
       )}

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { SyncService } from '../services/syncService';
 import { useToast } from '../context/ToastContext';
+import { useLanguage } from '../context/LanguageContext';
+import { SyncService } from '../services/syncService';
 import { Capacitor } from '@capacitor/core';
 import {
   Search,
@@ -37,6 +38,7 @@ interface FoodLogProps {
 export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) => {
   const { token, apiUrl, branding } = useAuth();
   const { showToast } = useToast();
+  const { t } = useLanguage();
   const isIOSAppStoreBlocked = Capacitor.getPlatform() === 'ios' && !branding.enableIOSExternalPayments;
 
   const getCategoryIcon = (category: string) => {
@@ -897,9 +899,9 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
           className="mb-6 flex items-center justify-between"
         >
           <div>
-            <h2 className="text-xl font-bold text-slate-850 dark:text-slate-100">Diet Log</h2>
+            <h2 className="text-xl font-bold text-slate-850 dark:text-slate-100">{t('foodLog.dietLog', 'Diet Log')}</h2>
             <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-1">
-              Identify meal items causing glucose spikes
+              {t('foodLog.identifySpikes', 'Identify meal items causing glucose spikes')}
             </p>
           </div>
           <div className="bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800 p-2 rounded-2xl shadow-sm text-primary">
@@ -924,11 +926,11 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
           <div>
             <div className="inline-flex items-center space-x-1 px-2 py-0.5 bg-emerald-100 dark:bg-emerald-800/80 text-emerald-700 dark:text-emerald-200 rounded-full text-[10px] uppercase tracking-wider font-extrabold mb-1">
               <ShieldCheck className="h-3 w-3" />
-              <span>Doctor Recommended</span>
+              <span>{t('foodLog.doctorRecommended', 'Doctor Recommended')}</span>
             </div>
-            <h4 className="text-sm font-extrabold text-emerald-900 dark:text-emerald-100">Recommended Foods</h4>
+            <h4 className="text-sm font-extrabold text-emerald-900 dark:text-emerald-100">{t('foodLog.recommendedFoods', 'Recommended Foods')}</h4>
             <p className="text-[10px] text-emerald-700 dark:text-emerald-300/70 font-medium mt-0.5 leading-tight pr-4">
-              View genuine food products recommended by doctors for better glucose management.
+              {t('foodLog.recommendedFoodsDesc', 'View genuine food products recommended by doctors for better glucose management.')}
             </p>
           </div>
           <div className="bg-white dark:bg-slate-900 p-2 rounded-2xl shadow-sm text-emerald-600 dark:text-emerald-400 shrink-0">
@@ -951,13 +953,13 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
               <Sparkles className="h-24 w-24" />
             </div>
             <div className="max-w-[70%] text-left">
-              <h4 className="text-sm font-extrabold tracking-tight">Food Scanner</h4>
+              <h4 className="text-sm font-extrabold tracking-tight">{t('foodScannerTitle')}</h4>
               <p className="text-[10px] text-indigo-100 font-semibold mt-0.5 leading-tight">
-                Snap a picture of your food to auto-estimate calories & macros!
+                {t('snapPictureMacros', 'Snap a picture of your food to auto-estimate calories & macros!')}
               </p>
             </div>
             <div className="shrink-0 bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 font-bold text-[10px] px-3.5 py-2.5 rounded-2xl shadow-soft transition-all">
-              Scan
+              {t('common.scan', 'Scan')}
             </div>
           </button>
         </motion.div>
@@ -969,7 +971,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
           className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-[0_12px_24px_rgba(0,0,0,0.02)] rounded-3xl p-5 mb-6"
         >
           <form onSubmit={handleLogSubmit} className="space-y-4">
-            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Log a Meal</h3>
+            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">{t('foodLog.logAMeal', 'Log a Meal')}</h3>
             <div className="flex space-x-1.5 p-1 bg-slate-100/80 dark:bg-slate-950/80 rounded-2xl mb-4 border border-slate-200/20 dark:border-slate-800/50">
               <button
                 type="button"
@@ -982,7 +984,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                 }}
                 className={`flex-1 py-2 text-center text-xs font-bold rounded-xl transition-all ${activeTab === 'search' ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-soft' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
               >
-                🔍 Search
+                🔍 {t('common.search')}
               </button>
               <button
                 type="button"
@@ -995,7 +997,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                 }}
                 className={`flex-1 py-2 text-center text-xs font-bold rounded-xl transition-all ${activeTab === 'manual' ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-soft' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
               >
-                ✍️ Manual
+                ✍️ {t('foodLog.manualEntry')}
               </button>
             </div>
 
@@ -1009,7 +1011,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search library (idli, roti, grilled chicken...)"
+                    placeholder={t('searchLibraryPlaceholder')}
                     className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-semibold bg-slate-50/30 dark:bg-slate-800/60 dark:text-slate-100 dark:placeholder-slate-500 transition-all"
                   />
 
@@ -1042,7 +1044,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                       {isFatSecretSearching && (
                         <div className="px-3 py-3 flex items-center gap-2 text-xs text-slate-400 font-semibold">
                           <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          Searching FatSecret...
+                          {t('foodLog.searchingFatSecret', 'Searching FatSecret...')}
                         </div>
                       )}
                       {fatSecretResults.map((food: any, idx: number) => (
@@ -1079,15 +1081,15 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                       <button
                         type="button"
                         onClick={handleClearSelected}
-                        className="text-xs font-bold text-rose-500 hover:text-rose-600 transition-all bg-white dark:bg-slate-900 shadow-sm px-2.5 py-1 rounded-lg border border-rose-100 dark:border-rose-900/30"
+                        className="text-xs font-bold text-rose-500 hover:text-rose-600 transition-all bg-white dark:bg-slate-900 shadow-sm px-2.5 py-1 rounded-lg border border-rose-100 dark:border-rose-900/30 cursor-pointer"
                       >
-                        Clear
+                        {t('common.clear', 'Clear')}
                       </button>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Date of Meal</label>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('foodLog.dateOfMeal', 'Date of Meal')}</label>
                         <input
                           type="date"
                           required
@@ -1097,7 +1099,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Time of Meal</label>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('foodLog.timeOfMeal', 'Time of Meal')}</label>
                         <input
                           type="time"
                           required
@@ -1110,16 +1112,16 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Meal Period</label>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('foodLog.mealPeriod', 'Meal Period')}</label>
                         <select
                           value={mealType}
                           onChange={(e: any) => setMealType(e.target.value)}
                           className="w-full px-3 py-2 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none text-xs font-bold text-slate-600 dark:text-slate-200 bg-white dark:bg-slate-800 cursor-pointer"
                         >
-                          <option value="Breakfast">Breakfast</option>
-                          <option value="Lunch">Lunch</option>
-                          <option value="Dinner">Dinner</option>
-                          <option value="Snack">Snack</option>
+                          <option value="Breakfast">{t('mealBreakfast')}</option>
+                          <option value="Lunch">{t('mealLunch')}</option>
+                          <option value="Dinner">{t('mealDinner')}</option>
+                          <option value="Snack">{t('mealSnack')}</option>
                         </select>
                       </div>
                     </div>
@@ -1145,7 +1147,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
 
                       return (
                         <div className="space-y-2 pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
-                          <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Select Portion Size</span>
+                          <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t('foodLog.selectPortionSize', 'Select Portion Size')}</span>
                           <div className="grid grid-cols-4 gap-2">
                             {options.map((type) => (
                               <button
@@ -1186,12 +1188,12 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                       className="w-full bg-primary hover:bg-primary/95 text-white font-bold py-3 px-4 rounded-2xl shadow-soft flex items-center justify-center space-x-2 transition-all"
                     >
                       <Plus className="h-4 w-4" />
-                      <span>Log Meal</span>
+                      <span>{t('logMealBtn')}</span>
                     </button>
                   </div>
                 ) : (
                   <div className="text-center py-8 border border-dashed border-slate-200 dark:border-slate-700 rounded-3xl bg-transparent dark:bg-transparent">
-                    <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 block">Search and select a food template from the library above to get started...</span>
+                    <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 block">{t('foodLog.searchFoodPrompt', 'Search and select a food template from the library above to get started...')}</span>
                   </div>
                 )}
               </div>
@@ -1200,20 +1202,20 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
             {activeTab === 'manual' && (
               <div className="space-y-3.5 bg-slate-50/30 dark:bg-slate-800/30 p-4 rounded-2xl border border-slate-100/70 dark:border-slate-700/50">
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Meal Name</label>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('foodLog.mealName', 'Meal Name')}</label>
                   <input
                     type="text"
                     required
                     value={customName}
                     onChange={(e) => setCustomName(e.target.value)}
-                    placeholder="Rice and Dal, boiled egg..."
+                    placeholder={t('riceDalPlaceholder')}
                     className="w-full px-3.5 py-2 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-sm font-semibold bg-white dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Date of Meal</label>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('foodLog.dateOfMeal', 'Date of Meal')}</label>
                     <input
                       type="date"
                       required
@@ -1223,7 +1225,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Time of Meal</label>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('foodLog.timeOfMeal', 'Time of Meal')}</label>
                     <input
                       type="time"
                       required
@@ -1236,42 +1238,42 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Meal Period</label>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('foodLog.mealPeriod', 'Meal Period')}</label>
                     <select
                       value={mealType}
                       onChange={(e: any) => setMealType(e.target.value)}
                       className="w-full px-3 py-2 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-xs font-bold text-slate-600 dark:text-slate-200 bg-white dark:bg-slate-800 cursor-pointer"
                     >
-                      <option value="Breakfast">Breakfast</option>
-                      <option value="Lunch">Lunch</option>
-                      <option value="Dinner">Dinner</option>
-                      <option value="Snack">Snack</option>
+                      <option value="Breakfast">{t('mealBreakfast')}</option>
+                      <option value="Lunch">{t('mealLunch')}</option>
+                      <option value="Dinner">{t('mealDinner')}</option>
+                      <option value="Snack">{t('mealSnack')}</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Food Category</label>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('foodLog.foodCategory', 'Food Category')}</label>
                     <select
                       value={category}
                       onChange={(e: any) => setCategory(e.target.value)}
                       className="w-full px-3 py-2 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-xs font-bold text-slate-600 dark:text-slate-200 bg-white dark:bg-slate-800 cursor-pointer"
                     >
-                      <option value="South Indian">South Indian</option>
-                      <option value="North Indian">North Indian</option>
-                      <option value="Snacks">Snacks</option>
-                      <option value="Fruits">Fruits</option>
-                      <option value="Vegetables">Vegetables</option>
-                      <option value="Beverages">Beverages</option>
-                      <option value="Dairy">Dairy</option>
-                      <option value="Non-Veg">Non-Veg</option>
-                      <option value="Sweets">Sweets</option>
-                      <option value="Custom">Custom Entry</option>
+                      <option value="South Indian">{t('catSouthIndian')}</option>
+                      <option value="North Indian">{t('catNorthIndian')}</option>
+                      <option value="Snacks">{t('catSnacks')}</option>
+                      <option value="Fruits">{t('catFruits')}</option>
+                      <option value="Vegetables">{t('catVegetables')}</option>
+                      <option value="Beverages">{t('catBeverages')}</option>
+                      <option value="Dairy">{t('catDairy')}</option>
+                      <option value="Non-Veg">{t('catNonVeg')}</option>
+                      <option value="Sweets">{t('catSweets')}</option>
+                      <option value="Custom">{t('catCustomEntry')}</option>
                     </select>
                   </div>
                 </div>
 
                 <div className="pt-3 border-t border-slate-200/60 dark:border-slate-700/60">
-                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Nutritional Breakdown</span>
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">{t('foodLog.nutritionalBreakdown', 'Nutritional Breakdown')}</span>
                   <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
                     <div className="p-2 rounded-xl text-center border bg-white dark:bg-slate-800 border-slate-200/80 dark:border-slate-700 focus-within:border-primary/40">
                       <span className="text-[8px] font-bold text-slate-400 block uppercase">Calories</span>
@@ -1323,7 +1325,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
 
                 <div className="grid grid-cols-2 gap-3 pt-1">
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Serving Qty</label>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('foodLog.servingQty', 'Serving Qty')}</label>
                     <input
                       type="number"
                       step="any"
@@ -1335,7 +1337,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Unit</label>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('foodLog.unit', 'Unit')}</label>
                     <input
                       type="text"
                       required
@@ -1351,7 +1353,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                   className="w-full bg-primary hover:bg-primary/95 text-white font-bold py-3 px-4 rounded-2xl shadow-soft flex items-center justify-center space-x-2 transition-all hover:shadow-md active:scale-[0.98]"
                 >
                   <Plus className="h-4 w-4" />
-                  <span>Log Meal</span>
+                  <span>{t('logMealBtn')}</span>
                 </button>
               </div>
             )}
@@ -1366,7 +1368,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
         >
           <div className="mb-4 mt-8">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-extrabold text-slate-800 dark:text-slate-200">Meal Log History</h3>
+              <h3 className="text-sm font-extrabold text-slate-800 dark:text-slate-200">{t('foodLog.mealLogHistory', 'Meal Log History')}</h3>
               <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl px-2.5 py-1.5 shadow-sm">
                 <Calendar className="h-3.5 w-3.5 text-slate-400 shrink-0" />
                 <input
@@ -1425,7 +1427,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
 
           {logs.length > 0 && (
             <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-[0_12px_24px_rgba(0,0,0,0.02)] rounded-3xl p-4 mb-4">
-              <h4 className="text-[10px] font-bold text-slate-450 dark:text-slate-400 uppercase tracking-wider mb-3">Daily Nutrients Summary</h4>
+              <h4 className="text-[10px] font-bold text-slate-450 dark:text-slate-400 uppercase tracking-wider mb-3">{t('foodLog.dailyNutrientsSummary', 'Daily Nutrients Summary')}</h4>
               <div className="grid grid-cols-5 gap-2 text-center">
                 <div className="bg-slate-50/50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-slate-100/60 dark:border-slate-700/60">
                   <span className="text-[8px] font-bold text-slate-400 block uppercase">Calories</span>
@@ -1503,14 +1505,14 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                     <button
                       onClick={() => handleOpenEditModal(log)}
                       className="p-2 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-400 hover:text-primary rounded-xl transition-all"
-                      title="Edit Log"
+                      title={t('editLogTitle')}
                     >
                       <Pencil className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => handleDeleteLog(log._id)}
                       className="p-2 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-slate-400 hover:text-rose-600 rounded-xl transition-all"
-                      title="Delete Log"
+                      title={t('deleteLogTitle')}
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -1526,8 +1528,8 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
             <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-md shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden transform transition-all animate-in zoom-in-95 duration-200">
               <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
                 <div>
-                  <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">Edit Food Log</h3>
-                  <p className="text-xs text-slate-450 dark:text-slate-400 font-medium mt-0.5">Modify meal entry details</p>
+                  <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">{t('foodLog.editFoodLog', 'Edit Food Log')}</h3>
+                  <p className="text-xs text-slate-450 dark:text-slate-400 font-medium mt-0.5">{t('foodLog.modifyMealDetails', 'Modify meal entry details')}</p>
                 </div>
                 <button
                   type="button"
@@ -1540,7 +1542,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
 
               <form onSubmit={handleEditSubmit} className="p-6 space-y-4">
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Meal Name</label>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('foodLog.mealName', 'Meal Name')}</label>
                   <input
                     type="text"
                     required
@@ -1552,7 +1554,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Date of Meal</label>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('foodLog.dateOfMeal', 'Date of Meal')}</label>
                     <input
                       type="date"
                       required
@@ -1562,7 +1564,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Time of Meal</label>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('foodLog.timeOfMeal', 'Time of Meal')}</label>
                     <input
                       type="time"
                       required
@@ -1575,7 +1577,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Meal Period</label>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('foodLog.mealPeriod', 'Meal Period')}</label>
                     <select
                       value={editMealType}
                       onChange={(e: any) => setEditMealType(e.target.value)}
@@ -1588,7 +1590,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Food Category</label>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('foodLog.foodCategory', 'Food Category')}</label>
                     <select
                       value={editCategory}
                       onChange={(e) => setEditCategory(e.target.value)}
@@ -1610,7 +1612,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
 
                 <div className="grid grid-cols-2 gap-3 pt-1">
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Serving Qty</label>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('foodLog.servingQty', 'Serving Qty')}</label>
                     <input
                       type="number"
                       step="any"
@@ -1622,7 +1624,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Unit</label>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('foodLog.unit', 'Unit')}</label>
                     <input
                       type="text"
                       required
@@ -1759,7 +1761,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
 
               <h3 className="text-sm font-extrabold text-slate-800 dark:text-slate-100 flex items-center space-x-1.5 mb-4 border-b border-slate-100 dark:border-slate-800 pb-3">
                 <Sparkles className="h-4 w-4 text-indigo-500 fill-indigo-500 animate-pulse" />
-                <span>Food Scanner</span>
+                <span>{t('foodLog.foodScanner', 'Food Scanner')}</span>
               </h3>
 
               {!scanPreviewUrl ? (
@@ -1776,7 +1778,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                      <div className="h-12 w-12 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-2xl flex items-center justify-center mb-3 border border-indigo-100 dark:border-indigo-800/50">
                        <Camera className="h-5 w-5" />
                      </div>
-                     <span className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-4">Meal Scanning Options</span>
+                     <span className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-4">{t('foodLog.mealScanningOptions', 'Meal Scanning Options')}</span>
                      
                      <div className="flex gap-3 w-full max-w-xs">
                        <button
@@ -1817,7 +1819,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                       className="mt-1 h-4 w-4 text-primary border-slate-300 dark:border-slate-600 rounded focus:ring-primary"
                     />
                     <label htmlFor="ai-consent" className="text-[10px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed cursor-pointer">
-                      <strong className="text-slate-700 dark:text-slate-300">Privacy Consent:</strong> I agree to securely share this meal image with a third-party AI provider (Google Gemini) solely for estimating nutritional content. Images are analyzed transiently and are never stored or used to personally identify you.
+                      <strong className="text-slate-700 dark:text-slate-300">{t('foodLog.privacyConsent', 'Privacy Consent:')}</strong> I agree to securely share this meal image with a third-party AI provider (Google Gemini) solely for estimating nutritional content. Images are analyzed transiently and are never stored or used to personally identify you.
                     </label>
                   </div>
                 </div>
@@ -1849,7 +1851,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                           <div className="absolute bottom-0 left-0 w-5 h-5 border-b-4 border-l-4 border-white rounded-bl-lg" />
                           <div className="absolute bottom-0 right-0 w-5 h-5 border-b-4 border-r-4 border-white rounded-br-lg" />
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-white text-xs font-bold bg-black/40 px-2 py-1 rounded-full">Crop Area</span>
+                            <span className="text-white text-xs font-bold bg-black/40 px-2 py-1 rounded-full">{t('foodLog.cropArea', 'Crop Area')}</span>
                           </div>
                         </div>
                         {/* Dark mask bottom */}
@@ -1944,13 +1946,13 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                         className="flex-1 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl text-xs font-bold shadow-soft flex items-center justify-center space-x-1.5 transition-all"
                       >
                         <Sparkles className="h-4 w-4 fill-white" />
-                        <span>Identify & Estimate</span>
+                        <span>{t('identifyEstimateBtn')}</span>
                       </button>
                     </div>
                   )}                  {scanResult && (
                     /* SCAN RESULTS CARD */
                     <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 space-y-4 animate-in slide-in-from-bottom duration-250">
-                      <span className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-2">Detected Items in Plate</span>
+                      <span className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-2">{t('foodLog.detectedItemsInPlate', 'Detected Items in Plate')}</span>
 
                       <div className="space-y-4 max-h-[320px] overflow-y-auto pr-1">
                         {scanResult.items && scanResult.items.map((item: any, idx: number) => {
@@ -1987,7 +1989,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                                         </span>
                                       )}
                                       {item.requiresManualEntry && (
-                                        <span className="text-[7px] font-extrabold bg-slate-100 text-slate-500 border border-slate-200 px-1.5 py-0.5 rounded-md uppercase tracking-wider">Not Found</span>
+                                        <span className="text-[7px] font-extrabold bg-slate-100 text-slate-500 border border-slate-200 px-1.5 py-0.5 rounded-md uppercase tracking-wider">{t('foodLog.notFound', 'Not Found')}</span>
                                       )}
                                     </div>
                                   </div>
@@ -2006,7 +2008,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                                 <>
                                   {item.requiresManualEntry ? (
                                     <div className="bg-slate-50 rounded-xl p-3 text-center border border-dashed border-slate-200">
-                                      <span className="text-[10px] text-slate-400 font-semibold">Nutrition data not found. Search this food manually.</span>
+                                      <span className="text-[10px] text-slate-400 font-semibold">{t('foodLog.nutritionDataNotFound', 'Nutrition data not found. Search this food manually.')}</span>
                                     </div>
                                   ) : (
                                     <>
@@ -2137,9 +2139,9 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
 
                         return (
                           <div className="bg-indigo-50/40 border border-indigo-100/60 rounded-2xl p-4 space-y-2">
-                            <span className="block text-[8px] font-extrabold text-indigo-750 uppercase tracking-wider">Total Meal Summary</span>
+                            <span className="block text-[8px] font-extrabold text-indigo-750 uppercase tracking-wider">{t('foodLog.totalMealSummary', 'Total Meal Summary')}</span>
                             <div className="flex justify-between items-center pb-2 border-b border-indigo-100/40">
-                              <span className="text-xs font-bold text-slate-650">Combined Energy</span>
+                              <span className="text-xs font-bold text-slate-650">{t('foodLog.combinedEnergy', 'Combined Energy')}</span>
                               <span className="text-sm font-black text-indigo-800">{Math.round(totalCal)} kcal</span>
                             </div>
                             <div className="grid grid-cols-4 gap-2 text-center pt-1">
@@ -2166,7 +2168,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
 
                       <div className="space-y-3 pt-2 border-t border-slate-200/60">
                         <div>
-                          <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Meal Window</label>
+                          <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('foodLog.mealWindow', 'Meal Window')}</label>
                           <select
                             value={scanMealType}
                             onChange={(e: any) => setScanMealType(e.target.value)}
@@ -2215,7 +2217,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                           onClick={handleAddScannedMeal}
                           className="flex-1 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl text-xs font-bold shadow-soft flex items-center justify-center space-x-1.5 transition-all"
                         >
-                          <span>Log Meal Entry</span>
+                          <span>{t('logMealEntryBtn')}</span>
                         </button>
                       </div>
                     </div>
@@ -2234,8 +2236,8 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
             <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <div>
                 <span className="text-[9px] font-extrabold text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full uppercase tracking-wider">🌐 FatSecret</span>
-                <h3 className="text-sm font-bold text-slate-800 mt-1">Select Correct Variant</h3>
-                <p className="text-[10px] text-slate-400 font-medium">Multiple matches found. Pick the closest one.</p>
+                <h3 className="text-sm font-bold text-slate-800 mt-1">{t('foodLog.selectCorrectVariant', 'Select Correct Variant')}</h3>
+                <p className="text-[10px] text-slate-400 font-medium">{t('foodLog.multipleMatches', 'Multiple matches found. Pick the closest one.')}</p>
               </div>
               <button
                 type="button"
@@ -2275,8 +2277,8 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                 <Calendar className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="text-base font-black text-slate-900 dark:text-slate-100">Filter Meal History Range</h3>
-                <p className="text-xs text-slate-400 font-semibold">Select start and end dates to view past logged meals.</p>
+                <h3 className="text-base font-black text-slate-900 dark:text-slate-100">{t('foodLog.filterHistoryRange', 'Filter Meal History Range')}</h3>
+                <p className="text-xs text-slate-400 font-semibold">{t('foodLog.selectDatesHistory', 'Select start and end dates to view past logged meals.')}</p>
               </div>
             </div>
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { useToast } from '../../context/ToastContext';
 import { Star, X, CheckCircle, ArrowLeft } from 'lucide-react';
 import { ProductImage } from '../../screens/Shop/ShopScreen';
@@ -11,6 +12,7 @@ interface ProductRatingScreenProps {
 
 export const ProductRatingScreen: React.FC<ProductRatingScreenProps> = ({ orderId, onBack }) => {
   const { apiUrl, token } = useAuth();
+  const { t } = useLanguage();
   const { showToast } = useToast();
   
   const [loading, setLoading] = useState(true);
@@ -114,7 +116,7 @@ export const ProductRatingScreen: React.FC<ProductRatingScreenProps> = ({ orderI
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-6 text-center">
         <X className="h-12 w-12 text-rose-500 mb-4" />
-        <h3 className="font-bold text-slate-800 text-lg">Invalid Review Session</h3>
+        <h3 className="font-bold text-slate-800 text-lg">{t('shop.invalidReviewSession', 'Invalid Review Session')}</h3>
         <p className="text-xs text-slate-500 mt-1 max-w-sm">
           We could not locate this order or it is not eligible for product feedback.
         </p>
@@ -188,13 +190,13 @@ export const ProductRatingScreen: React.FC<ProductRatingScreenProps> = ({ orderI
               {state.submitted ? (
                 <div className="bg-emerald-50 text-emerald-800 border border-emerald-100 rounded-2xl p-4 flex items-center gap-3 animate-in fade-in duration-200">
                   <CheckCircle className="h-5 w-5 text-emerald-555 shrink-0" />
-                  <span className="text-xs font-bold">Review submitted successfully! Pending moderator approval.</span>
+                  <span className="text-xs font-bold">{t('shop.reviewSubmitted', 'Review submitted successfully! Pending moderator approval.')}</span>
                 </div>
               ) : (
                 <div className="space-y-4 pt-2 border-t border-slate-100">
                   {/* Stars input */}
                   <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Product Rating</label>
+                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">{t('shop.productRating', 'Product Rating')}</label>
                     <div className="flex items-center gap-2">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <button
@@ -222,7 +224,7 @@ export const ProductRatingScreen: React.FC<ProductRatingScreenProps> = ({ orderI
 
                   {/* Comment Textarea */}
                   <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Review Comments</label>
+                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">{t('shop.reviewComments', 'Review Comments')}</label>
                     <textarea
                       value={state.comment}
                       onChange={(e) => {
@@ -231,7 +233,7 @@ export const ProductRatingScreen: React.FC<ProductRatingScreenProps> = ({ orderI
                           [pId]: { ...prev[pId], comment: e.target.value }
                         }));
                       }}
-                      placeholder="Explain what you liked or disliked about this product..."
+                      placeholder={t('explainReviewPlaceholder')}
                       rows={2}
                       className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3 text-xs focus:outline-none focus:border-indigo-400"
                     />

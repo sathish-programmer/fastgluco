@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Play, X } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface CancerVideo {
   _id: string;
@@ -78,6 +79,7 @@ const getYoutubeThumbnailUrl = (url: string) => {
 
 export const IndianCancersScreen: React.FC<IndianCancersScreenProps> = ({ onBack }) => {
   const { apiUrl, token } = useAuth();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<{ men: CancerData[]; women: CancerData[] }>({ men: [], women: [] });
   const [activeTab, setActiveTab] = useState<'Men' | 'Women'>('Men');
@@ -145,7 +147,7 @@ export const IndianCancersScreen: React.FC<IndianCancersScreenProps> = ({ onBack
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-6 text-slate-500">
-        Loading Indian Cancers & Risks data...
+        {t('common.loading', 'Loading Indian Cancers & Risks data...')}
       </div>
     );
   }
@@ -162,8 +164,8 @@ export const IndianCancersScreen: React.FC<IndianCancersScreenProps> = ({ onBack
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div>
-          <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100 font-sans">Indian Cancers & Risks</h1>
-          <p className="text-xs text-slate-500">Understand common cancers in India and their associated risk factors.</p>
+          <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100 font-sans">{t('indianCancersTitle', 'Indian Cancers & Risks')}</h1>
+          <p className="text-xs text-slate-500">{t('indianCancersSub', 'Understand common cancers in India and their associated risk factors.')}</p>
         </div>
       </div>
 
@@ -177,7 +179,7 @@ export const IndianCancersScreen: React.FC<IndianCancersScreenProps> = ({ onBack
               : 'text-slate-500 dark:text-slate-400 hover:text-slate-800'
           }`}
         >
-          Men
+          {t('men', 'Men')}
         </button>
         <button
           onClick={() => { setActiveTab('Women'); setActivePieIndex(0); }}
@@ -187,14 +189,14 @@ export const IndianCancersScreen: React.FC<IndianCancersScreenProps> = ({ onBack
               : 'text-slate-500 dark:text-slate-400 hover:text-slate-800'
           }`}
         >
-          Women
+          {t('women', 'Women')}
         </button>
       </div>
 
       {/* Donut Chart Card */}
       {currentList.length > 0 && (
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/60 dark:border-slate-800 p-6 flex flex-col items-center shadow-sm">
-          <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Top Cancer Sites Share</h2>
+          <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">{t('incidenceShare', 'Top Cancer Sites Share')}</h2>
           
           <div className="w-full h-56 relative flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
@@ -228,7 +230,7 @@ export const IndianCancersScreen: React.FC<IndianCancersScreenProps> = ({ onBack
             </ResponsiveContainer>
             <div className="absolute flex flex-col items-center justify-center text-center pointer-events-none">
               <span className="text-3xl font-black font-mono text-slate-800 dark:text-slate-100">{selectedCancer?.percentage}%</span>
-              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider max-w-[120px] truncate">{selectedCancer?.name}</span>
+              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider max-w-[120px] truncate">{t(`cancer.${selectedCancer?.name}`, selectedCancer?.name)}</span>
             </div>
           </div>
         </div>
@@ -238,17 +240,17 @@ export const IndianCancersScreen: React.FC<IndianCancersScreenProps> = ({ onBack
       {selectedCancer && (
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/60 dark:border-slate-800 p-6 space-y-4 shadow-sm">
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: currentAccent }}>Selected Site</span>
-            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">{selectedCancer.name}</h3>
-            <p className="text-xs text-slate-500 leading-relaxed mt-1">{selectedCancer.description}</p>
+            <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: currentAccent }}>{t('indianCancers.selectedSite', 'Selected Site')}</span>
+            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">{t(`cancer.${selectedCancer.name}`, selectedCancer.name)}</h3>
+            <p className="text-xs text-slate-500 leading-relaxed mt-1">{t(`cancerDesc.${selectedCancer.name}`, selectedCancer.description)}</p>
           </div>
 
           <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Major Risk Factors</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">{t('indianCancers.majorRiskFactors', 'Major Risk Factors')}</span>
             <div className="flex flex-wrap gap-1.5">
               {selectedCancer.riskFactors.map((factor, idx) => (
                 <span key={idx} className="text-xs font-semibold px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-full">
-                  {factor}
+                  {t(`cancerRisk.${factor}`, factor)}
                 </span>
               ))}
             </div>
@@ -257,7 +259,7 @@ export const IndianCancersScreen: React.FC<IndianCancersScreenProps> = ({ onBack
           {/* Video Card in User App if configured */}
           {selectedCancer.videos && selectedCancer.videos.length > 0 && (
             <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-3">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Watch Awareness Videos</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">{t('indianCancers.watchAwarenessVideos', 'Watch Awareness Videos')}</span>
               <div className="grid gap-3">
                 {selectedCancer.videos.map((video) => (
                   <button
@@ -298,7 +300,7 @@ export const IndianCancersScreen: React.FC<IndianCancersScreenProps> = ({ onBack
 
       {/* Legend for quickly switching */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/60 dark:border-slate-800 p-6 space-y-3 shadow-sm">
-        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Indian Cancer Site Distribution</span>
+        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">{t('indianCancers.siteDistribution', 'Indian Cancer Site Distribution')}</span>
         <div className="grid gap-2">
           {currentList.map((c, i) => (
             <button
@@ -312,7 +314,7 @@ export const IndianCancersScreen: React.FC<IndianCancersScreenProps> = ({ onBack
             >
               <div className="flex items-center gap-3">
                 <div className="h-3.5 w-3.5 rounded-full shrink-0" style={{ background: currentColors[i % currentColors.length] }}></div>
-                <span className="text-xs text-slate-700 dark:text-slate-350">{c.name}</span>
+                <span className="text-xs text-slate-700 dark:text-slate-350">{t(`cancer.${c.name}`, c.name)}</span>
               </div>
               <span className="text-xs font-bold font-mono" style={{ color: activePieIndex === i ? currentAccent : undefined }}>{c.percentage}%</span>
             </button>
@@ -323,10 +325,10 @@ export const IndianCancersScreen: React.FC<IndianCancersScreenProps> = ({ onBack
       {/* Attribution & Disclaimer */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/60 dark:border-slate-800 p-5 shadow-sm">
         <p className="text-[10.5px] text-slate-500 dark:text-slate-450 leading-relaxed">
-          <strong className="text-slate-700 dark:text-slate-300">Data Attribution:</strong> New case estimates based on IARC / GLOBOCAN 2024 India Fact Sheet.
+          <strong className="text-slate-700 dark:text-slate-300">{t('indianCancers.dataAttribution', 'Data Attribution:')}</strong> {t('indianCancers.dataAttributionDesc', 'New case estimates based on IARC / GLOBOCAN 2024 India Fact Sheet.')}
         </p>
         <p className="text-[10.5px] text-slate-500 dark:text-slate-450 leading-relaxed mt-2">
-          <strong className="text-slate-750 dark:text-slate-300">Disclaimer:</strong> Tobacco use (smoked and chewed) is the single largest preventable driver of cancer in India, contributing heavily to oral, lung, and oesophageal cancers. Cervical cancer is highly preventable through HPV vaccination and regular screening. Percentages reflect the share of new cases within each sex, not absolute risk.
+          <strong className="text-slate-750 dark:text-slate-300">{t('indianCancers.disclaimer', 'Disclaimer:')}</strong> {t('indianCancers.disclaimerDesc', 'Tobacco use (smoked and chewed) is the single largest preventable driver of cancer in India, contributing heavily to oral, lung, and oesophageal cancers. Cervical cancer is highly preventable through HPV vaccination and regular screening. Percentages reflect the share of new cases within each sex, not absolute risk.')}
         </p>
       </div>
 

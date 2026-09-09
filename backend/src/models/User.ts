@@ -26,7 +26,7 @@ export interface IUser extends Document {
   libreLastSyncAt?: Date;
   isBlocked: boolean;
   isDeleted: boolean;
-  cancerJourney?: 'PREVENTION' | 'TREATMENT' | 'SECONDARY_PREVENTION';
+  cancerJourney?: 'PREVENTION' | 'TREATMENT' | 'SECONDARY_PREVENTION' | 'AGEING' | 'PCOD' | 'DIABETES' | 'HYPERTENSION' | 'PARKINSON' | 'CARDIAC';
   cancerDisclaimerAccepted?: boolean;
   cancerDisclaimerAcceptedAt?: Date;
   termsAccepted?: boolean;
@@ -38,6 +38,7 @@ export interface IUser extends Document {
   addressState?: string;
   addressPinCode?: string;
   notificationPreferences?: any;
+  language?: 'en' | 'ta' | 'kn' | 'hi';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -75,7 +76,11 @@ const userSchema = new Schema<IUser>(
     libreLastSyncAt: { type: Date },
     isBlocked: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },
-    cancerJourney: { type: String, enum: ['PREVENTION', 'TREATMENT', 'SECONDARY_PREVENTION'], default: 'PREVENTION' },
+    cancerJourney: { 
+      type: String, 
+      enum: ['PREVENTION', 'TREATMENT', 'SECONDARY_PREVENTION', 'AGEING', 'PCOD', 'DIABETES', 'HYPERTENSION', 'PARKINSON', 'CARDIAC'], 
+      default: 'PREVENTION' 
+    },
     cancerDisclaimerAccepted: { type: Boolean, default: false },
     cancerDisclaimerAcceptedAt: { type: Date },
     termsAccepted: { type: Boolean, default: false },
@@ -86,7 +91,8 @@ const userSchema = new Schema<IUser>(
     addressCity: { type: String, default: '' },
     addressState: { type: String, default: '' },
     addressPinCode: { type: String, default: '' },
-    notificationPreferences: { type: Object, default: {} }
+    notificationPreferences: { type: Object, default: {} },
+    language: { type: String, enum: ['en', 'ta', 'kn', 'hi'], default: 'en' }
   },
   {
     timestamps: true

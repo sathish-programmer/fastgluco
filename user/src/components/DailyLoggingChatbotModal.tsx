@@ -11,6 +11,7 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
 import { scheduleDailyCheckinReminder, cancelDailyCheckinReminder, triggerTestNotification } from '../utils/notificationScheduler';
 import { getDeviceLocation } from '../utils/geolocationHelper';
 import type { FocusModeType } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { RoboAvatar } from './RoboAvatar';
 
 interface WorkflowStep {
@@ -63,6 +64,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
   userMode = 'PREVENTION',
   onRefreshDashboard
 }) => {
+  const { language, currentLanguageOption, t } = useLanguage();
   const [workflow, setWorkflow] = useState<Workflow | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [activeStepIndex, setActiveStepIndex] = useState<number>(0);
@@ -426,11 +428,483 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
         const parsed = JSON.parse(raw);
         if (parsed.inAqi != null) {
           const loc = parsed.cityName ? ` in ${parsed.cityName}` : '';
-          return `🌫️ Live Air Quality: AQI ${parsed.inAqi} (${parsed.status || 'Tracked'})${loc}. `;
+          const aqiLabel = language === 'ta' ? 'நேரலை காற்றின் தரம்' : language === 'hi' ? 'लाइव वायु गुणवत्ता' : language === 'kn' ? 'ಲೈವ್ ವಾಯು ಗುಣಮಟ್ಟ' : 'Live Air Quality';
+          return `🌫️ ${aqiLabel}: AQI ${parsed.inAqi} (${parsed.status || 'Tracked'})${loc}. `;
         }
       }
     } catch (e) {}
-    return '🌫️ Live Air Quality: AQI 65 (Satisfactory). ';
+    const defaultAqiLabel = language === 'ta' ? 'நேரலை காற்றின் தரம்' : language === 'hi' ? 'लाइव वायु गुणवत्ता' : language === 'kn' ? 'ಲೈವ್ ವಾಯು ಗುಣಮಟ್ಟ' : 'Live Air Quality';
+    return `🌫️ ${defaultAqiLabel}: AQI 65. `;
+  };
+
+  const localizeStepTitle = (stepId?: string, fallbackTitle?: string): string => {
+    if (!stepId) return fallbackTitle || '';
+    const s = stepId.toLowerCase();
+    const lang = (language || 'en') as 'en' | 'ta' | 'hi' | 'kn';
+
+    const TITLES_MAP: Record<string, { en: string; ta: string; hi: string; kn: string }> = {
+      stress: {
+        en: 'Survivor Stress & Emotional Health',
+        ta: 'உயிர் பிழைத்தோர் மனநல பரிசோதனை',
+        hi: 'सर्वाइवर तनाव एवं भावनात्मक स्वास्थ्य',
+        kn: 'ಸರ್ವೈವರ್ ಒತ್ತಡ ಮತ್ತು ಭಾವನಾತ್ಮಕ ಆರೋಗ್ಯ'
+      },
+      caregiver_stress: {
+        en: 'Caregiver Stress Check',
+        ta: 'பராமரிப்பாளர் மன அழுத்த சோதனை',
+        hi: 'देखभालकर्ता तनाव जांच',
+        kn: 'ಆರೈಕೆದಾರರ ಒತ್ತಡ ತಪಾಸಣೆ'
+      },
+      sleep: {
+        en: 'Sleep Duration & Quality',
+        ta: 'தூக்கத்தின் அளவு & தரம்',
+        hi: 'नींद की अवधि और गुणवत्ता',
+        kn: 'ನಿದ್ರೆಯ ಅವಧಿ ಮತ್ತು ಗುಣಮಟ್ಟ'
+      },
+      fasting: {
+        en: 'Circadian Fasting Window',
+        ta: 'சர்க்காடியன் விரத நேரம்',
+        hi: 'सर्कैडियन उपवास विंडो',
+        kn: 'ಸರ್ಕಾಡಿಯನ್ ಉಪವಾಸದ ಸಮಯ'
+      },
+      movement: {
+        en: 'Exercise & Movement',
+        ta: 'உடற்பயிற்சி மற்றும் இயக்கம்',
+        hi: 'व्यायाम और शारीरिक गतिविधि',
+        kn: 'ವ್ಯಾಯಾಮ ಮತ್ತು ಚಲನೆ'
+      },
+      stillness: {
+        en: 'Stillness & Meditation',
+        ta: 'அமைதி மற்றும் தியானம்',
+        hi: 'शांति और ध्यान',
+        kn: 'ಶಾಂತಿ ಮತ್ತು ಧ್ಯಾನ'
+      },
+      joy: {
+        en: 'Things You Love & Joy',
+        ta: 'மகிழ்ச்சி மற்றும் பிடித்த செயல்பாடுகள்',
+        hi: 'पसंदीदा चीजें और खुशी',
+        kn: 'ನಿಮಗೆ ಇಷ್ಟವಾದವುಗಳು ಮತ್ತು ಸಂತೋಷ'
+      },
+      smoking: {
+        en: 'Smoking & Chewing Tobacco',
+        ta: 'புகைபிடித்தல் & புகையிலை பயன்பாடு',
+        hi: 'धूम्रपान और तंबाकू का सेवन',
+        kn: 'ಧೂಮಪಾನ ಮತ್ತು ತಂಬಾಕು ಬಳಕೆ'
+      },
+      alcohol: {
+        en: 'Alcohol Intake Check',
+        ta: 'மதுபான உட்கொள்ளல் பரிசோதனை',
+        hi: 'शराब सेवन जांच',
+        kn: 'ಮದ್ಯಪಾನ ಸೇವನೆ ಪರಿಶೀಲನೆ'
+      },
+      antioxidants: {
+        en: 'Antioxidants & Repair Foods',
+        ta: 'ஆன்டிஆக்ஸிடன்ட்கள் & பழுதுபார்க்கும் உணவுகள்',
+        hi: 'एंटीऑक्सीडेंट और उपचार खाद्य पदार्थ',
+        kn: 'ಆಂಟಿಆಕ್ಸಿಡೆಂಟ್‌ಗಳು ಮತ್ತು ಚೇತರಿಕೆ ಆಹಾರಗಳು'
+      },
+      repair_habits: {
+        en: 'Antioxidant & Repair Nutrition',
+        ta: 'ஆன்டிஆக்ஸிடன்ட் & பழுதுபார்க்கும் ஊட்டச்சத்து',
+        hi: 'एंटीऑक्सीडेंट और उपचार पोषण',
+        kn: 'ಆಂಟಿಆಕ್ಸಿಡೆಂಟ್ ಮತ್ತು ದುರಸ್ತಿ ಪೋಷಣೆ'
+      },
+      env_air: {
+        en: 'Air Pollution & Passive Smoke',
+        ta: 'காற்று மாசுபாடு & புகை வெளிப்பாடு',
+        hi: 'वायु प्रदूषण और निष्क्रिय धुआं',
+        kn: 'ವಾಯು ಮಾಲಿನ್ಯ ಮತ್ತು ಧೂಮಪಾನದ ಹೊಗೆ'
+      },
+      env_water: {
+        en: 'Water Carcinogens Check',
+        ta: 'குடிநீர் பாதுகாப்பு பரிசோதனை',
+        hi: 'पीने के पानी की सुरक्षा जांच',
+        kn: 'ಕುಡಿಯುವ ನೀರಿನ ಸುರಕ್ಷತೆ ಪರಿಶೀಲನೆ'
+      },
+      env_pesticides: {
+        en: 'Pesticides Exposure',
+        ta: 'பூச்சிக்கொல்லி ரசாயன வெளிப்பாடு',
+        hi: 'कीटनाशक रसायन जोखिम',
+        kn: 'ಕೀಟನಾಶಕ ರಾಸಾಯನಿಕಗಳ ಒಡ್ಡಿಕೆ'
+      },
+      env_microplastics: {
+        en: 'Microplastics Exposure',
+        ta: 'மைக்ரோபிளாஸ்டிக் நச்சு வெளிப்பாடு',
+        hi: 'माइक्रोप्लास्टिक जोखिम',
+        kn: 'ಮೈಕ್ರೋಪ್ಲಾಸ್ಟಿಕ್ ಒಡ್ಡಿಕೆ'
+      },
+      gut_health: {
+        en: 'Gut & Oral Health Check',
+        ta: 'குடல் & வாய்வழி ஆரோக்கியம்',
+        hi: 'आंत और मौखिक स्वास्थ्य जांच',
+        kn: 'ಕರಳು ಮತ್ತು ಬಾಯಿಯ ಆರೋಗ್ಯ ತಪಾಸಣೆ'
+      },
+      genetics: {
+        en: 'Family History of Cancer',
+        ta: 'குடும்ப புற்றுநோய் வரலாறு',
+        hi: 'कैंसर का पारिवारिक इतिहास',
+        kn: 'ಕ್ಯಾನ್ಸರ್‌ನ ಕುಟುಂಬ ಇತಿಹಾಸ'
+      },
+      screening: {
+        en: 'Screening & Follow-up Compliance',
+        ta: 'புற்றுநோய் பரிசோதனை & பின்தொடர்தல்',
+        hi: 'स्क्रीनिंग और फॉलो-अप अनुपालन',
+        kn: 'ಸ್ಕ್ರೀನಿಂಗ್ ಮತ್ತು ಫಾಲೋ-ಅಪ್ ಅನುಸರಣೆ'
+      },
+      kitchen: {
+        en: 'Check Your Kitchen Audit',
+        ta: 'சமையலறை நச்சு தணிக்கை',
+        hi: 'रसोईघर विषैले पदार्थ जांच',
+        kn: 'ಅಡುಗೆಮನೆ ವಿಷಕಾರಿ ಪರಿಶೀಲನೆ'
+      },
+      env_kitchen: {
+        en: 'Check Your Kitchen Audit',
+        ta: 'சமையலறை நச்சு தணிக்கை',
+        hi: 'रसोईघर विषैले पदार्थ जांच',
+        kn: 'ಅಡುಗೆಮನೆ ವಿಷಕಾರಿ ಪರಿಶೀಲನೆ'
+      },
+      substances: {
+        en: 'Chemicals & Toxic Substances',
+        ta: 'வேதியியல் மற்றும் நச்சுப் பொருட்கள்',
+        hi: 'रासायनिक और विषैले पदार्थ',
+        kn: 'ರಾಸಾಯನಿಕ ಮತ್ತು ವಿಷಕಾರಿ ಪದಾರ್ಥಗಳು'
+      },
+      report_upload: {
+        en: 'Upload Lab or CGM Report',
+        ta: 'மருத்துவ பரிசோதனை அறிக்கை பதிவேற்றம்',
+        hi: 'लैब या सीजीएम रिपोर्ट अपलोड',
+        kn: 'ಲ್ಯಾಬ್ ಅಥವಾ ಸಿಜಿಎಂ ವರದಿ ಅಪ್‌ಲೋಡ್'
+      },
+      found_exercise: {
+        en: 'Daily Movement',
+        ta: 'தினசரி இயக்கம் & உடற்பயிற்சி',
+        hi: 'दैनिक व्यायाम',
+        kn: 'ದೈನಂದಿನ ಚಲನೆ'
+      },
+      found_sleep: {
+        en: 'Restorative Sleep',
+        ta: 'ஆழ்ந்த புத்துணர்ச்சி தூக்கம்',
+        hi: 'आरामदायक नींद',
+        kn: 'ಆಳವಾದ ನಿದ್ರೆ'
+      },
+      found_diet: {
+        en: 'Whole-Food Diet',
+        ta: 'இயற்கை முழு உணவு',
+        hi: 'संतुलित आहार',
+        kn: 'ಸಂಪೂರ್ಣ ಆಹಾರ'
+      },
+      found_fasting: {
+        en: 'Fasting Window',
+        ta: 'விரத நேரம்',
+        hi: 'उपवास विंडो',
+        kn: 'ಉಪವಾಸದ ಸಮಯ'
+      },
+      found_antioxidants: {
+        en: 'Antioxidant Foods',
+        ta: 'ஆன்டிஆக்ஸிடன்ட் உணவுகள்',
+        hi: 'एंटीऑक्सीडेंट खाद्य',
+        kn: 'ಆಂಟಿಆಕ್ಸಿಡೆಂಟ್ ಆಹಾರಗಳು'
+      },
+      found_stress: {
+        en: 'Stress Level',
+        ta: 'மன அழுத்த நிலை',
+        hi: 'तनाव का स्तर',
+        kn: 'ಒತ್ತಡದ ಮಟ್ಟ'
+      }
+    };
+
+    for (const key in TITLES_MAP) {
+      if (s === key || s.includes(key) || key.includes(s)) {
+        return TITLES_MAP[key][lang] || TITLES_MAP[key].en;
+      }
+    }
+    return fallbackTitle || stepId;
+  };
+
+  const localizeStepQuestion = (stepId?: string, fallbackPrompt?: string): string => {
+    if (!stepId) return fallbackPrompt || '';
+    const s = stepId.toLowerCase();
+    const lang = (language || 'en') as 'en' | 'ta' | 'hi' | 'kn';
+
+    const QUESTIONS_MAP: Record<string, { en: string; ta: string; hi: string; kn: string }> = {
+      stress: {
+        en: 'How is your emotional wellbeing today? Post-cancer anxiety, fear of recurrence, or caregiver stress?',
+        ta: 'இன்று உங்கள் மனநிலை மற்றும் உணர்ச்சி நல்வாழ்வு எவ்வாறு உள்ளது? புற்றுநோய் பயம், மறுநிகழ்வு பற்றிய கவலை அல்லது பராமரிப்பாளர் அழுத்தமா?',
+        hi: 'आज आपकी भावनात्मक स्थिति कैसी है? कैंसर के बाद की चिंता, दोबारा होने का डर या देखभालकर्ता का तनाव?',
+        kn: 'ಇಂದು ನಿಮ್ಮ ಭಾವನಾತ್ಮಕ ಆರೋಗ್ಯ ಹೇಗಿದೆ? ಕ್ಯಾನ್ಸರ್ ನಂತರದ ಆತಂಕ, ಮರುಕಳಿಸುವ ಭಯ ಅಥವಾ ಆರೈಕೆದಾರರ ಒತ್ತಡವೇ?'
+      },
+      caregiver_stress: {
+        en: 'How was your emotional wellbeing today? Post-cancer anxiety, fear of recurrence, or caregiver stress?',
+        ta: 'இன்று உங்கள் மனநிலை மற்றும் உணர்ச்சி நல்வாழ்வு எவ்வாறு உள்ளது? புற்றுநோய் பயம், மறுநிகழ்வு பற்றிய கவலை அல்லது பராமரிப்பாளர் அழுத்தமா?',
+        hi: 'आज आपकी भावनात्मक स्थिति कैसी है? कैंसर के बाद की चिंता, दोबारा होने का डर या देखभालकर्ता का तनाव?',
+        kn: 'ಇಂದು ನಿಮ್ಮ ಭಾವನಾತ್ಮಕ ಆರೋಗ್ಯ ಹೇಗಿದೆ? ಕ್ಯಾನ್ಸರ್ ನಂತರದ ಆತಂಕ, ಮರುಕಳಿಸುವ ಭಯ ಅಥವಾ ಆರೈಕೆದಾರರ ಒತ್ತಡವೇ?'
+      },
+      sleep: {
+        en: 'How many hours of quality, restorative sleep did you get last night?',
+        ta: 'நேற்றிரவு எத்தனை மணிநேரம் ஆழ்ந்த, புத்துணர்ச்சியூட்டும் தூக்கம் பெற்றீர்கள்? (எண் உள்ளிடவும், எ.கா: 7.5)',
+        hi: 'कल रात आपने कितने घंटे की अच्छी और आरामदायक नींद ली? (संख्या दर्ज करें, उदा. 7.5)',
+        kn: 'ನಿನ್ನೆ ರಾತ್ರಿ ನೀವು ಎಷ್ಟು ಗಂಟೆಗಳ ಕಾಲ ಆಳವಾದ ವಿಶ್ರಾಂತಿದಾಯಕ ನಿದ್ರೆ ಪಡೆದಿದ್ದೀರಿ? (ಸಂಖ್ಯೆ ನಮೂದಿಸಿ, ಉದಾ: 7.5)'
+      },
+      fasting: {
+        en: 'Did you complete your intermittent circadian fasting window today?',
+        ta: 'இன்று உங்கள் சர்க்காடியன் இடைப்பட்ட விரத காலத்தை முடித்தீர்களா?',
+        hi: 'क्या आपने आज अपना आंतरायिक सर्कैडियन उपवास पूरा किया?',
+        kn: 'ಇಂದು ನಿಮ್ಮ ಸರ್ಕಾಡಿಯನ್ ಮಧ್ಯಂತರ ಉಪವಾಸದ ಸಮಯವನ್ನು ಪೂರ್ಣಗೊಳಿಸಿದ್ದೀರಾ?'
+      },
+      movement: {
+        en: 'What physical activity or movement did you complete today?',
+        ta: 'இன்று நீங்கள் என்ன உடற்பயிற்சி அல்லது உடல் இயக்கத்தை முடித்தீர்கள்?',
+        hi: 'आज आपने क्या शारीरिक गतिविधि या व्यायाम पूरा किया?',
+        kn: 'ಇಂದು ನೀವು ಯಾವ ದೈಹಿಕ ಚಟುವಟಿಕೆ ಅಥವಾ ವ್ಯಾಯಾಮವನ್ನು ಪೂರ್ಣಗೊಳಿಸಿದ್ದೀರಿ?'
+      },
+      stillness: {
+        en: 'Did you practice stillness, quiet meditation, or deep breathing for at least 10 minutes today?',
+        ta: 'இன்று குறைந்தது 10 நிமிடங்கள் அமைதியான தியானம் அல்லது ஆழ்ந்த மூச்சுப் பயிற்சி செய்தீர்களா?',
+        hi: 'क्या आपने आज कम से कम 10 मिनट शांति, ध्यान या गहरी सांस लेने का अभ्यास किया?',
+        kn: 'ಇಂದು ಕನಿಷ್ಠ 10 ನಿಮಿಷಗಳ ಕಾಲ ಶಾಂತತೆ, ಧ್ಯಾನ ಅಥವಾ ಆಳವಾದ ಉಸಿರಾಟವನ್ನು ಅಭ್ಯಾಸ ಮಾಡಿದ್ದೀರಾ?'
+      },
+      joy: {
+        en: 'Did you spend time doing something you love today (hobbies, music, family, art, gratitude)?',
+        ta: 'இன்று உங்களுக்குப் பிடித்த காரியங்களைச் செய்ய நேரம் ஒதுக்கினீர்களா (விருப்பங்கள், இசை, குடும்பம், கலை)?',
+        hi: 'क्या आपने आज अपनी पसंद की किसी चीज़ (शौक, संगीत, परिवार, कला, आभार) के लिए समय निकाला?',
+        kn: 'ಇಂದು ನಿಮಗೆ ಇಷ್ಟವಾದ ಕೆಲಸಗಳನ್ನು ಮಾಡಲು ಸಮಯ ಕಳೆದಿದ್ದೀರಾ (ಹವ್ಯಾಸಗಳು, ಸಂಗೀತ, ಕುಟುಂಬ, ಕಲೆ)?'
+      },
+      smoking: {
+        en: 'Did you smoke cigarettes/bidis or chew tobacco (gutkha, khaini, paan with tobacco) today?',
+        ta: 'இன்று நீங்கள் சிகரெட்/பீடி பிடித்தீர்களா அல்லது புகையிலை (குட்கா, கைனி, பான்) மென்றீர்களா?',
+        hi: 'क्या आपने आज सिगरेट/बीड़ी पी या तंबाकू (गुटखा, खैनी, पान) चबाया?',
+        kn: 'ಇಂದು ನೀವು ಸಿಗರೇಟ್/ಬೀಡಿ ಸೇದಿದ್ದೀರಾ ಅಥವಾ ತಂಬಾಕು (ಗುಟ್ಕಾ, ಖೈನಿ, ಪಾನ್) ಅಗಿದಿದ್ದೀರಾ?'
+      },
+      alcohol: {
+        en: 'Did you consume any alcoholic beverages today?',
+        ta: 'இன்று நீங்கள் ஏதேனும் மது அருந்தினீர்களா?',
+        hi: 'क्या आपने आज किसी भी प्रकार की शराब का सेवन किया?',
+        kn: 'ಇಂದು ನೀವು ಯಾವುದೇ ಆಲ್ಕೊಹಾಲ್ಯುಕ್ತ ಪಾನೀಯವನ್ನು ಸೇವಿಸಿದ್ದೀರಾ?'
+      },
+      antioxidants: {
+        en: 'Did you consume antioxidant-rich foods (berries, greens, amla, turmeric) or repair supplements today?',
+        ta: 'இன்று ஆன்டிஆக்ஸிடன்ட் நிறைந்த உணவுகள் (நெல்லிக்காய், மஞ்சள், கீரைகள், பெர்ரி) அல்லது சத்து மருந்துகளை உட்கொண்டீர்களா?',
+        hi: 'क्या आपने आज एंटीऑक्सीडेंट युक्त खाद्य पदार्थ (आंवला, हल्दी, हरी सब्जियां, बेरीज) या पूरक आहार लिए?',
+        kn: 'ಇಂದು ನೀವು ಆಂಟಿಆಕ್ಸಿಡೆಂಟ್ ಸಮೃದ್ಧ ಆಹಾರಗಳು (ನೆಲ್ಲಿಕಾಯಿ, ಅರಿಶಿನ, ಸೊಪ್ಪು, ಬೆರ್ರಿಗಳು) ಅಥವಾ ಪೂರಕಗಳನ್ನು ಸೇವಿಸಿದ್ದೀರಾ?'
+      },
+      repair_habits: {
+        en: 'Did you include anti-cancer repair foods today (cruciferous vegetables, berries, turmeric, omega-3s)?',
+        ta: 'இன்று புற்றுநோய் எதிர்ப்பு உணவுகள் (முட்டைக்கோஸ் குடும்ப காய்கறிகள், பெர்ரி, மஞ்சள், ஒமேகா-3) சேர்த்துக் கொண்டீர்களா?',
+        hi: 'क्या आपने आज कैंसर-रोधी आहार (हरी सब्जियां, बेरीज, हल्दी, ओमेगा-3) शामिल किया?',
+        kn: 'ಇಂದು ನೀವು ಕ್ಯಾನ್ಸರ್ ವಿರೋಧಿ ಪುನಶ್ಚೇತನ ಆಹಾರಗಳನ್ನು (ತರಕಾರಿಗಳು, ಬೆರ್ರಿಗಳು, ಅರಿಶಿನ, ಒಮೆಗಾ-3) ಸೇವಿಸಿದ್ದೀರಾ?'
+      },
+      env_air: {
+        en: 'Did you commute in heavy traffic (>30 min), encounter passive smoking, or experience indoor smoke/incense exposure today?',
+        ta: 'இன்று அதிக போக்குவரத்து புகை (>30 நிமிடம்), பிறர் புகைபிடித்தலின் புகை, அல்லது வீட்டினுள் தூப/சாம்பிராணி புகையை எதிர்கொண்டீர்களா?',
+        hi: 'क्या आज आपको भारी ट्रैफिक (>30 मिनट), दूसरों के धूम्रपान के धुएं या घर के अंदर धुएं/अगरबत्ती का सामना करना पड़ा?',
+        kn: 'ಇಂದು ನೀವು ಭಾರೀ ಸಂಚಾರದಲ್ಲಿ (>30 ನಿಮಿಷ), ಇತರರ ಧೂಮಪಾನದ ಹೊಗೆ ಅಥವಾ ಒಳಾಂಗಣ ಹೊಗೆ/ಧೂಪದ್ರವ್ಯಕ್ಕೆ ಒಳಗಾಗಿದ್ದೀರಾ?'
+      },
+      env_water: {
+        en: 'Do you use safe filtered drinking water (RO / carbon filtered, free of heavy metals, chlorine byproducts, and PFAS)?',
+        ta: 'நீங்கள் பாதுகாப்பான வடிகட்டப்பட்ட குடிநீரைப் பயன்படுத்துகிறீர்களா (RO / கார்பன் வடிகட்டி, கன உலோகங்கள் அற்றது)?',
+        hi: 'क्या आप सुरक्षित फिल्टर किए गए पीने के पानी (RO / कार्बन फिल्टर, भारी धातुओं से मुक्त) का उपयोग करते हैं?',
+        kn: 'ನೀವು ಸುರಕ್ಷಿತ ಫಿಲ್ಟರ್ ಮಾಡಿದ ಕುಡಿಯುವ ನೀರನ್ನು (RO / ಕಾರ್ಬನ್ ಫಿಲ್ಟರ್, ಭಾರ ಲೋಹಗಳಿಂದ ಮುಕ್ತ) ಬಳಸುತ್ತೀರಾ?'
+      },
+      env_pesticides: {
+        en: 'Did you consume unwashed non-organic high-pesticide produce or use chemical bug sprays today?',
+        ta: 'இன்று நீங்கள் பூச்சிக்கொல்லி தெளிக்கப்பட்ட காய்கறிகள்/பழங்களை உட்கொண்டீர்களா அல்லது கொசு/பூச்சி மருந்துகளைப் பயன்படுத்தினீர்களா?',
+        hi: 'क्या आपने आज बिना धुले कीटनाशक युक्त फल/सब्जियां खाईं या रासायनिक स्प्रे का उपयोग किया?',
+        kn: 'ಇಂದು ನೀವು ತೊಳೆಯದ ಕೀಟನಾಶಕಯುಕ್ತ ತರಕಾರಿ/ಹಣ್ಣುಗಳನ್ನು ಸೇವಿಸಿದ್ದೀರಾ ಅಥವಾ ರಾಸಾಯನಿಕ ಸಿಂಪಡಣೆಗಳನ್ನು ಬಳಸಿದ್ದೀರಾ?'
+      },
+      env_microplastics: {
+        en: 'Did you drink from heated plastic bottles, microwave food in plastic containers, or drink hot beverages from paper/plastic cups today?',
+        ta: 'இன்று சூடான பிளாஸ்டிக் பாட்டிலில் குடித்தீர்களா, பிளாஸ்டிக்கில் உணவை சூடாக்கினீர்களா அல்லது பிளாஸ்டிக்/காகித கப்பில் சூடான பானம் அருந்தினீர்களா?',
+        hi: 'क्या आपने आज गर्म प्लास्टिक की बोतलों से पानी पिया, प्लास्टिक में खाना गर्म किया या पेपर/प्लास्टिक कप में गर्म पेय पिया?',
+        kn: 'ಇಂದು ನೀವು ಬಿಸಿಯಾದ ಪ್ಲಾಸ್ಟಿಕ್ ಬಾಟಲಿಗಳಿಂದ ಕುಡಿದಿದ್ದೀರಾ, ಪ್ಲಾಸ್ಟಿಕ್‌ನಲ್ಲಿ ಆಹಾರ ಬಿಸಿಮಾಡಿದ್ದೀರಾ ಅಥವಾ ಪ್ಲಾಸ್ಟಿಕ್ ಕಪ್‌ಗಳಲ್ಲಿ ಬಿಸಿ ಪಾನೀಯ ಸೇವಿಸಿದ್ದೀರಾ?'
+      },
+      gut_health: {
+        en: 'Did you experience acidity/gastritis or oral/dental discomfort today?',
+        ta: 'இன்று உங்களுக்கு அசிடிட்டி/வயிற்று எரிச்சல் அல்லது வாய்/பல் வலி அசௌகரியம் ஏற்பட்டதா?',
+        hi: 'क्या आपको आज एसिडिटी/पेट में जलन या मुंह/दांतों में कोई परेशानी महसूस हुई?',
+        kn: 'ಇಂದು ನಿಮಗೆ ಅಸಿಡಿಟಿ/ಹೊಟ್ಟೆ ಉರಿ ಅಥವಾ ಬಾಯಿ/ಹಲ್ಲು ನೋವು ಉಂಟಾಗಿದೆಯೇ?'
+      },
+      genetics: {
+        en: 'Do you have anybody in your family with cancer, or a self-diagnosis of cancer?',
+        ta: 'உங்கள் குடும்பத்தில் யாருக்காவது புற்றுநோய் வரலாறு உள்ளதா அல்லது உங்களுக்கு புற்றுநோய் கண்டறியப்பட்டுள்ளதா?',
+        hi: 'क्या आपके परिवार में किसी को कैंसर का इतिहास है, या आपका खुद का कैंसर निदान हुआ है?',
+        kn: 'ನಿಮ್ಮ ಕುಟುಂಬದಲ್ಲಿ ಯಾರಿಗಾದರೂ ಕ್ಯಾನ್ಸರ್ ಇತಿಹಾಸವಿದೆಯೇ ಅಥವಾ ನಿಮಗೆ ಕ್ಯಾನ್ಸರ್ ಇರುವುದು ಪತ್ತೆಯಾಗಿದೆಯೇ?'
+      },
+      screening: {
+        en: 'Did you have any follow-up appointment, imaging, or blood work today? Are your next screenings scheduled?',
+        ta: 'இன்று மருத்துவ பரிசோதனை/ஸ்கேன் ஏதேனும் செய்தீர்களா? உங்கள் அடுத்த பரிசோதனை திட்டமிடப்பட்டுள்ளதா?',
+        hi: 'क्या आज आपका कोई फॉलो-अप, स्कैन या ब्लड टेस्ट हुआ? क्या आपकी अगली स्क्रीनिंग निर्धारित है?',
+        kn: 'ಇಂದು ನೀವು ಯಾವುದೇ ಫಾಲೋ-ಅಪ್ ತಪಾಸಣೆ, ಸ್ಕ್ಯಾನ್ ಅಥವಾ ರಕ್ತ ಪರೀಕ್ಷೆ ಮಾಡಿಸಿಕೊಂಡಿದ್ದೀರಾ? ನಿಮ್ಮ ಮುಂದಿನ ಸ್ಕ್ರೀನಿಂಗ್ ನಿಗದಿಯಾಗಿದೆಯೇ?'
+      }
+    };
+
+    for (const key in QUESTIONS_MAP) {
+      if (s === key || s.includes(key) || key.includes(s)) {
+        return QUESTIONS_MAP[key][lang] || QUESTIONS_MAP[key].en;
+      }
+    }
+    return fallbackPrompt || '';
+  };
+
+  const localizeOptionText = (opt: string): string => {
+    if (!opt) return opt;
+    const lower = opt.toLowerCase().trim();
+    const lang = (language || 'en') as 'en' | 'ta' | 'hi' | 'kn';
+
+    if (lang === 'en') return opt;
+
+    // Direct basic options
+    if (lower === 'yes') return lang === 'ta' ? 'ஆம்' : lang === 'hi' ? 'हाँ' : 'ಹೌದು';
+    if (lower === 'no') return lang === 'ta' ? 'இல்லை' : lang === 'hi' ? 'नहीं' : 'ಇಲ್ಲ';
+    if (lower === 'skip' || lower === 'skipped') return lang === 'ta' ? 'தவிர்' : lang === 'hi' ? 'छोड़ें' : 'ಬಿಟ್ಟುಬಿಡಿ';
+
+    // Stress & Emotional Options
+    if (lower.includes('no stress') || lower.includes('calm')) {
+      return lang === 'ta' ? 'அமைதி / அழுத்தம் இல்லை' : lang === 'hi' ? 'शांत / कोई तनाव नहीं' : 'ಶಾಂತ / ಯಾವುದೇ ಒತ್ತಡವಿಲ್ಲ';
+    }
+    if (lower.includes('mild anxiety') || lower.includes('mild stress')) {
+      return lang === 'ta' ? 'லேசான கவலை / அழுத்தம்' : lang === 'hi' ? 'हल्की चिंता / तनाव' : 'ಸೌಮ್ಯ ಆತಂಕ / ಒತ್ತಡ';
+    }
+    if (lower.includes('fear of recurrence') || lower.includes('recurrence')) {
+      return lang === 'ta' ? 'மறுநிகழ்வு பயம்' : lang === 'hi' ? 'दोबारा होने का डर' : 'ಮರುಕಳಿಸುವ ಭಯ';
+    }
+    if (lower.includes('caregiver stress')) {
+      return lang === 'ta' ? 'பராமரிப்பாளர் மன அழுத்தம்' : lang === 'hi' ? 'देखभालकर्ता का तनाव' : 'ಆರೈಕೆದಾರರ ಒತ್ತಡ';
+    }
+    if (lower.includes('emotionally drained') || lower.includes('drained')) {
+      return lang === 'ta' ? 'உணர்ச்சி ரீதியாக சோர்வு' : lang === 'hi' ? 'भावनात्मक रूप से थकावट' : 'ಭಾವನಾತ್ಮಕವಾಗಿ ದಣಿದಿದೆ';
+    }
+    if (lower.includes('moderate stress')) {
+      return lang === 'ta' ? 'மிதமான அழுத்தம்' : lang === 'hi' ? 'मध्यम तनाव' : 'ಮಧ್ಯಮ ಒತ್ತಡ';
+    }
+    if (lower.includes('high stress')) {
+      return lang === 'ta' ? 'அதிக அழுத்தம்' : lang === 'hi' ? 'अत्यधिक तनाव' : 'ಹೆಚ್ಚಿನ ಒತ್ತಡ';
+    }
+
+    // Fasting Options
+    if (lower.includes('16+ hrs') || lower.includes('16+ hours')) {
+      return lang === 'ta' ? 'ஆம் (16+ மணி நேரம்)' : lang === 'hi' ? 'हाँ (16+ घंटे)' : 'ಹೌದು (16+ ಗಂಟೆ)';
+    }
+    if (lower.includes('12-16 hrs') || lower.includes('12-16 hours')) {
+      return lang === 'ta' ? 'ஆம் (12-16 மணி நேரம்)' : lang === 'hi' ? 'हाँ (12-16 घंटे)' : 'ಹೌದು (12-16 ಗಂಟೆ)';
+    }
+    if (lower.includes('partial') || lower.includes('<12 hrs') || lower.includes('<12 hours')) {
+      return lang === 'ta' ? 'பகுதி (<12 மணி நேரம்)' : lang === 'hi' ? 'आंशिक (<12 घंटे)' : 'ಭಾಗಶಃ (<12 ಗಂಟೆ)';
+    }
+    if (lower.includes('skipped') || lower.includes('no fasting')) {
+      return lang === 'ta' ? 'இல்லை (தவிர்க்கப்பட்டது)' : lang === 'hi' ? 'नहीं (छोड़ दिया)' : 'ಇಲ್ಲ (ಬಿಡಲಾಗಿದೆ)';
+    }
+
+    // Movement Options
+    if (lower.includes('30+ min walk') || lower.includes('walk / run') || lower.includes('walk / jog') || lower.includes('walking')) {
+      return lang === 'ta' ? '30+ நிமிடம் நடை / ஓட்டம்' : lang === 'hi' ? '30+ मिनट वॉक / दौड़' : '30+ ನಿಮಿಷ ನಡಿಗೆ / ಓಟ';
+    }
+    if (lower.includes('yoga') || lower.includes('tai chi') || lower.includes('stretching')) {
+      return lang === 'ta' ? 'யோகா / நீட்சிப் பயிற்சி' : lang === 'hi' ? 'योग / स्ट्रेचिंग' : 'ಯೋಗ / ಸ್ಟ್ರೆಚಿಂಗ್';
+    }
+    if (lower.includes('strength training') || lower.includes('weights') || lower.includes('gym')) {
+      return lang === 'ta' ? 'வலிமை உடற்பயிற்சி' : lang === 'hi' ? 'स्ट्रेंथ ट्रेनिंग' : 'ಸ್ಟ್ರೆಂತ್ ಟ್ರೈನಿಂಗ್';
+    }
+    if (lower.includes('swimming') || lower.includes('cycling')) {
+      return lang === 'ta' ? 'நீச்சல் / சைக்கிள்' : lang === 'hi' ? 'तैराकी / साइकिलिंग' : 'ಈಜು / ಸೈಕ್ಲಿಂಗ್';
+    }
+    if (lower.includes('light activity') || lower.includes('light stretching') || lower.includes('gentle')) {
+      return lang === 'ta' ? 'லேசான உடற்பயிற்சி (<20 நிமிடம்)' : lang === 'hi' ? 'हल्की गतिविधि' : 'ಲಘು ಚಟುವಟಿಕೆ';
+    }
+    if (lower.includes('no movement') || lower.includes('rest day') || lower.includes('no exercise')) {
+      return lang === 'ta' ? 'இன்று உடற்பயிற்சி இல்லை / ஓய்வு' : lang === 'hi' ? 'आज विश्राम / कोई व्यायाम नहीं' : 'ಇಂದು ವಿಶ್ರಾಂತಿ / ಯಾವುದೇ ಚಲನೆ ಇಲ್ಲ';
+    }
+
+    // Stillness & Joy Options
+    if (lower.includes('10+ min') || lower.includes('practiced') || lower.includes('meditation')) {
+      return lang === 'ta' ? 'ஆம் (10+ நிமிடம் தியானம்)' : lang === 'hi' ? 'हाँ (10+ मिनट ध्यान)' : 'ಹೌದು (10+ ನಿಮಿಷ ಧ್ಯಾನ)';
+    }
+    if (lower.includes('yes (done)') || lower.includes('completed')) {
+      return lang === 'ta' ? 'ஆம் (செய்தேன்)' : lang === 'hi' ? 'हाँ (किया)' : 'ಹೌದು (ಮಾಡಿದ್ದೇನೆ)';
+    }
+    if (lower.includes('not today') || lower.includes('no, did not')) {
+      return lang === 'ta' ? 'இன்று இல்லை' : lang === 'hi' ? 'आज नहीं' : 'ಇಂದಲ್ಲ';
+    }
+
+    // Smoking / Tobacco / Alcohol
+    if (lower.includes('no (clean day)') || lower.includes('no alcohol') || lower.includes('no smoking') || lower.includes('clean day')) {
+      return lang === 'ta' ? 'இல்லை (சுத்தமான நாள்)' : lang === 'hi' ? 'नहीं (स्वच्छ दिन)' : 'ಇಲ್ಲ (ಸ್ವಚ್ಛ ದಿನ)';
+    }
+    if (lower.includes('smoked') || lower.includes('chewed tobacco') || lower.includes('tobacco')) {
+      return lang === 'ta' ? 'ஆம் (புகை/புகையிலை உட்கொள்ளப்பட்டது)' : lang === 'hi' ? 'हाँ (धूम्रपान / तंबाकू लिया)' : 'ಹೌದು (ಧೂಮಪಾನ / ತಂಬಾಕು)';
+    }
+    if (lower.includes('1-2 drinks') || lower.includes('1-2')) {
+      return lang === 'ta' ? '1-2 பானங்கள்' : lang === 'hi' ? '1-2 ड्रिंक्स' : '1-2 ಪಾನೀಯಗಳು';
+    }
+    if (lower.includes('3+ drinks') || lower.includes('3+')) {
+      return lang === 'ta' ? '3+ பானங்கள் (அதிகம்)' : lang === 'hi' ? '3+ ड्रिंक्स (अधिक)' : '3+ ಪಾನೀಯಗಳು (ಹೆಚ್ಚು)';
+    }
+
+    // Nutrition & Environment
+    if (lower.includes('consumed') || lower.includes('anti-cancer meal') || lower.includes('whole-food') || lower.includes('healthy food')) {
+      return lang === 'ta' ? 'ஆம் (ஆரோக்கிய உணவு)' : lang === 'hi' ? 'हाँ (स्वस्थ आहार)' : 'ಹೌದು (ಆರೋಗ್ಯಕರ ಆಹಾರ)';
+    }
+    if (lower.includes('clean air') || lower.includes('fresh air')) {
+      return lang === 'ta' ? 'இல்லை (சுத்தமான காற்று)' : lang === 'hi' ? 'नहीं (स्वच्छ हवा)' : 'ಇಲ್ಲ (ಸ್ವಚ್ಛ ಗಾಳಿ)';
+    }
+    if (lower.includes('smog') || lower.includes('passive smoke') || lower.includes('air pollution')) {
+      return lang === 'ta' ? 'ஆம் (புகை / காற்று மாசுபாடு)' : lang === 'hi' ? 'हाँ (धुआं / प्रदूषण)' : 'ಹೌದು (ಹೊಗೆ / ಮಾಲಿನ್ಯ)';
+    }
+    if (lower.includes('safe filtered') || lower.includes('filtered water')) {
+      return lang === 'ta' ? 'ஆம் (வடிகட்டிய பாதுகாப்பான நீர்)' : lang === 'hi' ? 'हाँ (सुरक्षित फिल्टर पानी)' : 'ಹೌದು (சுರಕ್ಷಿತ ಫಿಲ್ಟರ್ ನೀರು)';
+    }
+    if (lower.includes('unfiltered tap') || lower.includes('tap water')) {
+      return lang === 'ta' ? 'இல்லை / வடிகட்டாத நீர்' : lang === 'hi' ? 'नहीं / बिना फिल्टर नल' : 'ಇಲ್ಲ / ಫಿಲ್ಟರ್ ಮಾಡದ ನೀರು';
+    }
+    if (lower.includes('clean / organic') || lower.includes('organic')) {
+      return lang === 'ta' ? 'இல்லை (இயற்கை / சுத்தமான உணவு)' : lang === 'hi' ? 'नहीं (जैविक / स्वच्छ)' : 'ಇಲ್ಲ (ಸಾವಯವ / ಸ್ವಚ್ಛ)';
+    }
+    if (lower.includes('pesticide exposure') || lower.includes('pesticide')) {
+      return lang === 'ta' ? 'ஆம் (பூச்சிக்கொல்லி வெளிப்பாடு)' : lang === 'hi' ? 'हाँ (कीटनाशक का सामना)' : 'ಹೌದು (ಕೀಟನಾಶಕ ಒಡ್ಡಿಕೆ)';
+    }
+    if (lower.includes('plastic-free') || lower.includes('no plastic')) {
+      return lang === 'ta' ? 'இல்லை (பிளாஸ்டிக் தவிர்த்தேன்)' : lang === 'hi' ? 'नहीं (प्लास्टिक मुक्त)' : 'ಇಲ್ಲ (ಪ್ಲಾಸ್ಟಿಕ್ ಮುಕ್ತ)';
+    }
+    if (lower.includes('plastic / hot cup') || lower.includes('plastic container')) {
+      return lang === 'ta' ? 'ஆம் (பிளாஸ்டிக் / சூடான கப்)' : lang === 'hi' ? 'हाँ (प्लास्टिक / गर्म कप)' : 'ಹೌದು (ಪ್ಲಾಸ್ಟಿಕ್ / ಬಿಸಿ ಕಪ್)';
+    }
+
+    // Health / Symptoms
+    if (lower.includes('no issues') || lower.includes('no symptoms') || lower.includes('healthy')) {
+      return lang === 'ta' ? 'பிரச்சனை இல்லை (ஆரோக்கியம்)' : lang === 'hi' ? 'कोई समस्या नहीं (स्वस्थ)' : 'ಯಾವುದೇ ಸಮಸ್ಯೆಯಿಲ್ಲ (ಆರೋಗ್ಯಕರ)';
+    }
+    if (lower.includes('gastritis') || lower.includes('acidity') || lower.includes('heartburn')) {
+      return lang === 'ta' ? 'அசிடிட்டி / நெஞ்செரிச்சல்' : lang === 'hi' ? 'एसिडिटी / गैस' : 'ಅಸಿಡಿಟಿ / ಗ್ಯಾಸ್ಟ್ರಿಟಿಸ್';
+    }
+    if (lower.includes('dental discomfort') || lower.includes('toothache') || lower.includes('dental')) {
+      return lang === 'ta' ? 'பல் / வாய் வலி' : lang === 'hi' ? 'दांतों में तकलीफ' : 'ಹಲ್ಲು ನೋವು';
+    }
+    if (lower === 'both') {
+      return lang === 'ta' ? 'இரண்டும்' : lang === 'hi' ? 'दोनों' : 'ಎರಡೂ';
+    }
+    if (lower.includes('no family history')) {
+      return lang === 'ta' ? 'குடும்ப வரலாறு இல்லை' : lang === 'hi' ? 'कोई पारिवारिक इतिहास नहीं' : 'ಯಾವುದೇ ಕುಟುಂಬ ಇತಿಹಾಸವಿಲ್ಲ';
+    }
+    if (lower.includes('family history of cancer') || lower.includes('family history')) {
+      return lang === 'ta' ? 'ஆம் (குடும்ப புற்றுநோய் வரலாறு)' : lang === 'hi' ? 'हाँ (परिवार में कैंसर इतिहास)' : 'ಹೌದು (ಕುಟುಂಬದಲ್ಲಿ ಕ್ಯಾನ್ಸರ್ ಇತಿಹಾಸ)';
+    }
+    if (lower.includes('appointment today') || lower.includes('(done)')) {
+      return lang === 'ta' ? 'இன்றைய பரிசோதனை (முடிந்தது)' : lang === 'hi' ? 'आज की अपॉइंटमेंट (पूर्ण)' : 'ಇಂದಿನ ತಪಾಸಣೆ (ಮುಗಿದಿದೆ)';
+    }
+    if (lower.includes('upcoming scheduled') || lower.includes('scheduled')) {
+      return lang === 'ta' ? 'அடுத்து திட்டமிடப்பட்டுள்ளது' : lang === 'hi' ? 'आगामी निर्धारित है' : 'ಮುಂಬರುವ ದಿನ ನಿಗದಿಯಾಗಿದೆ';
+    }
+    if (lower.includes('need to schedule') || lower.includes('not scheduled')) {
+      return lang === 'ta' ? 'திட்டமிட வேண்டும்' : lang === 'hi' ? 'समय निर्धारित करना है' : 'ದಿನ ನಿಗದಿಪಡಿಸಬೇಕು';
+    }
+    if (lower.includes('no follow-up') || lower.includes('not needed')) {
+      return lang === 'ta' ? 'பரிசோதனை தேவையில்லை' : lang === 'hi' ? 'फॉलो-अप की आवश्यकता नहीं' : 'ಯಾವುದೇ ಫಾಲೋ-ಅಪ್ ಅಗತ್ಯವಿಲ್ಲ';
+    }
+
+    // Try i18n lookup if available
+    const translated = t(opt);
+    if (translated && translated !== opt) return translated;
+
+    return opt;
   };
 
   const formatQuestionPromptWithAQI = (stepId: string, prompt: string): string => {
@@ -439,13 +913,8 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
     const pLower = prompt.toLowerCase();
     if (s === 'env_air' || s.includes('air') || pLower.includes('air pollution') || pLower.includes('smog') || pLower.includes('traffic') || pLower.includes('incense')) {
       const aqiPrefix = getLiveAQIInfoString();
-      if (!prompt.includes('Live Air Quality') && !prompt.includes('AQI')) {
+      if (!prompt.includes('Live Air Quality') && !prompt.includes('AQI') && !prompt.includes('காற்றின் தரம்') && !prompt.includes('वायु गुणवत्ता')) {
         return `${aqiPrefix}${prompt}`;
-      }
-    }
-    if (s === 'env_water' || pLower.includes('water carcinogens') || pLower.includes('drinking water')) {
-      if (!prompt.includes('Dual Filtration') && !prompt.includes('Activated Carbon')) {
-        return `💧 Water Carcinogens & Filtration Check: Based on current availability, dual filtration systems with RO and Activated Carbon are recommended. Remember not to store drinking water in plastic containers (to prevent microplastic exposure). Do you use Dual Filtration with Activated Carbon & RO?`;
       }
     }
     return prompt;
@@ -479,6 +948,8 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       return;
     }
 
+    const ttsLocale = currentLanguageOption?.localeTag || (language === 'ta' ? 'ta-IN' : language === 'kn' ? 'kn-IN' : language === 'hi' ? 'hi-IN' : 'en-US');
+
     // ── NATIVE CAPACITOR (Android & iOS) ──
     if (Capacitor.isNativePlatform()) {
       try {
@@ -486,7 +957,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
         try { await TextToSpeech.stop(); } catch {}
         await TextToSpeech.speak({
           text: clean,
-          lang: 'en-US',
+          lang: ttsLocale,
           rate: 1.0,
           pitch: 1.0,
           volume: 1.0,
@@ -515,17 +986,36 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       }
 
       const utterance = new SpeechSynthesisUtterance(clean);
-      utterance.rate = 1.0;
+      utterance.rate = 0.95;
       utterance.pitch = 1.0;
-      utterance.lang = 'en-US';
+      utterance.lang = ttsLocale;
 
-      // Pick best English voice if available
+      // Pick best matching voice for current language
       const voices = window.speechSynthesis.getVoices();
+      const langCode = (language || 'en').toLowerCase();
+      const targetPrefix = ttsLocale.toLowerCase().split('-')[0];
+
       if (voices.length > 0) {
-        const preferredVoice = voices.find(v => 
-          v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Siri') || v.name.includes('Alex'))
-        ) || voices.find(v => v.lang.startsWith('en'));
-        if (preferredVoice) utterance.voice = preferredVoice;
+        const matchedVoice = voices.find(v => {
+          const vLang = v.lang.toLowerCase().replace('_', '-');
+          const vName = v.name.toLowerCase();
+          if (langCode === 'ta') return vLang.startsWith('ta') || vName.includes('tamil');
+          if (langCode === 'hi') return vLang.startsWith('hi') || vName.includes('hindi');
+          if (langCode === 'kn') return vLang.startsWith('kn') || vName.includes('kannada');
+          if (langCode === 'en') return vLang.startsWith('en');
+          return vLang.startsWith(targetPrefix);
+        });
+
+        if (matchedVoice) {
+          utterance.voice = matchedVoice;
+        } else if (langCode === 'en') {
+          const enVoice = voices.find(v => 
+            v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Siri') || v.name.includes('Alex'))
+          ) || voices[0];
+          if (enVoice) utterance.voice = enVoice;
+        }
+        // If not English and no voice matches the list, we deliberately do NOT set utterance.voice to an English voice.
+        // Leaving utterance.voice unset lets the browser and OS handle utterance.lang properly without English corruption.
       }
 
       let doneFired = false;
@@ -577,7 +1067,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       // When unmuting, immediately speak current active step question or last message
       const currentStep = workflowRef.current?.steps[activeStepIndexRef.current];
       const lastBotMsg = [...(messagesRef.current || [])].reverse().find(m => m.sender === 'bot');
-      const textToSpeak = currentStep?.questionPrompt || lastBotMsg?.text || 'All daily check-ins completed. Your data is synced.';
+      const textToSpeak = (currentStep ? formatQuestionPromptWithAQI(currentStep.stepId, localizeStepQuestion(currentStep.stepId, currentStep.questionPrompt)) : null) || lastBotMsg?.text || (language === 'ta' ? 'அனைத்து தினசரி சரிபார்ப்புகளும் முடிவடைந்தன.' : language === 'hi' ? 'सभी दैनिक चेक-इन पूरे हो गए।' : language === 'kn' ? 'ಎಲ್ಲಾ ದೈನಂದಿನ ಚೆಕ್-ಇನ್‌ಗಳು ಪೂರ್ಣಗೊಂಡಿವೆ.' : 'All daily check-ins completed. Your data is synced.');
       speakQuestion(textToSpeak);
     }
   };
@@ -1294,16 +1784,17 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
             valStr = `${valStr.trim()} hrs`;
           }
 
-          const isManual = habit.source !== 'chatbot';
-          const tag = isManual ? 'Manual Log' : 'AI Log';
-          const displayValue = valStr && valStr !== 'true' && valStr !== 'false' ? `${valStr} · ${tag}` : `Logged · ${tag}`;
+          const isManual = habit ? habit.source !== 'chatbot' : true;
+          const tag = isManual ? (language === 'ta' ? 'கையேடு பதிவு' : language === 'hi' ? 'मैन्युअल लॉग' : language === 'kn' ? 'ಹಸ್ತಚಾಲಿತ ಲಾಗ್' : 'Manual Log') : (language === 'ta' ? 'AI பதிவு' : language === 'hi' ? 'AI लॉग' : language === 'kn' ? 'AI ಲಾಗ್' : 'AI Log');
+          const loggedPrefix = language === 'ta' ? 'பதிவு செய்யப்பட்டது' : language === 'hi' ? 'लॉग किया गया' : language === 'kn' ? 'ದಾಖಲಿಸಲಾಗಿದೆ' : 'Logged';
+          const displayValue = valStr && valStr !== 'true' && valStr !== 'false' ? `${valStr} · ${tag}` : `${loggedPrefix} · ${tag}`;
           return { valText: displayValue, isManual };
         };
 
         const ts = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const initialMessages: ChatMessage[] = [{
           id: 'welcome', sender: 'bot',
-          text: `Hi! I'm your AI Check-in Assistant. Here's your progress for today:`,
+          text: t('chatbot.greetingProgress', "Hi! I'm your AI Check-in Assistant. Here's your progress for today:"),
           timestamp: ts
         }];
 
@@ -1311,14 +1802,15 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
         activeSteps.forEach((step, idx) => {
           if (isLogged(step.stepId)) {
             const summary = getLoggedHabitSummary(step.stepId, todaysHabits);
+            const locTitle = localizeStepTitle(step.stepId, step.title);
             initialMessages.push({
               id: `logged_${step.stepId}`,
               sender: 'bot',
-              title: step.title,
+              title: locTitle,
               isLoggedBadge: true,
               stepId: step.stepId,
               loggedValue: summary.valText,
-              text: `${step.title} completed`,
+              text: `${locTitle} ${t('chatbot.completed', 'completed')}`,
               timestamp: ts
             });
           } else if (firstUnloggedIndex === -1) {
@@ -1330,7 +1822,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
           const nextStep = activeSteps[firstUnloggedIndex];
           setActiveStepIndex(firstUnloggedIndex);
 
-          let questionText = formatQuestionPromptWithAQI(nextStep.stepId, nextStep.questionPrompt);
+          let questionText = formatQuestionPromptWithAQI(nextStep.stepId, localizeStepQuestion(nextStep.stepId, nextStep.questionPrompt));
           let questionOptions = nextStep.options;
 
           if (nextStep.stepId === 'report_upload' && todayReports.length > 0) {
@@ -1757,17 +2249,18 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       if (nextUnloggedIndex !== -1) {
         const nextStep = currentWf.steps[nextUnloggedIndex];
         setActiveStepIndex(nextUnloggedIndex);
+        const promptWithAQI = formatQuestionPromptWithAQI(nextStep.stepId, localizeStepQuestion(nextStep.stepId, nextStep.questionPrompt));
         updatedMsgs.push({
           id: `bot_${Date.now()}`,
           sender: 'bot',
-          text: nextStep.questionPrompt,
+          text: promptWithAQI,
           timestamp: ts,
           inputType: nextStep.inputType,
           options: nextStep.options,
           stepId: nextStep.stepId
         });
         setMessages(updatedMsgs);
-        speakQuestion(nextStep.questionPrompt);
+        speakQuestion(promptWithAQI);
       } else {
         const multiMap: Record<string, string> = {};
         detectedMulti.forEach(d => {
@@ -1787,9 +2280,21 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
         if (finalAnswers['fasting']) localStorage.setItem('mito_fasting_logged_today', todayStr);
         if (finalAnswers['stillness']) localStorage.setItem('mito_stillness_logged_today', todayStr);
 
-        const finishVoice = `All daily check-ins complete. Today your Damage score is ${summary.damageScore}, and Repair score is ${summary.repairScore}. Tomorrow, focus on reducing your damage score by ${summary.priorityActionHints[0] || 'avoiding stress and processed foods'}, and improve your repair score with ${summary.priorityActionHints[1] || 'intermittent fasting and 20 minutes of daily exercise'}.`;
+        const finishVoice = language === 'ta'
+          ? `அனைத்து தினசரி சரிபார்ப்புகளும் முடிவடைந்தன. இன்று உங்கள் சேத மதிப்பீடு ${summary.damageScore}, மற்றும் பழுதுபார்ப்பு மதிப்பீடு ${summary.repairScore}.`
+          : language === 'hi'
+          ? `सभी दैनिक चेक-इन पूरे हो गए। आज आपका डैमेज स्कोर ${summary.damageScore} है, और रिपेयर स्कोर ${summary.repairScore} है।`
+          : language === 'kn'
+          ? `ಎಲ್ಲಾ ದೈನಂದಿನ ಚೆಕ್-ಇನ್‌ಗಳು ಪೂರ್ಣಗೊಂಡಿವೆ. ಇಂದು ನಿಮ್ಮ ಡ್ಯಾಮೇಜ್ ಸ್ಕೋರ್ ${summary.damageScore}, ಮತ್ತು ರಿಪೇರ್ ಸ್ಕೋರ್ ${summary.repairScore}.`
+          : `All daily check-ins complete. Today your Damage score is ${summary.damageScore}, and Repair score is ${summary.repairScore}. Tomorrow, focus on reducing your damage score by ${summary.priorityActionHints[0] || 'avoiding stress and processed foods'}, and improve your repair score with ${summary.priorityActionHints[1] || 'intermittent fasting and 20 minutes of daily exercise'}.`;
 
-        const finishCardText = `Daily Check-in Complete\n\nDamage Load: -${summary.damageScore}\nRepair Defense: +${summary.repairScore}\n\nPriority Actions for Tomorrow:\n1. ${summary.priorityActionHints[0] || 'Reduce daily stress and avoid late-night eating'}\n2. ${summary.priorityActionHints[1] || 'Boost cellular repair with 14-hour fasting and exercise'}`;
+        const finishCardText = language === 'ta'
+          ? `தினசரி சரிபார்ப்பு முடிந்தது\n\nசேத சுமை: -${summary.damageScore}\nபழுதுபார்ப்பு பாதுகாப்பு: +${summary.repairScore}\n\nநாளைய முன்னுரிமை நடவடிக்கைகள்:\n1. ${summary.priorityActionHints[0] || 'மன அழுத்தத்தைக் குறைக்கவும்'}\n2. ${summary.priorityActionHints[1] || '14 மணி நேர உண்ணாநோன்பு மற்றும் உடற்பயிற்சி'}`
+          : language === 'hi'
+          ? `दैनिक चेक-इन पूर्ण\n\nडैमेज लोड: -${summary.damageScore}\nरिपेयर डिफेंस: +${summary.repairScore}\n\nकल के लिए प्राथमिकता कार्य:\n1. ${summary.priorityActionHints[0] || 'दैनिक तनाव कम करें'}\n2. ${summary.priorityActionHints[1] || '14 घंटे का उपवास और व्यायाम'}`
+          : language === 'kn'
+          ? `ದೈನಂದಿನ ಚೆಕ್-ಇನ್ ಪೂರ್ಣಗೊಂಡಿದೆ\n\nಡ್ಯಾಮೇಜ್ ಲೋಡ್: -${summary.damageScore}\nರಿಪೇರ್ ಡಿಫೆನ್ಸ್: +${summary.repairScore}\n\nನಾಳೆಯ ಆದ್ಯತಾ ಕ್ರಿಯೆಗಳು:\n1. ${summary.priorityActionHints[0] || 'ಒತ್ತಡವನ್ನು ಕಡಿಮೆ ಮಾಡಿ'}\n2. ${summary.priorityActionHints[1] || '14 ಗಂಟೆ ಉಪವಾಸ ಮತ್ತು ವ್ಯಾಯಾಮ'}`
+          : `Daily Check-in Complete\n\nDamage Load: -${summary.damageScore}\nRepair Defense: +${summary.repairScore}\n\nPriority Actions for Tomorrow:\n1. ${summary.priorityActionHints[0] || 'Reduce daily stress and avoid late-night eating'}\n2. ${summary.priorityActionHints[1] || 'Boost cellular repair with 14-hour fasting and exercise'}`;
 
         updatedMsgs.push({
           id: 'bot_finish',
@@ -1810,18 +2315,26 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
     const validation = validateAndMapAnswer(userAnswer, currentStep);
 
     if (!validation.valid) {
+      const defaultClarify = language === 'ta'
+        ? 'திரையில் உள்ள விருப்பங்களில் ஒன்றைத் தேர்ந்தெடுக்கவும்.'
+        : language === 'hi'
+        ? 'कृपया स्क्रीन पर दिए गए विकल्पों में से एक चुनें।'
+        : language === 'kn'
+        ? 'ದಯವಿಟ್ಟು ಪರದೆಯ ಮೇಲಿನ ಆಯ್ಕೆಗಳಲ್ಲಿ ಒಂದನ್ನು ಆರಿಸಿ.'
+        : 'Please choose one of the available options below.';
+      const clarifyText = validation.clarificationMsg || defaultClarify;
       const userMsg: ChatMessage = { id: `user_${Date.now()}`, sender: 'user', text: userAnswer, timestamp: ts, stepId: currentStep?.stepId };
       const clarifyMsg: ChatMessage = {
         id: `bot_clarify_${Date.now()}`,
         sender: 'bot',
-        text: validation.clarificationMsg || 'Please choose one of the available options below.',
+        text: clarifyText,
         timestamp: ts,
         inputType: currentStep?.inputType,
         options: currentStep?.options,
         stepId: currentStep?.stepId
       };
       setMessages([...currentMsgs, userMsg, clarifyMsg]);
-      speakQuestion(validation.clarificationMsg || 'Please choose one of the options on screen.');
+      speakQuestion(clarifyText);
       return; // Block advancement and do NOT save incorrect answer!
     }
 
@@ -1839,7 +2352,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
     if (nextIndex < currentWf.steps.length) {
       const nextStep = currentWf.steps[nextIndex];
       setActiveStepIndex(nextIndex);
-      const promptWithAQI = formatQuestionPromptWithAQI(nextStep.stepId, nextStep.questionPrompt);
+      const promptWithAQI = formatQuestionPromptWithAQI(nextStep.stepId, localizeStepQuestion(nextStep.stepId, nextStep.questionPrompt));
       updatedMsgs.push({ id: `bot_${Date.now()}`, sender: 'bot', text: promptWithAQI, timestamp: ts, inputType: nextStep.inputType, options: nextStep.options, stepId: nextStep.stepId });
       setMessages(updatedMsgs);
       speakQuestion(promptWithAQI);
@@ -1854,9 +2367,21 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       if (finalAnswers['fasting']) localStorage.setItem('mito_fasting_logged_today', todayStr);
       if (finalAnswers['stillness']) localStorage.setItem('mito_stillness_logged_today', todayStr);
 
-      const finishVoice = `All daily check-ins complete. Today your Damage score is ${summary.damageScore}, and Repair score is ${summary.repairScore}. Tomorrow, focus on reducing your damage score by ${summary.priorityActionHints[0] || 'avoiding stress and processed foods'}, and improve your repair score with ${summary.priorityActionHints[1] || 'intermittent fasting and 20 minutes of daily exercise'}.`;
+      const finishVoice = language === 'ta'
+        ? `அனைத்து தினசரி சரிபார்ப்புகளும் முடிவடைந்தன. இன்று உங்கள் சேத மதிப்பீடு ${summary.damageScore}, மற்றும் பழுதுபார்ப்பு மதிப்பீடு ${summary.repairScore}.`
+        : language === 'hi'
+        ? `सभी दैनिक चेक-इन पूरे हो गए। आज आपका डैमेज स्कोर ${summary.damageScore} है, और रिपेयर स्कोर ${summary.repairScore} है।`
+        : language === 'kn'
+        ? `ಎಲ್ಲಾ ದೈನಂದಿನ ಚೆಕ್-ಇನ್‌ಗಳು ಪೂರ್ಣಗೊಂಡಿವೆ. ಇಂದು ನಿಮ್ಮ ಡ್ಯಾಮೇಜ್ ಸ್ಕೋರ್ ${summary.damageScore}, ಮತ್ತು ರಿಪೇರ್ ಸ್ಕೋರ್ ${summary.repairScore}.`
+        : `All daily check-ins complete. Today your Damage score is ${summary.damageScore}, and Repair score is ${summary.repairScore}. Tomorrow, focus on reducing your damage score by ${summary.priorityActionHints[0] || 'avoiding stress and processed foods'}, and improve your repair score with ${summary.priorityActionHints[1] || 'intermittent fasting and 20 minutes of daily exercise'}.`;
 
-      const finishCardText = `Daily Check-in Complete\n\nDamage Load: -${summary.damageScore}\nRepair Defense: +${summary.repairScore}\n\nPriority Actions for Tomorrow:\n1. ${summary.priorityActionHints[0] || 'Reduce daily stress and avoid late-night eating'}\n2. ${summary.priorityActionHints[1] || 'Boost cellular repair with 14-hour fasting and exercise'}`;
+      const finishCardText = language === 'ta'
+        ? `தினசரி சரிபார்ப்பு முடிந்தது\n\nசேத சுமை: -${summary.damageScore}\nபழுதுபார்ப்பு பாதுகாப்பு: +${summary.repairScore}\n\nநாளைய முன்னுரிமை நடவடிக்கைகள்:\n1. ${summary.priorityActionHints[0] || 'மன அழுத்தத்தைக் குறைக்கவும்'}\n2. ${summary.priorityActionHints[1] || '14 மணி நேர உண்ணாநோன்பு மற்றும் உடற்பயிற்சி'}`
+        : language === 'hi'
+        ? `दैनिक चेक-इन पूर्ण\n\nडैमेज लोड: -${summary.damageScore}\nरिपेयर डिफेंस: +${summary.repairScore}\n\nकल के लिए प्राथमिकता कार्य:\n1. ${summary.priorityActionHints[0] || 'दैनिक तनाव कम करें'}\n2. ${summary.priorityActionHints[1] || '14 घंटे का उपवास और व्यायाम'}`
+        : language === 'kn'
+        ? `ದೈನಂದಿನ ಚೆಕ್-ಇನ್ ಪೂರ್ಣಗೊಂಡಿದೆ\n\nಡ್ಯಾಮೇಜ್ ಲೋಡ್: -${summary.damageScore}\nರಿಪೇರ್ ಡಿಫೆನ್ಸ್: +${summary.repairScore}\n\nನಾಳೆಯ ಆದ್ಯತಾ ಕ್ರಿಯೆಗಳು:\n1. ${summary.priorityActionHints[0] || 'ಒತ್ತಡವನ್ನು ಕಡಿಮೆ ಮಾಡಿ'}\n2. ${summary.priorityActionHints[1] || '14 ಗಂಟೆ ಉಪವಾಸ ಮತ್ತು ವ್ಯಾಯಾಮ'}`
+        : `Daily Check-in Complete\n\nDamage Load: -${summary.damageScore}\nRepair Defense: +${summary.repairScore}\n\nPriority Actions for Tomorrow:\n1. ${summary.priorityActionHints[0] || 'Reduce daily stress and avoid late-night eating'}\n2. ${summary.priorityActionHints[1] || 'Boost cellular repair with 14-hour fasting and exercise'}`;
 
       updatedMsgs.push({ id: 'bot_finish', sender: 'bot', text: finishCardText, timestamp: ts });
       setMessages(updatedMsgs);
@@ -1924,24 +2449,24 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="font-black text-xs sm:text-sm text-white tracking-tight">AI Assistant</span>
+                    <span className="font-black text-xs sm:text-sm text-white tracking-tight">{t('chatbot.aiAssistant', 'AI Assistant')}</span>
                     {isSpeaking ? (
                       <span className="inline-flex items-center gap-1 text-[8.5px] font-black bg-amber-400/30 text-amber-200 px-1.5 py-0.5 rounded-full border border-amber-300/40">
                         <span className="flex items-center gap-0.5">
                           <span className="h-2 w-0.5 bg-amber-300 rounded-full animate-bounce" />
                           <span className="h-2.5 w-0.5 bg-amber-300 rounded-full animate-bounce [animation-delay:150ms]" />
                         </span>
-                        SPEAKING
+                        {t('chatbot.speaking', 'SPEAKING')}
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 text-[8.5px] font-black bg-emerald-400/25 text-emerald-200 px-1.5 py-0.5 rounded-full border border-emerald-400/30">
                         <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                        ONLINE
+                        {t('chatbot.online', 'ONLINE')}
                       </span>
                     )}
                   </div>
                   <p className="text-[9.5px] sm:text-[10px] font-medium text-blue-100/80 truncate mt-0.5">
-                    {userMode === 'TREATMENT' ? 'Oncology Care & Recovery Check-in' : userMode === 'SECONDARY_PREVENTION' ? 'Survivor Recovery Daily Check-in' : 'Cancer Prevention Daily Check-in'}
+                    {userMode === 'TREATMENT' ? t('chatbot.cancerTreatmentCheckin', 'Cancer Treatment Daily Check-in') : userMode === 'SECONDARY_PREVENTION' ? t('chatbot.cancerPreventionCheckin', 'Survivor Recovery Daily Check-in') : t('chatbot.cancerPreventionCheckin', 'Cancer Prevention Daily Check-in')}
                   </p>
                 </div>
               </div>
@@ -1958,7 +2483,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                         ? 'bg-white/20 hover:bg-white/30 border-white/30 text-white font-bold'
                         : 'bg-white/10 hover:bg-white/20 border-white/20 text-white/70'
                   }`}
-                  title="Daily AI Check-in Reminder Time"
+                  title={t('checkinReminderTime')}
                 >
                   {reminderEnabled && reminderTime ? (
                     <>
@@ -1995,17 +2520,17 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                   ) : isVoiceMuted ? (
                     <>
                       <VolumeX className="h-3.5 w-3.5 shrink-0 text-rose-300" />
-                      <span className="text-[8.5px] sm:text-[9px] font-bold uppercase tracking-wider opacity-90 hidden min-[360px]:inline">Muted</span>
+                      <span className="text-[8.5px] sm:text-[9px] font-bold uppercase tracking-wider opacity-90 hidden min-[360px]:inline">{t('chatbot.muted', 'Muted')}</span>
                     </>
                   ) : (
                     <>
                       <Volume2 className="h-3.5 w-3.5 shrink-0" />
-                      <span className="text-[8.5px] sm:text-[9px] font-bold uppercase tracking-wider opacity-90 hidden min-[360px]:inline">Voice</span>
+                      <span className="text-[8.5px] sm:text-[9px] font-bold uppercase tracking-wider opacity-90 hidden min-[360px]:inline">{t('chatbot.unmuted', 'Voice')}</span>
                     </>
                   )}
                 </button>
 
-                <button onClick={onClose} className="h-8 w-8 rounded-full bg-white/15 hover:bg-white/25 border border-white/20 flex items-center justify-center transition-all cursor-pointer shrink-0" aria-label="Close">
+                <button onClick={onClose} className="h-8 w-8 rounded-full bg-white/15 hover:bg-white/25 border border-white/20 flex items-center justify-center transition-all cursor-pointer shrink-0" aria-label={t('common.close')}>
                   <X className="h-4 w-4 text-white" />
                 </button>
               </div>
@@ -2056,7 +2581,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
 
                 {/* Custom Time Picker */}
                 <div className="flex items-center gap-2 bg-white/20 p-2 rounded-xl border border-white/25 mb-2.5">
-                  <span className="text-[10px] font-black text-white/80 uppercase tracking-wider shrink-0">Custom Time:</span>
+                  <span className="text-[10px] font-black text-white/80 uppercase tracking-wider shrink-0">{t('chatModal.customTime', 'Custom Time:')}</span>
                   <input
                     type="time"
                     value={customTimeInput}
@@ -2094,7 +2619,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                 <div className="flex items-center justify-between pt-2 border-t border-white/10">
                   <span className="text-[9.5px] text-blue-100/70 font-medium">
                     {typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'denied' ? (
-                      <span className="text-rose-300 font-bold">Blocked in browser settings</span>
+                      <span className="text-rose-300 font-bold">{t('chatModal.blockedInBrowser', 'Blocked in browser settings')}</span>
                     ) : (
                       <span className="flex items-center gap-1"><Bell className="h-3 w-3 inline text-blue-200" /> {reminderEnabled ? 'Active Alert Channel' : 'Alerts Disabled'}</span>
                     )}
@@ -2114,7 +2639,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
             {workflow && !isCompleted && (
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-[10px] font-bold text-blue-100/80">
-                  <span>{currentStep?.title}</span>
+                  <span>{localizeStepTitle(currentStep?.stepId, currentStep?.title)}</span>
                   <span>{Math.min(activeStepIndex + 1, workflow.steps.length)} / {workflow.steps.length}</span>
                 </div>
                 <div className="w-full bg-white/20 rounded-full h-1.5 overflow-hidden">
@@ -2134,7 +2659,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
             {loading ? (
               <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-400">
                 <RefreshCw className="h-6 w-6 animate-spin" />
-                <span className="text-xs font-bold">Loading your check-in...</span>
+                <span className="text-xs font-bold">{t('chatModal.loadingCheckIn', 'Loading your check-in...')}</span>
               </div>
             ) : (
               <>
@@ -2154,9 +2679,9 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                             <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                           </div>
                           <div>
-                            <p className="text-xs font-extrabold text-slate-800 dark:text-slate-100">{msg.title}</p>
+                            <p className="text-xs font-extrabold text-slate-800 dark:text-slate-100">{localizeStepTitle(msg.stepId, msg.title)}</p>
                             <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
-                              {msg.loggedValue || 'Logged for Today'}
+                              {msg.loggedValue || (language === 'ta' ? 'பதிவு செய்யப்பட்டது · கையேடு பதிவு' : language === 'hi' ? 'दर्ज किया गया · मैन्युअल प्रविष्टि' : language === 'kn' ? 'ದಾಖಲಿಸಲಾಗಿದೆ · ಕೈಪಿಡಿ ನಮೂದು' : 'Logged · Manual Entry')}
                             </p>
                           </div>
                         </div>
@@ -2169,7 +2694,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                                 className="px-2.5 py-1 bg-rose-100 hover:bg-rose-200 text-rose-700 text-[10px] font-bold rounded-xl border border-rose-300 shadow-2xs transition-all flex items-center gap-1 cursor-pointer"
                               >
                                 <X className="h-3 w-3" />
-                                <span>Cancel</span>
+                                <span>{t('common.cancel', 'Cancel')}</span>
                               </button>
                             ) : (
                               <button
@@ -2179,7 +2704,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                                 className="px-2.5 py-1 bg-white dark:bg-slate-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold rounded-xl border border-emerald-300 dark:border-emerald-700 shadow-2xs transition-all flex items-center gap-1 cursor-pointer disabled:opacity-40"
                               >
                                 <Pencil className="h-3 w-3" />
-                                <span>Edit</span>
+                                <span>{t('chatbot.edit', 'Edit')}</span>
                               </button>
                             )}
                           </div>
@@ -2230,7 +2755,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                                   onChange={e => setEditInputText(e.target.value)}
                                   onKeyDown={e => { if (e.key === 'Enter') handleSaveEdit(msg); if (e.key === 'Escape') setEditingMessageId(null); }}
                                   className="flex-1 text-xs font-semibold text-slate-800 dark:text-slate-100 bg-transparent focus:outline-none placeholder-slate-400"
-                                  placeholder="Edit your answer..."
+                                  placeholder={t('chatbot.inputPlaceholder', 'Edit your answer...')}
                                 />
                                 <button onClick={() => handleSaveEdit(msg)} className="h-6 w-6 rounded-lg bg-emerald-600 hover:bg-emerald-700 flex items-center justify-center transition-all cursor-pointer shrink-0">
                                   <Check className="h-3 w-3 text-white" />
@@ -2263,17 +2788,20 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                         {/* ── Option pills (only for current active step) ── */}
                         {msg.sender === 'bot' && msg.options && msg.options.length > 0 && !isCompleted && msg.stepId === currentStep?.stepId && (
                           <div className="flex flex-wrap gap-2 mt-2.5 pl-8">
-                            {msg.options.map((opt, i) => (
-                              <motion.button
-                                key={i}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={() => advanceToNextStep(opt)}
-                                className="bg-white dark:bg-slate-800 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 hover:border-blue-600 rounded-2xl px-4 py-2.5 text-xs font-bold shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer flex items-center gap-1.5"
-                              >
-                                {opt}
-                                <ArrowRight className="h-3 w-3 opacity-50" />
-                              </motion.button>
-                            ))}
+                            {msg.options.map((opt, i) => {
+                              const displayOpt = localizeOptionText(opt);
+                              return (
+                                <motion.button
+                                  key={i}
+                                  whileTap={{ scale: 0.95 }}
+                                  onClick={() => advanceToNextStep(opt)}
+                                  className="bg-white dark:bg-slate-800 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 hover:border-blue-600 rounded-2xl px-4 py-2.5 text-xs font-bold shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer flex items-center gap-1.5"
+                                >
+                                  {displayOpt}
+                                  <ArrowRight className="h-3 w-3 opacity-50" />
+                                </motion.button>
+                              );
+                            })}
                           </div>
                         )}
 
@@ -2320,8 +2848,8 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                     <div className="grid grid-cols-2 gap-2.5 my-4 text-left">
                       <div className="bg-rose-50/50 dark:bg-rose-950/20 p-3 rounded-2xl border border-rose-200/60 dark:border-rose-900/40">
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-rose-600 dark:text-rose-400">Damage Load</span>
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400">Reduce</span>
+                          <span className="text-[10px] font-black uppercase tracking-wider text-rose-600 dark:text-rose-400">{t('chatModal.damageLoad', 'Damage Load')}</span>
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400">{t('chatModal.reduce', 'Reduce')}</span>
                         </div>
                         <span className="text-xl sm:text-2xl font-black text-rose-600 dark:text-rose-400">
                           -{sessionSummary.damageScore}
@@ -2329,8 +2857,8 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                       </div>
                       <div className="bg-emerald-50/50 dark:bg-emerald-950/20 p-3 rounded-2xl border border-emerald-200/60 dark:border-emerald-900/40">
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Repair Defense</span>
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400">Build</span>
+                          <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">{t('chatModal.repairDefense', 'Repair Defense')}</span>
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400">{t('chatModal.build', 'Build')}</span>
                         </div>
                         <span className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400">
                           +{sessionSummary.repairScore}
@@ -2347,14 +2875,14 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                         <div className="flex items-start gap-2.5 bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-800 text-slate-800 dark:text-slate-200">
                           <span className="h-5 w-5 rounded-md bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 font-black flex items-center justify-center text-[10px] shrink-0">1</span>
                           <div>
-                            <strong className="block text-[11px] font-bold text-slate-900 dark:text-slate-100">Reduce Damage</strong>
+                            <strong className="block text-[11px] font-bold text-slate-900 dark:text-slate-100">{t('chatModal.reduceDamage', 'Reduce Damage')}</strong>
                             <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed mt-0.5">{sessionSummary.priorityActionHints[0] || 'Avoid evening stress, limit junk food, and get 7+ hours of sleep.'}</p>
                           </div>
                         </div>
                         <div className="flex items-start gap-2.5 bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-800 text-slate-800 dark:text-slate-200">
                           <span className="h-5 w-5 rounded-md bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 font-black flex items-center justify-center text-[10px] shrink-0">2</span>
                           <div>
-                            <strong className="block text-[11px] font-bold text-slate-900 dark:text-slate-100">Boost Repair</strong>
+                            <strong className="block text-[11px] font-bold text-slate-900 dark:text-slate-100">{t('chatModal.boostRepair', 'Boost Repair')}</strong>
                             <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed mt-0.5">{sessionSummary.priorityActionHints[1] || 'Target a 14-hour intermittent fast and 20 minutes of aerobic exercise.'}</p>
                           </div>
                         </div>
@@ -2365,7 +2893,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                       onClick={onClose}
                       className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs sm:text-sm rounded-xl shadow-xs transition-all active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
                     >
-                      <span>View Cellular Dashboard</span>
+                      <span>{t('viewCellularDashboardTitle')}</span>
                       <ArrowRight className="h-4 w-4" />
                     </button>
                   </motion.div>
@@ -2398,21 +2926,21 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                           onClick={() => { advanceToNextStep('Yes'); setShowQuickShortcuts(false); }}
                           className="px-3 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0"
                         >
-                          👍 Yes
+                          👍 {localizeOptionText('Yes')}
                         </button>
                         <button
                           type="button"
                           onClick={() => { advanceToNextStep('No'); setShowQuickShortcuts(false); }}
                           className="px-3 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800 border border-rose-200 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0"
                         >
-                          👎 No
+                          👎 {localizeOptionText('No')}
                         </button>
                         <button
                           type="button"
                           onClick={() => { advanceToNextStep('Skipped'); setShowQuickShortcuts(false); }}
                           className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0"
                         >
-                          ⏭️ Skip
+                          ⏭️ {localizeOptionText('Skip')}
                         </button>
                       </>
                     ) : (currentStep?.options || []).length > 0 ? (
@@ -2423,7 +2951,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                           onClick={() => { advanceToNextStep(opt); setShowQuickShortcuts(false); }}
                           className="px-3 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800 border border-blue-200 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0"
                         >
-                          {opt}
+                          {localizeOptionText(opt)}
                         </button>
                       ))
                     ) : (
@@ -2433,21 +2961,21 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                           onClick={() => { setInputText('7 hours'); setShowQuickShortcuts(false); }}
                           className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 rounded-xl text-xs font-semibold cursor-pointer shrink-0"
                         >
-                          7 hours
+                          {language === 'ta' ? '7 மணிநேரம்' : language === 'hi' ? '7 घंटे' : language === 'kn' ? '7 ಗಂಟೆಗಳು' : '7 hours'}
                         </button>
                         <button
                           type="button"
                           onClick={() => { setInputText('8 hours'); setShowQuickShortcuts(false); }}
                           className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 rounded-xl text-xs font-semibold cursor-pointer shrink-0"
                         >
-                          8 hours
+                          {language === 'ta' ? '8 மணிநேரம்' : language === 'hi' ? '8 घंटे' : language === 'kn' ? '8 ಗಂಟೆಗಳು' : '8 hours'}
                         </button>
                         <button
                           type="button"
                           onClick={() => { advanceToNextStep('Skipped'); setShowQuickShortcuts(false); }}
                           className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400 rounded-xl text-xs font-semibold cursor-pointer shrink-0"
                         >
-                          Skip
+                          {localizeOptionText('Skip')}
                         </button>
                       </>
                     )}
@@ -2469,10 +2997,10 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                       ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/25 font-black'
                       : 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 font-bold'
                   }`}
-                  title="Quick Answer Shortcuts"
+                  title={t('quickAnswerShortcuts')}
                 >
                   <Zap className={`h-4 w-4 ${showQuickShortcuts ? 'fill-current text-amber-300 animate-pulse' : 'text-blue-600 dark:text-blue-400'}`} />
-                  <span className="text-[11px]">Shortcuts</span>
+                  <span className="text-[11px]">{t('chatbot.shortcuts', 'Shortcuts')}</span>
                 </button>
 
                 {/* Text input with left Sparkles icon */}
@@ -2482,7 +3010,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                     type={currentStep?.inputType === 'NUMBER' ? 'number' : 'text'}
                     value={inputText}
                     onChange={e => setInputText(e.target.value)}
-                    placeholder="Type your answer or select an option..."
+                    placeholder={t('chatbot.inputPlaceholder', 'Type your answer or select an option...')}
                     className="flex-1 min-w-0 bg-transparent border-none px-2.5 py-3 text-xs font-semibold text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none"
                   />
                 </div>
@@ -2506,15 +3034,15 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                 <div>
-                  <p className="text-sm font-black text-emerald-700 dark:text-emerald-400">All Done!</p>
-                  <p className="text-[10px] font-bold text-emerald-600/70 dark:text-emerald-500">Dashboard updated</p>
+                  <p className="text-sm font-black text-emerald-700 dark:text-emerald-400">{t('nudge.checkinDone', 'All Done!')}</p>
+                  <p className="text-[10px] font-bold text-emerald-600/70 dark:text-emerald-500">{t('habits.habitLogged', { habit: '' }, 'Dashboard updated')}</p>
                 </div>
               </div>
               <button
                 onClick={onClose}
                 className="bg-gradient-to-br from-emerald-600 to-teal-600 hover:opacity-90 text-white font-extrabold text-xs px-6 py-3 rounded-2xl shadow-md transition-all cursor-pointer active:scale-95"
               >
-                Done
+                {t('common.done', 'Done')}
               </button>
             </div>
           )}

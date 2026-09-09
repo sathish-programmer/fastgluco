@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { ExternalLink } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 interface ConsultationBannerProps {
   sourceModule: string;
@@ -22,12 +23,15 @@ export const ConsultationBanner: React.FC<ConsultationBannerProps> = ({
   riskLevel,
   assessmentAnswers,
   recommendedSpecialty,
-  title = 'Consultation Recommended',
-  description = 'Based on your recent logs, we recommend consulting a specialist.',
+  title,
+  description,
   colorTheme = 'amber',
   onBookAppointment
 }) => {
   const { apiUrl, token } = useAuth();
+  const { t } = useLanguage();
+  const displayTitle = title || t('habits.consultationRecommended', 'Consultation Recommended');
+  const displayDesc = description || t('habits.consultationRecommendedDesc', 'Based on your recent logs, we recommend consulting a specialist.');
   const [recommendationId, setRecommendationId] = useState<string | null>(null);
   const loggedRef = useRef(false);
 
@@ -131,13 +135,13 @@ export const ConsultationBanner: React.FC<ConsultationBannerProps> = ({
 
   return (
     <div className={`mt-6 p-4 rounded-xl border ${theme.container}`}>
-      <h4 className={`${theme.title} font-bold text-sm mb-1`}>{title}</h4>
-      <p className={`${theme.desc} text-xs mb-3`}>{description}</p>
+      <h4 className={`${theme.title} font-bold text-sm mb-1`}>{displayTitle}</h4>
+      <p className={`${theme.desc} text-xs mb-3`}>{displayDesc}</p>
       <button 
         onClick={handleBook}
         className={`inline-flex items-center gap-1 px-4 py-2 rounded-lg text-xs font-bold transition-all shadow-sm ${theme.btn}`}
       >
-        Book Appointment <ExternalLink className="h-3 w-3" />
+        {t('appointment.bookAppointment', 'Book Appointment')} <ExternalLink className="h-3 w-3" />
       </button>
     </div>
   );
