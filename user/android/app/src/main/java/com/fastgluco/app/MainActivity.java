@@ -13,6 +13,8 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import androidx.activity.EdgeToEdge;
+import androidx.core.splashscreen.SplashScreen;
 import androidx.core.view.WindowCompat;
 import com.getcapacitor.Bridge;
 import com.getcapacitor.BridgeActivity;
@@ -21,14 +23,22 @@ import com.getcapacitor.BridgeWebChromeClient;
 public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        
-        // Enable modern Edge-to-Edge display (compatible with Android 15/API 35+)
+        // Install modern Android 12+ SplashScreen
         try {
+            SplashScreen.installSplashScreen(this);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
+        // Enable official AndroidX Edge-to-Edge (Android 15 / API 35+ compliant, removes deprecated APIs)
+        try {
+            EdgeToEdge.enable(this);
             WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+        super.onCreate(savedInstanceState);
         
         try {
             Bridge bridge = getBridge();

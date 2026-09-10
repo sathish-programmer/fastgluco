@@ -2314,5 +2314,5 @@ export const hi = {
   "whatsNew.chooseLanguageSubtitle": "अपनी मातृभाषा में संपूर्ण ऐप का अनुभव करें। हेडर या प्रोफ़ाइल से कभी भी बदलें:",
   "whatsNew.multilingual.title": "क्षेत्रीय बहुभाषी समर्थन",
   "whatsNew.multilingual.desc": "अंग्रेजी, तमिल, कन्नड़ और हिंदी में पूर्ण अनुवाद और त्वरित स्विचिंग।",
-  "whatsNew.openWhatsNew": "संस्करण 5.5.0 में नया क्या है",
+  "whatsNew.openWhatsNew": "संस्करण 5.6.0 में नया क्या है",
 } as const;

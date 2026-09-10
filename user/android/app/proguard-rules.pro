@@ -25,8 +25,10 @@
 -keep class com.capacitorjs.plugins.filesystem.** { *; }
 
 # R8 Optimization Configuration
--repackageclasses
+-optimizationpasses 5
+-repackageclasses ''
 -allowaccessmodification
+-mergeinterfacesaggressively
 -dontwarn com.google.android.gms.**
 -dontwarn com.google.firebase.**
 -keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod,SourceFile,LineNumberTable
@@ -36,4 +38,5 @@
     public static boolean isLoggable(java.lang.String, int);
     public static int v(...);
     public static int d(...);
+    public static int i(...);
 }

@@ -1248,11 +1248,11 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
           >
             <div className="flex items-center space-x-2.5">
               <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
-              <span>{t('whatsNew.openWhatsNew', "What's New in v5.5.0")}</span>
+              <span>{t('whatsNew.openWhatsNew', "What's New in v5.6.0")}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="text-[10px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-white/80 dark:bg-slate-800 px-2 py-0.5 rounded-full border border-blue-200/80 dark:border-blue-700">
-                v5.5.0
+                v5.6.0
               </span>
               <ChevronRight className="h-4 w-4 text-slate-400 shrink-0" />
             </div>
@@ -1305,7 +1305,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
           <span>{branding.appName || 'Mito Reboot'}</span>
           <sup className="text-[8.5px] font-black tracking-tighter text-slate-500 dark:text-slate-400 select-none -top-0.5">TM</sup>
           <span className="mx-1">•</span>
-          <span>v5.5.0</span>
+          <span>v5.6.0</span>
         </p>
         <p className="text-[9px] text-slate-400/80">
           © {new Date().getFullYear()} MitoReboot Private Limited. All rights reserved.
