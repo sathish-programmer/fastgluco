@@ -173,6 +173,11 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
       return;
     }
 
+    if (!navigator.onLine) {
+      setPhoneError(t('network.offlineTitle', 'No Internet Connection') + '. ' + t('network.offlineDesc', 'Please turn on your Wi-Fi or mobile data to continue.'));
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -209,7 +214,11 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
       setTimeout(() => otpInputRef.current?.focus(), 100);
     } catch (err: any) {
       console.error('sendOtp error:', err);
-      setPhoneError(err.message || 'Failed to send verification code. Please try again.');
+      if (!navigator.onLine || err.message?.includes('Failed to fetch')) {
+        setPhoneError(t('network.offlineTitle', 'No Internet Connection') + '. ' + t('network.offlineDesc', 'Please turn on Wi-Fi or mobile data.'));
+      } else {
+        setPhoneError(err.message || 'Failed to send verification code. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -294,9 +303,9 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
           </div>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center justify-center gap-0.5">
             <span>{branding.appName || 'Mito Reboot'}</span>
-            <span className="text-xs font-bold text-primary -translate-y-2 select-none">
-              ™
-            </span>
+            <sup className="text-xs font-black tracking-tight text-slate-500 -top-2 select-none">
+              TM
+            </sup>
           </h1>
           <p className="text-slate-500 mt-2 font-medium text-sm">
             {branding.appTagline || 'Preventive Lifestyle App'}

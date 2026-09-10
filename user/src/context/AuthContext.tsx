@@ -79,9 +79,11 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  isOnline: boolean;
   verifyOtp: (mobileNumber: string, otp: string, email: string) => Promise<{ isNewUser: boolean } | null>;
   completeOnboarding: (profileData: Partial<UserProfile>) => Promise<boolean>;
   logout: () => void;
+  refreshProfile: () => Promise<void>;
   updateProfile: (profileUpdates: Partial<UserProfile>) => Promise<boolean>;
   requestProfileUpdate: (profileUpdates: Partial<UserProfile>) => Promise<boolean>;
   acceptTerms: (termsVersion: string) => Promise<boolean>;
@@ -95,10 +97,18 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(() => {
+    try {
+      const cached = localStorage.getItem('fastgluco_user_cache');
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
   const [token, setToken] = useState<string | null>(localStorage.getItem('fastgluco_token'));
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [isOnline, setIsOnline] = useState<boolean>(() => (typeof navigator !== 'undefined' ? navigator.onLine : true));
   const [branding, setBranding] = useState<AppBranding>({
     appName: 'Mito_Reboot',
     appTagline: 'Preventive Lifestyle App',
@@ -116,6 +126,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5001/api' : 'https://api.mitoreboot.in/api');
+
+  // Monitor network connectivity
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      if (token) {
+        loadProfile();
+      }
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [token]);
+
+  // Listen to global session expired events
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      logout();
+      setError('Session expired. Please log in again.');
+    };
+    window.addEventListener('session_expired', handleSessionExpired);
+    return () => {
+      window.removeEventListener('session_expired', handleSessionExpired);
+    };
+  }, []);
 
   useEffect(() => {
     if (user && user.cancerJourney) {
@@ -155,24 +197,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     fetchBranding();
   }, [apiUrl]);
 
-  useEffect(() => {
-    const loadProfile = async () => {
-      if (!token) {
-        setIsLoading(false);
-        return;
-      }
+  const loadProfile = async () => {
+    if (!token) {
+      setIsLoading(false);
+      return;
+    }
 
-      try {
-        let currentToken = token;
-        let response = await fetch(`${apiUrl}/users/profile`, {
-          headers: {
-            'Authorization': `Bearer ${currentToken}`
-          }
-        });
+    if (!navigator.onLine) {
+      // Offline mode: retain cached user without kicking them out
+      setIsLoading(false);
+      return;
+    }
 
-        if (response.status === 401) {
-          const refreshToken = localStorage.getItem('fastgluco_refresh_token');
-          if (refreshToken) {
+    try {
+      let currentToken = token;
+      let response = await fetch(`${apiUrl}/users/profile`, {
+        headers: {
+          'Authorization': `Bearer ${currentToken}`
+        }
+      });
+
+      if (response.status === 401 || response.status === 403) {
+        const refreshToken = localStorage.getItem('fastgluco_refresh_token');
+        let refreshed = false;
+        if (refreshToken) {
+          try {
             const refreshRes = await fetch(`${apiUrl}/auth/refresh`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -183,6 +232,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               localStorage.setItem('fastgluco_token', data.accessToken);
               currentToken = data.accessToken;
               setToken(currentToken);
+              refreshed = true;
 
               // Retry with new token
               response = await fetch(`${apiUrl}/users/profile`, {
@@ -191,20 +241,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 }
               });
             }
+          } catch (e) {
+            console.error('Refresh token failed:', e);
           }
         }
 
-        if (response.ok) {
-          const profile = await response.json();
-          setUser({ ...profile, id: profile._id || profile.id });
+        if (!refreshed || response.status === 401 || response.status === 403) {
+          // Token is invalid/expired and refresh failed: perform automatic logout
+          console.warn('Session expired or revoked. Performing auto-logout.');
+          logout();
+          setError('Session expired. Please log in again.');
+          return;
         }
-      } catch (err) {
-        console.error('Failed to load profile:', err);
-      } finally {
-        setIsLoading(false);
       }
-    };
 
+      if (response.ok) {
+        const profile = await response.json();
+        const normalized = { ...profile, id: profile._id || profile.id };
+        setUser(normalized);
+        localStorage.setItem('fastgluco_user_cache', JSON.stringify(normalized));
+      }
+    } catch (err) {
+      console.error('Failed to load profile:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     loadProfile();
   }, [token]);
 
@@ -273,9 +337,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = () => {
     localStorage.removeItem('fastgluco_token');
     localStorage.removeItem('fastgluco_refresh_token');
+    localStorage.removeItem('fastgluco_user_cache');
     setToken(null);
     setUser(null);
     setError(null);
+  };
+
+  const refreshProfile = async () => {
+    await loadProfile();
   };
 
   const updateProfile = async (profileUpdates: Partial<UserProfile>): Promise<boolean> => {
@@ -386,9 +455,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated,
         isLoading,
         error,
+        isOnline,
         verifyOtp,
         completeOnboarding,
         logout,
+        refreshProfile,
         updateProfile,
         requestProfileUpdate,
         acceptTerms,

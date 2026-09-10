@@ -1,0 +1,192 @@
+[
+  {
+    "key": "token",
+    "fallback": "token",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true
+    }
+  },
+  {
+    "key": "product",
+    "fallback": "product",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true
+    }
+  },
+  {
+    "key": "script",
+    "fallback": "script",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true
+    }
+  },
+  {
+    "key": "-",
+    "fallback": "-",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true
+    }
+  },
+  {
+    "key": "navigateToTab",
+    "fallback": "navigateToTab",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true
+    }
+  },
+  {
+    "key": "T",
+    "fallback": "T",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true
+    }
+  },
+  {
+    "key": "a",
+    "fallback": "a",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true
+    }
+  },
+  {
+    "key": "foodLog.diet",
+    "fallback": "Diet",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true
+    }
+  },
+  {
+    "key": "ml",
+    "fallback": "ml",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true
+    }
+  },
+  {
+    "key": "g",
+    "fallback": "g",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true
+    }
+  },
+  {
+    "key": "serving",
+    "fallback": "serving",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true
+    }
+  },
+  {
+    "key": "canvas",
+    "fallback": "canvas",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true
+    }
+  },
+  {
+    "key": "2d",
+    "fallback": "2d",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true
+    }
+  },
+  {
+    "key": "2025-03-26",
+    "fallback": "2025-03-26",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true
+    }
+  },
+  {
+    "key": "content-type",
+    "fallback": "content-type",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true
+    }
+  },
+  {
+    "key": "shop",
+    "fallback": "shop",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true
+    }
+  },
+  {
+    "key": "subScreenChange",
+    "fallback": "subScreenChange",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true
+    }
+  },
+  {
+    "key": "iframe",
+    "fallback": "iframe",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true
+    }
+  },
+  {
+    "key": "status",
+    "fallback": "Tracking",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true
+    }
+  }
+]

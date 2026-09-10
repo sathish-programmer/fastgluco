@@ -1243,6 +1243,22 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
         <div className="space-y-2">
           <button
             type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('open_whats_new'))}
+            className="w-full flex items-center justify-between p-3 rounded-2xl bg-gradient-to-r from-blue-50/70 to-indigo-50/70 dark:from-blue-950/30 dark:to-indigo-950/30 hover:from-blue-100 hover:to-indigo-100 text-xs font-bold text-blue-900 dark:text-blue-200 transition-all border border-blue-200/60 dark:border-blue-800/60 text-left cursor-pointer shadow-2xs"
+          >
+            <div className="flex items-center space-x-2.5">
+              <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
+              <span>{t('whatsNew.openWhatsNew', "What's New in v5.5.0")}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-white/80 dark:bg-slate-800 px-2 py-0.5 rounded-full border border-blue-200/80 dark:border-blue-700">
+                v5.5.0
+              </span>
+              <ChevronRight className="h-4 w-4 text-slate-400 shrink-0" />
+            </div>
+          </button>
+          <button
+            type="button"
             onClick={() => onNavigateToTab?.('Terms of Service')}
             className="w-full flex items-center justify-between p-3 rounded-2xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 transition-all border border-slate-200/60 dark:border-slate-700/60 text-left cursor-pointer"
           >
@@ -1287,7 +1303,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
       <div className="text-center py-3 mb-6 text-[10px] text-slate-400 dark:text-slate-500 space-y-0.5">
         <p className="font-bold flex items-center justify-center gap-0.5">
           <span>{branding.appName || 'Mito Reboot'}</span>
-          <span className="text-[8.5px] font-black text-blue-600 dark:text-blue-400 -translate-y-0.5 select-none">™</span>
+          <sup className="text-[8.5px] font-black tracking-tighter text-slate-500 dark:text-slate-400 select-none -top-0.5">TM</sup>
           <span className="mx-1">•</span>
           <span>v5.5.0</span>
         </p>

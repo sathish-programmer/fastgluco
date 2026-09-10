@@ -1,14 +1,14 @@
 <en-US>
-- Redesigned Cellular Balance: Sleek side-by-side view tracking stress forces vs. restorative repair.
-- Interactive Timeframe Filter: Easily toggle between Today, 7-Day, 30-Day, and 1-Year trends.
-- Cellular Health Reports: Download & share comprehensive health audit reports on Android & iOS.
-- Health Defense & Repair Indicators: Enhanced visual tracking for daily cellular balance.
-- Performance improvements and smoother dashboard navigation.
+- Multilingual Support: Switch between English, Tamil, Kannada, and Hindi.
+- Cancer Intelligence: Regional risk analytics and screening guidelines.
+- Streamlined Onboarding: Faster registration and profile customization.
+- Smarter Tracking: Enhanced diet logging and diagnostic booking.
+- Performance & UI Polish: Faster load times and smoother animations.
 </en-US>
 <en-IN>
-- Redesigned Cellular Balance: Sleek side-by-side view tracking stress forces vs. restorative repair.
-- Interactive Timeframe Filter: Easily toggle between Today, 7-Day, 30-Day, and 1-Year trends.
-- Cellular Health Reports: Download & share comprehensive health audit reports on Android & iOS.
-- Health Defense & Repair Indicators: Enhanced visual tracking for daily cellular balance.
-- Performance improvements and smoother dashboard navigation.
+- Multilingual Support: Switch between English, Tamil, Kannada, and Hindi.
+- Cancer Intelligence: Regional risk analytics and screening guidelines.
+- Streamlined Onboarding: Faster registration and profile customization.
+- Smarter Tracking: Enhanced diet logging and diagnostic booking.
+- Performance & UI Polish: Faster load times and smoother animations.
 </en-IN>

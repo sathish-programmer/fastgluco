@@ -12,12 +12,12 @@ const SYMPTOMS = [
 ];
 
 const DOPAMINE_BOOSTERS = [
-  'Hugged a loved one',
-  'Received / gave kind words',
-  'Morning sunlight exposure',
-  'Listened to favourite music',
-  'Gentle massage / stretch',
-  'Laughed / watched comedy'
+  { key: 'hugged', labelKey: 'protocols.huggedLovedOne', defaultLabel: 'Hugged a loved one' },
+  { key: 'kindWords', labelKey: 'protocols.receivedKindWords', defaultLabel: 'Received / gave kind words' },
+  { key: 'morningSunlight', labelKey: 'protocols.morningSunlight', defaultLabel: 'Morning sunlight exposure' },
+  { key: 'favouriteMusic', labelKey: 'protocols.favouriteMusic', defaultLabel: 'Listened to favourite music' },
+  { key: 'gentleMassage', labelKey: 'protocols.gentleMassage', defaultLabel: 'Gentle massage / stretch' },
+  { key: 'watchedComedy', labelKey: 'protocols.watchedComedy', defaultLabel: 'Laughed / watched comedy' }
 ];
 
 export const ParkinsonModule: React.FC = () => {
@@ -138,7 +138,7 @@ export const ParkinsonModule: React.FC = () => {
   const activeBoosterList = useMemo(() => {
     const list: string[] = [];
     DOPAMINE_BOOSTERS.forEach(b => {
-      if (boosters[b]) list.push(b);
+      if (boosters[b.key]) list.push(b.key);
     });
     if (slept8 === true) list.push('8 Hours Restful Sleep');
     if (lovedActivity === true) list.push(lovedActivityNote ? `Activity: ${lovedActivityNote}` : 'Loved Activity');
@@ -434,11 +434,11 @@ export const ParkinsonModule: React.FC = () => {
 
       {/* Mood & Dopamine Boosters */}
       <Card>
-        <SectionTitle icon={Heart}>Mood & Dopamine Support</SectionTitle>
-        <YesNoToggle label={t('protocols.slept8Hours')} value={slept8} onChange={setSlept8} goodAnswer={true} />
+        <SectionTitle icon={Heart}>{t('protocols.moodDopamineSupport', 'Mood & Dopamine Support')}</SectionTitle>
+        <YesNoToggle label={t('protocols.slept8Hours', '8 Hours Restful Sleep')} value={slept8} onChange={setSlept8} goodAnswer={true} />
         <YesNoToggle
-          label={t('protocols.lovedActivity')}
-          sublabel="Singing, drawing, gardening, or hobbies"
+          label={t('protocols.lovedActivity', 'Engaged in Loved Activity (10+ mins)')}
+          sublabel={t('protocols.lovedActivitySub', 'Singing, drawing, gardening, or hobbies')}
           value={lovedActivity}
           onChange={setLovedActivity}
           goodAnswer={true}
@@ -446,31 +446,36 @@ export const ParkinsonModule: React.FC = () => {
         {lovedActivity === true && (
           <input
             type="text"
-            placeholder="What activity did you enjoy?"
+            placeholder={t('protocols.lovedActivityPlaceholder', 'What activity did you enjoy?')}
             value={lovedActivityNote}
             onChange={(e) => setLovedActivityNote(e.target.value)}
             className="w-full mt-2 mb-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none"
           />
         )}
-        <YesNoToggle label="Ate dark chocolate (>70% cacao) today?" value={darkChocolate} onChange={setDarkChocolate} goodAnswer={true} />
+        <YesNoToggle
+          label={t('protocols.ateDarkChocolate', 'Ate dark chocolate (>70% cacao) today?')}
+          value={darkChocolate}
+          onChange={setDarkChocolate}
+          goodAnswer={true}
+        />
 
         <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
           <span className="text-[10.5px] font-black uppercase tracking-wider text-slate-400 block mb-2">
-            Select Dopamine Boosters Experienced Today:
+            {t('protocols.selectDopamineBoosters', 'Select Dopamine Boosters Experienced Today:')}
           </span>
           <div className="flex flex-wrap gap-2">
             {DOPAMINE_BOOSTERS.map(b => (
               <button
-                key={b}
+                key={b.key}
                 type="button"
-                onClick={() => toggleBooster(b)}
+                onClick={() => toggleBooster(b.key)}
                 className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all cursor-pointer ${
-                  boosters[b]
+                  boosters[b.key]
                     ? 'bg-violet-600 text-white border-violet-600 shadow-xs'
                     : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:border-slate-300'
                 }`}
               >
-                {b}
+                {t(b.labelKey, b.defaultLabel)}
               </button>
             ))}
           </div>

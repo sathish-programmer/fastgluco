@@ -96,6 +96,19 @@ export const Educational: React.FC = () => {
     }
   };
 
+  const localizeEducationText = (text: string) => {
+    if (!text) return text;
+    const mapping: Record<string, string> = {
+      'Optimal Fasting Window Tips': t('learn.optimalFastingTitle', 'Optimal Fasting Window Tips'),
+      'Understanding Glycaemic Index (GI)': t('learn.understandingGiTitle', 'Understanding Glycaemic Index (GI)'),
+      'How to Attach and Pair Abbott CGM Sensor': t('learn.cgmSensorTitle', 'How to Attach and Pair Abbott CGM Sensor'),
+      'A step-by-step video guide explaining sensor application, cleaning the skin site, and scanning to activate.': t('learn.cgmSensorDesc', 'A step-by-step video guide explaining sensor application, cleaning the skin site, and scanning to activate.'),
+      'CGM GUIDE': t('learn.cgmGuideBadge', 'CGM Guide'),
+      'DIET': t('foodLog.diet', 'Diet')
+    };
+    return mapping[text] || text;
+  };
+
   return (
     <div className="pb-24 pt-4 px-4 max-w-5xl mx-auto bg-white dark:bg-slate-950 min-h-screen transition-colors duration-300">
       {/* Category selector */}
@@ -152,9 +165,9 @@ export const Educational: React.FC = () => {
             ← {t('nav.back')}
           </button>
           <span className="text-[10px] font-bold text-secondary uppercase tracking-wider bg-secondary-light/50 px-2.5 py-0.5 rounded-full">
-            {activeGuideContent.category} • {activeGuideContent.readTime} min read
+            {localizeEducationText(activeGuideContent.category)} • {activeGuideContent.readTime} {t('learn.minRead', 'min read')}
           </span>
-          <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mt-2 mb-4">{activeGuideContent.title}</h3>
+          <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mt-2 mb-4">{localizeEducationText(activeGuideContent.title)}</h3>
           
           <div className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium whitespace-pre-line space-y-4">
             {activeGuideContent.content}
@@ -182,9 +195,9 @@ export const Educational: React.FC = () => {
                       className="bg-cardBg dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-soft flex items-center justify-between cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-card"
                     >
                       <div className="max-w-[80%]">
-                        <h4 className="text-xs font-bold text-slate-700 dark:text-slate-200">{guide.title}</h4>
+                        <h4 className="text-xs font-bold text-slate-700 dark:text-slate-200">{localizeEducationText(guide.title)}</h4>
                         <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mt-1 block">
-                          {guide.category} • {guide.readTime} min read
+                          {localizeEducationText(guide.category)} • {guide.readTime} {t('learn.minRead', 'min read')}
                         </span>
                       </div>
                       <Eye className="h-4.5 w-4.5 text-slate-400" />
@@ -200,7 +213,7 @@ export const Educational: React.FC = () => {
             <div>
               <h3 className="text-sm font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-4 flex items-center space-x-1.5">
                 <Video className="h-4.5 w-4.5 text-secondary" />
-                <span>{t('learn.videos', 'Video Tutorials')}</span>
+                <span>{t('learn.videoTutorials', 'Video Tutorials')}</span>
               </h3>
 
               <div className="space-y-4">
@@ -223,11 +236,11 @@ export const Educational: React.FC = () => {
                       </div>
                       <div className="p-4">
                         <span className="text-[10px] font-bold text-primary uppercase tracking-wider bg-primary-light/50 px-2 py-0.5 rounded-full">
-                          {video.category}
+                          {localizeEducationText(video.category)}
                         </span>
-                        <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 mt-2">{video.title}</h4>
+                        <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 mt-2">{localizeEducationText(video.title)}</h4>
                         <p className="text-[10px] text-slate-400 font-semibold mt-1">
-                          {video.description}
+                          {localizeEducationText(video.description)}
                         </p>
                       </div>
                     </div>

@@ -35,7 +35,8 @@ import {
   Bot,
   Sparkles,
   Crown,
-  ShieldCheck
+  ShieldCheck,
+  WifiOff
 } from 'lucide-react';
 import { AskMitoDrawer } from './components/AskMitoDrawer';
 import { GlobalAICoachPopup } from './components/GlobalAICoachPopup';
@@ -43,10 +44,12 @@ import { NotificationBell } from './components/NotificationBell';
 import { WelcomeOnboardingModal } from './components/WelcomeOnboardingModal';
 import { TermsAndConditionsAcceptancePage, CURRENT_TERMS_VERSION } from './components/TermsAndConditionsAcceptancePage';
 import { DeleteAccount } from './pages/DeleteAccount';
+import { OfflineScreen } from './components/OfflineScreen';
+import { WhatsNewModal } from './components/WhatsNewModal';
 import { initNotificationScheduler } from './utils/notificationScheduler';
 
 const MainAppContent: React.FC = () => {
-  const { isAuthenticated, isLoading, token, apiUrl, logout, branding, user, activeMode } = useAuth();
+  const { isAuthenticated, isLoading, token, apiUrl, logout, branding, user, activeMode, isOnline, refreshProfile } = useAuth();
   const { t } = useLanguage();
   // Theme toggle moved to Profile settings
 
@@ -76,6 +79,7 @@ const MainAppContent: React.FC = () => {
   };
   const [showHelpModal, setShowHelpModal] = useState<boolean>(false);
   const [showAskMitoDrawer, setShowAskMitoDrawer] = useState<boolean>(false);
+  const [showWhatsNew, setShowWhatsNew] = useState<boolean>(false);
   const [inAppReminder, setInAppReminder] = useState<{ title: string; body: string; type?: string } | null>(null);
 
   useEffect(() => {
@@ -83,11 +87,14 @@ const MainAppContent: React.FC = () => {
       setInAppReminder(e.detail);
     };
     const handleOpenAskMito = () => setShowAskMitoDrawer(true);
+    const handleOpenWhatsNew = () => setShowWhatsNew(true);
     window.addEventListener('mito_reminder_triggered', handleTriggered);
     window.addEventListener('open_ask_mito', handleOpenAskMito);
+    window.addEventListener('open_whats_new', handleOpenWhatsNew);
     return () => {
       window.removeEventListener('mito_reminder_triggered', handleTriggered);
       window.removeEventListener('open_ask_mito', handleOpenAskMito);
+      window.removeEventListener('open_whats_new', handleOpenWhatsNew);
     };
   }, []);
 
@@ -331,6 +338,17 @@ const MainAppContent: React.FC = () => {
     }
   }, [branding.enableExternalPayments, branding.enableSubscriptions]);
 
+  // If completely offline and no authenticated session, show modern OfflineScreen
+  if (!isOnline && !isAuthenticated) {
+    return (
+      <OfflineScreen
+        onRetry={refreshProfile}
+        appName={branding.appName}
+        logoUrl={branding.appLogoUrl}
+      />
+    );
+  }
+
   if (!isAuthenticated) {
     return (
       <Login 
@@ -345,7 +363,7 @@ const MainAppContent: React.FC = () => {
       ? (branding.appLogoUrl.startsWith('http') ? branding.appLogoUrl : `${apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl}${branding.appLogoUrl.startsWith('/') ? '' : '/'}${branding.appLogoUrl}`)
       : '/icon.png';
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-950">
         <div className="flex flex-col items-center space-y-4">
           <div className="p-4 bg-primary-light text-primary rounded-[2.5rem] shadow-soft animate-pulse">
             <img 
@@ -354,9 +372,20 @@ const MainAppContent: React.FC = () => {
               className="h-24 w-24 object-contain rounded-3xl" 
             />
           </div>
-          <span className="font-extrabold text-slate-700 text-sm tracking-wide animate-pulse">{branding.appName}</span>
+          <span className="font-extrabold text-slate-700 dark:text-slate-200 text-sm tracking-wide animate-pulse">{branding.appName}</span>
         </div>
       </div>
+    );
+  }
+
+  // If offline on fresh install with token but no cached user details yet, show OfflineScreen instead of confusing Register
+  if (!isOnline && isAuthenticated && !user?.name) {
+    return (
+      <OfflineScreen
+        onRetry={refreshProfile}
+        appName={branding.appName}
+        logoUrl={branding.appLogoUrl}
+      />
     );
   }
 
@@ -384,12 +413,36 @@ const MainAppContent: React.FC = () => {
 
   return (
     <div className="bg-slate-50 dark:bg-slate-950 h-full flex flex-col justify-between relative transition-colors duration-300">
+      {/* Offline Status Sticky Banner */}
+      {!isOnline && (
+        <div className="bg-amber-500/90 text-amber-950 dark:bg-amber-900/90 dark:text-amber-100 text-[11px] font-extrabold px-3 py-1.5 text-center flex items-center justify-center gap-1.5 sticky top-0 z-50 backdrop-blur-xs transition-all shadow-xs">
+          <WifiOff className="h-3.5 w-3.5 shrink-0" />
+          <span>{t('network.offlineBanner', 'You are currently offline. Changes will sync once reconnected.')}</span>
+        </div>
+      )}
+
       <WelcomeOnboardingModal
         isOpen={showOnboarding}
         onClose={() => {
           localStorage.setItem('mito_welcome_onboarding_completed', 'true');
           localStorage.setItem('fastgluco_onboarding_completed', 'true');
           setShowOnboarding(false);
+        }}
+      />
+
+      <WhatsNewModal
+        isOpen={showWhatsNew}
+        onClose={() => setShowWhatsNew(false)}
+        onExploreFeature={(featureKey) => {
+          if (featureKey === 'cancer_care') {
+            setActiveTab('Home');
+          } else if (featureKey === 'breath') {
+            window.dispatchEvent(new CustomEvent('navigateToHabitScreen', { detail: 'Breath' }));
+          } else if (featureKey === 'environmental') {
+            window.dispatchEvent(new CustomEvent('navigateToHabitScreen', { detail: 'Environmental' }));
+          } else if (featureKey === 'shop') {
+            setActiveTab('Store');
+          }
         }}
       />
       {/* Dynamic Header with safe area padding for mobile notches */}
@@ -410,9 +463,9 @@ const MainAppContent: React.FC = () => {
               <div className="flex items-center gap-1 sm:gap-1.5 leading-none">
                 <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white tracking-tight leading-none truncate flex items-center">
                   {branding.appName ? branding.appName.replace(/_/g, ' ') : 'Mito Reboot'}
-                  <span className="text-[8.5px] font-black text-blue-600 dark:text-blue-400 -translate-y-1 ml-0.5 select-none shrink-0">
-                    ™
-                  </span>
+                  <sup className="text-[8.5px] sm:text-[9.5px] font-black tracking-tighter text-slate-600 dark:text-slate-300 ml-0.5 select-none shrink-0 -top-1">
+                    TM
+                  </sup>
                 </span>
                 {branding.enableSubscriptions !== false && (
                   <button

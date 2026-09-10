@@ -1,0 +1,2607 @@
+[
+  {
+    "file": "src/components/DailyLoggingChatbotModal.tsx",
+    "line": 1098,
+    "text": "= 0 && numVal"
+  },
+  {
+    "file": "src/components/DailyLoggingChatbotModal.tsx",
+    "line": 1153,
+    "text": "o.includes('"
+  },
+  {
+    "file": "src/components/DailyLoggingChatbotModal.tsx",
+    "line": 1169,
+    "text": "o.includes('"
+  },
+  {
+    "file": "src/components/DailyLoggingChatbotModal.tsx",
+    "line": 2498,
+    "text": "Off"
+  },
+  {
+    "file": "src/components/DailyLoggingChatbotModal.tsx",
+    "line": 2518,
+    "text": "Stop"
+  },
+  {
+    "file": "src/components/DailyLoggingChatbotModal.tsx",
+    "line": 2774,
+    "text": "[PROP] title=\"Edit answer\""
+  },
+  {
+    "file": "src/components/DeStressAIChatModal.tsx",
+    "line": 790,
+    "text": "That's wonderful — you're making real progress!"
+  },
+  {
+    "file": "src/components/DeStressAIChatModal.tsx",
+    "line": 792,
+    "text": "2 full weeks"
+  },
+  {
+    "file": "src/components/DeStressAIChatModal.tsx",
+    "line": 792,
+    "text": ". Small consistent steps create lasting change at the cellular level."
+  },
+  {
+    "file": "src/components/GeneticRiskAIChatModal.tsx",
+    "line": 486,
+    "text": "💡 What to prepare for your consultation:"
+  },
+  {
+    "file": "src/components/GlobalAICoachPopup.tsx",
+    "line": 140,
+    "text": "Peak Glucose"
+  },
+  {
+    "file": "src/components/LiveAQIWidget.tsx",
+    "line": 370,
+    "text": "LIVE"
+  },
+  {
+    "file": "src/components/LiveAQIWidget.tsx",
+    "line": 414,
+    "text": "Detecting live GPS location & air quality data..."
+  },
+  {
+    "file": "src/components/LiveAQIWidget.tsx",
+    "line": 569,
+    "text": "hrs"
+  },
+  {
+    "file": "src/components/LiveAQIWidget.tsx",
+    "line": 572,
+    "text": "51 - 100 (Satisfactory)"
+  },
+  {
+    "file": "src/components/LiveAQIWidget.tsx",
+    "line": 573,
+    "text": "hrs"
+  },
+  {
+    "file": "src/components/LiveAQIWidget.tsx",
+    "line": 576,
+    "text": "101 - 150 (Moderate)"
+  },
+  {
+    "file": "src/components/LiveAQIWidget.tsx",
+    "line": 577,
+    "text": "hrs"
+  },
+  {
+    "file": "src/components/LiveAQIWidget.tsx",
+    "line": 581,
+    "text": "hrs"
+  },
+  {
+    "file": "src/components/LiveAQIWidget.tsx",
+    "line": 649,
+    "text": "0-50 Good"
+  },
+  {
+    "file": "src/components/LiveAQIWidget.tsx",
+    "line": 650,
+    "text": "51-100 Satisfactory"
+  },
+  {
+    "file": "src/components/LiveAQIWidget.tsx",
+    "line": 651,
+    "text": "101-200 Moderate"
+  },
+  {
+    "file": "src/components/LiveAQIWidget.tsx",
+    "line": 652,
+    "text": "200+ Poor"
+  },
+  {
+    "file": "src/components/MitoProgressCard.tsx",
+    "line": 228,
+    "text": "Note:"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 102,
+    "text": "MITOREBOOT PRIVATE LIMITED"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 103,
+    "text": "MASTER DISCLAIMER, PRIVACY NOTICE & TERMS OF USE"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 104,
+    "text": "For the MitoReboot Application, Website and Related Services"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 105,
+    "text": "Effective Date: August 23, 2026 &nbsp;|&nbsp; Last Updated: August 23, 2026"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 109,
+    "text": "1. INTRODUCTION"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 110,
+    "text": "MitoReboot is a digital health, wellness, lifestyle and health-awareness platform developed and operated by"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 110,
+    "text": "MitoReboot Private Limited"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 110,
+    "text": "(\"MitoReboot\", \"Company\", \"we\", \"us\" or \"our\")."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 111,
+    "text": "The Platform may provide users with tools for recording, organising and analysing information relating to lifestyle, nutrition, fasting, glucose patterns, environmental exposures, stress, wellness and other health-related parameters."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 112,
+    "text": "Certain features may generate scores, trends, insights, reports, educational information or recommendations based on information supplied by the user, information obtained from connected devices or third-party services, and/or algorithms developed or used by MitoReboot."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 113,
+    "text": "This document applies to all three modes of MitoReboot and to all related features, services, websites, applications, dashboards, reports and digital communications unless a specific additional notice is provided."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 114,
+    "text": "By accessing, registering for or using MitoReboot, you acknowledge that you have read and understood this document and agree to be bound by its terms."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 118,
+    "text": "PART A – MEDICAL AND HEALTH DISCLAIMER"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 119,
+    "text": "2. NOT A SUBSTITUTE FOR MEDICAL CARE"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 120,
+    "text": "MitoReboot is intended primarily as a health-awareness, wellness, educational and informational platform."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 121,
+    "text": "Unless a specific feature has been expressly identified and appropriately validated and authorised for a particular medical purpose, MitoReboot is not a medical device, diagnostic service, emergency medical service or substitute for consultation with a qualified healthcare professional."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 122,
+    "text": "Information, scores, graphs, reports, recommendations and other outputs provided by MitoReboot should not be considered a diagnosis, prognosis, prescription or definitive medical opinion."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 123,
+    "text": "Users should not:"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 125,
+    "text": "Start, stop or alter medication based solely on MitoReboot."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 126,
+    "text": "Change cancer treatment based solely on MitoReboot."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 127,
+    "text": "Delay medical consultation because of a favourable MitoReboot score."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 128,
+    "text": "Assume that a low score means absence of disease or cancer risk."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 129,
+    "text": "Assume that a high score means that cancer or another disease is present."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 131,
+    "text": "Medical decisions should be made in consultation with an appropriately qualified healthcare professional."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 135,
+    "text": "PART B – MITOREBOOT SCORES AND ALGORITHMS"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 136,
+    "text": "3. DAMAGE, REPAIR, RISK AND OTHER SCORES"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 137,
+    "text": "MitoReboot may generate scores or indices relating to concepts such as:"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 139,
+    "text": "Cellular or biological damage"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 140,
+    "text": "Repair capacity"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 141,
+    "text": "Lifestyle or metabolic health"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 142,
+    "text": "Environmental exposure"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 143,
+    "text": "Wellness"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 144,
+    "text": "Health risk"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 145,
+    "text": "Cancer-related risk awareness"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 146,
+    "text": "Other parameters developed by MitoReboot"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 148,
+    "text": "These scores are intended to provide health-awareness and educational information. Unless specifically stated otherwise and supported by appropriate scientific validation, such scores:"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 150,
+    "text": "Are not diagnostic tests."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 151,
+    "text": "Are not validated cancer prediction tests."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 152,
+    "text": "Do not establish the presence or absence of cancer."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 153,
+    "text": "Do not establish an individual’s probability of developing cancer."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 154,
+    "text": "Do not establish causation between a particular exposure and cancer."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 155,
+    "text": "Should not be used as the sole basis for medical decision-making."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 157,
+    "text": "A favourable score does not guarantee good health or absence of disease, and an unfavourable score does not establish the presence of disease."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 159,
+    "text": "4. ALGORITHMS, ARTIFICIAL INTELLIGENCE AND AUTOMATED OUTPUTS"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 160,
+    "text": "Certain MitoReboot features may use algorithms, statistical models, machine-learning systems or artificial intelligence. Such outputs may contain inaccuracies, omissions, limitations or errors."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 161,
+    "text": "Automated outputs are intended to assist health awareness and should not be interpreted as a definitive medical opinion. Where an AI or algorithmic feature is used, the user remains responsible for seeking appropriate professional medical advice before making significant health-related decisions."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 162,
+    "text": "MitoReboot may modify, improve, replace or discontinue algorithms and scoring methodologies from time to time."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 166,
+    "text": "PART C – HEALTH, CGM AND WEARABLE DATA"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 167,
+    "text": "5. HEALTH INFORMATION"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 168,
+    "text": "Users may voluntarily provide information including:"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 170,
+    "text": "Medical history"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 171,
+    "text": "Family history"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 172,
+    "text": "Cancer history"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 173,
+    "text": "Treatment information"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 174,
+    "text": "Laboratory reports"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 175,
+    "text": "Medication information"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 176,
+    "text": "Dietary information"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 177,
+    "text": "Fasting information"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 178,
+    "text": "Exercise and activity"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 179,
+    "text": "Sleep"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 180,
+    "text": "Stress and wellbeing"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 181,
+    "text": "Blood glucose information"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 182,
+    "text": "Other health-related information"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 184,
+    "text": "Such information may constitute personal or sensitive health information under applicable law."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 185,
+    "text": "MitoReboot will process such information in accordance with applicable privacy and data-protection requirements."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 187,
+    "text": "6. CGM AND CONNECTED DEVICE DISCLAIMER"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 188,
+    "text": "MitoReboot may permit integration with compatible continuous glucose monitoring systems, wearable devices, health applications or other third-party platforms. Data obtained through such integrations may contain:"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 190,
+    "text": "Sensor inaccuracies"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 191,
+    "text": "Delays"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 192,
+    "text": "Missing data"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 193,
+    "text": "Transmission errors"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 194,
+    "text": "Device-related errors"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 195,
+    "text": "Incorrect user-entered information"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 197,
+    "text": "MitoReboot does not guarantee the accuracy, completeness or uninterrupted availability of data supplied by third-party devices or platforms."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 198,
+    "text": "MitoReboot should not be used as the sole basis for emergency glucose-management decisions."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 199,
+    "text": "Users using glucose-lowering medication or insulin should follow the instructions of their treating healthcare professional and the applicable device manufacturer’s guidance."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 203,
+    "text": "PART D – FASTING, NUTRITION AND LIFESTYLE"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 204,
+    "text": "7. FASTING AND DIETARY INFORMATION"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 205,
+    "text": "MitoReboot may provide educational information regarding:"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 207,
+    "text": "Intermittent fasting"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 208,
+    "text": "Fasting duration"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 209,
+    "text": "Meal timing"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 210,
+    "text": "Dietary patterns"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 211,
+    "text": "Low-carbohydrate approaches"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 212,
+    "text": "Metabolic health"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 213,
+    "text": "Lifestyle modification"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 215,
+    "text": "Such information is educational and does not constitute an individualised medical prescription."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 216,
+    "text": "Fasting and dietary interventions may not be appropriate for every individual."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 217,
+    "text": "Users should obtain professional medical advice before undertaking significant dietary or fasting changes, particularly where they have a medical condition, take medication, are pregnant or breastfeeding, have nutritional concerns, or otherwise require medical supervision."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 218,
+    "text": "MitoReboot does not guarantee that any particular fasting or dietary approach will prevent cancer or improve an individual’s health outcome."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 222,
+    "text": "PART E – ENVIRONMENTAL EXPOSURE"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 223,
+    "text": "8. ENVIRONMENTAL EXPOSURE INFORMATION"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 224,
+    "text": "MitoReboot may provide information relating to potential exposure to factors such as:"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 226,
+    "text": "Air pollution"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 227,
+    "text": "Water quality"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 228,
+    "text": "Pesticides"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 229,
+    "text": "Heavy metals"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 230,
+    "text": "Microplastics"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 231,
+    "text": "Food-related exposures"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 232,
+    "text": "Household or occupational exposures"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 233,
+    "text": "Other environmental factors"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 235,
+    "text": "Environmental information may be derived from user inputs, publicly available information, databases, scientific literature, third-party information or other sources."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 236,
+    "text": "Such information is subject to geographical, temporal and scientific limitations."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 237,
+    "text": "An environmental exposure score does not establish that an individual has been exposed to a particular substance, nor does it establish that a particular exposure caused or will cause cancer."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 238,
+    "text": "Individual exposure assessment may require specialised environmental, occupational, laboratory or clinical evaluation."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 242,
+    "text": "PART F – CANCER AND PREVENTION"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 243,
+    "text": "9. CANCER RISK DISCLAIMER"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 244,
+    "text": "MitoReboot may provide cancer-awareness, prevention and lifestyle information."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 245,
+    "text": "Cancer is a complex disease influenced by multiple factors including genetics, age, lifestyle, environment, chance and other biological factors."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 246,
+    "text": "No lifestyle intervention or digital platform can guarantee prevention of cancer."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 247,
+    "text": "MitoReboot does not guarantee that following any recommendation, achieving any score or using any feature will prevent cancer, reduce cancer risk or improve cancer treatment outcomes."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 248,
+    "text": "Users should continue to follow established cancer-screening recommendations and medical advice appropriate to their individual circumstances."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 252,
+    "text": "PART G – RESEARCH AND SCIENTIFIC INFORMATION"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 253,
+    "text": "10. SCIENTIFIC AND RESEARCH INFORMATION"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 254,
+    "text": "MitoReboot may present information derived from scientific publications, clinical research, observational studies, ongoing research, emerging evidence or internal research."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 255,
+    "text": "Scientific evidence evolves over time."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 256,
+    "text": "The existence of a scientific publication or research finding does not necessarily establish that the same finding applies to every individual."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 257,
+    "text": "Where information is based on preliminary, observational or emerging evidence, it should not be interpreted as definitive clinical evidence."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 258,
+    "text": "MitoReboot may update information as scientific knowledge develops."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 262,
+    "text": "PART H – PRIVACY AND DATA PROTECTION"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 263,
+    "text": "11. INFORMATION WE COLLECT"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 264,
+    "text": "Depending on the features used, MitoReboot may collect:"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 266,
+    "text": "Account Information"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 268,
+    "text": "Name"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 269,
+    "text": "Age/date of birth"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 270,
+    "text": "Contact details"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 271,
+    "text": "Account credentials"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 272,
+    "text": "Subscription information"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 275,
+    "text": "Health Information"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 277,
+    "text": "Medical and family history"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 278,
+    "text": "Cancer-related information"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 279,
+    "text": "Laboratory data"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 280,
+    "text": "Glucose information"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 281,
+    "text": "Lifestyle and dietary information"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 282,
+    "text": "Fasting and activity information"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 283,
+    "text": "Stress and wellbeing information"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 286,
+    "text": "Environmental Information"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 288,
+    "text": "Air quality"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 289,
+    "text": "Water-related information"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 290,
+    "text": "Food and product usage"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 291,
+    "text": "Environmental exposure information"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 294,
+    "text": "Technical Information"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 296,
+    "text": "Device information"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 297,
+    "text": "Operating system"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 298,
+    "text": "Application version"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 299,
+    "text": "IP address"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 300,
+    "text": "Log information"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 301,
+    "text": "Crash and diagnostic information"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 302,
+    "text": "Usage information"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 305,
+    "text": "12. PURPOSE OF DATA PROCESSING"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 306,
+    "text": "Information may be processed to:"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 308,
+    "text": "Provide MitoReboot services."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 309,
+    "text": "Create user dashboards and reports."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 310,
+    "text": "Generate scores and insights."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 311,
+    "text": "Provide requested recommendations."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 312,
+    "text": "Integrate connected devices."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 313,
+    "text": "Process subscriptions and payments."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 314,
+    "text": "Provide customer support."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 315,
+    "text": "Improve the Platform."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 316,
+    "text": "Conduct legitimate research and product development."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 317,
+    "text": "Maintain security."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 318,
+    "text": "Detect fraud or misuse."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 319,
+    "text": "Comply with legal obligations."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 322,
+    "text": "13. CONSENT"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 323,
+    "text": "Where consent is required by applicable law, MitoReboot will obtain appropriate consent before processing personal information for the relevant purpose."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 324,
+    "text": "Users may withdraw consent where legally permitted."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 325,
+    "text": "Withdrawal of consent may result in certain features becoming unavailable."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 327,
+    "text": "14. DATA SHARING"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 328,
+    "text": "MitoReboot does not intend to sell users’ personal health information as a commercial product."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 329,
+    "text": "Information may be shared, where necessary and legally permitted, with:"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 331,
+    "text": "Cloud and hosting providers"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 332,
+    "text": "Technology providers"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 333,
+    "text": "Payment providers"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 334,
+    "text": "Analytics providers"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 335,
+    "text": "Security providers"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 336,
+    "text": "Professional service providers"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 337,
+    "text": "Healthcare or service partners where authorised"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 338,
+    "text": "Research collaborators where legally permitted and appropriately safeguarded"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 339,
+    "text": "Government or regulatory authorities where legally required"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 341,
+    "text": "MitoReboot will take reasonable steps to ensure appropriate safeguards are applied to personal information handled by service providers."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 343,
+    "text": "15. DE-IDENTIFIED AND AGGREGATED INFORMATION"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 344,
+    "text": "MitoReboot may create aggregated, statistical or de-identified information from user data."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 345,
+    "text": "Where permitted by applicable law, such information may be used for:"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 347,
+    "text": "Scientific research"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 348,
+    "text": "Population-level analysis"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 349,
+    "text": "Product development"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 350,
+    "text": "Educational purposes"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 351,
+    "text": "Quality improvement"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 352,
+    "text": "Scientific publications or presentations"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 354,
+    "text": "Reasonable measures will be taken to prevent such information from being used to identify individual users."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 356,
+    "text": "16. DATA SECURITY"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 357,
+    "text": "MitoReboot will implement reasonable technical, organisational and administrative safeguards designed to protect personal information."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 358,
+    "text": "However, no digital platform, internet transmission, database or electronic storage system can be guaranteed to be completely secure."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 359,
+    "text": "Accordingly, MitoReboot cannot guarantee absolute security of information."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 361,
+    "text": "17. DATA RETENTION"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 362,
+    "text": "Personal information may be retained for as long as reasonably necessary to provide services, fulfil legitimate business purposes, comply with legal obligations, resolve disputes, enforce agreements or satisfy applicable regulatory requirements."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 363,
+    "text": "When information is no longer required, it may be deleted, anonymised or securely disposed of, subject to applicable law."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 365,
+    "text": "18. USER PRIVACY RIGHTS"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 366,
+    "text": "Subject to applicable law, users may have rights to:"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 368,
+    "text": "Access their personal information."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 369,
+    "text": "Correct inaccurate information."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 370,
+    "text": "Request deletion where legally permitted."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 371,
+    "text": "Withdraw consent where applicable."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 372,
+    "text": "Raise privacy concerns or complaints."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 373,
+    "text": "Exercise other rights available under applicable data-protection laws."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 375,
+    "text": "Requests may be made through the contact details provided below."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 379,
+    "text": "PART I – THIRD-PARTY SERVICES AND PRODUCTS"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 380,
+    "text": "19. THIRD-PARTY PLATFORMS"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 381,
+    "text": "MitoReboot may integrate with third-party applications, devices, health platforms and other services."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 382,
+    "text": "MitoReboot is not responsible for the independent privacy policies, security practices, availability or accuracy of third-party services."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 383,
+    "text": "Users should review the applicable third-party terms and privacy policies before connecting their accounts."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 385,
+    "text": "20. THIRD-PARTY PRODUCTS AND SERVICES"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 386,
+    "text": "MitoReboot may display, recommend, list or facilitate access to products and services supplied by independent third parties."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 387,
+    "text": "MitoReboot may receive commissions, referral fees or other commercial consideration from certain transactions. Where applicable, such relationships will be disclosed."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 388,
+    "text": "The listing or recommendation of a product does not constitute a guarantee, certification or medical endorsement of that product."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 389,
+    "text": "The manufacturer, seller or service provider remains responsible for the quality, safety, legality and performance of its products or services."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 390,
+    "text": "Users should independently evaluate products before purchase or use."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 394,
+    "text": "PART J – PAYMENTS AND SUBSCRIPTIONS"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 395,
+    "text": "21. PAYMENTS"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 396,
+    "text": "Payments may be processed through authorised third-party payment gateways."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 397,
+    "text": "MitoReboot may not directly store complete payment-card information where payment processing is performed by a third-party payment provider."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 398,
+    "text": "Users are subject to the applicable terms and privacy policies of the payment provider."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 400,
+    "text": "22. SUBSCRIPTIONS"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 401,
+    "text": "Where MitoReboot offers paid subscriptions:"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 403,
+    "text": "Applicable subscription fees will be displayed before purchase."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 404,
+    "text": "Subscription terms may vary by plan."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 405,
+    "text": "Taxes, where applicable, may be charged in accordance with law."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 406,
+    "text": "Refunds, cancellations and renewals will be governed by the applicable subscription terms displayed at the time of purchase."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 411,
+    "text": "PART K – EMERGENCY AND SAFETY"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 412,
+    "text": "23. EMERGENCY DISCLAIMER"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 413,
+    "text": "MitoReboot is not an emergency medical service."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 414,
+    "text": "The Platform should not be used for emergency diagnosis, monitoring or treatment."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 415,
+    "text": "In the event of severe symptoms, suspected medical emergency, dangerously abnormal readings or other urgent health concerns, users should immediately seek appropriate medical attention or contact the relevant emergency medical service."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 416,
+    "text": "Users should not delay emergency care while attempting to use or interpret MitoReboot."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 420,
+    "text": "PART L – CHILDREN"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 421,
+    "text": "24. MINORS"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 422,
+    "text": "MitoReboot does not knowingly seek to collect personal information from children without appropriate parental or guardian involvement where required by applicable law."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 423,
+    "text": "Where use by a minor is permitted, appropriate consent and supervision requirements may apply."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 427,
+    "text": "PART M – USER RESPONSIBILITY"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 428,
+    "text": "25. USER-PROVIDED INFORMATION"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 429,
+    "text": "Users are responsible for providing information that is reasonably accurate and complete."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 430,
+    "text": "MitoReboot may rely upon information supplied by users or received from connected services."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 431,
+    "text": "Incorrect, incomplete or outdated information may result in inaccurate scores, reports or recommendations."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 433,
+    "text": "26. ACCOUNT SECURITY"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 434,
+    "text": "Users are responsible for maintaining the confidentiality of their login credentials and for activity conducted through their account."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 435,
+    "text": "Users should immediately notify MitoReboot if they suspect unauthorised access to their account."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 439,
+    "text": "PART N – LIMITATION OF LIABILITY"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 440,
+    "text": "27. LIMITATION OF LIABILITY"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 441,
+    "text": "To the maximum extent permitted by applicable law, MitoReboot Private Limited, its directors, officers, employees, consultants, affiliates, contractors and service providers shall not be liable for any loss, injury, damage, medical outcome, financial loss or other consequence arising from:"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 443,
+    "text": "Reliance upon information provided through the Platform."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 444,
+    "text": "Interpretation or use of MitoReboot scores."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 445,
+    "text": "Incorrect or incomplete user-provided information."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 446,
+    "text": "Errors in third-party device or platform data."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 447,
+    "text": "Decisions made by a user based solely on MitoReboot information."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 448,
+    "text": "Failure of a third-party device, platform or service."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 449,
+    "text": "Interruption or unavailability of the Platform."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 450,
+    "text": "Cybersecurity incidents beyond reasonable control."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 451,
+    "text": "Use or purchase of third-party products or services."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 453,
+    "text": "Nothing in this document shall exclude or limit liability to the extent such exclusion or limitation is prohibited by applicable law."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 457,
+    "text": "PART O – INTELLECTUAL PROPERTY"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 458,
+    "text": "28. OWNERSHIP"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 459,
+    "text": "Unless otherwise stated, the MitoReboot name, logo, application, website, software, interface, graphics, content, reports, scoring methodology, algorithms, databases, educational material and other intellectual property are owned by or licensed to MitoReboot Private Limited."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 460,
+    "text": "Users may not copy, reproduce, modify, reverse engineer, distribute, commercialise or exploit MitoReboot intellectual property without prior written permission, except where permitted by law."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 464,
+    "text": "PART P – CHANGES TO SERVICES AND DOCUMENT"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 465,
+    "text": "29. MODIFICATION OF SERVICES"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 466,
+    "text": "MitoReboot may modify, update, suspend or discontinue features, algorithms, scoring systems, integrations or services from time to time."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 467,
+    "text": "Certain features may become unavailable because of technical, regulatory, commercial or third-party limitations."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 469,
+    "text": "30. CHANGES TO THIS DOCUMENT"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 470,
+    "text": "MitoReboot may periodically update this document to reflect changes in:"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 472,
+    "text": "Applicable law"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 473,
+    "text": "Technology"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 474,
+    "text": "Services"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 475,
+    "text": "Data-processing practices"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 476,
+    "text": "Scientific evidence"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 477,
+    "text": "Business operations"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 479,
+    "text": "The updated version will be made available through the Platform."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 480,
+    "text": "Continued use of MitoReboot following an applicable update may constitute acceptance of the revised terms to the extent permitted by law."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 484,
+    "text": "PART Q – GOVERNING LAW AND GRIEVANCE"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 485,
+    "text": "31. GOVERNING LAW"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 486,
+    "text": "This document shall be governed by the applicable laws of India, subject to applicable statutory and regulatory requirements."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 487,
+    "text": "Any disputes shall be subject to the jurisdiction of the courts having appropriate jurisdiction over the Company, unless otherwise required by applicable law."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 489,
+    "text": "32. PRIVACY AND GRIEVANCE CONTACT"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 490,
+    "text": "MitoReboot Private Limited"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 491,
+    "text": "Registered Office: MitoReboot Private Limited, Tamil Nadu, India"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 492,
+    "text": "Email: privacy@mitoreboot.in / support@mitoreboot.in"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 493,
+    "text": "Privacy/Grievance Officer: Grievance Officer, MitoReboot Private Limited"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 494,
+    "text": "Contact: +91-9597042107 / privacy@mitoreboot.in"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 498,
+    "text": "PART R – USER ACKNOWLEDGEMENT AND CONSENT"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 499,
+    "text": "Before using MitoReboot, the user acknowledges that:"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 501,
+    "text": "I have read and understood this Master Disclaimer, Privacy Notice and Terms of Use."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 502,
+    "text": "I understand that MitoReboot is not a substitute for professional medical advice, diagnosis or treatment."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 503,
+    "text": "I understand that MitoReboot scores and algorithmic outputs are not necessarily medically validated diagnostic or predictive tests."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 504,
+    "text": "I understand that a favourable score does not mean that I am free from disease or cancer risk."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 505,
+    "text": "I understand that an unfavourable score does not mean that I have cancer or another disease."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 506,
+    "text": "I understand that information obtained from CGMs, wearables and third-party platforms may contain errors."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 507,
+    "text": "I understand that fasting, dietary and lifestyle recommendations may not be appropriate for everyone."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 508,
+    "text": "I understand that environmental exposure information and scores do not establish individual exposure or causation."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 509,
+    "text": "I understand that MitoReboot does not guarantee prevention, diagnosis or treatment of cancer or any other disease."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 510,
+    "text": "I understand how my personal and health-related information may be collected, processed and used as described in this document."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 511,
+    "text": "I understand that third-party products, services and platforms may be subject to separate terms and privacy policies."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 512,
+    "text": "I understand that MitoReboot is not an emergency medical service."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 513,
+    "text": "I agree to the processing of my information in accordance with this Privacy Notice and applicable law."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 517,
+    "text": "User Digital Acceptance Record:"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 518,
+    "text": "User Name:"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 519,
+    "text": "Registered Mobile/Email:"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 520,
+    "text": "Date:"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 521,
+    "text": "Digital Signature / Acceptance:"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 526,
+    "text": "IMPORTANT NOTICE"
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 527,
+    "text": "MitoReboot is intended to support health awareness, education and informed engagement with healthcare. It is not intended to replace qualified medical care."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 527,
+    "text": "Do not use MitoReboot as the sole basis for diagnosing, preventing or treating cancer or any other medical condition."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 528,
+    "text": "© MitoReboot Private Limited. All Rights Reserved."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 602,
+    "text": "Please scroll to the bottom to continue."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 616,
+    "text": "You have reached the bottom of the document. You may now accept the terms below."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 629,
+    "text": "Loading document..."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 676,
+    "text": "Saving Acceptance..."
+  },
+  {
+    "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
+    "line": 679,
+    "text": "Accept & Continue"
+  },
+  {
+    "file": "src/context/AuthContext.tsx",
+    "line": 82,
+    "text": "Promise"
+  },
+  {
+    "file": "src/context/AuthContext.tsx",
+    "line": 83,
+    "text": "Promise"
+  },
+  {
+    "file": "src/context/AuthContext.tsx",
+    "line": 85,
+    "text": "Promise"
+  },
+  {
+    "file": "src/context/AuthContext.tsx",
+    "line": 86,
+    "text": "Promise"
+  },
+  {
+    "file": "src/context/AuthContext.tsx",
+    "line": 87,
+    "text": "Promise"
+  },
+  {
+    "file": "src/context/AuthContext.tsx",
+    "line": 92,
+    "text": "Promise"
+  },
+  {
+    "file": "src/context/AuthContext.tsx",
+    "line": 240,
+    "text": "): Promise"
+  },
+  {
+    "file": "src/context/AuthContext.tsx",
+    "line": 281,
+    "text": "): Promise"
+  },
+  {
+    "file": "src/context/AuthContext.tsx",
+    "line": 313,
+    "text": "): Promise"
+  },
+  {
+    "file": "src/modules/DiabetesModule.tsx",
+    "line": 314,
+    "text": "= 5.7 && item.value"
+  },
+  {
+    "file": "src/modules/DiabetesModule.tsx",
+    "line": 351,
+    "text": "[PROP] title=\"Delete test\""
+  },
+  {
+    "file": "src/modules/HypertensionModule.tsx",
+    "line": 211,
+    "text": "[PROP] placeholder=\"AM Systolic (e.g. 120)\""
+  },
+  {
+    "file": "src/modules/HypertensionModule.tsx",
+    "line": 218,
+    "text": "[PROP] placeholder=\"AM Diastolic (e.g. 80)\""
+  },
+  {
+    "file": "src/modules/HypertensionModule.tsx",
+    "line": 225,
+    "text": "[PROP] placeholder=\"PM Systolic (e.g. 125)\""
+  },
+  {
+    "file": "src/modules/HypertensionModule.tsx",
+    "line": 232,
+    "text": "[PROP] placeholder=\"PM Diastolic (e.g. 82)\""
+  },
+  {
+    "file": "src/modules/HypertensionModule.tsx",
+    "line": 307,
+    "text": "AM & PM longitudinal pressure logs"
+  },
+  {
+    "file": "src/modules/HypertensionModule.tsx",
+    "line": 377,
+    "text": "[PROP] title=\"Delete log\""
+  },
+  {
+    "file": "src/modules/PCODModule.tsx",
+    "line": 262,
+    "text": "All recorded menstrual cycles & regularity"
+  },
+  {
+    "file": "src/modules/PCODModule.tsx",
+    "line": 324,
+    "text": "= 21 && cycleDays"
+  },
+  {
+    "file": "src/modules/PCODModule.tsx",
+    "line": 328,
+    "text": "= 21 && cycleDays"
+  },
+  {
+    "file": "src/modules/PCODModule.tsx",
+    "line": 341,
+    "text": "[PROP] title=\"Delete log\""
+  },
+  {
+    "file": "src/modules/ParkinsonModule.tsx",
+    "line": 308,
+    "text": "[PROP] title=\"Toggle taken status\""
+  },
+  {
+    "file": "src/modules/ParkinsonModule.tsx",
+    "line": 329,
+    "text": "[PROP] title=\"Delete entry\""
+  },
+  {
+    "file": "src/modules/ParkinsonModule.tsx",
+    "line": 353,
+    "text": "No medication doses logged today. Enter your dose details above to track schedule adherence."
+  },
+  {
+    "file": "src/modules/ParkinsonModule.tsx",
+    "line": 369,
+    "text": "Daily dose timings & adherence"
+  },
+  {
+    "file": "src/modules/ParkinsonModule.tsx",
+    "line": 413,
+    "text": "[PROP] title=\"Delete log\""
+  },
+  {
+    "file": "src/pages/Coaching.tsx",
+    "line": 118,
+    "text": "Peak Glucose"
+  },
+  {
+    "file": "src/pages/Dashboard.tsx",
+    "line": 249,
+    "text": "= s && qDate"
+  },
+  {
+    "file": "src/pages/Dashboard.tsx",
+    "line": 295,
+    "text": "r.value"
+  },
+  {
+    "file": "src/pages/Dashboard.tsx",
+    "line": 435,
+    "text": "= 70 && r.value"
+  },
+  {
+    "file": "src/pages/Dashboard.tsx",
+    "line": 1003,
+    "text": "Glucose Level:"
+  },
+  {
+    "file": "src/pages/Dashboard.tsx",
+    "line": 1013,
+    "text": "LibreView CGM"
+  },
+  {
+    "file": "src/pages/Dashboard.tsx",
+    "line": 1022,
+    "text": "Calories:"
+  },
+  {
+    "file": "src/pages/Dashboard.tsx",
+    "line": 1023,
+    "text": "Carbs:"
+  },
+  {
+    "file": "src/pages/Dashboard.tsx",
+    "line": 1024,
+    "text": "Protein:"
+  },
+  {
+    "file": "src/pages/Dashboard.tsx",
+    "line": 1025,
+    "text": "Fat:"
+  },
+  {
+    "file": "src/pages/Dashboard.tsx",
+    "line": 1073,
+    "text": "[PROP] title=\"Refresh Data\""
+  },
+  {
+    "file": "src/pages/Dashboard.tsx",
+    "line": 1155,
+    "text": "is scheduled on"
+  },
+  {
+    "file": "src/pages/Dashboard.tsx",
+    "line": 1177,
+    "text": "[PROP] title=\"Dismiss Alert\""
+  },
+  {
+    "file": "src/pages/Dashboard.tsx",
+    "line": 1254,
+    "text": "spikeThreshold && displayGlucose"
+  },
+  {
+    "file": "src/pages/Dashboard.tsx",
+    "line": 1283,
+    "text": "No Data"
+  },
+  {
+    "file": "src/pages/Dashboard.tsx",
+    "line": 1323,
+    "text": "= 70 && r.value"
+  },
+  {
+    "file": "src/pages/Dashboard.tsx",
+    "line": 1337,
+    "text": "Time"
+  },
+  {
+    "file": "src/pages/Dashboard.tsx",
+    "line": 1390,
+    "text": "[PROP] title=\"Previous\""
+  },
+  {
+    "file": "src/pages/Dashboard.tsx",
+    "line": 1437,
+    "text": "[PROP] title=\"Next\""
+  },
+  {
+    "file": "src/pages/Dashboard.tsx",
+    "line": 1679,
+    "text": "[Source]"
+  },
+  {
+    "file": "src/pages/Dashboard.tsx",
+    "line": 1844,
+    "text": "CGM history & sync details"
+  },
+  {
+    "file": "src/pages/Dashboard.tsx",
+    "line": 1850,
+    "text": "files"
+  },
+  {
+    "file": "src/pages/Dashboard.tsx",
+    "line": 2279,
+    "text": "[PROP] title=\"Open AI Daily Check-in Assistant\""
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 1041,
+    "text": "🌐 FatSecret"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 1042,
+    "text": "Not in local DB — showing verified external results"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 1279,
+    "text": "Calories"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 1288,
+    "text": "Carbs"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 1297,
+    "text": "Protein"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 1306,
+    "text": "Fat"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 1315,
+    "text": "Fiber"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 1433,
+    "text": "Calories"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 1437,
+    "text": "Carbs"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 1441,
+    "text": "Protein"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 1445,
+    "text": "Fat"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 1449,
+    "text": "Fiber"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 1586,
+    "text": "Breakfast"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 1587,
+    "text": "Lunch"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 1588,
+    "text": "Dinner"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 1589,
+    "text": "Snack"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 1599,
+    "text": "South Indian"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 1600,
+    "text": "North Indian"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 1601,
+    "text": "Snacks"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 1602,
+    "text": "Fruits"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 1603,
+    "text": "Vegetables"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 1604,
+    "text": "Beverages"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 1605,
+    "text": "Dairy"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 1606,
+    "text": "Non-Veg"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 1607,
+    "text": "Sweets"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 1608,
+    "text": "Custom Entry"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 1639,
+    "text": "Nutritional Values (Total)"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 1642,
+    "text": "Calories"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 1651,
+    "text": "Carbs"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 1660,
+    "text": "Protein"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 1669,
+    "text": "Fat"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 1678,
+    "text": "Fiber"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 1984,
+    "text": "🌐 FatSecret"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 2018,
+    "text": "Carbs"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 2022,
+    "text": "Protein"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 2026,
+    "text": "Fat"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 2030,
+    "text": "Fiber"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 2057,
+    "text": "Portion Size"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 2149,
+    "text": "Carbs"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 2153,
+    "text": "Protein"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 2157,
+    "text": "Fat"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 2161,
+    "text": "Fiber"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 2177,
+    "text": "Breakfast"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 2178,
+    "text": "Lunch"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 2179,
+    "text": "Dinner"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 2180,
+    "text": "Snack"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 2186,
+    "text": "Date"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 2196,
+    "text": "Time"
+  },
+  {
+    "file": "src/pages/FoodLog.tsx",
+    "line": 2238,
+    "text": "🌐 FatSecret"
+  },
+  {
+    "file": "src/pages/Legal.tsx",
+    "line": 61,
+    "text": "MITOREBOOT PRIVATE LIMITED"
+  },
+  {
+    "file": "src/pages/Legal.tsx",
+    "line": 62,
+    "text": "MASTER DISCLAIMER, PRIVACY NOTICE & TERMS OF USE"
+  },
+  {
+    "file": "src/pages/Legal.tsx",
+    "line": 63,
+    "text": "For the MitoReboot Application, Website and Related Services"
+  },
+  {
+    "file": "src/pages/Legal.tsx",
+    "line": 64,
+    "text": "Effective Date: August 23, 2026 &nbsp;|&nbsp; Last Updated: August 23, 2026"
+  },
+  {
+    "file": "src/pages/Legal.tsx",
+    "line": 68,
+    "text": "1. INTRODUCTION"
+  },
+  {
+    "file": "src/pages/Legal.tsx",
+    "line": 69,
+    "text": "MitoReboot is a digital health, wellness, lifestyle and health-awareness platform developed and operated by"
+  },
+  {
+    "file": "src/pages/Legal.tsx",
+    "line": 69,
+    "text": "MitoReboot Private Limited"
+  },
+  {
+    "file": "src/pages/Legal.tsx",
+    "line": 69,
+    "text": "(\"MitoReboot\", \"Company\", \"we\", \"us\" or \"our\")."
+  },
+  {
+    "file": "src/pages/Legal.tsx",
+    "line": 70,
+    "text": "The Platform may provide users with tools for recording, organising and analysing information relating to lifestyle, nutrition, fasting, glucose patterns, environmental exposures, stress, wellness and other health-related parameters."
+  },
+  {
+    "file": "src/pages/Legal.tsx",
+    "line": 71,
+    "text": "Certain features may generate scores, trends, insights, reports, educational information or recommendations based on information supplied by the user, information obtained from connected devices or third-party services, and/or algorithms developed or used by MitoReboot."
+  },
+  {
+    "file": "src/pages/Legal.tsx",
+    "line": 72,
+    "text": "This document applies to all three modes of MitoReboot and to all related features, services, websites, applications, dashboards, reports and digital communications unless a specific additional notice is provided."
+  },
+  {
+    "file": "src/pages/Legal.tsx",
+    "line": 73,
+    "text": "By accessing, registering for or using MitoReboot, you acknowledge that you have read and understood this document and agree to be bound by its terms."
+  },
+  {
+    "file": "src/pages/Legal.tsx",
+    "line": 77,
+    "text": "PART A – MEDICAL AND HEALTH DISCLAIMER"
+  },
+  {
+    "file": "src/pages/Legal.tsx",
+    "line": 78,
+    "text": "2. NOT A SUBSTITUTE FOR MEDICAL CARE"
+  },
+  {
+    "file": "src/pages/Legal.tsx",
+    "line": 79,
+    "text": "MitoReboot is intended primarily as a health-awareness, wellness, educational and informational platform."
+  },
+  {
+    "file": "src/pages/Legal.tsx",
+    "line": 80,
+    "text": "Unless a specific feature has been expressly identified and appropriately validated and authorised for a particular medical purpose, MitoReboot is not a medical device, diagnostic service, emergency medical service or substitute for consultation with a qualified healthcare professional."
+  },
+  {
+    "file": "src/pages/Legal.tsx",
+    "line": 81,
+    "text": "Information, scores, graphs, reports, recommendations and other outputs provided by MitoReboot should not be considered a diagnosis, prognosis, prescription or definitive medical opinion."
+  },
+  {
+    "file": "src/pages/Legal.tsx",
+    "line": 82,
+    "text": "Users should not:"
+  },
+  {
+    "file": "src/pages/Legal.tsx",
+    "line": 84,
+    "text": "Start, stop or alter medication based solely on MitoReboot."
+  },
+  {
+    "file": "src/pages/Legal.tsx",
+    "line": 85,
+    "text": "Change cancer treatment based solely on MitoReboot."
+  },
+  {
+    "file": "src/pages/Legal.tsx",
+    "line": 86,
+    "text": "Delay medical consultation because of a favourable MitoReboot score."
+  },
+  {
+    "file": "src/pages/Legal.tsx",
+    "line": 87,
+    "text": "Assume that a low score means absence of disease or cancer risk."
+  },
+  {
+    "file": "src/pages/Legal.tsx",
+    "line": 88,
+    "text": "Assume that a high score means that cancer or another disease is present."
+  },
+  {
+    "file": "src/pages/Legal.tsx",
+    "line": 90,
+    "text": "Medical decisions should be made in consultation with an appropriately qualified healthcare professional."
+  },
+  {
+    "file": "src/pages/Legal.tsx",
+    "line": 94,
+    "text": "PART Q – GOVERNING LAW AND GRIEVANCE"
+  },
+  {
+    "file": "src/pages/Legal.tsx",
+    "line": 95,
+    "text": "32. PRIVACY AND GRIEVANCE CONTACT"
+  },
+  {
+    "file": "src/pages/Legal.tsx",
+    "line": 96,
+    "text": "MitoReboot Private Limited"
+  },
+  {
+    "file": "src/pages/Legal.tsx",
+    "line": 97,
+    "text": "Email: support@gmail.com / mitoreboot@gmail.com"
+  },
+  {
+    "file": "src/pages/Legal.tsx",
+    "line": 98,
+    "text": "Contact: support@gmail.com / mitoreboot@gmail.com"
+  },
+  {
+    "file": "src/pages/Legal.tsx",
+    "line": 102,
+    "text": "PART R – USER ACKNOWLEDGEMENT AND CONSENT"
+  },
+  {
+    "file": "src/pages/Legal.tsx",
+    "line": 104,
+    "text": "User Name: ____________________________________"
+  },
+  {
+    "file": "src/pages/Legal.tsx",
+    "line": 105,
+    "text": "Registered Mobile/Email: _________________________"
+  },
+  {
+    "file": "src/pages/Legal.tsx",
+    "line": 106,
+    "text": "Date: __________________________________________"
+  },
+  {
+    "file": "src/pages/Legal.tsx",
+    "line": 107,
+    "text": "Signature / Digital Acceptance: ___________________"
+  },
+  {
+    "file": "src/pages/Legal.tsx",
+    "line": 112,
+    "text": "Content not found."
+  },
+  {
+    "file": "src/pages/NonCancerDashboard.tsx",
+    "line": 331,
+    "text": "val.hours"
+  },
+  {
+    "file": "src/pages/NonCancerDashboard.tsx",
+    "line": 550,
+    "text": "Mito"
+  },
+  {
+    "file": "src/pages/NonCancerDashboard.tsx",
+    "line": 550,
+    "text": "Reboot"
+  },
+  {
+    "file": "src/pages/NonCancerDashboard.tsx",
+    "line": 1835,
+    "text": "Shield"
+  },
+  {
+    "file": "src/pages/Profile.tsx",
+    "line": 389,
+    "text": "[PROP] label=\"Back to Profile\""
+  },
+  {
+    "file": "src/pages/Reports.tsx",
+    "line": 418,
+    "text": "Supports CSV & PDF exports"
+  },
+  {
+    "file": "src/pages/Subscription.tsx",
+    "line": 825,
+    "text": "Total Price"
+  },
+  {
+    "file": "src/pages/Subscription.tsx",
+    "line": 879,
+    "text": "Billing & Invoice History"
+  },
+  {
+    "file": "src/pages/Subscription.tsx",
+    "line": 958,
+    "text": "Total Paid:"
+  },
+  {
+    "file": "src/pages/Subscription.tsx",
+    "line": 1005,
+    "text": "FREE100"
+  },
+  {
+    "file": "src/screens/Appointment/BookAppointmentScreen.tsx",
+    "line": 707,
+    "text": "📝 My Notes to Doctor:"
+  },
+  {
+    "file": "src/screens/Appointment/BookAppointmentScreen.tsx",
+    "line": 726,
+    "text": "🏥 Clinic Instructions from Doctor:"
+  },
+  {
+    "file": "src/screens/Appointment/BookAppointmentScreen.tsx",
+    "line": 813,
+    "text": "Rating"
+  },
+  {
+    "file": "src/screens/Diagnostics/PaymentScreen.tsx",
+    "line": 136,
+    "text": "Checkout & Pay"
+  },
+  {
+    "file": "src/screens/Diagnostics/PaymentScreen.tsx",
+    "line": 144,
+    "text": "🎁 Trial Special Offer"
+  },
+  {
+    "file": "src/screens/Diagnostics/PaymentScreen.tsx",
+    "line": 145,
+    "text": "Use the code"
+  },
+  {
+    "file": "src/screens/Diagnostics/PaymentScreen.tsx",
+    "line": 145,
+    "text": "free100"
+  },
+  {
+    "file": "src/screens/Diagnostics/PaymentScreen.tsx",
+    "line": 145,
+    "text": "at checkout to book this test fully free for testing purposes!"
+  },
+  {
+    "file": "src/screens/Diagnostics/PaymentScreen.tsx",
+    "line": 154,
+    "text": "Apply"
+  },
+  {
+    "file": "src/screens/Diagnostics/PaymentScreen.tsx",
+    "line": 157,
+    "text": "✓ Code applied! Booking fee discounted to 0."
+  },
+  {
+    "file": "src/screens/Diagnostics/PaymentScreen.tsx",
+    "line": 187,
+    "text": "100% discount applied"
+  },
+  {
+    "file": "src/screens/Diagnostics/PaymentScreen.tsx",
+    "line": 195,
+    "text": "Date & Time"
+  },
+  {
+    "file": "src/screens/Diagnostics/PaymentScreen.tsx",
+    "line": 232,
+    "text": "Processing..."
+  },
+  {
+    "file": "src/screens/HabitScreens/DentalLogScreen.tsx",
+    "line": 722,
+    "text": "1. Add a photo"
+  },
+  {
+    "file": "src/screens/HabitScreens/DentalLogScreen.tsx",
+    "line": 778,
+    "text": "2. Select tooth areas"
+  },
+  {
+    "file": "src/screens/HabitScreens/DentalLogScreen.tsx",
+    "line": 962,
+    "text": "Previous Readings (Tap to view details)"
+  },
+  {
+    "file": "src/screens/HabitScreens/EnvironmentalExposuresLogScreen.tsx",
+    "line": 538,
+    "text": "Shop now"
+  },
+  {
+    "file": "src/screens/HabitScreens/EnvironmentalExposuresLogScreen.tsx",
+    "line": 546,
+    "text": "Shop now"
+  },
+  {
+    "file": "src/screens/HabitScreens/EnvironmentalExposuresLogScreen.tsx",
+    "line": 605,
+    "text": "MitoReboot"
+  },
+  {
+    "file": "src/screens/HabitScreens/EnvironmentalExposuresLogScreen.tsx",
+    "line": 621,
+    "text": "Bacteria & Viruses only"
+  },
+  {
+    "file": "src/screens/HabitScreens/EnvironmentalExposuresLogScreen.tsx",
+    "line": 630,
+    "text": "Yes"
+  },
+  {
+    "file": "src/screens/HabitScreens/EnvironmentalExposuresLogScreen.tsx",
+    "line": 638,
+    "text": "Yes"
+  },
+  {
+    "file": "src/screens/HabitScreens/EnvironmentalExposuresLogScreen.tsx",
+    "line": 770,
+    "text": "Avoid ❌"
+  },
+  {
+    "file": "src/screens/HabitScreens/EnvironmentalExposuresLogScreen.tsx",
+    "line": 774,
+    "text": "Choose ✅"
+  },
+  {
+    "file": "src/screens/HabitScreens/EnvironmentalExposuresLogScreen.tsx",
+    "line": 809,
+    "text": "Kitchen Microplastics & Utensils Audit"
+  },
+  {
+    "file": "src/screens/HabitScreens/IntimacyCheckScreen.tsx",
+    "line": 117,
+    "text": "[PROP] title=\"You're not alone — and this is treatable\""
+  },
+  {
+    "file": "src/screens/HabitScreens/ObesityLogScreen.tsx",
+    "line": 33,
+    "text": "= 18.5 && val"
+  },
+  {
+    "file": "src/screens/HabitScreens/ObesityLogScreen.tsx",
+    "line": 34,
+    "text": "= 25 && val"
+  },
+  {
+    "file": "src/screens/HabitScreens/SleepLogScreen.tsx",
+    "line": 170,
+    "text": "7-Day Trend"
+  },
+  {
+    "file": "src/screens/HabitScreens/SleepLogScreen.tsx",
+    "line": 204,
+    "text": "h.value.hours"
+  },
+  {
+    "file": "src/screens/HabitScreens/SmokingLogScreen.tsx",
+    "line": 296,
+    "text": "total"
+  },
+  {
+    "file": "src/screens/HabitScreens/SmokingLogScreen.tsx",
+    "line": 300,
+    "text": "/day"
+  },
+  {
+    "file": "src/screens/HabitScreens/SubstancesLogScreen.tsx",
+    "line": 143,
+    "text": "Toll-Free · 24/7 Helpline"
+  },
+  {
+    "file": "src/screens/Shop/ShopOrdersHistoryScreen.tsx",
+    "line": 534,
+    "text": "Your Name"
+  },
+  {
+    "file": "src/screens/Shop/ShopScreen.tsx",
+    "line": 511,
+    "text": "Back"
+  },
+  {
+    "file": "src/screens/Shop/ShopScreen.tsx",
+    "line": 845,
+    "text": "Patient Reviews & Feedback"
+  },
+  {
+    "file": "src/screens/Shop/ShopScreen.tsx",
+    "line": 911,
+    "text": "Medical & Health Store"
+  },
+  {
+    "file": "src/screens/Shop/ShopScreen.tsx",
+    "line": 1024,
+    "text": "Close"
+  }
+]
