@@ -279,7 +279,7 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
   return (
     <div className="min-h-screen flex items-center justify-center bg-white px-4 py-8 relative">
       {/* Top Header Language Selector */}
-      <div className="absolute top-4 sm:top-6 right-4 sm:right-6 z-30">
+      <div className="absolute top-[max(1rem,calc(env(safe-area-inset-top,0px)+12px))] right-4 sm:right-6 z-30">
         <LanguageSelector variant="dropdown" />
       </div>
 
@@ -303,7 +303,7 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
           </div>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center justify-center gap-0.5">
             <span>{branding.appName || 'Mito Reboot'}</span>
-            <sup className="text-xs font-black tracking-tight text-slate-500 -top-2 select-none">
+            <sup className="text-[9px] font-semibold tracking-normal text-slate-400 -top-2.5 select-none">
               TM
             </sup>
           </h1>

@@ -1,14 +1,14 @@
 <en-US>
-- Multilingual Support: Switch between English, Tamil, Kannada, and Hindi.
-- Cancer Intelligence: Regional risk analytics and screening guidelines.
-- Streamlined Onboarding: Faster registration and profile customization.
-- Smarter Tracking: Enhanced diet logging and diagnostic booking.
-- Performance & UI Polish: Faster load times and smoother animations.
+- Native Launch Experience: Clean full-screen splash display with crisp brand logo.
+- Display & Notch Polish: Enhanced layout alignment for camera notch and edge-to-edge screens.
+- Offline Protection: Improved no-connection experience with clear status indicators.
+- Header & UI Refinements: Polished typography, trademark badge, and language selection.
+- Stability & Speed: Smoother transitions and faster launch performance.
 </en-US>
 <en-IN>
-- Multilingual Support: Switch between English, Tamil, Kannada, and Hindi.
-- Cancer Intelligence: Regional risk analytics and screening guidelines.
-- Streamlined Onboarding: Faster registration and profile customization.
-- Smarter Tracking: Enhanced diet logging and diagnostic booking.
-- Performance & UI Polish: Faster load times and smoother animations.
+- Native Launch Experience: Clean full-screen splash display with crisp brand logo.
+- Display & Notch Polish: Enhanced layout alignment for camera notch and edge-to-edge screens.
+- Offline Protection: Improved no-connection experience with clear status indicators.
+- Header & UI Refinements: Polished typography, trademark badge, and language selection.
+- Stability & Speed: Smoother transitions and faster launch performance.
 </en-IN>

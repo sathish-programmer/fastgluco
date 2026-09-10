@@ -415,7 +415,7 @@ const MainAppContent: React.FC = () => {
     <div className="bg-slate-50 dark:bg-slate-950 h-full flex flex-col justify-between relative transition-colors duration-300">
       {/* Offline Status Sticky Banner */}
       {!isOnline && (
-        <div className="bg-amber-500/90 text-amber-950 dark:bg-amber-900/90 dark:text-amber-100 text-[11px] font-extrabold px-3 py-1.5 text-center flex items-center justify-center gap-1.5 sticky top-0 z-50 backdrop-blur-xs transition-all shadow-xs">
+        <div className="bg-amber-500/95 text-amber-950 dark:bg-amber-900/95 dark:text-amber-100 text-[11.5px] font-extrabold px-3 pt-[max(0.5rem,calc(env(safe-area-inset-top,0px)+6px))] pb-2 text-center flex items-center justify-center gap-1.5 sticky top-0 z-50 backdrop-blur-md transition-all shadow-xs">
           <WifiOff className="h-3.5 w-3.5 shrink-0" />
           <span>{t('network.offlineBanner', 'You are currently offline. Changes will sync once reconnected.')}</span>
         </div>
@@ -447,7 +447,9 @@ const MainAppContent: React.FC = () => {
       />
       {/* Dynamic Header with safe area padding for mobile notches */}
       {!isSubScreenActive && activeTab !== 'Subscription' && (
-        <header className="sticky top-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-100 dark:border-slate-800/80 z-20 px-3 sm:px-4 pt-[calc(env(safe-area-inset-top)+8px)] pb-2 max-w-5xl w-full mx-auto flex items-center justify-between gap-1 sm:gap-2 transition-all duration-300">
+        <header className={`sticky top-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-100 dark:border-slate-800/80 z-20 px-3 sm:px-4 ${
+          !isOnline ? 'pt-2.5' : 'pt-[calc(env(safe-area-inset-top)+8px)]'
+        } pb-2 max-w-5xl w-full mx-auto flex items-center justify-between gap-1 sm:gap-2 transition-all duration-300`}>
           {/* Brand Identity */}
           <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
             {branding.appLogoUrl ? (
@@ -463,7 +465,7 @@ const MainAppContent: React.FC = () => {
               <div className="flex items-center gap-1 sm:gap-1.5 leading-none">
                 <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white tracking-tight leading-none truncate flex items-center">
                   {branding.appName ? branding.appName.replace(/_/g, ' ') : 'Mito Reboot'}
-                  <sup className="text-[8.5px] sm:text-[9.5px] font-black tracking-tighter text-slate-600 dark:text-slate-300 ml-0.5 select-none shrink-0 -top-1">
+                  <sup className="text-[6.5px] sm:text-[7px] font-semibold tracking-normal text-slate-400 dark:text-slate-500 ml-0.5 select-none shrink-0 -top-1">
                     TM
                   </sup>
                 </span>

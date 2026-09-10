@@ -2314,5 +2314,5 @@ export const en = {
   "whatsNew.chooseLanguageSubtitle": "Experience the entire app in your native language. Switch anytime from the top header or profile:",
   "whatsNew.multilingual.title": "Regional Multilingual Support",
   "whatsNew.multilingual.desc": "Full in-depth translation across English, தமிழ், ಕನ್ನಡ, and हिन्दी with instant switching.",
-  "whatsNew.openWhatsNew": "What's New in v5.6.0",
+  "whatsNew.openWhatsNew": "What's New in v5.7.0",
 } as const;

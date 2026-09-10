@@ -32,7 +32,7 @@ export const OfflineScreen: React.FC<OfflineScreenProps> = ({
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex flex-col justify-between p-4 sm:p-6 transition-colors duration-300">
       {/* Top Bar with Brand and Language Selector */}
-      <header className="w-full max-w-lg mx-auto flex items-center justify-between pt-[calc(env(safe-area-inset-top)+8px)] pb-4">
+      <header className="w-full max-w-lg mx-auto flex items-center justify-between pt-[max(1rem,calc(env(safe-area-inset-top,0px)+12px))] px-1 pb-4">
         <div className="flex items-center gap-2">
           {logoUrl ? (
             <img src={logoUrl} alt={appName} className="h-7 w-auto object-contain" />
@@ -45,7 +45,7 @@ export const OfflineScreen: React.FC<OfflineScreenProps> = ({
             {appName}
           </span>
         </div>
-        <LanguageSelector />
+        <LanguageSelector variant="dropdown" />
       </header>
 
       {/* Main Offline Content */}

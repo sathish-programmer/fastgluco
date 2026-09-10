@@ -76,7 +76,7 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-white px-4 py-8 relative">
       {/* Top Header Language Selector */}
-      <div className="absolute top-4 sm:top-6 right-4 sm:right-6 z-30">
+      <div className="absolute top-[max(1rem,calc(env(safe-area-inset-top,0px)+12px))] right-4 sm:right-6 z-30">
         <LanguageSelector variant="dropdown" />
       </div>
 
