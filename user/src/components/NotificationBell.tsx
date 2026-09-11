@@ -205,7 +205,7 @@ export const NotificationBell: React.FC = () => {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={handleToggleDropdown}
-        className="p-1.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer relative focus:outline-none"
+        className="h-8 w-8 flex items-center justify-center text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer relative focus:outline-none"
         title={t('navigation.notifications')}
         aria-label={t('navigation.notifications')}
       >

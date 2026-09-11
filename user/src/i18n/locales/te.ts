@@ -2314,5 +2314,5 @@ export const te = {
   "whatsNew.chooseLanguageSubtitle": "మీ స్థానిక భాషలో మొత్తం యాప్‌ను అనుభవించండి. ఎగువ హెడర్ లేదా ప్రొఫైల్ నుండి ఎప్పుడైనా మారండి:",
   "whatsNew.multilingual.title": "ప్రాంతీయ బహుభాషా మద్దతు",
   "whatsNew.multilingual.desc": "English, தமிழ், తెలుగు, ಕನ್ನಡ మరియు हिन्दी లలో సంపూర్ణ అనువాదం మరియు తక్షణ మార్పిడి.",
-  "whatsNew.openWhatsNew": "v5.8.0 లో కొత్త ఫీచర్లు",
+  "whatsNew.openWhatsNew": "v5.9.0 లో కొత్త ఫీచర్లు",
 } as const;
