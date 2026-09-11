@@ -83,20 +83,26 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
       <div className="w-full max-w-md">
         {/* Brand Header */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center p-4 bg-primary-light text-primary rounded-[2rem] mb-4 shadow-soft">
-            {branding.appLogoUrl ? (
-              <img 
-                src={branding.appLogoUrl.startsWith('http') ? branding.appLogoUrl : `${apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl}${branding.appLogoUrl.startsWith('/') ? '' : '/'}${branding.appLogoUrl}`} 
-                alt="Logo" 
-                className="h-20 w-20 object-contain rounded-2xl" 
-              />
-            ) : (
-              <img 
-                src="/icon.png" 
-                alt="Logo" 
-                className="h-20 w-20 object-contain rounded-2xl" 
-              />
-            )}
+          <div className="relative mb-5 inline-flex items-center justify-center">
+            {/* Ambient Backlight Glow matching brand palette */}
+            <div className="absolute -inset-2 bg-gradient-to-tr from-teal-400/25 via-primary/20 to-indigo-400/25 rounded-[2.2rem] blur-xl opacity-80 pointer-events-none" />
+
+            {/* Elevated Clean Modern Emblem Tile */}
+            <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-[2rem] bg-white p-2.5 shadow-xl shadow-slate-200/80 border border-slate-100 ring-1 ring-slate-900/5 flex items-center justify-center transition-all duration-300 hover:scale-105 hover:shadow-2xl">
+              {branding.appLogoUrl ? (
+                <img 
+                  src={branding.appLogoUrl.startsWith('http') ? branding.appLogoUrl : `${apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl}${branding.appLogoUrl.startsWith('/') ? '' : '/'}${branding.appLogoUrl}`} 
+                  alt="Logo" 
+                  className="w-full h-full object-contain rounded-2xl" 
+                />
+              ) : (
+                <img 
+                  src="/icon.png" 
+                  alt="Logo" 
+                  className="w-full h-full object-contain rounded-2xl" 
+                />
+              )}
+            </div>
           </div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t('auth.completeProfile', 'Complete Profile')}</h1>
           <p className="text-slate-500 mt-1 text-sm">{t('auth.tellUsAboutYourself', 'Please tell us a bit about yourself to customize your preventive lifestyle journey.')}</p>

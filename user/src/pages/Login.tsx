@@ -286,26 +286,33 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
       <div className="w-full max-w-md">
         {/* Brand Header */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center p-4 bg-primary-light text-primary rounded-[2rem] mb-4 shadow-soft">
-            {branding.appLogoUrl ? (
-              <img 
-                src={branding.appLogoUrl.startsWith('http') ? branding.appLogoUrl : `${apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl}${branding.appLogoUrl.startsWith('/') ? '' : '/'}${branding.appLogoUrl}`} 
-                alt={t('logoAlt')} 
-                className="h-20 w-20 object-contain rounded-2xl" 
-              />
-            ) : (
-              <img 
-                src="/icon.png" 
-                alt={t('logoAlt')} 
-                className="h-20 w-20 object-contain rounded-2xl" 
-              />
-            )}
+          <div className="relative mb-5 inline-flex items-center justify-center">
+            {/* Ambient Backlight Glow matching brand palette */}
+            <div className="absolute -inset-2 bg-gradient-to-tr from-teal-400/25 via-primary/20 to-indigo-400/25 rounded-[2.2rem] blur-xl opacity-80 pointer-events-none" />
+
+            {/* Elevated Clean Modern Emblem Tile */}
+            <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-[2rem] bg-white p-2.5 shadow-xl shadow-slate-200/80 border border-slate-100 ring-1 ring-slate-900/5 flex items-center justify-center transition-all duration-300 hover:scale-105 hover:shadow-2xl">
+              {branding.appLogoUrl ? (
+                <img 
+                  src={branding.appLogoUrl.startsWith('http') ? branding.appLogoUrl : `${apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl}${branding.appLogoUrl.startsWith('/') ? '' : '/'}${branding.appLogoUrl}`} 
+                  alt={t('logoAlt')} 
+                  className="w-full h-full object-contain rounded-2xl" 
+                />
+              ) : (
+                <img 
+                  src="/icon.png" 
+                  alt={t('logoAlt')} 
+                  className="w-full h-full object-contain rounded-2xl" 
+                />
+              )}
+            </div>
           </div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center justify-center gap-0.5">
-            <span>{branding.appName || 'Mito Reboot'}</span>
-            <sup className="text-[9px] font-semibold tracking-normal text-slate-400 -top-2.5 select-none">
+
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center justify-center gap-1.5">
+            <span>{branding.appName ? branding.appName.replace(/_/g, ' ') : 'Mito Reboot'}</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-100 border border-slate-200/70 px-1.5 py-0.5 rounded-md self-center leading-none select-none shadow-2xs">
               TM
-            </sup>
+            </span>
           </h1>
           <p className="text-slate-500 mt-2 font-medium text-sm">
             {branding.appTagline || 'Preventive Lifestyle App'}

@@ -1301,9 +1301,11 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
 
       {/* Trademark & Copyright Footer */}
       <div className="text-center py-3 mb-6 text-[10px] text-slate-400 dark:text-slate-500 space-y-0.5">
-        <p className="font-bold flex items-center justify-center gap-0.5">
+        <p className="font-bold flex items-center justify-center gap-1">
           <span>{branding.appName || 'Mito Reboot'}</span>
-          <sup className="text-[6.5px] font-semibold tracking-normal text-slate-400 dark:text-slate-500 select-none -top-0.5">TM</sup>
+          <span className="text-[7px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 px-1 py-0.5 rounded leading-none select-none shadow-2xs">
+            TM
+          </span>
           <span className="mx-1">•</span>
           <span>v5.7.0</span>
         </p>

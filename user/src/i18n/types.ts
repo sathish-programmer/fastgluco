@@ -1,4 +1,4 @@
-export type SupportedLanguage = 'en' | 'ta' | 'kn' | 'hi';
+export type SupportedLanguage = 'en' | 'ta' | 'te' | 'kn' | 'hi';
 
 export interface LanguageOption {
   code: SupportedLanguage;
@@ -22,6 +22,13 @@ export const SUPPORTED_LANGUAGES: LanguageOption[] = [
     nativeName: 'தமிழ்',
     flag: '🇮🇳',
     localeTag: 'ta-IN'
+  },
+  {
+    code: 'te',
+    name: 'Telugu',
+    nativeName: 'తెలుగు',
+    flag: '🇮🇳',
+    localeTag: 'te-IN'
   },
   {
     code: 'kn',

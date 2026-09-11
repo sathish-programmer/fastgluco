@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import type { SupportedLanguage } from '../i18n/types';
 
 export type FocusModeType =
   | 'PREVENTION'
@@ -56,7 +57,7 @@ export interface UserProfile {
   addressState?: string;
   addressPinCode?: string;
   notificationPreferences?: UserNotificationPreferences;
-  language?: 'en' | 'ta' | 'kn' | 'hi';
+  language?: SupportedLanguage;
 }
 
 export interface AppBranding {

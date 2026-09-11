@@ -448,7 +448,7 @@ const MainAppContent: React.FC = () => {
       {/* Dynamic Header with safe area padding for mobile notches */}
       {!isSubScreenActive && activeTab !== 'Subscription' && (
         <header className={`sticky top-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-100 dark:border-slate-800/80 z-20 px-3 sm:px-4 ${
-          !isOnline ? 'pt-2.5' : 'pt-[calc(env(safe-area-inset-top)+8px)]'
+          !isOnline ? 'pt-2.5' : 'pt-[max(calc(env(safe-area-inset-top,0px)+8px),28px)]'
         } pb-2 max-w-5xl w-full mx-auto flex items-center justify-between gap-1 sm:gap-2 transition-all duration-300`}>
           {/* Brand Identity */}
           <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
@@ -465,9 +465,9 @@ const MainAppContent: React.FC = () => {
               <div className="flex items-center gap-1 sm:gap-1.5 leading-none">
                 <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white tracking-tight leading-none truncate flex items-center">
                   {branding.appName ? branding.appName.replace(/_/g, ' ') : 'Mito Reboot'}
-                  <sup className="text-[6.5px] sm:text-[7px] font-semibold tracking-normal text-slate-400 dark:text-slate-500 ml-0.5 select-none shrink-0 -top-1">
+                  <span className="text-[7px] sm:text-[7.5px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 px-1 py-0.5 rounded leading-none ml-1 select-none shrink-0 shadow-2xs">
                     TM
-                  </sup>
+                  </span>
                 </span>
                 {branding.enableSubscriptions !== false && (
                   <button

@@ -141,43 +141,76 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     );
   }
 
-  // Cards Variant (Grid for profile/modal)
+  // Cards Variant (Modern clean UI for profile/modal)
   return (
     <div className={`grid grid-cols-2 gap-2.5 ${className}`}>
       {languages.map((l) => {
         const isSelected = language === l.code;
+        const isFeatured = l.code === 'en';
         return (
           <button
             key={l.code}
             type="button"
             onClick={() => handleSelect(l.code)}
-            className={`relative p-3.5 rounded-2xl border text-left flex items-center justify-between transition-all cursor-pointer active:scale-98 ${
+            className={`group relative p-3 rounded-2xl border text-left flex items-center justify-between transition-all duration-200 cursor-pointer active:scale-[0.98] ${
+              isFeatured ? 'col-span-2' : 'col-span-1'
+            } ${
               isSelected
-                ? 'bg-primary/10 dark:bg-primary/20 border-primary text-primary dark:text-primary-light shadow-xs ring-1 ring-primary'
-                : 'bg-white dark:bg-slate-800/80 border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
+                ? 'bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary ring-1 ring-primary/40 text-slate-900 dark:text-white shadow-xs'
+                : 'bg-white dark:bg-slate-800/80 border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50/80 dark:hover:bg-slate-800/60'
             }`}
           >
-            <div className="flex items-center gap-2.5">
-              <span className="text-xl" role="img" aria-label={l.name}>
-                {l.flag}
-              </span>
-              <div>
-                <p className="text-xs font-bold leading-tight">{l.nativeName}</p>
-                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+            <div className="flex items-center gap-3 min-w-0">
+              {/* Modern Flag Avatar */}
+              <div
+                className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0 transition-transform duration-200 group-hover:scale-105 ${
+                  isSelected
+                    ? 'bg-primary/15 dark:bg-primary/25 shadow-2xs'
+                    : 'bg-slate-100 dark:bg-slate-700/60'
+                }`}
+              >
+                <span role="img" aria-label={l.name}>
+                  {l.flag}
+                </span>
+              </div>
+
+              {/* Language Name & Subtitle */}
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 leading-tight">
+                  <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                    {l.nativeName}
+                  </p>
+                  <span className="text-[8px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-700/60 px-1 py-0.5 rounded leading-none">
+                    {l.code.toUpperCase()}
+                  </span>
+                </div>
+                <p className="text-[10.5px] text-slate-400 dark:text-slate-500 font-medium truncate mt-0.5">
                   {l.name}
+                  {isFeatured && (
+                    <span className="text-primary font-semibold ml-1.5">• Default</span>
+                  )}
                 </p>
               </div>
             </div>
 
-            {isSelected && (
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="h-5 w-5 rounded-full bg-primary text-white flex items-center justify-center shrink-0 shadow-2xs"
-              >
-                <Check className="h-3 w-3 stroke-[3]" />
-              </motion.div>
-            )}
+            {/* Selection Check Indicator */}
+            <div
+              className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-all duration-200 ${
+                isSelected
+                  ? 'bg-primary text-white shadow-xs'
+                  : 'border border-slate-300 dark:border-slate-600 group-hover:border-slate-400'
+              }`}
+            >
+              {isSelected ? (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                >
+                  <Check className="h-3 w-3 stroke-[3]" />
+                </motion.div>
+              ) : null}
+            </div>
           </button>
         );
       })}

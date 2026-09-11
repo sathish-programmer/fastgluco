@@ -18,12 +18,13 @@ const LANGUAGE_STORAGE_KEY = 'mito_app_language';
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<SupportedLanguage>(() => {
     const saved = localStorage.getItem(LANGUAGE_STORAGE_KEY);
-    if (saved && ['en', 'ta', 'kn', 'hi'].includes(saved)) {
+    if (saved && ['en', 'ta', 'te', 'kn', 'hi'].includes(saved)) {
       return saved as SupportedLanguage;
     }
     // Check navigator language if available
     const browserLang = navigator.language?.toLowerCase() || '';
     if (browserLang.startsWith('ta')) return 'ta';
+    if (browserLang.startsWith('te')) return 'te';
     if (browserLang.startsWith('kn')) return 'kn';
     if (browserLang.startsWith('hi')) return 'hi';
     return 'en';
@@ -38,7 +39,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   React.useEffect(() => {
     const handleLangChange = (e: any) => {
       const newLang = e?.detail?.language || localStorage.getItem(LANGUAGE_STORAGE_KEY);
-      if (newLang && ['en', 'ta', 'kn', 'hi'].includes(newLang) && newLang !== language) {
+      if (newLang && ['en', 'ta', 'te', 'kn', 'hi'].includes(newLang) && newLang !== language) {
         setLanguageState(newLang as SupportedLanguage);
       }
     };

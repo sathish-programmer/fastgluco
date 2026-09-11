@@ -1,5 +1,6 @@
 import { en } from './en';
 import { ta } from './ta';
+import { te } from './te';
 import { kn } from './kn';
 import { hi } from './hi';
 import type { SupportedLanguage } from '../types';
@@ -7,6 +8,7 @@ import type { SupportedLanguage } from '../types';
 export const translations = {
   en,
   ta,
+  te,
   kn,
   hi
 } as const;
