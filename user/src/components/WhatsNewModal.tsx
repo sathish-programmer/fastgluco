@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import type { SupportedLanguage } from '../i18n/types';
 
-export const CURRENT_APP_VERSION = 'v5.7.0';
+export const CURRENT_APP_VERSION = 'v5.8.0';
 
 interface WhatsNewModalProps {
   isOpen?: boolean;
@@ -19,7 +19,7 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
   onExploreFeature
 }) => {
   const { branding } = useAuth();
-  const { t, language, setLanguage, languages } = useLanguage();
+  const { t, language, defaultLanguage, setLanguage, languages } = useLanguage();
   const [shouldShow, setShouldShow] = useState(false);
 
   useEffect(() => {
@@ -85,13 +85,13 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ duration: 0.25 }}
-          className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200/80 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+          className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
         >
           {/* Header Banner */}
-          <div className="p-5 sm:p-6 pb-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white flex items-center justify-between shadow-md shrink-0">
+          <div className="p-4 sm:p-5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white flex items-center justify-between shadow-xs shrink-0">
             <div className="flex items-center space-x-3 min-w-0">
-              <div className="p-2.5 bg-white/20 rounded-2xl backdrop-blur-md shrink-0">
-                <Sparkles className="h-5 w-5 text-amber-300" />
+              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-md shrink-0">
+                <Sparkles className="h-4.5 w-4.5 text-amber-300" />
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
@@ -110,22 +110,22 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
             <button
               type="button"
               onClick={handleDismiss}
-              className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors cursor-pointer shrink-0"
+              className="p-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors cursor-pointer shrink-0"
               title="Close"
             >
               <X className="h-4 w-4" />
             </button>
           </div>
 
-          <div className="p-5 sm:p-6 overflow-y-auto space-y-4 flex-1">
+          <div className="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1">
             {/* 🌟 Spotlight: Interactive Native Language Selector */}
-            <div className="p-4 sm:p-4.5 rounded-3xl bg-gradient-to-br from-blue-50 via-indigo-50/60 to-purple-50/40 dark:from-blue-950/40 dark:via-indigo-950/30 dark:to-purple-950/20 border-2 border-blue-500/30 dark:border-blue-500/40 shadow-sm">
+            <div className="p-3.5 sm:p-4 rounded-xl bg-gradient-to-br from-blue-50/80 via-indigo-50/50 to-purple-50/30 dark:from-blue-950/40 dark:via-indigo-950/30 dark:to-purple-950/20 border border-blue-200/80 dark:border-blue-900/60 shadow-2xs">
               <div className="flex items-center gap-2 mb-1.5">
-                <div className="p-1.5 rounded-xl bg-blue-600 text-white shadow-2xs">
-                  <Languages className="h-4 w-4" />
+                <div className="p-1.5 rounded-md bg-blue-600 text-white shadow-2xs">
+                  <Languages className="h-3.5 w-3.5" />
                 </div>
                 <div>
-                  <h4 className="font-black text-xs sm:text-sm text-slate-900 dark:text-white tracking-tight">
+                  <h4 className="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white tracking-tight">
                     {t('whatsNew.chooseLanguageTitle', 'Choose Your Preferred Language')}
                   </h4>
                 </div>
@@ -135,54 +135,86 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
                 {t('whatsNew.chooseLanguageSubtitle', 'Experience the entire app in your native language. Switch anytime from the top header or profile:')}
               </p>
 
-              {/* 4 Interactive Language Cards */}
-              <div className="grid grid-cols-2 gap-2">
-                {languages.map((lang) => {
-                  const isSelected = language === lang.code;
-                  return (
-                    <button
-                      key={lang.code}
-                      type="button"
-                      onClick={() => handleLanguageSelect(lang.code)}
-                      className={`p-2.5 rounded-2xl border text-left transition-all duration-200 cursor-pointer relative flex items-center justify-between ${
-                        isSelected
-                          ? 'bg-blue-600 text-white border-blue-600 shadow-md scale-[1.02]'
-                          : 'bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 border-slate-200/80 dark:border-slate-700/80'
-                      }`}
-                    >
-                      <div className="min-w-0">
-                        <span className="text-xs font-black block leading-tight">
-                          {lang.nativeName}
-                        </span>
-                        <span className={`text-[10px] block truncate ${isSelected ? 'text-blue-100 font-medium' : 'text-slate-400 dark:text-slate-400'}`}>
-                          {lang.name}
-                        </span>
-                      </div>
-                      {isSelected ? (
-                        <div className="h-5 w-5 rounded-full bg-white text-blue-600 flex items-center justify-center shrink-0 ml-1 shadow-2xs">
-                          <Check className="h-3 w-3 stroke-[3]" />
-                        </div>
-                      ) : (
-                        <div className="h-4 w-4 rounded-full border border-slate-300 dark:border-slate-600 shrink-0 ml-1" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+              {/* Balanced Symmetrical 1+4 Language Layout */}
+              {(() => {
+                const activeDefault = defaultLanguage || language;
+                const sortedLanguages = [
+                  ...languages.filter((l) => l.code === activeDefault),
+                  ...languages.filter((l) => l.code !== activeDefault)
+                ];
+                return (
+                  <div className="grid grid-cols-2 gap-2">
+                    {sortedLanguages.map((lang) => {
+                      const isSelected = language === lang.code;
+                      const isDefault = activeDefault === lang.code;
+                      return (
+                        <button
+                          key={lang.code}
+                          type="button"
+                          onClick={() => handleLanguageSelect(lang.code)}
+                          className={`p-2.5 rounded-lg border text-left transition-all duration-150 cursor-pointer relative flex items-center justify-between active:scale-[0.99] ${
+                            isDefault ? 'col-span-2' : 'col-span-1'
+                          } ${
+                            isSelected
+                              ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                              : 'bg-white dark:bg-slate-800/90 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 border-slate-200/90 dark:border-slate-700/90'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className="text-base shrink-0 select-none" role="img" aria-label={lang.name}>
+                              {lang.flag}
+                            </span>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs font-black block leading-tight truncate">
+                                  {lang.nativeName}
+                                </span>
+                                <span className={`text-[8px] font-black uppercase px-1 py-0.5 rounded leading-none ${
+                                  isSelected
+                                    ? 'bg-blue-500/50 text-white'
+                                    : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
+                                }`}>
+                                  {lang.code.toUpperCase()}
+                                </span>
+                              </div>
+                              <span className={`text-[10px] block truncate ${isSelected ? 'text-blue-100 font-medium' : 'text-slate-400 dark:text-slate-400'}`}>
+                                {lang.name}
+                                {isDefault && (
+                                  <span className={isSelected ? 'text-amber-300 font-bold ml-1.5' : 'text-blue-600 dark:text-blue-400 font-bold ml-1.5'}>
+                                    • {t('common.default', 'Default')}
+                                  </span>
+                                )}
+                              </span>
+                            </div>
+                          </div>
+
+                          {isSelected ? (
+                            <div className="h-4.5 w-4.5 rounded-full bg-white text-blue-600 flex items-center justify-center shrink-0 ml-1 shadow-2xs">
+                              <Check className="h-3 w-3 stroke-[3]" />
+                            </div>
+                          ) : (
+                            <div className="h-4 w-4 rounded-full border border-slate-300 dark:border-slate-600 shrink-0 ml-1" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Other Feature Highlights */}
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 block px-1">
                 More in this update
               </span>
               {features.map(f => (
                 <div
                   key={f.key}
-                  className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800/80 flex items-start justify-between gap-3 hover:border-slate-200 dark:hover:border-slate-700 transition-all"
+                  className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/70 dark:border-slate-800/80 flex items-start justify-between gap-3 hover:border-slate-300 dark:hover:border-slate-700 transition-all"
                 >
-                  <div className="flex items-start space-x-3 min-w-0">
-                    <div className={`p-2.5 rounded-xl border shrink-0 ${f.bg}`}>
+                  <div className="flex items-start space-x-2.5 min-w-0">
+                    <div className={`p-2 rounded-lg border shrink-0 ${f.bg}`}>
                       {f.icon}
                     </div>
                     <div className="min-w-0">
@@ -202,7 +234,7 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
                         handleDismiss();
                         onExploreFeature(f.key);
                       }}
-                      className="shrink-0 px-2.5 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary dark:text-primary-light rounded-lg text-[10px] font-bold transition-all flex items-center space-x-1 mt-0.5 cursor-pointer"
+                      className="shrink-0 px-2.5 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary dark:text-primary-light rounded-md text-[10px] font-bold transition-all flex items-center space-x-1 mt-0.5 cursor-pointer"
                     >
                       <span>{t('common.explore', 'Explore')}</span>
                       <ChevronRight className="h-3 w-3" />
@@ -214,14 +246,14 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
           </div>
 
           {/* Footer CTA */}
-          <div className="p-4 sm:p-5 bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
-            <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 truncate max-w-[200px]">
+          <div className="p-3.5 sm:p-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-3 shrink-0">
+            <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-snug flex-1 pr-1">
               {t('whatsNew.footer', 'Check back anytime from your profile settings')}
-            </span>
+            </p>
             <button
               type="button"
               onClick={handleDismiss}
-              className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-xs rounded-xl shadow-md transition-all active:scale-95 cursor-pointer"
+              className="px-5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-xs rounded-lg shadow-sm transition-all active:scale-95 cursor-pointer shrink-0 whitespace-nowrap"
             >
               {t('common.confirm', 'Got It')}
             </button>

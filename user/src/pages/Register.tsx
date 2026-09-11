@@ -82,8 +82,8 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
 
       <div className="w-full max-w-md">
         {/* Brand Header */}
-        <div className="text-center mb-6">
-          <div className="relative mb-5 inline-flex items-center justify-center">
+        <div className="flex flex-col items-center justify-center text-center mb-6">
+          <div className="relative mb-4 flex items-center justify-center">
             {/* Ambient Backlight Glow matching brand palette */}
             <div className="absolute -inset-2 bg-gradient-to-tr from-teal-400/25 via-primary/20 to-indigo-400/25 rounded-[2.2rem] blur-xl opacity-80 pointer-events-none" />
 

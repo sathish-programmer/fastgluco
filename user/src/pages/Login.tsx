@@ -285,8 +285,8 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
 
       <div className="w-full max-w-md">
         {/* Brand Header */}
-        <div className="text-center mb-6">
-          <div className="relative mb-5 inline-flex items-center justify-center">
+        <div className="flex flex-col items-center justify-center text-center mb-6">
+          <div className="relative mb-4 flex items-center justify-center">
             {/* Ambient Backlight Glow matching brand palette */}
             <div className="absolute -inset-2 bg-gradient-to-tr from-teal-400/25 via-primary/20 to-indigo-400/25 rounded-[2.2rem] blur-xl opacity-80 pointer-events-none" />
 
@@ -308,11 +308,11 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
             </div>
           </div>
 
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center justify-center gap-1.5">
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-start justify-center">
             <span>{branding.appName ? branding.appName.replace(/_/g, ' ') : 'Mito Reboot'}</span>
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-100 border border-slate-200/70 px-1.5 py-0.5 rounded-md self-center leading-none select-none shadow-2xs">
+            <sup className="text-[10px] font-bold text-slate-400 dark:text-slate-500 ml-1 -top-1.5 relative select-none leading-none tracking-tight">
               TM
-            </span>
+            </sup>
           </h1>
           <p className="text-slate-500 mt-2 font-medium text-sm">
             {branding.appTagline || 'Preventive Lifestyle App'}

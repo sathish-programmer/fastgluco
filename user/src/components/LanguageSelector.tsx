@@ -15,13 +15,15 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   className = '',
   onSelect
 }) => {
-  const { language, setLanguage, languages, t } = useLanguage();
+  const { language, defaultLanguage, setLanguage, setDefaultLanguage, languages, t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const activeDefault = defaultLanguage || language;
   const currentLang = languages.find((l) => l.code === language) || languages[0];
 
   const handleSelect = (code: SupportedLanguage) => {
+    setDefaultLanguage(code);
     setLanguage(code);
     if (onSelect) onSelect(code);
     setIsOpen(false);
@@ -142,18 +144,23 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   }
 
   // Cards Variant (Modern clean UI for profile/modal)
+  const sortedLanguages = [
+    ...languages.filter((l) => l.code === activeDefault),
+    ...languages.filter((l) => l.code !== activeDefault)
+  ];
+
   return (
     <div className={`grid grid-cols-2 gap-2.5 ${className}`}>
-      {languages.map((l) => {
+      {sortedLanguages.map((l) => {
         const isSelected = language === l.code;
-        const isFeatured = l.code === 'en';
+        const isDefault = activeDefault === l.code;
         return (
           <button
             key={l.code}
             type="button"
             onClick={() => handleSelect(l.code)}
-            className={`group relative p-3 rounded-2xl border text-left flex items-center justify-between transition-all duration-200 cursor-pointer active:scale-[0.98] ${
-              isFeatured ? 'col-span-2' : 'col-span-1'
+            className={`group relative p-3 rounded-xl border text-left flex items-center justify-between transition-all duration-200 cursor-pointer active:scale-[0.99] ${
+              isDefault ? 'col-span-2' : 'col-span-1'
             } ${
               isSelected
                 ? 'bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary ring-1 ring-primary/40 text-slate-900 dark:text-white shadow-xs'
@@ -163,7 +170,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
             <div className="flex items-center gap-3 min-w-0">
               {/* Modern Flag Avatar */}
               <div
-                className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0 transition-transform duration-200 group-hover:scale-105 ${
+                className={`w-8 h-8 rounded-lg flex items-center justify-center text-base shrink-0 transition-transform duration-200 group-hover:scale-105 ${
                   isSelected
                     ? 'bg-primary/15 dark:bg-primary/25 shadow-2xs'
                     : 'bg-slate-100 dark:bg-slate-700/60'
@@ -186,8 +193,12 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
                 </div>
                 <p className="text-[10.5px] text-slate-400 dark:text-slate-500 font-medium truncate mt-0.5">
                   {l.name}
-                  {isFeatured && (
-                    <span className="text-primary font-semibold ml-1.5">• Default</span>
+                  {isDefault ? (
+                    <span className="text-primary font-bold ml-1.5">• {t('common.default', 'Default')}</span>
+                  ) : (
+                    <span className="text-slate-400 dark:text-slate-500 group-hover:text-primary transition-colors ml-1.5 text-[10px]">
+                      • {t('profile.tapToSetDefault', 'Tap to set default')}
+                    </span>
                   )}
                 </p>
               </div>

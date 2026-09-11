@@ -61,7 +61,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
   const { user, token, apiUrl, logout, updateProfile, isLoading, error, branding, setActiveMode } = useAuth();
   const { showToast } = useToast();
   const { setTheme, isDark } = useTheme();
-  const { t, language } = useLanguage();
+  const { t, language, currentLanguageOption } = useLanguage();
   const isIOSAppStoreBlocked = Capacitor.getPlatform() === 'ios';
 
   // Tabs for profile section: 'settings' or 'education' or 'subscription' or 'notifications'
@@ -1188,10 +1188,17 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
 
           {/* App Language Section */}
           <div className="pt-4 mt-2 border-t border-slate-100 dark:border-slate-800 space-y-3">
-            <h4 className="text-[10px] font-bold text-slate-450 dark:text-slate-400 uppercase tracking-wider flex items-center space-x-1.5">
-              <Globe className="h-4 w-4 text-primary dark:text-primary-light" />
-              <span>{t('profile.appLanguage')}</span>
-            </h4>
+            <div className="flex items-center justify-between">
+              <h4 className="text-[10px] font-bold text-slate-450 dark:text-slate-400 uppercase tracking-wider flex items-center space-x-1.5">
+                <Globe className="h-4 w-4 text-primary dark:text-primary-light" />
+                <span>{t('profile.appLanguage')}</span>
+              </h4>
+              <span className="text-[10px] font-bold text-primary bg-primary/10 dark:bg-primary/20 px-2 py-0.5 rounded-md flex items-center gap-1.5">
+                <span>{currentLanguageOption.flag}</span>
+                <span>{currentLanguageOption.nativeName}</span>
+                <span className="text-[9px] font-black uppercase tracking-wider text-primary/80">• {t('common.default', 'Default')}</span>
+              </span>
+            </div>
             <LanguageSelector variant="cards" />
           </div>
 
@@ -1248,11 +1255,11 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
           >
             <div className="flex items-center space-x-2.5">
               <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
-              <span>{t('whatsNew.openWhatsNew', "What's New in v5.7.0")}</span>
+              <span>{t('whatsNew.openWhatsNew', "What's New in v5.8.0")}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="text-[10px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-white/80 dark:bg-slate-800 px-2 py-0.5 rounded-full border border-blue-200/80 dark:border-blue-700">
-                v5.7.0
+                v5.8.0
               </span>
               <ChevronRight className="h-4 w-4 text-slate-400 shrink-0" />
             </div>
@@ -1301,13 +1308,15 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
 
       {/* Trademark & Copyright Footer */}
       <div className="text-center py-3 mb-6 text-[10px] text-slate-400 dark:text-slate-500 space-y-0.5">
-        <p className="font-bold flex items-center justify-center gap-1">
-          <span>{branding.appName || 'Mito Reboot'}</span>
-          <span className="text-[7px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 px-1 py-0.5 rounded leading-none select-none shadow-2xs">
-            TM
+        <p className="font-bold inline-flex items-center justify-center gap-1.5">
+          <span className="inline-flex items-start">
+            <span>{branding.appName ? branding.appName.replace(/_/g, ' ') : 'Mito Reboot'}</span>
+            <sup className="text-[6.5px] font-extrabold text-slate-400 dark:text-slate-500 ml-0.5 -top-1 relative select-none leading-none">
+              TM
+            </sup>
           </span>
-          <span className="mx-1">•</span>
-          <span>v5.7.0</span>
+          <span>•</span>
+          <span>v5.8.0</span>
         </p>
         <p className="text-[9px] text-slate-400/80">
           © {new Date().getFullYear()} MitoReboot Private Limited. All rights reserved.

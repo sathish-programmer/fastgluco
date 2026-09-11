@@ -5,7 +5,9 @@ import { getTranslation } from '../i18n/locales';
 
 interface LanguageContextType {
   language: SupportedLanguage;
+  defaultLanguage: SupportedLanguage;
   setLanguage: (lang: SupportedLanguage) => void;
+  setDefaultLanguage: (lang: SupportedLanguage) => void;
   t: (key: string, paramsOrFallback?: Record<string, string | number> | string, fallback?: string) => string;
   languages: LanguageOption[];
   currentLanguageOption: LanguageOption;
@@ -14,10 +16,11 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 const LANGUAGE_STORAGE_KEY = 'mito_app_language';
+const DEFAULT_LANGUAGE_STORAGE_KEY = 'mito_app_default_language';
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<SupportedLanguage>(() => {
-    const saved = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    const saved = localStorage.getItem(DEFAULT_LANGUAGE_STORAGE_KEY) || localStorage.getItem(LANGUAGE_STORAGE_KEY);
     if (saved && ['en', 'ta', 'te', 'kn', 'hi'].includes(saved)) {
       return saved as SupportedLanguage;
     }
@@ -30,10 +33,28 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return 'en';
   });
 
+  const [defaultLanguage, setDefaultLanguageState] = useState<SupportedLanguage>(() => {
+    const saved = localStorage.getItem(DEFAULT_LANGUAGE_STORAGE_KEY) || localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    if (saved && ['en', 'ta', 'te', 'kn', 'hi'].includes(saved)) {
+      return saved as SupportedLanguage;
+    }
+    return 'en';
+  });
+
+  const setDefaultLanguage = useCallback((lang: SupportedLanguage) => {
+    setDefaultLanguageState(lang);
+    setLanguageState(lang);
+    localStorage.setItem(DEFAULT_LANGUAGE_STORAGE_KEY, lang);
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
+    window.dispatchEvent(new CustomEvent('language_changed', { detail: { language: lang, defaultLanguage: lang } }));
+  }, []);
+
   const setLanguage = useCallback((lang: SupportedLanguage) => {
     setLanguageState(lang);
+    setDefaultLanguageState(lang);
     localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
-    window.dispatchEvent(new CustomEvent('language_changed', { detail: { language: lang } }));
+    localStorage.setItem(DEFAULT_LANGUAGE_STORAGE_KEY, lang);
+    window.dispatchEvent(new CustomEvent('language_changed', { detail: { language: lang, defaultLanguage: lang } }));
   }, []);
 
   React.useEffect(() => {
@@ -65,7 +86,9 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     <LanguageContext.Provider
       value={{
         language,
+        defaultLanguage,
         setLanguage,
+        setDefaultLanguage,
         t,
         languages: SUPPORTED_LANGUAGES,
         currentLanguageOption

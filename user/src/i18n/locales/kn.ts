@@ -2313,6 +2313,6 @@ export const kn = {
   "whatsNew.chooseLanguageTitle": "ನಿಮ್ಮ ಆದ್ಯತೆಯ ಭಾಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ",
   "whatsNew.chooseLanguageSubtitle": "ನಿಮ್ಮ ಸ್ಥಳೀಯ ಭಾಷೆಯಲ್ಲಿ ಸಂಪೂರ್ಣ ಅಪ್ಲಿಕೇಶನ್ ಅನುಭವಿಸಿ. ಹೆಡರ್ ಅಥವಾ ಪ್ರೊಫೈಲ್‌ನಿಂದ ಯಾವಾಗ ಬೇಕಾದರೂ ಬದಲಾಯಿಸಿ:",
   "whatsNew.multilingual.title": "ಪ್ರಾದೇಶಿಕ ಬಹುಭಾಷಾ ಬೆಂಬಲ",
-  "whatsNew.multilingual.desc": "ಇಂಗ್ಲಿಷ್, ತಮಿಳು, ಕನ್ನಡ ಮತ್ತು ಹಿಂದಿಯಲ್ಲಿ ಸಂಪೂರ್ಣ ಅನುವಾದ ಮತ್ತು ತ್ವರಿತ ಬದಲಾವಣೆ.",
-  "whatsNew.openWhatsNew": "ಆವೃತ್ತಿ 5.7.0 ರ ಹೊಸ ವೈಶಿಷ್ಟ್ಯಗಳು",
+  "whatsNew.multilingual.desc": "English, தமிழ், తెలుగు, ಕನ್ನಡ ಮತ್ತು हिन्दी ಯಲ್ಲಿ ಸಂಪೂರ್ಣ ಅನುವಾದ ಮತ್ತು ತ್ವರಿತ ಬದಲಾವಣೆ.",
+  "whatsNew.openWhatsNew": "ಆವೃತ್ತಿ 5.8.0 ರ ಹೊಸ ವೈಶಿಷ್ಟ್ಯಗಳು",
 } as const;
