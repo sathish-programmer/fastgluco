@@ -2318,6 +2318,7 @@ export const en = {
 
   // --- CRITICAL 5-LANGUAGE AI & SCREEN COMPLETIONS ---
   "common.default": "Default",
+  "modeSwitcher.switchedFocus": "Switched active focus to",
   "common.stopAudio": "Stop Audio",
   "common.listenAudio": "Listen",
   "profile.tapToSetDefault": "Tap to set default",

@@ -93,7 +93,9 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
   onGoToCGMDashboard
 }) => {
   const { apiUrl, token, user, activeMode } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const LOCALE_MAP: Record<string, string> = { en: 'en-US', ta: 'ta-IN', te: 'te-IN', kn: 'kn-IN', hi: 'hi-IN' };
+  const activeLocale = LOCALE_MAP[language] || 'en-US';
 
   // Navigation State for Habit Screens
   const [activeScreen, _setActiveScreen] = useState<string | null>(() => {
@@ -1286,10 +1288,18 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
       {/* Top Greeting & Action Bar */}
       <div className="mb-4">
         <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
-          {t('dashboard.welcomeBack', 'Welcome back')}
+          {new Date().toLocaleDateString(activeLocale, { weekday: 'long', day: 'numeric', month: 'short' }).toUpperCase()}
         </span>
-        <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight leading-tight mt-0.5">
-          {t('dashboard.helloUser', { name: user?.name || 'Friend' }, `Hello, ${user?.name || 'Friend'}`)}
+        <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-slate-100 tracking-tight leading-tight mt-0.5 truncate max-w-[210px] min-[380px]:max-w-[260px] sm:max-w-none">
+          {(() => {
+            const h = new Date().getHours();
+            if (h >= 5 && h < 12) return t('dashboard.goodMorning', 'Good Morning');
+            if (h >= 12 && h < 18) return t('dashboard.goodAfternoon', 'Good Afternoon');
+            return t('dashboard.goodEvening', 'Good Evening');
+          })()},{' '}
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
+            {user?.name?.split(' ')[0] || 'Friend'}
+          </span>
         </h2>
       </div>
 

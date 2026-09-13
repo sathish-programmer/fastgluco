@@ -215,7 +215,7 @@ This module is intended to support your personal daily lifestyle habits, nutriti
         cancerDisclaimerAcceptedAt: new Date().toISOString()
       } as any);
       setActiveMode(modeToSet);
-      showToast(`Switched active focus to ${modesConfig.find(m => m.key === modeToSet)?.title}`, 'success');
+      showToast(`${t('modeSwitcher.switchedFocus', 'Switched active focus to')} ${modesConfig.find(m => m.key === modeToSet)?.title}`, 'success');
     } catch (e: any) {
       showToast(e.message || 'Failed to update focus mode', 'error');
     } finally {

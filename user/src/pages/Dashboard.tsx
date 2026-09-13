@@ -1076,12 +1076,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
       >
         <div className="min-w-0 flex-1 pr-2">
           <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 tracking-widest uppercase block">
-            {t('dashboard.todaysFocus', 'Overview')}
+            {new Date().toLocaleDateString(activeLocale, { weekday: 'long', day: 'numeric', month: 'short' }).toUpperCase()}
           </span>
-          <h2 className="text-xl sm:text-2xl font-black text-slate-850 dark:text-slate-50 mt-0.5 tracking-tight truncate leading-snug">
-            {t('dashboard.goodMorning', 'Hello')},{' '}
+          <h2 className="text-lg sm:text-xl font-black text-slate-850 dark:text-slate-50 mt-0.5 tracking-tight truncate leading-snug max-w-[210px] min-[380px]:max-w-[260px] sm:max-w-none">
+            {(() => {
+              const h = new Date().getHours();
+              if (h >= 5 && h < 12) return t('dashboard.goodMorning', 'Good Morning');
+              if (h >= 12 && h < 18) return t('dashboard.goodAfternoon', 'Good Afternoon');
+              return t('dashboard.goodEvening', 'Good Evening');
+            })()},{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
-              {user?.name || 'Patient'}
+              {user?.name?.split(' ')[0] || 'Patient'}
             </span>
           </h2>
         </div>
@@ -1469,7 +1474,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
                       <button
                         key={mode}
                         onClick={() => mode === 'custom' ? setShowRangeModal(true) : setDateRange(mode)}
-                        className={`py-1 text-[9.5px] font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
+                        className={`min-h-[32px] flex items-center justify-center text-[9px] font-black uppercase tracking-wide rounded-xl transition-all cursor-pointer leading-tight px-0.5 ${
                           dateRange === mode
                             ? 'bg-primary text-white shadow-xs'
                             : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'

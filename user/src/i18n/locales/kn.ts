@@ -2860,7 +2860,7 @@ export const kn = {
 
   // Added user reported missing translations
   "common.today": "ಇಂದು",
-  "common.customRange": "ಕಸ್ಟಮ್ ಶ್ರೇಣಿ",
+  "common.customRange": "ಕಸ್ಟಮ್",
   "common.7Days": "7 ದಿನಗಳು",
   "common.30Days": "30 ದಿನಗಳು",
   "common.other": "ಇತರ",

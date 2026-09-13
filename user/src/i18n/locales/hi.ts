@@ -2318,6 +2318,7 @@ export const hi = {
 
   // --- CRITICAL 5-LANGUAGE AI & SCREEN COMPLETIONS ---
   "common.default": "डिफ़ॉल्ट",
+  "modeSwitcher.switchedFocus": "सक्रिय फ़ोकस बदल गया",
   "common.stopAudio": "ऑडियो रोकें",
   "common.listenAudio": "सुनें",
   "profile.tapToSetDefault": "डिफ़ॉल्ट सेट करने के लिए टैप करें",
@@ -2860,7 +2861,7 @@ export const hi = {
 
   // Added user reported missing translations
   "common.today": "आज",
-  "common.customRange": "कस्टम रेंज",
+  "common.customRange": "कस्टम",
   "common.7Days": "7 दिन",
   "common.30Days": "30 दिन",
   "common.other": "अन्य",

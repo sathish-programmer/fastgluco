@@ -2318,6 +2318,7 @@ export const ta = {
 
   // --- CRITICAL 5-LANGUAGE AI & SCREEN COMPLETIONS ---
   "common.default": "இயல்புநிலை",
+  "modeSwitcher.switchedFocus": "செயலில் உள்ள கவனம் மாற்றப்பட்டது",
   "common.stopAudio": "ஆடியோவை நிறுத்து",
   "common.listenAudio": "கேட்கவும்",
   "profile.tapToSetDefault": "இயல்புநிலையாக அமைக்க தட்டவும்",
@@ -2860,7 +2861,7 @@ export const ta = {
 
   // Added user reported missing translations
   "common.today": "இன்று",
-  "common.customRange": "தனிப்பயன் வரம்பு",
+  "common.customRange": "தனிப்பன்",
   "common.7Days": "7 நாட்கள்",
   "common.30Days": "30 நாட்கள்",
   "common.other": "மற்றவை",

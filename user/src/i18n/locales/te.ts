@@ -2318,6 +2318,7 @@ export const te = {
 
   // --- CRITICAL 5-LANGUAGE AI & SCREEN COMPLETIONS ---
   "common.default": "డిఫాల్ట్",
+  "modeSwitcher.switchedFocus": "క్రియాశీల దృష్టి మారింది",
   "common.stopAudio": "ఆడియోను ఆపండి",
   "common.listenAudio": "వినండి",
   "profile.tapToSetDefault": "డిఫాల్ట్‌గా సెట్ చేయడానికి నొక్కండి",
@@ -2860,7 +2861,7 @@ export const te = {
 
   // Added user reported missing translations
   "common.today": "ఈ రోజు",
-  "common.customRange": "అనుకూల శ్రేణి",
+  "common.customRange": "అనుకూల",
   "common.7Days": "7 రోజులు",
   "common.30Days": "30 రోజులు",
   "common.other": "ఇతర",
