@@ -125,17 +125,31 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
     damageHighlights: string[];
     repairHighlights: string[];
     priorityActionHints: string[];
+    tipsToReduceDamage?: { title: string; desc: string; category: string }[];
   }>({
     damageScore: 0,
     repairScore: 0,
     netBalance: 0,
     damageHighlights: [],
     repairHighlights: [],
-    priorityActionHints: []
+    priorityActionHints: [],
+    tipsToReduceDamage: []
   });
 
   const sessionAnswersRef = useRef(sessionAnswers);
   useEffect(() => { sessionAnswersRef.current = sessionAnswers; }, [sessionAnswers]);
+
+  
+  const handleModalClose = () => {
+    stopListening();
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    if (onRefreshDashboard) {
+      onRefreshDashboard();
+    }
+    onClose();
+  };
 
   const computeSessionScoreSummary = (answers: Record<string, string>) => {
     let damageCount = 0;
@@ -340,13 +354,80 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       finalPriorityHints.push('Keep boosting your repair defense with 14-hour intermittent fasting and exercise.');
     }
 
+    const tipsToReduceDamage: { title: string; desc: string; category: string }[] = [];
+
+    const substancesAnswer = getAnswer(["substances", "genetics_substances", "environmental", "env_air", "env_pesticides", "env_microplastics", "env_water"]).toLowerCase();
+    if (substancesAnswer && (substancesAnswer.includes("yes") || substancesAnswer.includes("exposed") || substancesAnswer.includes("chemical") || substancesAnswer.includes("plastic") || substancesAnswer.includes("smog") || substancesAnswer.includes("tap"))) {
+      tipsToReduceDamage.push({
+        title: "Environmental & Chemical Detox",
+        desc: "Drink double-filtered water (RO + Activated Carbon) and ensure adequate ventilation to assist liver and cellular clearance.",
+        category: "damage"
+      });
+    } else {
+      tipsToReduceDamage.push({
+        title: "Clean Day Environmental Shield",
+        desc: "Continue protecting your cellular terrain by avoiding synthetic fragrances, industrial solvents, and pesticide residues.",
+        category: "repair"
+      });
+    }
+
+    const stressAnswer = getAnswer(["stress", "caregiver_stress"]).toLowerCase();
+    if (stressAnswer && (stressAnswer.includes("high") || stressAnswer.includes("strain") || stressAnswer.includes("severe") || stressAnswer.includes("drained") || stressAnswer.includes("tense") || stressAnswer.includes("stress"))) {
+      tipsToReduceDamage.push({
+        title: "Vagus Nerve Reset (Lower Cortisol)",
+        desc: "Practice 5 minutes of 4-7-8 diaphragmatic breathing before bed to neutralize stress hormones and prevent oxidative cellular damage.",
+        category: "damage"
+      });
+    }
+
+    const sleepAnswer = getAnswer(["sleep"]).toLowerCase();
+    const sleepNum = parseFloat(sleepAnswer);
+    if (!isNaN(sleepNum) && sleepNum < 7) {
+      tipsToReduceDamage.push({
+        title: "Circadian Sleep Optimization",
+        desc: "Target a full 7-8 hour sleep window tonight in a cool, dark room. Deep delta sleep is the body’s primary DNA repair and autophagy phase.",
+        category: "damage"
+      });
+    } else if (!isNaN(sleepNum) && sleepNum >= 7) {
+      tipsToReduceDamage.push({
+        title: "Restorative Sleep Architecture",
+        desc: "Keep a consistent bedtime routine without blue light 1 hour before bed to sustain natural killer (NK) cell immune surveillance.",
+        category: "repair"
+      });
+    }
+
+    const fastingAnswer = getAnswer(["fasting", "fasting_hours"]).toLowerCase();
+    if (fastingAnswer && (fastingAnswer.includes("yes") || fastingAnswer.includes("14") || fastingAnswer.includes("16") || fastingAnswer.includes("completed"))) {
+      tipsToReduceDamage.push({
+        title: "Sustain Autophagy Window",
+        desc: "Break your fast with nutrient-dense whole foods, healthy fats (olive oil, avocados), and polyphenols to sustain cellular repair.",
+        category: "repair"
+      });
+    } else {
+      tipsToReduceDamage.push({
+        title: "Cellular Autophagy Activation",
+        desc: "Aim for an overnight 12 to 14-hour fasting window tomorrow to trigger cellular autophagy and mitochondrial renewal.",
+        category: "repair"
+      });
+    }
+
+    const kitchenAnswer = getAnswer(["kitchen", "kitchen_audit", "env_kitchen"]).toLowerCase();
+    if (kitchenAnswer && (kitchenAnswer.includes("plastic") || kitchenAnswer.includes("teflon") || kitchenAnswer.includes("non-stick") || kitchenAnswer.includes("risk"))) {
+      tipsToReduceDamage.push({
+        title: "Microplastic & Cookware Detox",
+        desc: "Switch to glass or stainless steel food containers and avoid non-stick cookware to minimize synthetic plasticizer exposure.",
+        category: "damage"
+      });
+    }
+
     return {
       damageScore: damageCount,
       repairScore: repairCount,
       netBalance: repairCount - damageCount,
       damageHighlights,
       repairHighlights,
-      priorityActionHints: finalPriorityHints.slice(0, 2)
+      priorityActionHints: finalPriorityHints.slice(0, 2),
+      tipsToReduceDamage: tipsToReduceDamage.slice(0, 3)
     };
   };
 
@@ -1589,10 +1670,15 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
         }
       } else if (stepId === 'genetics') {
         habitType = 'Genetic';
-        habitValue = { geneticLink: isYes, option: valueStr };
+        const hasGeneticLink = (lowerVal.includes('yes') || lowerVal.includes('family') || lowerVal.includes('relative')) && !lowerVal.includes('no family') && !lowerVal.includes('none') && !lowerVal.includes('no (no');
+        habitValue = { geneticLink: hasGeneticLink, option: valueStr };
       } else if (stepId === 'substances') {
         habitType = 'Substances';
-        habitValue = { used: isYes, option: valueStr };
+        const isClean = lowerVal.includes('clean') || lowerVal.includes('no') || lowerVal.includes('none') || lowerVal.includes('zero') || lowerVal.includes('avoid');
+        habitValue = { used: !isClean, option: valueStr };
+      } else if (stepId === 'report_upload') {
+        habitType = 'ReportUpload';
+        habitValue = { uploaded: true, option: valueStr };
       } else if (stepId === 'genetics_substances') {
         habitType = 'Genetic';
         habitValue = { geneticLink: lowerVal.includes('family') || lowerVal.includes('both'), option: valueStr };
@@ -2126,7 +2212,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                   )}
                 </button>
 
-                <button onClick={onClose} className="h-8 w-8 rounded-full bg-white/15 hover:bg-white/25 border border-white/20 flex items-center justify-center transition-all cursor-pointer shrink-0" aria-label={t('common.close')}>
+                <button onClick={handleModalClose} className="h-8 w-8 rounded-full bg-white/15 hover:bg-white/25 border border-white/20 flex items-center justify-center transition-all cursor-pointer shrink-0" aria-label={t('common.close')}>
                   <X className="h-4 w-4 text-white" />
                 </button>
               </div>
@@ -2449,54 +2535,71 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                       {t('chatModal.logsUpdatedDesc', 'Your circadian fasting, cellular repair, and risk prevention logs are updated on your dashboard.')}
                     </p>
 
-                    {/* Live Scorecard Metrics */}
-                    <div className="grid grid-cols-2 gap-2.5 my-4 text-left">
-                      <div className="bg-rose-50/50 dark:bg-rose-950/20 p-3 rounded-2xl border border-rose-200/60 dark:border-rose-900/40">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-rose-600 dark:text-rose-400">{t('chatModal.damageLoad', 'Damage Load')}</span>
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400">{t('chatModal.reduce', 'Reduce')}</span>
-                        </div>
-                        <span className="text-xl sm:text-2xl font-black text-rose-600 dark:text-rose-400">
-                          -{sessionSummary.damageScore}
-                        </span>
+                    {/* All Logged In Status Banner */}
+                    <div className="my-4 p-3.5 bg-emerald-50/90 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 rounded-2xl text-left flex items-start gap-3">
+                      <div className="h-9 w-9 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 border border-emerald-500/20">
+                        <CheckCircle2 className="h-5 w-5" />
                       </div>
-                      <div className="bg-emerald-50/50 dark:bg-emerald-950/20 p-3 rounded-2xl border border-emerald-200/60 dark:border-emerald-900/40">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">{t('chatModal.repairDefense', 'Repair Defense')}</span>
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400">{t('chatModal.build', 'Build')}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="text-xs font-black text-emerald-950 dark:text-emerald-100">
+                            {t('chatModal.allCheckinsLogged', 'All Daily Check-ins Logged')}
+                          </span>
+                          <span className="text-[9.5px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-200/70 dark:bg-emerald-800/70 text-emerald-800 dark:text-emerald-200 uppercase tracking-wider">
+                            {t('chatModal.syncedStatus', 'Synced')}
+                          </span>
                         </div>
-                        <span className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400">
-                          +{sessionSummary.repairScore}
-                        </span>
+                        <p className="text-[11px] text-emerald-700/90 dark:text-emerald-300/80 mt-0.5 leading-snug">
+                          {t('chatModal.allCheckinsSyncedDesc', 'All responses are logged and calculated in your Cellular Dashboard.')}
+                        </p>
                       </div>
                     </div>
 
-                    {/* Priority Action Hints for Tomorrow */}
-                    <div className="bg-slate-50 dark:bg-slate-950/60 rounded-2xl p-3.5 border border-slate-200/70 dark:border-slate-800 text-left mb-4">
-                      <span className="text-[10.5px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider block mb-2">
-                        {t('chatModal.priorityActionPlanTomorrow', 'Priority Action Plan for Tomorrow:')}
-                      </span>
-                      <div className="space-y-2 text-xs">
-                        <div className="flex items-start gap-2.5 bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-800 text-slate-800 dark:text-slate-200">
-                          <span className="h-5 w-5 rounded-md bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 font-black flex items-center justify-center text-[10px] shrink-0">1</span>
-                          <div>
-                            <strong className="block text-[11px] font-bold text-slate-900 dark:text-slate-100">{t('chatModal.reduceDamage', 'Reduce Damage')}</strong>
-                            <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed mt-0.5">{sessionSummary.priorityActionHints[0] || t('chatModal.fallbackDamageHint', 'Avoid evening stress, limit junk food, and get 7+ hours of sleep.')}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-2.5 bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-800 text-slate-800 dark:text-slate-200">
-                          <span className="h-5 w-5 rounded-md bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 font-black flex items-center justify-center text-[10px] shrink-0">2</span>
-                          <div>
-                            <strong className="block text-[11px] font-bold text-slate-900 dark:text-slate-100">{t('chatModal.boostRepair', 'Boost Repair')}</strong>
-                            <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed mt-0.5">{sessionSummary.priorityActionHints[1] || t('chatModal.fallbackRepairHint', 'Target a 14-hour intermittent fast and 20 minutes of aerobic exercise.')}</p>
-                          </div>
-                        </div>
+                    {/* Tips to Reduce Damage Section */}
+                    <div className="bg-slate-50/90 dark:bg-slate-950/60 rounded-2xl p-4 border border-slate-200/70 dark:border-slate-800 text-left mb-4">
+                      <div className="flex items-center gap-1.5 mb-3">
+                        <Sparkles className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                        <span className="text-[11px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+                          {t('chatModal.tipsToReduceDamage', 'Tips to Reduce Damage Based on Your Logs')}
+                        </span>
+                      </div>
+                      <div className="space-y-2.5 text-xs">
+                        {sessionSummary.tipsToReduceDamage && sessionSummary.tipsToReduceDamage.length > 0 ? (
+                          sessionSummary.tipsToReduceDamage.map((item, idx) => (
+                            <div key={idx} className="flex items-start gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200/60 dark:border-slate-800 text-slate-800 dark:text-slate-200">
+                              <span className={`h-5 w-5 rounded-md ${item.category === 'damage' ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400' : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400'} font-black flex items-center justify-center text-[10px] shrink-0 mt-0.5`}>
+                                {idx + 1}
+                              </span>
+                              <div>
+                                <strong className="block text-[11.5px] font-bold text-slate-900 dark:text-slate-100">{item.title}</strong>
+                                <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed mt-0.5">{item.desc}</p>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <>
+                            <div className="flex items-start gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200/60 dark:border-slate-800 text-slate-800 dark:text-slate-200">
+                              <span className="h-5 w-5 rounded-md bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 font-black flex items-center justify-center text-[10px] shrink-0 mt-0.5">1</span>
+                              <div>
+                                <strong className="block text-[11.5px] font-bold text-slate-900 dark:text-slate-100">{t('chatModal.reduceDamage', 'Reduce Damage')}</strong>
+                                <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed mt-0.5">{sessionSummary.priorityActionHints[0] || t('chatModal.fallbackDamageHint', 'Avoid environmental toxins, eliminate plastic food storage, and ensure restful sleep.')}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200/60 dark:border-slate-800 text-slate-800 dark:text-slate-200">
+                              <span className="h-5 w-5 rounded-md bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 font-black flex items-center justify-center text-[10px] shrink-0 mt-0.5">2</span>
+                              <div>
+                                <strong className="block text-[11.5px] font-bold text-slate-900 dark:text-slate-100">{t('chatModal.boostRepair', 'Boost Repair')}</strong>
+                                <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed mt-0.5">{sessionSummary.priorityActionHints[1] || t('chatModal.fallbackRepairHint', 'Maintain 14-hour intermittent fasting and 20 minutes of daily aerobic movement.')}</p>
+                              </div>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
 
                     <button
-                      onClick={onClose}
-                      className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs sm:text-sm rounded-xl shadow-xs transition-all active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
+                      onClick={handleModalClose}
+                      className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs sm:text-sm rounded-2xl shadow-md transition-all active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
                     >
                       <span>{t('viewCellularDashboardTitle')}</span>
                       <ArrowRight className="h-4 w-4" />
@@ -2644,7 +2747,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                 </div>
               </div>
               <button
-                onClick={onClose}
+                onClick={handleModalClose}
                 className="bg-gradient-to-br from-emerald-600 to-teal-600 hover:opacity-90 text-white font-extrabold text-xs px-6 py-3 rounded-2xl shadow-md transition-all cursor-pointer active:scale-95"
               >
                 {t('common.done', 'Done')}

@@ -2314,7 +2314,7 @@ export const kn = {
   "whatsNew.chooseLanguageSubtitle": "ನಿಮ್ಮ ಸ್ಥಳೀಯ ಭಾಷೆಯಲ್ಲಿ ಸಂಪೂರ್ಣ ಅಪ್ಲಿಕೇಶನ್ ಅನುಭವಿಸಿ. ಹೆಡರ್ ಅಥವಾ ಪ್ರೊಫೈಲ್‌ನಿಂದ ಯಾವಾಗ ಬೇಕಾದರೂ ಬದಲಾಯಿಸಿ:",
   "whatsNew.multilingual.title": "ಪ್ರಾದೇಶಿಕ ಬಹುಭಾಷಾ ಬೆಂಬಲ",
   "whatsNew.multilingual.desc": "English, தமிழ், తెలుగు, ಕನ್ನಡ ಮತ್ತು हिन्दी ಯಲ್ಲಿ ಸಂಪೂರ್ಣ ಅನುವಾದ ಮತ್ತು ತ್ವರಿತ ಬದಲಾವಣೆ.",
-  "whatsNew.openWhatsNew": "ಆವೃತ್ತಿ 5.11.0 ರ ಹೊಸ ವೈಶಿಷ್ಟ್ಯಗಳು",
+  "whatsNew.openWhatsNew": "ಆವೃತ್ತಿ 5.12.0 ರ ಹೊಸ ವೈಶಿಷ್ಟ್ಯಗಳು",
 
   // --- CRITICAL 5-LANGUAGE AI & SCREEN COMPLETIONS ---
   "common.default": "ಡೀಫಾಲ್ಟ್",
@@ -2407,6 +2407,10 @@ export const kn = {
   "chatModal.dailyHealthSummary": "ದೈನಂದಿನ ಆರೋಗ್ಯ ಸಾರಾಂಶ",
   "chatModal.checkinLoggedSuccess": "ಚೆಕ್-ಇನ್ ಯಶಸ್ವಿಯಾಗಿ ದಾಖಲಾಗಿದೆ",
   "chatModal.checkinLoggedDesc": "ನಿಮ್ಮ ಉಪವಾಸ, ಕೋಶೀಯ ದುರಸ್ತಿ ಮತ್ತು ತಡೆಗಟ್ಟುವಿಕೆಯ ವಿವರಗಳನ್ನು ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ನಲ್ಲಿ ನವೀಕರಿಸಲಾಗಿದೆ.",
+  "chatModal.allCheckinsLogged": "ಎಲ್ಲಾ ದೈನಂದಿನ ಚೆಕ್-ಇನ್‌ಗಳು ದಾಖಲಾಗಿವೆ",
+  "chatModal.syncedStatus": "ಸಿಂಕ್ ಆಗಿದೆ",
+  "chatModal.allCheckinsSyncedDesc": "ಎಲ್ಲಾ ಪ್ರತಿಕ್ರಿಯೆಗಳನ್ನು ನಿಮ್ಮ ಸೆಲ್ಯುಲಾರ್ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ನಲ್ಲಿ ದಾಖಲಿಸಲಾಗಿದೆ ಮತ್ತು ಲೆಕ್ಕಹಾಕಲಾಗಿದೆ.",
+  "chatModal.tipsToReduceDamage": "ನಿಮ್ಮ ದಾಖಲೆಗಳ ಆಧಾರದ ಮೇಲೆ ಹಾನಿಯನ್ನು ಕಡಿಮೆ ಮಾಡುವ ಸಲಹೆಗಳು",
   "chatModal.priorityActionPlanTomorrow": "ನಾಳೆಯ ಆದ್ಯತೆಯ ಕ್ರಿಯಾ ಯೋಜನೆ:",
   "chatModal.dailyCheckinReminder": "ದೈನಂದಿನ AI ಜ್ಞಾಪನೆ",
   "chatModal.selectReminderTime": "ಜ್ಞಾಪನೆಯ ಸಮಯವನ್ನು ಆರಿಸಿ ಅಥವಾ ಎಚ್ಚರಿಕೆಗಳನ್ನು ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಿ:",

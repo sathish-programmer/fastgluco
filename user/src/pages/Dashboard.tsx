@@ -626,16 +626,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
 
           const checkStepCompleted = (stepId: string): boolean => {
             const s = (stepId || '').toLowerCase();
+            if (todayLogs.some((h: any) => (h.value?.stepId && h.value.stepId.toLowerCase() === s) || (h.type && h.type.toLowerCase() === s))) {
+              return true;
+            }
             if (s === 'stress' || s === 'caregiver_stress') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'STRESS');
             if (s === 'sleep') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'SLEEP');
             if (s === 'fasting') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'FASTING');
             if (s === 'movement') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'MOVEMENT');
             if (s === 'stillness') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'STILLNESS');
             if (s === 'joy') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'JOY');
-            if (s === 'smoking') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'SMOKING');
-            if (s === 'alcohol') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'ALCOHOL');
-            if (s === 'antioxidants') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'ANTIOXIDANTS');
-            if (s === 'report_upload' || s.includes('report')) return reportsLoggedToday || todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('REPORT'));
+            if (s === 'joy_stillness') return todayLogs.some((h: any) => ['JOY', 'STILLNESS'].includes((h.type || '').toUpperCase()));
+            if (s === 'smoking') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('SMOKING'));
+            if (s === 'alcohol') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('ALCOHOL'));
+            if (s === 'substances') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('SUBSTANCE'));
+            if (s === 'antioxidants') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('ANTIOXIDANT') || (h.type || '').toUpperCase() === 'REPAIR_HABIT');
+            if (s === 'kitchen' || s === 'env_kitchen') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('KITCHEN') || envAnswers.kitchenQ1 !== undefined);
+            if (s === 'gut_health') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('GASTRIC') || (h.type || '').toUpperCase().includes('DENTAL'));
+            if (s === 'genetics' || s === 'genetics_substances') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('GENETIC'));
+            if (s === 'damage_habits') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('DAMAGE'));
+            if (s === 'repair_habits') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('REPAIR'));
+            if (s === 'screening') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('SCREEN'));
+            if (s === 'report_upload' || s.includes('report')) return reportsLoggedToday || todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('REPORT') || h.value?.stepId === 'report_upload');
             if (s === 'env_air') return (envAnswers.airQ1 !== undefined && envAnswers.airQ1 !== null) || (envAnswers.airQ2 !== undefined && envAnswers.airQ2 !== null) || (envAnswers.airQ3 !== undefined && envAnswers.airQ3 !== null);
             if (s === 'env_water') return envAnswers.waterQ1 !== undefined && envAnswers.waterQ1 !== null;
             if (s === 'env_pesticides') return envAnswers.pesticidesQ1 !== undefined && envAnswers.pesticidesQ1 !== null;

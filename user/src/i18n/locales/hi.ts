@@ -2314,7 +2314,7 @@ export const hi = {
   "whatsNew.chooseLanguageSubtitle": "अपनी मातृभाषा में संपूर्ण ऐप का अनुभव करें। हेडर या प्रोफ़ाइल से कभी भी बदलें:",
   "whatsNew.multilingual.title": "क्षेत्रीय बहुभाषी समर्थन",
   "whatsNew.multilingual.desc": "अंग्रेजी, தமிழ், తెలుగు, ಕನ್ನಡ और हिन्दी में व्यापक अनुवाद तुरंत बदलने की सुविधा के साथ।",
-  "whatsNew.openWhatsNew": "संस्करण 5.11.0 में नया क्या है",
+  "whatsNew.openWhatsNew": "संस्करण 5.12.0 में नया क्या है",
 
   // --- CRITICAL 5-LANGUAGE AI & SCREEN COMPLETIONS ---
   "common.default": "डिफ़ॉल्ट",
@@ -2408,6 +2408,10 @@ export const hi = {
   "chatModal.dailyHealthSummary": "दैनिक स्वास्थ्य सारांश",
   "chatModal.checkinLoggedSuccess": "चेक-इन सफलतापूर्वक दर्ज किया गया",
   "chatModal.checkinLoggedDesc": "आपका उपवास, कोशिकीय मरम्मत और सुरक्षा रिकॉर्ड डैशबोर्ड पर अपडेट कर दिए गए हैं।",
+  "chatModal.allCheckinsLogged": "सभी दैनिक चेक-इन दर्ज कर लिए गए हैं",
+  "chatModal.syncedStatus": "सिंक हो गया",
+  "chatModal.allCheckinsSyncedDesc": "सभी उत्तर आपके सेलुलर डैशबोर्ड में दर्ज और गणना किए गए हैं।",
+  "chatModal.tipsToReduceDamage": "आपके लॉग के आधार पर सेलुलर क्षति को कम करने के सुझाव",
   "chatModal.priorityActionPlanTomorrow": "कल के लिए प्राथमिकता कार्य योजना:",
   "chatModal.dailyCheckinReminder": "दैनिक AI रिमाइंडर",
   "chatModal.selectReminderTime": "रिमाइंडर का समय चुनें या अलर्ट पूरी तरह से बंद करें:",

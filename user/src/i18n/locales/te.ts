@@ -2314,7 +2314,7 @@ export const te = {
   "whatsNew.chooseLanguageSubtitle": "మీ స్థానిక భాషలో మొత్తం యాప్‌ను అనుభవించండి. ఎగువ హెడర్ లేదా ప్రొఫైల్ నుండి ఎప్పుడైనా మారండి:",
   "whatsNew.multilingual.title": "ప్రాంతీయ బహుభాషా మద్దతు",
   "whatsNew.multilingual.desc": "English, தமிழ், తెలుగు, ಕನ್ನಡ మరియు हिन्दी లలో సంపూర్ణ అనువాదం మరియు తక్షణ మార్పిడి.",
-  "whatsNew.openWhatsNew": "v5.11.0 లో కొత్త ఫీచర్లు",
+  "whatsNew.openWhatsNew": "v5.12.0 లో కొత్త ఫీచర్లు",
 
   // --- CRITICAL 5-LANGUAGE AI & SCREEN COMPLETIONS ---
   "common.default": "డిఫాల్ట్",
@@ -2408,6 +2408,10 @@ export const te = {
   "chatModal.dailyHealthSummary": "రోజువారీ ఆరోగ్య సారాంశం",
   "chatModal.checkinLoggedSuccess": "చెకిన్ విజయవంతంగా నమోదు చేయబడింది",
   "chatModal.checkinLoggedDesc": "మీ ఉపవాసం, సెల్యులార్ రిపేర్ మరియు రక్షణ లాగ్‌లు డాష్‌బోర్డ్‌లో అప్‌డేట్ చేయబడ్డాయి.",
+  "chatModal.allCheckinsLogged": "అన్ని రోజువారీ చెక్-ఇన్‌లు నమోదు చేయబడ్డాయి",
+  "chatModal.syncedStatus": "సమకాలీకరించబడింది",
+  "chatModal.allCheckinsSyncedDesc": "అన్ని ప్రతిస్పందనలు మీ సెల్యులార్ డాష్‌బోర్డ్‌లో నమోదు చేయబడి లెక్కించబడ్డాయి.",
+  "chatModal.tipsToReduceDamage": "మీ లాగ్‌ల ఆధారంగా నష్టాన్ని తగ్గించే చిట్కాలు",
   "chatModal.priorityActionPlanTomorrow": "రేపటి ప్రాధాన్యతా కార్యాచరణ ప్రణాళిక:",
   "chatModal.dailyCheckinReminder": "రోజువారీ AI రిమైండర్",
   "chatModal.selectReminderTime": "రిమైండర్ సమయాన్ని ఎంచుకోండి లేదా అలర్ట్‌లను పూర్తిగా ఆపివేయండి:",

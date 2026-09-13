@@ -221,6 +221,9 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
 
       const checkStepCompleted = (stepId: string): boolean => {
         const s = (stepId || '').toLowerCase();
+        if (todayLogs.some((h: any) => (h.value?.stepId && h.value.stepId.toLowerCase() === s) || (h.type && h.type.toLowerCase() === s))) {
+          return true;
+        }
         if (s === 'stress' || s === 'caregiver_stress') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'STRESS');
         if (s === 'sleep') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'SLEEP');
         if (s === 'fasting') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'FASTING');
@@ -228,10 +231,18 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
         if (s === 'stillness') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'STILLNESS');
         if (s === 'breath' || s === 'power_of_breath' || s === 'breathwork') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'BREATH');
         if (s === 'joy') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'JOY');
-        if (s === 'smoking') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'SMOKING');
-        if (s === 'alcohol') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'ALCOHOL');
-        if (s === 'antioxidants') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'ANTIOXIDANTS');
-        if (s === 'report_upload' || s.includes('report')) return reportsLoggedToday || todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('REPORT'));
+        if (s === 'joy_stillness') return todayLogs.some((h: any) => ['JOY', 'STILLNESS'].includes((h.type || '').toUpperCase()));
+        if (s === 'smoking') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('SMOKING'));
+        if (s === 'alcohol') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('ALCOHOL'));
+        if (s === 'substances') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('SUBSTANCE'));
+        if (s === 'antioxidants') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('ANTIOXIDANT') || (h.type || '').toUpperCase() === 'REPAIR_HABIT');
+        if (s === 'kitchen' || s === 'env_kitchen') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('KITCHEN') || envAnswers.kitchenQ1 !== undefined);
+        if (s === 'gut_health') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('GASTRIC') || (h.type || '').toUpperCase().includes('DENTAL'));
+        if (s === 'genetics' || s === 'genetics_substances') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('GENETIC'));
+        if (s === 'damage_habits') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('DAMAGE'));
+        if (s === 'repair_habits') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('REPAIR'));
+        if (s === 'screening') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('SCREEN'));
+        if (s === 'report_upload' || s.includes('report')) return reportsLoggedToday || todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('REPORT') || h.value?.stepId === 'report_upload');
         if (s === 'env_air') return (envAnswers.airQ1 !== undefined && envAnswers.airQ1 !== null) || (envAnswers.airQ2 !== undefined && envAnswers.airQ2 !== null) || (envAnswers.airQ3 !== undefined && envAnswers.airQ3 !== null);
         if (s === 'env_water') return envAnswers.waterQ1 !== undefined && envAnswers.waterQ1 !== null;
         if (s === 'env_pesticides') return envAnswers.pesticidesQ1 !== undefined && envAnswers.pesticidesQ1 !== null;
@@ -474,6 +485,39 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
       subtitle = optStr || (val?.count > 0 ? t('dashboard.unitsLogged', { count: val.count }, `${val.count} Units Logged`) : t('dashboard.exposureCheckin', 'Exposure Check-in'));
       isRepair = val === 0 || val?.count === 0;
       category = typeUpper.includes('SMOKING') ? 'smoking' : 'alcohol';
+    } else if (typeUpper.includes('SUBSTANCES')) {
+      title = t('dashboard.substancesTitle', 'Chemical & Industrial Substances');
+      const isClean = val === 0 || val?.used === false || optStr.includes('clean') || optStr.includes('no');
+      subtitle = optStr || (isClean ? t('dashboard.cleanExposure', 'No Industrial / Chemical Exposure') : t('dashboard.chemicalExposureFlagged', 'Toxic Chemical Exposure Flagged'));
+      isRepair = isClean;
+      category = 'environment';
+    } else if (typeUpper.includes('DENTAL')) {
+      title = t('dashboard.oralHealthCheck', 'Oral & Dental Health Check');
+      const isClean = val?.sharpTooth !== true && val?.tobacco !== true && !optStr.includes('sharp');
+      subtitle = optStr || (isClean ? t('dashboard.healthyOral', 'Normal Oral Hygiene') : t('dashboard.dentalRiskFlagged', 'Dental / Oral Risk Flagged'));
+      isRepair = isClean;
+      category = 'dental';
+    } else if (typeUpper.includes('GASTRITIS')) {
+      title = t('dashboard.gastritisTitle', 'Gastric Acidity & Gut Check');
+      const isClean = val?.gastritis !== true && !optStr.includes('gastritis') && !optStr.includes('acidity');
+      subtitle = optStr || (isClean ? t('dashboard.cleanGut', 'No Severe Acid Reflux') : t('dashboard.gastritisFlagged', 'Gastric Acidity Flagged'));
+      isRepair = isClean;
+      category = 'gut';
+    } else if (typeUpper.includes('INTIMACY')) {
+      title = t('dashboard.intimacyTitle', 'Intimacy & Hormonal Wellness');
+      isRepair = val?.happy !== false;
+      subtitle = optStr || (isRepair ? t('dashboard.normalIntimacy', 'Healthy Intimacy') : t('dashboard.intimacyFlagged', 'Concern Flagged'));
+      category = 'intimacy';
+    } else if (typeUpper.includes('CANCER') || typeUpper.includes('SCREENING')) {
+      title = t('dashboard.cancerScreeningTitle', 'Cancer Screening Check');
+      isRepair = true;
+      subtitle = optStr || t('dashboard.screeningCheckin', 'Screening Protocol Updated');
+      category = 'screening';
+    } else if (typeUpper.includes('REPORT')) {
+      title = t('dashboard.labReportTitle', 'Lab / CGM Report Upload');
+      isRepair = true;
+      subtitle = optStr || t('dashboard.reportUploaded', 'Report Synced with AI Analysis');
+      category = 'report';
     } else {
       isRepair = ['ANTIOXIDANTS', 'MEAL', 'NUTRITION', 'REPAIR'].some(k => typeUpper.includes(k));
       category = 'default';
@@ -844,7 +888,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
       if (typeUpper.includes('STRESS') && (optStr.includes('tense') || optStr.includes('high') || optStr.includes('stressed') || optStr.includes('maxed') || val === 3 || val?.faceId === 'tense' || val?.faceId === 'stressed' || val?.faceId === 'maxed')) count += 1;
       if (typeUpper.includes('SLEEP') && ((typeof val === 'number' && val < 6) || val?.hours < 6 || val?.quality === 'poor' || optStr.includes('poor'))) count += 1;
       if ((typeUpper.includes('SMOKING') || typeUpper.includes('ALCOHOL')) && ((typeof val === 'number' && val > 0) || val?.count > 0 || val?.chewingCount > 0 || val?.drinks > 0 || optStr.includes('smoke') || optStr.includes('chew') || optStr.includes('tobacco') || optStr.includes('gutkha') || optStr.includes('khaini') || optStr.includes('drink') || optStr.includes('both'))) count += 1;
-      if (typeUpper.includes('SUBSTANCES') && (val === 1 || val?.used === true || optStr.includes('exposure'))) count += 1;
+      if (typeUpper.includes('SUBSTANCES') && (val === 1 || val?.used === true || optStr.includes('exposure') || optStr.includes('exposed'))) count += 1;
       if (typeUpper.includes('INTIMACY') && (val?.happy === false)) count += 1;
       if (typeUpper.includes('DENTAL') && (val?.sharpTooth === true || val?.tobacco === true || val?.illFittingDenture === true || optStr.includes('discomfort'))) count += 1;
       if (typeUpper.includes('GASTRITIS') && (val?.gastritis === true || optStr.includes('gastritis') || optStr.includes('acidity'))) count += 1;
@@ -862,7 +906,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
 
   const calculateRepairCount = () => {
     let count = 0;
-    const categories = ['STRESS', 'SLEEP', 'SMOKING', 'ALCOHOL', 'SUBSTANCES', 'FASTING', 'ANTIOXIDANTS', 'MOVEMENT', 'STILLNESS', 'BREATH', 'JOY', 'SAFERPRODUCTS', 'CANCERSCREENING', 'INTIMACY', 'ENVIRONMENT', 'KITCHEN'];
+    const categories = ['STRESS', 'SLEEP', 'SMOKING', 'ALCOHOL', 'SUBSTANCES', 'FASTING', 'ANTIOXIDANTS', 'MOVEMENT', 'STILLNESS', 'BREATH', 'JOY', 'SAFERPRODUCTS', 'CANCERSCREENING', 'INTIMACY', 'ENVIRONMENT', 'KITCHEN', 'GENETIC'];
     categories.forEach(cat => {
       const latest = getLatestLogForTypes(cat);
       if (!latest) return;
@@ -873,8 +917,9 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
       if (typeUpper.includes('STRESS') && (optStr.includes('calm') || optStr.includes('steady') || optStr.includes('no stress') || val === 1 || val?.faceId === 'calm')) count += 1;
       if (typeUpper.includes('SLEEP') && ((typeof val === 'number' && val >= 6) || (val?.hours >= 6 && val?.quality !== 'poor'))) count += 1;
       if ((typeUpper.includes('SMOKING') || typeUpper.includes('ALCOHOL')) && ((typeof val === 'number' && val === 0) || ((val?.count === 0 || val?.count === undefined) && (val?.chewingCount === 0 || val?.chewingCount === undefined)) || val?.drinks === 0 || optStr.includes('clean') || optStr.includes('no alcohol') || optStr.includes('no (clean'))) count += 1;
-      if (typeUpper.includes('SUBSTANCES') && (val === 0 || val?.used === false || optStr.includes('clean'))) count += 1;
-      if (typeUpper.includes('FASTING') && (val === 1 || val?.hours >= 12 || typeof val === 'object' || optStr.includes('yes') || optStr.includes('16') || optStr.includes('12'))) count += 1;
+      if (typeUpper.includes('SUBSTANCES') && (val === 0 || val?.used === false || optStr.includes('clean') || optStr.includes('no'))) count += 1;
+      if (typeUpper.includes('FASTING') && (val === 1 || (val?.hours && val.hours >= 12) || val?.completed === true || optStr.includes('yes') || optStr.includes('16') || optStr.includes('12') || (val?.started && val?.ended))) count += 1;
+      if (typeUpper.includes('GENETIC') && (val === 0 || val?.geneticLink === false || optStr.includes('no family') || optStr.includes('none') || optStr.includes('clean'))) count += 1;
       if (typeUpper.includes('ANTIOXIDANTS') && (val === 1 || val?.consumed === true || optStr.includes('yes') || optStr.includes('consumed'))) count += 1;
       if (typeUpper.includes('MOVEMENT') && (val === 1 || val?.minutes >= 20 || typeof val === 'number' || optStr.includes('walk') || optStr.includes('run') || optStr.includes('30+') || optStr.includes('yoga'))) count += 1;
       if (typeUpper.includes('STILLNESS') && (val === 1 || val?.sat === true || optStr.includes('yes') || optStr.includes('practiced'))) count += 1;

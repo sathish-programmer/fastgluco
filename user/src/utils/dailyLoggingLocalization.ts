@@ -921,39 +921,39 @@ export const localizeClarification = (
 // 7. COMPLETION VOICE & CARD TEXT IN ALL 5 LANGUAGES
 // ─────────────────────────────────────────────────────────────────────────────
 export const getLocalizedFinishContent = (
-  summary: { damageScore: number; repairScore: number; priorityActionHints: string[] },
-  lang: SupportedLanguage = 'en'
+  summary: { damageScore?: number; repairScore?: number; priorityActionHints: string[] },
+  lang: SupportedLanguage = "en"
 ): { voice: string; card: string } => {
   const h1 = summary.priorityActionHints[0];
   const h2 = summary.priorityActionHints[1];
 
-  if (lang === 'ta') {
+  if (lang === "ta") {
     return {
-      voice: `அனைத்து தினசரி சரிபார்ப்புகளும் முடிவடைந்தன. இன்று உங்கள் சேத மதிப்பீடு ${summary.damageScore}, மற்றும் பழுதுபார்ப்பு மதிப்பீடு ${summary.repairScore}.`,
-      card: `தினசரி சரிபார்ப்பு முடிந்தது\n\nசேத சுமை: -${summary.damageScore}\nபழுதுபார்ப்பு பாதுகாப்பு: +${summary.repairScore}\n\nநாளைய முன்னுரிமை நடவடிக்கைகள்:\n1. ${h1 || 'மன அழுத்தத்தைக் குறைத்து இரவு உணவை முன்கூட்டியே முடிக்கவும்'}\n2. ${h2 || '14 மணி நேர உண்ணாநோன்பு மற்றும் 20 நிமிடம் உடற்பயிற்சி'}`
+      voice: "அனைத்து தினசரி சரிபார்ப்புகளும் வெற்றிகரமாகப் பதிவு செய்யப்பட்டன. உங்கள் தரவு ஒத்திசைக்கப்பட்டுள்ளது.",
+      card: "அனைத்து தினசரி சரிபார்ப்புகளும் முடிவடைந்தன!\n\nசேதத்தைக் குறைப்பதற்கான முன்னுரிமை நடவடிக்கைகள்:\n1. " + (h1 || "மன அழுத்தத்தைக் குறைத்து இரவு உணவை முன்கூட்டியே முடிக்கவும்") + "\n2. " + (h2 || "14 மணி நேர உண்ணாநோன்பு மற்றும் 20 நிமிடம் உடற்பயிற்சி")
     };
   }
-  if (lang === 'kn') {
+  if (lang === "kn") {
     return {
-      voice: `ಎಲ್ಲಾ ದೈನಂದಿನ ಚೆಕ್-ಇನ್‌ಗಳು ಪೂರ್ಣಗೊಂಡಿವೆ. ಇಂದು ನಿಮ್ಮ ಡ್ಯಾಮೇಜ್ ಸ್ಕೋರ್ ${summary.damageScore}, ಮತ್ತು ರಿಪೇರ್ ಸ್ಕೋರ್ ${summary.repairScore}.`,
-      card: `ದೈನಂದಿನ ಚೆಕ್-ಇನ್ ಪೂರ್ಣಗೊಂಡಿದೆ\n\nಡ್ಯಾಮೇಜ್ ಲೋಡ್: -${summary.damageScore}\nರಿಪೇರ್ ಡಿಫೆನ್ಸ್: +${summary.repairScore}\n\nನಾಳೆಯ ಆದ್ಯತಾ ಕ್ರಿಯೆಗಳು:\n1. ${h1 || 'ಒತ್ತಡವನ್ನು ಕಡಿಮೆ ಮಾಡಿ ಸಂಸ್ಕರಿಸಿದ ಆಹಾರ ತಪ್ಪಿಸಿ'}\n2. ${h2 || '14 ಗಂಟೆ ಉಪವಾಸ ಮತ್ತು ವ್ಯಾಯಾಮ ಮಾಡಿ'}`
+      voice: "ಎಲ್ಲಾ ದೈನಂದಿನ ಚೆಕ್-ಇನ್‌ಗಳು ಯಶಸ್ವಿಯಾಗಿ ದಾಖಲಾಗಿವೆ. ನಿಮ್ಮ ಡೇಟಾ ಸಿಂಕ್ ಆಗಿದೆ.",
+      card: "ದೈನಂದಿನ ಚೆಕ್-ಇನ್ ಪೂರ್ಣಗೊಂಡಿದೆ!\n\nಹಾನಿಯನ್ನು ಕಡಿಮೆ ಮಾಡುವ ಆದ್ಯತಾ ಕ್ರಿಯೆಗಳು:\n1. " + (h1 || "ಒತ್ತಡವನ್ನು ಕಡಿಮೆ ಮಾಡಿ ಸಂಸ್ಕರಿಸಿದ ಆಹಾರ ತಪ್ಪಿಸಿ") + "\n2. " + (h2 || "14 ಗಂಟೆ ಉಪವಾಸ ಮತ್ತು ವ್ಯಾಯಾಮ ಮಾಡಿ")
     };
   }
-  if (lang === 'hi') {
+  if (lang === "hi") {
     return {
-      voice: `सभी दैनिक चेक-इन पूरे हो गए। आज आपका डैमेज स्कोर ${summary.damageScore} है, और रिपेयर स्कोर ${summary.repairScore} है।`,
-      card: `दैनिक चेक-इन पूर्ण\n\nडैमेज लोड: -${summary.damageScore}\nरिपेयर डिफेंस: +${summary.repairScore}\n\nकल के लिए प्राथमिकता कार्य:\n1. ${h1 || 'दैनिक तनाव कम करें और जंक फूड से बचें'}\n2. ${h2 || '14 घंटे का उपवास और 20 मिनट व्यायाम'}`
+      voice: "सभी दैनिक चेक-इन सफलतापूर्वक दर्ज कर लिए गए हैं। आपका डेटा सिंक हो गया है।",
+      card: "दैनिक चेक-इन पूर्ण!\n\nसेलुलर क्षति कम करने के लिए सुझाव:\n1. " + (h1 || "दैनिक तनाव कम करें और जंक फूड से बचें") + "\n2. " + (h2 || "14 घंटे का उपवास और 20 मिनट व्यायाम")
     };
   }
-  if (lang === 'te') {
+  if (lang === "te") {
     return {
-      voice: `అన్ని రోజువారీ చెక్-ఇన్‌లు పూర్తయ్యాయి. ఈరోజు మీ డ్యామేజ్ స్కోర్ ${summary.damageScore}, మరియు రిపేర్ స్కోర్ ${summary.repairScore}.`,
-      card: `రోజువారీ చెక్-ఇన్ పూర్తయింది\n\nడ్యామేజ్ లోడ్: -${summary.damageScore}\nరిపేర్ డిఫెన్స్: +${summary.repairScore}\n\nరేపటి ప్రాధాన్యతా చర్యలు:\n1. ${h1 || 'రోజువారీ ఒత్తిడిని తగ్గించి ప్రాసెస్ చేసిన ఆహారాన్ని నివారించండి'}\n2. ${h2 || '14 గంటల ఉపవాసం మరియు 20 నిమిషాల వ్యాయామం'}`
+      voice: "అన్ని రోజువారీ చెక్-ఇన్‌లు విజయవంతంగా నమోదు చేయబడ్డాయి. మీ డేటా సమకాలీకరించబడింది.",
+      card: "రోజువారీ చెక్-ఇన్ పూర్తయింది!\n\nనష్టాన్ని తగ్గించడానికి చిట్కాలు:\n1. " + (h1 || "రోజువారీ ఒత్తిడిని తగ్గించి ప్రాసెస్ చేసిన ఆహారాన్ని నివారించండి") + "\n2. " + (h2 || "14 గంటల ఉపవాసం మరియు 20 నిమిషాల వ్యాయామం")
     };
   }
   return {
-    voice: `All daily check-ins complete. Today your Damage score is ${summary.damageScore}, and Repair score is ${summary.repairScore}.`,
-    card: `Daily Check-in Complete\n\nDamage Load: -${summary.damageScore}\nRepair Defense: +${summary.repairScore}\n\nPriority Actions for Tomorrow:\n1. ${h1 || 'Reduce daily stress and avoid late-night eating'}\n2. ${h2 || 'Boost cellular repair with 14-hour fasting and exercise'}`
+    voice: "All daily check-ins complete. Your data is synced with your cellular dashboard.",
+    card: "Daily Check-in Complete!\n\nTips to Reduce Cellular Damage:\n1. " + (h1 || "Reduce daily stress, eliminate environmental toxins, and avoid late-night eating") + "\n2. " + (h2 || "Boost cellular repair with 14-hour fasting and regular exercise")
   };
 };
 

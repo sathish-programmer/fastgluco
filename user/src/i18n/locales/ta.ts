@@ -2314,7 +2314,7 @@ export const ta = {
   "whatsNew.chooseLanguageSubtitle": "முழு செயலியையும் உங்கள் தாய்மொழியில் அனுபவியுங்கள். மேலே உள்ள தலைப்பிலிருந்தோ சுயவிவரத்திலிருந்தோ எப்போது வேண்டுமானாலும் மாற்றலாம்:",
   "whatsNew.multilingual.title": "பிராந்திய பன்மொழி ஆதரவு",
   "whatsNew.multilingual.desc": "English, தமிழ், తెలుగు, ಕನ್ನಡ மற்றும் हिन्दी ஆகியவற்றில் முழுமையான மொழிபெயர்ப்பு மற்றும் உடனடி மாற்றம்.",
-  "whatsNew.openWhatsNew": "பதிப்பு 5.11.0 இல் புதிய அம்சங்கள்",
+  "whatsNew.openWhatsNew": "பதிப்பு 5.12.0 இல் புதிய அம்சங்கள்",
 
   // --- CRITICAL 5-LANGUAGE AI & SCREEN COMPLETIONS ---
   "common.default": "இயல்புநிலை",
@@ -2408,6 +2408,10 @@ export const ta = {
   "chatModal.dailyHealthSummary": "தினசரி ஆரோக்கிய சுருக்கம்",
   "chatModal.checkinLoggedSuccess": "தினசரி பதிவு வெற்றிகரமாகச் சேமிக்கப்பட்டது",
   "chatModal.checkinLoggedDesc": "உங்கள் விரதம், செல் பழுதுபார்ப்பு மற்றும் பாதுகாப்புத் தரவுகள் டாஷ்போர்டில் புதுப்பிக்கப்பட்டுள்ளன.",
+  "chatModal.allCheckinsLogged": "அனைத்து தினசரி பதிவுகளும் முடிவடைந்தன",
+  "chatModal.syncedStatus": "ஒத்திசைக்கப்பட்டது",
+  "chatModal.allCheckinsSyncedDesc": "அனைத்துப் பதில்களும் உங்கள் செல்லுலார் டாஷ்போர்டில் கணக்கிடப்பட்டுப் பதிவு செய்யப்பட்டுள்ளன.",
+  "chatModal.tipsToReduceDamage": "உங்கள் பதிவுகளின் அடிப்படையில் சேதத்தைக் குறைப்பதற்கான உதவிக்குறிப்புகள்",
   "chatModal.priorityActionPlanTomorrow": "நாளைக்கான முன்னுரிமை செயல் திட்டம்:",
   "chatModal.dailyCheckinReminder": "தினசரி AI நினைவூட்டல்",
   "chatModal.selectReminderTime": "நினைவூட்டல் நேரத்தைத் தேர்ந்தெடுக்கவும் அல்லது எச்சரிக்கைகளை முடக்கவும்:",
