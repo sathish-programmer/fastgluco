@@ -38,7 +38,7 @@ export interface IUser extends Document {
   addressState?: string;
   addressPinCode?: string;
   notificationPreferences?: any;
-  language?: 'en' | 'ta' | 'kn' | 'hi';
+  language?: 'en' | 'ta' | 'kn' | 'hi' | 'te';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -92,7 +92,7 @@ const userSchema = new Schema<IUser>(
     addressState: { type: String, default: '' },
     addressPinCode: { type: String, default: '' },
     notificationPreferences: { type: Object, default: {} },
-    language: { type: String, enum: ['en', 'ta', 'kn', 'hi'], default: 'en' }
+    language: { type: String, enum: ['en', 'ta', 'kn', 'hi', 'te'], default: 'en' }
   },
   {
     timestamps: true
