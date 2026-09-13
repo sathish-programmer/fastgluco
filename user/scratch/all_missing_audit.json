@@ -1,0 +1,3463 @@
+{
+  "missingT": {
+    "nav.askMito": [
+      "src/App.tsx"
+    ],
+    "nav.consultation": [
+      "src/App.tsx"
+    ],
+    "modals.helpSupport": [
+      "src/App.tsx",
+      "src/pages/Educational.tsx"
+    ],
+    "nav.home": [
+      "src/App.tsx"
+    ],
+    "nav.reports": [
+      "src/App.tsx"
+    ],
+    "nav.foodLog": [
+      "src/App.tsx"
+    ],
+    "nav.analysis": [
+      "src/App.tsx"
+    ],
+    "nav.learn": [
+      "src/App.tsx"
+    ],
+    "nav.bookAppt": [
+      "src/App.tsx"
+    ],
+    "nav.myOrders": [
+      "src/App.tsx"
+    ],
+    "nav.profile": [
+      "src/App.tsx",
+      "src/pages/DeleteAccount.tsx"
+    ],
+    "habits.aiBannerTitle": [
+      "src/components/AiBannerQuickNudge.tsx"
+    ],
+    "habits.aiBannerSubtitle": [
+      "src/components/AiBannerQuickNudge.tsx"
+    ],
+    "habits.aiPowered": [
+      "src/components/AiBannerQuickNudge.tsx"
+    ],
+    "habits.tryAi": [
+      "src/components/AiBannerQuickNudge.tsx"
+    ],
+    "nudge.dailyCheckinReminderTime": [
+      "src/components/AiDailyCheckinFloatingNudge.tsx"
+    ],
+    "nudge.selectQuickTime": [
+      "src/components/AiDailyCheckinFloatingNudge.tsx"
+    ],
+    "nudge.customTime": [
+      "src/components/AiDailyCheckinFloatingNudge.tsx"
+    ],
+    "nudge.setTime": [
+      "src/components/AiDailyCheckinFloatingNudge.tsx"
+    ],
+    "nudge.reminderScheduledFor": [
+      "src/components/AiDailyCheckinFloatingNudge.tsx"
+    ],
+    "nudge.blockedInBrowser": [
+      "src/components/AiDailyCheckinFloatingNudge.tsx"
+    ],
+    "nudge.activeAlertChannel": [
+      "src/components/AiDailyCheckinFloatingNudge.tsx"
+    ],
+    "nudge.testAlertNow": [
+      "src/components/AiDailyCheckinFloatingNudge.tsx"
+    ],
+    "nudge.checkinDone": [
+      "src/components/AiDailyCheckinFloatingNudge.tsx",
+      "src/components/DailyLoggingChatbotModal.tsx"
+    ],
+    "nudge.dailyAiCheckin": [
+      "src/components/AiDailyCheckinFloatingNudge.tsx"
+    ],
+    "nudge.allHabitsLoggedToday": [
+      "src/components/AiDailyCheckinFloatingNudge.tsx"
+    ],
+    "nudge.habitsRemaining": [
+      "src/components/AiDailyCheckinFloatingNudge.tsx"
+    ],
+    "nudge.review": [
+      "src/components/AiDailyCheckinFloatingNudge.tsx"
+    ],
+    "nudge.checkin": [
+      "src/components/AiDailyCheckinFloatingNudge.tsx"
+    ],
+    "common.close": [
+      "src/components/AiDailyCheckinFloatingNudge.tsx",
+      "src/components/DailyLoggingChatbotModal.tsx",
+      "src/components/DeStressAIChatModal.tsx",
+      "src/components/GeneticRiskAIChatModal.tsx",
+      "src/pages/Subscription.tsx",
+      "src/screens/HabitScreens/DentalLogScreen.tsx",
+      "src/screens/HabitScreens/SubstancesLogScreen.tsx"
+    ],
+    "askMito.doctor": [
+      "src/components/AskMitoDrawer.tsx"
+    ],
+    "askMito.clinicalReply48h": [
+      "src/components/AskMitoDrawer.tsx"
+    ],
+    "habits.consultationRecommended": [
+      "src/components/ConsultationBanner.tsx"
+    ],
+    "habits.consultationRecommendedDesc": [
+      "src/components/ConsultationBanner.tsx"
+    ],
+    "appointment.bookAppointment": [
+      "src/components/ConsultationBanner.tsx",
+      "src/modules/shared/ConditionUI.tsx",
+      "src/screens/Appointment/BookAppointmentScreen.tsx"
+    ],
+    "explore.airPurifiers": [
+      "src/components/ContextualShopCard.tsx"
+    ],
+    "explore.airPurifiersDesc": [
+      "src/components/ContextualShopCard.tsx"
+    ],
+    "explore.waterFilters": [
+      "src/components/ContextualShopCard.tsx"
+    ],
+    "explore.waterFiltersDesc": [
+      "src/components/ContextualShopCard.tsx"
+    ],
+    "explore.hairlossWigs": [
+      "src/components/ContextualShopCard.tsx"
+    ],
+    "explore.hairlossWigsDesc": [
+      "src/components/ContextualShopCard.tsx"
+    ],
+    "explore.organicFoods": [
+      "src/components/ContextualShopCard.tsx"
+    ],
+    "explore.organicFoodsDesc": [
+      "src/components/ContextualShopCard.tsx"
+    ],
+    "explore.recommendedProducts": [
+      "src/components/ContextualShopCard.tsx"
+    ],
+    "chatbot.greetingProgress": [
+      "src/components/DailyLoggingChatbotModal.tsx"
+    ],
+    "chatbot.aiAssistant": [
+      "src/components/DailyLoggingChatbotModal.tsx"
+    ],
+    "chatbot.online": [
+      "src/components/DailyLoggingChatbotModal.tsx"
+    ],
+    "chatbot.cancerTreatmentCheckin": [
+      "src/components/DailyLoggingChatbotModal.tsx"
+    ],
+    "chatbot.cancerPreventionCheckin": [
+      "src/components/DailyLoggingChatbotModal.tsx"
+    ],
+    "chatbot.muted": [
+      "src/components/DailyLoggingChatbotModal.tsx"
+    ],
+    "chatbot.unmuted": [
+      "src/components/DailyLoggingChatbotModal.tsx"
+    ],
+    "chatModal.customTime": [
+      "src/components/DailyLoggingChatbotModal.tsx"
+    ],
+    "chatModal.blockedInBrowser": [
+      "src/components/DailyLoggingChatbotModal.tsx"
+    ],
+    "chatModal.loadingCheckIn": [
+      "src/components/DailyLoggingChatbotModal.tsx"
+    ],
+    "common.cancel": [
+      "src/components/DailyLoggingChatbotModal.tsx",
+      "src/components/ModeSwitcher.tsx",
+      "src/pages/Analysis.tsx",
+      "src/pages/Dashboard.tsx",
+      "src/pages/NonCancerDashboard.tsx",
+      "src/pages/Profile.tsx",
+      "src/pages/Reports.tsx",
+      "src/screens/Appointment/BookAppointmentScreen.tsx",
+      "src/screens/HabitScreens/DentalLogScreen.tsx",
+      "src/screens/HabitScreens/GastritisLogScreen.tsx",
+      "src/screens/HabitScreens/SleepLogScreen.tsx",
+      "src/screens/Shop/ShopScreen.tsx"
+    ],
+    "chatbot.edit": [
+      "src/components/DailyLoggingChatbotModal.tsx"
+    ],
+    "chatbot.inputPlaceholder": [
+      "src/components/DailyLoggingChatbotModal.tsx"
+    ],
+    "chatModal.damageLoad": [
+      "src/components/DailyLoggingChatbotModal.tsx"
+    ],
+    "chatModal.reduce": [
+      "src/components/DailyLoggingChatbotModal.tsx"
+    ],
+    "chatModal.repairDefense": [
+      "src/components/DailyLoggingChatbotModal.tsx"
+    ],
+    "chatModal.build": [
+      "src/components/DailyLoggingChatbotModal.tsx"
+    ],
+    "chatModal.reduceDamage": [
+      "src/components/DailyLoggingChatbotModal.tsx"
+    ],
+    "chatModal.boostRepair": [
+      "src/components/DailyLoggingChatbotModal.tsx"
+    ],
+    "chatbot.shortcuts": [
+      "src/components/DailyLoggingChatbotModal.tsx"
+    ],
+    "habits.habitLogged": [
+      "src/components/DailyLoggingChatbotModal.tsx"
+    ],
+    "common.done": [
+      "src/components/DailyLoggingChatbotModal.tsx",
+      "src/components/LanguageSelectorModal.tsx"
+    ],
+    "mia.greetingStress": [
+      "src/components/DeStressAIChatModal.tsx",
+      "src/screens/HabitScreens/StressLogScreen.tsx"
+    ],
+    "mia.worklifeBurnout": [
+      "src/components/DeStressAIChatModal.tsx"
+    ],
+    "mia.relationshipConflict": [
+      "src/components/DeStressAIChatModal.tsx"
+    ],
+    "mia.lossOfLovedOne": [
+      "src/components/DeStressAIChatModal.tsx"
+    ],
+    "mia.hormonalMoodSwings": [
+      "src/components/DeStressAIChatModal.tsx"
+    ],
+    "mia.sexualHealthConcerns": [
+      "src/components/DeStressAIChatModal.tsx"
+    ],
+    "mia.somethingElse": [
+      "src/components/DeStressAIChatModal.tsx"
+    ],
+    "mia.greetingSleep": [
+      "src/components/DeStressAIChatModal.tsx"
+    ],
+    "mia.troubleFallingAsleep": [
+      "src/components/DeStressAIChatModal.tsx"
+    ],
+    "mia.fallAsleepWake34am": [
+      "src/components/DeStressAIChatModal.tsx"
+    ],
+    "mia.wakeTooEarly": [
+      "src/components/DeStressAIChatModal.tsx"
+    ],
+    "mia.allPoorSleep": [
+      "src/components/DeStressAIChatModal.tsx"
+    ],
+    "mia.startedRecently": [
+      "src/components/DeStressAIChatModal.tsx"
+    ],
+    "mia.stressSupport": [
+      "src/components/DeStressAIChatModal.tsx",
+      "src/screens/HabitScreens/StressLogScreen.tsx"
+    ],
+    "mia.sleepAssessment": [
+      "src/components/DeStressAIChatModal.tsx",
+      "src/screens/HabitScreens/SleepLogScreen.tsx"
+    ],
+    "mia.mentalHealthAiExpert": [
+      "src/components/DeStressAIChatModal.tsx",
+      "src/screens/HabitScreens/StressLogScreen.tsx"
+    ],
+    "mia.alwaysHere": [
+      "src/components/DeStressAIChatModal.tsx"
+    ],
+    "mia.restart": [
+      "src/components/DeStressAIChatModal.tsx"
+    ],
+    "mia.selectOptionToReply": [
+      "src/components/DeStressAIChatModal.tsx"
+    ],
+    "mia.freeHelpline": [
+      "src/components/DeStressAIChatModal.tsx"
+    ],
+    "mia.quickToolsTitle": [
+      "src/components/DeStressAIChatModal.tsx"
+    ],
+    "mia.instantCalmTitle": [
+      "src/components/DeStressAIChatModal.tsx"
+    ],
+    "mia.breathingGuide": [
+      "src/components/DeStressAIChatModal.tsx"
+    ],
+    "mia.breathingDesc": [
+      "src/components/DeStressAIChatModal.tsx"
+    ],
+    "mia.groundingGuide": [
+      "src/components/DeStressAIChatModal.tsx"
+    ],
+    "mia.groundingDesc": [
+      "src/components/DeStressAIChatModal.tsx"
+    ],
+    "mia.worryDumpGuide": [
+      "src/components/DeStressAIChatModal.tsx"
+    ],
+    "mia.worryDumpDesc": [
+      "src/components/DeStressAIChatModal.tsx"
+    ],
+    "mia.jumpToTopic": [
+      "src/components/DeStressAIChatModal.tsx"
+    ],
+    "mia.bookSpecialistConsultation": [
+      "src/components/DeStressAIChatModal.tsx"
+    ],
+    "mia.shortcuts": [
+      "src/components/DeStressAIChatModal.tsx"
+    ],
+    "mia.shareWithMia": [
+      "src/components/DeStressAIChatModal.tsx"
+    ],
+    "mia.describeSleepDifficulty": [
+      "src/components/DeStressAIChatModal.tsx"
+    ],
+    "mia.disclaimer": [
+      "src/components/DeStressAIChatModal.tsx"
+    ],
+    "explore.cgmDiagnostics": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "explore.cgmDiagnosticsDesc": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "explore.doctorAppointments": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "explore.doctorAppointmentsDesc": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "explore.caregiverSymptoms": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "explore.caregiverSymptomsDesc": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "explore.hairLossWigsExplore": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "explore.hairLossWigsExploreDesc": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "explore.glycemicFoodLog": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "explore.glycemicFoodLogDesc": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "explore.wellnessShop": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "explore.wellnessShopDesc": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "explore.surveillanceRecovery": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "explore.surveillanceRecoveryDesc": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "explore.envRiskAudit": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "explore.envRiskAuditDesc": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "explore.bioactiveAntioxidants": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "explore.bioactiveAntioxidantsDesc": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "explore.circadianFasting": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "explore.circadianFastingDesc": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "explore.followupVisits": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "explore.followupVisitsDesc": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "explore.recoveryProducts": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "explore.recoveryProductsDesc": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "explore.environmentToxins": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "explore.environmentToxinsDesc": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "explore.geneticSusceptibility": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "explore.geneticSusceptibilityDesc": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "explore.lifestyleFasting": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "explore.lifestyleFastingDesc": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "explore.preventiveAppointments": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "explore.preventiveAppointmentsDesc": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "explore.healthcareShop": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "explore.healthcareShopDesc": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "explore.exploreFeatures": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "common.showLess": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "explore.showAll": [
+      "src/components/ExploreFeaturesGrid.tsx"
+    ],
+    "gia.greeting": [
+      "src/components/GeneticRiskAIChatModal.tsx"
+    ],
+    "gia.optPersonal": [
+      "src/components/GeneticRiskAIChatModal.tsx"
+    ],
+    "gia.optFamily": [
+      "src/components/GeneticRiskAIChatModal.tsx"
+    ],
+    "gia.optBoth": [
+      "src/components/GeneticRiskAIChatModal.tsx"
+    ],
+    "gia.optCancerFree": [
+      "src/components/GeneticRiskAIChatModal.tsx"
+    ],
+    "gia.guidelines": [
+      "src/components/GeneticRiskAIChatModal.tsx",
+      "src/screens/HabitScreens/GeneticLogScreen.tsx"
+    ],
+    "gia.selectOptionToReply": [
+      "src/components/GeneticRiskAIChatModal.tsx"
+    ],
+    "gia.shortcuts": [
+      "src/components/GeneticRiskAIChatModal.tsx"
+    ],
+    "gia.disclaimer": [
+      "src/components/GeneticRiskAIChatModal.tsx"
+    ],
+    "common.details": [
+      "src/components/GlobalAICoachPopup.tsx",
+      "src/pages/Coaching.tsx",
+      "src/pages/Educational.tsx"
+    ],
+    "profile.appLanguage": [
+      "src/components/LanguageSelector.tsx",
+      "src/components/LanguageSelectorModal.tsx",
+      "src/pages/Profile.tsx"
+    ],
+    "profile.languageDescription": [
+      "src/components/LanguageSelectorModal.tsx"
+    ],
+    "aqi.indianStandard": [
+      "src/components/LiveAQIWidget.tsx"
+    ],
+    "aqi.liveAirQuality": [
+      "src/components/LiveAQIWidget.tsx"
+    ],
+    "aqi.total24Hours": [
+      "src/components/LiveAQIWidget.tsx"
+    ],
+    "aqi.below50Good": [
+      "src/components/LiveAQIWidget.tsx"
+    ],
+    "aqi.above150Unhealthy": [
+      "src/components/LiveAQIWidget.tsx"
+    ],
+    "aqi.hourlyTrend": [
+      "src/components/LiveAQIWidget.tsx"
+    ],
+    "aqi.presets": [
+      "src/components/LiveAQIWidget.tsx"
+    ],
+    "modes.preventionTitle": [
+      "src/components/ModeSwitcher.tsx",
+      "src/pages/Profile.tsx",
+      "src/pages/Register.tsx"
+    ],
+    "modes.preventionShort": [
+      "src/components/ModeSwitcher.tsx",
+      "src/modules/shared/ConditionUI.tsx"
+    ],
+    "modes.preventionDesc": [
+      "src/components/ModeSwitcher.tsx"
+    ],
+    "modes.treatmentTitle": [
+      "src/components/ModeSwitcher.tsx",
+      "src/pages/Profile.tsx",
+      "src/pages/Register.tsx"
+    ],
+    "modes.treatmentShort": [
+      "src/components/ModeSwitcher.tsx",
+      "src/components/TodaysFocusCard.tsx",
+      "src/modules/shared/ConditionUI.tsx"
+    ],
+    "modes.treatmentDesc": [
+      "src/components/ModeSwitcher.tsx"
+    ],
+    "modes.secondaryPreventionTitle": [
+      "src/components/ModeSwitcher.tsx",
+      "src/pages/Profile.tsx",
+      "src/pages/Register.tsx"
+    ],
+    "modes.secondaryPreventionShort": [
+      "src/components/ModeSwitcher.tsx",
+      "src/modules/shared/ConditionUI.tsx"
+    ],
+    "modes.secondaryPreventionDesc": [
+      "src/components/ModeSwitcher.tsx"
+    ],
+    "modes.ageingTitle": [
+      "src/components/ModeSwitcher.tsx",
+      "src/pages/Profile.tsx",
+      "src/pages/Register.tsx"
+    ],
+    "modes.ageingShort": [
+      "src/components/ModeSwitcher.tsx"
+    ],
+    "modes.ageingDesc": [
+      "src/components/ModeSwitcher.tsx"
+    ],
+    "modes.pcodTitle": [
+      "src/components/ModeSwitcher.tsx",
+      "src/pages/Profile.tsx",
+      "src/pages/Register.tsx"
+    ],
+    "modes.pcodShort": [
+      "src/components/ModeSwitcher.tsx"
+    ],
+    "modes.pcodDesc": [
+      "src/components/ModeSwitcher.tsx"
+    ],
+    "modes.diabetesTitle": [
+      "src/components/ModeSwitcher.tsx",
+      "src/pages/Profile.tsx",
+      "src/pages/Register.tsx"
+    ],
+    "modes.diabetesShort": [
+      "src/components/ModeSwitcher.tsx"
+    ],
+    "modes.diabetesDesc": [
+      "src/components/ModeSwitcher.tsx"
+    ],
+    "modes.hypertensionTitle": [
+      "src/components/ModeSwitcher.tsx",
+      "src/pages/Profile.tsx",
+      "src/pages/Register.tsx"
+    ],
+    "modes.hypertensionShort": [
+      "src/components/ModeSwitcher.tsx"
+    ],
+    "modes.hypertensionDesc": [
+      "src/components/ModeSwitcher.tsx"
+    ],
+    "modes.parkinsonTitle": [
+      "src/components/ModeSwitcher.tsx",
+      "src/pages/Profile.tsx",
+      "src/pages/Register.tsx"
+    ],
+    "modes.parkinsonShort": [
+      "src/components/ModeSwitcher.tsx"
+    ],
+    "modes.parkinsonDesc": [
+      "src/components/ModeSwitcher.tsx"
+    ],
+    "modes.cardiacTitle": [
+      "src/components/ModeSwitcher.tsx",
+      "src/pages/Profile.tsx",
+      "src/pages/Register.tsx"
+    ],
+    "modes.cardiacShort": [
+      "src/components/ModeSwitcher.tsx"
+    ],
+    "modes.cardiacDesc": [
+      "src/components/ModeSwitcher.tsx"
+    ],
+    "dashboard.activeFocus": [
+      "src/components/ModeSwitcher.tsx"
+    ],
+    "dashboard.change": [
+      "src/components/ModeSwitcher.tsx"
+    ],
+    "modes.selectHealthFocus": [
+      "src/components/ModeSwitcher.tsx"
+    ],
+    "modes.selectHealthFocusDesc": [
+      "src/components/ModeSwitcher.tsx"
+    ],
+    "dashboard.today": [
+      "src/components/NotificationBell.tsx",
+      "src/pages/Dashboard.tsx",
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "common.save": [
+      "src/components/NotificationBell.tsx",
+      "src/screens/HabitScreens/AntioxidantLogScreen.tsx",
+      "src/screens/HabitScreens/FastingLogScreen.tsx"
+    ],
+    "common.delete": [
+      "src/components/NotificationBell.tsx",
+      "src/modules/DiabetesModule.tsx",
+      "src/modules/HypertensionModule.tsx",
+      "src/modules/PCODModule.tsx",
+      "src/modules/ParkinsonModule.tsx",
+      "src/screens/HabitScreens/DentalLogScreen.tsx"
+    ],
+    "common.loading": [
+      "src/components/NotificationBell.tsx",
+      "src/components/PincodeDeliveryChecker.tsx",
+      "src/pages/Analysis.tsx",
+      "src/pages/Coaching.tsx",
+      "src/pages/Login.tsx",
+      "src/pages/Reports.tsx",
+      "src/screens/Diagnostics/BookingTrackingScreen.tsx",
+      "src/screens/Diagnostics/ReportViewerScreen.tsx",
+      "src/screens/HabitScreens/AntioxidantLogScreen.tsx",
+      "src/screens/HabitScreens/BreathLogScreen.tsx",
+      "src/screens/HabitScreens/FastingLogScreen.tsx",
+      "src/screens/HabitScreens/IndianCancersScreen.tsx",
+      "src/screens/Shop/ShopScreen.tsx"
+    ],
+    "common.next": [
+      "src/components/OnboardingTour.tsx",
+      "src/components/WelcomeOnboardingModal.tsx",
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "habits.caregiverStress": [
+      "src/components/TodaysFocusCard.tsx",
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "habits.intermittentFasting": [
+      "src/components/TodaysFocusCard.tsx",
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "habits.antioxidants": [
+      "src/components/TodaysFocusCard.tsx",
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "habits.fasting": [
+      "src/components/TodaysFocusCard.tsx",
+      "src/pages/NonCancerDashboard.tsx",
+      "src/screens/HabitScreens/FastingLogScreen.tsx"
+    ],
+    "habits.sleep": [
+      "src/components/TodaysFocusCard.tsx",
+      "src/pages/NonCancerDashboard.tsx",
+      "src/screens/HabitScreens/SleepLogScreen.tsx"
+    ],
+    "habits.stress": [
+      "src/components/TodaysFocusCard.tsx",
+      "src/pages/NonCancerDashboard.tsx",
+      "src/screens/HabitScreens/StressLogScreen.tsx"
+    ],
+    "habits.movement": [
+      "src/components/TodaysFocusCard.tsx",
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dashboard.todaysFocus": [
+      "src/components/TodaysFocusCard.tsx",
+      "src/pages/Dashboard.tsx"
+    ],
+    "dashboard.why": [
+      "src/components/TodaysFocusCard.tsx"
+    ],
+    "dashboard.takeAction": [
+      "src/components/TodaysFocusCard.tsx"
+    ],
+    "common.back": [
+      "src/components/WelcomeOnboardingModal.tsx",
+      "src/pages/Register.tsx",
+      "src/screens/RecommendedFoodsScreen.tsx",
+      "src/screens/Shop/ProductRatingScreen.tsx"
+    ],
+    "common.confirm": [
+      "src/components/WhatsNewModal.tsx",
+      "src/pages/Profile.tsx"
+    ],
+    "protocols.longevityProtocol": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "protocols.healthyAgeingTitle": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "protocols.healthyAgeingSubtitle": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "protocols.overallLongevityScore": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "protocols.selectDecade": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "protocols.foundationalHabits": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "protocols.decadeOrganDefense": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "disclaimer.educationalTrackingNote": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "protocols.cardiovascularProtection": [
+      "src/modules/CardiacModule.tsx"
+    ],
+    "protocols.cardiacProtocol": [
+      "src/modules/CardiacModule.tsx"
+    ],
+    "protocols.cardiacSubtitle": [
+      "src/modules/CardiacModule.tsx"
+    ],
+    "protocols.cardiacPreventionScore": [
+      "src/modules/CardiacModule.tsx"
+    ],
+    "protocols.cardiacSummary": [
+      "src/modules/CardiacModule.tsx"
+    ],
+    "protocols.cardiacBMI": [
+      "src/modules/CardiacModule.tsx"
+    ],
+    "protocols.heightCm": [
+      "src/modules/CardiacModule.tsx",
+      "src/modules/PCODModule.tsx"
+    ],
+    "protocols.weightKg": [
+      "src/modules/CardiacModule.tsx",
+      "src/modules/PCODModule.tsx"
+    ],
+    "protocols.cardiovascularBMI": [
+      "src/modules/CardiacModule.tsx",
+      "src/modules/PCODModule.tsx"
+    ],
+    "protocols.dailyCardiacDefense": [
+      "src/modules/CardiacModule.tsx"
+    ],
+    "protocols.exercised20Min": [
+      "src/modules/CardiacModule.tsx",
+      "src/modules/DiabetesModule.tsx",
+      "src/modules/HypertensionModule.tsx",
+      "src/modules/PCODModule.tsx"
+    ],
+    "protocols.ateLowSalt": [
+      "src/modules/CardiacModule.tsx",
+      "src/modules/HypertensionModule.tsx"
+    ],
+    "protocols.ateLowSugarJunk": [
+      "src/modules/CardiacModule.tsx"
+    ],
+    "protocols.hadAlcohol": [
+      "src/modules/CardiacModule.tsx",
+      "src/modules/DiabetesModule.tsx"
+    ],
+    "protocols.slept8Hours": [
+      "src/modules/CardiacModule.tsx",
+      "src/modules/DiabetesModule.tsx",
+      "src/modules/HypertensionModule.tsx",
+      "src/modules/PCODModule.tsx",
+      "src/modules/ParkinsonModule.tsx"
+    ],
+    "protocols.cardiacTreatmentScore": [
+      "src/modules/CardiacModule.tsx"
+    ],
+    "protocols.treatmentSummary": [
+      "src/modules/CardiacModule.tsx"
+    ],
+    "protocols.gentleCardiacRecovery": [
+      "src/modules/CardiacModule.tsx"
+    ],
+    "protocols.nonStrenuous20Min": [
+      "src/modules/CardiacModule.tsx"
+    ],
+    "protocols.nonStrenuousSub": [
+      "src/modules/CardiacModule.tsx"
+    ],
+    "protocols.meditatedToday": [
+      "src/modules/CardiacModule.tsx",
+      "src/modules/HypertensionModule.tsx"
+    ],
+    "protocols.ateLowFatWhole": [
+      "src/modules/CardiacModule.tsx"
+    ],
+    "protocols.cardiologist": [
+      "src/modules/CardiacModule.tsx",
+      "src/modules/HypertensionModule.tsx"
+    ],
+    "protocols.cardiologistNote": [
+      "src/modules/CardiacModule.tsx"
+    ],
+    "protocols.glycemicInsulinControl": [
+      "src/modules/DiabetesModule.tsx"
+    ],
+    "protocols.diabetesProtocol": [
+      "src/modules/DiabetesModule.tsx"
+    ],
+    "protocols.diabetesSubtitle": [
+      "src/modules/DiabetesModule.tsx"
+    ],
+    "protocols.diabetesPreventionScore": [
+      "src/modules/DiabetesModule.tsx"
+    ],
+    "protocols.diabetesSummary": [
+      "src/modules/DiabetesModule.tsx"
+    ],
+    "protocols.dailyGlycemicDefense": [
+      "src/modules/DiabetesModule.tsx"
+    ],
+    "protocols.ateJunkUltra": [
+      "src/modules/DiabetesModule.tsx",
+      "src/modules/PCODModule.tsx"
+    ],
+    "protocols.yearlyScreening": [
+      "src/modules/DiabetesModule.tsx"
+    ],
+    "protocols.lastFbsPpbs": [
+      "src/modules/DiabetesModule.tsx"
+    ],
+    "protocols.overdueScreening": [
+      "src/modules/DiabetesModule.tsx"
+    ],
+    "protocols.upToDateScreening": [
+      "src/modules/DiabetesModule.tsx"
+    ],
+    "protocols.quarterlyHba1c": [
+      "src/modules/DiabetesModule.tsx"
+    ],
+    "protocols.addReading": [
+      "src/modules/DiabetesModule.tsx"
+    ],
+    "protocols.hba1cEmpty": [
+      "src/modules/DiabetesModule.tsx"
+    ],
+    "protocols.hba1cHistory": [
+      "src/modules/DiabetesModule.tsx"
+    ],
+    "protocols.latest": [
+      "src/modules/DiabetesModule.tsx",
+      "src/modules/PCODModule.tsx"
+    ],
+    "protocols.average": [
+      "src/modules/DiabetesModule.tsx"
+    ],
+    "protocols.hba1cRecords": [
+      "src/modules/DiabetesModule.tsx"
+    ],
+    "protocols.hba1cQuarterly": [
+      "src/modules/DiabetesModule.tsx"
+    ],
+    "protocols.lowestBest": [
+      "src/modules/DiabetesModule.tsx"
+    ],
+    "protocols.normal": [
+      "src/modules/DiabetesModule.tsx"
+    ],
+    "protocols.prediabetic": [
+      "src/modules/DiabetesModule.tsx"
+    ],
+    "protocols.diabetic": [
+      "src/modules/DiabetesModule.tsx"
+    ],
+    "protocols.closeHistory": [
+      "src/modules/DiabetesModule.tsx",
+      "src/modules/HypertensionModule.tsx",
+      "src/modules/PCODModule.tsx"
+    ],
+    "protocols.annualOrganProtection": [
+      "src/modules/DiabetesModule.tsx"
+    ],
+    "protocols.dailyDietaryGlycemic": [
+      "src/modules/DiabetesModule.tsx"
+    ],
+    "protocols.highCarbRefined": [
+      "src/modules/DiabetesModule.tsx"
+    ],
+    "protocols.diabetologist": [
+      "src/modules/DiabetesModule.tsx"
+    ],
+    "protocols.diabetologistNote": [
+      "src/modules/DiabetesModule.tsx"
+    ],
+    "protocols.hypertensionProtocol": [
+      "src/modules/HypertensionModule.tsx"
+    ],
+    "protocols.hypertensionSubtitle": [
+      "src/modules/HypertensionModule.tsx"
+    ],
+    "protocols.bpMorningEvening": [
+      "src/modules/HypertensionModule.tsx"
+    ],
+    "protocols.logBpReading": [
+      "src/modules/HypertensionModule.tsx"
+    ],
+    "protocols.bpEmpty": [
+      "src/modules/HypertensionModule.tsx"
+    ],
+    "protocols.bpHistory": [
+      "src/modules/HypertensionModule.tsx"
+    ],
+    "protocols.avgMorningAm": [
+      "src/modules/HypertensionModule.tsx"
+    ],
+    "protocols.avgEveningPm": [
+      "src/modules/HypertensionModule.tsx"
+    ],
+    "protocols.treatmentDailyHabits": [
+      "src/modules/HypertensionModule.tsx"
+    ],
+    "protocols.highSaltToday": [
+      "src/modules/HypertensionModule.tsx"
+    ],
+    "protocols.lovedActivity": [
+      "src/modules/HypertensionModule.tsx",
+      "src/modules/ParkinsonModule.tsx"
+    ],
+    "protocols.bpDoctorNote": [
+      "src/modules/HypertensionModule.tsx"
+    ],
+    "protocols.underweight": [
+      "src/modules/PCODModule.tsx"
+    ],
+    "protocols.optimalBmi": [
+      "src/modules/PCODModule.tsx"
+    ],
+    "protocols.overweight": [
+      "src/modules/PCODModule.tsx"
+    ],
+    "protocols.obese": [
+      "src/modules/PCODModule.tsx"
+    ],
+    "protocols.hormonalCycleDefense": [
+      "src/modules/PCODModule.tsx"
+    ],
+    "protocols.pcodProtocol": [
+      "src/modules/PCODModule.tsx"
+    ],
+    "protocols.pcodSubtitle": [
+      "src/modules/PCODModule.tsx"
+    ],
+    "protocols.pcodScoreLabel": [
+      "src/modules/PCODModule.tsx"
+    ],
+    "protocols.metabolicBMI": [
+      "src/modules/PCODModule.tsx"
+    ],
+    "protocols.dailyHormonalHabits": [
+      "src/modules/PCODModule.tsx"
+    ],
+    "protocols.periodTracker": [
+      "src/modules/PCODModule.tsx"
+    ],
+    "protocols.logPeriod": [
+      "src/modules/PCODModule.tsx"
+    ],
+    "protocols.avgCycle": [
+      "src/modules/PCODModule.tsx"
+    ],
+    "protocols.nextPredictedPeriod": [
+      "src/modules/PCODModule.tsx"
+    ],
+    "protocols.periodEmpty": [
+      "src/modules/PCODModule.tsx"
+    ],
+    "protocols.periodHistory": [
+      "src/modules/PCODModule.tsx"
+    ],
+    "protocols.totalLogs": [
+      "src/modules/PCODModule.tsx"
+    ],
+    "protocols.avgDuration": [
+      "src/modules/PCODModule.tsx"
+    ],
+    "protocols.cycleGap": [
+      "src/modules/PCODModule.tsx"
+    ],
+    "protocols.regular": [
+      "src/modules/PCODModule.tsx"
+    ],
+    "protocols.varied": [
+      "src/modules/PCODModule.tsx"
+    ],
+    "protocols.baselineRecorded": [
+      "src/modules/PCODModule.tsx"
+    ],
+    "protocols.symptomCheckIn": [
+      "src/modules/PCODModule.tsx"
+    ],
+    "protocols.hirsutismLabel": [
+      "src/modules/PCODModule.tsx"
+    ],
+    "protocols.hirsutismSub": [
+      "src/modules/PCODModule.tsx"
+    ],
+    "protocols.gynaecologist": [
+      "src/modules/PCODModule.tsx"
+    ],
+    "protocols.pcodDoctorNote": [
+      "src/modules/PCODModule.tsx"
+    ],
+    "protocols.medicationDoseRemoved": [
+      "src/modules/ParkinsonModule.tsx"
+    ],
+    "protocols.neuroprotectiveCare": [
+      "src/modules/ParkinsonModule.tsx"
+    ],
+    "protocols.parkinsonProtocol": [
+      "src/modules/ParkinsonModule.tsx"
+    ],
+    "protocols.parkinsonSubtitle": [
+      "src/modules/ParkinsonModule.tsx"
+    ],
+    "protocols.dopamineBoostersToday": [
+      "src/modules/ParkinsonModule.tsx"
+    ],
+    "protocols.activeBoosters": [
+      "src/modules/ParkinsonModule.tsx"
+    ],
+    "protocols.symptomSeverityByTime": [
+      "src/modules/ParkinsonModule.tsx"
+    ],
+    "protocols.symptomSeverityDesc": [
+      "src/modules/ParkinsonModule.tsx"
+    ],
+    "protocols.avgSeverity": [
+      "src/modules/ParkinsonModule.tsx"
+    ],
+    "protocols.motorFluctuationCurve": [
+      "src/modules/ParkinsonModule.tsx"
+    ],
+    "protocols.medicationSchedule": [
+      "src/modules/ParkinsonModule.tsx"
+    ],
+    "protocols.drugNamePlaceholder": [
+      "src/modules/ParkinsonModule.tsx"
+    ],
+    "protocols.dosePlaceholder": [
+      "src/modules/ParkinsonModule.tsx"
+    ],
+    "protocols.logDoseTiming": [
+      "src/modules/ParkinsonModule.tsx"
+    ],
+    "common.yes": [
+      "src/modules/shared/ConditionUI.tsx",
+      "src/screens/HabitScreens/DentalLogScreen.tsx",
+      "src/screens/HabitScreens/GastritisLogScreen.tsx",
+      "src/screens/HabitScreens/GeneticLogScreen.tsx",
+      "src/screens/HabitScreens/ObesityLogScreen.tsx",
+      "src/screens/HabitScreens/StillnessLogScreen.tsx",
+      "src/screens/HabitScreens/SubstancesLogScreen.tsx"
+    ],
+    "common.no": [
+      "src/modules/shared/ConditionUI.tsx",
+      "src/screens/HabitScreens/DentalLogScreen.tsx",
+      "src/screens/HabitScreens/GastritisLogScreen.tsx",
+      "src/screens/HabitScreens/GeneticLogScreen.tsx",
+      "src/screens/HabitScreens/ObesityLogScreen.tsx",
+      "src/screens/HabitScreens/StillnessLogScreen.tsx",
+      "src/screens/HabitScreens/SubstancesLogScreen.tsx"
+    ],
+    "disclaimer.lifestyleSupportNote": [
+      "src/modules/shared/ConditionUI.tsx"
+    ],
+    "analysis.title": [
+      "src/pages/Analysis.tsx"
+    ],
+    "analysis.subtitle": [
+      "src/pages/Analysis.tsx"
+    ],
+    "analysis.premiumFeature": [
+      "src/pages/Analysis.tsx"
+    ],
+    "analysis.noFoodsSafe": [
+      "src/pages/Analysis.tsx"
+    ],
+    "analysis.noFoodsModerate": [
+      "src/pages/Analysis.tsx"
+    ],
+    "analysis.noFoodsAvoid": [
+      "src/pages/Analysis.tsx"
+    ],
+    "analysis.mealSpikeAnalyzer": [
+      "src/pages/Analysis.tsx"
+    ],
+    "analysis.noMealAnalysisAvailable": [
+      "src/pages/Analysis.tsx"
+    ],
+    "foodLog.": [
+      "src/pages/Analysis.tsx"
+    ],
+    "analysis.beforeMeal": [
+      "src/pages/Analysis.tsx"
+    ],
+    "analysis.postPeak": [
+      "src/pages/Analysis.tsx"
+    ],
+    "analysis.difference": [
+      "src/pages/Analysis.tsx"
+    ],
+    "analysis.spikeAccurateQ": [
+      "src/pages/Analysis.tsx"
+    ],
+    "analysis.selectFoodRange": [
+      "src/pages/Analysis.tsx"
+    ],
+    "analysis.chooseDatesDesc": [
+      "src/pages/Analysis.tsx"
+    ],
+    "common.noDataFound": [
+      "src/pages/Coaching.tsx",
+      "src/pages/Dashboard.tsx",
+      "src/pages/Educational.tsx",
+      "src/screens/Diagnostics/ReportViewerScreen.tsx",
+      "src/screens/HabitScreens/FastingLogScreen.tsx"
+    ],
+    "dash.loggedMeal": [
+      "src/pages/Dashboard.tsx"
+    ],
+    "dashboard.goodMorning": [
+      "src/pages/Dashboard.tsx"
+    ],
+    "dash.cellularDefenseStrength": [
+      "src/pages/Dashboard.tsx",
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dash.upcomingApptScheduled": [
+      "src/pages/Dashboard.tsx",
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dash.stabilityScore": [
+      "src/pages/Dashboard.tsx"
+    ],
+    "dash.inRange": [
+      "src/pages/Dashboard.tsx"
+    ],
+    "dash.uploadCgmPrompt": [
+      "src/pages/Dashboard.tsx"
+    ],
+    "dashboard.mifflinDisclaimer": [
+      "src/pages/Dashboard.tsx"
+    ],
+    "common.reset": [
+      "src/pages/Dashboard.tsx"
+    ],
+    "dashboard.mentalHealthBadge": [
+      "src/pages/Dashboard.tsx"
+    ],
+    "dashboard.caregiverStressDesc": [
+      "src/pages/Dashboard.tsx"
+    ],
+    "dashboard.consultPsychoOncologist": [
+      "src/pages/Dashboard.tsx"
+    ],
+    "dashboard.geminiAiDisclaimer": [
+      "src/pages/Dashboard.tsx"
+    ],
+    "dash.uploadedReports": [
+      "src/pages/Dashboard.tsx"
+    ],
+    "dash.logGlucoseReading": [
+      "src/pages/Dashboard.tsx"
+    ],
+    "dash.consultDietician": [
+      "src/pages/Dashboard.tsx"
+    ],
+    "dash.selectDateRange": [
+      "src/pages/Dashboard.tsx"
+    ],
+    "dash.chooseDatesFilter": [
+      "src/pages/Dashboard.tsx"
+    ],
+    "dash.logWorkoutSteps": [
+      "src/pages/Dashboard.tsx"
+    ],
+    "dash.glucoseProfileFullView": [
+      "src/pages/Dashboard.tsx"
+    ],
+    "dash.cgmTrendCurveDesc": [
+      "src/pages/Dashboard.tsx"
+    ],
+    "dash.aiCheckIn": [
+      "src/pages/Dashboard.tsx",
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "auth.deleteAccount": [
+      "src/pages/DeleteAccount.tsx",
+      "src/pages/Profile.tsx"
+    ],
+    "auth.confirmDeleteAccount": [
+      "src/pages/DeleteAccount.tsx"
+    ],
+    "delAcc.howToDelete": [
+      "src/pages/DeleteAccount.tsx"
+    ],
+    "delAcc.method1InsideApp": [
+      "src/pages/DeleteAccount.tsx"
+    ],
+    "profile.requestAccountDeletion": [
+      "src/pages/DeleteAccount.tsx",
+      "src/pages/Profile.tsx"
+    ],
+    "common.viewAll": [
+      "src/pages/Educational.tsx"
+    ],
+    "modals.faq": [
+      "src/pages/Educational.tsx"
+    ],
+    "nav.back": [
+      "src/pages/Educational.tsx",
+      "src/screens/Diagnostics/ReportViewerScreen.tsx"
+    ],
+    "profile.educationCenter": [
+      "src/pages/Educational.tsx",
+      "src/pages/Profile.tsx"
+    ],
+    "profile.fullName": [
+      "src/pages/Educational.tsx",
+      "src/pages/Profile.tsx",
+      "src/pages/Register.tsx"
+    ],
+    "profile.emailAddress": [
+      "src/pages/Educational.tsx",
+      "src/pages/Profile.tsx"
+    ],
+    "common.submit": [
+      "src/pages/Educational.tsx",
+      "src/screens/Appointment/BookAppointmentScreen.tsx"
+    ],
+    "foodLog.dietLog": [
+      "src/pages/FoodLog.tsx"
+    ],
+    "foodLog.doctorRecommended": [
+      "src/pages/FoodLog.tsx"
+    ],
+    "foodLog.recommendedFoods": [
+      "src/pages/FoodLog.tsx"
+    ],
+    "foodLog.logAMeal": [
+      "src/pages/FoodLog.tsx"
+    ],
+    "common.search": [
+      "src/pages/FoodLog.tsx"
+    ],
+    "foodLog.manualEntry": [
+      "src/pages/FoodLog.tsx"
+    ],
+    "foodLog.dateOfMeal": [
+      "src/pages/FoodLog.tsx"
+    ],
+    "foodLog.timeOfMeal": [
+      "src/pages/FoodLog.tsx"
+    ],
+    "foodLog.mealPeriod": [
+      "src/pages/FoodLog.tsx"
+    ],
+    "foodLog.selectPortionSize": [
+      "src/pages/FoodLog.tsx"
+    ],
+    "foodLog.searchFoodPrompt": [
+      "src/pages/FoodLog.tsx"
+    ],
+    "foodLog.mealName": [
+      "src/pages/FoodLog.tsx"
+    ],
+    "foodLog.foodCategory": [
+      "src/pages/FoodLog.tsx"
+    ],
+    "foodLog.nutritionalBreakdown": [
+      "src/pages/FoodLog.tsx"
+    ],
+    "foodLog.servingQty": [
+      "src/pages/FoodLog.tsx"
+    ],
+    "foodLog.unit": [
+      "src/pages/FoodLog.tsx"
+    ],
+    "foodLog.mealLogHistory": [
+      "src/pages/FoodLog.tsx"
+    ],
+    "foodLog.dailyNutrientsSummary": [
+      "src/pages/FoodLog.tsx"
+    ],
+    "foodLog.editFoodLog": [
+      "src/pages/FoodLog.tsx"
+    ],
+    "foodLog.modifyMealDetails": [
+      "src/pages/FoodLog.tsx"
+    ],
+    "foodLog.foodScanner": [
+      "src/pages/FoodLog.tsx"
+    ],
+    "foodLog.mealScanningOptions": [
+      "src/pages/FoodLog.tsx"
+    ],
+    "foodLog.privacyConsent": [
+      "src/pages/FoodLog.tsx"
+    ],
+    "foodLog.cropArea": [
+      "src/pages/FoodLog.tsx"
+    ],
+    "foodLog.detectedItemsInPlate": [
+      "src/pages/FoodLog.tsx"
+    ],
+    "foodLog.notFound": [
+      "src/pages/FoodLog.tsx"
+    ],
+    "foodLog.nutritionDataNotFound": [
+      "src/pages/FoodLog.tsx"
+    ],
+    "foodLog.totalMealSummary": [
+      "src/pages/FoodLog.tsx"
+    ],
+    "foodLog.combinedEnergy": [
+      "src/pages/FoodLog.tsx"
+    ],
+    "foodLog.mealWindow": [
+      "src/pages/FoodLog.tsx"
+    ],
+    "foodLog.selectCorrectVariant": [
+      "src/pages/FoodLog.tsx"
+    ],
+    "foodLog.multipleMatches": [
+      "src/pages/FoodLog.tsx"
+    ],
+    "foodLog.filterHistoryRange": [
+      "src/pages/FoodLog.tsx"
+    ],
+    "foodLog.selectDatesHistory": [
+      "src/pages/FoodLog.tsx"
+    ],
+    "auth.dismiss": [
+      "src/pages/Login.tsx"
+    ],
+    "auth.mobileNumber": [
+      "src/pages/Login.tsx"
+    ],
+    "auth.noCountryFound": [
+      "src/pages/Login.tsx"
+    ],
+    "auth.emailAddress": [
+      "src/pages/Login.tsx"
+    ],
+    "auth.getOtp": [
+      "src/pages/Login.tsx"
+    ],
+    "auth.verificationCode": [
+      "src/pages/Login.tsx"
+    ],
+    "auth.verifying": [
+      "src/pages/Login.tsx"
+    ],
+    "dash.totalDocumentedLogs": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dash.activeDamageScore": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dash.activeRepairScore": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dash.cellularRepairRatio": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "habits.smoking": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "habits.substances": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "habits.intimacy": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "habits.exposures": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "habits.alcohol": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "habits.stillness": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "habits.breath": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "habits.joy": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "habits.screening": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "habits.indianCancers": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "habits.obesity": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "habits.dental": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "habits.gastritis": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "habits.geneticRisk": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "habits.cancerAwareness": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "habits.trackHabit": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dashboard.welcomeBack": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dashboard.helloUser": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dash.actionRecommended": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dashboard.cellularBalance": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dashboard.lifestyleVsDefense": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "common.filter": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "reports.last7Days": [
+      "src/pages/NonCancerDashboard.tsx",
+      "src/pages/Reports.tsx"
+    ],
+    "reports.last30Days": [
+      "src/pages/NonCancerDashboard.tsx",
+      "src/pages/Reports.tsx"
+    ],
+    "reports.allTime": [
+      "src/pages/NonCancerDashboard.tsx",
+      "src/pages/Reports.tsx"
+    ],
+    "dashboard.preparing": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dashboard.reportButton": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dashboard.repairLabel": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dashboard.dailyState": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dashboard.weeklyState": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dashboard.monthlyState": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dashboard.yearlyState": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dashboard.netRepair": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dashboard.netStress": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dashboard.equilibrium": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dashboard.stressLabel": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dashboard.restorativeOutpaces": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dashboard.stressOutweighs": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dashboard.forcesEquilibrium": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dashboard.trackTwoForces": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dashboard.all": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dashboard.damage": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dashboard.reduceLoad": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dashboard.active": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "habits.sleepDebt": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "habits.smokingChewing": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "habits.environment": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "habits.checkKitchen": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "habits.dentalHealth": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dashboard.buildDefence": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "habits.powerOfBreath": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "habits.thingsYouLove": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "habits.areYouStressed": [
+      "src/pages/NonCancerDashboard.tsx",
+      "src/screens/HabitScreens/StressLogScreen.tsx"
+    ],
+    "habits.wigsHairloss": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "habits.exercise": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "habits.saferProducts": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dashboard.catchItEarly": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dashboard.cancerScreening": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dashboard.cancerScreeningDesc": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dashboard.indianCancers": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dashboard.indianCancersDesc": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dashboard.glucoseAndFoodBadge": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dashboard.continuousGlucoseInsights": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dashboard.continuousGlucoseDesc": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dash.talkMentalHealthExpert": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dashboard.facingCancerOverwhelming": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dashboard.talkToExpert": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dash.caregiverStress": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dashboard.caregiverStressDescNonCancer": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "dashboard.consultAndConnect": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "fasting.consultExpertTitle": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "fasting.cancerWarningDesc": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "fasting.medicalTeam": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "fasting.medicalTeamDesc": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "fasting.btnConsultExpert": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "fasting.btnStartFasting": [
+      "src/pages/NonCancerDashboard.tsx"
+    ],
+    "profile.savedSuccessfully": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.alertCategory": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.timeLabel": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.liveCgmTracking": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.cgmSubtext": [
+      "src/pages/Profile.tsx"
+    ],
+    "common.comingSoon": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.cgmComingSoonDesc": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.useManualReport": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.uploadCsvPdf": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.pendingReview": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.calorieRecommendation": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.kcalPerDay": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.calorieRecommendationHint": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.source": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.subscriptionBilling": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.notificationPreferences": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.profileConfig": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.mobileNumber": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.cancerJourney": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.disclaimerAccepted": [
+      "src/pages/Profile.tsx",
+      "src/pages/Register.tsx"
+    ],
+    "profile.disclaimerNotAccepted": [
+      "src/pages/Profile.tsx",
+      "src/pages/Register.tsx"
+    ],
+    "profile.readDisclaimer": [
+      "src/pages/Profile.tsx",
+      "src/pages/Register.tsx"
+    ],
+    "profile.gender": [
+      "src/pages/Profile.tsx",
+      "src/pages/Register.tsx"
+    ],
+    "profile.male": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.female": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.other": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.age": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.height": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.weight": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.activityLevel": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.sedentary": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.lightlyActive": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.moderatelyActive": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.veryActive": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.spikeThreshold": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.spikeThresholdHint": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.currencyPreference": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.shippingAddress": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.streetAddress": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.streetAddressPlaceholder": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.city": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.cityPlaceholder": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.state": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.statePlaceholder": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.postalCode": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.postalCodePlaceholder": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.appAppearance": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.light": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.dark": [
+      "src/pages/Profile.tsx"
+    ],
+    "common.update": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.legalAgreements": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.masterDisclaimer": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.termsAcceptedOn": [
+      "src/pages/Profile.tsx"
+    ],
+    "auth.signOut": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.deleteAccountConfirmTitle": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.deleteAccountConfirmDesc": [
+      "src/pages/Profile.tsx"
+    ],
+    "profile.deleting": [
+      "src/pages/Profile.tsx"
+    ],
+    "auth.completeProfile": [
+      "src/pages/Register.tsx"
+    ],
+    "auth.emailOptional": [
+      "src/pages/Register.tsx"
+    ],
+    "auth.emailUsageNotice": [
+      "src/pages/Register.tsx"
+    ],
+    "auth.continue": [
+      "src/pages/Register.tsx"
+    ],
+    "auth.ageYears": [
+      "src/pages/Register.tsx"
+    ],
+    "auth.heightCm": [
+      "src/pages/Register.tsx"
+    ],
+    "auth.weightKg": [
+      "src/pages/Register.tsx"
+    ],
+    "reports.title": [
+      "src/pages/Reports.tsx"
+    ],
+    "reports.uploadHint": [
+      "src/pages/Reports.tsx"
+    ],
+    "reports.uploadCgmData": [
+      "src/pages/Reports.tsx"
+    ],
+    "reports.dragAndDrop": [
+      "src/pages/Reports.tsx"
+    ],
+    "reports.clinicalExport": [
+      "src/pages/Reports.tsx"
+    ],
+    "reports.onePagePdf": [
+      "src/pages/Reports.tsx"
+    ],
+    "reports.doctorSummaryTitle": [
+      "src/pages/Reports.tsx"
+    ],
+    "reports.doctorSummaryDesc": [
+      "src/pages/Reports.tsx"
+    ],
+    "reports.exportDoctorSummaryPdf": [
+      "src/pages/Reports.tsx"
+    ],
+    "reports.exportCustomPdf": [
+      "src/pages/Reports.tsx"
+    ],
+    "reports.exportCustomDesc": [
+      "src/pages/Reports.tsx"
+    ],
+    "reports.todayPill": [
+      "src/pages/Reports.tsx"
+    ],
+    "reports.custom": [
+      "src/pages/Reports.tsx"
+    ],
+    "reports.from": [
+      "src/pages/Reports.tsx"
+    ],
+    "reports.to": [
+      "src/pages/Reports.tsx"
+    ],
+    "reports.downloadPdf": [
+      "src/pages/Reports.tsx"
+    ],
+    "reports.reportHistory": [
+      "src/pages/Reports.tsx"
+    ],
+    "reports.noReportsYet": [
+      "src/pages/Reports.tsx"
+    ],
+    "reports.readingsCount": [
+      "src/pages/Reports.tsx"
+    ],
+    "reports.medianPoints": [
+      "src/pages/Reports.tsx"
+    ],
+    "reports.dailySummariesCount": [
+      "src/pages/Reports.tsx"
+    ],
+    "reports.agpSummaryData": [
+      "src/pages/Reports.tsx"
+    ],
+    "reports.libreViewPdf": [
+      "src/pages/Reports.tsx"
+    ],
+    "reports.scannedDailyLog": [
+      "src/pages/Reports.tsx"
+    ],
+    "reports.processing": [
+      "src/pages/Reports.tsx"
+    ],
+    "reports.failed": [
+      "src/pages/Reports.tsx"
+    ],
+    "reports.deleteReportConfirmTitle": [
+      "src/pages/Reports.tsx"
+    ],
+    "reports.deleteReportConfirmDesc": [
+      "src/pages/Reports.tsx"
+    ],
+    "reports.yesDelete": [
+      "src/pages/Reports.tsx"
+    ],
+    "sub.fetchingPlans": [
+      "src/pages/Subscription.tsx"
+    ],
+    "sub.disableAutoRenewalQ": [
+      "src/pages/Subscription.tsx"
+    ],
+    "sub.availablePlans": [
+      "src/pages/Subscription.tsx"
+    ],
+    "sub.activeSubscription": [
+      "src/pages/Subscription.tsx"
+    ],
+    "sub.iosIapSoon": [
+      "src/pages/Subscription.tsx"
+    ],
+    "sub.invoiceDetails": [
+      "src/pages/Subscription.tsx"
+    ],
+    "sub.invoiceNumber": [
+      "src/pages/Subscription.tsx"
+    ],
+    "sub.paymentReference": [
+      "src/pages/Subscription.tsx"
+    ],
+    "sub.billingDate": [
+      "src/pages/Subscription.tsx"
+    ],
+    "sub.billingName": [
+      "src/pages/Subscription.tsx"
+    ],
+    "sub.billingEmail": [
+      "src/pages/Subscription.tsx"
+    ],
+    "sub.baseAmountTaxable": [
+      "src/pages/Subscription.tsx"
+    ],
+    "appointment.consultation": [
+      "src/screens/Appointment/BookAppointmentScreen.tsx"
+    ],
+    "appointment.appointmentSchedule": [
+      "src/screens/Appointment/BookAppointmentScreen.tsx"
+    ],
+    "appointment.selectSpecialist": [
+      "src/screens/Appointment/BookAppointmentScreen.tsx"
+    ],
+    "appointment.recommended": [
+      "src/screens/Appointment/BookAppointmentScreen.tsx"
+    ],
+    "appointment.yrsExp": [
+      "src/screens/Appointment/BookAppointmentScreen.tsx"
+    ],
+    "appointment.onlineRs": [
+      "src/screens/Appointment/BookAppointmentScreen.tsx"
+    ],
+    "appointment.inClinicRs": [
+      "src/screens/Appointment/BookAppointmentScreen.tsx"
+    ],
+    "appointment.consultationType": [
+      "src/screens/Appointment/BookAppointmentScreen.tsx"
+    ],
+    "appointment.onlineConsultation": [
+      "src/screens/Appointment/BookAppointmentScreen.tsx"
+    ],
+    "appointment.feeRs": [
+      "src/screens/Appointment/BookAppointmentScreen.tsx"
+    ],
+    "appointment.inClinicVisit": [
+      "src/screens/Appointment/BookAppointmentScreen.tsx"
+    ],
+    "appointment.chooseDate": [
+      "src/screens/Appointment/BookAppointmentScreen.tsx"
+    ],
+    "appointment.reasonForAppt": [
+      "src/screens/Appointment/BookAppointmentScreen.tsx"
+    ],
+    "appointment.selectTime": [
+      "src/screens/Appointment/BookAppointmentScreen.tsx"
+    ],
+    "appointment.noSlotsAvailable": [
+      "src/screens/Appointment/BookAppointmentScreen.tsx"
+    ],
+    "appointment.booked": [
+      "src/screens/Appointment/BookAppointmentScreen.tsx"
+    ],
+    "appointment.past": [
+      "src/screens/Appointment/BookAppointmentScreen.tsx"
+    ],
+    "appointment.notesToDoctor": [
+      "src/screens/Appointment/BookAppointmentScreen.tsx"
+    ],
+    "appointment.notesPlaceholder": [
+      "src/screens/Appointment/BookAppointmentScreen.tsx"
+    ],
+    "appointment.booking": [
+      "src/screens/Appointment/BookAppointmentScreen.tsx"
+    ],
+    "appointment.confirmBooking": [
+      "src/screens/Appointment/BookAppointmentScreen.tsx"
+    ],
+    "diag.pendingApptExists": [
+      "src/screens/Appointment/BookAppointmentScreen.tsx"
+    ],
+    "diag.reason": [
+      "src/screens/Appointment/BookAppointmentScreen.tsx"
+    ],
+    "diag.consultationNotes": [
+      "src/screens/Appointment/BookAppointmentScreen.tsx"
+    ],
+    "diag.prescriptionNotes": [
+      "src/screens/Appointment/BookAppointmentScreen.tsx"
+    ],
+    "diag.noApptHistory": [
+      "src/screens/Appointment/BookAppointmentScreen.tsx"
+    ],
+    "diag.yourReview": [
+      "src/screens/Appointment/BookAppointmentScreen.tsx"
+    ],
+    "diag.redirectingPayment": [
+      "src/screens/Appointment/BookAppointmentScreen.tsx"
+    ],
+    "diag.step2of3": [
+      "src/screens/Diagnostics/BookingSlotScreen.tsx"
+    ],
+    "diag.collectionDetails": [
+      "src/screens/Diagnostics/BookingSlotScreen.tsx"
+    ],
+    "diag.howToGiveSample": [
+      "src/screens/Diagnostics/BookingSlotScreen.tsx"
+    ],
+    "diag.notAvailableForLab": [
+      "src/screens/Diagnostics/BookingSlotScreen.tsx"
+    ],
+    "diag.visitCenter": [
+      "src/screens/Diagnostics/BookingSlotScreen.tsx"
+    ],
+    "diag.visitCenterFree": [
+      "src/screens/Diagnostics/BookingSlotScreen.tsx"
+    ],
+    "diag.labClosed": [
+      "src/screens/Diagnostics/BookingSlotScreen.tsx"
+    ],
+    "diag.labHoliday": [
+      "src/screens/Diagnostics/BookingSlotScreen.tsx"
+    ],
+    "diag.specialInstructions": [
+      "src/screens/Diagnostics/BookingSlotScreen.tsx"
+    ],
+    "diag.totalAmount": [
+      "src/screens/Diagnostics/BookingSlotScreen.tsx"
+    ],
+    "diag.step3of3": [
+      "src/screens/Diagnostics/PaymentScreen.tsx"
+    ],
+    "diag.bookingSummary": [
+      "src/screens/Diagnostics/PaymentScreen.tsx"
+    ],
+    "diag.diagnosticCenter": [
+      "src/screens/Diagnostics/PaymentScreen.tsx"
+    ],
+    "diag.collectionMethod": [
+      "src/screens/Diagnostics/PaymentScreen.tsx"
+    ],
+    "diag.promoCode": [
+      "src/screens/Diagnostics/PaymentScreen.tsx"
+    ],
+    "diag.totalToPay": [
+      "src/screens/Diagnostics/PaymentScreen.tsx"
+    ],
+    "diag.securePayment": [
+      "src/screens/Diagnostics/PaymentScreen.tsx"
+    ],
+    "diag.paymentProcessedVia": [
+      "src/screens/Diagnostics/PaymentScreen.tsx"
+    ],
+    "habits.alcoholHeader": [
+      "src/screens/HabitScreens/AlcoholLogScreen.tsx"
+    ],
+    "habits.trackAndTaper": [
+      "src/screens/HabitScreens/AlcoholLogScreen.tsx"
+    ],
+    "habits.ethanolDisrupts": [
+      "src/screens/HabitScreens/AlcoholLogScreen.tsx"
+    ],
+    "habits.ethanolDesc": [
+      "src/screens/HabitScreens/AlcoholLogScreen.tsx"
+    ],
+    "habits.drinksToday": [
+      "src/screens/HabitScreens/AlcoholLogScreen.tsx"
+    ],
+    "habits.drinks": [
+      "src/screens/HabitScreens/AlcoholLogScreen.tsx"
+    ],
+    "habits.saving": [
+      "src/screens/HabitScreens/AlcoholLogScreen.tsx",
+      "src/screens/HabitScreens/MovementLogScreen.tsx",
+      "src/screens/HabitScreens/SmokingLogScreen.tsx"
+    ],
+    "habits.logAlcohol": [
+      "src/screens/HabitScreens/AlcoholLogScreen.tsx"
+    ],
+    "habits.fourteenDayTrend": [
+      "src/screens/HabitScreens/AlcoholLogScreen.tsx"
+    ],
+    "habits.noDaysLogged": [
+      "src/screens/HabitScreens/AlcoholLogScreen.tsx",
+      "src/screens/HabitScreens/JoyLogScreen.tsx",
+      "src/screens/HabitScreens/MovementLogScreen.tsx",
+      "src/screens/HabitScreens/StillnessLogScreen.tsx"
+    ],
+    "habits.zeroDrinksClean": [
+      "src/screens/HabitScreens/AlcoholLogScreen.tsx"
+    ],
+    "habits.drinksCount": [
+      "src/screens/HabitScreens/AlcoholLogScreen.tsx"
+    ],
+    "habits.alcoholConsultTitle": [
+      "src/screens/HabitScreens/AlcoholLogScreen.tsx"
+    ],
+    "habits.alcoholConsultDesc": [
+      "src/screens/HabitScreens/AlcoholLogScreen.tsx"
+    ],
+    "breath.techniques.box.name": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.techniques.box.tagline": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.techniques.box.badge": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.techniques.box.description": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.phaseNameInhale": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.techniques.box.phaseInhale": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.phaseNameHold": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.techniques.box.phaseHold": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.phaseNameExhale": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.techniques.box.phaseExhale": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.techniques.box.phaseHoldEmpty": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.techniques.box.benefit": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.techniques.relax478.name": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.techniques.relax478.tagline": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.techniques.relax478.badge": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.techniques.relax478.description": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.techniques.relax478.phaseInhale": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.techniques.relax478.phaseHold": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.techniques.relax478.phaseExhale": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.techniques.relax478.benefit": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.techniques.coherent.name": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.techniques.coherent.tagline": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.techniques.coherent.badge": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.techniques.coherent.description": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.techniques.coherent.phaseInhale": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.techniques.coherent.phaseExhale": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.techniques.coherent.benefit": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.techniques.energizing.name": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.techniques.energizing.tagline": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.techniques.energizing.badge": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.techniques.energizing.description": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.techniques.energizing.phaseInhale": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.phaseNamePause": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.techniques.energizing.phasePause": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.techniques.energizing.phaseExhale": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.techniques.energizing.benefit": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.repairForceBreadcrumb": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.notificationTitle": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.activeRepair": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.powerOfBreath": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.mitochondrialAtpBadge": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.heroTitle": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.heroDesc": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.sinusNo": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.viaNasal": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.hrv": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.coherence": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.cortisol": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.fiveMinSession": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.chooseExercise": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.protocolsAvailable": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.ready": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.cycleNum": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.pauseSession": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.startPractice": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.cadenceBreakdown": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.sPerCycle": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.physioBenefit": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.practicedJustNow": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.completedCycles": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.cycles": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.dailyHabitLogger": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.logTodaysSession": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.plusRepairScore": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.recordDesc": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.standard": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.optimal": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.deep": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.quick": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.customDuration": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.mins": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.saveLog": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.scienceNotesTitle": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.card1Title": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.card1Desc": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.card2Title": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.card2Desc": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.card3Title": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.card3Desc": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.card4Title": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.notificationDesc": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.setReminder": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.recentSessions": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.last7Days": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "breath.noSessionsDesc": [
+      "src/screens/HabitScreens/BreathLogScreen.tsx"
+    ],
+    "dental.dentalHealth": [
+      "src/screens/HabitScreens/DentalLogScreen.tsx"
+    ],
+    "dental.oralHealthCheck": [
+      "src/screens/HabitScreens/DentalLogScreen.tsx"
+    ],
+    "dental.selfAssessment": [
+      "src/screens/HabitScreens/DentalLogScreen.tsx"
+    ],
+    "dental.doYouHaveSharpTooth": [
+      "src/screens/HabitScreens/DentalLogScreen.tsx"
+    ],
+    "dental.goodMaintainHygiene": [
+      "src/screens/HabitScreens/DentalLogScreen.tsx"
+    ],
+    "dental.tobaccoStaining": [
+      "src/screens/HabitScreens/DentalLogScreen.tsx"
+    ],
+    "dental.tobaccoStainTracker": [
+      "src/screens/HabitScreens/DentalLogScreen.tsx"
+    ],
+    "dental.noReadingsYet": [
+      "src/screens/HabitScreens/DentalLogScreen.tsx"
+    ],
+    "dental.takeFirstPhoto": [
+      "src/screens/HabitScreens/DentalLogScreen.tsx"
+    ],
+    "dental.lastReading": [
+      "src/screens/HabitScreens/DentalLogScreen.tsx"
+    ],
+    "dental.currentScore": [
+      "src/screens/HabitScreens/DentalLogScreen.tsx"
+    ],
+    "dental.uploadingPhoto": [
+      "src/screens/HabitScreens/DentalLogScreen.tsx"
+    ],
+    "dental.stainingTrend": [
+      "src/screens/HabitScreens/DentalLogScreen.tsx"
+    ],
+    "dental.disclaimer": [
+      "src/screens/HabitScreens/DentalLogScreen.tsx"
+    ],
+    "dental.illFittingDentureQ": [
+      "src/screens/HabitScreens/DentalLogScreen.tsx"
+    ],
+    "dental.goodDentures": [
+      "src/screens/HabitScreens/DentalLogScreen.tsx"
+    ],
+    "common.edit": [
+      "src/screens/HabitScreens/DentalLogScreen.tsx"
+    ],
+    "dental.deleteReadingQ": [
+      "src/screens/HabitScreens/DentalLogScreen.tsx"
+    ],
+    "environmental.notLogged": [
+      "src/screens/HabitScreens/EnvironmentalExposuresLogScreen.tsx"
+    ],
+    "environmental.safe": [
+      "src/screens/HabitScreens/EnvironmentalExposuresLogScreen.tsx"
+    ],
+    "environmental.resetToday": [
+      "src/screens/HabitScreens/EnvironmentalExposuresLogScreen.tsx"
+    ],
+    "environmental.score": [
+      "src/screens/HabitScreens/EnvironmentalExposuresLogScreen.tsx"
+    ],
+    "environmental.exposureScore": [
+      "src/screens/HabitScreens/EnvironmentalExposuresLogScreen.tsx"
+    ],
+    "environmental.aqiTracked": [
+      "src/screens/HabitScreens/EnvironmentalExposuresLogScreen.tsx"
+    ],
+    "env.waterPollution": [
+      "src/screens/HabitScreens/EnvironmentalExposuresLogScreen.tsx"
+    ],
+    "env.pesticidesExposure": [
+      "src/screens/HabitScreens/EnvironmentalExposuresLogScreen.tsx"
+    ],
+    "env.microplasticsExposure": [
+      "src/screens/HabitScreens/EnvironmentalExposuresLogScreen.tsx"
+    ],
+    "env.answerAtLeastOne": [
+      "src/screens/HabitScreens/EnvironmentalExposuresLogScreen.tsx"
+    ],
+    "env.personalizedRiskQ": [
+      "src/screens/HabitScreens/EnvironmentalExposuresLogScreen.tsx"
+    ],
+    "env.airAssessmentTitle": [
+      "src/screens/HabitScreens/EnvironmentalExposuresLogScreen.tsx"
+    ],
+    "env.questionNum": [
+      "src/screens/HabitScreens/EnvironmentalExposuresLogScreen.tsx"
+    ],
+    "env.airQ1": [
+      "src/screens/HabitScreens/EnvironmentalExposuresLogScreen.tsx"
+    ],
+    "env.airQ2": [
+      "src/screens/HabitScreens/EnvironmentalExposuresLogScreen.tsx"
+    ],
+    "env.airQ3": [
+      "src/screens/HabitScreens/EnvironmentalExposuresLogScreen.tsx"
+    ],
+    "env.orderN95Masks": [
+      "src/screens/HabitScreens/EnvironmentalExposuresLogScreen.tsx"
+    ],
+    "env.orderAirPurifier": [
+      "src/screens/HabitScreens/EnvironmentalExposuresLogScreen.tsx"
+    ],
+    "env.doneWithAirCategory": [
+      "src/screens/HabitScreens/EnvironmentalExposuresLogScreen.tsx"
+    ],
+    "env.waterQ1": [
+      "src/screens/HabitScreens/EnvironmentalExposuresLogScreen.tsx"
+    ],
+    "env.pesticidesQ1": [
+      "src/screens/HabitScreens/EnvironmentalExposuresLogScreen.tsx"
+    ],
+    "env.microplasticsQ1": [
+      "src/screens/HabitScreens/EnvironmentalExposuresLogScreen.tsx"
+    ],
+    "env.checkYourKitchen": [
+      "src/screens/HabitScreens/EnvironmentalExposuresLogScreen.tsx"
+    ],
+    "env.checkKitchenDesc": [
+      "src/screens/HabitScreens/EnvironmentalExposuresLogScreen.tsx"
+    ],
+    "env.airSafetyRecs": [
+      "src/screens/HabitScreens/EnvironmentalExposuresLogScreen.tsx"
+    ],
+    "common.dismiss": [
+      "src/screens/HabitScreens/EnvironmentalExposuresLogScreen.tsx"
+    ],
+    "dashboard.fastingWindow": [
+      "src/screens/HabitScreens/FastingLogScreen.tsx"
+    ],
+    "dashboard.eatingWindow": [
+      "src/screens/HabitScreens/FastingLogScreen.tsx"
+    ],
+    "dashboard.activeFasting": [
+      "src/screens/HabitScreens/FastingLogScreen.tsx"
+    ],
+    "habits.logHabit": [
+      "src/screens/HabitScreens/FastingLogScreen.tsx",
+      "src/screens/HabitScreens/SleepLogScreen.tsx"
+    ],
+    "habits.started": [
+      "src/screens/HabitScreens/FastingLogScreen.tsx"
+    ],
+    "habits.ended": [
+      "src/screens/HabitScreens/FastingLogScreen.tsx"
+    ],
+    "fasting.recentFasts": [
+      "src/screens/HabitScreens/FastingLogScreen.tsx"
+    ],
+    "common.completed": [
+      "src/screens/HabitScreens/FastingLogScreen.tsx"
+    ],
+    "gastritis.damageBreadcrumb": [
+      "src/screens/HabitScreens/GastritisLogScreen.tsx"
+    ],
+    "gastritis.gutHealthTracker": [
+      "src/screens/HabitScreens/GastritisLogScreen.tsx"
+    ],
+    "gastritis.trackAcidity": [
+      "src/screens/HabitScreens/GastritisLogScreen.tsx"
+    ],
+    "gastritis.trackAcidityDesc": [
+      "src/screens/HabitScreens/GastritisLogScreen.tsx"
+    ],
+    "gastritis.assessment": [
+      "src/screens/HabitScreens/GastritisLogScreen.tsx"
+    ],
+    "gastritis.doYouFeelAcidityOften": [
+      "src/screens/HabitScreens/GastritisLogScreen.tsx"
+    ],
+    "gastritis.frequentRequiresEvaluation": [
+      "src/screens/HabitScreens/GastritisLogScreen.tsx"
+    ],
+    "gastritis.chooseOption": [
+      "src/screens/HabitScreens/GastritisLogScreen.tsx"
+    ],
+    "gastritis.option1HpyTest": [
+      "src/screens/HabitScreens/GastritisLogScreen.tsx"
+    ],
+    "gastritis.option1Desc": [
+      "src/screens/HabitScreens/GastritisLogScreen.tsx"
+    ],
+    "gastritis.buyHpyTest": [
+      "src/screens/HabitScreens/GastritisLogScreen.tsx"
+    ],
+    "gastritis.consultDesc": [
+      "src/screens/HabitScreens/GastritisLogScreen.tsx"
+    ],
+    "gastritis.thatsGreat": [
+      "src/screens/HabitScreens/GastritisLogScreen.tsx"
+    ],
+    "gastritis.thatsGreatDesc": [
+      "src/screens/HabitScreens/GastritisLogScreen.tsx"
+    ],
+    "gastritis.advisoryTitle": [
+      "src/screens/HabitScreens/GastritisLogScreen.tsx"
+    ],
+    "gastritis.advisoryDesc": [
+      "src/screens/HabitScreens/GastritisLogScreen.tsx"
+    ],
+    "gastritis.proceedToBuyTest": [
+      "src/screens/HabitScreens/GastritisLogScreen.tsx"
+    ],
+    "gastritis.bookConsultationFirst": [
+      "src/screens/HabitScreens/GastritisLogScreen.tsx"
+    ],
+    "genetic.geneticLink": [
+      "src/screens/HabitScreens/GeneticLogScreen.tsx"
+    ],
+    "gia.badge": [
+      "src/screens/HabitScreens/GeneticLogScreen.tsx"
+    ],
+    "genetic.tenPercentRisk": [
+      "src/screens/HabitScreens/GeneticLogScreen.tsx"
+    ],
+    "genetic.evaluateRisk": [
+      "src/screens/HabitScreens/GeneticLogScreen.tsx"
+    ],
+    "genetic.chatWithGia": [
+      "src/screens/HabitScreens/GeneticLogScreen.tsx"
+    ],
+    "genetic.familyHistory": [
+      "src/screens/HabitScreens/GeneticLogScreen.tsx"
+    ],
+    "genetic.selfAssessment": [
+      "src/screens/HabitScreens/GeneticLogScreen.tsx"
+    ],
+    "genetic.thankYouSharing": [
+      "src/screens/HabitScreens/GeneticLogScreen.tsx"
+    ],
+    "genetic.regularCheckupsRecommended": [
+      "src/screens/HabitScreens/GeneticLogScreen.tsx"
+    ],
+    "indianCancers.siteDistribution": [
+      "src/screens/HabitScreens/IndianCancersScreen.tsx"
+    ],
+    "indianCancers.dataAttribution": [
+      "src/screens/HabitScreens/IndianCancersScreen.tsx"
+    ],
+    "indianCancers.disclaimer": [
+      "src/screens/HabitScreens/IndianCancersScreen.tsx"
+    ],
+    "habits.joyHeader": [
+      "src/screens/HabitScreens/JoyLogScreen.tsx"
+    ],
+    "habits.doWhatYouLove": [
+      "src/screens/HabitScreens/JoyLogScreen.tsx"
+    ],
+    "habits.joyBiochemistry": [
+      "src/screens/HabitScreens/JoyLogScreen.tsx"
+    ],
+    "habits.joyDesc": [
+      "src/screens/HabitScreens/JoyLogScreen.tsx"
+    ],
+    "habits.yourJoyThisWeek": [
+      "src/screens/HabitScreens/JoyLogScreen.tsx"
+    ],
+    "habits.joyPlaceholder": [
+      "src/screens/HabitScreens/JoyLogScreen.tsx"
+    ],
+    "habits.joyNudgeQuote": [
+      "src/screens/HabitScreens/JoyLogScreen.tsx"
+    ],
+    "habits.give30MinToday": [
+      "src/screens/HabitScreens/JoyLogScreen.tsx"
+    ],
+    "habits.yesExclamation": [
+      "src/screens/HabitScreens/JoyLogScreen.tsx"
+    ],
+    "habits.notToday": [
+      "src/screens/HabitScreens/JoyLogScreen.tsx"
+    ],
+    "habits.recent": [
+      "src/screens/HabitScreens/JoyLogScreen.tsx"
+    ],
+    "habits.myJoy": [
+      "src/screens/HabitScreens/JoyLogScreen.tsx"
+    ],
+    "habits.missed": [
+      "src/screens/HabitScreens/JoyLogScreen.tsx"
+    ],
+    "habits.whatDidYouDoJoy": [
+      "src/screens/HabitScreens/JoyLogScreen.tsx"
+    ],
+    "habits.whatDidYouDoJoyDesc": [
+      "src/screens/HabitScreens/JoyLogScreen.tsx"
+    ],
+    "habits.joyPlaceholderModal": [
+      "src/screens/HabitScreens/JoyLogScreen.tsx"
+    ],
+    "habits.cancel": [
+      "src/screens/HabitScreens/JoyLogScreen.tsx"
+    ],
+    "habits.saveJoy": [
+      "src/screens/HabitScreens/JoyLogScreen.tsx"
+    ],
+    "kitchen.resetToday": [
+      "src/screens/HabitScreens/KitchenLogScreen.tsx"
+    ],
+    "kitchen.kitchenSafetyQuestions": [
+      "src/screens/HabitScreens/KitchenLogScreen.tsx"
+    ],
+    "kitchen.kitchenSafetyDesc": [
+      "src/screens/HabitScreens/KitchenLogScreen.tsx"
+    ],
+    "kitchen.question1": [
+      "src/screens/HabitScreens/KitchenLogScreen.tsx"
+    ],
+    "common.yesSafeZero": [
+      "src/screens/HabitScreens/KitchenLogScreen.tsx"
+    ],
+    "common.noRiskMinus1": [
+      "src/screens/HabitScreens/KitchenLogScreen.tsx"
+    ],
+    "kitchen.question2": [
+      "src/screens/HabitScreens/KitchenLogScreen.tsx"
+    ],
+    "kitchen.question3": [
+      "src/screens/HabitScreens/KitchenLogScreen.tsx"
+    ],
+    "habits.movementHeader": [
+      "src/screens/HabitScreens/MovementLogScreen.tsx"
+    ],
+    "habits.keepItMoving": [
+      "src/screens/HabitScreens/MovementLogScreen.tsx"
+    ],
+    "habits.exerciseEssential": [
+      "src/screens/HabitScreens/MovementLogScreen.tsx"
+    ],
+    "habits.exerciseDesc": [
+      "src/screens/HabitScreens/MovementLogScreen.tsx"
+    ],
+    "habits.exerciseQuestion": [
+      "src/screens/HabitScreens/MovementLogScreen.tsx"
+    ],
+    "habits.min": [
+      "src/screens/HabitScreens/MovementLogScreen.tsx"
+    ],
+    "habits.logMovement": [
+      "src/screens/HabitScreens/MovementLogScreen.tsx"
+    ],
+    "habits.minutesCount": [
+      "src/screens/HabitScreens/MovementLogScreen.tsx"
+    ],
+    "obesity.obesityTracker": [
+      "src/screens/HabitScreens/ObesityLogScreen.tsx"
+    ],
+    "obesity.knowYourBmi": [
+      "src/screens/HabitScreens/ObesityLogScreen.tsx"
+    ],
+    "obesity.bmiCalculator": [
+      "src/screens/HabitScreens/ObesityLogScreen.tsx"
+    ],
+    "obesity.heightCm": [
+      "src/screens/HabitScreens/ObesityLogScreen.tsx"
+    ],
+    "obesity.weightKg": [
+      "src/screens/HabitScreens/ObesityLogScreen.tsx"
+    ],
+    "obesity.yourBmi": [
+      "src/screens/HabitScreens/ObesityLogScreen.tsx"
+    ],
+    "habits.sleepDebtSub": [
+      "src/screens/HabitScreens/SleepLogScreen.tsx"
+    ],
+    "habits.catchUpRest": [
+      "src/screens/HabitScreens/SleepLogScreen.tsx"
+    ],
+    "habits.troubleSleepingTitle": [
+      "src/screens/HabitScreens/SleepLogScreen.tsx"
+    ],
+    "habits.troubleSleepingDesc": [
+      "src/screens/HabitScreens/SleepLogScreen.tsx"
+    ],
+    "habits.startSleepAssessment": [
+      "src/screens/HabitScreens/SleepLogScreen.tsx"
+    ],
+    "habits.sleepClearsBrain": [
+      "src/screens/HabitScreens/SleepLogScreen.tsx"
+    ],
+    "habits.sleepClearsBrainDesc": [
+      "src/screens/HabitScreens/SleepLogScreen.tsx"
+    ],
+    "habits.hoursSleptLastNight": [
+      "src/screens/HabitScreens/SleepLogScreen.tsx"
+    ],
+    "habits.hrs": [
+      "src/screens/HabitScreens/SleepLogScreen.tsx"
+    ],
+    "habits.sleepQuality": [
+      "src/screens/HabitScreens/SleepLogScreen.tsx"
+    ],
+    "habits.poor": [
+      "src/screens/HabitScreens/SleepLogScreen.tsx"
+    ],
+    "habits.fair": [
+      "src/screens/HabitScreens/SleepLogScreen.tsx"
+    ],
+    "habits.good": [
+      "src/screens/HabitScreens/SleepLogScreen.tsx"
+    ],
+    "habits.excellent": [
+      "src/screens/HabitScreens/SleepLogScreen.tsx"
+    ],
+    "common.noDaysLogged": [
+      "src/screens/HabitScreens/SleepLogScreen.tsx",
+      "src/screens/HabitScreens/StressLogScreen.tsx"
+    ],
+    "habits.quality_": [
+      "src/screens/HabitScreens/SleepLogScreen.tsx"
+    ],
+    "sleep.sleepAdvisoryAlert": [
+      "src/screens/HabitScreens/SleepLogScreen.tsx"
+    ],
+    "sleep.option1": [
+      "src/screens/HabitScreens/SleepLogScreen.tsx"
+    ],
+    "sleep.stressedHenceSleepIssue": [
+      "src/screens/HabitScreens/SleepLogScreen.tsx"
+    ],
+    "sleep.consultMentalHealth": [
+      "src/screens/HabitScreens/SleepLogScreen.tsx"
+    ],
+    "habits.tobaccoHeader": [
+      "src/screens/HabitScreens/SmokingLogScreen.tsx"
+    ],
+    "habits.smokingAndTobacco": [
+      "src/screens/HabitScreens/SmokingLogScreen.tsx"
+    ],
+    "habits.tobaccoAdvisoryTitle": [
+      "src/screens/HabitScreens/SmokingLogScreen.tsx"
+    ],
+    "habits.tobaccoAdvisoryDesc": [
+      "src/screens/HabitScreens/SmokingLogScreen.tsx"
+    ],
+    "habits.cigarettesSmoked": [
+      "src/screens/HabitScreens/SmokingLogScreen.tsx"
+    ],
+    "habits.sticks": [
+      "src/screens/HabitScreens/SmokingLogScreen.tsx"
+    ],
+    "habits.cleanPreset": [
+      "src/screens/HabitScreens/SmokingLogScreen.tsx"
+    ],
+    "habits.tobaccoChewed": [
+      "src/screens/HabitScreens/SmokingLogScreen.tsx"
+    ],
+    "habits.pouches": [
+      "src/screens/HabitScreens/SmokingLogScreen.tsx"
+    ],
+    "habits.smokeFreeDay": [
+      "src/screens/HabitScreens/SmokingLogScreen.tsx"
+    ],
+    "habits.totalTobaccoExposures": [
+      "src/screens/HabitScreens/SmokingLogScreen.tsx"
+    ],
+    "habits.scoreNoDamage": [
+      "src/screens/HabitScreens/SmokingLogScreen.tsx"
+    ],
+    "habits.scoreDamageAdded": [
+      "src/screens/HabitScreens/SmokingLogScreen.tsx"
+    ],
+    "habits.pts0": [
+      "src/screens/HabitScreens/SmokingLogScreen.tsx"
+    ],
+    "habits.ptsMinus1": [
+      "src/screens/HabitScreens/SmokingLogScreen.tsx"
+    ],
+    "habits.loggedSuccessfully": [
+      "src/screens/HabitScreens/SmokingLogScreen.tsx"
+    ],
+    "habits.logTobaccoHabitsToday": [
+      "src/screens/HabitScreens/SmokingLogScreen.tsx"
+    ],
+    "habits.fourteenDayTrendTapering": [
+      "src/screens/HabitScreens/SmokingLogScreen.tsx"
+    ],
+    "habits.tobaccoFreeDaysCount": [
+      "src/screens/HabitScreens/SmokingLogScreen.tsx"
+    ],
+    "habits.totalLogged": [
+      "src/screens/HabitScreens/SmokingLogScreen.tsx"
+    ],
+    "habits.dailyAvg": [
+      "src/screens/HabitScreens/SmokingLogScreen.tsx"
+    ],
+    "habits.daysTracked": [
+      "src/screens/HabitScreens/SmokingLogScreen.tsx"
+    ],
+    "habits.stillnessHeader": [
+      "src/screens/HabitScreens/StillnessLogScreen.tsx"
+    ],
+    "habits.tenQuietMinutes": [
+      "src/screens/HabitScreens/StillnessLogScreen.tsx"
+    ],
+    "habits.stillnessLowersCortisol": [
+      "src/screens/HabitScreens/StillnessLogScreen.tsx"
+    ],
+    "habits.stillnessDesc": [
+      "src/screens/HabitScreens/StillnessLogScreen.tsx"
+    ],
+    "habits.meditateQuestion": [
+      "src/screens/HabitScreens/StillnessLogScreen.tsx"
+    ],
+    "habits.quietWindowHelps": [
+      "src/screens/HabitScreens/StillnessLogScreen.tsx"
+    ],
+    "habits.tenMinutesCounts": [
+      "src/screens/HabitScreens/StillnessLogScreen.tsx"
+    ],
+    "habits.dailyReminder": [
+      "src/screens/HabitScreens/StillnessLogScreen.tsx"
+    ],
+    "habits.reminderSetSuccess": [
+      "src/screens/HabitScreens/StillnessLogScreen.tsx"
+    ],
+    "habits.permissionNeeded": [
+      "src/screens/HabitScreens/StillnessLogScreen.tsx"
+    ],
+    "habits.setReminder": [
+      "src/screens/HabitScreens/StillnessLogScreen.tsx"
+    ],
+    "habits.last7Days": [
+      "src/screens/HabitScreens/StillnessLogScreen.tsx"
+    ],
+    "habits.meditatedOver10": [
+      "src/screens/HabitScreens/StillnessLogScreen.tsx"
+    ],
+    "stress.todaysLoad": [
+      "src/screens/HabitScreens/StressLogScreen.tsx"
+    ],
+    "stress.whatIsContributing": [
+      "src/screens/HabitScreens/StressLogScreen.tsx"
+    ],
+    "stress.selectFactor": [
+      "src/screens/HabitScreens/StressLogScreen.tsx"
+    ],
+    "stress.chatOrConsult": [
+      "src/screens/HabitScreens/StressLogScreen.tsx"
+    ],
+    "common.last7Days": [
+      "src/screens/HabitScreens/StressLogScreen.tsx"
+    ],
+    "recFoods.loading": [
+      "src/screens/RecommendedFoodsScreen.tsx"
+    ],
+    "recFoods.noRecs": [
+      "src/screens/RecommendedFoodsScreen.tsx"
+    ],
+    "recFoods.nutrition": [
+      "src/screens/RecommendedFoodsScreen.tsx"
+    ],
+    "recFoods.ingredients": [
+      "src/screens/RecommendedFoodsScreen.tsx"
+    ],
+    "recFoods.cultivation": [
+      "src/screens/RecommendedFoodsScreen.tsx"
+    ],
+    "recFoods.doctorsNote": [
+      "src/screens/RecommendedFoodsScreen.tsx"
+    ],
+    "shop.emptyCart": [
+      "src/screens/Shop/BasketScreen.tsx"
+    ],
+    "shop.reviewSubmitted": [
+      "src/screens/Shop/ProductRatingScreen.tsx"
+    ],
+    "common.error": [
+      "src/screens/Shop/ProductRatingScreen.tsx"
+    ],
+    "shop.invalidReviewSession": [
+      "src/screens/Shop/ProductRatingScreen.tsx"
+    ],
+    "shop.orderId": [
+      "src/screens/Shop/ProductRatingScreen.tsx",
+      "src/screens/Shop/ShopOrdersHistoryScreen.tsx"
+    ],
+    "shop.productRating": [
+      "src/screens/Shop/ProductRatingScreen.tsx"
+    ],
+    "shop.reviewComments": [
+      "src/screens/Shop/ProductRatingScreen.tsx"
+    ],
+    "shop.stepOrderPlaced": [
+      "src/screens/Shop/ShopOrdersHistoryScreen.tsx"
+    ],
+    "shop.stepVendorAssigned": [
+      "src/screens/Shop/ShopOrdersHistoryScreen.tsx"
+    ],
+    "shop.stepAccepted": [
+      "src/screens/Shop/ShopOrdersHistoryScreen.tsx"
+    ],
+    "shop.stepPacked": [
+      "src/screens/Shop/ShopOrdersHistoryScreen.tsx"
+    ],
+    "shop.stepShipped": [
+      "src/screens/Shop/ShopOrdersHistoryScreen.tsx"
+    ],
+    "shop.stepDelivered": [
+      "src/screens/Shop/ShopOrdersHistoryScreen.tsx"
+    ],
+    "shop.storeTitle": [
+      "src/screens/Shop/ShopOrdersHistoryScreen.tsx"
+    ],
+    "shop.myOrdersHistory": [
+      "src/screens/Shop/ShopOrdersHistoryScreen.tsx"
+    ],
+    "shop.productsTab": [
+      "src/screens/Shop/ShopOrdersHistoryScreen.tsx"
+    ],
+    "shop.testsTab": [
+      "src/screens/Shop/ShopOrdersHistoryScreen.tsx"
+    ],
+    "shop.loadingHistory": [
+      "src/screens/Shop/ShopOrdersHistoryScreen.tsx"
+    ],
+    "shop.noOrdersYet": [
+      "src/screens/Shop/ShopOrdersHistoryScreen.tsx"
+    ],
+    "shop.firstOrderHelp": [
+      "src/screens/Shop/ShopOrdersHistoryScreen.tsx"
+    ],
+    "shop.statusDelivered": [
+      "src/screens/Shop/ShopOrdersHistoryScreen.tsx"
+    ],
+    "shop.statusShipped": [
+      "src/screens/Shop/ShopOrdersHistoryScreen.tsx"
+    ],
+    "shop.statusCompleted": [
+      "src/screens/Shop/ShopOrdersHistoryScreen.tsx"
+    ],
+    "shop.statusPending": [
+      "src/screens/Shop/ShopOrdersHistoryScreen.tsx"
+    ],
+    "shop.paymentCompleted": [
+      "src/screens/Shop/ShopOrdersHistoryScreen.tsx"
+    ],
+    "shop.paymentPending": [
+      "src/screens/Shop/ShopOrdersHistoryScreen.tsx"
+    ],
+    "shop.orderedSupplies": [
+      "src/screens/Shop/ShopOrdersHistoryScreen.tsx"
+    ],
+    "shop.qty": [
+      "src/screens/Shop/ShopOrdersHistoryScreen.tsx"
+    ],
+    "shop.courierPartner": [
+      "src/screens/Shop/ShopOrdersHistoryScreen.tsx"
+    ],
+    "shop.trackingId": [
+      "src/screens/Shop/ShopOrdersHistoryScreen.tsx"
+    ],
+    "shop.deliveryTimeline": [
+      "src/screens/Shop/ShopOrdersHistoryScreen.tsx"
+    ],
+    "shop.needHelp": [
+      "src/screens/Shop/ShopOrdersHistoryScreen.tsx"
+    ],
+    "shop.totalAmountPaid": [
+      "src/screens/Shop/ShopOrdersHistoryScreen.tsx"
+    ],
+    "shop.noTestHistory": [
+      "src/screens/Shop/ShopOrdersHistoryScreen.tsx"
+    ],
+    "shop.bookTestHelp": [
+      "src/screens/Shop/ShopOrdersHistoryScreen.tsx"
+    ],
+    "shop.bookingId": [
+      "src/screens/Shop/ShopOrdersHistoryScreen.tsx"
+    ],
+    "shop.totalPaid": [
+      "src/screens/Shop/ShopOrdersHistoryScreen.tsx"
+    ],
+    "shop.backToStore": [
+      "src/screens/Shop/ShopScreen.tsx"
+    ],
+    "shop.category": [
+      "src/screens/Shop/ShopScreen.tsx"
+    ],
+    "shop.brand": [
+      "src/screens/Shop/ShopScreen.tsx"
+    ],
+    "shop.manufacturer": [
+      "src/screens/Shop/ShopScreen.tsx"
+    ],
+    "shop.highQualityDesc": [
+      "src/screens/Shop/ShopScreen.tsx"
+    ],
+    "shop.fulfillmentPrice": [
+      "src/screens/Shop/ShopScreen.tsx"
+    ],
+    "shop.selectSizePack": [
+      "src/screens/Shop/ShopScreen.tsx"
+    ],
+    "shop.productDetails": [
+      "src/screens/Shop/ShopScreen.tsx"
+    ],
+    "shop.keyBenefits": [
+      "src/screens/Shop/ShopScreen.tsx"
+    ],
+    "shop.activeIngredients": [
+      "src/screens/Shop/ShopScreen.tsx"
+    ],
+    "shop.directionsForUse": [
+      "src/screens/Shop/ShopScreen.tsx"
+    ],
+    "shop.safetyPrecautions": [
+      "src/screens/Shop/ShopScreen.tsx"
+    ],
+    "shop.checkDelivery": [
+      "src/screens/Shop/ShopScreen.tsx"
+    ],
+    "shop.totalPrice": [
+      "src/screens/Shop/ShopScreen.tsx"
+    ],
+    "shop.noReviewsYet": [
+      "src/screens/Shop/ShopScreen.tsx"
+    ],
+    "shop.reviewPurchasedItem": [
+      "src/screens/Shop/ShopScreen.tsx"
+    ],
+    "shop.mitoRebootHealth": [
+      "src/screens/Shop/ShopScreen.tsx"
+    ],
+    "shop.myBasket": [
+      "src/screens/Shop/ShopScreen.tsx"
+    ],
+    "shop.refreshingProducts": [
+      "src/screens/Shop/ShopScreen.tsx"
+    ],
+    "shop.noItemsAvailable": [
+      "src/screens/Shop/ShopScreen.tsx"
+    ],
+    "shop.tryResettingFilters": [
+      "src/screens/Shop/ShopScreen.tsx"
+    ],
+    "shop.startsFrom": [
+      "src/screens/Shop/ShopScreen.tsx"
+    ],
+    "shop.soldOut": [
+      "src/screens/Shop/ShopScreen.tsx"
+    ]
+  },
+  "missingMeta": {
+    "protocols.eyes": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "protocols.dental": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "protocols.bone": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "protocols.cardiac": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "protocols.brain": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "protocols.metabolic": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "habits.exercisedToday": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "habits.slept8Hours": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "habits.balancedDiet": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "habits.fastingWindow": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "habits.antioxidantFoods": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "habits.lowStressToday": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "risk.e30": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.e30_2020": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.e30_outdoor": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.e30_diet": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "risk.d30": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.d30_brush": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.d30_sugar": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.d30_grind": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "risk.b30": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.b30_resist": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.b30_calcium": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.b30_sun": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "risk.c30": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.c30_cardio": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.c30_sodium": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.c30_sleep": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "risk.n30": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.n30_sleep": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.n30_meditate": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.n30_learn": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "risk.m30": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.m30_fast": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.m30_carb": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.m30_steps": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "risk.e40": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.e40_uv": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.e40_antiox": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.e40_checkup": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "risk.d40": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.d40_deep": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.d40_tobacco": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.d40_floss": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "risk.b40": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.b40_resist": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.b40_dexa": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.b40_vitd": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "risk.c40": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.c40_cac": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.c40_zone2": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.c40_bp": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "risk.n40": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.n40_ketones": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.n40_omega3": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.n40_sleep": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "risk.m40": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.m40_fasting": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.m40_cgm": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.m40_muscle": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "risk.e50": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.e50_pressure": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.e50_omega3": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.e50_screens": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "risk.d50": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.d50_saliva": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.d50_fluoride": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.d50_checkup": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "risk.b50": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.b50_heavy": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.b50_balance": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.b50_protein": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "risk.c50": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.c50_arteries": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.c50_sodium": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.c50_vo2": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "risk.n50": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.n50_exercise": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.n50_social": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.n50_polyphenols": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "risk.m50": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.m50_strength": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.m50_fast": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.m50_postmeal": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "risk.e60": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.e60_exam": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.e60_sunglasses": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.e60_lighting": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "risk.d60": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.d60_cancer": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.d60_implant": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.d60_clean": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "risk.b60": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.b60_fall": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.b60_dexa": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.b60_sun": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "risk.c60": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.c60_ecg": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.c60_walk": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.c60_hydration": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "risk.n60": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.n60_cognitive": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.n60_sleep": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.n60_meds": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "risk.m60": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.m60_protein": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.m60_bands": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "factors.m60_glucose": [
+      "src/modules/AgeingModule.tsx"
+    ],
+    "protocols.peripheralCheck": [
+      "src/modules/DiabetesModule.tsx"
+    ],
+    "protocols.retinopathyCheck": [
+      "src/modules/DiabetesModule.tsx"
+    ],
+    "protocols.nephropathyCheck": [
+      "src/modules/DiabetesModule.tsx"
+    ]
+  }
+}

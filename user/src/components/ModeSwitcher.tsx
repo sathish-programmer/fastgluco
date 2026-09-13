@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 export const ModeSwitcher: React.FC = () => {
   const { activeMode, setActiveMode, updateProfile, branding } = useAuth();
   const { showToast } = useToast();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [pendingMode, setPendingMode] = useState<FocusModeType | null>(null);
@@ -47,22 +47,22 @@ export const ModeSwitcher: React.FC = () => {
       key: 'TREATMENT',
       title: t('modes.treatmentTitle', 'Cancer Treatment'),
       shortLabel: t('modes.treatmentShort', 'Treatment'),
-      description: t('modes.treatmentDesc', 'Treatment tracking, symptom management, medication logging, and clinical monitoring.'),
+      description: t('modes.treatmentDesc', 'Adjunct lifestyle guidance, sleep hygiene, and gut repair during active oncology care.'),
       icon: Heart,
-      accentColor: '#3B82F6',
-      cardTheme: 'border-blue-500/80 dark:border-blue-500/70 bg-blue-50/50 dark:bg-blue-950/30 shadow-xs shadow-blue-500/5',
-      badgeDot: 'bg-blue-500',
-      badgeText: 'text-blue-700 dark:text-blue-400',
-      iconContainer: 'bg-blue-100/80 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800',
-      changeBtn: 'bg-blue-100/80 hover:bg-blue-200 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 border-blue-300/80 dark:border-blue-700'
+      accentColor: '#4F46E5',
+      cardTheme: 'border-indigo-500/80 dark:border-indigo-500/70 bg-indigo-50/50 dark:bg-indigo-950/30 shadow-xs shadow-indigo-500/5',
+      badgeDot: 'bg-indigo-500',
+      badgeText: 'text-indigo-700 dark:text-indigo-400',
+      iconContainer: 'bg-indigo-100/80 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800',
+      changeBtn: 'bg-indigo-100/80 hover:bg-indigo-200 dark:bg-indigo-900/50 text-indigo-800 dark:text-indigo-200 border-indigo-300/80 dark:border-indigo-700'
     },
     {
       key: 'SECONDARY_PREVENTION',
       title: t('modes.secondaryPreventionTitle', 'Secondary Prevention'),
-      shortLabel: t('modes.secondaryPreventionShort', 'Recurrence Care'),
-      description: t('modes.secondaryPreventionDesc', 'Long-term survivorship habits, antioxidant support, and recurrence protection.'),
+      shortLabel: t('modes.secondaryPreventionShort', 'Survivorship'),
+      description: t('modes.secondaryPreventionDesc', 'Long-term recurrence prevention, immune resilience, and metabolic tracking.'),
       icon: Sparkles,
-      accentColor: '#14B8A6',
+      accentColor: '#0D9488',
       cardTheme: 'border-teal-500/80 dark:border-teal-500/70 bg-teal-50/50 dark:bg-teal-950/30 shadow-xs shadow-teal-500/5',
       badgeDot: 'bg-teal-500',
       badgeText: 'text-teal-700 dark:text-teal-400',
@@ -72,21 +72,21 @@ export const ModeSwitcher: React.FC = () => {
     {
       key: 'AGEING',
       title: t('modes.ageingTitle', 'Ageing & Longevity'),
-      shortLabel: t('modes.ageingShort', 'Ageing'),
-      description: t('modes.ageingDesc', 'Decade-based organ defense (Eyes, Dental, Bone, Cardiac, Brain, Metabolic).'),
+      shortLabel: t('modes.ageingShort', 'Longevity'),
+      description: t('modes.ageingDesc', 'Cellular renewal, circadian rhythm maintenance, and healthy lifespan enhancement.'),
       icon: Hourglass,
-      accentColor: '#8B5CF6',
-      cardTheme: 'border-purple-500/80 dark:border-purple-500/70 bg-purple-50/50 dark:bg-purple-950/30 shadow-xs shadow-purple-500/5',
-      badgeDot: 'bg-purple-500',
-      badgeText: 'text-purple-700 dark:text-purple-400',
-      iconContainer: 'bg-purple-100/80 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800',
-      changeBtn: 'bg-purple-100/80 hover:bg-purple-200 dark:bg-purple-900/50 text-purple-800 dark:text-purple-200 border-purple-300/80 dark:border-purple-700'
+      accentColor: '#0EA5E9',
+      cardTheme: 'border-sky-500/80 dark:border-sky-500/70 bg-sky-50/50 dark:bg-sky-950/30 shadow-xs shadow-sky-500/5',
+      badgeDot: 'bg-sky-500',
+      badgeText: 'text-sky-700 dark:text-sky-400',
+      iconContainer: 'bg-sky-100/80 dark:bg-sky-900/60 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800',
+      changeBtn: 'bg-sky-100/80 hover:bg-sky-200 dark:bg-sky-900/50 text-sky-800 dark:text-sky-200 border-sky-300/80 dark:border-sky-700'
     },
     {
       key: 'PCOD',
       title: t('modes.pcodTitle', 'PCOD / PCOS Care'),
-      shortLabel: t('modes.pcodShort', 'PCOD'),
-      description: t('modes.pcodDesc', 'Menstrual cycle predictor, androgen/hirsutism monitoring, and metabolic habits.'),
+      shortLabel: t('modes.pcodShort', 'PCOD Care'),
+      description: t('modes.pcodDesc', 'Hormonal balance, insulin resistance management, and cycle regularity.'),
       icon: Flower2,
       accentColor: '#EC4899',
       cardTheme: 'border-pink-500/80 dark:border-pink-500/70 bg-pink-50/50 dark:bg-pink-950/30 shadow-xs shadow-pink-500/5',
@@ -99,33 +99,33 @@ export const ModeSwitcher: React.FC = () => {
       key: 'DIABETES',
       title: t('modes.diabetesTitle', 'Diabetes & Glucose'),
       shortLabel: t('modes.diabetesShort', 'Diabetes'),
-      description: t('modes.diabetesDesc', 'Glycemic control, quarterly HbA1c curves, and yearly podiatry/retina checks.'),
-      icon: Droplets,
-      accentColor: '#059669',
-      cardTheme: 'border-emerald-600/80 dark:border-emerald-600/70 bg-emerald-50/50 dark:bg-emerald-950/30 shadow-xs shadow-emerald-600/5',
-      badgeDot: 'bg-emerald-600',
-      badgeText: 'text-emerald-800 dark:text-emerald-300',
-      iconContainer: 'bg-emerald-100/80 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 border-emerald-200 dark:border-emerald-800',
-      changeBtn: 'bg-emerald-100/80 hover:bg-emerald-200 dark:bg-emerald-900/50 text-emerald-900 dark:text-emerald-100 border-emerald-300/80 dark:border-emerald-700'
+      description: t('modes.diabetesDesc', 'Glycemic control, time-in-range optimization, and post-prandial spike reduction.'),
+      icon: Gauge,
+      accentColor: '#3B82F6',
+      cardTheme: 'border-blue-500/80 dark:border-blue-500/70 bg-blue-50/50 dark:bg-blue-950/30 shadow-xs shadow-blue-500/5',
+      badgeDot: 'bg-blue-500',
+      badgeText: 'text-blue-700 dark:text-blue-400',
+      iconContainer: 'bg-blue-100/80 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+      changeBtn: 'bg-blue-100/80 hover:bg-blue-200 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 border-blue-300/80 dark:border-blue-700'
     },
     {
       key: 'HYPERTENSION',
       title: t('modes.hypertensionTitle', 'Hypertension (HTN)'),
-      shortLabel: t('modes.hypertensionShort', 'Hypertension'),
-      description: t('modes.hypertensionDesc', 'Morning & evening blood pressure logs, low-salt DASH tracking, and relaxation.'),
-      icon: Gauge,
-      accentColor: '#EF4444',
-      cardTheme: 'border-rose-500/80 dark:border-rose-500/70 bg-rose-50/50 dark:bg-rose-950/30 shadow-xs shadow-rose-500/5',
-      badgeDot: 'bg-rose-500',
-      badgeText: 'text-rose-700 dark:text-rose-400',
-      iconContainer: 'bg-rose-100/80 dark:bg-rose-900/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800',
-      changeBtn: 'bg-rose-100/80 hover:bg-rose-200 dark:bg-rose-900/50 text-rose-800 dark:text-rose-200 border-rose-300/80 dark:border-rose-700'
+      shortLabel: t('modes.hypertensionShort', 'HTN Care'),
+      description: t('modes.hypertensionDesc', 'Blood pressure stability, sodium regulation, and vascular elasticity support.'),
+      icon: Droplets,
+      accentColor: '#F97316',
+      cardTheme: 'border-orange-500/80 dark:border-orange-500/70 bg-orange-50/50 dark:bg-orange-950/30 shadow-xs shadow-orange-500/5',
+      badgeDot: 'bg-orange-500',
+      badgeText: 'text-orange-700 dark:text-orange-400',
+      iconContainer: 'bg-orange-100/80 dark:bg-orange-900/60 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800',
+      changeBtn: 'bg-orange-100/80 hover:bg-orange-200 dark:bg-orange-900/50 text-orange-800 dark:text-orange-200 border-orange-300/80 dark:border-orange-700'
     },
     {
       key: 'PARKINSON',
       title: t('modes.parkinsonTitle', "Parkinson's Care"),
-      shortLabel: t('modes.parkinsonShort', "Parkinson's"),
-      description: t('modes.parkinsonDesc', 'Motor symptom severity curves (Tremor/Rigidity/Bradykinesia) and dopamine habits.'),
+      shortLabel: t('modes.parkinsonShort', 'Parkinson'),
+      description: t('modes.parkinsonDesc', 'Neuroprotection, mitochondrial bioenergetics, and dopamine axis support.'),
       icon: Brain,
       accentColor: '#7C3AED',
       cardTheme: 'border-violet-500/80 dark:border-violet-500/70 bg-violet-50/50 dark:bg-violet-950/30 shadow-xs shadow-violet-500/5',
@@ -155,6 +155,10 @@ export const ModeSwitcher: React.FC = () => {
   const getDynamicDisclaimer = (mode: FocusModeType | null) => {
     if (!mode) return '';
     if (mode === 'TREATMENT') {
+      if (language !== 'en') {
+        return t('disclaimer.cancerTreatmentText', `Lifestyle Guidance & Legal Disclaimer for Cancer Treatment:
+This application provides preventive lifestyle, nutritional, and metabolic habit tracking designed solely to support overall wellness. It does NOT constitute medical treatment, chemotherapy, surgery, radiation, or direct medical diagnosis. All recommendations must be evaluated with your treating oncologist.`);
+      }
       return (
         branding?.cancerTreatmentDisclaimer ||
         `Lifestyle Guidance & Legal Disclaimer for Cancer Treatment:
@@ -162,6 +166,10 @@ This application provides preventive lifestyle, nutritional, and metabolic habit
       );
     }
     if (mode === 'SECONDARY_PREVENTION') {
+      if (language !== 'en') {
+        return t('disclaimer.cancerSecondaryText', `Lifestyle & Nutrition Guidance for Cancer Survivorship:
+This program is designed to support long-term metabolic health, antioxidant intake, and cellular repair habits for individuals in post-treatment survivorship. Always consult your oncology care team for regular clinical screenings.`);
+      }
       return (
         branding?.cancerSecondaryDisclaimer ||
         `Lifestyle & Nutrition Guidance for Cancer Survivorship:
@@ -169,14 +177,18 @@ This program is designed to support long-term metabolic health, antioxidant inta
       );
     }
     if (mode === 'PREVENTION') {
+      if (language !== 'en') {
+        return t('disclaimer.cancerPreventionText', `Lifestyle Guidance & Legal Disclaimer for Cancer Prevention:
+This application offers evidence-informed guidance on preventive lifestyle habits, sleep hygiene, metabolic stability, and reducing environmental toxin exposure. It is intended for general educational wellness.`);
+      }
       return (
         branding?.cancerPreventionDisclaimer ||
         `Lifestyle Guidance & Legal Disclaimer for Cancer Prevention:
 This application offers evidence-informed guidance on preventive lifestyle habits, sleep hygiene, metabolic stability, and reducing environmental toxin exposure. It is intended for general educational wellness.`
       );
     }
-    return `Lifestyle & Wellness Tracking Protocol:
-This module is intended to support your personal daily lifestyle habits, nutrition choices, and symptom tracking. It does not provide medical diagnosis or replace consultation with certified healthcare specialists.`;
+    return t('disclaimer.generalLifestyleText', `Lifestyle & Wellness Tracking Protocol:
+This module is intended to support your personal daily lifestyle habits, nutrition choices, and symptom tracking. It does not provide medical diagnosis or replace consultation with certified healthcare specialists.`);
   };
 
   const handleSelectMode = (key: FocusModeType) => {
@@ -349,7 +361,7 @@ This module is intended to support your personal daily lifestyle habits, nutriti
                 </div>
                 <div>
                   <h3 className="text-base font-black text-slate-900 dark:text-slate-100 leading-tight">
-                    Medical Disclaimer
+                    {t('disclaimer.medicalDisclaimer', 'Medical Disclaimer')}
                   </h3>
                   <span className="text-[10.5px] font-bold text-slate-400 dark:text-slate-500">
                     {modesConfig.find(m => m.key === pendingMode)?.title}
@@ -374,7 +386,7 @@ This module is intended to support your personal daily lifestyle habits, nutriti
                   onClick={() => { setShowDisclaimer(false); setPendingMode(null); }}
                   className="flex-1 py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold text-xs hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer"
                 >
-                  Cancel
+                  {t('common.cancel', 'Cancel')}
                 </button>
                 <button
                   type="button"
@@ -382,7 +394,7 @@ This module is intended to support your personal daily lifestyle habits, nutriti
                   disabled={isSaving}
                   className="flex-1 py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-600/25 transition-all cursor-pointer flex items-center justify-center gap-1.5"
                 >
-                  {isSaving ? 'Switching...' : 'I Understand & Accept'}
+                  {isSaving ? t('common.saving', 'Switching...') : t('disclaimer.understandAndAccept', 'I Understand & Accept')}
                 </button>
               </div>
             </motion.div>

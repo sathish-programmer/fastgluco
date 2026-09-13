@@ -150,7 +150,7 @@ export const CardiacModule: React.FC = () => {
                   value={height}
                   onChange={(e) => setHeight(e.target.value)}
                   className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-rose-500"
-                  placeholder="e.g. 172"
+                  placeholder={t('protocols.heightPlaceholder', 'e.g. 172')}
                 />
               </div>
               <div>
@@ -160,7 +160,7 @@ export const CardiacModule: React.FC = () => {
                   value={weight}
                   onChange={(e) => setWeight(e.target.value)}
                   className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-rose-500"
-                  placeholder="e.g. 74"
+                  placeholder={t('protocols.weightPlaceholder', 'e.g. 74')}
                 />
               </div>
             </div>

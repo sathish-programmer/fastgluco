@@ -4,8 +4,17 @@ import { useToast } from '../context/ToastContext';
 import { useLanguage } from '../context/LanguageContext';
 import { Bell, Check, Loader2, Trash2 } from 'lucide-react';
 
+const LOCALE_MAP: Record<string, string> = {
+  en: 'en-US',
+  ta: 'ta-IN',
+  te: 'te-IN',
+  kn: 'kn-IN',
+  hi: 'hi-IN'
+};
+
 export const NotificationBell: React.FC = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const activeLocale = LOCALE_MAP[language] || 'en-US';
   const { token, apiUrl } = useAuth();
   const { showToast } = useToast();
   const [unreadCount, setUnreadCount] = useState(0);
@@ -189,14 +198,14 @@ export const NotificationBell: React.FC = () => {
     yesterday.setDate(now.getDate() - 1);
     const isYesterday = date.toDateString() === yesterday.toDateString();
     
-    const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+    const timeStr = date.toLocaleTimeString(activeLocale, { hour: '2-digit', minute: '2-digit', hour12: true });
     
     if (isToday) {
       return `${t('dashboard.today')}, ${timeStr}`;
     } else if (isYesterday) {
-      return `Yesterday, ${timeStr}`;
+      return `${t('common.yesterday', 'Yesterday')}, ${timeStr}`;
     } else {
-      const dateStrFormatted = date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      const dateStrFormatted = date.toLocaleDateString(activeLocale, { month: 'short', day: 'numeric' });
       return `${dateStrFormatted}, ${timeStr}`;
     }
   };

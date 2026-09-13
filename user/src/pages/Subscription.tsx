@@ -75,9 +75,18 @@ interface SubscriptionPageProps {
   isBlocking?: boolean;
 }
 
+const LOCALE_MAP: Record<string, string> = {
+  en: 'en-US',
+  ta: 'ta-IN',
+  te: 'te-IN',
+  kn: 'kn-IN',
+  hi: 'hi-IN'
+};
+
 export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSuccess, isBlocking = false }) => {
   const { user, token, apiUrl, branding } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const activeLocale = LOCALE_MAP[language] || 'en-US';
   const isIOSAppStoreBlocked = Capacitor.getPlatform() === 'ios';
 
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -202,7 +211,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to cancel auto-renewal.');
 
-      setSuccessMsg('Auto-renewal turned off. Your subscription is active until ' + new Date(data.subscription.endDate).toLocaleDateString());
+      setSuccessMsg(t('sub.autoRenewTurnedOffUntil', { date: new Date(data.subscription.endDate).toLocaleDateString(activeLocale), defaultValue: 'Auto-renewal turned off. Your subscription is active until ' + new Date(data.subscription.endDate).toLocaleDateString(activeLocale) }));
       await fetchData();
     } catch (err: any) {
       setError(err.message);
@@ -437,7 +446,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                   <span>{f.label}</span>
                   {hasFeature && (
                     <span className="text-[7px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-full uppercase tracking-wider font-extrabold animate-pulse">
-                      Included
+                      {t('sub.included', 'Included')}
                     </span>
                   )}
                 </span>
@@ -539,13 +548,13 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
           <div className="flex justify-between items-start mb-3 relative z-10">
             <div>
               <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-full border border-slate-200/60 dark:border-slate-700">
-                Your Current Tier
+                {t('sub.yourCurrentTier', 'Your Current Tier')}
               </span>
               <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100 mt-2 flex items-center gap-2">
                 <span style={{ color: activePlanDetails.color }}>{activePlanDetails.name}</span>
                 {activeSub.status === 'trialing' && (
                   <span className="text-[9.5px] font-bold bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200/80 dark:border-amber-700/60 px-2 py-0.5 rounded-md leading-none self-center">
-                    Free Trial
+                    {t('sub.freeTrial', 'Free Trial')}
                   </span>
                 )}
               </h3>
@@ -571,17 +580,17 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                 <span>{t('startDateLabel')}</span>
               </span>
               <span className="text-slate-800 dark:text-slate-100 font-bold">
-                {new Date(activeSub.startDate).toLocaleDateString()}
+                {new Date(activeSub.startDate).toLocaleDateString(activeLocale)}
               </span>
             </div>
 
             <div className="flex justify-between items-center text-xs font-semibold text-slate-600 dark:text-slate-400">
               <span className="flex items-center space-x-1.5">
                 <Calendar className="h-4 w-4 text-slate-400 dark:text-slate-500" />
-                <span>{activeSub.status === 'trialing' ? 'Trial Expiry' : activeSub.cancelAtPeriodEnd ? 'Expiry Date' : 'Renewal Date'}</span>
+                <span>{activeSub.status === 'trialing' ? t('sub.trialExpiry', 'Trial Expiry') : activeSub.cancelAtPeriodEnd ? t('sub.expiryDate', 'Expiry Date') : t('sub.renewalDate', 'Renewal Date')}</span>
               </span>
               <span className="text-slate-800 dark:text-slate-100 font-bold">
-                {new Date(activeSub.status === 'trialing' && activeSub.trialEndDate ? activeSub.trialEndDate : activeSub.endDate).toLocaleDateString()}
+                {new Date(activeSub.status === 'trialing' && activeSub.trialEndDate ? activeSub.trialEndDate : activeSub.endDate).toLocaleDateString(activeLocale)}
               </span>
             </div>
 
@@ -589,14 +598,14 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
               <div className="space-y-2.5 pt-2">
                 <div className="p-3 bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300 text-xs font-bold rounded-2xl border border-amber-100 dark:border-amber-900/30 flex items-start space-x-2">
                   <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-500 mt-0.5" />
-                  <span>Auto-renew is disabled. Your access will expire on {new Date(activeSub.endDate).toLocaleDateString()}.</span>
+                  <span>{t('sub.autoRenewDisabledExpireOn', { date: new Date(activeSub.endDate).toLocaleDateString(activeLocale), defaultValue: `Auto-renew is disabled. Your access will expire on ${new Date(activeSub.endDate).toLocaleDateString(activeLocale)}.` })}</span>
                 </div>
                 <button
                   onClick={handleReactivateSubscription}
                   disabled={actionLoading}
                   className="w-full bg-primary hover:bg-primary-dark text-white text-xs font-bold py-3 rounded-2xl transition-all shadow-sm cursor-pointer"
                 >
-                  {actionLoading ? 'Processing...' : 'Turn On Auto-Renewal'}
+                  {actionLoading ? t('common.processing', 'Processing...') : t('sub.turnOnAutoRenewal', 'Turn On Auto-Renewal')}
                 </button>
               </div>
             ) : (
@@ -664,13 +673,13 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
               onClick={() => setBillingCycle('monthly')}
               className={`px-3 py-1 rounded-full transition-all ${billingCycle === 'monthly' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}
             >
-              Monthly
+              {t('sub.monthly', 'Monthly')}
             </button>
             <button
               onClick={() => setBillingCycle('yearly')}
               className={`px-3 py-1 rounded-full transition-all ${billingCycle === 'yearly' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}
             >
-              Yearly ({yearlySavingsPercentage > 0 ? `Save ~${yearlySavingsPercentage}%` : 'Billing'})
+              {t('sub.yearly', 'Yearly')} ({yearlySavingsPercentage > 0 ? t('sub.savePercentage', { pct: yearlySavingsPercentage }, `Save ~${yearlySavingsPercentage}%`) : t('sub.yearlyBilling', 'Billing')})
             </button>
           </div>
         </div>
@@ -876,7 +885,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-soft">
           <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3 flex items-center space-x-1.5">
             <FileText className="h-4 w-4" />
-            <span>Billing & Invoice History</span>
+            <span>{t('sub.billingInvoiceHistory', 'Billing & Invoice History')}</span>
           </h4>
 
           <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-60 overflow-y-auto no-scrollbar">
@@ -885,14 +894,14 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                 <div>
                   <span className="text-slate-800 dark:text-slate-100 font-bold block">{inv.invoiceNumber}</span>
                   <span className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">
-                    {new Date(inv.createdAt).toLocaleDateString()}
+                    {new Date(inv.createdAt).toLocaleDateString(activeLocale)}
                   </span>
                 </div>
                 <div className="flex items-center space-x-3">
                   <span className="text-slate-700 dark:text-slate-200 font-bold">₹{inv.totalAmount.toFixed(2)}</span>
                   <button
                     onClick={() => setSelectedInvoice(inv)}
-                    className="p-1.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-primary transition-all"
+                    className="p-1.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-primary transition-all cursor-pointer"
                   >
                     <Download className="h-4.5 w-4.5" />
                   </button>
@@ -914,9 +923,9 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
               </span>
               <button
                 onClick={() => setSelectedInvoice(null)}
-                className="text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-full"
+                className="text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-full cursor-pointer"
               >
-                Close
+                {t('common.close', 'Close')}
               </button>
             </div>
 
@@ -927,11 +936,11 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
               </div>
               <div className="flex justify-between">
                 <span>{t('sub.paymentReference', 'Payment Reference:')}</span>
-                <span className="text-slate-850 dark:text-slate-200 font-mono text-[10px]">{selectedInvoice.paymentTransactionId || 'Promo Code / Manual'}</span>
+                <span className="text-slate-850 dark:text-slate-200 font-mono text-[10px]">{selectedInvoice.paymentTransactionId || t('sub.promoCodeManual', 'Promo Code / Manual')}</span>
               </div>
               <div className="flex justify-between">
                 <span>{t('sub.billingDate', 'Billing Date:')}</span>
-                <span className="text-slate-800 dark:text-slate-100 font-bold">{new Date(selectedInvoice.createdAt).toLocaleDateString()}</span>
+                <span className="text-slate-800 dark:text-slate-100 font-bold">{new Date(selectedInvoice.createdAt).toLocaleDateString(activeLocale)}</span>
               </div>
               <div className="flex justify-between">
                 <span>{t('sub.billingName', 'Billing Name:')}</span>
@@ -955,7 +964,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
               </div>
               <div className="border-t border-slate-200 dark:border-slate-800 my-2"></div>
               <div className="flex justify-between text-sm font-extrabold text-slate-800 dark:text-slate-100">
-                <span>Total Paid:</span>
+                <span>{t('shop.totalPaid', 'Total Paid')}:</span>
                 <span className="text-primary font-black">₹{selectedInvoice.totalAmount.toFixed(2)}</span>
               </div>
             </div>
@@ -964,10 +973,10 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
               <button
                 onClick={() => handleDownloadPDF(selectedInvoice._id, selectedInvoice.invoiceNumber)}
                 disabled={actionLoading}
-                className="w-full bg-primary hover:bg-primary-dark text-white text-xs font-bold py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center space-x-1.5 disabled:opacity-50"
+                className="w-full bg-primary hover:bg-primary-dark text-white text-xs font-bold py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center space-x-1.5 disabled:opacity-50 cursor-pointer"
               >
                 <Download className="h-4 w-4" />
-                <span>{actionLoading ? 'Generating PDF...' : 'Download Invoice PDF'}</span>
+                <span>{actionLoading ? t('sub.generatingPdf', 'Generating PDF...') : t('diag.downloadInvoicePdf', 'Download Invoice PDF')}</span>
               </button>
             </div>
 

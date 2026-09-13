@@ -341,7 +341,13 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
 
       {error && (
         <div className="mb-6 p-4 bg-red-50 text-red-700 text-xs font-semibold rounded-2xl border border-red-150">
-          ⚠️ {error}
+          ⚠️ {(() => {
+            const match = error.match(/Delivery is (?:currently )?unavailable for pincode (\d+)/i);
+            if (match) {
+              return t('shop.deliveryUnavailableForPincode', { pincode: match[1] }, error);
+            }
+            return error;
+          })()}
         </div>
       )}
 

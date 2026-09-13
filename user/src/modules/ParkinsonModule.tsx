@@ -80,6 +80,8 @@ export const ParkinsonModule: React.FC = () => {
     setTimeout(() => setSaveToast(null), 2500);
   };
 
+  const [lastSavedSlot, setLastSavedSlot] = useState<string | null>(null);
+
   const setScore = (slot: string, key: string, value: number) => {
     setSymptomScores(prev => {
       const next = {
@@ -91,6 +93,7 @@ export const ParkinsonModule: React.FC = () => {
       };
       return next;
     });
+    setLastSavedSlot(slot);
   };
 
   const addDrug = () => {
@@ -159,6 +162,17 @@ export const ParkinsonModule: React.FC = () => {
     slot && Object.values(slot).some(v => typeof v === 'number')
   );
 
+  const loggedSlotsCount = useMemo(() => {
+    return TIME_SLOTS.filter(slot => {
+      const slotScores = symptomScores[slot];
+      return slotScores && Object.values(slotScores).some(v => typeof v === 'number');
+    }).length;
+  }, [symptomScores]);
+
+  const medsTakenCount = useMemo(() => {
+    return drugLog.filter(d => d.taken !== false).length;
+  }, [drugLog]);
+
   return (
     <div className="space-y-5 relative">
       {/* Toast Confirmation */}
@@ -180,18 +194,26 @@ export const ParkinsonModule: React.FC = () => {
           {t('protocols.parkinsonSubtitle')}
         </p>
 
-        {/* Live Dopamine Counter & Progress */}
-        <div className="mt-4 pt-4 border-t border-white/20">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-violet-100">{t('protocols.dopamineBoostersToday')}</span>
-            <span className="text-xs font-black bg-white/20 px-3 py-1 rounded-xl backdrop-blur-md">
-              {t('protocols.activeBoosters', { count: boosterCount })}
-            </span>
+        {/* Live Multi-Metric Counters & Progress */}
+        <div className="mt-4 pt-4 border-t border-white/20 space-y-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <div className="bg-white/10 rounded-2xl p-2.5 backdrop-blur-md">
+              <span className="text-[10px] font-bold text-violet-200 block truncate">{t('protocols.dopamineBoostersToday')}</span>
+              <span className="text-xs font-black text-white">{t('protocols.activeBoosters', { count: boosterCount })}</span>
+            </div>
+            <div className="bg-white/10 rounded-2xl p-2.5 backdrop-blur-md">
+              <span className="text-[10px] font-bold text-violet-200 block truncate">{t('protocols.symptomsTracked', 'Symptom Slots')}</span>
+              <span className="text-xs font-black text-white">{t('protocols.slotsLoggedCount', { count: loggedSlotsCount }, `${loggedSlotsCount} / 4 Logged`)}</span>
+            </div>
+            <div className="bg-white/10 rounded-2xl p-2.5 backdrop-blur-md col-span-2 sm:col-span-1">
+              <span className="text-[10px] font-bold text-violet-200 block truncate">{t('protocols.medsTaken', 'Meds Taken')}</span>
+              <span className="text-xs font-black text-white">{t('protocols.medsTakenCount', { taken: medsTakenCount, total: drugLog.length || 0 }, `${medsTakenCount} / ${drugLog.length || 0} Doses`)}</span>
+            </div>
           </div>
           <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-amber-300 to-emerald-300 transition-all duration-500 rounded-full"
-              style={{ width: `${Math.min(100, Math.round((boosterCount / 9) * 100))}%` }}
+              style={{ width: `${Math.min(100, Math.round(((boosterCount + (loggedSlotsCount > 0 ? 3 : 0)) / 12) * 100))}%` }}
             ></div>
           </div>
         </div>
@@ -212,7 +234,14 @@ export const ParkinsonModule: React.FC = () => {
             return (
               <div key={slot} className="border-t border-slate-100 dark:border-slate-800 pt-3.5 first:border-t-0 first:pt-0">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-black text-violet-600 dark:text-violet-400">{slot}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black text-violet-600 dark:text-violet-400">{slot}</span>
+                    {lastSavedSlot === slot && (
+                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200/50 dark:border-emerald-900/40 flex items-center gap-1 animate-in fade-in">
+                        <CheckCircle2 className="h-3 w-3" /> {t('protocols.autoSaved', 'Saved')}
+                      </span>
+                    )}
+                  </div>
                   {avgSlotScore && (
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-300 border border-violet-200/50 dark:border-violet-900/40">
                       {t('protocols.avgSeverity', { score: avgSlotScore })}
@@ -342,15 +371,15 @@ export const ParkinsonModule: React.FC = () => {
             >
               <span className="flex items-center gap-1.5">
                 <History className="h-3.5 w-3.5 text-violet-500" />
-                {t('protocols.medicationSchedule')} ({drugLog.length} Recorded)
+                {t('protocols.medicationSchedule')} ({t('protocols.recordedCount', { count: drugLog.length, defaultValue: `${drugLog.length} Recorded` })})
               </span>
               <span className="text-violet-600 dark:text-violet-400 flex items-center gap-0.5 text-[11px]">
-                Manage <ChevronRight className="h-3.5 w-3.5" />
+                {t('protocols.manage', 'Manage')} <ChevronRight className="h-3.5 w-3.5" />
               </span>
             </button>
           </div>
         ) : (
-          <p className="text-xs text-slate-400 dark:text-slate-500 italic">No medication doses logged today. Enter your dose details above to track schedule adherence.</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 italic">{t('protocols.noDosesLoggedToday', 'No medication doses logged today. Enter your dose details above to track schedule adherence.')}</p>
         )}
       </Card>
 
@@ -366,7 +395,7 @@ export const ParkinsonModule: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-sm font-black text-slate-800 dark:text-slate-100">{t('protocols.medicationSchedule')}</h3>
-                  <p className="text-[10.5px] text-slate-400">Daily dose timings & adherence</p>
+                  <p className="text-[10.5px] text-slate-400">{t('protocols.doseTimingsAdherence', 'Daily dose timings & adherence')}</p>
                 </div>
               </div>
               <button
@@ -402,7 +431,7 @@ export const ParkinsonModule: React.FC = () => {
                         {d.name}
                       </p>
                       <p className="text-[11px] text-slate-400">
-                        {d.dose} · Scheduled for <strong className="text-violet-600 dark:text-violet-400">{d.time}</strong>
+                        {d.dose} · {t('protocols.scheduledFor', 'Scheduled for')} <strong className="text-violet-600 dark:text-violet-400">{d.time}</strong>
                       </p>
                     </div>
                   </div>
@@ -410,7 +439,7 @@ export const ParkinsonModule: React.FC = () => {
                     type="button"
                     onClick={() => removeDrug(d.id)}
                     className="h-7 w-7 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/50 dark:hover:text-rose-400 flex items-center justify-center text-xs font-bold transition-all cursor-pointer shrink-0"
-                    title="Delete log"
+                    title={t('common.delete')}
                   >
                     ✕
                   </button>
@@ -425,7 +454,7 @@ export const ParkinsonModule: React.FC = () => {
                 onClick={() => setShowMedModal(false)}
                 className="w-full py-2.5 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-black rounded-xl cursor-pointer hover:opacity-95 transition-opacity"
               >
-                Close Schedule
+                {t('protocols.closeSchedule', 'Close Schedule')}
               </button>
             </div>
           </div>

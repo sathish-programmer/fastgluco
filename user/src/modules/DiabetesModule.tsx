@@ -4,10 +4,18 @@ import { Activity, Sparkles, AlertTriangle, Check, Calendar, Plus, History, Chev
 import { Card, SectionTitle, YesNoToggle, ModeTabs, StressTracker, TalkToDoctorCard } from './shared/ConditionUI';
 import { useLanguage } from '../context/LanguageContext';
 
+const LOCALE_MAP: Record<string, string> = {
+  en: 'en-US',
+  ta: 'ta-IN',
+  te: 'te-IN',
+  kn: 'kn-IN',
+  hi: 'hi-IN'
+};
+
 const YEARLY_CHECKS_TEMPLATE = [
-  { key: 'peripheral', label: 'Peripheral Neuropathy & Foot (Podiatry) Check' },
-  { key: 'retinopathy', label: 'Retinopathy Screening (Dilated Eye Exam)' },
-  { key: 'nephropathy', label: 'Nephropathy Screening (Kidney / Urine Microalbumin)' }
+  { key: 'peripheral', labelKey: 'protocols.peripheralCheck', label: 'Peripheral Neuropathy & Foot (Podiatry) Check' },
+  { key: 'retinopathy', labelKey: 'protocols.retinopathyCheck', label: 'Retinopathy Screening (Dilated Eye Exam)' },
+  { key: 'nephropathy', labelKey: 'protocols.nephropathyCheck', label: 'Nephropathy Screening (Kidney / Urine Microalbumin)' }
 ];
 
 function daysSince(dateStr: string) {
@@ -16,7 +24,8 @@ function daysSince(dateStr: string) {
 }
 
 export const DiabetesModule: React.FC = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const activeLocale = LOCALE_MAP[language] || 'en-US';
   const [mode, setMode] = useState<string>('Prevention');
   const [showHba1cHistoryModal, setShowHba1cHistoryModal] = useState<boolean>(false);
 
@@ -118,7 +127,7 @@ export const DiabetesModule: React.FC = () => {
   }, [hba1cLog]);
 
   const chartData = hba1cLog.map(e => ({
-    date: new Date(e.date).toLocaleDateString(undefined, { month: 'short', year: '2-digit' }),
+    date: new Date(e.date).toLocaleDateString(activeLocale, { month: 'short', year: '2-digit' }),
     HbA1c: e.value
   }));
 
@@ -202,7 +211,7 @@ export const DiabetesModule: React.FC = () => {
               <input
                 type="number"
                 step="0.1"
-                placeholder="e.g. 6.5%"
+                placeholder={t('protocols.hba1cPlaceholder', 'e.g. 6.5%')}
                 value={newHba1cValue}
                 onChange={(e) => setNewHba1cValue(e.target.value)}
                 className="w-24 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500"
@@ -255,7 +264,7 @@ export const DiabetesModule: React.FC = () => {
                   </div>
                 </div>
                 <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5 shrink-0 group-hover:translate-x-0.5 transition-transform">
-                  View All Tests <ChevronRight className="h-4 w-4" />
+                  {t('protocols.viewAllTests', 'View All Tests')} <ChevronRight className="h-4 w-4" />
                 </span>
               </button>
             )}
@@ -320,12 +329,12 @@ export const DiabetesModule: React.FC = () => {
                         >
                           <div className="flex items-center gap-3 min-w-0">
                             <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-500 text-white flex flex-col items-center justify-center shrink-0 shadow-xs">
-                              <span className="text-[9px] font-semibold leading-none uppercase">{logDate.toLocaleString(undefined, { month: 'short' })}</span>
+                              <span className="text-[9px] font-semibold leading-none uppercase">{logDate.toLocaleString(activeLocale, { month: 'short' })}</span>
                               <span className="text-xs font-black leading-none mt-0.5">{logDate.getDate()}</span>
                             </div>
                             <div className="min-w-0">
                               <p className="font-extrabold text-slate-900 dark:text-slate-100 text-xs">
-                                {logDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                {logDate.toLocaleDateString(activeLocale, { month: 'short', day: 'numeric', year: 'numeric' })}
                               </p>
                               <div className="flex items-center gap-2 mt-0.5">
                                 <span className="font-black text-sm text-emerald-600 dark:text-emerald-400">
@@ -348,7 +357,7 @@ export const DiabetesModule: React.FC = () => {
                             type="button"
                             onClick={() => removeHba1c(item.date)}
                             className="h-7 w-7 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/50 dark:hover:text-rose-400 flex items-center justify-center text-xs font-bold transition-all cursor-pointer shrink-0"
-                            title="Delete test"
+                            title={t('common.delete')}
                           >
                             ✕
                           </button>
@@ -380,7 +389,7 @@ export const DiabetesModule: React.FC = () => {
                 const isOverdue = d !== null && d > 365;
                 return (
                   <div key={c.key} className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
-                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">{c.label}</p>
+                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">{c.labelKey ? t(c.labelKey, c.label) : c.label}</p>
                     <div className="flex items-center gap-2">
                       <input
                         type="date"
@@ -392,7 +401,7 @@ export const DiabetesModule: React.FC = () => {
                         <span className={`text-[10.5px] font-black px-2.5 py-1 rounded-lg shrink-0 ${
                           isOverdue ? 'bg-rose-50 text-rose-600 border border-rose-200' : 'bg-emerald-50 text-emerald-600 border border-emerald-200'
                         }`}>
-                          {isOverdue ? 'Overdue' : 'OK'}
+                          {isOverdue ? t('protocols.overdue', 'Overdue') : t('protocols.ok', 'OK')}
                         </span>
                       )}
                     </div>

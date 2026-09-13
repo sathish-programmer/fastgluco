@@ -175,14 +175,14 @@ export const PincodeDeliveryChecker: React.FC<PincodeDeliveryCheckerProps> = ({
               )}
               <span>
                 {result.serviceable
-                  ? (result.isFallback ? 'Standard National Delivery' : (result.localityName || 'Serviceable Zone'))
-                  : 'Delivery Unavailable'}
+                  ? (result.isFallback ? t('shop.standardNationalDelivery', 'Standard National Delivery') : (result.localityName || t('shop.serviceableZone', 'Serviceable Zone')))
+                  : t('shop.deliveryUnavailable', 'Delivery Unavailable')}
               </span>
             </div>
 
             {result.serviceable && (
               <span className="font-black text-xs">
-                {result.shippingFee === 0 ? 'FREE Shipping' : `₹${result.shippingFee.toFixed(2)}`}
+                {result.shippingFee === 0 ? t('shop.freeShipping', 'FREE Shipping') : `₹${result.shippingFee.toFixed(2)}`}
               </span>
             )}
           </div>
@@ -190,16 +190,16 @@ export const PincodeDeliveryChecker: React.FC<PincodeDeliveryCheckerProps> = ({
           <div className="flex flex-wrap items-center justify-between text-[10px] opacity-90 border-t border-current/10 pt-1">
             <span className="flex items-center gap-1 font-semibold">
               <Clock className="h-3 w-3 opacity-70" />
-              <span>Est: {result.estimatedDeliveryTime}</span>
+              <span>{t('shop.estimatedShort', 'Est:')} {result.estimatedDeliveryTime}</span>
             </span>
 
             {result.isFallback ? (
               <span className="font-bold opacity-80">
-                Standard Courier
+                {t('shop.standardCourier', 'Standard Courier')}
               </span>
             ) : result.distanceKm !== undefined && result.distanceKm > 0 ? (
               <span className="font-bold opacity-80">
-                {result.distanceKm} km from Warehouse
+                {result.distanceKm} {t('shop.kmFromWarehouse', 'km from Warehouse')}
               </span>
             ) : null}
           </div>

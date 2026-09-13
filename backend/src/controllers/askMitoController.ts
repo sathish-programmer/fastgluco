@@ -86,7 +86,7 @@ export const askMito = async (req: Request, res: Response) => {
     const { message, history, language = 'en' } = req.body as {
       message: string;
       history?: Array<{ role: 'user' | 'model'; parts: string }>;
-      language?: 'en' | 'ta' | 'kn' | 'hi';
+      language?: 'en' | 'ta' | 'kn' | 'hi' | 'te';
     };
 
     if (!message?.trim()) {
@@ -134,8 +134,15 @@ export const askMito = async (req: Request, res: Response) => {
       if (matchedTopicAnswer) {
         return res.json({ answer: matchedTopicAnswer });
       }
+      const defaultOfflineGreetings: Record<string, string> = {
+        ta: "நான் மிட்டோ, உங்கள் சுகாதார தோழன்! CGM அறிக்கைகள், உண்ணாநோன்பு, தூக்கம், மன அழுத்தம், புற்றுநோய் எதிர்ப்பு உணவுகள் பற்றி என்னிடம் கேட்கலாம்.",
+        kn: "ನಾನು ಮಿಟೊ, ನಿಮ್ಮ ಆರೋಗ್ಯ ಸಂಗಾತಿ! CGM ವರದಿಗಳು, ಉಪವಾಸ, ನಿದ್ರೆ, ಒತ್ತಡ, ಕ್ಯಾನ್ಸರ್ ವಿರೋಧಿ ಆಹಾರಗಳ ಬಗ್ಗೆ ನನ್ನನ್ನು ಕೇಳಬಹುದು.",
+        hi: "मैं माइटो हूँ, आपका स्वास्थ्य साथी! आप मुझसे CGM रिपोर्ट, उपवास, नींद, तनाव या कैंसर-रोधी आहार के बारे में पूछ सकते हैं।",
+        te: "నేను మిటో, మీ ఆరోగ్య సహచరుడిని! CGM నివేదికలు, ఉపవాసం, నిద్ర, ఒత్తిడి లేదా క్యాన్సర్ నిరోధక ఆహారాల గురించి నన్ను అడగవచ్చు.",
+        en: "I'm Mito, your health companion! You can ask me about CGM reports, anti-cancer foods, intermittent fasting, sleep, stress reduction, or physician checklists."
+      };
       return res.json({
-        answer: "I'm Mito, your health companion! You can ask me about CGM reports, anti-cancer foods, intermittent fasting, sleep, stress reduction, or physician checklists."
+        answer: defaultOfflineGreetings[language] || defaultOfflineGreetings.en
       });
     }
 
@@ -145,11 +152,15 @@ export const askMito = async (req: Request, res: Response) => {
 
       let languageDirective = '';
       if (language === 'ta') {
-        languageDirective = '\n\nLANGUAGE INSTRUCTION: You MUST respond in Tamil (தமிழ்). Use natural, empathetic conversational Tamil. Retain critical medical terms (e.g. glucose, CGM, HbA1c, mg/dL, ketones, mitochondria) in English or transliteration with English for clinical clarity.';
+        languageDirective = '\n\nLANGUAGE INSTRUCTION: You MUST respond ENTIRELY in Tamil (தமிழ்). Do NOT output English sentences or mixed paragraphs. Use natural, empathetic conversational Tamil. Retain critical medical terms (e.g. glucose, CGM, HbA1c, mg/dL, ketones, mitochondria) in English for clinical clarity.';
       } else if (language === 'kn') {
-        languageDirective = '\n\nLANGUAGE INSTRUCTION: You MUST respond in Kannada (ಕನ್ನಡ). Use natural, empathetic conversational Kannada. Retain critical medical terms (e.g. glucose, CGM, HbA1c, mg/dL, ketones, mitochondria) in English or transliteration with English for clinical clarity.';
+        languageDirective = '\n\nLANGUAGE INSTRUCTION: You MUST respond ENTIRELY in Kannada (ಕನ್ನಡ). Do NOT output English sentences or mixed paragraphs. Use natural, empathetic conversational Kannada. Retain critical medical terms (e.g. glucose, CGM, HbA1c, mg/dL, ketones, mitochondria) in English for clinical clarity.';
       } else if (language === 'hi') {
-        languageDirective = '\n\nLANGUAGE INSTRUCTION: You MUST respond in Hindi (हिंदी). Use natural, empathetic conversational Hindi. Retain critical medical terms (e.g. glucose, CGM, HbA1c, mg/dL, ketones, mitochondria) in English or transliteration with English for clinical clarity.';
+        languageDirective = '\n\nLANGUAGE INSTRUCTION: You MUST respond ENTIRELY in Hindi (हिंदी). Do NOT output English sentences or mixed paragraphs. Use natural, empathetic conversational Hindi. Retain critical medical terms (e.g. glucose, CGM, HbA1c, mg/dL, ketones, mitochondria) in English for clinical clarity.';
+      } else if (language === 'te') {
+        languageDirective = '\n\nLANGUAGE INSTRUCTION: You MUST respond ENTIRELY in Telugu (తెలుగు). Do NOT output English sentences or mixed paragraphs. Use natural, empathetic conversational Telugu. Retain critical medical terms (e.g. glucose, CGM, HbA1c, mg/dL, ketones, mitochondria) in English for clinical clarity.';
+      } else {
+        languageDirective = '\n\nLANGUAGE INSTRUCTION: You MUST respond ENTIRELY in English.';
       }
 
       const contents: any[] = [];
@@ -173,14 +184,30 @@ export const askMito = async (req: Request, res: Response) => {
       if (matchedTopicAnswer) {
         return res.json({ answer: matchedTopicAnswer });
       }
+      
+      const fallbacks: Record<string, string> = {
+        ta: "நான் மிட்டோ, உங்கள் சுகாதார தோழன்! CGM அறிக்கைகள், உண்ணாநோன்பு, தூக்கம், மன அழுத்தம், புற்றுநோய் எதிர்ப்பு உணவுகள் பற்றி என்னிடம் கேட்கலாம்.",
+        kn: "ನಾನು ಮಿಟೊ, ನಿಮ್ಮ ಆರೋಗ್ಯ ಸಂಗಾತಿ! CGM ವರದಿಗಳು, ಉಪವಾಸ, ನಿದ್ರೆ, ಒತ್ತಡ, ಕ್ಯಾನ್ಸರ್ ವಿರೋಧಿ ಆಹಾರಗಳ ಬಗ್ಗೆ ನನ್ನನ್ನು ಕೇಳಬಹುದು.",
+        hi: "मैं माइटो हूँ, आपका स्वास्थ्य साथी! आप मुझसे CGM रिपोर्ट, उपवास, नींद, तनाव या कैंसर-रोधी आहार के बारे में पूछ सकते हैं।",
+        te: "నేను మిటో, మీ ఆరోగ్య సహచరుడిని! CGM నివేదికలు, ఉపవాసం, నిద్ర, ఒత్తిడి లేదా క్యాన్సర్ నిరోధక ఆహారాల గురించి నన్ను అడగవచ్చు.",
+        en: "I'm Mito, your health companion! For personalized guidance, try asking about CGM reports, intermittent fasting, sleep, stress, anti-cancer nutrition, or questions for your doctor."
+      };
+      
       return res.json({
-        answer: "I'm Mito, your health companion! For personalized guidance, try asking about CGM reports, intermittent fasting, sleep, stress, anti-cancer nutrition, or questions for your doctor."
+        answer: fallbacks[language] || fallbacks.en
       });
     }
   } catch (err: any) {
-    console.error('[AskMito] General error:', err?.message || err);
+    const lang = (req.body?.language || 'en') as string;
+    const errorFallbacks: Record<string, string> = {
+      ta: "நான் மிட்டோ, உங்கள் சுகாதார தோழன்! தயவுசெய்து உங்கள் கேள்வியை மீண்டும் முயற்சிக்கவும் அல்லது கீழே உள்ள தலைப்பைத் தேர்ந்தெடுக்கவும்.",
+      kn: "ನಾನು ಮಿಟೊ, ನಿಮ್ಮ ಆರೋಗ್ಯ ಸಂಗಾತಿ! ದಯವಿಟ್ಟು ನಿಮ್ಮ ಪ್ರಶ್ನೆಯನ್ನು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ ಅಥವಾ ಕೆಳಗಿನ ವಿಷಯವನ್ನು ಆಯ್ಕೆಮಾಡಿ.",
+      hi: "मैं माइटो हूँ, आपका स्वास्थ्य साथी! कृपया अपना प्रश्न पुनः पूछें या नीचे दिए गए सुझावों में से चुनें।",
+      te: "నేను మిటో, మీ ఆరోగ్య సహచరుడిని! దయచేసి మీ ప్రశ్నను మళ్ళీ ప్రయత్నించండి లేదా క్రింది అంశాన్ని ఎంచుకోండి.",
+      en: "I'm Mito, your health companion! Please try your question again or choose a suggested topic below."
+    };
     return res.status(500).json({
-      answer: "I'm Mito, your health companion! Please try your question again or choose a suggested topic below."
+      answer: errorFallbacks[lang] || errorFallbacks.en
     });
   }
 };

@@ -453,13 +453,13 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
                     onClick={() => handleAnswerAirQ1(true)}
                     className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${airQ1 === true ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
                   >
-                    Yes (-1)
+                    {t('habits.yesMinus1', 'Yes (-1)')}
                   </button>
                   <button 
                     onClick={() => handleAnswerAirQ1(false)}
                     className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${airQ1 === false ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
                   >
-                    No (0)
+                    {t('habits.noZero', 'No (0)')}
                   </button>
                 </div>
               </div>
@@ -475,13 +475,13 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
                   onClick={() => handleAnswerAirQ2(true)}
                   className={`flex-1 py-3 px-4 rounded-xl font-bold text-xs transition-all border ${airQ2 === true ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
                 >
-                  Yes (-1)
+                  {t('habits.yesMinus1', 'Yes (-1)')}
                 </button>
                 <button 
                   onClick={() => handleAnswerAirQ2(false)}
                   className={`flex-1 py-3 px-4 rounded-xl font-bold text-xs transition-all border ${airQ2 === false ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
                 >
-                  No (0)
+                  {t('habits.noZero', 'No (0)')}
                 </button>
               </div>
             </div>
@@ -497,13 +497,13 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
                   onClick={() => handleAnswerAirQ3(true)}
                   className={`flex-1 py-3 px-4 rounded-xl font-bold text-xs transition-all border ${airQ3 === true ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
                 >
-                  Yes (-1)
+                  {t('habits.yesMinus1', 'Yes (-1)')}
                 </button>
                 <button 
                   onClick={() => handleAnswerAirQ3(false)}
                   className={`flex-1 py-3 px-4 rounded-xl font-bold text-xs transition-all border ${airQ3 === false ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
                 >
-                  No (0)
+                  {t('habits.noZero', 'No (0)')}
                 </button>
               </div>
             </div>
@@ -517,7 +517,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
                 riskLevel="High"
                 recommendedSpecialty="Pulmonologist"
                 title={t('pulmonologistConsultation')}
-                description="Your score flags significant particulate, chemical, or passive smoke inhalation risks. Consider speaking to a pulmonologist to check lung health."
+                description={t('env.pulmonologistConsultDesc', 'Your score flags significant particulate, chemical, or passive smoke inhalation risks. Consider speaking to a pulmonologist to check lung health.')}
                 colorTheme="rose"
                 onBookAppointment={onBookAppointment}
               />
@@ -526,7 +526,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
             {airQ1 !== null && airQ2 !== null && airQ3 !== null && (
               <div className="bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 rounded-2xl p-5 space-y-4 animate-in fade-in duration-300">
                 <p className="text-xs text-indigo-750 dark:text-indigo-400 font-semibold leading-relaxed">
-                  ℹ️ <strong>{t('recommendationTitle')}:</strong> Reduce your exposure to air pollution and passive second-hand smoke where possible. Use an N95 mask and an air purifier when appropriate.
+                  ℹ️ <strong>{t('recommendationTitle')}:</strong> {t('env.airExposureRecDesc', 'Reduce your exposure to air pollution and passive second-hand smoke where possible. Use an N95 mask and an air purifier when appropriate.')}
                 </p>
                 <div className="grid grid-cols-2 gap-3.5">
                   <button 
@@ -535,7 +535,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
                   >
                     <ShoppingBag className="h-5 w-5 text-indigo-500 mb-1.5 group-hover:scale-110 transition-transform" />
                     <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200">{t('env.orderN95Masks', 'Order N95 Masks')}</span>
-                    <span className="text-[9px] text-slate-400 mt-1 inline-flex items-center gap-0.5">Shop now <ExternalLink className="h-2 w-2" /></span>
+                    <span className="text-[9px] text-slate-400 mt-1 inline-flex items-center gap-0.5">{t('shop.shopNow', 'Shop now')} <ExternalLink className="h-2 w-2" /></span>
                   </button>
                   <button 
                     onClick={() => onNavigateToShop?.('Air Purifier')}
@@ -543,7 +543,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
                   >
                     <ShoppingBag className="h-5 w-5 text-indigo-500 mb-1.5 group-hover:scale-110 transition-transform" />
                     <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200">{t('env.orderAirPurifier', 'Order Air Purifier')}</span>
-                    <span className="text-[9px] text-slate-400 mt-1 inline-flex items-center gap-0.5">Shop now <ExternalLink className="h-2 w-2" /></span>
+                    <span className="text-[9px] text-slate-400 mt-1 inline-flex items-center gap-0.5">{t('shop.shopNow', 'Shop now')} <ExternalLink className="h-2 w-2" /></span>
                   </button>
                 </div>
               </div>
@@ -575,13 +575,13 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
                   onClick={() => handleAnswerWaterQ1(true)}
                   className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${waterQ1 === true ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
                 >
-                  Yes, it is free (0)
+                  {t('habits.waterFreeZero', 'Yes, it is free (0)')}
                 </button>
                 <button 
                   onClick={() => handleAnswerWaterQ1(false)}
                   className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${waterQ1 === false ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
                 >
-                  No / Not sure (-1)
+                  {t('habits.waterNotSureMinus1', 'No / Not sure (-1)')}
                 </button>
               </div>
             </div>
@@ -600,8 +600,8 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
             {showWaterInfo && (
               <div className="mt-5 mb-8 border border-indigo-100 dark:border-slate-800 rounded-3xl overflow-hidden shadow-xs animate-in slide-in-from-top duration-200">
                 <div className="grid grid-cols-12 bg-indigo-50/80 dark:bg-indigo-950/50 px-5 py-4 border-b border-indigo-100 dark:border-slate-800 text-[10px] font-black uppercase text-indigo-700 dark:text-indigo-300 tracking-wider gap-2">
-                  <span className="col-span-4">{t('env.technology', 'Technology')}</span>
-                  <span className="col-span-5">{t('env.mainPurpose', 'Main Purpose')}</span>
+                  <span className="col-span-4">{t('habits.technology', 'Technology')}</span>
+                  <span className="col-span-5">{t('habits.mainPurpose', 'Main Purpose')}</span>
                   <span className="col-span-3 text-right">MitoReboot</span>
                 </div>
                 <div className="bg-white dark:bg-slate-900 divide-y divide-slate-100 dark:divide-slate-800 text-xs">
@@ -610,32 +610,32 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
                       <span className="h-2.5 w-2.5 rounded-full bg-amber-700 shrink-0" />
                       Candle / Gravity
                     </span>
-                    <span className="col-span-5 text-slate-500 dark:text-slate-400">{t('env.mudDirtCysts', 'Mud, dirt, basic cysts')}</span>
-                    <span className="col-span-3 text-right text-rose-500 font-bold">No</span>
+                    <span className="col-span-5 text-slate-500 dark:text-slate-400">{t('habits.mudDirtCysts', 'Mud, dirt, basic cysts')}</span>
+                    <span className="col-span-3 text-right text-rose-500 font-bold">{t('habits.noLabel', 'No')}</span>
                   </div>
                   <div className="grid grid-cols-12 px-5 py-4 items-center gap-2">
                     <span className="col-span-4 font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                       <span className="h-2.5 w-2.5 rounded-full bg-blue-500 shrink-0" />
                       UV / UF
                     </span>
-                    <span className="col-span-5 text-slate-500 dark:text-slate-400">Bacteria & Viruses only</span>
-                    <span className="col-span-3 text-right text-rose-500 font-bold">No</span>
+                    <span className="col-span-5 text-slate-500 dark:text-slate-400">{t('habits.bacteriaVirusesOnly', 'Bacteria & Viruses only')}</span>
+                    <span className="col-span-3 text-right text-rose-500 font-bold">{t('habits.noLabel', 'No')}</span>
                   </div>
                   <div className="grid grid-cols-12 px-5 py-4 items-center gap-2">
                     <span className="col-span-4 font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                       <span className="h-2.5 w-2.5 rounded-full bg-slate-800 shrink-0" />
                       Activated Carbon
                     </span>
-                    <span className="col-span-5 text-slate-500 dark:text-slate-400">{t('env.pesticidesChlorine', 'Pesticides, chlorine, VOCs, carcinogens')}</span>
-                    <span className="col-span-3 text-right text-emerald-600 font-black">Yes</span>
+                    <span className="col-span-5 text-slate-500 dark:text-slate-400">{t('habits.pesticidesChlorineVoc', 'Pesticides, chlorine, VOCs, carcinogens')}</span>
+                    <span className="col-span-3 text-right text-emerald-600 font-black">{t('habits.yesLabel', 'Yes')}</span>
                   </div>
                   <div className="grid grid-cols-12 px-5 py-4 items-center gap-2">
                     <span className="col-span-4 font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                       <span className="h-2.5 w-2.5 rounded-full bg-indigo-600 shrink-0" />
                       RO (Reverse Osmosis)
                     </span>
-                    <span className="col-span-5 text-slate-500 dark:text-slate-400">{t('env.heavyMetalsArsenic', 'Heavy metals, arsenic, nitrates, microplastics')}</span>
-                    <span className="col-span-3 text-right text-emerald-600 font-black">Yes</span>
+                    <span className="col-span-5 text-slate-500 dark:text-slate-400">{t('habits.heavyMetalsArsenic', 'Heavy metals, arsenic, nitrates, microplastics')}</span>
+                    <span className="col-span-3 text-right text-emerald-600 font-black">{t('habits.yesLabel', 'Yes')}</span>
                   </div>
                 </div>
               </div>
@@ -648,7 +648,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
                   <ShieldAlert className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                 </div>
                 <div className="space-y-1.5 min-w-0 flex-1">
-                  <p className="text-xs font-black text-indigo-700 dark:text-indigo-300 uppercase tracking-wider">{t('env.mitoRebootRecommendation', 'MitoReboot Official Recommendation')}</p>
+                  <p className="text-xs font-black text-indigo-700 dark:text-indigo-300 uppercase tracking-wider">{t('habits.mitoRebootRecommendation', 'MitoReboot Official Recommendation')}</p>
                   <p className="text-xs text-slate-800 dark:text-slate-100 font-semibold leading-relaxed">
                     {t('waterFilterAdvice')}
                   </p>
@@ -671,7 +671,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
               disabled={waterQ1 === null}
               className={`w-full py-4 rounded-2xl font-bold text-xs text-white transition-all ${waterQ1 !== null ? 'bg-indigo-600 hover:bg-indigo-700 shadow-sm' : 'bg-slate-200 dark:bg-slate-800 opacity-60 cursor-not-allowed'}`}
             >
-              Done with Water Category
+              {t('habits.doneWithWaterCategory', 'Done with Water Pollution Category')}
             </button>
           </div>
         </div>
@@ -690,20 +690,20 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
                 onClick={() => handleAnswerPesticidesQ1(true)}
                 className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${pesticidesQ1 === true ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
               >
-                Yes, I consume without steps (-1)
+                {t('habits.pesticidesConsumeMinus1', 'Yes, I consume without steps (-1)')}
               </button>
               <button 
                 onClick={() => handleAnswerPesticidesQ1(false)}
                 className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${pesticidesQ1 === false ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
               >
-                No, I wash or choose organic (0)
+                {t('habits.pesticidesWashZero', 'No, I wash or choose organic (0)')}
               </button>
             </div>
 
             {/* Dirty Dozen Washing Tips Card */}
             <div className="bg-amber-50/50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-2xl p-5 space-y-3">
               <h4 className="text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
-                🥬 Dirty Dozen & Residue Washing Tips
+                🥬 {t('habits.dirtyDozenWashingTips', 'Dirty Dozen & Residue Washing Tips')}
               </h4>
               <ul className="text-xs text-amber-700 dark:text-amber-450 space-y-2 list-disc pl-4 leading-relaxed font-semibold">
                 <li>{t('produceWashAdvice')}</li>
@@ -715,13 +715,13 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
             {pesticidesQ1 !== null && (
               <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl p-5 mt-5 space-y-2.5 animate-in fade-in duration-200">
                 <p className="text-xs text-emerald-700 dark:text-emerald-450 font-semibold">
-                  Choosing organic produce drastically reduces chemical pesticide residue levels in your diet.
+                  {t('habits.organicReducesPesticides', 'Choosing organic produce drastically reduces chemical pesticide residue levels in your diet.')}
                 </p>
                 <button 
                   onClick={() => onNavigateToShop?.('Organic')}
                   className="inline-flex items-center gap-1.5 text-xs text-emerald-650 hover:underline font-bold text-left"
                 >
-                  🥬 Click here to Order Organic Food
+                  🥬 {t('habits.orderOrganicFood', 'Click here to Order Organic Food')}
                 </button>
               </div>
             )}
@@ -732,7 +732,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
             disabled={pesticidesQ1 === null}
             className={`w-full py-4 rounded-2xl font-bold text-xs text-white transition-all ${pesticidesQ1 !== null ? 'bg-indigo-600 hover:bg-indigo-700 shadow-sm' : 'bg-slate-200 dark:bg-slate-800 opacity-60 cursor-not-allowed'}`}
           >
-            {t('env.doneWithPesticidesCategory', 'Done with Pesticides Category')}
+            {t('habits.doneWithPesticidesCategory', 'Done with Pesticides Category')}
           </button>
         </div>
       )}
@@ -750,29 +750,29 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
                 onClick={() => handleAnswerMicroplasticsQ1(true)}
                 className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${microplasticsQ1 === true ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
               >
-                Yes, regularly (-1)
+                {t('habits.microplasticsRegularMinus1', 'Yes, regularly (-1)')}
               </button>
               <button 
                 onClick={() => handleAnswerMicroplasticsQ1(false)}
                 className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${microplasticsQ1 === false ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
               >
-                No, I avoid plastic containers (0)
+                {t('habits.microplasticsAvoidZero', 'No, I avoid plastic containers (0)')}
               </button>
             </div>
 
             {/* Plastic Swap Guide Card */}
             <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl p-5 space-y-3">
               <h4 className="text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
-                🥛 Safe Container Plastic Swaps
+                🥛 {t('habits.safeContainerPlasticSwaps', 'Safe Container Plastic Swaps')}
               </h4>
               <div className="grid grid-cols-2 text-xs text-emerald-700 dark:text-emerald-450 gap-3 font-semibold">
                 <div className="bg-white/60 dark:bg-slate-900/40 p-3 rounded-xl border border-emerald-100/50">
-                  <span className="block font-black text-rose-600 uppercase tracking-widest text-[9px] mb-1">Avoid ❌</span>
-                  Disposable PET water bottles, heating plastic in microwaves, plastic tea bags.
+                  <span className="block font-black text-rose-600 uppercase tracking-widest text-[9px] mb-1">{t('habits.avoidLabel', 'Avoid ❌')}</span>
+                  {t('habits.avoidPetBottles', 'Disposable PET water bottles, heating plastic in microwaves, plastic tea bags.')}
                 </div>
                 <div className="bg-white/60 dark:bg-slate-900/40 p-3 rounded-xl border border-emerald-100/50">
-                  <span className="block font-black text-emerald-600 uppercase tracking-widest text-[9px] mb-1">Choose ✅</span>
-                  Borosilicate glass bottles, food-grade stainless steel containers, ceramic dinnerware.
+                  <span className="block font-black text-emerald-600 uppercase tracking-widest text-[9px] mb-1">{t('habits.chooseLabel', 'Choose ✅')}</span>
+                  {t('habits.chooseGlassBottles', 'Borosilicate glass bottles, food-grade stainless steel containers, ceramic dinnerware.')}
                 </div>
               </div>
             </div>
@@ -780,13 +780,13 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
             {microplasticsQ1 !== null && (
               <div className="bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 rounded-2xl p-5 mt-5 space-y-2.5 animate-in fade-in duration-200">
                 <p className="text-xs text-indigo-700 dark:text-indigo-400 font-semibold">
-                  Swap plastic storage for premium borosilicate glass or stainless steel containers.
+                  {t('habits.swapPlasticStorage', 'Swap plastic storage for premium borosilicate glass or stainless steel containers.')}
                 </p>
                 <button 
                   onClick={() => onNavigateToShop?.('SaferProducts')}
                   className="inline-flex items-center gap-1.5 text-xs text-indigo-650 hover:underline font-bold text-left"
                 >
-                  🥛 Click here to Order Plastic-Free Products
+                  🥛 {t('habits.orderPlasticFreeProducts', 'Click here to Order Plastic-Free Products')}
                 </button>
               </div>
             )}
@@ -797,7 +797,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
             disabled={microplasticsQ1 === null}
             className={`w-full py-4 rounded-2xl font-bold text-xs text-white transition-all ${microplasticsQ1 !== null ? 'bg-indigo-600 hover:bg-indigo-700 shadow-sm' : 'bg-slate-200 dark:bg-slate-800 opacity-60'}`}
           >
-            {t('env.doneWithMicroplasticsCategory', 'Done with Microplastics Category')}
+            {t('habits.doneWithMicroplasticsCategory', 'Done with Microplastics Category')}
           </button>
         </div>
       )}
@@ -806,7 +806,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
       {currentView === 'kitchen' && (
         <div className="space-y-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 sm:p-8 shadow-sm animate-in slide-in-from-right duration-250">
           <div className="border-b border-slate-100 dark:border-slate-800 pb-4">
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Kitchen Microplastics & Utensils Audit</span>
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">{t('habits.kitchenMicroplasticsAudit', 'Kitchen Microplastics & Utensils Audit')}</span>
             <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100 mt-0.5">{t('env.checkYourKitchen', 'Check Your Kitchen')}</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('env.checkKitchenDesc', 'Audit water cans, synthetic non-stick cookware exposure, and plastic commodity storage.')}</p>
           </div>
@@ -816,20 +816,20 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
             <div>
               <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-2">{t('env.questionNum', 'Question')} 1</p>
               <p className="text-sm font-semibold text-slate-850 dark:text-slate-100 leading-relaxed mb-3.5">
-                Is your drinking water <strong>{t('notInPlasticCan')}</strong>?
+                {t('habits.isDrinkingWater', 'Is your drinking water')} <strong>{t('notInPlasticCan')}</strong>?
               </p>
               <div className="flex gap-3">
                 <button 
                   onClick={() => handleAnswerKitchenQ1(true)}
                   className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${kitchenQ1 === true ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
                 >
-                  Yes (Safe - 0)
+                  {t('habits.yesSafeZero', 'Yes (Safe - 0)')}
                 </button>
                 <button 
                   onClick={() => handleAnswerKitchenQ1(false)}
                   className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${kitchenQ1 === false ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
                 >
-                  No (Risk -1)
+                  {t('habits.noRiskMinus1', 'No (Risk -1)')}
                 </button>
               </div>
             </div>
@@ -838,20 +838,20 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
             <div className="pt-5 border-t border-slate-100 dark:border-slate-800">
               <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-2">{t('env.questionNum', 'Question')} 2</p>
               <p className="text-sm font-semibold text-slate-850 dark:text-slate-100 leading-relaxed mb-3.5">
-                Are utensils like <strong>{t('naturalCookware')}</strong> like iron, brass, or clay (avoiding synthetic non-stick coatings)?
+                {t('habits.areUtensils', 'Are utensils like')} <strong>{t('naturalCookware')}</strong> ({t('castIronDesc', 'iron, brass, or clay, avoiding synthetic non-stick coatings')})?
               </p>
               <div className="flex gap-3">
                 <button 
                   onClick={() => handleAnswerKitchenQ2(true)}
                   className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${kitchenQ2 === true ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
                 >
-                  Yes (Safe - 0)
+                  {t('habits.yesSafeZero', 'Yes (Safe - 0)')}
                 </button>
                 <button 
                   onClick={() => handleAnswerKitchenQ2(false)}
                   className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${kitchenQ2 === false ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
                 >
-                  No (Risk -1)
+                  {t('habits.noRiskMinus1', 'No (Risk -1)')}
                 </button>
               </div>
             </div>
@@ -860,20 +860,20 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
             <div className="pt-5 border-t border-slate-100 dark:border-slate-800">
               <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-2">{t('env.questionNum', 'Question')} 3</p>
               <p className="text-sm font-semibold text-slate-850 dark:text-slate-100 leading-relaxed mb-3.5">
-                Are commodities and ingredients <strong>{t('nonPlasticContainers')}</strong> (e.g. glass, stainless steel, ceramic)?
+                {t('habits.areCommodities', 'Are commodities and ingredients')} <strong>{t('nonPlasticContainers')}</strong> ({t('glassStainlessDesc', 'glass, stainless steel, ceramic')})?
               </p>
               <div className="flex gap-3">
                 <button 
                   onClick={() => handleAnswerKitchenQ3(true)}
                   className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${kitchenQ3 === true ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
                 >
-                  Yes (Safe - 0)
+                  {t('habits.yesSafeZero', 'Yes (Safe - 0)')}
                 </button>
                 <button 
                   onClick={() => handleAnswerKitchenQ3(false)}
                   className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${kitchenQ3 === false ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
                 >
-                  No (Risk -1)
+                  {t('habits.noRiskMinus1', 'No (Risk -1)')}
                 </button>
               </div>
             </div>
@@ -882,7 +882,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
           {/* Kitchen Best Practices Card */}
           <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl p-5 space-y-3">
             <h4 className="text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
-              🍳 Natural Kitchen & Utensil Guidelines
+              🍳 {t('env.naturalKitchenGuidelines', 'Natural Kitchen & Utensil Guidelines')}
             </h4>
             <ul className="text-xs text-emerald-700 dark:text-emerald-450 space-y-2 list-disc pl-4 font-semibold leading-relaxed">
               <li><strong>{t('castIronBrassTava')}</strong>: {t('castIronDesc')}</li>
@@ -894,7 +894,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
           {(kitchenQ1 !== null || kitchenQ2 !== null || kitchenQ3 !== null) && (
             <div className="bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 rounded-2xl p-5 space-y-2.5 animate-in fade-in duration-200">
               <p className="text-xs text-indigo-700 dark:text-indigo-400 font-semibold">
-                Looking for plastic-free stainless steel or glass kitchen storage containers?
+                {t('env.lookingForPlasticFree', 'Looking for plastic-free stainless steel or glass kitchen storage containers?')}
               </p>
               <button 
                 onClick={() => onNavigateToShop?.('SaferProducts')}
@@ -910,7 +910,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
             disabled={kitchenQ1 === null && kitchenQ2 === null && kitchenQ3 === null}
             className={`w-full py-4 rounded-2xl font-bold text-xs text-white transition-all ${kitchenQ1 !== null || kitchenQ2 !== null || kitchenQ3 !== null ? 'bg-indigo-600 hover:bg-indigo-700 cursor-pointer shadow-sm' : 'bg-slate-200 dark:bg-slate-800 opacity-60'}`}
           >
-            Done with Kitchen Category
+            {t('env.doneWithKitchenCategory', 'Done with Kitchen Category')}
           </button>
         </div>
       )}
@@ -923,7 +923,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
             </div>
             <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">{t('env.airSafetyRecs', 'Air Safety Recommendations')}</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              Reduce your exposure to air pollution where possible. Use an N95 mask and an air purifier when appropriate.
+              {t('env.airSafetyDesc', 'Reduce your exposure to air pollution where possible. Use an N95 mask and an air purifier when appropriate.')}
             </p>
             <div className="grid grid-cols-2 gap-2 pt-2">
               <button
@@ -949,7 +949,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
               onClick={() => setShowAirModal(false)}
               className="w-full py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-350 font-bold rounded-xl text-xs transition-all"
             >
-              Dismiss
+              {t('common.dismiss', 'Dismiss')}
             </button>
           </div>
         </div>

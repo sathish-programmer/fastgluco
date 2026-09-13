@@ -32,6 +32,14 @@ interface TodaysFocusCardProps {
   onTakeAction: (actionKey: string) => void;
 }
 
+const LOCALE_MAP: Record<string, string> = {
+  en: 'en-US',
+  ta: 'ta-IN',
+  te: 'te-IN',
+  kn: 'kn-IN',
+  hi: 'hi-IN'
+};
+
 export const TodaysFocusCard: React.FC<TodaysFocusCardProps> = ({
   activeMode,
   habits,
@@ -39,7 +47,8 @@ export const TodaysFocusCard: React.FC<TodaysFocusCardProps> = ({
   upcomingAppt,
   onTakeAction
 }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const activeLocale = LOCALE_MAP[language] || 'en-US';
 
   // Logic to determine the ONE best unfulfilled priority action dynamically
   const determineBestAction = (): FocusAction | null => {
@@ -51,11 +60,12 @@ export const TodaysFocusCard: React.FC<TodaysFocusCardProps> = ({
 
     // 1. Upcoming Appointment Priority across all modes
     if (upcomingAppt) {
+      const formattedApptDate = new Date(`${upcomingAppt.date}T${upcomingAppt.time}`).toLocaleDateString(activeLocale, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
       return {
         id: 'upcoming_appointment',
-        title: `Upcoming Consultation with ${upcomingAppt.doctorName || 'Doctor'}`,
-        reason: `Scheduled for ${new Date(`${upcomingAppt.date}T${upcomingAppt.time}`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`,
-        category: 'Appointment',
+        title: t('focus.upcomingConsultation', { doctor: upcomingAppt.doctorName || t('common.doctor', 'Doctor') }),
+        reason: t('focus.scheduledFor', { date: formattedApptDate }),
+        category: t('focus.categoryAppointment', 'Appointment'),
         icon: <Calendar className="h-6 w-6 text-cyan-500" />,
         gradient: 'from-cyan-500/10 via-blue-500/5 to-transparent',
         badgeBg: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20',
@@ -68,9 +78,9 @@ export const TodaysFocusCard: React.FC<TodaysFocusCardProps> = ({
       if (!hasCGMData && !loggedKeysEver.has('cgm') && !loggedKeysEver.has('CGM')) {
         return {
           id: 'cgm_upload',
-          title: 'Review or Upload Your CGM Glucose Export',
-          reason: 'Digitizing continuous glucose measurements helps track metabolic spikes during active treatment.',
-          category: 'Metabolic Support',
+          title: t('focus.cgmUploadTitle', 'Review or Upload Your CGM Glucose Export'),
+          reason: t('focus.cgmUploadReason', 'Digitizing continuous glucose measurements helps track metabolic spikes during active treatment.'),
+          category: t('focus.categoryMetabolic', 'Metabolic Support'),
           icon: <FileText className="h-6 w-6 text-indigo-500" />,
           gradient: 'from-indigo-500/10 via-violet-500/5 to-transparent',
           badgeBg: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20',
@@ -81,7 +91,7 @@ export const TodaysFocusCard: React.FC<TodaysFocusCardProps> = ({
         return {
           id: 'caregiver_stress',
           title: t('habits.caregiverStress', 'Log Today’s Symptom & Caregiver Stress Assessment'),
-          reason: 'Monitoring emotional strain and physical recovery provides holistic treatment clarity.',
+          reason: t('focus.caregiverStressReason', 'Monitoring emotional strain and physical recovery provides holistic treatment clarity.'),
           category: t('modes.treatmentShort', 'Treatment Support'),
           icon: <Heart className="h-6 w-6 text-rose-500" />,
           gradient: 'from-rose-500/10 via-pink-500/5 to-transparent',
@@ -93,8 +103,8 @@ export const TodaysFocusCard: React.FC<TodaysFocusCardProps> = ({
         return {
           id: 'treatment_fasting',
           title: t('habits.intermittentFasting', 'Log Today’s Intermittent Fasting Window'),
-          reason: 'Aligning therapeutic fasting windows supports mitochondrial resilience during treatment.',
-          category: 'Metabolic Health',
+          reason: t('focus.fastingReasonTx', 'Aligning therapeutic fasting windows supports mitochondrial resilience during treatment.'),
+          category: t('focus.categoryMetabolicHealth', 'Metabolic Health'),
           icon: <Activity className="h-6 w-6 text-amber-500" />,
           gradient: 'from-amber-500/10 via-orange-500/5 to-transparent',
           badgeBg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
@@ -107,9 +117,9 @@ export const TodaysFocusCard: React.FC<TodaysFocusCardProps> = ({
       if (!loggedKeysEver.has('Environmental') && !loggedKeysEver.has('environmental_exposures')) {
         return {
           id: 'secondary_env',
-          title: 'Complete Environmental Recurrence Risk Audit',
-          reason: 'Identifying air toxins, particulate exposure, and household chemical risks aids long-term recovery.',
-          category: 'Long-term Recovery',
+          title: t('focus.secondaryEnvTitle', 'Complete Environmental Recurrence Risk Audit'),
+          reason: t('focus.secondaryEnvReason', 'Identifying air toxins, particulate exposure, and household chemical risks aids long-term recovery.'),
+          category: t('focus.categoryRecovery', 'Long-term Recovery'),
           icon: <Wind className="h-6 w-6 text-sky-500" />,
           gradient: 'from-sky-500/10 via-teal-500/5 to-transparent',
           badgeBg: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20',
@@ -120,8 +130,8 @@ export const TodaysFocusCard: React.FC<TodaysFocusCardProps> = ({
         return {
           id: 'secondary_antioxidant',
           title: t('habits.antioxidants', 'Check Bioactive Antioxidant Protective Intake'),
-          reason: 'Consuming phytochemicals and polyphenols reduces cellular oxidative stress during recovery.',
-          category: 'Cellular Health',
+          reason: t('focus.antioxidantsReason', 'Consuming phytochemicals and polyphenols reduces cellular oxidative stress during recovery.'),
+          category: t('focus.categoryCellular', 'Cellular Health'),
           icon: <ShieldCheck className="h-6 w-6 text-rose-500" />,
           gradient: 'from-rose-500/10 via-amber-500/5 to-transparent',
           badgeBg: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
@@ -134,9 +144,9 @@ export const TodaysFocusCard: React.FC<TodaysFocusCardProps> = ({
     if (!loggedKeysEver.has('Environmental') && !loggedKeysEver.has('environmental_exposures')) {
       return {
         id: 'prev_env',
-        title: 'Complete Your Environmental Exposure Assessment',
-        reason: 'Air toxins, water contaminants, and plastic exposure account for significant preventable health risks.',
-        category: 'Primary Prevention',
+        title: t('focus.prevEnvTitle', 'Complete Your Environmental Exposure Assessment'),
+        reason: t('focus.prevEnvReason', 'Air toxins, water contaminants, and plastic exposure account for significant preventable health risks.'),
+        category: t('focus.categoryPrimaryPrev', 'Primary Prevention'),
         icon: <Wind className="h-6 w-6 text-emerald-500" />,
         gradient: 'from-emerald-500/10 via-teal-500/5 to-transparent',
         badgeBg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
@@ -148,8 +158,8 @@ export const TodaysFocusCard: React.FC<TodaysFocusCardProps> = ({
       return {
         id: 'prev_fasting',
         title: t('habits.fasting', 'Log Today’s Fasting Window'),
-        reason: 'Circadian metabolic fasting promotes cellular autophagy and mitochondrial renewal.',
-        category: 'Circadian Health',
+        reason: t('focus.fastingReason', 'Circadian metabolic fasting promotes cellular autophagy and mitochondrial renewal.'),
+        category: t('focus.categoryCircadian', 'Circadian Health'),
         icon: <Activity className="h-6 w-6 text-amber-500" />,
         gradient: 'from-amber-500/10 via-orange-500/5 to-transparent',
         badgeBg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
@@ -161,8 +171,8 @@ export const TodaysFocusCard: React.FC<TodaysFocusCardProps> = ({
       return {
         id: 'prev_sleep',
         title: t('habits.sleep', 'Log Today’s Sleep Quality & Duration'),
-        reason: 'Consistent rest prevents sleep debt accumulation and supports systemic repair.',
-        category: 'Rest & Recovery',
+        reason: t('focus.sleepReason', 'Consistent rest prevents sleep debt accumulation and supports systemic repair.'),
+        category: t('focus.categoryRest', 'Rest & Recovery'),
         icon: <Activity className="h-6 w-6 text-indigo-500" />,
         gradient: 'from-indigo-500/10 via-purple-500/5 to-transparent',
         badgeBg: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20',
@@ -174,8 +184,8 @@ export const TodaysFocusCard: React.FC<TodaysFocusCardProps> = ({
       return {
         id: 'prev_stress',
         title: t('habits.stress', 'Log Today’s Stress Level'),
-        reason: 'Managing acute stress prevents cortisol elevation and cellular inflammatory load.',
-        category: 'Mental Balance',
+        reason: t('focus.stressReason', 'Managing acute stress prevents cortisol elevation and cellular inflammatory load.'),
+        category: t('focus.categoryMental', 'Mental Balance'),
         icon: <Heart className="h-6 w-6 text-rose-500" />,
         gradient: 'from-rose-500/10 via-pink-500/5 to-transparent',
         badgeBg: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
@@ -187,8 +197,8 @@ export const TodaysFocusCard: React.FC<TodaysFocusCardProps> = ({
       return {
         id: 'prev_movement',
         title: t('habits.movement', 'Log Today’s Exercise & Movement'),
-        reason: 'Physical activity enhances insulin sensitivity and cardiovascular resilience.',
-        category: 'Physical Activity',
+        reason: t('focus.movementReason', 'Physical activity enhances insulin sensitivity and cardiovascular resilience.'),
+        category: t('focus.categoryPhysical', 'Physical Activity'),
         icon: <Activity className="h-6 w-6 text-emerald-500" />,
         gradient: 'from-emerald-500/10 via-teal-500/5 to-transparent',
         badgeBg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
@@ -199,9 +209,9 @@ export const TodaysFocusCard: React.FC<TodaysFocusCardProps> = ({
     if (!loggedKeysEver.has('Genetic') && !loggedKeysEver.has('genetics')) {
       return {
         id: 'prev_genetics',
-        title: 'Log Family Health & Genetic Tendencies',
-        reason: 'Understanding hereditary history enables early targeted lifestyle intervention.',
-        category: 'Genetics',
+        title: t('focus.geneticsTitle', 'Log Family Health & Genetic Tendencies'),
+        reason: t('focus.geneticsReason', 'Understanding hereditary history enables early targeted lifestyle intervention.'),
+        category: t('focus.categoryGenetics', 'Genetics'),
         icon: <Dna className="h-6 w-6 text-violet-500" />,
         gradient: 'from-violet-500/10 via-purple-500/5 to-transparent',
         badgeBg: 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20',

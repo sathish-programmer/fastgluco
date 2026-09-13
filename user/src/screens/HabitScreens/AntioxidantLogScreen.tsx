@@ -75,7 +75,16 @@ const antioxidantColors: Record<string, string> = {
 
 export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({ onBack, onViewShop, onNavigateToDiagnostics }) => {
   const { user, token, apiUrl } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+
+  const LOCALE_MAP: Record<string, string> = {
+    en: 'en-US',
+    ta: 'ta-IN',
+    te: 'te-IN',
+    kn: 'kn-IN',
+    hi: 'hi-IN'
+  };
+  const activeLocale = LOCALE_MAP[language] || 'en-US';
   const [answer, setAnswer] = useState<'yes' | 'no' | null>(null);
   const [history, setHistory] = useState<HabitLog[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
@@ -307,7 +316,7 @@ export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({ onBa
                         {consumed ? t('consumedAntioxidants', 'Consumed antioxidants') : t('notConsumed', 'Not consumed')}
                       </span>
                       <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 block">
-                        {new Date(h.timestamp).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}
+                        {new Date(h.timestamp).toLocaleDateString(activeLocale, { weekday: 'short', month: 'short', day: 'numeric' })}
                       </span>
                     </div>
                   </div>

@@ -10,7 +10,17 @@ interface FastingLogScreenProps {
 
 export const FastingLogScreen: React.FC<FastingLogScreenProps> = ({ onBack }) => {
   const { user, token, apiUrl } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+
+  const LOCALE_MAP: Record<string, string> = {
+    en: 'en-US',
+    ta: 'ta-IN',
+    te: 'te-IN',
+    kn: 'kn-IN',
+    hi: 'hi-IN'
+  };
+  const activeLocale = LOCALE_MAP[language] || 'en-US';
+
   const [started, setStarted] = useState('2026-07-01T20:20');
   const [ended, setEnded] = useState('2026-07-01T20:20');
   const [loading, setLoading] = useState(false);
@@ -67,7 +77,7 @@ export const FastingLogScreen: React.FC<FastingLogScreenProps> = ({ onBack }) =>
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl p-4 mb-4">
         <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-1.5">{t('dashboard.eatingWindow', 'Fasting & Eating Window')}</h3>
         <p className="text-xs text-slate-550 dark:text-slate-450 leading-relaxed">
-          Eating window guidelines: Wind up dinner by 7 PM, take breakfast by 9 AM. Maintain your calorie intake, and avoid processed and unhealthy food.
+          {t('habits.fastingEatingWindowGuidelines', 'Eating window guidelines: Wind up dinner by 7 PM, take breakfast by 9 AM. Maintain your calorie intake, and avoid processed and unhealthy food.')}
         </p>
       </div>
 
@@ -132,7 +142,7 @@ export const FastingLogScreen: React.FC<FastingLogScreenProps> = ({ onBack }) =>
                     <Check className="h-4 w-4 text-emerald-500" /> {t('common.completed')}
                   </span>
                   <span className="text-[10px] text-slate-400 mt-1 block">
-                    {new Date(h.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                    {new Date(h.timestamp).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric' })}
                   </span>
                 </div>
               </div>

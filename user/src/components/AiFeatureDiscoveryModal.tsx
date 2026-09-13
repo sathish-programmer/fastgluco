@@ -53,11 +53,11 @@ export const AiFeatureDiscoveryModal: React.FC<AiFeatureDiscoveryModalProps> = (
           </div>
 
           <h3 className="text-lg font-black text-slate-900 dark:text-slate-100 tracking-tight leading-snug">
-            Log {targetFeatureName} 10x Faster with AI!
+            {t('logFasterWithAi', { target: targetFeatureName }, `Log ${targetFeatureName} 10x Faster with AI!`)}
           </h3>
 
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed font-medium">
-            Did you know? You can answer a quick 60-second voice check-in or upload reports with our AI Assistant — no manual typing needed!
+            {t('aiCheckinNotice', 'Did you know? You can answer a quick 60-second voice check-in or upload reports with our AI Assistant — no manual typing needed!')}
           </p>
 
           {/* Quick Perks */}
@@ -92,7 +92,7 @@ export const AiFeatureDiscoveryModal: React.FC<AiFeatureDiscoveryModalProps> = (
               }}
               className="w-full py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-2xl text-xs transition-all cursor-pointer"
             >
-              Continue Manually
+              {t('continueManually', 'Continue Manually')}
             </button>
           </div>
         </motion.div>

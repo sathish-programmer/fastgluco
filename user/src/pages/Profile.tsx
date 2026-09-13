@@ -392,10 +392,10 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
             </button>
             <div>
               <h1 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-tight">
-                Notification Preferences
+                {t('notif.preferencesTitle', 'Notification Preferences')}
               </h1>
               <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                Manage alerts across Push, Email & SMS
+                {t('notif.manageAlertsDesc', 'Manage alerts across Push, Email & SMS')}
               </p>
             </div>
           </div>
@@ -407,7 +407,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
             className="px-3.5 py-2 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800 rounded-2xl text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
           >
             <Volume2 className="h-4 w-4 text-primary" />
-            <span className="hidden sm:inline">{isTestingNotif ? 'Testing...' : 'Test Audio'}</span>
+            <span className="hidden sm:inline">{isTestingNotif ? t('notif.testing', 'Testing...') : t('notif.testAudio', 'Test Audio')}</span>
           </button>
         </div>
 
@@ -415,10 +415,10 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800 shadow-soft mb-4 transition-colors">
           <div className="mb-3">
             <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-              Preferred Delivery Mode
+              {t('notif.preferredDeliveryMode', 'Preferred Delivery Mode')}
             </span>
             <p className="text-xs text-slate-600 dark:text-slate-300 font-medium mt-0.5">
-              Select a 1-click delivery preset, or fine-tune individual alerts below:
+              {t('notif.selectPresetDesc', 'Select a 1-click delivery preset, or fine-tune individual alerts below:')}
             </p>
           </div>
 
@@ -491,10 +491,10 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
             <div>
               <h2 className="text-sm font-bold text-slate-900 dark:text-white">
-                Detailed Alert Matrix
+                {t('notif.detailedMatrix', 'Detailed Alert Matrix')}
               </h2>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                Customize each category per channel. Click channel header to toggle all.
+                {t('notif.customizeMatrixDesc', 'Customize each category per channel. Click channel header to toggle all.')}
               </p>
             </div>
           </div>
@@ -1255,11 +1255,11 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
           >
             <div className="flex items-center space-x-2.5">
               <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
-              <span>{t('whatsNew.openWhatsNew', "What's New in v5.9.0")}</span>
+              <span>{t('whatsNew.openWhatsNew', "What's New in v5.10.0")}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="text-[10px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-white/80 dark:bg-slate-800 px-2 py-0.5 rounded-full border border-blue-200/80 dark:border-blue-700">
-                v5.9.0
+                v5.10.0
               </span>
               <ChevronRight className="h-4 w-4 text-slate-400 shrink-0" />
             </div>
@@ -1338,11 +1338,17 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
             <div
               className="max-h-60 overflow-y-auto pr-1 text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed mb-6 whitespace-pre-line"
               dangerouslySetInnerHTML={{
-                __html: cancerJourney === 'TREATMENT'
-                  ? branding.cancerTreatmentDisclaimer
-                  : cancerJourney === 'SECONDARY_PREVENTION'
-                  ? branding.cancerSecondaryDisclaimer
-                  : branding.cancerPreventionDisclaimer
+                __html: language !== 'en'
+                  ? (cancerJourney === 'TREATMENT'
+                      ? t('disclaimer.cancerTreatmentText', branding.cancerTreatmentDisclaimer)
+                      : cancerJourney === 'SECONDARY_PREVENTION'
+                      ? t('disclaimer.cancerSecondaryText', branding.cancerSecondaryDisclaimer)
+                      : t('disclaimer.cancerPreventionText', branding.cancerPreventionDisclaimer))
+                  : (cancerJourney === 'TREATMENT'
+                      ? branding.cancerTreatmentDisclaimer
+                      : cancerJourney === 'SECONDARY_PREVENTION'
+                      ? branding.cancerSecondaryDisclaimer
+                      : branding.cancerPreventionDisclaimer)
               }}
             ></div>
             <div className="flex space-x-3">

@@ -30,7 +30,17 @@ const STRESS_SUB_OPTIONS = [
 ];
 
 export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBookAppointment, onNavigateToIntimacy }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+
+  const LOCALE_MAP: Record<string, string> = {
+    en: 'en-US',
+    ta: 'ta-IN',
+    te: 'te-IN',
+    kn: 'kn-IN',
+    hi: 'hi-IN'
+  };
+  const activeLocale = LOCALE_MAP[language] || 'en-US';
+
   const { user, token, apiUrl } = useAuth();
   const [selectedFace, setSelectedFace] = useState<string | null>(null);
   const [history, setHistory] = useState<HabitLog[]>([]);
@@ -212,7 +222,7 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
                 }}
                 className={`p-3 rounded-xl border text-left text-xs font-bold transition-all ${selectedSubOption === opt.id ? 'bg-indigo-50 border-indigo-300 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-400' : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
               >
-                {opt.label}
+                {t(`stress.sub.${opt.id}`, opt.label)}
               </button>
             ))}
           </div>
@@ -307,7 +317,7 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
                       )}
                     </div>
                     <span className="text-[10px] text-slate-400 mt-1 block font-medium">
-                      {new Date(h.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      {new Date(h.timestamp).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
                 </div>

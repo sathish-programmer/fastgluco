@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Check, Minus, Moon, Trash2, Sparkles, MessageSquare } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { useToast } from '../../context/ToastContext';
 import { HabitsService, type HabitLog } from '../../services/habitsService';
 import { ConsultationBanner } from '../../components/ConsultationBanner';
 import { DeStressAIChatModal } from '../../components/DeStressAIChatModal';
@@ -11,9 +12,18 @@ interface SleepLogScreenProps {
   onBookAppointment?: (recommendationId: string) => void;
 }
 
+const LOCALE_MAP: Record<string, string> = {
+  en: 'en-US',
+  ta: 'ta-IN',
+  te: 'te-IN',
+  kn: 'kn-IN',
+  hi: 'hi-IN'
+};
+
 export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAppointment }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { user, token, apiUrl } = useAuth();
+  const { showToast } = useToast();
   const [hours, setHours] = useState<number>(7);
   const [quality, setQuality] = useState<string>('good');
   const [showSleepPopup, setShowSleepPopup] = useState<boolean>(false);
@@ -21,6 +31,8 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
   const [history, setHistory] = useState<HabitLog[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [loading, setLoading] = useState(false);
+
+  const activeLocale = LOCALE_MAP[language] || 'en-US';
 
   useEffect(() => {
     if (user?.id) loadHistory();
@@ -43,9 +55,11 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
     if (!token) return;
     try {
       await HabitsService.deleteHabit(apiUrl, token, id);
+      showToast(t('habits.habitDeleted', 'Log deleted'), 'info');
       await loadHistory();
     } catch (err) {
       console.error('Failed to delete habit', err);
+      showToast(t('habits.habitDeleteFailed', 'Failed to delete log'), 'error');
     }
   };
 
@@ -54,12 +68,14 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
     setLoading(true);
     try {
       await HabitsService.logHabit(apiUrl, token, 'Sleep', { hours, quality });
+      showToast(t('habits.sleepLoggedSuccess', 'Sleep logged successfully!'), 'success');
       await loadHistory();
       if (quality === 'poor' || hours < 6) {
         setShowSleepPopup(true);
       }
     } catch (err) {
       console.error('Failed to log sleep', err);
+      showToast(t('habits.sleepLogFailed', 'Failed to log sleep. Please try again.'), 'error');
     } finally {
       setLoading(false);
     }
@@ -167,7 +183,7 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
       </div>
 
       <div>
-        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-3">7-Day Trend</span>
+        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-3">{t('habits.sevenDayTrend', '7-Day Trend')}</span>
         {loadingHistory ? (
           <div className="text-center py-8">
             <div className="w-6 h-6 border-2 border-slate-200 border-t-slate-400 rounded-full animate-spin mx-auto mb-3"></div>
@@ -182,11 +198,11 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
               <div key={h.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-xl p-3 flex justify-between items-center">
                 <div>
                   <span className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
-                    {h.value.hours >= 7 ? '🌟' : '🥱'} {h.value.hours} hours
+                    {h.value.hours >= 7 ? '🌟' : '🥱'} {h.value.hours ?? 0} {t('habits.hoursWord', 'hours')}
                   </span>
                   <span className="text-[10px] text-slate-400 mt-1 block">
-                    {new Date(h.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })}
-                    {h.value.quality && ` · Quality: ${h.value.quality.charAt(0).toUpperCase() + h.value.quality.slice(1)}`}
+                    {new Date(h.timestamp).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric' })}
+                    {h.value.quality && ` · ${t('habits.quality', 'Quality')}: ${t('habits.quality_' + h.value.quality, h.value.quality.charAt(0).toUpperCase() + h.value.quality.slice(1))}`}
                   </span>
                 </div>
                 {h.value.hours >= 7 ? (
@@ -208,8 +224,8 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
           triggerCondition="Logged <= 5 hours of sleep"
           riskLevel="Medium"
           recommendedSpecialty="Sleep Specialist"
-          title={t('sleepQualitySupport')}
-          description="You've logged less than 5 hours of sleep recently. Chronic sleep deprivation can accelerate cellular aging. Consider consulting a specialist."
+          title={t('sleepQualitySupport', 'Sleep Quality Support')}
+          description={t('habits.sleepDeprivationDesc', "You've logged less than 5 hours of sleep recently. Chronic sleep deprivation can accelerate cellular aging. Consider consulting a specialist.")}
           colorTheme="indigo"
           onBookAppointment={onBookAppointment!}
         />

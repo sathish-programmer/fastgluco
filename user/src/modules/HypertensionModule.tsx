@@ -5,8 +5,17 @@ import { Card, SectionTitle, YesNoToggle, ModeTabs, StressTracker, TalkToDoctorC
 import { triggerHealthInsightNotification } from '../utils/notificationScheduler';
 import { useLanguage } from '../context/LanguageContext';
 
+const LOCALE_MAP: Record<string, string> = {
+  en: 'en-US',
+  ta: 'ta-IN',
+  te: 'te-IN',
+  kn: 'kn-IN',
+  hi: 'hi-IN'
+};
+
 export const HypertensionModule: React.FC = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const activeLocale = LOCALE_MAP[language] || 'en-US';
   const [mode, setMode] = useState<string>('Prevention');
   const [showBpHistoryModal, setShowBpHistoryModal] = useState<boolean>(false);
 
@@ -145,7 +154,7 @@ export const HypertensionModule: React.FC = () => {
   }, [bpLog]);
 
   const chartData = bpLog.map(e => ({
-    date: new Date(e.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }),
+    date: new Date(e.date).toLocaleDateString(activeLocale, { day: 'numeric', month: 'short' }),
     'AM Systolic': e.amSys,
     'AM Diastolic': e.amDia,
     'PM Systolic': e.pmSys,
@@ -155,10 +164,10 @@ export const HypertensionModule: React.FC = () => {
   return (
     <div className="space-y-5">
       {/* Module Title Banner */}
-      <div className="bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 rounded-3xl p-6 text-white shadow-xl">
+      <div className="bg-gradient-to-r from-rose-600 via-pink-600 to-red-600 rounded-3xl p-6 text-white shadow-xl">
         <div className="flex items-center gap-2 mb-1.5">
           <Sparkles className="h-5 w-5 text-amber-200" />
-          <span className="text-xs font-black uppercase tracking-widest text-rose-100">{t('protocols.cardioPressureControl')}</span>
+          <span className="text-xs font-black uppercase tracking-widest text-rose-100">{t('protocols.hypertensionProtocol')}</span>
         </div>
         <h1 className="text-xl font-black tracking-tight text-white">{t('protocols.hypertensionProtocol')}</h1>
         <p className="text-xs text-rose-100/90 mt-1 leading-relaxed max-w-xl">
@@ -172,20 +181,20 @@ export const HypertensionModule: React.FC = () => {
         <>
           <Card className="flex items-center justify-between">
             <div>
-              <p className="text-[10.5px] text-slate-400 font-bold uppercase tracking-wider">{t('protocols.hypertensionPreventionScore')}</p>
+              <p className="text-[10.5px] text-slate-400 font-bold uppercase tracking-wider">{t('protocols.dailyHypertensionScore')}</p>
               <p className="text-2xl font-black" style={{ color: preventionScore >= 0 ? '#10B981' : '#EF4444' }}>
                 {preventionScore > 0 ? `+${preventionScore}` : preventionScore}
               </p>
             </div>
             <span className="text-xs font-bold text-slate-400 text-right">
-              {t('protocols.htnSummary')}
+              {t('protocols.hypertensionSummary')}
             </span>
           </Card>
 
           <Card>
-            <SectionTitle icon={Heart}>{t('protocols.dailyBpDefense')}</SectionTitle>
+            <SectionTitle icon={Heart}>{t('protocols.dailyLifestyleVitals')}</SectionTitle>
             <YesNoToggle label={t('protocols.exercised20Min')} value={exercised} onChange={setExercised} goodAnswer={true} />
-            <YesNoToggle label={t('protocols.meditatedBreathwork')} value={meditated} onChange={setMeditated} goodAnswer={true} />
+            <YesNoToggle label={t('protocols.meditatedToday')} value={meditated} onChange={setMeditated} goodAnswer={true} />
             <YesNoToggle label={t('protocols.ateLowSalt')} value={lowSalt} onChange={setLowSalt} goodAnswer={true} />
             <YesNoToggle label={t('protocols.slept8Hours')} value={slept8} onChange={setSlept8} goodAnswer={true} />
             <div className="pt-2">
@@ -208,28 +217,28 @@ export const HypertensionModule: React.FC = () => {
               />
               <input
                 type="number"
-                placeholder="AM Systolic (e.g. 120)"
+                placeholder={t('bp.amSysPlaceholder', 'AM Systolic (e.g. 120)')}
                 value={amSys}
                 onChange={(e) => setAmSys(e.target.value)}
                 className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-rose-500"
               />
               <input
                 type="number"
-                placeholder="AM Diastolic (e.g. 80)"
+                placeholder={t('bp.amDiaPlaceholder', 'AM Diastolic (e.g. 80)')}
                 value={amDia}
                 onChange={(e) => setAmDia(e.target.value)}
                 className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-rose-500"
               />
               <input
                 type="number"
-                placeholder="PM Systolic (e.g. 125)"
+                placeholder={t('bp.pmSysPlaceholder', 'PM Systolic (e.g. 125)')}
                 value={pmSys}
                 onChange={(e) => setPmSys(e.target.value)}
                 className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-rose-500"
               />
               <input
                 type="number"
-                placeholder="PM Diastolic (e.g. 82)"
+                placeholder={t('bp.pmDiaPlaceholder', 'PM Diastolic (e.g. 82)')}
                 value={pmDia}
                 onChange={(e) => setPmDia(e.target.value)}
                 className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-rose-500"
@@ -281,12 +290,12 @@ export const HypertensionModule: React.FC = () => {
                       {t('protocols.bpHistory', { count: bpLog.length })}
                     </p>
                     <p className="text-[10.5px] text-slate-400 truncate">
-                      {bpStats.avgAmSys ? `Avg AM: ${bpStats.avgAmSys}/${bpStats.avgAmDia} mmHg` : 'View recorded readings'}
+                      {bpStats.avgAmSys ? `${t('protocols.avgMorningAm')}: ${bpStats.avgAmSys}/${bpStats.avgAmDia} mmHg` : t('protocols.viewRecordedReadings', 'View recorded readings')}
                     </p>
                   </div>
                 </div>
                 <span className="text-xs font-bold text-rose-600 dark:text-rose-400 flex items-center gap-0.5 shrink-0 group-hover:translate-x-0.5 transition-transform">
-                  View All Logs <ChevronRight className="h-4 w-4" />
+                  {t('protocols.viewAllLogs', 'View All Logs')} <ChevronRight className="h-4 w-4" />
                 </span>
               </button>
             )}
@@ -304,7 +313,7 @@ export const HypertensionModule: React.FC = () => {
                     </div>
                     <div>
                       <h3 className="text-sm font-black text-slate-800 dark:text-slate-100">{t('protocols.bpMorningEvening')}</h3>
-                      <p className="text-[10.5px] text-slate-400">AM & PM longitudinal pressure logs</p>
+                      <p className="text-[10.5px] text-slate-400">{t('protocols.amPmLongitudinalLogs', 'AM & PM longitudinal pressure logs')}</p>
                     </div>
                   </div>
                   <button
@@ -348,12 +357,12 @@ export const HypertensionModule: React.FC = () => {
                         >
                           <div className="flex items-center gap-3 min-w-0">
                             <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-rose-500 to-amber-500 text-white flex flex-col items-center justify-center shrink-0 shadow-xs">
-                              <span className="text-[9px] font-semibold leading-none uppercase">{logDate.toLocaleString(undefined, { month: 'short' })}</span>
+                              <span className="text-[9px] font-semibold leading-none uppercase">{logDate.toLocaleString(activeLocale, { month: 'short' })}</span>
                               <span className="text-xs font-black leading-none mt-0.5">{logDate.getDate()}</span>
                             </div>
                             <div className="min-w-0">
                               <p className="font-extrabold text-slate-900 dark:text-slate-100 text-xs">
-                                {logDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                                {logDate.toLocaleDateString(activeLocale, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
                               </p>
                               <div className="flex flex-wrap gap-2 mt-1">
                                 {log.amSys ? (
@@ -374,7 +383,7 @@ export const HypertensionModule: React.FC = () => {
                             type="button"
                             onClick={() => removeBpEntry(log.date)}
                             className="h-7 w-7 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/50 dark:hover:text-rose-400 flex items-center justify-center text-xs font-bold transition-all cursor-pointer shrink-0"
-                            title="Delete log"
+                            title={t('common.delete')}
                           >
                             ✕
                           </button>

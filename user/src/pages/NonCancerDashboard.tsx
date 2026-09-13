@@ -377,103 +377,103 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
   const todaysHabits = getFilteredPeriodHabits(habits, 'today');
 
   const formatHabitLogItem = (log: HabitLog) => {
-    const t = (log.type || '').toUpperCase();
+    const typeUpper = (log.type || '').toUpperCase();
     const val = log.value || {};
     const optStr = typeof val === 'object' ? (val.option || val.notes || val.label || val.subOption || val.faceId || '') : `${val}`;
 
-    let title = log.type || 'Habit Check-in';
+    let title = log.type || t('dashboard.habitCheckin', 'Habit Check-in');
     let subtitle = optStr;
     let isRepair = false;
     let category = 'default';
 
-    if (t.includes('KITCHEN')) {
-      title = 'Check Your Kitchen Audit';
+    if (typeUpper.includes('KITCHEN')) {
+      title = t('dashboard.kitchenAuditTitle', 'Check Your Kitchen Audit');
       const answers = val?.answers || {};
       const isSafe = (val?.score === 0) || (answers.kitchenQ1 === true && answers.kitchenQ2 === true && answers.kitchenQ3 === true);
-      subtitle = isSafe ? 'Non-plastic water, natural utensils & glass storage' : 'Plastic container / synthetic non-stick cookware risk flagged';
+      subtitle = isSafe ? t('dashboard.kitchenSafe', 'Non-plastic water, natural utensils & glass storage') : t('dashboard.kitchenRisk', 'Plastic container / synthetic non-stick cookware risk flagged');
       isRepair = isSafe;
       category = 'microplastics';
-    } else if (t.includes('ENVIRONMENT')) {
+    } else if (typeUpper.includes('ENVIRONMENT')) {
       const answers = val?.answers || {};
       if (answers.waterQ1 !== undefined) {
-        title = 'Water Filtration Check';
-        subtitle = answers.waterQ1 === 0 ? 'RO + Activated Carbon Dual Filter' : 'Standard / Tap Water Exposure';
+        title = t('dashboard.waterCheckTitle', 'Water Filtration Check');
+        subtitle = answers.waterQ1 === 0 ? t('dashboard.waterSafe', 'RO + Activated Carbon Dual Filter') : t('dashboard.waterRisk', 'Standard / Tap Water Exposure');
         isRepair = answers.waterQ1 === 0;
         category = 'water';
       } else if (answers.airQ1 !== undefined) {
-        title = 'Air Exposure Check';
-        subtitle = answers.airQ1 === 0 ? 'Clean / Filtered Indoor Air' : 'Smog / Traffic Air Exposure';
+        title = t('dashboard.airCheckTitle', 'Air Exposure Check');
+        subtitle = answers.airQ1 === 0 ? t('dashboard.airSafe', 'Clean / Filtered Indoor Air') : t('dashboard.airRisk', 'Smog / Traffic Air Exposure');
         isRepair = answers.airQ1 === 0;
         category = 'air';
       } else if (answers.pesticidesQ1 !== undefined) {
-        title = 'Pesticide Exposure Check';
-        subtitle = answers.pesticidesQ1 === 0 ? 'Organic / Thoroughly Washed' : 'Conventional Produce';
+        title = t('dashboard.pesticidesTitle', 'Pesticide Exposure Check');
+        subtitle = answers.pesticidesQ1 === 0 ? t('dashboard.pesticidesSafe', 'Organic / Thoroughly Washed') : t('dashboard.pesticidesRisk', 'Conventional Produce');
         isRepair = answers.pesticidesQ1 === 0;
         category = 'pesticides';
       } else if (answers.microplasticsQ1 !== undefined) {
-        title = 'Microplastics Check';
-        subtitle = answers.microplasticsQ1 === 0 ? 'Glass / Stainless Steel Storage' : 'Plastic Water Bottle Exposure';
+        title = t('dashboard.microplasticsTitle', 'Microplastics Check');
+        subtitle = answers.microplasticsQ1 === 0 ? t('dashboard.microplasticsSafe', 'Glass / Stainless Steel Storage') : t('dashboard.microplasticsRisk', 'Plastic Water Bottle Exposure');
         isRepair = answers.microplasticsQ1 === 0;
         category = 'microplastics';
       } else if (answers.kitchenQ1 !== undefined || answers.kitchenQ2 !== undefined || answers.kitchenQ3 !== undefined) {
-        title = 'Check Your Kitchen Audit';
+        title = t('dashboard.kitchenAuditTitle', 'Check Your Kitchen Audit');
         const isSafe = answers.kitchenQ1 === true && answers.kitchenQ2 === true && answers.kitchenQ3 === true;
-        subtitle = isSafe ? 'Non-plastic water, natural utensils & glass storage' : 'Plastic container / synthetic non-stick cookware risk flagged';
+        subtitle = isSafe ? t('dashboard.kitchenSafe', 'Non-plastic water, natural utensils & glass storage') : t('dashboard.kitchenRisk', 'Plastic container / synthetic non-stick cookware risk flagged');
         isRepair = isSafe;
         category = 'microplastics';
       } else {
-        title = 'Environmental Audit';
-        subtitle = optStr || 'Environmental Check-in';
+        title = t('dashboard.envAudit', 'Environmental Audit');
+        subtitle = optStr || t('dashboard.envCheckin', 'Environmental Check-in');
         isRepair = val?.isExposure !== true;
         category = 'environment';
       }
-    } else if (t.includes('STRESS')) {
-      title = 'Mental Health Check (Mia)';
-      subtitle = optStr || 'Stress Check-in';
+    } else if (typeUpper.includes('STRESS')) {
+      title = t('dashboard.mentalHealthCheck', 'Mental Health Check (Mia)');
+      subtitle = optStr || t('dashboard.stressCheckin', 'Stress Check-in');
       isRepair = optStr.toLowerCase().includes('better') || optStr.toLowerCase().includes('calm') || val?.faceId === 'happy';
       category = 'stress';
-    } else if (t.includes('SLEEP')) {
-      title = 'Sleep Health Assessment';
-      subtitle = optStr || (val?.hours ? `${val.hours} Hours Rested` : 'Sleep Quality Log');
+    } else if (typeUpper.includes('SLEEP')) {
+      title = t('dashboard.sleepAssessment', 'Sleep Health Assessment');
+      subtitle = optStr || (val?.hours ? t('dashboard.hoursRested', { hours: val.hours }, `${val.hours} Hours Rested`) : t('dashboard.sleepQualityLog', 'Sleep Quality Log'));
       isRepair = (val?.hours && val.hours >= 7) || optStr.toLowerCase().includes('good') || optStr.toLowerCase().includes('rested');
       category = 'sleep';
-    } else if (t.includes('FASTING')) {
-      title = 'Autophagy Fasting Log';
-      subtitle = optStr || (val?.hours ? `${val.hours}-Hour Fast Completed` : 'Fasting Check-in');
+    } else if (typeUpper.includes('FASTING')) {
+      title = t('dashboard.fastingLog', 'Autophagy Fasting Log');
+      subtitle = optStr || (val?.hours ? t('dashboard.fastCompleted', { hours: val.hours }, `${val.hours}-Hour Fast Completed`) : t('dashboard.fastingCheckin', 'Fasting Check-in'));
       isRepair = true;
       category = 'fasting';
-    } else if (t.includes('MOVEMENT')) {
-      title = 'Daily Movement & Cardio';
-      subtitle = optStr || (val?.minutes ? `${val.minutes} Mins Active` : 'Physical Activity');
+    } else if (typeUpper.includes('MOVEMENT')) {
+      title = t('dashboard.movementTitle', 'Daily Movement & Cardio');
+      subtitle = optStr || (val?.minutes ? t('dashboard.minsActive', { minutes: val.minutes }, `${val.minutes} Mins Active`) : t('dashboard.physicalActivity', 'Physical Activity'));
       isRepair = true;
       category = 'movement';
-    } else if (t.includes('STILLNESS')) {
-      title = 'Stillness & Meditation';
-      subtitle = optStr || 'Quiet Meditation Check-in';
+    } else if (typeUpper.includes('STILLNESS')) {
+      title = t('dashboard.stillnessTitle', 'Stillness & Meditation');
+      subtitle = optStr || t('dashboard.meditationCheckin', 'Quiet Meditation Check-in');
       isRepair = true;
       category = 'stillness';
-    } else if (t.includes('BREATH')) {
-      title = 'Power of Breath (Cellular Oxygenation)';
-      subtitle = optStr || (val?.minutes ? `${val.minutes} Mins Breathwork (${val?.technique || 'Box'})` : 'Cellular Breath Practice');
+    } else if (typeUpper.includes('BREATH')) {
+      title = t('dashboard.breathTitle', 'Power of Breath (Cellular Oxygenation)');
+      subtitle = optStr || (val?.minutes ? t('dashboard.minsBreathwork', { minutes: val.minutes, tech: val?.technique || 'Box' }, `${val.minutes} Mins Breathwork (${val?.technique || 'Box'})`) : t('dashboard.breathPractice', 'Cellular Breath Practice'));
       isRepair = true;
       category = 'breath';
-    } else if (t.includes('JOY')) {
-      title = 'Joy & Gratitude Check';
-      subtitle = optStr || 'Positive Emotional Check-in';
+    } else if (typeUpper.includes('JOY')) {
+      title = t('dashboard.joyTitle', 'Joy & Gratitude Check');
+      subtitle = optStr || t('dashboard.joyCheckin', 'Positive Emotional Check-in');
       isRepair = true;
       category = 'joy';
-    } else if (t.includes('GENETIC')) {
-      title = 'Genetic Risk Check (Gia)';
-      subtitle = optStr || 'Pedigree & Panel Screening';
+    } else if (typeUpper.includes('GENETIC')) {
+      title = t('dashboard.geneticTitle', 'Genetic Risk Check (Gia)');
+      subtitle = optStr || t('dashboard.geneticCheckin', 'Pedigree & Panel Screening');
       isRepair = val?.geneticLink === false;
       category = 'genetic';
-    } else if (t.includes('SMOKING') || t.includes('ALCOHOL')) {
-      title = t.includes('SMOKING') ? 'Tobacco Exposure' : 'Alcohol Check';
-      subtitle = optStr || (val?.count > 0 ? `${val.count} Units Logged` : 'Exposure Check-in');
+    } else if (typeUpper.includes('SMOKING') || typeUpper.includes('ALCOHOL')) {
+      title = typeUpper.includes('SMOKING') ? t('dashboard.tobaccoTitle', 'Tobacco Exposure') : t('dashboard.alcoholTitle', 'Alcohol Check');
+      subtitle = optStr || (val?.count > 0 ? t('dashboard.unitsLogged', { count: val.count }, `${val.count} Units Logged`) : t('dashboard.exposureCheckin', 'Exposure Check-in'));
       isRepair = val === 0 || val?.count === 0;
-      category = t.includes('SMOKING') ? 'smoking' : 'alcohol';
+      category = typeUpper.includes('SMOKING') ? 'smoking' : 'alcohol';
     } else {
-      isRepair = ['ANTIOXIDANTS', 'MEAL', 'NUTRITION', 'REPAIR'].some(k => t.includes(k));
+      isRepair = ['ANTIOXIDANTS', 'MEAL', 'NUTRITION', 'REPAIR'].some(k => typeUpper.includes(k));
       category = 'default';
     }
 
@@ -1391,7 +1391,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
             <div>
               <h4 className="font-bold text-emerald-800 dark:text-emerald-300 text-xs">{t('dash.upcomingApptScheduled', 'Upcoming Consultation Scheduled')}</h4>
               <p className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-0.5">
-                Appointment with <strong>Dr. {upcomingAppt.doctorId?.name || 'Specialist'}</strong> {t('appointmentScheduledOn')} <strong>{upcomingAppt.date}</strong> {t('appointmentAtTime')} <strong>{upcomingAppt.time}</strong>.
+                {t('dash.appointmentWith', 'Appointment with')} <strong>Dr. {upcomingAppt.doctorId?.name || t('common.specialist', 'Specialist')}</strong> {t('appointmentScheduledOn')} <strong>{upcomingAppt.date}</strong> {t('appointmentAtTime')} <strong>{upcomingAppt.time}</strong>.
               </p>
               {upcomingAppt.meetingLink && (
                 <a
@@ -1401,8 +1401,8 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                   className="inline-block mt-2 text-[10px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-3.5 py-1.5 rounded-lg shadow-sm transition-all"
                 >
                   {upcomingAppt.meetingLink.includes('calendar.app.google') || upcomingAppt.meetingLink.includes('calendar.google.com')
-                    ? 'Open Google Calendar Invite'
-                    : 'Join Google Meet'}
+                    ? t('dash.openGoogleCalendar', 'Open Google Calendar Invite')
+                    : t('dash.joinGoogleMeet', 'Join Google Meet')}
                 </a>
               )}
             </div>

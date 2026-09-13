@@ -120,6 +120,16 @@
     "text": "Note:"
   },
   {
+    "file": "src/components/OfflineScreen.tsx",
+    "line": 74,
+    "text": "Check Cellular / Mobile Data switch in Settings"
+  },
+  {
+    "file": "src/components/OfflineScreen.tsx",
+    "line": 78,
+    "text": "Verify Wi-Fi network connection & signal strength"
+  },
+  {
     "file": "src/components/TermsAndConditionsAcceptancePage.tsx",
     "line": 102,
     "text": "MITOREBOOT PRIVATE LIMITED"
@@ -1700,13 +1710,13 @@
     "text": "Accept & Continue"
   },
   {
-    "file": "src/context/AuthContext.tsx",
-    "line": 82,
-    "text": "Promise"
+    "file": "src/components/WhatsNewModal.tsx",
+    "line": 114,
+    "text": "[PROP] title=\"Close\""
   },
   {
     "file": "src/context/AuthContext.tsx",
-    "line": 83,
+    "line": 84,
     "text": "Promise"
   },
   {
@@ -1716,32 +1726,42 @@
   },
   {
     "file": "src/context/AuthContext.tsx",
-    "line": 86,
-    "text": "Promise"
-  },
-  {
-    "file": "src/context/AuthContext.tsx",
     "line": 87,
     "text": "Promise"
   },
   {
     "file": "src/context/AuthContext.tsx",
-    "line": 92,
+    "line": 88,
     "text": "Promise"
   },
   {
     "file": "src/context/AuthContext.tsx",
-    "line": 240,
+    "line": 89,
+    "text": "Promise"
+  },
+  {
+    "file": "src/context/AuthContext.tsx",
+    "line": 90,
+    "text": "Promise"
+  },
+  {
+    "file": "src/context/AuthContext.tsx",
+    "line": 95,
+    "text": "Promise"
+  },
+  {
+    "file": "src/context/AuthContext.tsx",
+    "line": 305,
     "text": "): Promise"
   },
   {
     "file": "src/context/AuthContext.tsx",
-    "line": 281,
+    "line": 351,
     "text": "): Promise"
   },
   {
     "file": "src/context/AuthContext.tsx",
-    "line": 313,
+    "line": 383,
     "text": "): Promise"
   },
   {

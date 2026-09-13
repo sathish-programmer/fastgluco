@@ -1,8 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, Sparkles, HeartHandshake, Calendar, RefreshCw, Moon, PhoneCall, Zap } from 'lucide-react';
+import { X, Send, Sparkles, HeartHandshake, Calendar, RefreshCw, Moon, PhoneCall, Zap, Volume2, VolumeX } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { HabitsService } from '../services/habitsService';
+import {
+  normalizeLang,
+  MIA_SPECIFIC_TIPS,
+  getGuidedReplyFallback,
+  getStepQuickRepliesFallback,
+  getSpecialistCardDataLocalized,
+  getShortcutExerciseDataLocalized,
+  detectIssueKeyMultilingual
+} from '../data/miaData';
+import { speakText, stopSpeaking } from '../utils/ttsHelper';
 
 interface DeStressAIChatModalProps {
   isOpen: boolean;
@@ -37,65 +47,8 @@ interface Message {
   };
 }
 
-const MIA_STORAGE_KEY = (userId?: string) => `mito_mia_state_${userId || 'guest'}`;
-const MIA_FOLLOWUP_KEY = (userId?: string) => `mr_mia_followup_${userId || 'guest'}`;
-
-const SPECIFIC_TIPS: Record<string, string[]> = {
-  worklife: [
-    'Set a firm 7pm shutdown — close laptop, silence work notifications completely.',
-    'Take a 5-minute micro-break every 90 minutes — walk outside or stretch.',
-    'Write down 3 things that went well today before bed.',
-    'One screen-free morning per week to reset your nervous system.'
-  ],
-  relationship: [
-    'Write what you feel before you say it — it removes the emotional charge.',
-    'Choose one 10-minute conversation this week with no phones present.',
-    'Ask "what do you need right now?" instead of giving unsolicited advice.',
-    'Weekly check-in ritual: 5 minutes of undivided attention each way.'
-  ],
-  loss: [
-    'Allow yourself 10 timed minutes to grieve each day — then gently close it.',
-    'Write one memory that made you smile — keep it somewhere you will see it.',
-    'Call one person who loved them too — shared grief is lighter.',
-    'Create a small weekly ritual to honour them — it keeps the connection.'
-  ],
-  hormonal: [
-    'Track your cycle with an app — awareness reduces the surprise of mood shifts.',
-    'Cut refined sugar and caffeine in the 10 days before your period.',
-    'Add magnesium-rich foods daily: dark chocolate (85%+), almonds, leafy greens.',
-    '20-minute daily walk — it raises serotonin even when you feel sluggish.'
-  ],
-  sexual: [
-    'Write one kind thing about your body each morning — body image is trainable.',
-    'Schedule intimacy-free closeness — a warm hug, a conversation, zero pressure.',
-    'Open a 5-minute partner check-in weekly: "how are you really?"',
-    'Pelvic floor relaxation breathing: deep belly breath in, fully release out.'
-  ],
-  general: [
-    '4-7-8 breathing: inhale 4s, hold 7s, exhale 8s — do this 4 times when stressed.',
-    '10 minutes outside in nature daily — cortisol drops measurably.',
-    '5-minute free-flow journaling — no editing, just empty your mind onto paper.',
-    'One thing you are looking forward to, planned each week — anticipation heals.'
-  ],
-  sleep_stress: [
-    'Strict shutdown routine — no screens 45 min before bed, dim lights at 9pm.',
-    'Write a "worry dump" — 10 min journaling all worries before bed so brain releases them.',
-    '4-7-8 breathing in bed (inhale 4s, hold 7s, exhale 8s) — activates parasympathetic system.',
-    'Keep a consistent wake time even on weekends — anchors the circadian rhythm.'
-  ],
-  sleep_disorder: [
-    'Sleep restriction therapy — go to bed ONLY when sleepy, not at a fixed time.',
-    'Get up if awake >20 min — do something calm in dim light, return when sleepy.',
-    'Morning bright light exposure (10 min sunlight within 30 min of waking) — resets melatonin.',
-    'Remove the bedroom clock — clock-watching increases arousal and worsens insomnia.'
-  ],
-  sleep_apnea: [
-    'Sleep on your side, not your back — tennis ball in back of pyjama pocket trick.',
-    'Avoid alcohol within 3 hours of bed — it worsens airway collapse.',
-    'Elevate head of bed by 10-15 degrees.',
-    'Refer urgently to a sleep specialist for polysomnography (sleep study).'
-  ]
-};
+const MIA_STORAGE_KEY = (userId?: string, lang: string = 'en') => `mito_mia_state_${userId || 'guest'}_${lang}`;
+const MIA_FOLLOWUP_KEY = (userId?: string, lang: string = 'en') => `mr_mia_followup_${userId || 'guest'}_${lang}`;
 
 export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
   isOpen,
@@ -105,7 +58,8 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
   onBookAppointment
 }) => {
   const { apiUrl, token, user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const curLang = normalizeLang(language);
 
   const [mode, setMode] = useState<'stress' | 'sleep'>(initialMode);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -118,6 +72,7 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
   const [phase, setPhase] = useState<'identify' | 'lifestyle' | 'followup' | 'continue' | 'specialist'>('identify');
   const [activeQuickReplies, setActiveQuickReplies] = useState<string[]>([]);
   const [showQuickShortcuts, setShowQuickShortcuts] = useState<boolean>(false);
+  const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null);
 
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
@@ -125,7 +80,7 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
     if (isOpen) {
       // Check saved followup state
       try {
-        const savedFollowup = localStorage.getItem(MIA_FOLLOWUP_KEY(user?.id));
+        const savedFollowup = localStorage.getItem(MIA_FOLLOWUP_KEY(user?.id, curLang));
         if (savedFollowup) {
           const parsed = JSON.parse(savedFollowup);
           const hoursAgo = (Date.now() - (parsed.ts || 0)) / 3600000;
@@ -139,12 +94,30 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
       } catch (err) {}
 
       startChatSession(initialMode);
+    } else {
+      stopSpeaking();
+      setSpeakingMsgId(null);
     }
-  }, [isOpen]);
+  }, [isOpen, curLang]);
 
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
+
+  const handleSpeak = (msgId: string, textToSpeak: string) => {
+    if (speakingMsgId === msgId) {
+      stopSpeaking();
+      setSpeakingMsgId(null);
+      return;
+    }
+    setSpeakingMsgId(msgId);
+    speakText({
+      text: textToSpeak,
+      language: curLang,
+      onEnd: () => setSpeakingMsgId(null),
+      onError: () => setSpeakingMsgId(null)
+    });
+  };
 
   const showReturningUserFlow = (savedData: any) => {
     setExchangeCount(4);
@@ -152,12 +125,21 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
     setFollowupShown(true);
     setPhase('followup');
 
-    const greeting = `Welcome back 💙 I've been thinking about you. Yesterday we talked about what was going on with **${savedData.issueLabel || 'your wellbeing'}** and I suggested 4 personalized steps to try.\n\nHow are you feeling today compared to yesterday?`;
+    const greeting = curLang === 'ta'
+      ? `மீண்டும் வருக 💙 உங்களை நினைத்துக் கொண்டிருந்தேன். நேற்று நாம் பேசிய **${savedData.issueLabel || 'உங்கள் நல்வாழ்வு'}** அடிப்படையில் 4 தனிப்பயனாக்கப்பட்ட வாழ்க்கைமுறை படிகளை பரிந்துரைத்தேன்.\n\nநேற்றைய தினத்துடன் ஒப்பிடும்போது இன்று நீங்கள் எப்படி உணர்கிறீர்கள்?`
+      : curLang === 'kn'
+      ? `ಮರಳಿ ಸ್ವಾಗತ 💙 ನಿಮ್ಮ ಬಗ್ಗೆ ಯೋಚಿಸುತ್ತಿದ್ದೆ. ನಿನ್ನೆ ನಾವು ಚರ್ಚಿಸಿದ **${savedData.issueLabel || 'ನಿಮ್ಮ ಕ್ಷೇಮ'}** ಆಧಾರದ ಮೇಲೆ 4 ಜೀವನಶೈಲಿ ಕ್ರಮಗಳನ್ನು ಸೂಚಿಸಿದ್ದೆ.\n\nನಿನ್ನೆಗೆ ಹೋಲಿಸಿದರೆ ಇಂದು ನಿಮಗೆ ಹೇಗನಿಸುತ್ತಿದೆ?`
+      : curLang === 'hi'
+      ? `पुनः स्वागत है 💙 मैं आपके बारे में ही सोच रही थी। कल हमने **${savedData.issueLabel || 'आपकी सेहत'}** के बारे में बात की थी और 4 उपाय सुझाए थे।\n\nकल की तुलना में आज आप कैसा महसूस कर रहे हैं?`
+      : curLang === 'te'
+      ? `తిరిగి స్వాగతం 💙 నేను మీ గురించే ఆలోచిస్తున్నాను. నిన్న మనం చర్చించిన **${savedData.issueLabel || 'మీ శ్రేయస్సు'}** ఆధారంగా 4 జీవనశైలి మార్పులను సూచించాను.\n\nనిన్నటితో పోలిస్తే ఈ రోజు మీరు ఎలా ఉన్నారు?`
+      : `Welcome back 💙 I've been thinking about you. Yesterday we talked about what was going on with **${savedData.issueLabel || 'your wellbeing'}** and I suggested 4 personalized steps to try.\n\nHow are you feeling today compared to yesterday?`;
+
     const options = [
-      'I feel noticeably better',
-      'About the same — no real change',
-      'I feel worse actually',
-      'I tried some things but not all'
+      t('mia.returningBetter', 'I feel noticeably better'),
+      t('mia.returningSame', 'About the same — no real change'),
+      t('mia.returningWorse', 'I feel worse actually'),
+      t('mia.returningSome', 'I tried some things but not all')
     ];
 
     setMessages([
@@ -179,6 +161,8 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
     setPhase('identify');
     setIdentifiedIssue('general');
     setShowQuickShortcuts(false);
+    stopSpeaking();
+    setSpeakingMsgId(null);
 
     if (currentMode === 'stress') {
       const greeting = t('mia.greetingStress', `Hello 💙 I'm **Mia**, your Mental Health AI Expert at Mito Reboot. I can see you're going through a tough time. I want to really understand what's going on for you — not give you generic advice.\n\nWhich of these is weighing on you most right now?`);
@@ -223,30 +207,17 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
   const switchMode = (newMode: 'stress' | 'sleep') => {
     if (newMode === mode) return;
     try {
-      localStorage.removeItem(MIA_FOLLOWUP_KEY(user?.id));
+      localStorage.removeItem(MIA_FOLLOWUP_KEY(user?.id, curLang));
     } catch (e) {}
     startChatSession(newMode);
   };
 
   const restartChatSession = () => {
     try {
-      localStorage.removeItem(MIA_FOLLOWUP_KEY(user?.id));
-      localStorage.removeItem(MIA_STORAGE_KEY(user?.id));
+      localStorage.removeItem(MIA_FOLLOWUP_KEY(user?.id, curLang));
+      localStorage.removeItem(MIA_STORAGE_KEY(user?.id, curLang));
     } catch (e) {}
     startChatSession(mode);
-  };
-
-  const detectIssueKey = (text: string): string => {
-    const t = text.toLowerCase();
-    if (t.includes('work') || t.includes('burn') || t.includes('job') || t.includes('boss')) return 'worklife';
-    if (t.includes('relation') || t.includes('partner') || t.includes('family') || t.includes('conflict')) return 'relationship';
-    if (t.includes('loss') || t.includes('grief') || t.includes('death') || t.includes('loved one')) return 'loss';
-    if (t.includes('hormon') || t.includes('pms') || t.includes('menopaus') || t.includes('period')) return 'hormonal';
-    if (t.includes('sexual') || t.includes('intimac') || t.includes('sex') || t.includes('libido')) return 'sexual';
-    if (t.includes('snore') || t.includes('breath') || t.includes('apnea')) return 'sleep_apnea';
-    if (t.includes('worry') || t.includes('racing') || t.includes('mind')) return 'sleep_stress';
-    if (t.includes('quiet') || t.includes('clock') || t.includes('disorder')) return 'sleep_disorder';
-    return 'general';
   };
 
   const handleSendMessage = async (textToSend?: string) => {
@@ -263,7 +234,7 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
     const newCount = exchangeCount + 1;
     setExchangeCount(newCount);
 
-    const detectedCat = detectIssueKey(text);
+    const detectedCat = detectIssueKeyMultilingual(text);
     if (newCount === 1) {
       setIdentifiedIssue(detectedCat);
     }
@@ -280,10 +251,19 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
       }).catch(e => console.error('Error saving Mia habit log:', e));
     }
 
-    // Handle Followup choices
+    // Handle Followup choices in all 5 languages
     const lower = text.toLowerCase();
-    const isBetter = lower.includes('better') || lower.includes('good') || lower.includes('improved') || lower.includes('helped');
-    const isWorse = lower.includes('worse') || lower.includes('same') || lower.includes('no change') || lower.includes('still') || lower.includes('struggling');
+    const isBetter = lower.includes('better') || lower.includes('good') || lower.includes('improved') || lower.includes('helped') ||
+      lower.includes('நன்று') || lower.includes('மேம்பட்ட') || lower.includes('தேவல') ||
+      lower.includes('ಉತ್ತಮ') || lower.includes('ಸುಧಾರಣೆ') ||
+      lower.includes('बेहतर') || lower.includes('अच्छा') || lower.includes('सुधार') ||
+      lower.includes('మెరుగైన') || lower.includes('నయమైంది') || lower.includes('బాగుంది');
+
+    const isWorse = lower.includes('worse') || lower.includes('same') || lower.includes('no change') || lower.includes('still') || lower.includes('struggling') ||
+      lower.includes('மோசம்') || lower.includes('மாற்றமில்லை') || lower.includes('சிரமம்') ||
+      lower.includes('ಕೆಟ್ಟ') || lower.includes('ಬದಲಾವಣೆ ಇಲ್ಲ') || lower.includes('ಕಷ್ಟ') ||
+      lower.includes('खराब') || lower.includes('कोई बदलाव नहीं') || lower.includes('मुश्किल') ||
+      lower.includes('తీవ్రం') || lower.includes('మార్పు లేదు') || lower.includes('కష్టం');
 
     if (phase === 'followup' || followupShown) {
       if (isBetter && !isWorse) {
@@ -291,7 +271,16 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
         setPhase('continue');
         try { localStorage.removeItem(MIA_FOLLOWUP_KEY(user?.id)); } catch (e) {}
         
-        const contOpts = ['Thank you! I will keep going', 'What if I slip up?', 'Can I add more changes?'];
+        const contOpts = curLang === 'ta'
+          ? ['நன்றி! நான் தொடர்ந்து செய்வேன்', 'இடைவெளி ஏற்பட்டால் என்ன செய்வது?', 'மேலும் மாற்றங்களை சேர்க்கலாமா?']
+          : curLang === 'kn'
+          ? ['ಧನ್ಯವಾದಗಳು! ನಾನು ಮುಂದುವರಿಸುತ್ತೇನೆ', 'ತಪ್ಪಿದರೆ ಏನು ಮಾಡುವುದು?', 'ಇನ್ನಷ್ಟು ಬದಲಾವಣೆಗಳನ್ನು ಸೇರಿಸಬಹುದೇ?']
+          : curLang === 'hi'
+          ? ['धन्यवाद! मैं इसे जारी रखूँगा', 'यदि कोई नियम छूट जाए तो?', 'क्या मैं और बदलाव जोड़ सकता हूँ?']
+          : curLang === 'te'
+          ? ['ధన్యవాదాలు! నేను కొనసాగిస్తాను', 'ఒకవేళ మిస్ అయితే ఏమి చేయాలి?', 'మరిన్ని మార్పులు జోడించవచ్చా?']
+          : ['Thank you! I will keep going', 'What if I slip up?', 'Can I add more changes?'];
+
         setMessages(prev => [
           ...prev,
           {
@@ -310,10 +299,26 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
         try { localStorage.removeItem(MIA_FOLLOWUP_KEY(user?.id)); } catch (e) {}
 
         const compassion = mode === 'sleep'
-          ? `I'm sorry the lifestyle changes haven't brought full relief yet. That tells me your nervous system and body need more targeted specialist support.`
-          : `I'm sorry you're still struggling. Admitting that takes real courage, and it shows you deserve dedicated, professional care.`;
+          ? (curLang === 'ta'
+              ? `வாழ்க்கைமுறை மாற்றங்கள் முழு நிவாரணம் அளிக்கவில்லை என்பது வருத்தமளிக்கிறது. உங்கள் உடலுக்கும் நரம்பு மண்டலத்திற்கும் சிறப்பு மருத்துவ உதவி தேவை என்பதை இது காட்டுகிறது.`
+              : curLang === 'kn'
+              ? `ಜೀವನಶೈಲಿಯ ಬದಲಾವಣೆಗಳು ಸಂಪೂರ್ಣ ಪರಿಹಾರ ನೀಡಿಲ್ಲದಿರುವುದು ವಿಷಾದನೀಯ. ನಿಮ್ಮ ನರಮಂಡಲಕ್ಕೆ ತಜ್ಞರ ವೈದ್ಯಕೀಯ ಬೆಂಬಲದ ಅಗತ್ಯವಿದೆ.`
+              : curLang === 'hi'
+              ? `मुझे खेद है कि जीवनशैली में बदलाव से पूरा आराम नहीं मिला। इसका संकेत है कि आपके शरीर और तंत्रिका तंत्र को विशेषज्ञ के समर्थन की आवश्यकता है।`
+              : curLang === 'te'
+              ? `జీవనశైలి మార్పులు పూర్తి ఉపశమనాన్ని ఇవ్వనందుకు చింతిస్తున్నాను. మీ నాడీ వ్యవస్థకు నిపుణుల వైద్య మద్దతు అవసరమని ఇది సూచిస్తుంది.`
+              : `I'm sorry the lifestyle changes haven't brought full relief yet. That tells me your nervous system and body need more targeted specialist support.`)
+          : (curLang === 'ta'
+              ? `நீங்கள் இன்னும் சிரமப்படுகிறீர்கள் என்பது வருத்தமளிக்கிறது. அதை வெளிப்படையாக ஒப்புக்கொள்வது பெரும் துணிச்சல். உங்களுக்கு அர்ப்பணிப்புள்ள மருத்துவப் பராமரிப்பு அவசியம்.`
+              : curLang === 'kn'
+              ? `ನೀವು ಇನ್ನೂ ಕಷ್ಟಪಡುತ್ತಿದ್ದೀರಿ ಎಂಬುದು ಬೇಸರದ ಸಂಗತಿ. ಅದನ್ನು ಮುಕ್ತವಾಗಿ ಒಪ್ಪಿಕೊಳ್ಳಲು ನಿಜವಾದ ಧೈರ್ಯ ಬೇಕು. ನಿಮಗೆ ಸೂಕ್ತ ವೃತ್ತಿಪರ ಆರೈಕೆ ಸಿಗಬೇಕು.`
+              : curLang === 'hi'
+              ? `मुझे खेद है कि आप अभी भी संघर्ष कर रहे हैं। इसे स्वीकार करना वास्तविक साहस दिखाता है, और आप समर्पित पेशेवर देखभाल के हकदार हैं।`
+              : curLang === 'te'
+              ? `మీరు ఇంకా ఇబ్బంది పడుతున్నందుకు చింతిస్తున్నాను. దాన్ని అంగీకరించడం నిజమైన ధైర్యం, మీకు నిపుణుల ప్రత్యేక సంరక్షణ అవసరం.`
+              : `I'm sorry you're still struggling. Admitting that takes real courage, and it shows you deserve dedicated, professional care.`);
 
-        const specData = getSpecialistCardData(detectedCat || identifiedIssue, mode);
+        const specData = getSpecialistCardDataLocalized(detectedCat || identifiedIssue, mode, curLang);
 
         setMessages(prev => [
           ...prev,
@@ -336,16 +341,27 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
           mode,
           exchangeCount: newCount,
           identifiedIssue: detectedCat || identifiedIssue,
+          language: curLang,
           history: messages.map(m => ({ role: m.role, content: m.text }))
         })
       });
 
       let replyText = '';
+      let responseOptions: string[] | undefined = undefined;
+      let responseTips: string[] | undefined = undefined;
+
       if (res.ok) {
         const data = await res.json();
         replyText = data.reply || data.message;
+        if (Array.isArray(data.options) && data.options.length > 0) {
+          responseOptions = data.options;
+        }
+        if (Array.isArray(data.tips) && data.tips.length > 0) {
+          responseTips = data.tips;
+        }
       } else {
-        replyText = generateGuidedReply(text, newCount, mode, detectedCat || identifiedIssue);
+        replyText = getGuidedReplyFallback(newCount, mode, detectedCat || identifiedIssue, curLang);
+        responseOptions = getStepQuickRepliesFallback(newCount, mode, curLang);
       }
 
       setIsTyping(false);
@@ -356,7 +372,12 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
         setPhase('lifestyle');
         
         const catKey = detectedCat || identifiedIssue || 'general';
-        const tipsList = SPECIFIC_TIPS[catKey] || SPECIFIC_TIPS.general;
+        const tipsList = responseTips && responseTips.length > 0
+          ? responseTips
+          : (MIA_SPECIFIC_TIPS[curLang]?.[catKey] || MIA_SPECIFIC_TIPS[curLang]?.general || MIA_SPECIFIC_TIPS.en[catKey] || MIA_SPECIFIC_TIPS.en.general);
+
+        const lifestyleTitle = t('mia.lifestyleTitle', '🌿 4 Personalised Changes for You');
+        const lifestyleOutro = t('mia.lifestyleOutro', '📅 Try these 4 steps today and come back tomorrow to tell me how you feel.');
 
         setMessages(prev => [
           ...prev,
@@ -366,10 +387,10 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
             text: '',
             isLifestyleCard: true,
             lifestyleData: {
-              title: `🌿 4 Personalised Changes for You`,
+              title: lifestyleTitle,
               intro: replyText,
               tips: tipsList,
-              outro: `📅 Try these 4 steps today and come back tomorrow to tell me how you feel.`
+              outro: lifestyleOutro
             }
           }
         ]);
@@ -381,7 +402,10 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
         setTimeout(() => {
           setFollowupShown(true);
           setPhase('followup');
-          const folOpts = ['I feel noticeably better', 'Still struggling / Feeling worse'];
+          const folOpts = [
+            t('mia.feelBetterChoice', 'I feel noticeably better'),
+            t('mia.stillStrugglingChoice', 'Still struggling / Feeling worse')
+          ];
           setMessages(prev => [
             ...prev,
             {
@@ -399,7 +423,7 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
       }
 
       // Regular question step
-      const stepOptions = getStepQuickReplies(newCount, mode);
+      const stepOptions = responseOptions || getStepQuickRepliesFallback(newCount, mode, curLang);
       setMessages(prev => [
         ...prev,
         { id: `ai-${Date.now()}`, role: 'ai', text: replyText, options: stepOptions }
@@ -409,8 +433,8 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
     } catch (err) {
       console.error(err);
       setIsTyping(false);
-      const fallback = generateGuidedReply(text, newCount, mode, detectedCat || identifiedIssue);
-      const stepOptions = getStepQuickReplies(newCount, mode);
+      const fallback = getGuidedReplyFallback(newCount, mode, detectedCat || identifiedIssue, curLang);
+      const stepOptions = getStepQuickRepliesFallback(newCount, mode, curLang);
       setMessages(prev => [...prev, { id: `ai-${Date.now()}`, role: 'ai', text: fallback, options: stepOptions }]);
       setActiveQuickReplies(stepOptions || []);
     }
@@ -437,125 +461,11 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
     } catch (e) {}
   };
 
-  const getStepQuickReplies = (count: number, currentMode: 'stress' | 'sleep'): string[] => {
-    if (currentMode === 'stress') {
-      switch (count) {
-        case 1:
-          return ["It's been going on for months", "Started recently", "I feel completely overwhelmed", "It's affecting my sleep too"];
-        case 2:
-          return ["Yes, that's exactly it", "It's more complicated than that", "I just feel stuck", "I don't know where to start"];
-        default:
-          return ["Tell me more", "I want to try that", "I need professional help"];
-      }
-    } else {
-      switch (count) {
-        case 1:
-          return ["Racing thoughts and worry", "My mind is quiet but I just can't sleep", "Both worry and physical restlessness", "I overthink everything at night"];
-        case 2:
-          return ["Exhausted all day but can't sleep at night", "Okay during the day actually", "Falling asleep at wrong times"];
-        case 3:
-          return ["Yes, I snore quite a lot", "My partner says I stop breathing", "No, I don't snore", "Not sure"];
-        default:
-          return ["Tell me more", "I want to try that", "I need professional help"];
-      }
-    }
-  };
-
-  const generateGuidedReply = (_text: string, count: number, currentMode: 'stress' | 'sleep', catKey: string): string => {
-    if (currentMode === 'stress') {
-      if (count === 1) {
-        return `Thank you for sharing that with me. Understanding what is driving your stress is the first step toward relief.\n\nIs it the daily workload itself, or feeling unrecognised and unsupported that hurts the most?`;
-      }
-      return `Got it. Thank you for opening up. Based on what you shared, here are 4 specific lifestyle steps tailored for your ${catKey} stress.`;
-    } else {
-      if (count === 1) {
-        return `Got it. Next, when you lie in bed and can't sleep, what is going through your mind — worries and racing thoughts, or is your mind fairly quiet?`;
-      }
-      if (count === 2) {
-        return `Understood. How would you describe your daytime energy — do you feel exhausted but can't sleep at night, or do you feel reasonably okay during the day?`;
-      }
-      return `Thank you. Here are 4 targeted sleep changes based on your assessment.`;
-    }
-  };
-
-  const getSpecialistCardData = (issueKey: string, currentMode: 'stress' | 'sleep') => {
-    if (currentMode === 'sleep') {
-      return {
-        title: '💜 Specialist Sleep Assessment Recommended',
-        body: 'Lifestyle changes are a vital foundation, but persistent sleep disruption benefits greatly from specialist evaluation.',
-        primaryBtnLabel: 'Consult Sleep Specialist (Somnologist)',
-        primaryReason: 'Sleep Specialist Consultation',
-        secondaryBtnLabel: 'Consult Psychiatrist / Counsellor',
-        secondaryReason: 'Mental Health Specialist Consultation'
-      };
-    }
-
-    if (issueKey === 'hormonal') {
-      return {
-        title: '🩺 Gynaecologist Consultation Recommended',
-        body: 'Hormonal fluctuations (PMS/PMDD or perimenopause) respond best to targeted medical & lifestyle protocols.',
-        primaryBtnLabel: 'Consult Gynaecologist',
-        primaryReason: 'Gynaecologist Consultation'
-      };
-    }
-    if (issueKey === 'sexual') {
-      return {
-        title: '❤️ Sexual Health Specialist Recommended',
-        body: 'Intimacy and sexual wellness are deeply tied to emotional and physiological balance. Dedicated guidance helps.',
-        primaryBtnLabel: 'Consult Sexual Health Specialist',
-        primaryReason: 'Sexual Health Specialist Consultation'
-      };
-    }
-    return {
-      title: '💜 Certified Counselor / Psychologist Recommended',
-      body: 'Speaking with a trained mental health specialist provides a safe, confidential space to process deep stress and find clarity.',
-      primaryBtnLabel: 'Book Mental Health Specialist',
-      primaryReason: 'Mental Health Specialist Consultation'
-    };
-  };
-
   const triggerShortcutExercise = (exerciseType: 'breathing' | 'grounding' | 'worry_dump') => {
     setShowQuickShortcuts(false);
-    
-    let userTitle = '';
-    let exerciseCardTitle = '';
-    let exerciseCardText = '';
-    let steps: string[] = [];
+    const exerciseData = getShortcutExerciseDataLocalized(exerciseType, curLang);
 
-    if (exerciseType === 'breathing') {
-      userTitle = "Guide me through 4-7-8 Breathing";
-      exerciseCardTitle = "🫁 4-7-8 Deep Breathing Technique";
-      exerciseCardText = "This proven parasympathetic breathing pattern lowers heart rate, eases anxiety, and preps your mind for rest.";
-      steps = [
-        "Inhale quietly through your nose for 4 seconds.",
-        "Hold your breath gently for 7 seconds.",
-        "Exhale completely through your mouth with a whoosh for 8 seconds.",
-        "Repeat for 4 full cycles until your shoulders relax."
-      ];
-    } else if (exerciseType === 'grounding') {
-      userTitle = "Start 5-4-3-2-1 Sensory Grounding";
-      exerciseCardTitle = "🌿 5-4-3-2-1 Sensory Grounding Technique";
-      exerciseCardText = "When your mind is racing or feeling overwhelmed, anchoring your 5 physical senses pulls you back into the present moment.";
-      steps = [
-        "👁️ 5 Things: Look around and name 5 distinct objects you can see.",
-        "✋ 4 Things: Touch 4 different textures (clothing, desk, phone screen, floor).",
-        "👂 3 Things: Listen closely and identify 3 subtle ambient sounds.",
-        "👃 2 Things: Notice 2 smells around you (coffee, fresh air, perfume).",
-        "👅 1 Thing: Focus on 1 taste in your mouth right now."
-      ];
-    } else {
-      userTitle = "Guide me through a 10-Min Worry Dump";
-      exerciseCardTitle = "📓 10-Minute Brain & Worry Dump";
-      exerciseCardText = "Transferring racing thoughts from your head onto paper signals to your brain that your worries are documented and safe to set aside.";
-      steps = [
-        "Grab a pen & paper or open your notes app.",
-        "Set a timer for 10 minutes.",
-        "Write every thought, fear, task, or stressor continuously without editing.",
-        "When 10 mins are up, close the notebook — give yourself permission to rest."
-      ];
-    }
-
-    const userMsg: Message = { id: `user-${Date.now()}`, role: 'user', text: userTitle };
+    const userMsg: Message = { id: `user-${Date.now()}`, role: 'user', text: exerciseData.userTitle };
     setMessages(prev => [
       ...prev,
       userMsg,
@@ -565,10 +475,10 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
         text: '',
         isLifestyleCard: true,
         lifestyleData: {
-          title: exerciseCardTitle,
-          intro: exerciseCardText,
-          tips: steps,
-          outro: "✨ Take a deep breath. Mia is here whenever you need another exercise."
+          title: exerciseData.cardTitle,
+          intro: exerciseData.cardIntro,
+          tips: exerciseData.steps,
+          outro: exerciseData.outro
         }
       }
     ]);
@@ -677,16 +587,31 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
                 ? mode === 'stress' ? 'bg-rose-600 text-white font-medium rounded-tr-xs shadow-xs' : 'bg-blue-600 text-white font-medium rounded-tr-xs shadow-xs'
                 : 'bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 text-slate-800 dark:text-slate-100 rounded-tl-xs shadow-xs'
             }`}>
-              {msg.text && (
-                <div 
-                  className="space-y-1.5 [&_strong]:font-black [&_strong]:text-slate-900 dark:[&_strong]:text-slate-100 [&_ul]:list-disc [&_ul]:pl-4"
-                  dangerouslySetInnerHTML={{
-                    __html: msg.text
-                      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                      .replace(/\n/g, '<br />')
-                  }}
-                />
-              )}
+              <div className="flex items-start justify-between gap-2">
+                {msg.text && (
+                  <div 
+                    className="space-y-1.5 flex-1 [&_strong]:font-black [&_strong]:text-slate-900 dark:[&_strong]:text-slate-100 [&_ul]:list-disc [&_ul]:pl-4"
+                    dangerouslySetInnerHTML={{
+                      __html: msg.text
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\n/g, '<br />')
+                    }}
+                  />
+                )}
+                {msg.role === 'ai' && (msg.text || msg.lifestyleData?.intro) && (
+                  <button
+                    onClick={() => handleSpeak(msg.id, msg.text || msg.lifestyleData?.intro || '')}
+                    className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer shrink-0 mt-0.5"
+                    title={speakingMsgId === msg.id ? t('common.stopAudio', 'Stop Audio') : t('common.listenAudio', 'Listen')}
+                  >
+                    {speakingMsgId === msg.id ? (
+                      <VolumeX className="h-3.5 w-3.5 text-rose-500 animate-pulse" />
+                    ) : (
+                      <Volume2 className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                )}
+              </div>
 
               {/* Inline Options Directly Below Question */}
               {msg.role === 'ai' && (() => {
@@ -760,25 +685,25 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
                 <div className="bg-amber-50/90 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-2xl p-4 space-y-3 mt-3">
                   <div className="flex items-center gap-2 font-black text-xs text-amber-800 dark:text-amber-300">
                     <Calendar className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                    <span>{t('followUpCheckInTitle')}</span>
+                    <span>{t('followUpCheckInTitle', '📅 Follow-Up Check-In')}</span>
                   </div>
                   <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
-                    I've saved your personalised 4-step plan. Please try these steps today and return tomorrow to check in with me. We'll decide your next steps together!
+                    {t('mia.followUpCardDesc', "I've saved your personalised 4-step plan. Please try these steps today and return tomorrow to check in with me. We'll decide your next steps together!")}
                   </p>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
                     <button
-                      onClick={() => handleSendMessage('I feel noticeably better')}
+                      onClick={() => handleSendMessage(t('mia.feelBetterChoice', 'I feel noticeably better'))}
                       className="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                     >
-                      I feel better!
+                      {t('mia.feelBetter', 'I feel better!')}
                     </button>
 
                     <button
-                      onClick={() => handleSendMessage('Still struggling / Feeling worse')}
+                      onClick={() => handleSendMessage(t('mia.stillStrugglingChoice', 'Still struggling / Feeling worse'))}
                       className="py-2.5 px-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                     >
-                      Still struggling
+                      {t('mia.stillStruggling', 'Still struggling')}
                     </button>
                   </div>
                 </div>
@@ -787,10 +712,11 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
               {/* Celebration / Progress Card */}
               {msg.isContinueCard && (
                 <div className="bg-emerald-50/90 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-2xl p-4 text-center space-y-2 mt-2">
-                  <h4 className="font-extrabold text-xs text-emerald-800 dark:text-emerald-400">That's wonderful — you're making real progress!</h4>
+                  <h4 className="font-extrabold text-xs text-emerald-800 dark:text-emerald-400">
+                    {t('mia.continueCardTitle', "That's wonderful — you're making real progress!")}
+                  </h4>
                   <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
-                    Keep going with your 4 lifestyle changes for the next <strong className="text-slate-900 dark:text-white font-black">2 full weeks</strong>. Small consistent steps create lasting change at the cellular level.<br /><br />
-                    Come back anytime you need support. You are doing brilliantly! 💚
+                    {t('mia.continueCardDesc', "Keep going with your 4 lifestyle changes for the next 2 full weeks. Small consistent steps create lasting change at the cellular level. Come back anytime you need support. You are doing brilliantly! 💚")}
                   </p>
                 </div>
               )}
@@ -940,19 +866,19 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
               </span>
               <div className="flex flex-wrap gap-1.5">
                 {[
-                  { label: "💼 Work-Life Stress", text: "I want help with Work & Career Stress" },
-                  { label: "❤️ Relationship Conflict", text: "I want help with Relationship & Communication Stress" },
-                  { label: "🌧️ Grief & Loss", text: "I am dealing with Grief and emotional loss" },
-                  { label: "🌸 Hormonal Mood Shifts", text: "I feel stressed due to Hormonal shifts (PMS/Perimenopause)" },
-                  { label: "🔥 Sexual Health & Intimacy", text: "I want guidance on Sexual health & Intimacy stress" },
-                  { label: "🌙 Sleep & Insomnia", text: "I want to assess my Sleep and Insomnia" }
+                  { label: `💼 ${t('mia.worklifeBurnout', 'Work-life balance & burnout')}`, text: t('mia.worklifeBurnout', 'Work-life balance & burnout') },
+                  { label: `❤️ ${t('mia.relationshipConflict', 'Relationship conflict')}`, text: t('mia.relationshipConflict', 'Relationship conflict') },
+                  { label: `🌧️ ${t('mia.lossOfLovedOne', 'Loss of a loved one')}`, text: t('mia.lossOfLovedOne', 'Loss of a loved one') },
+                  { label: `🌸 ${t('mia.hormonalMoodSwings', 'Premenstrual / hormonal mood swings')}`, text: t('mia.hormonalMoodSwings', 'Premenstrual / hormonal mood swings') },
+                  { label: `🔥 ${t('mia.sexualHealthConcerns', 'Sexual health concerns')}`, text: t('mia.sexualHealthConcerns', 'Sexual health concerns') },
+                  { label: `🌙 ${t('mia.sleepAssessment', 'Sleep Assessment')}`, text: t('mia.sleepAssessment', 'Sleep Assessment') }
                 ].map((item, idx) => (
                   <button
                     key={idx}
                     type="button"
                     onClick={() => {
                       setShowQuickShortcuts(false);
-                      if (item.label.includes('Sleep')) {
+                      if (item.label.includes('🌙') || item.label.includes('Sleep') || item.label.includes('தூக்கம்') || item.label.includes('ನಿದ್ರೆ') || item.label.includes('नींद') || item.label.includes('నిద్ర')) {
                         switchMode('sleep');
                       } else {
                         handleSendMessage(item.text);

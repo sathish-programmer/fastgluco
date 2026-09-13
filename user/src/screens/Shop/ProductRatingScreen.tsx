@@ -8,11 +8,21 @@ import { ProductImage } from '../../screens/Shop/ShopScreen';
 interface ProductRatingScreenProps {
   orderId: string;
   onBack: () => void;
+  onComplete?: () => void;
 }
 
-export const ProductRatingScreen: React.FC<ProductRatingScreenProps> = ({ orderId, onBack }) => {
-  const { apiUrl, token } = useAuth();
-  const { t } = useLanguage();
+const LOCALE_MAP: Record<string, string> = {
+  en: 'en-US',
+  ta: 'ta-IN',
+  te: 'te-IN',
+  kn: 'kn-IN',
+  hi: 'hi-IN'
+};
+
+export const ProductRatingScreen: React.FC<ProductRatingScreenProps> = ({ orderId, onBack, onComplete }) => {
+  const { token, apiUrl } = useAuth();
+  const { t, language } = useLanguage();
+  const activeLocale = LOCALE_MAP[language] || 'en-US';
   const { showToast } = useToast();
   
   const [loading, setLoading] = useState(true);
@@ -81,14 +91,15 @@ export const ProductRatingScreen: React.FC<ProductRatingScreenProps> = ({ orderI
       });
 
       if (res.ok) {
-        showToast('Review submitted successfully!', 'success');
+        showToast(t('shop.reviewSubmitted', 'Review submitted successfully!'), 'success');
         setReviewsState(prev => ({
           ...prev,
           [productId]: { ...prev[productId], submitting: false, submitted: true }
         }));
+        onComplete?.();
       } else {
         const errData = await res.json();
-        showToast(errData.message || 'Failed to submit review.', 'error');
+        showToast(errData.message || t('common.error', 'Failed to submit review.'), 'error');
         setReviewsState(prev => ({
           ...prev,
           [productId]: { ...prev[productId], submitting: false }
@@ -96,7 +107,7 @@ export const ProductRatingScreen: React.FC<ProductRatingScreenProps> = ({ orderI
       }
     } catch (err) {
       console.error(err);
-      showToast('Error connecting to review server.', 'error');
+      showToast(t('common.error', 'Error connecting to review server.'), 'error');
       setReviewsState(prev => ({
         ...prev,
         [productId]: { ...prev[productId], submitting: false }
@@ -118,13 +129,13 @@ export const ProductRatingScreen: React.FC<ProductRatingScreenProps> = ({ orderI
         <X className="h-12 w-12 text-rose-500 mb-4" />
         <h3 className="font-bold text-slate-800 text-lg">{t('shop.invalidReviewSession', 'Invalid Review Session')}</h3>
         <p className="text-xs text-slate-500 mt-1 max-w-sm">
-          We could not locate this order or it is not eligible for product feedback.
+          {t('shop.orderNotFoundForReview', 'We could not locate this order or it is not eligible for product feedback.')}
         </p>
         <button
           onClick={onBack}
           className="mt-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-6 py-3 rounded-2xl shadow-sm transition-all"
         >
-          Return to Dashboard
+          {t('shop.returnToDashboard', 'Return to Dashboard')}
         </button>
       </div>
     );
@@ -143,10 +154,10 @@ export const ProductRatingScreen: React.FC<ProductRatingScreenProps> = ({ orderI
             onClick={onBack}
             className="h-10 px-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 shadow-2xs transition-all cursor-pointer"
           >
-            <ArrowLeft className="h-4 w-4" /> Back
+            <ArrowLeft className="h-4 w-4" /> {t('common.back', 'Back')}
           </button>
           <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">
-            Delivered Order Feedback
+            {t('shop.deliveredOrderFeedback', 'Delivered Order Feedback')}
           </span>
         </div>
       </div>
@@ -156,15 +167,15 @@ export const ProductRatingScreen: React.FC<ProductRatingScreenProps> = ({ orderI
       {/* Main Card */}
       <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-[0_12px_40px_rgba(0,0,0,0.02)] p-6 mb-6">
         <h2 className="text-xl font-black text-slate-850 flex items-center gap-2">
-          ⭐ Rate Your Products
+          ⭐ {t('shop.rateYourProducts', 'Rate Your Products')}
         </h2>
         <p className="text-xs text-slate-500 mt-1">
-          Thank you for your purchase! Let us know how your new items worked out.
+          {t('shop.thankYouForPurchaseDesc', 'Thank you for your purchase! Let us know how your new items worked out.')}
         </p>
 
         <div className="bg-slate-50 p-4 border border-slate-100 rounded-2xl mt-4 flex justify-between items-center text-xs font-bold text-slate-655">
-          <span>Order ID: {order._id.slice(-8).toUpperCase()}</span>
-          <span>Delivered: {new Date(order.deliveryDate || order.updatedAt).toLocaleDateString()}</span>
+          <span>{t('shop.orderId', 'Order ID:')} {order._id.slice(-8).toUpperCase()}</span>
+          <span>{t('shop.deliveredDate', 'Delivered:')} {new Date(order.deliveryDate || order.updatedAt).toLocaleDateString(activeLocale)}</span>
         </div>
       </div>
 
@@ -246,7 +257,7 @@ export const ProductRatingScreen: React.FC<ProductRatingScreenProps> = ({ orderI
                     onClick={() => handleSubmitRating(pId)}
                     className="w-full py-3 bg-indigo-600 hover:bg-indigo-750 text-white text-xs font-bold rounded-2xl shadow-sm hover:shadow transition-all disabled:opacity-50"
                   >
-                    {state.submitting ? 'Submitting Review...' : 'Submit Rating & Comment'}
+                    {state.submitting ? t('common.submitting', 'Submitting...') : t('submitReview', 'Submit Review')}
                   </button>
                 </div>
               )}

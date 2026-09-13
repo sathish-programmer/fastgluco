@@ -193,12 +193,8 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
                 </div>
                 <p className="text-[10.5px] text-slate-400 dark:text-slate-500 font-medium truncate mt-0.5">
                   {l.name}
-                  {isDefault ? (
+                  {isDefault && (
                     <span className="text-primary font-bold ml-1.5">• {t('common.default', 'Default')}</span>
-                  ) : (
-                    <span className="text-slate-400 dark:text-slate-500 group-hover:text-primary transition-colors ml-1.5 text-[10px]">
-                      • {t('profile.tapToSetDefault', 'Tap to set default')}
-                    </span>
                   )}
                 </p>
               </div>

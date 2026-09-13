@@ -38,8 +38,13 @@ import { assignLabBookingDoctor } from '../controllers/labController';
 import { IndianCancerController } from '../controllers/indianCancerController';
 import * as DailyLoggingWorkflowController from '../controllers/dailyLoggingWorkflowController';
 import * as AskMitoController from '../controllers/askMitoController';
+import { AiChatController } from '../controllers/aiChatController';
 
 const router = Router();
+
+// ─── AI Conversational Chatbots (Mia & Gia) ──────────────────────────────────
+router.post('/ai/de-stress-chat', authenticateToken, AiChatController.deStressChat);
+router.post('/ai/genetic-risk-chat', authenticateToken, AiChatController.geneticRiskChat);
 
 // ─── Ask Mito – Conversational AI & Knowledge Workflows ──────────────────────
 router.post('/ai/ask', authenticateToken, AskMitoController.askMito);

@@ -411,7 +411,7 @@ export const LiveAQIWidget: React.FC<LiveAQIWidgetProps> = ({ className = '', co
       {loading ? (
         <div className="text-center py-10 space-y-2">
           <div className="w-8 h-8 border-4 border-slate-200 border-t-indigo-600 rounded-full animate-spin mx-auto"></div>
-          <p className="text-xs font-bold text-slate-400">Detecting live GPS location & air quality data...</p>
+          <p className="text-xs font-bold text-slate-400">{t('aqi.detectingLiveGps', 'Detecting live GPS location & air quality data...')}</p>
         </div>
       ) : error ? (
         <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/40 rounded-2xl p-4 text-center space-y-2">
@@ -421,7 +421,7 @@ export const LiveAQIWidget: React.FC<LiveAQIWidgetProps> = ({ className = '', co
             onClick={detectLocationAndFetchAQI}
             className="px-4 py-1.5 bg-rose-600 text-white rounded-xl text-xs font-extrabold shadow-2xs cursor-pointer"
           >
-            Retry Live GPS
+            {t('aqi.retryLiveGps', 'Retry Live GPS')}
           </button>
         </div>
       ) : aqiData ? (
@@ -436,10 +436,10 @@ export const LiveAQIWidget: React.FC<LiveAQIWidgetProps> = ({ className = '', co
                 </div>
                 <div>
                   <p className="text-xs font-black text-amber-900 dark:text-amber-200">
-                    Location Access Disabled • Showing Default ({aqiData.cityName})
+                    {t('aqi.locationAccessDisabled', 'Location Access Disabled')} • {t('aqi.showingDefault', 'Showing Default')} ({aqiData.cityName})
                   </p>
                   <p className="text-[11px] text-amber-700 dark:text-amber-300 font-medium leading-tight mt-0.5">
-                    Enable device location to track live real-time AQI and pollution exposure for your exact area.
+                    {t('aqi.enableDeviceLocationDesc', 'Enable device location to track live real-time AQI and pollution exposure for your exact area.')}
                   </p>
                 </div>
               </div>
@@ -558,7 +558,7 @@ export const LiveAQIWidget: React.FC<LiveAQIWidgetProps> = ({ className = '', co
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <h4 className="text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1">
-                <Clock className="h-3 w-3 text-indigo-500" /> Today's 24-Hour Exposure Hours
+                <Clock className="h-3 w-3 text-indigo-500" /> {t('aqi.exposureHoursTitle', "Today's 24-Hour Exposure Hours")}
               </h4>
               <span className="text-[10px] font-bold text-slate-400">{t('aqi.total24Hours', 'Total 24 Hours')}</span>
             </div>
@@ -566,19 +566,19 @@ export const LiveAQIWidget: React.FC<LiveAQIWidgetProps> = ({ className = '', co
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <div className="bg-emerald-50/90 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800 rounded-xl p-2.5 text-center">
                 <span className="text-[9px] font-black uppercase text-emerald-700 dark:text-emerald-300 block">{t('aqi.below50Good', 'Below 50 (Good)')}</span>
-                <span className="text-lg font-black text-emerald-700 dark:text-emerald-300 block leading-tight mt-0.5">{aqiData.hoursBelow50} <span className="text-xs font-normal">hrs</span></span>
+                <span className="text-lg font-black text-emerald-700 dark:text-emerald-300 block leading-tight mt-0.5">{aqiData.hoursBelow50} <span className="text-xs font-normal">{t('common.hoursAbbr', 'hrs')}</span></span>
               </div>
               <div className="bg-emerald-600/10 dark:bg-emerald-950/20 border border-emerald-300/80 dark:border-emerald-700 rounded-xl p-2.5 text-center">
-                <span className="text-[9px] font-black uppercase text-emerald-800 dark:text-emerald-200 block">51 - 100 (Satisfactory)</span>
-                <span className="text-lg font-black text-emerald-800 dark:text-emerald-200 block leading-tight mt-0.5">{aqiData.hoursBelow100} <span className="text-xs font-normal">hrs</span></span>
+                <span className="text-[9px] font-black uppercase text-emerald-800 dark:text-emerald-200 block">{t('aqi.satisfactory51to100', '51 - 100 (Satisfactory)')}</span>
+                <span className="text-lg font-black text-emerald-800 dark:text-emerald-200 block leading-tight mt-0.5">{aqiData.hoursBelow100} <span className="text-xs font-normal">{t('common.hoursAbbr', 'hrs')}</span></span>
               </div>
               <div className="bg-amber-50/90 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800 rounded-xl p-2.5 text-center">
-                <span className="text-[9px] font-black uppercase text-amber-700 dark:text-amber-300 block">101 - 150 (Moderate)</span>
-                <span className="text-lg font-black text-amber-700 dark:text-amber-300 block leading-tight mt-0.5">{aqiData.hoursBelow150} <span className="text-xs font-normal">hrs</span></span>
+                <span className="text-[9px] font-black uppercase text-amber-700 dark:text-amber-300 block">{t('aqi.moderate101to150', '101 - 150 (Moderate)')}</span>
+                <span className="text-lg font-black text-amber-700 dark:text-amber-300 block leading-tight mt-0.5">{aqiData.hoursBelow150} <span className="text-xs font-normal">{t('common.hoursAbbr', 'hrs')}</span></span>
               </div>
               <div className="bg-rose-50/90 dark:bg-rose-950/30 border border-rose-200/80 dark:border-rose-800 rounded-xl p-2.5 text-center">
                 <span className="text-[9px] font-black uppercase text-rose-700 dark:text-rose-300 block">{t('aqi.above150Unhealthy', 'Above 150 (Unhealthy)')}</span>
-                <span className="text-lg font-black text-rose-700 dark:text-rose-300 block leading-tight mt-0.5">{aqiData.hoursAbove150} <span className="text-xs font-normal">hrs</span></span>
+                <span className="text-lg font-black text-rose-700 dark:text-rose-300 block leading-tight mt-0.5">{aqiData.hoursAbove150} <span className="text-xs font-normal">{t('common.hoursAbbr', 'hrs')}</span></span>
               </div>
             </div>
           </div>
@@ -587,7 +587,7 @@ export const LiveAQIWidget: React.FC<LiveAQIWidgetProps> = ({ className = '', co
           <div className="bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3.5 space-y-3">
             <div className="flex items-center justify-between">
               <h4 className="text-[11px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-100 flex items-center gap-1">
-                <TrendingUp className="h-3.5 w-3.5 text-indigo-500" /> 24-Hour Interactive AQI Curve
+                <TrendingUp className="h-3.5 w-3.5 text-indigo-500" /> {t('aqi.interactiveCurve', '24-Hour Interactive AQI Curve')}
               </h4>
               <span className="text-[9px] font-extrabold text-slate-400">{t('aqi.hourlyTrend', 'Hourly Trend (Today)')}</span>
             </div>
@@ -606,7 +606,7 @@ export const LiveAQIWidget: React.FC<LiveAQIWidgetProps> = ({ className = '', co
                     dataKey="time" 
                     tick={{ fontSize: 9, fill: '#94a3b8', fontWeight: 700 }} 
                     axisLine={false} 
-                    tickLine={false}
+                    tickLine={false} 
                     interval={3}
                   />
                   <YAxis 
@@ -646,10 +646,10 @@ export const LiveAQIWidget: React.FC<LiveAQIWidgetProps> = ({ className = '', co
 
             {/* Threshold Legend */}
             <div className="flex items-center justify-between text-[9px] font-extrabold text-slate-400 border-t border-slate-200/60 dark:border-slate-800 pt-2">
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> 0-50 Good</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-600"></span> 51-100 Satisfactory</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500"></span> 101-200 Moderate</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-500"></span> 200+ Poor</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> 0-50 {t('aqi.good', 'Good')}</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-600"></span> 51-100 {t('aqi.satisfactoryLegend', 'Satisfactory')}</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500"></span> 101-200 {t('aqi.moderateLegend', 'Moderate')}</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-500"></span> 200+ {t('aqi.poor', 'Poor')}</span>
             </div>
           </div>
 
@@ -671,7 +671,7 @@ export const LiveAQIWidget: React.FC<LiveAQIWidgetProps> = ({ className = '', co
                 disabled={searching}
                 className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-xl transition-all cursor-pointer disabled:opacity-50 shrink-0"
               >
-                {searching ? 'Searching...' : 'Check AQI'}
+                {searching ? t('common.searching', 'Searching...') : t('aqi.checkAqi', 'Check AQI')}
               </button>
             </form>
 
@@ -704,7 +704,7 @@ export const LiveAQIWidget: React.FC<LiveAQIWidgetProps> = ({ className = '', co
               </a>
             </p>
             <p className="italic text-[9px] text-slate-400">
-              Provided for lifestyle guidance; not formal medical advice.
+              {t('aqi.lifestyleGuidanceDisclaimer', 'Provided for lifestyle guidance; not formal medical advice.')}
             </p>
           </div>
 

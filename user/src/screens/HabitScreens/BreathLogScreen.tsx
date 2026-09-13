@@ -40,7 +40,16 @@ interface Technique {
 export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack }) => {
   const { user, token, apiUrl } = useAuth();
   const { showToast } = useToast();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+
+  const LOCALE_MAP: Record<string, string> = {
+    en: 'en-US',
+    ta: 'ta-IN',
+    te: 'te-IN',
+    kn: 'kn-IN',
+    hi: 'hi-IN'
+  };
+  const activeLocale = LOCALE_MAP[language] || 'en-US';
 
   const TECHNIQUES: Technique[] = [
     {
@@ -723,13 +732,13 @@ export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack }) => {
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
             {history.map((item) => {
-              const dateStr = new Date(item.timestamp).toLocaleDateString(undefined, { 
+              const dateStr = new Date(item.timestamp).toLocaleDateString(activeLocale, { 
                 weekday: 'short', 
                 month: 'short', 
                 day: 'numeric' 
               });
               const mins = (item.value as any)?.minutes || (item.value as any)?.duration || 5;
-              const tech = (item.value as any)?.technique || 'Breath Practice';
+              const tech = (item.value as any)?.technique || t('dashboard.breathPractice', 'Breath Practice');
 
               const logId = item.id || (item as any)._id || `${item.timestamp}-${mins}`;
 

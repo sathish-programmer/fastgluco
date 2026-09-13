@@ -35,10 +35,19 @@ interface FoodLogProps {
   onNavigateToTab?: (tab: string) => void;
 }
 
+const LOCALE_MAP: Record<string, string> = {
+  en: 'en-US',
+  ta: 'ta-IN',
+  te: 'te-IN',
+  kn: 'kn-IN',
+  hi: 'hi-IN'
+};
+
 export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) => {
   const { token, apiUrl, branding } = useAuth();
   const { showToast } = useToast();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const activeLocale = LOCALE_MAP[language] || 'en-US';
   const isIOSAppStoreBlocked = Capacitor.getPlatform() === 'ios' && !branding.enableIOSExternalPayments;
 
   const getCategoryIcon = (category: string) => {
@@ -1276,7 +1285,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                   <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">{t('foodLog.nutritionalBreakdown', 'Nutritional Breakdown')}</span>
                   <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
                     <div className="p-2 rounded-xl text-center border bg-white dark:bg-slate-800 border-slate-200/80 dark:border-slate-700 focus-within:border-primary/40">
-                      <span className="text-[8px] font-bold text-slate-400 block uppercase">Calories</span>
+                      <span className="text-[8px] font-bold text-slate-400 block uppercase">{t('foodLog.calories', 'Calories')}</span>
                       <input
                         type="number"
                         value={calories}
@@ -1285,7 +1294,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                       />
                     </div>
                     <div className="p-2 rounded-xl text-center border bg-white dark:bg-slate-800 border-slate-200/80 dark:border-slate-700 focus-within:border-primary/40">
-                      <span className="text-[8px] font-bold text-slate-400 block uppercase">Carbs</span>
+                      <span className="text-[8px] font-bold text-slate-400 block uppercase">{t('foodLog.carbs', 'Carbs')}</span>
                       <input
                         type="number"
                         value={carbs}
@@ -1294,7 +1303,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                       />
                     </div>
                     <div className="p-2 rounded-xl text-center border bg-white dark:bg-slate-800 border-slate-200/80 dark:border-slate-700 focus-within:border-primary/40">
-                      <span className="text-[8px] font-bold text-slate-400 block uppercase">Protein</span>
+                      <span className="text-[8px] font-bold text-slate-400 block uppercase">{t('foodLog.protein', 'Protein')}</span>
                       <input
                         type="number"
                         value={protein}
@@ -1303,7 +1312,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                       />
                     </div>
                     <div className="p-2 rounded-xl text-center border bg-white dark:bg-slate-800 border-slate-200/80 dark:border-slate-700 focus-within:border-primary/40">
-                      <span className="text-[8px] font-bold text-slate-400 block uppercase">Fat</span>
+                      <span className="text-[8px] font-bold text-slate-400 block uppercase">{t('foodLog.fat', 'Fat')}</span>
                       <input
                         type="number"
                         value={fat}
@@ -1312,7 +1321,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                       />
                     </div>
                     <div className="p-2 rounded-xl text-center border bg-white dark:bg-slate-800 border-slate-200/80 dark:border-slate-700 focus-within:border-primary/40">
-                      <span className="text-[8px] font-bold text-slate-400 block uppercase">Fiber</span>
+                      <span className="text-[8px] font-bold text-slate-400 block uppercase">{t('foodLog.fiber', 'Fiber')}</span>
                       <input
                         type="number"
                         value={fiber}
@@ -1389,10 +1398,10 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                 const weekAgoStr = weekAgoObj.toISOString().split('T')[0];
 
                 const filters = [
-                  { label: 'Today', date: todayStr, custom: false },
-                  { label: 'Yesterday', date: yesterdayStr, custom: false },
-                  { label: '7 Days Ago', date: weekAgoStr, custom: false },
-                  { label: 'Custom Range', date: '', custom: true }
+                  { label: t('common.today', 'Today'), date: todayStr, custom: false },
+                  { label: t('common.yesterday', 'Yesterday'), date: yesterdayStr, custom: false },
+                  { label: t('foodLog.sevenDaysAgo', '7 Days Ago'), date: weekAgoStr, custom: false },
+                  { label: t('common.customRange', 'Custom Range'), date: '', custom: true }
                 ];
 
                 return filters.map(({ label, date, custom }) => {
@@ -1430,23 +1439,23 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
               <h4 className="text-[10px] font-bold text-slate-450 dark:text-slate-400 uppercase tracking-wider mb-3">{t('foodLog.dailyNutrientsSummary', 'Daily Nutrients Summary')}</h4>
               <div className="grid grid-cols-5 gap-2 text-center">
                 <div className="bg-slate-50/50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-slate-100/60 dark:border-slate-700/60">
-                  <span className="text-[8px] font-bold text-slate-400 block uppercase">Calories</span>
+                  <span className="text-[8px] font-bold text-slate-400 block uppercase">{t('foodLog.calories', 'Calories')}</span>
                   <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block mt-0.5">{totalCalories}</span>
                 </div>
                 <div className="bg-slate-50/50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-slate-100/60 dark:border-slate-700/60">
-                  <span className="text-[8px] font-bold text-slate-400 block uppercase">Carbs</span>
+                  <span className="text-[8px] font-bold text-slate-400 block uppercase">{t('foodLog.carbs', 'Carbs')}</span>
                   <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block mt-0.5">{totalCarbs}g</span>
                 </div>
                 <div className="bg-slate-50/50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-slate-100/60 dark:border-slate-700/60">
-                  <span className="text-[8px] font-bold text-slate-400 block uppercase">Protein</span>
+                  <span className="text-[8px] font-bold text-slate-400 block uppercase">{t('foodLog.protein', 'Protein')}</span>
                   <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block mt-0.5">{totalProtein}g</span>
                 </div>
                 <div className="bg-slate-50/50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-slate-100/60 dark:border-slate-700/60">
-                  <span className="text-[8px] font-bold text-slate-400 block uppercase">Fat</span>
+                  <span className="text-[8px] font-bold text-slate-400 block uppercase">{t('foodLog.fat', 'Fat')}</span>
                   <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block mt-0.5">{totalFat}g</span>
                 </div>
                 <div className="bg-slate-50/50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-slate-100/60 dark:border-slate-700/60">
-                  <span className="text-[8px] font-bold text-slate-400 block uppercase">Fiber</span>
+                  <span className="text-[8px] font-bold text-slate-400 block uppercase">{t('foodLog.fiber', 'Fiber')}</span>
                   <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block mt-0.5">{totalFiber}g</span>
                 </div>
               </div>
@@ -1456,7 +1465,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
           <div className="space-y-3.5">
             {logs.length === 0 ? (
               <div className="text-center p-8 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl text-xs font-semibold text-slate-400 shadow-[0_12px_24px_rgba(0,0,0,0.02)]">
-                No foods logged for {new Date(selectedViewDate + 'T12:00:00').toLocaleDateString([], { dateStyle: 'medium' })}.
+                {t('food.noFoodsLoggedForDate', { date: new Date(selectedViewDate + 'T12:00:00').toLocaleDateString(activeLocale, { dateStyle: 'medium' }), defaultValue: `No foods logged for ${new Date(selectedViewDate + 'T12:00:00').toLocaleDateString(activeLocale, { dateStyle: 'medium' })}.` })}
               </div>
             ) : (
               logs.map((log) => (
@@ -1472,7 +1481,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                       <div className="flex items-center gap-2 flex-wrap">
                         <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 tracking-tight leading-tight">{log.name}</h4>
                         <span className="text-[9px] text-slate-500 dark:text-slate-300 font-extrabold bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
-                          {new Date(log.loggedAt).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })} • {new Date(log.loggedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {new Date(log.loggedAt).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric', year: 'numeric' })} • {new Date(log.loggedAt).toLocaleTimeString(activeLocale, { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
                       <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mt-0.5">
@@ -1583,10 +1592,10 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                       onChange={(e: any) => setEditMealType(e.target.value)}
                       className="w-full px-3.5 py-2 rounded-2xl border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-xs font-semibold text-slate-600 bg-white cursor-pointer"
                     >
-                      <option value="Breakfast">Breakfast</option>
-                      <option value="Lunch">Lunch</option>
-                      <option value="Dinner">Dinner</option>
-                      <option value="Snack">Snack</option>
+                      <option value="Breakfast">{t('mealBreakfast', 'Breakfast')}</option>
+                      <option value="Lunch">{t('mealLunch', 'Lunch')}</option>
+                      <option value="Dinner">{t('mealDinner', 'Dinner')}</option>
+                      <option value="Snack">{t('mealSnack', 'Snack')}</option>
                     </select>
                   </div>
                   <div>
@@ -1596,16 +1605,16 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                       onChange={(e) => setEditCategory(e.target.value)}
                       className="w-full px-3.5 py-2 rounded-2xl border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-xs font-semibold text-slate-600 bg-white cursor-pointer"
                     >
-                      <option value="South Indian">South Indian</option>
-                      <option value="North Indian">North Indian</option>
-                      <option value="Snacks">Snacks</option>
-                      <option value="Fruits">Fruits</option>
-                      <option value="Vegetables">Vegetables</option>
-                      <option value="Beverages">Beverages</option>
-                      <option value="Dairy">Dairy</option>
-                      <option value="Non-Veg">Non-Veg</option>
-                      <option value="Sweets">Sweets</option>
-                      <option value="Custom">Custom Entry</option>
+                      <option value="South Indian">{t('catSouthIndian', 'South Indian')}</option>
+                      <option value="North Indian">{t('catNorthIndian', 'North Indian')}</option>
+                      <option value="Snacks">{t('catSnacks', 'Snacks')}</option>
+                      <option value="Fruits">{t('catFruits', 'Fruits')}</option>
+                      <option value="Vegetables">{t('catVegetables', 'Vegetables')}</option>
+                      <option value="Beverages">{t('catBeverages', 'Beverages')}</option>
+                      <option value="Dairy">{t('catDairy', 'Dairy')}</option>
+                      <option value="Non-Veg">{t('catNonVeg', 'Non-Veg')}</option>
+                      <option value="Sweets">{t('catSweets', 'Sweets')}</option>
+                      <option value="Custom">{t('catCustomEntry', 'Custom Entry')}</option>
                     </select>
                   </div>
                 </div>
@@ -1636,10 +1645,10 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                 </div>
 
                 <div className="pt-3 border-t border-slate-200/60">
-                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Nutritional Values (Total)</span>
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">{t('food.nutritionalValuesTotal', 'Nutritional Values (Total)')}</span>
                   <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
                     <div className="p-2 rounded-xl text-center border bg-slate-50 border-slate-100 focus-within:border-primary/40 transition-all">
-                      <span className="text-[8px] font-bold text-slate-450 block uppercase">Calories</span>
+                      <span className="text-[8px] font-bold text-slate-450 block uppercase">{t('foodLog.calories', 'Calories')}</span>
                       <input
                         type="number"
                         value={editCalories}
@@ -1648,7 +1657,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                       />
                     </div>
                     <div className="p-2 rounded-xl text-center border bg-slate-50 border-slate-100 focus-within:border-primary/40 transition-all">
-                      <span className="text-[8px] font-bold text-slate-450 block uppercase">Carbs</span>
+                      <span className="text-[8px] font-bold text-slate-450 block uppercase">{t('foodLog.carbs', 'Carbs')}</span>
                       <input
                         type="number"
                         value={editCarbs}
@@ -1657,7 +1666,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                       />
                     </div>
                     <div className="p-2 rounded-xl text-center border bg-slate-50 border-slate-100 focus-within:border-primary/40 transition-all">
-                      <span className="text-[8px] font-bold text-slate-450 block uppercase">Protein</span>
+                      <span className="text-[8px] font-bold text-slate-450 block uppercase">{t('foodLog.protein', 'Protein')}</span>
                       <input
                         type="number"
                         value={editProtein}
@@ -1666,7 +1675,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                       />
                     </div>
                     <div className="p-2 rounded-xl text-center border bg-slate-50 border-slate-100 focus-within:border-primary/40 transition-all">
-                      <span className="text-[8px] font-bold text-slate-450 block uppercase">Fat</span>
+                      <span className="text-[8px] font-bold text-slate-450 block uppercase">{t('foodLog.fat', 'Fat')}</span>
                       <input
                         type="number"
                         value={editFat}
@@ -1675,7 +1684,7 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                       />
                     </div>
                     <div className="p-2 rounded-xl text-center border bg-slate-50 border-slate-100 focus-within:border-primary/40 transition-all">
-                      <span className="text-[8px] font-bold text-slate-450 block uppercase">Fiber</span>
+                      <span className="text-[8px] font-bold text-slate-450 block uppercase">{t('foodLog.fiber', 'Fiber')}</span>
                       <input
                         type="number"
                         value={editFiber}
@@ -2015,19 +2024,19 @@ export const FoodLog: React.FC<FoodLogProps> = ({ features, onNavigateToTab }) =
                                       {/* Nutrition values grid */}
                                       <div className="grid grid-cols-4 gap-1.5">
                                         <div className="bg-slate-50/50 p-1.5 rounded-xl text-center border border-slate-100">
-                                          <span className="text-[8px] text-slate-400 font-bold uppercase block">Carbs</span>
+                                          <span className="text-[8px] text-slate-400 font-bold uppercase block">{t('foodLog.carbs', 'Carbs')}</span>
                                           <span className="text-[10px] font-bold text-slate-700">{Math.round((item.carbs || 0) * factor)}g</span>
                                         </div>
                                         <div className="bg-slate-50/50 p-1.5 rounded-xl text-center border border-slate-100">
-                                          <span className="text-[8px] text-slate-400 font-bold uppercase block">Protein</span>
+                                          <span className="text-[8px] text-slate-400 font-bold uppercase block">{t('foodLog.protein', 'Protein')}</span>
                                           <span className="text-[10px] font-bold text-slate-700">{Math.round((item.protein || 0) * factor)}g</span>
                                         </div>
                                         <div className="bg-slate-50/50 p-1.5 rounded-xl text-center border border-slate-100">
-                                          <span className="text-[8px] text-slate-400 font-bold uppercase block">Fat</span>
+                                          <span className="text-[8px] text-slate-400 font-bold uppercase block">{t('foodLog.fat', 'Fat')}</span>
                                           <span className="text-[10px] font-bold text-slate-700">{Math.round((item.fat || 0) * factor)}g</span>
                                         </div>
                                         <div className="bg-slate-50/50 p-1.5 rounded-xl text-center border border-slate-100">
-                                          <span className="text-[8px] text-slate-400 font-bold uppercase block">Fiber</span>
+                                          <span className="text-[8px] text-slate-400 font-bold uppercase block">{t('foodLog.fiber', 'Fiber')}</span>
                                           <span className="text-[10px] font-bold text-slate-700">{Math.round((item.fiber || 0) * factor)}g</span>
                                         </div>
                                       </div>

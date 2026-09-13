@@ -4,8 +4,17 @@ import { Card, SectionTitle, YesNoToggle, TalkToDoctorCard, StressTracker } from
 import { triggerHealthInsightNotification } from '../utils/notificationScheduler';
 import { useLanguage } from '../context/LanguageContext';
 
+const LOCALE_MAP: Record<string, string> = {
+  en: 'en-US',
+  ta: 'ta-IN',
+  te: 'te-IN',
+  kn: 'kn-IN',
+  hi: 'hi-IN'
+};
+
 export const PCODModule: React.FC = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const activeLocale = LOCALE_MAP[language] || 'en-US';
   const [showHistoryModal, setShowHistoryModal] = useState<boolean>(false);
   const [height, setHeight] = useState<string>(() => localStorage.getItem('mito_pcod_height') || '');
   const [weight, setWeight] = useState<string>(() => localStorage.getItem('mito_pcod_weight') || '');
@@ -54,7 +63,7 @@ export const PCODModule: React.FC = () => {
   }, [height, weight]);
 
   const bmiCategory = (b: number | null) => {
-    if (b == null) return { label: 'Enter details', color: '#94A3B8', bg: 'bg-slate-100 dark:bg-slate-800' };
+    if (b == null) return { label: t('protocols.enterDetails', 'Enter details'), color: '#94A3B8', bg: 'bg-slate-100 dark:bg-slate-800' };
     if (b < 18.5) return { label: t('protocols.underweight'), color: '#F59E0B', bg: 'bg-amber-50 dark:bg-amber-950/40 text-amber-600' };
     if (b < 25) return { label: t('protocols.optimalBmi'), color: '#10B981', bg: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600' };
     if (b < 30) return { label: t('protocols.overweight'), color: '#F59E0B', bg: 'bg-amber-50 dark:bg-amber-950/40 text-amber-600' };
@@ -211,7 +220,7 @@ export const PCODModule: React.FC = () => {
             <div className="h-7 w-[1px] bg-pink-200 dark:bg-pink-800/60 hidden sm:block"></div>
             <div>
               <span className="text-[10px] text-purple-500 font-bold uppercase tracking-wider block">{t('protocols.nextPredictedPeriod')}</span>
-              <span className="text-sm font-black text-purple-700 dark:text-purple-300">{cycleStats.nextPredicted?.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+              <span className="text-sm font-black text-purple-700 dark:text-purple-300">{cycleStats.nextPredicted?.toLocaleDateString(activeLocale, { day: 'numeric', month: 'short', year: 'numeric' })}</span>
             </div>
           </div>
         ) : (
@@ -236,12 +245,12 @@ export const PCODModule: React.FC = () => {
                   {t('protocols.periodHistory', { count: periodDates.length })}
                 </p>
                 <p className="text-[10.5px] text-slate-400 truncate">
-                  {t('protocols.latest')}: {new Date(periodDates.slice().sort((a,b) => new Date(b).getTime() - new Date(a).getTime())[0]).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                  {t('protocols.latest')}: {new Date(periodDates.slice().sort((a,b) => new Date(b).getTime() - new Date(a).getTime())[0]).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric', year: 'numeric' })}
                 </p>
               </div>
             </div>
             <span className="text-xs font-bold text-pink-600 dark:text-pink-400 flex items-center gap-0.5 shrink-0 group-hover:translate-x-0.5 transition-transform">
-              View All History <ChevronRight className="h-4 w-4" />
+              {t('protocols.viewAllHistory', 'View All History')} <ChevronRight className="h-4 w-4" />
             </span>
           </button>
         )}
@@ -259,7 +268,7 @@ export const PCODModule: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-sm font-black text-slate-800 dark:text-slate-100">{t('protocols.periodTracker')}</h3>
-                  <p className="text-[10.5px] text-slate-400">All recorded menstrual cycles & regularity</p>
+                  <p className="text-[10.5px] text-slate-400">{t('protocols.allRecordedCyclesDesc', 'All recorded menstrual cycles & regularity')}</p>
                 </div>
               </div>
               <button
@@ -285,7 +294,7 @@ export const PCODModule: React.FC = () => {
                 <div className="p-2.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/40 text-center">
                   <span className="text-[9px] font-extrabold uppercase text-indigo-500 block">{t('protocols.nextPredictedPeriod')}</span>
                   <span className="text-xs font-black text-indigo-700 dark:text-indigo-300 mt-1 block">
-                    {cycleStats.nextPredicted ? cycleStats.nextPredicted.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '--'}
+                    {cycleStats.nextPredicted ? cycleStats.nextPredicted.toLocaleDateString(activeLocale, { month: 'short', day: 'numeric' }) : '--'}
                   </span>
                 </div>
               </div>
@@ -310,12 +319,12 @@ export const PCODModule: React.FC = () => {
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-pink-500 to-rose-500 text-white flex flex-col items-center justify-center shrink-0 shadow-xs">
-                          <span className="text-[9px] font-semibold leading-none uppercase">{currentDate.toLocaleString(undefined, { month: 'short' })}</span>
+                          <span className="text-[9px] font-semibold leading-none uppercase">{currentDate.toLocaleString(activeLocale, { month: 'short' })}</span>
                           <span className="text-xs font-black leading-none mt-0.5">{currentDate.getDate()}</span>
                         </div>
                         <div className="min-w-0">
                           <p className="font-extrabold text-slate-900 dark:text-slate-100 text-xs">
-                            {currentDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                            {currentDate.toLocaleDateString(activeLocale, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
                           </p>
                           {cycleDays !== null ? (
                             <p className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1.5">
@@ -338,7 +347,7 @@ export const PCODModule: React.FC = () => {
                         type="button"
                         onClick={() => removePeriodDate(dStr)}
                         className="h-7 w-7 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/50 dark:hover:text-rose-400 flex items-center justify-center text-xs font-bold transition-all cursor-pointer shrink-0"
-                        title="Delete log"
+                        title={t('common.delete')}
                       >
                         ✕
                       </button>

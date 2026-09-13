@@ -10,7 +10,17 @@ interface JoyLogScreenProps {
 
 export const JoyLogScreen: React.FC<JoyLogScreenProps> = ({ onBack }) => {
   const { user, token, apiUrl } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+
+  const LOCALE_MAP: Record<string, string> = {
+    en: 'en-US',
+    ta: 'ta-IN',
+    te: 'te-IN',
+    kn: 'kn-IN',
+    hi: 'hi-IN'
+  };
+  const activeLocale = LOCALE_MAP[language] || 'en-US';
+
   const [joy, setJoy] = useState('');
   const [didDoJoy, setDidDoJoy] = useState<boolean | null>(null);
   const [history, setHistory] = useState<HabitLog[]>([]);
@@ -146,7 +156,7 @@ export const JoyLogScreen: React.FC<JoyLogScreenProps> = ({ onBack }) => {
                     {h.value.done ? '🎉' : '😔'} {h.value.done ? (h.value.joyActivity || t('habits.myJoy', 'My joy')) : t('habits.missed', 'Missed')}
                   </span>
                   <span className="text-[10px] text-slate-400 mt-1 block">
-                    {new Date(h.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                    {new Date(h.timestamp).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric' })}
                   </span>
                 </div>
                 {h.value.done ? (

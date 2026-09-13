@@ -133,7 +133,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ bookingData, testP
         </button>
         <div>
           <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">{t('diag.step3of3', 'Step 3 of 3')}</span>
-          <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 leading-none mt-1">Checkout & Pay</h2>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 leading-none mt-1">{t('diag.checkoutAndPay', 'Checkout & Pay')}</h2>
         </div>
       </div>
 
@@ -141,8 +141,8 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ bookingData, testP
         <div className="bg-gradient-to-r from-indigo-600 to-blue-600 rounded-3xl p-6 text-white mb-6 relative overflow-hidden shadow-lg animate-in fade-in slide-in-from-top-4 duration-300">
           <div className="absolute right-0 bottom-0 translate-y-4 translate-x-4 opacity-10 text-9xl font-black">100</div>
           <button onClick={() => setShowPromoPopup(false)} className="absolute top-4 right-4 text-white/80 hover:text-white text-xs font-bold bg-white/10 hover:bg-white/20 w-6 h-6 rounded-full flex items-center justify-center">✕</button>
-          <h4 className="font-extrabold text-lg mb-1 flex items-center gap-2">🎁 Trial Special Offer</h4>
-          <p className="text-xs text-white/90 leading-relaxed mb-4">Use the code <span className="font-mono bg-white/20 px-2 py-0.5 rounded font-black text-white">free100</span> at checkout to book this test fully free for testing purposes!</p>
+          <h4 className="font-extrabold text-lg mb-1 flex items-center gap-2">{t('diag.trialSpecialOffer', '🎁 Trial Special Offer')}</h4>
+          <p className="text-xs text-white/90 leading-relaxed mb-4">{t('diag.trialOfferDesc', 'Use the code free100 at checkout to book this test fully free for testing purposes!')}</p>
           <div className="flex gap-2">
             <input 
               type="text" 
@@ -151,10 +151,10 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ bookingData, testP
               onChange={e => setPromoCode(e.target.value)} 
               className="bg-white/10 border border-white/25 placeholder-white/60 text-white rounded-xl px-4 py-2 text-xs font-bold focus:outline-none focus:border-white/50 flex-1"
             />
-            <button onClick={applyPromo} className="bg-white text-indigo-700 hover:bg-indigo-50 font-bold px-4 py-2 rounded-xl text-xs shadow transition-all">Apply</button>
+            <button onClick={applyPromo} className="bg-white text-indigo-700 hover:bg-indigo-50 font-bold px-4 py-2 rounded-xl text-xs shadow transition-all">{t('diag.apply', 'Apply')}</button>
           </div>
           {promoError && <p className="text-[10px] text-rose-200 font-bold mt-1.5">{promoError}</p>}
-          {promoApplied && <p className="text-[10px] text-emerald-200 font-bold mt-1.5">✓ Code applied! Booking fee discounted to 0.</p>}
+          {promoApplied && <p className="text-[10px] text-emerald-200 font-bold mt-1.5">{t('diag.codeAppliedSuccess', '✓ Code applied! Booking fee discounted to 0.')}</p>}
         </div>
       )}
 
@@ -173,7 +173,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ bookingData, testP
           <div className="flex justify-between items-start">
             <div>
               <p className="font-bold text-slate-700 dark:text-slate-300 text-sm">{t('diag.collectionMethod', 'Collection Method')}</p>
-              <p className="text-xs text-slate-500">{bookingData.collectionType === 'HOME' ? 'Home Visit' : 'Lab Visit'}</p>
+              <p className="text-xs text-slate-500">{bookingData.collectionType === 'HOME' ? t('diag.homeVisit', 'Home Visit') : t('diag.labVisit', 'Lab Visit')}</p>
             </div>
             {bookingData.collectionType === 'HOME' && (
               <span className="text-xs font-bold bg-slate-100 dark:bg-slate-950 px-2 py-1 rounded-lg text-slate-600 dark:text-slate-400">₹{bookingData.homeCollectionFee}</span>
@@ -184,7 +184,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ bookingData, testP
             <div className="flex justify-between items-start text-emerald-600 dark:text-emerald-400">
               <div>
                 <p className="font-bold text-sm">{t('diag.promoCode', 'Promo Code (free100)')}</p>
-                <p className="text-xs text-emerald-500">100% discount applied</p>
+                <p className="text-xs text-emerald-500">{t('diag.discountApplied100', '100% discount applied')}</p>
               </div>
               <span className="text-xs font-bold bg-emerald-50 dark:bg-emerald-950/20 px-2 py-1 rounded-lg">-₹{discountAmount}</span>
             </div>
@@ -192,8 +192,8 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ bookingData, testP
 
           <div className="flex justify-between items-start">
             <div>
-              <p className="font-bold text-slate-700 dark:text-slate-300 text-sm">Date & Time</p>
-              <p className="text-xs text-slate-500">{new Date(bookingData.preferredDate).toLocaleDateString()} at {bookingData.preferredTime}</p>
+              <p className="font-bold text-slate-700 dark:text-slate-300 text-sm">{t('diag.dateTime', 'Date & Time')}</p>
+              <p className="text-xs text-slate-500">{new Date(bookingData.preferredDate).toLocaleDateString()} {t('common.at', 'at')} {bookingData.preferredTime}</p>
             </div>
           </div>
         </div>
@@ -229,11 +229,11 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ bookingData, testP
           className="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
         >
           {processing ? (
-            <><Loader2 className="h-5 w-5 animate-spin" /> Processing...</>
+            <><Loader2 className="h-5 w-5 animate-spin" /> {t('diag.processing', 'Processing...')}</>
           ) : totalAmount === 0 ? (
-            'Confirm Booking (Free)'
+            t('diag.confirmBookingFree', 'Confirm Booking (Free)')
           ) : (
-            `Pay ₹${totalAmount} via Razorpay`
+            t('diag.payViaRazorpay', { amount: totalAmount })
           )}
         </button>
       </div>

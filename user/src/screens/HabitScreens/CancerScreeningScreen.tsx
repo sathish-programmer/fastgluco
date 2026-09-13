@@ -188,7 +188,16 @@ const TAB_LABELS: { [key: string]: string } = {
 
 export const CancerScreeningScreen: React.FC<CancerScreeningScreenProps> = ({ onBack }) => {
   const { user, apiUrl, token } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+
+  const LOCALE_MAP: Record<string, string> = {
+    en: 'en-US',
+    ta: 'ta-IN',
+    te: 'te-IN',
+    kn: 'kn-IN',
+    hi: 'hi-IN'
+  };
+  const activeLocale = LOCALE_MAP[language] || 'en-US';
   
   // Navigation State
   const [activeView, setActiveView] = useState<'TEST_LIST' | 'LABS' | 'SLOTS' | 'PAYMENT' | 'TRACKING' | 'REPORT'>('TEST_LIST');
@@ -451,7 +460,7 @@ export const CancerScreeningScreen: React.FC<CancerScreeningScreenProps> = ({ on
                       <Beaker className="h-4 w-4 text-slate-450" /> {h.value.testName}
                     </span>
                     <span className="text-[10px] text-slate-500 dark:text-slate-450 mt-1 flex items-center gap-1">
-                      <Calendar className="h-3 w-3" /> {h.value.date}
+                      <Calendar className="h-3 w-3" /> {h.value.date ? new Date(h.value.date).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric', year: 'numeric' }) : ''}
                     </span>
                   </div>
                   <div className="text-right">

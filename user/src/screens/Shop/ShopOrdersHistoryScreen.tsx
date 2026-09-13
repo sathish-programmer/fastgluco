@@ -12,7 +12,17 @@ interface ShopOrdersHistoryScreenProps {
 }
 
 export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = ({ onBack, onRateOrder }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+
+  const LOCALE_MAP: Record<string, string> = {
+    en: 'en-US',
+    ta: 'ta-IN',
+    te: 'te-IN',
+    kn: 'kn-IN',
+    hi: 'hi-IN'
+  };
+  const activeLocale = LOCALE_MAP[language] || 'en-US';
+
   const { apiUrl, token } = useAuth();
   const { showToast } = useToast();
   const [orders, setOrders] = useState<any[]>([]);
@@ -394,12 +404,12 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
                         }}
                         className="py-2 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl text-xs font-bold text-slate-650 dark:text-slate-300 flex items-center gap-1.5 transition-all shadow-sm"
                       >
-                        <Download className="h-3.5 w-3.5 text-indigo-500" /> Invoice PDF
+                        <Download className="h-3.5 w-3.5 text-indigo-500" /> {t('shop.invoicePdf', 'Invoice PDF')}
                       </button>
                     )}
                     {order.deliveryStatus === 'delivered' && hasRated && (
                       <span className="py-2 px-4 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-405 border border-emerald-100 dark:border-emerald-900/30 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm">
-                        ✓ Rated & Reviewed
+                        {t('shop.ratedAndReviewed', '✓ Rated & Reviewed')}
                       </span>
                     )}
                     {order.deliveryStatus === 'delivered' && !hasRated && onRateOrder && (
@@ -407,12 +417,12 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
                         onClick={() => onRateOrder(order._id)}
                         className="py-2 px-4 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
                       >
-                        <Star className="h-3.5 w-3.5 fill-white" /> Rate Products
+                        <Star className="h-3.5 w-3.5 fill-white" /> {t('shop.rateProducts', 'Rate Products')}
                       </button>
                     )}
                     {order.deliveryDate && (
                       <span className="text-[10px] text-slate-400 font-bold flex items-center gap-1">
-                        <Calendar className="h-3.5 w-3.5" /> Delivered: {new Date(order.deliveryDate).toLocaleDateString()}
+                        <Calendar className="h-3.5 w-3.5" /> {t('shop.deliveredDate', 'Delivered:')} {new Date(order.deliveryDate).toLocaleDateString(activeLocale)}
                       </span>
                     )}
                   </div>
@@ -446,7 +456,7 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
                     
                     <div className="flex flex-wrap gap-2">
                       <span className={`text-[9px] font-bold px-2.5 py-1 rounded-xl border uppercase tracking-wider ${reportReady ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-405 border-emerald-100 dark:border-emerald-900/30' : 'bg-amber-50 dark:bg-amber-955/20 text-amber-600 dark:text-amber-405 border-amber-100 dark:border-amber-900/30'}`}>
-                        Status: {booking.status.replace('_', ' ')}
+                        {t('common.status', 'Status')}: {booking.status === 'COMPLETED' ? t('shop.statusCompleted', 'Completed') : booking.status === 'CONFIRMED' ? t('appointment.confirmed', 'Confirmed') : booking.status === 'CANCELLED' ? t('appointment.cancelled', 'Cancelled') : booking.status.replace('_', ' ')}
                       </span>
                     </div>
                   </div>
@@ -457,12 +467,12 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
                         <h5 className="font-extrabold text-slate-800 dark:text-slate-100 text-sm truncate leading-snug">{booking.labTestId?.cancerScreeningTestId?.name || booking.labTestId?.name || 'Unknown Test'}</h5>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-[10px] text-slate-550 dark:text-slate-450 font-semibold flex items-center gap-1">
-                            <Calendar className="h-3 w-3" /> {new Date(booking.preferredDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                            <Calendar className="h-3 w-3" /> {new Date(booking.preferredDate).toLocaleDateString(activeLocale, { year: 'numeric', month: 'short', day: 'numeric' })}
                           </span>
                           <span className="text-[10px] text-slate-550 dark:text-slate-455 font-semibold">• {booking.preferredTime}</span>
                         </div>
                         <div className="text-[10px] text-slate-550 dark:text-slate-455 mt-1">
-                          Collection: {booking.collectionType === 'HOME' ? 'Home Collection' : 'Lab Visit'}
+                          {t('shop.collectionType', 'Collection')}: {booking.collectionType === 'HOME' ? t('shop.homeCollection', 'Home Collection') : t('shop.labVisit', 'Lab Visit')}
                         </div>
                       </div>
                       <div className="text-right shrink-0">
@@ -479,30 +489,30 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
                           setSupportForm({ name: '', email: '', question: '', relatedId: booking._id, type: 'LAB_TEST' });
                           setShowSupportModal(true);
                         }}
-                        className="py-2 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl text-xs font-bold text-slate-655 dark:text-slate-300 flex items-center gap-1.5 transition-all shadow-sm"
+                        className="py-2 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl text-xs font-bold text-slate-655 dark:text-slate-300 flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
                       >
-                        <HelpCircle className="h-3.5 w-3.5 text-slate-500" /> Need Help?
+                        <HelpCircle className="h-3.5 w-3.5 text-slate-500" /> {t('shop.needHelp', 'Need Help?')}
                       </button>
                       <a
-                        href={`${apiUrl.replace(/\/api$/, '')}/api/diagnostics/booking/${booking._id}/invoice`}
+                        href={`${apiUrl.replace(/\/api$/, '')}/api/labs/booking/${booking._id}/invoice`}
                         target="_blank"
                         rel="noreferrer"
                         className="py-2 px-4 border border-indigo-200 dark:border-indigo-800/40 bg-indigo-50/60 dark:bg-indigo-950/30 hover:bg-indigo-100 rounded-xl text-xs font-bold text-indigo-700 dark:text-indigo-300 flex items-center gap-1.5 transition-all shadow-sm"
                       >
-                        <FileText className="h-3.5 w-3.5 text-indigo-500" /> Invoice
+                        <FileText className="h-3.5 w-3.5 text-indigo-500" /> {t('shop.invoice', 'Invoice')}
                       </a>
                     </div>
                     <div className="flex items-center gap-2">
                       {reportReady ? (
                         <button 
                           onClick={() => handleDownloadReport(booking._id)}
-                          className="py-2 px-4 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-405 border border-emerald-100 dark:border-emerald-900/30 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-emerald-100 transition-colors"
+                          className="py-2 px-4 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-405 border border-emerald-100 dark:border-emerald-900/30 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-emerald-100 transition-colors cursor-pointer"
                         >
-                          <FileText className="h-3.5 w-3.5" /> Download Report
+                          <FileText className="h-3.5 w-3.5" /> {t('shop.downloadReport', 'Download Report')}
                         </button>
                       ) : (
                         <span className="text-[10px] font-bold text-slate-405 dark:text-slate-500 flex items-center gap-1">
-                          <FileText className="h-4 w-4" /> Awaiting Report
+                          <FileText className="h-4 w-4" /> {t('shop.awaitingReport', 'Awaiting Report')}
                         </span>
                       )}
                     </div>
@@ -519,11 +529,11 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
           <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col border border-slate-100 dark:border-slate-800">
             <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-950">
               <h3 className="text-lg font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                <HelpCircle className="h-5 w-5 text-indigo-600" /> Need Help?
+                <HelpCircle className="h-5 w-5 text-indigo-600" /> {t('shop.needHelp', 'Need Help?')}
               </h3>
               <button 
                 onClick={() => setShowSupportModal(false)}
-                className="text-slate-400 hover:text-slate-655"
+                className="text-slate-400 hover:text-slate-655 cursor-pointer"
               >
                 ✕
               </button>
@@ -531,7 +541,7 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
             <div className="p-6">
               <form onSubmit={handleSupportSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-450 mb-1">Your Name</label>
+                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-450 mb-1">{t('auth.fullName', 'Your Name')}</label>
                   <input
                     type="text"
                     required
@@ -567,16 +577,16 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
                   <button 
                     type="button" 
                     onClick={() => setShowSupportModal(false)}
-                    className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                    className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all cursor-pointer"
                   >
-                    Cancel
+                    {t('common.cancel', 'Cancel')}
                   </button>
                   <button 
                     type="submit" 
                     disabled={submittingSupport}
-                    className="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all disabled:opacity-50 flex items-center justify-center"
+                    className="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all disabled:opacity-50 flex items-center justify-center cursor-pointer"
                   >
-                    {submittingSupport ? 'Submitting...' : 'Submit Ticket'}
+                    {submittingSupport ? t('common.submitting', 'Submitting...') : t('shop.submitTicket', 'Submit Ticket')}
                   </button>
                 </div>
               </form>

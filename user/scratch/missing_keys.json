@@ -1,0 +1,1221 @@
+[
+  {
+    "key": "aqi.checkAqi",
+    "files": [
+      "components/LiveAQIWidget.tsx"
+    ]
+  },
+  {
+    "key": "aqi.detectingLiveGps",
+    "files": [
+      "components/LiveAQIWidget.tsx"
+    ]
+  },
+  {
+    "key": "aqi.enableDeviceLocationDesc",
+    "files": [
+      "components/LiveAQIWidget.tsx"
+    ]
+  },
+  {
+    "key": "aqi.exposureHoursTitle",
+    "files": [
+      "components/LiveAQIWidget.tsx"
+    ]
+  },
+  {
+    "key": "aqi.good",
+    "files": [
+      "components/LiveAQIWidget.tsx"
+    ]
+  },
+  {
+    "key": "aqi.interactiveCurve",
+    "files": [
+      "components/LiveAQIWidget.tsx"
+    ]
+  },
+  {
+    "key": "aqi.lifestyleGuidanceDisclaimer",
+    "files": [
+      "components/LiveAQIWidget.tsx"
+    ]
+  },
+  {
+    "key": "aqi.locationAccessDisabled",
+    "files": [
+      "components/LiveAQIWidget.tsx"
+    ]
+  },
+  {
+    "key": "aqi.moderate101to150",
+    "files": [
+      "components/LiveAQIWidget.tsx"
+    ]
+  },
+  {
+    "key": "aqi.moderateLegend",
+    "files": [
+      "components/LiveAQIWidget.tsx"
+    ]
+  },
+  {
+    "key": "aqi.poor",
+    "files": [
+      "components/LiveAQIWidget.tsx"
+    ]
+  },
+  {
+    "key": "aqi.retryLiveGps",
+    "files": [
+      "components/LiveAQIWidget.tsx"
+    ]
+  },
+  {
+    "key": "aqi.satisfactory51to100",
+    "files": [
+      "components/LiveAQIWidget.tsx"
+    ]
+  },
+  {
+    "key": "aqi.satisfactoryLegend",
+    "files": [
+      "components/LiveAQIWidget.tsx"
+    ]
+  },
+  {
+    "key": "aqi.showingDefault",
+    "files": [
+      "components/LiveAQIWidget.tsx"
+    ]
+  },
+  {
+    "key": "askMito.askDoctorFee",
+    "files": [
+      "components/AskMitoDrawer.tsx"
+    ]
+  },
+  {
+    "key": "askMito.askDoctorFreeWithPlan",
+    "files": [
+      "components/AskMitoDrawer.tsx"
+    ]
+  },
+  {
+    "key": "askMito.askNow",
+    "files": [
+      "components/AskMitoDrawer.tsx"
+    ]
+  },
+  {
+    "key": "askMito.attachedDiagnosticReport",
+    "files": [
+      "components/AskMitoDrawer.tsx"
+    ]
+  },
+  {
+    "key": "askMito.clinicalTeamResponse",
+    "files": [
+      "components/AskMitoDrawer.tsx"
+    ]
+  },
+  {
+    "key": "askMito.consultationFeePerQuestion",
+    "files": [
+      "components/AskMitoDrawer.tsx"
+    ]
+  },
+  {
+    "key": "askMito.doctorConsultation",
+    "files": [
+      "components/AskMitoDrawer.tsx"
+    ]
+  },
+  {
+    "key": "askMito.doctorReplied",
+    "files": [
+      "components/AskMitoDrawer.tsx"
+    ]
+  },
+  {
+    "key": "askMito.emptyStateDesc",
+    "files": [
+      "components/AskMitoDrawer.tsx"
+    ]
+  },
+  {
+    "key": "askMito.freeQuestionsRemaining",
+    "files": [
+      "components/AskMitoDrawer.tsx"
+    ]
+  },
+  {
+    "key": "askMito.freeQuotaBadge",
+    "files": [
+      "components/AskMitoDrawer.tsx"
+    ]
+  },
+  {
+    "key": "askMito.includedSubscriptionSla",
+    "files": [
+      "components/AskMitoDrawer.tsx"
+    ]
+  },
+  {
+    "key": "askMito.noConsultationsYet",
+    "files": [
+      "components/AskMitoDrawer.tsx"
+    ]
+  },
+  {
+    "key": "askMito.paidBadge",
+    "files": [
+      "components/AskMitoDrawer.tsx"
+    ]
+  },
+  {
+    "key": "askMito.underReview",
+    "files": [
+      "components/AskMitoDrawer.tsx"
+    ]
+  },
+  {
+    "key": "askMito.verifiedClinicalReview",
+    "files": [
+      "components/AskMitoDrawer.tsx"
+    ]
+  },
+  {
+    "key": "askMito.yourInquiry",
+    "files": [
+      "components/AskMitoDrawer.tsx"
+    ]
+  },
+  {
+    "key": "bp.amDiaPlaceholder",
+    "files": [
+      "modules/HypertensionModule.tsx"
+    ]
+  },
+  {
+    "key": "bp.amSysPlaceholder",
+    "files": [
+      "modules/HypertensionModule.tsx"
+    ]
+  },
+  {
+    "key": "bp.pmDiaPlaceholder",
+    "files": [
+      "modules/HypertensionModule.tsx"
+    ]
+  },
+  {
+    "key": "bp.pmSysPlaceholder",
+    "files": [
+      "modules/HypertensionModule.tsx"
+    ]
+  },
+  {
+    "key": "chatModal.checkInLoggedSuccessfully",
+    "files": [
+      "components/DailyLoggingChatbotModal.tsx"
+    ]
+  },
+  {
+    "key": "chatModal.dailyAiReminderTitle",
+    "files": [
+      "components/DailyLoggingChatbotModal.tsx"
+    ]
+  },
+  {
+    "key": "chatModal.fallbackDamageHint",
+    "files": [
+      "components/DailyLoggingChatbotModal.tsx"
+    ]
+  },
+  {
+    "key": "chatModal.fallbackRepairHint",
+    "files": [
+      "components/DailyLoggingChatbotModal.tsx"
+    ]
+  },
+  {
+    "key": "chatModal.logsUpdatedDesc",
+    "files": [
+      "components/DailyLoggingChatbotModal.tsx"
+    ]
+  },
+  {
+    "key": "chatModal.selectReminderTimeDesc",
+    "files": [
+      "components/DailyLoggingChatbotModal.tsx"
+    ]
+  },
+  {
+    "key": "common.applyRange",
+    "files": [
+      "pages/Analysis.tsx"
+    ]
+  },
+  {
+    "key": "common.at",
+    "files": [
+      "components/AskMitoDrawer.tsx",
+      "screens/Diagnostics/PaymentScreen.tsx"
+    ]
+  },
+  {
+    "key": "common.change",
+    "files": [
+      "pages/Analysis.tsx"
+    ]
+  },
+  {
+    "key": "common.doctor",
+    "files": [
+      "components/TodaysFocusCard.tsx"
+    ]
+  },
+  {
+    "key": "common.endDateTo",
+    "files": [
+      "pages/Analysis.tsx"
+    ]
+  },
+  {
+    "key": "common.free",
+    "files": [
+      "components/AskMitoDrawer.tsx"
+    ]
+  },
+  {
+    "key": "common.hoursAbbr",
+    "files": [
+      "components/LiveAQIWidget.tsx"
+    ]
+  },
+  {
+    "key": "common.note",
+    "files": [
+      "components/MitoProgressCard.tsx"
+    ]
+  },
+  {
+    "key": "common.off",
+    "files": [
+      "components/DailyLoggingChatbotModal.tsx"
+    ]
+  },
+  {
+    "key": "common.searching",
+    "files": [
+      "components/LiveAQIWidget.tsx"
+    ]
+  },
+  {
+    "key": "common.specialist",
+    "files": [
+      "pages/Dashboard.tsx",
+      "pages/NonCancerDashboard.tsx"
+    ]
+  },
+  {
+    "key": "common.startDateFrom",
+    "files": [
+      "pages/Analysis.tsx"
+    ]
+  },
+  {
+    "key": "common.stop",
+    "files": [
+      "components/DailyLoggingChatbotModal.tsx"
+    ]
+  },
+  {
+    "key": "common.stopSpeaking",
+    "files": [
+      "components/DailyLoggingChatbotModal.tsx"
+    ]
+  },
+  {
+    "key": "common.tapToListen",
+    "files": [
+      "components/DailyLoggingChatbotModal.tsx"
+    ]
+  },
+  {
+    "key": "common.tapToMute",
+    "files": [
+      "components/DailyLoggingChatbotModal.tsx"
+    ]
+  },
+  {
+    "key": "common.yesterday",
+    "files": [
+      "components/NotificationBell.tsx"
+    ]
+  },
+  {
+    "key": "dash.appointmentWith",
+    "files": [
+      "pages/NonCancerDashboard.tsx"
+    ]
+  },
+  {
+    "key": "dash.joinGoogleMeet",
+    "files": [
+      "pages/Dashboard.tsx",
+      "pages/NonCancerDashboard.tsx"
+    ]
+  },
+  {
+    "key": "dash.offlineMealsQueued",
+    "files": [
+      "pages/Dashboard.tsx"
+    ]
+  },
+  {
+    "key": "dash.openGoogleCalendar",
+    "files": [
+      "pages/Dashboard.tsx",
+      "pages/NonCancerDashboard.tsx"
+    ]
+  },
+  {
+    "key": "dash.syncNow",
+    "files": [
+      "pages/Dashboard.tsx"
+    ]
+  },
+  {
+    "key": "dash.yourApptWith",
+    "files": [
+      "pages/Dashboard.tsx"
+    ]
+  },
+  {
+    "key": "dashboard.envAudit",
+    "files": [
+      "pages/NonCancerDashboard.tsx"
+    ]
+  },
+  {
+    "key": "dashboard.envCheckin",
+    "files": [
+      "pages/NonCancerDashboard.tsx"
+    ]
+  },
+  {
+    "key": "dashboard.glucoseReading",
+    "files": [
+      "pages/Dashboard.tsx"
+    ]
+  },
+  {
+    "key": "dashboard.habitCheckin",
+    "files": [
+      "pages/NonCancerDashboard.tsx"
+    ]
+  },
+  {
+    "key": "dental.deleteReadingConfirm",
+    "files": [
+      "screens/HabitScreens/DentalLogScreen.tsx"
+    ]
+  },
+  {
+    "key": "dental.nextReadingDueIn",
+    "files": [
+      "screens/HabitScreens/DentalLogScreen.tsx"
+    ]
+  },
+  {
+    "key": "dental.yesDelete",
+    "files": [
+      "screens/HabitScreens/DentalLogScreen.tsx"
+    ]
+  },
+  {
+    "key": "diag.consultationFeedback",
+    "files": [
+      "screens/Appointment/BookAppointmentScreen.tsx"
+    ]
+  },
+  {
+    "key": "diag.downloadInvoicePdf",
+    "files": [
+      "screens/Appointment/BookAppointmentScreen.tsx"
+    ]
+  },
+  {
+    "key": "diag.giveFeedbackRating",
+    "files": [
+      "screens/Appointment/BookAppointmentScreen.tsx"
+    ]
+  },
+  {
+    "key": "diag.ratingLabel",
+    "files": [
+      "screens/Appointment/BookAppointmentScreen.tsx"
+    ]
+  },
+  {
+    "key": "diag.viewPrescriptionAttachment",
+    "files": [
+      "screens/Appointment/BookAppointmentScreen.tsx"
+    ]
+  },
+  {
+    "key": "focus.antioxidantsReason",
+    "files": [
+      "components/TodaysFocusCard.tsx"
+    ]
+  },
+  {
+    "key": "focus.caregiverStressReason",
+    "files": [
+      "components/TodaysFocusCard.tsx"
+    ]
+  },
+  {
+    "key": "focus.categoryAppointment",
+    "files": [
+      "components/TodaysFocusCard.tsx"
+    ]
+  },
+  {
+    "key": "focus.categoryCellular",
+    "files": [
+      "components/TodaysFocusCard.tsx"
+    ]
+  },
+  {
+    "key": "focus.categoryCircadian",
+    "files": [
+      "components/TodaysFocusCard.tsx"
+    ]
+  },
+  {
+    "key": "focus.categoryGenetics",
+    "files": [
+      "components/TodaysFocusCard.tsx"
+    ]
+  },
+  {
+    "key": "focus.categoryMental",
+    "files": [
+      "components/TodaysFocusCard.tsx"
+    ]
+  },
+  {
+    "key": "focus.categoryMetabolic",
+    "files": [
+      "components/TodaysFocusCard.tsx"
+    ]
+  },
+  {
+    "key": "focus.categoryMetabolicHealth",
+    "files": [
+      "components/TodaysFocusCard.tsx"
+    ]
+  },
+  {
+    "key": "focus.categoryPhysical",
+    "files": [
+      "components/TodaysFocusCard.tsx"
+    ]
+  },
+  {
+    "key": "focus.categoryPrimaryPrev",
+    "files": [
+      "components/TodaysFocusCard.tsx"
+    ]
+  },
+  {
+    "key": "focus.categoryRecovery",
+    "files": [
+      "components/TodaysFocusCard.tsx"
+    ]
+  },
+  {
+    "key": "focus.categoryRest",
+    "files": [
+      "components/TodaysFocusCard.tsx"
+    ]
+  },
+  {
+    "key": "focus.cgmUploadReason",
+    "files": [
+      "components/TodaysFocusCard.tsx"
+    ]
+  },
+  {
+    "key": "focus.cgmUploadTitle",
+    "files": [
+      "components/TodaysFocusCard.tsx"
+    ]
+  },
+  {
+    "key": "focus.fastingReason",
+    "files": [
+      "components/TodaysFocusCard.tsx"
+    ]
+  },
+  {
+    "key": "focus.fastingReasonTx",
+    "files": [
+      "components/TodaysFocusCard.tsx"
+    ]
+  },
+  {
+    "key": "focus.geneticsReason",
+    "files": [
+      "components/TodaysFocusCard.tsx"
+    ]
+  },
+  {
+    "key": "focus.geneticsTitle",
+    "files": [
+      "components/TodaysFocusCard.tsx"
+    ]
+  },
+  {
+    "key": "focus.movementReason",
+    "files": [
+      "components/TodaysFocusCard.tsx"
+    ]
+  },
+  {
+    "key": "focus.prevEnvReason",
+    "files": [
+      "components/TodaysFocusCard.tsx"
+    ]
+  },
+  {
+    "key": "focus.prevEnvTitle",
+    "files": [
+      "components/TodaysFocusCard.tsx"
+    ]
+  },
+  {
+    "key": "focus.scheduledFor",
+    "files": [
+      "components/TodaysFocusCard.tsx"
+    ]
+  },
+  {
+    "key": "focus.secondaryEnvReason",
+    "files": [
+      "components/TodaysFocusCard.tsx"
+    ]
+  },
+  {
+    "key": "focus.secondaryEnvTitle",
+    "files": [
+      "components/TodaysFocusCard.tsx"
+    ]
+  },
+  {
+    "key": "focus.sleepReason",
+    "files": [
+      "components/TodaysFocusCard.tsx"
+    ]
+  },
+  {
+    "key": "focus.stressReason",
+    "files": [
+      "components/TodaysFocusCard.tsx"
+    ]
+  },
+  {
+    "key": "focus.upcomingConsultation",
+    "files": [
+      "components/TodaysFocusCard.tsx"
+    ]
+  },
+  {
+    "key": "food.noFoodsLoggedForDate",
+    "files": [
+      "pages/FoodLog.tsx"
+    ]
+  },
+  {
+    "key": "food.nutritionalValuesTotal",
+    "files": [
+      "pages/FoodLog.tsx"
+    ]
+  },
+  {
+    "key": "food.status.avoid",
+    "files": [
+      "pages/Analysis.tsx"
+    ]
+  },
+  {
+    "key": "food.status.moderate",
+    "files": [
+      "pages/Analysis.tsx"
+    ]
+  },
+  {
+    "key": "food.status.safe",
+    "files": [
+      "pages/Analysis.tsx"
+    ]
+  },
+  {
+    "key": "foodLog.",
+    "files": [
+      "pages/Analysis.tsx"
+    ]
+  },
+  {
+    "key": "habits.chewedLabel",
+    "files": [
+      "screens/HabitScreens/SmokingLogScreen.tsx"
+    ]
+  },
+  {
+    "key": "habits.habitDeleteFailed",
+    "files": [
+      "screens/HabitScreens/MovementLogScreen.tsx",
+      "screens/HabitScreens/SleepLogScreen.tsx"
+    ]
+  },
+  {
+    "key": "habits.habitDeleted",
+    "files": [
+      "screens/HabitScreens/MovementLogScreen.tsx",
+      "screens/HabitScreens/SleepLogScreen.tsx"
+    ]
+  },
+  {
+    "key": "habits.quality_",
+    "files": [
+      "screens/HabitScreens/SleepLogScreen.tsx"
+    ]
+  },
+  {
+    "key": "habits.smokedLabel",
+    "files": [
+      "screens/HabitScreens/SmokingLogScreen.tsx"
+    ]
+  },
+  {
+    "key": "habits.totalExposuresWord",
+    "files": [
+      "screens/HabitScreens/SmokingLogScreen.tsx"
+    ]
+  },
+  {
+    "key": "habits.totalWord",
+    "files": [
+      "screens/HabitScreens/SmokingLogScreen.tsx"
+    ]
+  },
+  {
+    "key": "mitoProgress.basedOnActiveLogs",
+    "files": [
+      "components/MitoProgressCard.tsx"
+    ]
+  },
+  {
+    "key": "mitoProgress.breakdownSubtitle",
+    "files": [
+      "components/MitoProgressCard.tsx"
+    ]
+  },
+  {
+    "key": "mitoProgress.breakdownTitle",
+    "files": [
+      "components/MitoProgressCard.tsx"
+    ]
+  },
+  {
+    "key": "mitoProgress.disclaimerDesc",
+    "files": [
+      "components/MitoProgressCard.tsx"
+    ]
+  },
+  {
+    "key": "mitoProgress.metricCGM",
+    "files": [
+      "components/MitoProgressCard.tsx"
+    ]
+  },
+  {
+    "key": "mitoProgress.metricDoctor",
+    "files": [
+      "components/MitoProgressCard.tsx"
+    ]
+  },
+  {
+    "key": "mitoProgress.metricEnv",
+    "files": [
+      "components/MitoProgressCard.tsx"
+    ]
+  },
+  {
+    "key": "mitoProgress.metricGenetics",
+    "files": [
+      "components/MitoProgressCard.tsx"
+    ]
+  },
+  {
+    "key": "mitoProgress.metricHabits",
+    "files": [
+      "components/MitoProgressCard.tsx"
+    ]
+  },
+  {
+    "key": "mitoProgress.metricRecovery",
+    "files": [
+      "components/MitoProgressCard.tsx"
+    ]
+  },
+  {
+    "key": "mitoProgress.metricSymptom",
+    "files": [
+      "components/MitoProgressCard.tsx"
+    ]
+  },
+  {
+    "key": "mitoProgress.tipCGMActive",
+    "files": [
+      "components/MitoProgressCard.tsx"
+    ]
+  },
+  {
+    "key": "mitoProgress.tipDoctorDone",
+    "files": [
+      "components/MitoProgressCard.tsx"
+    ]
+  },
+  {
+    "key": "mitoProgress.tipEnvDone",
+    "files": [
+      "components/MitoProgressCard.tsx"
+    ]
+  },
+  {
+    "key": "mitoProgress.tipEnvTodo",
+    "files": [
+      "components/MitoProgressCard.tsx"
+    ]
+  },
+  {
+    "key": "mitoProgress.tipGeneticsDone",
+    "files": [
+      "components/MitoProgressCard.tsx"
+    ]
+  },
+  {
+    "key": "mitoProgress.tipGeneticsTodo",
+    "files": [
+      "components/MitoProgressCard.tsx"
+    ]
+  },
+  {
+    "key": "mitoProgress.tipHabitsDone",
+    "files": [
+      "components/MitoProgressCard.tsx"
+    ]
+  },
+  {
+    "key": "mitoProgress.tipHabitsTodo",
+    "files": [
+      "components/MitoProgressCard.tsx"
+    ]
+  },
+  {
+    "key": "mitoProgress.tipRecoveryDone",
+    "files": [
+      "components/MitoProgressCard.tsx"
+    ]
+  },
+  {
+    "key": "mitoProgress.tipRecoveryTodo",
+    "files": [
+      "components/MitoProgressCard.tsx"
+    ]
+  },
+  {
+    "key": "mitoProgress.tipSymptomDone",
+    "files": [
+      "components/MitoProgressCard.tsx"
+    ]
+  },
+  {
+    "key": "mitoProgress.tipSymptomTodo",
+    "files": [
+      "components/MitoProgressCard.tsx"
+    ]
+  },
+  {
+    "key": "mitoProgress.title",
+    "files": [
+      "components/MitoProgressCard.tsx"
+    ]
+  },
+  {
+    "key": "mitoProgress.wellnessIndicator",
+    "files": [
+      "components/MitoProgressCard.tsx"
+    ]
+  },
+  {
+    "key": "notif.customizeMatrixDesc",
+    "files": [
+      "pages/Profile.tsx"
+    ]
+  },
+  {
+    "key": "notif.detailedMatrix",
+    "files": [
+      "pages/Profile.tsx"
+    ]
+  },
+  {
+    "key": "notif.manageAlertsDesc",
+    "files": [
+      "pages/Profile.tsx"
+    ]
+  },
+  {
+    "key": "notif.preferencesTitle",
+    "files": [
+      "pages/Profile.tsx"
+    ]
+  },
+  {
+    "key": "notif.preferredDeliveryMode",
+    "files": [
+      "pages/Profile.tsx"
+    ]
+  },
+  {
+    "key": "notif.selectPresetDesc",
+    "files": [
+      "pages/Profile.tsx"
+    ]
+  },
+  {
+    "key": "notif.testAudio",
+    "files": [
+      "pages/Profile.tsx"
+    ]
+  },
+  {
+    "key": "notif.testing",
+    "files": [
+      "pages/Profile.tsx"
+    ]
+  },
+  {
+    "key": "protocols.allRecordedCyclesDesc",
+    "files": [
+      "modules/PCODModule.tsx"
+    ]
+  },
+  {
+    "key": "protocols.amPmLongitudinalLogs",
+    "files": [
+      "modules/HypertensionModule.tsx"
+    ]
+  },
+  {
+    "key": "protocols.dailyHypertensionScore",
+    "files": [
+      "modules/HypertensionModule.tsx"
+    ]
+  },
+  {
+    "key": "protocols.dailyLifestyleVitals",
+    "files": [
+      "modules/HypertensionModule.tsx"
+    ]
+  },
+  {
+    "key": "protocols.doseTimingsAdherence",
+    "files": [
+      "modules/ParkinsonModule.tsx"
+    ]
+  },
+  {
+    "key": "protocols.enterDetails",
+    "files": [
+      "modules/PCODModule.tsx"
+    ]
+  },
+  {
+    "key": "protocols.heightPlaceholder",
+    "files": [
+      "modules/CardiacModule.tsx"
+    ]
+  },
+  {
+    "key": "protocols.hypertensionSummary",
+    "files": [
+      "modules/HypertensionModule.tsx"
+    ]
+  },
+  {
+    "key": "protocols.noDosesLoggedToday",
+    "files": [
+      "modules/ParkinsonModule.tsx"
+    ]
+  },
+  {
+    "key": "protocols.ok",
+    "files": [
+      "modules/DiabetesModule.tsx"
+    ]
+  },
+  {
+    "key": "protocols.overdue",
+    "files": [
+      "modules/DiabetesModule.tsx"
+    ]
+  },
+  {
+    "key": "protocols.recordedCount",
+    "files": [
+      "modules/ParkinsonModule.tsx"
+    ]
+  },
+  {
+    "key": "protocols.scheduledFor",
+    "files": [
+      "modules/ParkinsonModule.tsx"
+    ]
+  },
+  {
+    "key": "protocols.viewAllHistory",
+    "files": [
+      "modules/PCODModule.tsx"
+    ]
+  },
+  {
+    "key": "protocols.viewAllLogs",
+    "files": [
+      "modules/HypertensionModule.tsx"
+    ]
+  },
+  {
+    "key": "protocols.viewAllTests",
+    "files": [
+      "modules/DiabetesModule.tsx"
+    ]
+  },
+  {
+    "key": "protocols.viewRecordedReadings",
+    "files": [
+      "modules/HypertensionModule.tsx"
+    ]
+  },
+  {
+    "key": "protocols.weightPlaceholder",
+    "files": [
+      "modules/CardiacModule.tsx"
+    ]
+  },
+  {
+    "key": "recFoods.comingSoonDesc",
+    "files": [
+      "screens/RecommendedFoodsScreen.tsx"
+    ]
+  },
+  {
+    "key": "recFoods.subtitle",
+    "files": [
+      "screens/RecommendedFoodsScreen.tsx"
+    ]
+  },
+  {
+    "key": "recFoods.title",
+    "files": [
+      "screens/RecommendedFoodsScreen.tsx"
+    ]
+  },
+  {
+    "key": "recFoods.verified",
+    "files": [
+      "screens/RecommendedFoodsScreen.tsx"
+    ]
+  },
+  {
+    "key": "reports.cgmPlanRequired",
+    "files": [
+      "pages/Reports.tsx"
+    ]
+  },
+  {
+    "key": "reports.featureUnavailable",
+    "files": [
+      "pages/Reports.tsx"
+    ]
+  },
+  {
+    "key": "reports.featureUnavailableIOS",
+    "files": [
+      "pages/Reports.tsx"
+    ]
+  },
+  {
+    "key": "reports.premiumFeature",
+    "files": [
+      "pages/Reports.tsx"
+    ]
+  },
+  {
+    "key": "reports.premiumFeatureLocked",
+    "files": [
+      "pages/Reports.tsx"
+    ]
+  },
+  {
+    "key": "reports.upgradePlanBtn",
+    "files": [
+      "pages/Reports.tsx"
+    ]
+  },
+  {
+    "key": "reports.upgradePlanToImport",
+    "files": [
+      "pages/Reports.tsx"
+    ]
+  },
+  {
+    "key": "reports.viewSubscriptionPlans",
+    "files": [
+      "pages/Reports.tsx"
+    ]
+  },
+  {
+    "key": "shop.addToCartShort",
+    "files": [
+      "screens/Shop/ShopScreen.tsx"
+    ]
+  },
+  {
+    "key": "shop.deliveredDate",
+    "files": [
+      "screens/Shop/ProductRatingScreen.tsx",
+      "screens/Shop/ShopOrdersHistoryScreen.tsx"
+    ]
+  },
+  {
+    "key": "shop.deliveredOrderFeedback",
+    "files": [
+      "screens/Shop/ProductRatingScreen.tsx"
+    ]
+  },
+  {
+    "key": "shop.orderNotFoundForReview",
+    "files": [
+      "screens/Shop/ProductRatingScreen.tsx"
+    ]
+  },
+  {
+    "key": "shop.rateYourProducts",
+    "files": [
+      "screens/Shop/ProductRatingScreen.tsx"
+    ]
+  },
+  {
+    "key": "shop.ratedAndReviewed",
+    "files": [
+      "screens/Shop/ShopOrdersHistoryScreen.tsx"
+    ]
+  },
+  {
+    "key": "shop.returnToDashboard",
+    "files": [
+      "screens/Shop/ProductRatingScreen.tsx"
+    ]
+  },
+  {
+    "key": "shop.shopNow",
+    "files": [
+      "screens/HabitScreens/EnvironmentalExposuresLogScreen.tsx"
+    ]
+  },
+  {
+    "key": "shop.soldOutToast",
+    "files": [
+      "screens/Shop/ShopScreen.tsx"
+    ]
+  },
+  {
+    "key": "shop.thankYouForPurchaseDesc",
+    "files": [
+      "screens/Shop/ProductRatingScreen.tsx"
+    ]
+  },
+  {
+    "key": "sub.autoRenewDisabledExpireOn",
+    "files": [
+      "pages/Subscription.tsx"
+    ]
+  },
+  {
+    "key": "sub.autoRenewTurnedOffUntil",
+    "files": [
+      "pages/Subscription.tsx"
+    ]
+  },
+  {
+    "key": "sub.expiryDate",
+    "files": [
+      "pages/Subscription.tsx"
+    ]
+  },
+  {
+    "key": "sub.monthly",
+    "files": [
+      "pages/Subscription.tsx"
+    ]
+  },
+  {
+    "key": "sub.promoCodeManual",
+    "files": [
+      "pages/Subscription.tsx"
+    ]
+  },
+  {
+    "key": "sub.renewalDate",
+    "files": [
+      "pages/Subscription.tsx"
+    ]
+  },
+  {
+    "key": "sub.savePercentage",
+    "files": [
+      "pages/Subscription.tsx"
+    ]
+  },
+  {
+    "key": "sub.trialExpiry",
+    "files": [
+      "pages/Subscription.tsx"
+    ]
+  },
+  {
+    "key": "sub.turnOnAutoRenewal",
+    "files": [
+      "pages/Subscription.tsx"
+    ]
+  },
+  {
+    "key": "sub.yearly",
+    "files": [
+      "pages/Subscription.tsx"
+    ]
+  },
+  {
+    "key": "sub.yearlyBilling",
+    "files": [
+      "pages/Subscription.tsx"
+    ]
+  }
+]

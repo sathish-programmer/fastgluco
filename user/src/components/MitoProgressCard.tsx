@@ -30,10 +30,10 @@ export const MitoProgressCard: React.FC<MitoProgressCardProps> = ({
     // 1. Environment metric (Available to everyone)
     const envLogged = loggedTypes.has('Environmental') || loggedTypes.has('environmental_exposures');
     metrics.push({
-      name: 'Environment Audit',
+      name: t('mitoProgress.metricEnv', 'Environment Audit'),
       score: envLogged ? 100 : 30,
       max: 100,
-      tip: envLogged ? 'Environment risk audit completed' : 'Complete environment exposure assessment (+70%)',
+      tip: envLogged ? t('mitoProgress.tipEnvDone', 'Environment risk audit completed') : t('mitoProgress.tipEnvTodo', 'Complete environment exposure assessment (+70%)'),
       actionKey: 'environmental_exposures'
     });
 
@@ -41,20 +41,20 @@ export const MitoProgressCard: React.FC<MitoProgressCardProps> = ({
     const habitCount = loggedTypes.size;
     const habitScore = Math.min(100, habitCount * 20 + 20);
     metrics.push({
-      name: 'Wellness Habits',
+      name: t('mitoProgress.metricHabits', 'Wellness Habits'),
       score: habitScore,
       max: 100,
-      tip: habitScore === 100 ? 'Active daily tracking' : 'Log daily habits like sleep, stillness, or fasting',
+      tip: habitScore === 100 ? t('mitoProgress.tipHabitsDone', 'Active daily tracking') : t('mitoProgress.tipHabitsTodo', 'Log daily habits like sleep, stillness, or fasting'),
       actionKey: 'fasting'
     });
 
     // 3. Genetics or Antioxidants (Available to everyone)
     const genLogged = loggedTypes.has('Genetic') || loggedTypes.has('genetics') || loggedTypes.has('Antioxidants') || loggedTypes.has('antioxidants');
     metrics.push({
-      name: 'Genetics & Cellular',
+      name: t('mitoProgress.metricGenetics', 'Genetics & Cellular'),
       score: genLogged ? 100 : 40,
       max: 100,
-      tip: genLogged ? 'Genetics or antioxidant profile updated' : 'Complete genetics or antioxidant log (+60%)',
+      tip: genLogged ? t('mitoProgress.tipGeneticsDone', 'Genetics or antioxidant profile updated') : t('mitoProgress.tipGeneticsTodo', 'Complete genetics or antioxidant log (+60%)'),
       actionKey: 'genetics'
     });
 
@@ -62,30 +62,30 @@ export const MitoProgressCard: React.FC<MitoProgressCardProps> = ({
     if (activeMode === 'TREATMENT') {
       if (hasCGMData) {
         metrics.push({
-          name: 'CGM Metabolic Data',
+          name: t('mitoProgress.metricCGM', 'CGM Metabolic Data'),
           score: 100,
           max: 100,
-          tip: 'Continuous glucose monitoring active',
+          tip: t('mitoProgress.tipCGMActive', 'Continuous glucose monitoring active'),
           actionKey: 'Reports'
         });
       } else {
         // If CGM data is missing, we don't penalize harshly; we offer it as an enhancement
         const symptomLogged = loggedTypes.has('Stress') || loggedTypes.has('stress') || loggedTypes.has('Joy') || loggedTypes.has('joy');
         metrics.push({
-          name: 'Symptom & Treatment Support',
+          name: t('mitoProgress.metricSymptom', 'Symptom & Treatment Support'),
           score: symptomLogged ? 100 : 50,
           max: 100,
-          tip: symptomLogged ? 'Symptom log recorded' : 'Log daily treatment symptoms (+50%)',
+          tip: symptomLogged ? t('mitoProgress.tipSymptomDone', 'Symptom log recorded') : t('mitoProgress.tipSymptomTodo', 'Log daily treatment symptoms (+50%)'),
           actionKey: 'stress'
         });
       }
     } else if (activeMode === 'SECONDARY_PREVENTION') {
       const recoveryLogged = loggedTypes.has('CancerScreening') || loggedTypes.has('cancer_screening') || loggedTypes.has('Antioxidants') || loggedTypes.has('antioxidants');
       metrics.push({
-        name: 'Recovery & Recurrence Check',
+        name: t('mitoProgress.metricRecovery', 'Recovery & Recurrence Check'),
         score: recoveryLogged ? 100 : 50,
         max: 100,
-        tip: recoveryLogged ? 'Surveillance check logged' : 'Complete cancer screening & recovery log (+50%)',
+        tip: recoveryLogged ? t('mitoProgress.tipRecoveryDone', 'Surveillance check logged') : t('mitoProgress.tipRecoveryTodo', 'Complete cancer screening & recovery log (+50%)'),
         actionKey: 'cancer_screening'
       });
     }
@@ -93,10 +93,10 @@ export const MitoProgressCard: React.FC<MitoProgressCardProps> = ({
     // 5. Doctor / Consultation metric (if appointment exists)
     if (upcomingAppt) {
       metrics.push({
-        name: 'Doctor Consultations',
+        name: t('mitoProgress.metricDoctor', 'Doctor Consultations'),
         score: 100,
         max: 100,
-        tip: 'Upcoming appointment confirmed',
+        tip: t('mitoProgress.tipDoctorDone', 'Upcoming appointment confirmed'),
         actionKey: 'Book Appointment'
       });
     }
@@ -140,14 +140,14 @@ export const MitoProgressCard: React.FC<MitoProgressCardProps> = ({
           <div className="min-w-0">
             <div className="flex items-center space-x-1.5">
               <h4 className="text-sm font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
-                Mito Progress
+                {t('mitoProgress.title', 'Mito Progress')}
               </h4>
               <span className="text-[9px] font-extrabold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full">
-                Wellness Indicator
+                {t('mitoProgress.wellnessIndicator', 'Wellness Indicator')}
               </span>
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium leading-snug mt-0.5 truncate">
-              Based on your active habit & assessment logs
+              {t('mitoProgress.basedOnActiveLogs', 'Based on your active habit & assessment logs')}
             </p>
           </div>
         </div>
@@ -173,10 +173,10 @@ export const MitoProgressCard: React.FC<MitoProgressCardProps> = ({
             <div className="flex justify-between items-center mb-4">
               <div>
                 <h3 className="text-base font-black text-slate-900 dark:text-slate-100 tracking-tight">
-                  Mito Progress Breakdown
+                  {t('mitoProgress.breakdownTitle', 'Mito Progress Breakdown')}
                 </h3>
                 <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500">
-                  Engagement & Wellness Indicator (Non-medical)
+                  {t('mitoProgress.breakdownSubtitle', 'Engagement & Wellness Indicator (Non-medical)')}
                 </span>
               </div>
               <button
@@ -225,8 +225,8 @@ export const MitoProgressCard: React.FC<MitoProgressCardProps> = ({
             </div>
 
             <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-[10px] text-amber-700 dark:text-amber-300 font-medium">
-              <span className="font-bold">Note: </span>
-              This score measures habit consistency and application engagement. It is not a medical diagnosis or health risk assessment.
+              <span className="font-bold">{t('common.note', 'Note')}: </span>
+              {t('mitoProgress.disclaimerDesc', 'This score measures habit consistency and application engagement. It is not a medical diagnosis or health risk assessment.')}
             </div>
           </motion.div>
         </div>

@@ -12,7 +12,7 @@ interface RegisterProps {
 export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
   const { completeOnboarding, error, isLoading, branding, user, apiUrl } = useAuth();
   const { showToast } = useToast();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
@@ -335,11 +335,17 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
             <div
               className="max-h-60 overflow-y-auto pr-1 text-xs text-slate-600 font-medium leading-relaxed mb-6 whitespace-pre-line"
               dangerouslySetInnerHTML={{
-                __html: cancerJourney === 'TREATMENT'
-                  ? branding.cancerTreatmentDisclaimer
-                  : cancerJourney === 'SECONDARY_PREVENTION'
-                  ? branding.cancerSecondaryDisclaimer
-                  : branding.cancerPreventionDisclaimer
+                __html: language !== 'en'
+                  ? (cancerJourney === 'TREATMENT'
+                      ? t('disclaimer.cancerTreatmentText', branding.cancerTreatmentDisclaimer)
+                      : cancerJourney === 'SECONDARY_PREVENTION'
+                      ? t('disclaimer.cancerSecondaryText', branding.cancerSecondaryDisclaimer)
+                      : t('disclaimer.cancerPreventionText', branding.cancerPreventionDisclaimer))
+                  : (cancerJourney === 'TREATMENT'
+                      ? branding.cancerTreatmentDisclaimer
+                      : cancerJourney === 'SECONDARY_PREVENTION'
+                      ? branding.cancerSecondaryDisclaimer
+                      : branding.cancerPreventionDisclaimer)
               }}
             ></div>
             <div className="flex flex-col sm:flex-row gap-2">

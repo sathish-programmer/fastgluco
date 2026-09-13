@@ -71,15 +71,15 @@ export const RecommendedFoodsScreen: React.FC<Props> = ({ onBack }) => {
           <div>
             <div className="flex items-center gap-1.5">
               <h2 className="text-base font-black text-slate-900 dark:text-white leading-tight">
-                Doctor Recommended
+                {t('recFoods.title', 'Doctor Recommended')}
               </h2>
               <span className="text-[9px] font-black uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-md flex items-center gap-1">
                 <Sparkles className="h-2.5 w-2.5 text-emerald-600 dark:text-emerald-400" />
-                Verified
+                {t('recFoods.verified', 'Verified')}
               </span>
             </div>
             <p className="text-[11px] text-slate-400 dark:text-slate-500 font-semibold mt-0.5">
-              Clean food products for optimal glucose & metabolic stability
+              {t('recFoods.subtitle', 'Clean food products for optimal glucose & metabolic stability')}
             </p>
           </div>
         </div>
@@ -97,7 +97,7 @@ export const RecommendedFoodsScreen: React.FC<Props> = ({ onBack }) => {
           </div>
           <h4 className="text-base font-black text-slate-900 dark:text-white">{t('recFoods.noRecs', 'No Recommendations Yet')}</h4>
           <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-sm mx-auto">
-            Our clinical nutrition specialists will publish verified genuine foods for your profile soon.
+            {t('recFoods.comingSoonDesc', 'Our clinical nutrition specialists will publish verified genuine foods for your profile soon.')}
           </p>
         </div>
       ) : (

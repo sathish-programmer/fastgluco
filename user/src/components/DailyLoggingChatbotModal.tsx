@@ -948,7 +948,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       return;
     }
 
-    const ttsLocale = currentLanguageOption?.localeTag || (language === 'ta' ? 'ta-IN' : language === 'kn' ? 'kn-IN' : language === 'hi' ? 'hi-IN' : 'en-US');
+    const ttsLocale = currentLanguageOption?.localeTag || (language === 'ta' ? 'ta-IN' : language === 'kn' ? 'kn-IN' : language === 'hi' ? 'hi-IN' : language === 'te' ? 'te-IN' : 'en-US');
 
     // ── NATIVE CAPACITOR (Android & iOS) ──
     if (Capacitor.isNativePlatform()) {
@@ -1000,6 +1000,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
           const vLang = v.lang.toLowerCase().replace('_', '-');
           const vName = v.name.toLowerCase();
           if (langCode === 'ta') return vLang.startsWith('ta') || vName.includes('tamil');
+          if (langCode === 'te') return vLang.startsWith('te') || vName.includes('telugu');
           if (langCode === 'hi') return vLang.startsWith('hi') || vName.includes('hindi');
           if (langCode === 'kn') return vLang.startsWith('kn') || vName.includes('kannada');
           if (langCode === 'en') return vLang.startsWith('en');
@@ -1116,6 +1117,13 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       const exact = options.find(o => o.toLowerCase() === clean);
       if (exact) return { valid: true, mappedValue: exact };
 
+      // Exact match with localized option text (e.g. Tamil, Telugu, Hindi, Kannada)
+      const locExact = options.find(o => {
+        const loc = localizeOptionText(o).toLowerCase();
+        return loc === clean || loc.replace(/[()]/g, ' ').trim() === clean;
+      });
+      if (locExact) return { valid: true, mappedValue: locExact };
+
       // Substring match
       const sub = options.find(o => {
         const oLower = o.toLowerCase();
@@ -1123,6 +1131,14 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
         return stripped.includes(clean) || clean.includes(oLower);
       });
       if (sub) return { valid: true, mappedValue: sub };
+
+      // Substring match with localized option text
+      const locSub = options.find(o => {
+        const loc = localizeOptionText(o).toLowerCase();
+        const stripped = loc.replace(/[()]/g, ' ');
+        return stripped.includes(clean) || clean.includes(stripped);
+      });
+      if (locSub) return { valid: true, mappedValue: locSub };
 
       // Step-specific smart semantic matching
       // STRESS
@@ -2495,7 +2511,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                   ) : (
                     <>
                       <BellOff className="h-3.5 w-3.5 opacity-80 shrink-0" />
-                      <span className="text-[8.5px] sm:text-[9px] uppercase tracking-wider font-bold opacity-80">Off</span>
+                      <span className="text-[8.5px] sm:text-[9px] uppercase tracking-wider font-bold opacity-80">{t('common.off', 'Off')}</span>
                     </>
                   )}
                 </button>
@@ -2510,12 +2526,12 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                         ? 'bg-white/10 hover:bg-white/20 border-white/20 text-rose-300'
                         : 'bg-white/15 hover:bg-white/25 border-white/20 text-white'
                   }`}
-                  title={isSpeaking ? 'Stop Speaking' : isVoiceMuted ? 'Muted (Tap to Listen)' : 'AI Voice Active (Tap to Mute)'}
+                  title={isSpeaking ? t('common.stopSpeaking', 'Stop Speaking') : isVoiceMuted ? t('common.tapToListen', 'Muted (Tap to Listen)') : t('common.tapToMute', 'AI Voice Active (Tap to Mute)')}
                 >
                   {isSpeaking ? (
                     <>
                       <Volume2 className="h-3.5 w-3.5 shrink-0" />
-                      <span className="text-[8.5px] sm:text-[9px] font-black uppercase tracking-wider">Stop</span>
+                      <span className="text-[8.5px] sm:text-[9px] font-black uppercase tracking-wider">{t('common.stop', 'Stop')}</span>
                     </>
                   ) : isVoiceMuted ? (
                     <>
@@ -2547,7 +2563,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-black text-white flex items-center gap-1.5">
                     <Clock className="h-4 w-4 text-blue-200" />
-                    Daily AI Check-in Reminder
+                    {t('chatModal.dailyAiReminderTitle', 'Daily AI Check-in Reminder')}
                   </span>
                   <button
                     type="button"
@@ -2558,7 +2574,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                   </button>
                 </div>
                 <p className="text-[10.5px] text-blue-100/90 mb-2.5 font-medium">
-                  Select a reminder time or turn off alerts completely:
+                  {t('chatModal.selectReminderTimeDesc', 'Select a reminder time or turn off alerts completely:')}
                 </p>
 
                 {/* Quick Presets */}
@@ -2593,7 +2609,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                     onClick={() => handleSaveReminder(customTimeInput)}
                     className="px-3 py-1 bg-white hover:bg-blue-50 text-blue-700 text-[10.5px] font-black rounded-lg shadow-xs transition-all cursor-pointer shrink-0"
                   >
-                    Set Time
+                    {t('chatModal.setTime', 'Set Time')}
                   </button>
                 </div>
 
@@ -2777,7 +2793,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                                   </button>
                                 )}
                                 <div className="bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-2xl rounded-tr-sm px-4 py-3 text-xs font-semibold leading-relaxed shadow-md shadow-blue-500/15">
-                                  {msg.text}
+                                  {localizeOptionText(msg.text)}
                                 </div>
                               </div>
                             )}
@@ -2835,13 +2851,13 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                       <CheckCircle2 className="h-6 w-6" />
                     </div>
                     <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-black uppercase tracking-wider mb-1.5">
-                      Daily Health Summary
+                      {t('chatModal.dailyHealthSummary', 'Daily Health Summary')}
                     </div>
                     <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
-                      Check-in Logged Successfully
+                      {t('chatModal.checkInLoggedSuccessfully', 'Check-in Logged Successfully')}
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto leading-relaxed">
-                      Your circadian fasting, cellular repair, and risk prevention logs are updated on your dashboard.
+                      {t('chatModal.logsUpdatedDesc', 'Your circadian fasting, cellular repair, and risk prevention logs are updated on your dashboard.')}
                     </p>
 
                     {/* Live Scorecard Metrics */}
@@ -2869,21 +2885,21 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                     {/* Priority Action Hints for Tomorrow */}
                     <div className="bg-slate-50 dark:bg-slate-950/60 rounded-2xl p-3.5 border border-slate-200/70 dark:border-slate-800 text-left mb-4">
                       <span className="text-[10.5px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider block mb-2">
-                        Priority Action Plan for Tomorrow:
+                        {t('chatModal.priorityActionPlanTomorrow', 'Priority Action Plan for Tomorrow:')}
                       </span>
                       <div className="space-y-2 text-xs">
                         <div className="flex items-start gap-2.5 bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-800 text-slate-800 dark:text-slate-200">
                           <span className="h-5 w-5 rounded-md bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 font-black flex items-center justify-center text-[10px] shrink-0">1</span>
                           <div>
                             <strong className="block text-[11px] font-bold text-slate-900 dark:text-slate-100">{t('chatModal.reduceDamage', 'Reduce Damage')}</strong>
-                            <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed mt-0.5">{sessionSummary.priorityActionHints[0] || 'Avoid evening stress, limit junk food, and get 7+ hours of sleep.'}</p>
+                            <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed mt-0.5">{sessionSummary.priorityActionHints[0] || t('chatModal.fallbackDamageHint', 'Avoid evening stress, limit junk food, and get 7+ hours of sleep.')}</p>
                           </div>
                         </div>
                         <div className="flex items-start gap-2.5 bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-800 text-slate-800 dark:text-slate-200">
                           <span className="h-5 w-5 rounded-md bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 font-black flex items-center justify-center text-[10px] shrink-0">2</span>
                           <div>
                             <strong className="block text-[11px] font-bold text-slate-900 dark:text-slate-100">{t('chatModal.boostRepair', 'Boost Repair')}</strong>
-                            <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed mt-0.5">{sessionSummary.priorityActionHints[1] || 'Target a 14-hour intermittent fast and 20 minutes of aerobic exercise.'}</p>
+                            <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed mt-0.5">{sessionSummary.priorityActionHints[1] || t('chatModal.fallbackRepairHint', 'Target a 14-hour intermittent fast and 20 minutes of aerobic exercise.')}</p>
                           </div>
                         </div>
                       </div>
@@ -2917,7 +2933,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                     className="px-3 pt-2.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar text-xs border-b border-slate-100 dark:border-slate-800/60 pb-2"
                   >
                     <span className="text-[9.5px] font-black text-slate-400 uppercase tracking-wider shrink-0 flex items-center gap-1 mr-1">
-                      <Zap className="h-3 w-3 text-amber-500" /> Fast Answer:
+                      <Zap className="h-3 w-3 text-amber-500" /> {t('chatModal.fastAnswer', 'Fast Answer:')}
                     </span>
                     {currentStep?.inputType === 'YES_NO' ? (
                       <>

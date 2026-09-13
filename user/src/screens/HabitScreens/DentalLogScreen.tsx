@@ -13,10 +13,19 @@ interface DentalLogScreenProps {
   onBookAppointment?: (reason: string) => void;
 }
 
+const LOCALE_MAP: Record<string, string> = {
+  en: 'en-US',
+  ta: 'ta-IN',
+  te: 'te-IN',
+  kn: 'kn-IN',
+  hi: 'hi-IN'
+};
+
 export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBookAppointment }) => {
   const { user, token, apiUrl } = useAuth();
   const { showToast } = useToast();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const activeLocale = LOCALE_MAP[language] || 'en-US';
   
   // Dental Consultation state
   const [sharpTooth, setSharpTooth] = useState<boolean | null>(null);
@@ -412,11 +421,20 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
   }, [enamelColor, stainColor]);
 
   // Score categories
+  const getCategoryLabel = (category: string) => {
+    const lower = (category || '').toLowerCase();
+    if (lower === 'minimal') return t('dental.minimal', 'Minimal');
+    if (lower === 'mild') return t('dental.mild', 'Mild');
+    if (lower === 'moderate') return t('dental.moderate', 'Moderate');
+    if (lower === 'heavy') return t('dental.heavy', 'Heavy');
+    return category;
+  };
+
   const getCategory = (scoreVal: number) => {
-    if (scoreVal <= 14) return { label: 'Minimal', color: 'text-emerald-600 bg-emerald-50 border-emerald-200' };
-    if (scoreVal <= 34) return { label: 'Mild', color: 'text-yellow-600 bg-yellow-50 border-yellow-200' };
-    if (scoreVal <= 59) return { label: 'Moderate', color: 'text-amber-600 bg-amber-50 border-amber-200' };
-    return { label: 'Heavy', color: 'text-rose-600 bg-rose-50 border-rose-200' };
+    if (scoreVal <= 14) return { rawKey: 'Minimal', label: t('dental.minimal', 'Minimal'), color: 'text-emerald-600 bg-emerald-50 border-emerald-200' };
+    if (scoreVal <= 34) return { rawKey: 'Mild', label: t('dental.mild', 'Mild'), color: 'text-yellow-600 bg-yellow-50 border-yellow-200' };
+    if (scoreVal <= 59) return { rawKey: 'Moderate', label: t('dental.moderate', 'Moderate'), color: 'text-amber-600 bg-amber-50 border-amber-200' };
+    return { rawKey: 'Heavy', label: t('dental.heavy', 'Heavy'), color: 'text-rose-600 bg-rose-50 border-rose-200' };
   };
 
   // Save tracker reading
@@ -425,7 +443,7 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
 
     setTrackerLoading(true);
     try {
-      const categoryLabel = getCategory(calculatedScore).label;
+      const categoryLabel = getCategory(calculatedScore).rawKey;
       const targetDate = editingLog ? editingLog.value.date : new Date().toISOString();
       const payload = {
         score: calculatedScore,
@@ -530,7 +548,7 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
   const chartData = [...history]
     .reverse()
     .map(log => ({
-      date: new Date(log.value.date).toLocaleDateString([], { month: 'short', day: 'numeric' }),
+      date: new Date(log.value.date).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric' }),
       score: log.value.score
     }));
 
@@ -656,7 +674,7 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
                 <div className="p-3 bg-slate-50 rounded-xl text-slate-600 text-[11px] leading-relaxed mb-4 flex gap-2">
                   <Info className="h-3.5 w-3.5 text-slate-455 shrink-0 mt-0.5" />
                   <div>
-                    Photograph the same front teeth using consistent light, angle, and distance every 4 weeks. Select the enamel and stained areas to track shade differences over time.
+                    {t('dental.trackerGuide', 'Photograph the same front teeth using consistent light, angle, and distance every 4 weeks. Select the enamel and stained areas to track shade differences over time.')}
                   </div>
                 </div>
 
@@ -671,21 +689,21 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
                     <div className="bg-slate-50 p-2 rounded-xl border border-slate-200/50">
                       <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">{t('dental.lastReading', 'Last Reading')}</span>
                       <p className="text-xs font-bold text-slate-700">
-                        {lastReadingDate ? lastReadingDate.toLocaleDateString([], { month: 'short', day: 'numeric' }) : '-'}
+                        {lastReadingDate ? lastReadingDate.toLocaleDateString(activeLocale, { month: 'short', day: 'numeric' }) : '-'}
                       </p>
                     </div>
                     <div className="bg-slate-50 p-2 rounded-xl border border-slate-200/50">
                       <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">{t('dental.currentScore', 'Current Score')}</span>
                       <p className="text-xs font-bold text-slate-700">
-                        {latestReading.value.score} ({latestReading.value.category})
+                        {latestReading.value.score} ({getCategoryLabel(latestReading.value.category)})
                       </p>
                     </div>
                     <div className={`p-2 rounded-xl border ${isDue ? 'bg-rose-50 border-rose-200 text-rose-700' : 'bg-teal-50 border-teal-200 text-teal-700'}`}>
                       <span className={`text-[8px] font-bold uppercase tracking-wider block mb-0.5 ${isDue ? 'text-rose-400' : 'text-teal-400'}`}>
-                        Next Due
+                        {t('dental.nextDue', 'Next Due')}
                       </span>
                       <p className="text-xs font-bold">
-                        {isDue ? 'Reading due now' : `${daysRemaining} days`}
+                        {isDue ? t('dental.readingDueNow', 'Reading due now') : t('dental.daysRemainingCount', { days: daysRemaining }, `${daysRemaining} days`)}
                       </p>
                     </div>
                   </div>
@@ -699,7 +717,7 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
                         <div className="flex items-center gap-2">
                           <Edit2 className="h-4 w-4 text-amber-600 shrink-0" />
                           <span className="text-[11px] font-bold text-amber-800">
-                            Editing reading from {new Date(editingLog.value.date).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
+                            {t('dental.editingReadingFrom', 'Editing reading from')} {new Date(editingLog.value.date).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric', year: 'numeric' })}
                           </span>
                         </div>
                         <button
@@ -715,11 +733,11 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
                           }}
                           className="text-[9px] font-bold text-amber-700 bg-amber-100 hover:bg-amber-250 px-2 py-1 rounded-lg uppercase tracking-wider"
                         >
-                          Cancel
+                          {t('common.cancel', 'Cancel')}
                         </button>
                       </div>
                     )}
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">1. Add a photo</span>
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">{t('dental.stepAddPhoto', '1. Add a photo')}</span>
                     
                     {imageUrl ? (
                       <button
@@ -734,7 +752,7 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
                         }}
                         className="w-full py-2.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-900/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-900/30 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm"
                       >
-                        <Trash2 className="h-4 w-4" /> Remove & Retake Photo
+                        <Trash2 className="h-4 w-4" /> {t('dental.removeRetakePhoto', 'Remove & Retake Photo')}
                       </button>
                     ) : (
                       <div className="flex gap-3">
@@ -752,7 +770,7 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
                           className="flex-1 py-2.5 bg-teal-850 hover:bg-teal-900 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 disabled:opacity-50"
                           style={{ backgroundColor: '#1F4D4B' }}
                         >
-                          <Camera className="h-4 w-4" /> Take Photo
+                          <Camera className="h-4 w-4" /> {t('dental.takePhoto', 'Take Photo')}
                         </button>
                         <button
                           type="button"
@@ -760,7 +778,7 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
                           disabled={uploading || trackerLoading}
                           className="flex-1 py-2.5 bg-slate-700 hover:bg-slate-800 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 disabled:opacity-50"
                         >
-                          Upload Photo
+                          {t('dental.uploadPhoto', 'Upload Photo')}
                         </button>
                       </div>
                     )}
@@ -775,7 +793,7 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
                     {/* Interactive Canvas */}
                     {imageUrl && (
                       <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50">
-                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-3">2. Select tooth areas</span>
+                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-3">{t('dental.stepSelectAreas', '2. Select tooth areas')}</span>
                         
                         {/* Selector Toggle */}
                         <div className="flex gap-2 mb-4 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm">
@@ -784,7 +802,7 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
                             onClick={() => setSelectionMode('enamel')}
                             className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${selectionMode === 'enamel' ? 'bg-emerald-500 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}
                           >
-                            Enamel Area
+                            {t('dental.enamelArea', 'Enamel Area')}
                             {enamelColor && <Check className="h-3.5 w-3.5 text-emerald-100" />}
                           </button>
                           <button
@@ -792,15 +810,15 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
                             onClick={() => setSelectionMode('stain')}
                             className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${selectionMode === 'stain' ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-550 hover:bg-slate-50'}`}
                           >
-                            Stained Area
+                            {t('dental.stainedArea', 'Stained Area')}
                             {stainColor && <Check className="h-3.5 w-3.5 text-amber-100" />}
                           </button>
                         </div>
 
                         <p className="text-[11px] text-slate-500 mb-4 bg-white p-2.5 rounded-lg border border-slate-200/50">
                           {selectionMode === 'enamel' 
-                            ? 'Tap on a clean, normal enamel part of your front teeth.' 
-                            : 'Tap on a stained part of your front teeth to measure discoloration.'}
+                            ? t('dental.tapEnamelInstruction', 'Tap on a clean, normal enamel part of your front teeth.') 
+                            : t('dental.tapStainInstruction', 'Tap on a stained part of your front teeth to measure discoloration.')}
                         </p>
 
                         <div className="flex justify-center mb-4">
@@ -859,13 +877,13 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
                             {enamelColor && (
                               <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full border border-slate-200 shadow-sm text-[10px] font-bold text-slate-600">
                                 <span className="w-3 h-3 rounded-full border border-slate-200 shadow-inner" style={{ backgroundColor: `rgb(${enamelColor.r}, ${enamelColor.g}, ${enamelColor.b})` }} />
-                                Enamel Shade
+                                {t('dental.enamelShade', 'Enamel Shade')}
                               </div>
                             )}
                             {stainColor && (
                               <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full border border-slate-200 shadow-sm text-[10px] font-bold text-slate-600">
                                 <span className="w-3 h-3 rounded-full border border-slate-200 shadow-inner" style={{ backgroundColor: `rgb(${stainColor.r}, ${stainColor.g}, ${stainColor.b})` }} />
-                                Stain Shade
+                                {t('dental.stainShade', 'Stain Shade')}
                               </div>
                             )}
                           </div>
@@ -875,7 +893,7 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
                         {calculatedScore !== null && (
                           <div className="bg-white border border-slate-200 rounded-2xl p-4 mt-4 shadow-sm text-center">
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">
-                              Calculated Stain Score
+                              {t('dental.calculatedStainScore', 'Calculated Stain Score')}
                             </span>
                             <div className="flex items-center justify-center gap-2 mb-4">
                               <span className="text-4xl font-sans font-bold text-slate-800">
@@ -901,10 +919,10 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
                                 />
                               </div>
                               <div className="flex justify-between text-[9px] font-bold text-slate-400 mt-2 px-1">
-                                <span>{t('minimalScore')}</span>
-                                <span>{t('mildScore')}</span>
-                                <span>{t('modScore')}</span>
-                                <span>{t('heavyScore')}</span>
+                                <span>{t('dental.minimal', 'Minimal')}</span>
+                                <span>{t('dental.mild', 'Mild')}</span>
+                                <span>{t('dental.moderate', 'Moderate')}</span>
+                                <span>{t('dental.heavy', 'Heavy')}</span>
                               </div>
                             </div>
 
@@ -913,7 +931,7 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
                               disabled={trackerLoading}
                               className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs transition-all disabled:opacity-50"
                             >
-                              {trackerLoading ? 'Saving reading...' : 'Save Reading'}
+                              {trackerLoading ? t('dental.savingReading', 'Saving reading...') : t('dental.saveReading', 'Save Reading')}
                             </button>
                           </div>
                         )}
@@ -922,7 +940,7 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
                   </div>
                 ) : (
                   <div className="bg-teal-50 border border-teal-100 rounded-2xl p-4 text-center text-teal-800 font-bold text-xs mb-4">
-                    Next reading due in {daysRemaining} days.
+                    {t('dental.nextReadingDueIn', { days: daysRemaining }, `Next reading due in ${daysRemaining} days.`)}
                   </div>
                 )}
 
@@ -959,7 +977,7 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
                   if (filteredHistory.length === 0) return null;
                   return (
                     <div className="mt-8 pt-6 border-t border-slate-100">
-                      <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-4 flex items-center gap-1.5"><History className="h-3.5 w-3.5" /> Previous Readings (Tap to view details)</span>
+                      <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-4 flex items-center gap-1.5"><History className="h-3.5 w-3.5" /> {t('dental.previousReadings', 'Previous Readings (Tap to view details)')}</span>
                       
                       <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                         {filteredHistory.map((log) => {
@@ -975,8 +993,8 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
                             <div className="flex items-center gap-2.5">
                               <Calendar className="h-4 w-4 text-slate-400" />
                               <div>
-                                <p className="text-xs font-bold text-slate-700">{logDate.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}</p>
-                                <p className="text-[10px] text-slate-400">Score: {logScore}</p>
+                                <p className="text-xs font-bold text-slate-700">{logDate.toLocaleDateString(activeLocale, { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                                <p className="text-[10px] text-slate-400">{t('dental.scoreLabel', 'Score:')} {logScore}</p>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
@@ -1053,7 +1071,7 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
           <div className="bg-white rounded-3xl p-5 max-w-md w-full border border-slate-100 shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4 pb-2.5 border-b border-slate-100">
               <h3 className="font-bold text-slate-800 text-sm">
-                Reading Details ({new Date(selectedHistoryItem.value.date).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })})
+                {t('dental.readingDetails', 'Reading Details')} ({new Date(selectedHistoryItem.value.date).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric', year: 'numeric' })})
               </h3>
               <button 
                 type="button"
@@ -1101,7 +1119,7 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
 
             <div className="bg-slate-50 border border-slate-200/50 rounded-2xl p-4 text-center">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">
-                Stain Score
+                {t('dental.stainScore', 'Stain Score')}
               </span>
               <div className="flex items-center justify-center gap-2 mb-4">
                 <span className="text-3xl font-sans font-bold text-slate-800">
@@ -1135,14 +1153,14 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
                 onClick={() => setDentalReadingToDelete(selectedHistoryItem.id)}
                 className="flex-1 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-xl font-bold text-[10px] transition-all flex items-center justify-center gap-1"
               >
-                <Trash2 className="h-3 w-3" /> Delete
+                <Trash2 className="h-3 w-3" /> {t('common.delete', 'Delete')}
               </button>
               <button
                 type="button"
                 onClick={() => handleStartEdit(selectedHistoryItem)}
                 className="flex-1 py-2 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-xl font-bold text-[10px] transition-all flex items-center justify-center gap-1"
               >
-                <Edit2 className="h-3 w-3" /> Edit
+                <Edit2 className="h-3 w-3" /> {t('common.edit', 'Edit')}
               </button>
               <button
                 type="button"
@@ -1150,7 +1168,7 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
                 className="flex-1 py-2 bg-slate-850 hover:bg-slate-900 text-white rounded-xl font-bold text-[10px] transition-all"
                 style={{ backgroundColor: '#1F4D4B' }}
               >
-                Close
+                {t('common.close', 'Close')}
               </button>
             </div>
           </div>
@@ -1166,7 +1184,7 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
             </div>
             <h3 className="text-base font-black text-slate-900 dark:text-slate-100 mb-1">{t('dental.deleteReadingQ', 'Delete Reading?')}</h3>
             <p className="text-xs text-slate-400 font-semibold leading-relaxed mb-5">
-              Are you sure you want to delete this stain reading? This action cannot be undone.
+              {t('dental.deleteReadingConfirm', 'Are you sure you want to delete this stain reading? This action cannot be undone.')}
             </p>
             <div className="flex space-x-3">
               <button
@@ -1174,14 +1192,14 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
                 onClick={() => setDentalReadingToDelete(null)}
                 className="flex-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-extrabold py-3 rounded-2xl transition-all"
               >
-                Cancel
+                {t('common.cancel', 'Cancel')}
               </button>
               <button
                 type="button"
                 onClick={confirmDeleteReading}
                 className="flex-1 bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold py-3 rounded-2xl transition-all shadow-md shadow-rose-600/20"
               >
-                Yes, Delete
+                {t('dental.yesDelete', 'Yes, Delete')}
               </button>
             </div>
           </div>

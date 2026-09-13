@@ -317,11 +317,11 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
         <div className="h-16 w-16 bg-blue-50 dark:bg-indigo-900/30 text-primary dark:text-indigo-400 rounded-full flex items-center justify-center mb-4 shadow-soft">
           <CreditCard className="h-8 w-8" />
         </div>
-        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">{isIOSAppStoreBlocked ? 'Feature Unavailable' : 'Premium Feature Locked'}</h3>
+        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">{isIOSAppStoreBlocked ? t('reports.featureUnavailable', 'Feature Unavailable') : t('reports.premiumFeatureLocked', 'Premium Feature Locked')}</h3>
         <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold max-w-xs mt-2 mb-6">
           {isIOSAppStoreBlocked
-            ? 'This feature is currently unavailable on iOS.'
-            : 'CGM Report Upload requires an active Basic or Premium Plan. Unlock unlimited uploads, analysis, and custom alerts.'
+            ? t('reports.featureUnavailableIOS', 'This feature is currently unavailable on iOS.')
+            : t('reports.cgmPlanRequired', 'CGM Report Upload requires an active Basic or Premium Plan. Unlock unlimited uploads, analysis, and custom alerts.')
           }
         </p>
         {!isIOSAppStoreBlocked && (
@@ -333,7 +333,7 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
             }}
             className="bg-primary hover:bg-primary/95 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white font-bold px-6 py-3 rounded-2xl shadow-soft transition-all"
           >
-            View Subscription Plans
+            {t('reports.viewSubscriptionPlans', 'View Subscription Plans')}
           </button>
         )}
       </motion.div>
@@ -378,9 +378,9 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
           <div className="absolute inset-0 z-10 bg-white/70 dark:bg-slate-900/80 backdrop-blur-[1.5px] rounded-3xl flex flex-col items-center justify-center p-4">
             <div className="bg-white dark:bg-slate-800 p-5 rounded-3xl shadow-[0_12px_30px_rgba(0,0,0,0.05)] text-center max-w-xs border border-slate-100 dark:border-slate-700/80">
               <Lock className="h-7 w-7 text-amber-500 mx-auto mb-2" />
-              <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-1">{isIOSAppStoreBlocked ? 'Feature Unavailable' : 'Premium Feature'}</h4>
+              <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-1">{isIOSAppStoreBlocked ? t('reports.featureUnavailable', 'Feature Unavailable') : t('reports.premiumFeature', 'Premium Feature')}</h4>
               <p className="text-xs text-slate-450 dark:text-slate-400 font-semibold mb-3">
-                {isIOSAppStoreBlocked ? 'This feature is currently unavailable on iOS.' : 'Upgrade to a premium plan to import new CGM reports.'}
+                {isIOSAppStoreBlocked ? t('reports.featureUnavailableIOS', 'This feature is currently unavailable on iOS.') : t('reports.upgradePlanToImport', 'Upgrade to a premium plan to import new CGM reports.')}
               </p>
               {!isIOSAppStoreBlocked && (
                 <button
@@ -388,7 +388,7 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
                   onClick={() => setShowUpgradePrompt(true)}
                   className="bg-primary hover:bg-primary/95 text-white text-xs font-bold px-4 py-2.5 rounded-2xl shadow-soft transition-all"
                 >
-                  Upgrade Plan
+                  {t('reports.upgradePlanBtn', 'Upgrade Plan')}
                 </button>
               )}
             </div>

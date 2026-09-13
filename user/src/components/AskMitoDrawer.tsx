@@ -57,9 +57,18 @@ const QUESTION_CATEGORIES = [
   'Others'
 ];
 
+const LOCALE_MAP: Record<string, string> = {
+  en: 'en-US',
+  ta: 'ta-IN',
+  te: 'te-IN',
+  kn: 'kn-IN',
+  hi: 'hi-IN'
+};
+
 export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose }) => {
   const { token, user } = useAuth();
   const { language, t } = useLanguage();
+  const activeLocale = LOCALE_MAP[language] || 'en-US';
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
   // State
@@ -324,7 +333,7 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
 
               <div>
                 <h3 className="text-base font-extrabold text-slate-900 dark:text-white leading-tight">
-                  Doctor Consultation
+                  {t('askMito.doctorConsultation', 'Doctor Consultation')}
                 </h3>
                 <div className="text-xs text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">
                   <span>{t('clinicalTeamActive')}</span>
@@ -367,15 +376,15 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                   </div>
                   <div>
                     <p className="text-[11.5px] font-black text-emerald-900 dark:text-emerald-200">
-                      {quotaStatus.remainingFreeQuestions} Free Question{quotaStatus.remainingFreeQuestions > 1 ? 's' : ''} Remaining
+                      {t('askMito.freeQuestionsRemaining', { count: quotaStatus.remainingFreeQuestions }, `${quotaStatus.remainingFreeQuestions} Free Question${quotaStatus.remainingFreeQuestions > 1 ? 's' : ''} Remaining`)}
                     </p>
                     <p className="text-[10px] text-emerald-700/80 dark:text-emerald-400/80 font-semibold">
-                      Included with your subscription • 48h Response SLA
+                      {t('askMito.includedSubscriptionSla', 'Included with your subscription • 48h Response SLA')}
                     </p>
                   </div>
                 </div>
                 <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 bg-emerald-600 text-white rounded-md shrink-0">
-                  FREE
+                  {t('common.free', 'FREE')}
                 </span>
               </div>
             ) : (
@@ -389,10 +398,10 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                   </div>
                   <div>
                     <p className="text-[11.5px] font-black text-blue-950 dark:text-blue-200">
-                      Doctor Consultation: ₹{questionFee} / Question
+                      {t('askMito.consultationFeePerQuestion', { fee: questionFee }, `Doctor Consultation: ₹${questionFee} / Question`)}
                     </p>
                     <p className="text-[10px] text-blue-700/80 dark:text-blue-400/80 font-semibold">
-                      Verified Clinical Review within 48 hours
+                      {t('askMito.verifiedClinicalReview', 'Verified Clinical Review within 48 hours')}
                     </p>
                   </div>
                 </div>
@@ -404,7 +413,7 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                   }}
                   className="text-[10.5px] font-black px-2.5 py-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg shadow-xs shrink-0 cursor-pointer active:scale-95 transition-all"
                 >
-                  Ask Now
+                  {t('askMito.askNow', 'Ask Now')}
                 </button>
               </div>
             )
@@ -435,10 +444,10 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                 <MessageSquare className="h-8 w-8" />
               </div>
               <h4 className="text-base font-black text-slate-900 dark:text-white">
-                No Consultations Yet
+                {t('askMito.noConsultationsYet', 'No Consultations Yet')}
               </h4>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed max-w-xs mx-auto">
-                Have questions regarding your glucose spikes, lab reports, or diet? Tap the button below to get verified medical advice within 48 hours.
+                {t('askMito.emptyStateDesc', 'Have questions regarding your glucose spikes, lab reports, or diet? Tap the button below to get verified medical advice within 48 hours.')}
               </p>
             </div>
           ) : (
@@ -462,11 +471,11 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                           </span>
                           {q.isFreeQuotaUsed ? (
                             <span className="text-[9px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
-                              ✨ Free Quota
+                              ✨ {t('askMito.freeQuotaBadge', 'Free Quota')}
                             </span>
                           ) : (
                             <span className="text-[9px] font-black uppercase tracking-wider text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-800">
-                              💳 ₹{q.amountPaid || 100} Paid
+                              💳 ₹{q.amountPaid || 100} {t('askMito.paidBadge', 'Paid')}
                             </span>
                           )}
                         </div>
@@ -474,7 +483,7 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                           {q.subject}
                         </h4>
                         <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
-                          {createdDate.toLocaleDateString([], { month: 'short', day: 'numeric' })} at {createdDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {createdDate.toLocaleDateString(activeLocale, { month: 'short', day: 'numeric' })} {t('common.at', 'at')} {createdDate.toLocaleTimeString(activeLocale, { hour: '2-digit', minute: '2-digit' })}
                         </p>
                       </div>
 
@@ -484,7 +493,7 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                           : 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800'
                       }`}>
                         <span className={`h-1.5 w-1.5 rounded-full ${isAnswered ? 'bg-emerald-500' : 'bg-amber-500 animate-ping'}`} />
-                        {isAnswered ? 'Doctor Replied' : 'Under Review'}
+                        {isAnswered ? t('askMito.doctorReplied', 'Doctor Replied') : t('askMito.underReview', 'Under Review')}
                       </span>
                     </div>
 
@@ -495,7 +504,7 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                       </div>
                       <div className="flex-1 bg-slate-50 dark:bg-slate-800/80 p-3.5 rounded-2xl rounded-tl-sm border border-slate-100 dark:border-slate-800">
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                          Your Inquiry
+                          {t('askMito.yourInquiry', 'Your Inquiry')}
                         </span>
                         <p className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 font-medium leading-relaxed whitespace-pre-wrap">
                           {q.question}
@@ -503,7 +512,7 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                         {q.patientImageUrl && (
                           <div className="mt-2.5 pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
                             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
-                              Attached Diagnostic Image / Report
+                              {t('askMito.attachedDiagnosticReport', 'Attached Diagnostic Image / Report')}
                             </span>
                             <a href={q.patientImageUrl} target="_blank" rel="noopener noreferrer">
                               <img 
@@ -527,13 +536,13 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                           <div className="flex items-center justify-between border-b border-emerald-500/15 dark:border-emerald-800/40 pb-1.5">
                             <div className="flex items-center gap-1.5">
                               <span className="font-extrabold text-emerald-950 dark:text-emerald-200 text-xs">
-                                Clinical Team Response
+                                {t('askMito.clinicalTeamResponse', 'Clinical Team Response')}
                               </span>
                               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                             </div>
                             {q.repliedAt && (
                               <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold">
-                                {new Date(q.repliedAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                                {new Date(q.repliedAt).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric' })}
                               </span>
                             )}
                           </div>
@@ -565,7 +574,7 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
           >
             <Plus className="h-4 w-4" />
             <span>
-              {hasFreeQuota ? 'Ask a Doctor (Free with Plan)' : `Ask a Doctor (₹${questionFee})`}
+              {hasFreeQuota ? t('askMito.askDoctorFreeWithPlan', 'Ask a Doctor (Free with Plan)') : t('askMito.askDoctorFee', { fee: questionFee, defaultValue: `Ask a Doctor (₹${questionFee})` })}
             </span>
           </button>
         </div>
@@ -627,10 +636,10 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                       <ShieldCheck className="h-4.5 w-4.5 text-emerald-600 dark:text-emerald-400" />
                       <div>
                         <span className="font-bold text-emerald-950 dark:text-emerald-200 block">
-                          Included Free with Subscription
+                          {t('askMito.includedFreeWithSub', 'Included Free with Subscription')}
                         </span>
                         <span className="text-[11px] text-emerald-700 dark:text-emerald-400">
-                          {quotaStatus?.remainingFreeQuestions} free question{quotaStatus?.remainingFreeQuestions !== 1 ? 's' : ''} left in this cycle
+                          {t('askMito.freeQuestionsCycleLeft', { count: quotaStatus?.remainingFreeQuestions }, `${quotaStatus?.remainingFreeQuestions} free question(s) left in this cycle`)}
                         </span>
                       </div>
                     </div>
@@ -642,10 +651,10 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                   <div className="p-3.5 bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-2xl flex items-center justify-between text-xs">
                     <div>
                       <span className="font-bold text-blue-950 dark:text-blue-200 block">
-                        Doctor Consultation Fee
+                        {t('askMito.doctorConsultationFee', 'Doctor Consultation Fee')}
                       </span>
                       <span className="text-[11px] text-blue-700 dark:text-blue-400">
-                        Detailed review by clinical team within 48h
+                        {t('askMito.detailedReview48h', 'Detailed review by clinical team within 48h')}
                       </span>
                     </div>
                     <span className="text-sm font-black text-blue-700 dark:text-blue-300">
@@ -656,7 +665,7 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
 
                 <div>
                   <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">
-                    Category
+                    {t('askMito.category', 'Category')}
                   </label>
                   <div className="relative">
                     <select
@@ -664,9 +673,19 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                       onChange={e => setNewCategory(e.target.value)}
                       className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer appearance-none pr-9"
                     >
-                      {QUESTION_CATEGORIES.map(c => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
+                      {QUESTION_CATEGORIES.map(c => {
+                        let label = c;
+                        if (c === 'CGM & Glucose Reports') label = t('askMito.catGlucose', c);
+                        else if (c === 'Anti-Cancer Nutrition & Diet') label = t('askMito.catNutrition', c);
+                        else if (c === 'Circadian Fasting Protocol') label = t('askMito.catFasting', c);
+                        else if (c === 'PCOS & Hormonal Health') label = t('askMito.catPcos', c);
+                        else if (c === 'Hypertension & Blood Pressure') label = t('askMito.catHtn', c);
+                        else if (c === 'Parkinson\'s & Motor Health') label = t('askMito.catParkinson', c);
+                        else if (c === 'Sleep & Recovery') label = t('askMito.catSleep', c);
+                        else if (c === 'General Medical / App Query') label = t('askMito.catGeneral', c);
+                        else if (c === 'Others') label = t('askMito.catOthers', c);
+                        return <option key={c} value={c}>{label}</option>;
+                      })}
                     </select>
                     <ChevronDown className="absolute right-3.5 top-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
                   </div>
@@ -675,7 +694,7 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                 {newCategory === 'Others' && (
                   <div>
                     <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">
-                      Specify Health Topic
+                      {t('askMito.specifyTopic', 'Specify Health Topic')}
                     </label>
                     <input
                       type="text"
@@ -690,7 +709,7 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
 
                 <div>
                   <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">
-                    Subject / Question Title
+                    {t('askMito.subjectTitle', 'Subject / Question Title')}
                   </label>
                   <input
                     type="text"
@@ -704,7 +723,7 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
 
                 <div>
                   <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">
-                    Detailed Symptoms & Inquiry
+                    {t('askMito.detailedSymptoms', 'Detailed Symptoms & Inquiry')}
                   </label>
                   <textarea
                     rows={4}
@@ -725,7 +744,7 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                 ) : (
                   <div className="space-y-2.5 pt-1">
                     <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500">
-                      Attach Diagnostic Image / Lab Report (Optional)
+                      {t('askMito.attachReportOptional', 'Attach Diagnostic Image / Lab Report (Optional)')}
                     </label>
 
                     {/* Strict Policy & Guidelines Callout */}
@@ -733,11 +752,11 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                       <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                       <div className="text-[11px] text-amber-900 dark:text-amber-200 leading-relaxed font-medium">
                         <strong className="font-bold text-amber-950 dark:text-amber-100 block mb-0.5">
-                          Medical Image Guidelines & Compliance Notice:
+                          {t('askMito.medicalImageNotice', 'Medical Image Guidelines & Compliance Notice:')}
                         </strong>
-                        Only upload clear photos of lab reports, CGM glucose readings, food items, or relevant diagnostic charts.
+                        {t('askMito.medicalImageDesc', 'Only upload clear photos of lab reports, CGM glucose readings, food items, or relevant diagnostic charts.')}
                         <span className="text-rose-600 dark:text-rose-400 font-extrabold block mt-1">
-                          🚫 Strictly NO nudity, explicit, offensive, or non-medical personal images. Violations result in immediate permanent account suspension.
+                          {t('askMito.strictlyNoExplicit', '🚫 Strictly NO nudity, explicit, offensive, or non-medical personal images. Violations result in immediate permanent account suspension.')}
                         </span>
                       </div>
                     </div>
@@ -789,7 +808,7 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                     onClick={() => setShowNewQuestionModal(false)}
                     className="flex-1 py-3 text-xs font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-2xl hover:bg-slate-200 transition-colors cursor-pointer"
                   >
-                    Cancel
+                    {t('common.cancel', 'Cancel')}
                   </button>
                   <button
                     type="submit"
@@ -802,7 +821,7 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                       <Send className="h-4 w-4" />
                     )}
                     <span>
-                      {hasFreeQuota ? 'Submit Question (Free)' : `Pay ₹${questionFee} & Submit`}
+                      {hasFreeQuota ? t('askMito.submitQuestionFree', 'Submit Question (Free)') : t('askMito.payAndSubmit', { fee: questionFee }, `Pay ₹${questionFee} & Submit`)}
                     </span>
                   </button>
                 </div>

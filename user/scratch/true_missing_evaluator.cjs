@@ -6,6 +6,7 @@ const enContent = fs.readFileSync(path.join(__dirname, '../src/i18n/locales/en.t
 const taContent = fs.readFileSync(path.join(__dirname, '../src/i18n/locales/ta.ts'), 'utf8');
 const knContent = fs.readFileSync(path.join(__dirname, '../src/i18n/locales/kn.ts'), 'utf8');
 const hiContent = fs.readFileSync(path.join(__dirname, '../src/i18n/locales/hi.ts'), 'utf8');
+const teContent = fs.readFileSync(path.join(__dirname, '../src/i18n/locales/te.ts'), 'utf8');
 
 function cleanToObj(tsContent) {
   const jsonStr = tsContent
@@ -17,19 +18,20 @@ function cleanToObj(tsContent) {
   return new Function(`return (${jsonStr});`)();
 }
 
-let enObj, taObj, knObj, hiObj;
+let enObj, taObj, knObj, hiObj, teObj;
 try {
   enObj = cleanToObj(enContent);
   taObj = cleanToObj(taContent);
   knObj = cleanToObj(knContent);
   hiObj = cleanToObj(hiContent);
-  console.log('Successfully evaluated all 4 locale objects!');
+  teObj = cleanToObj(teContent);
+  console.log('Successfully evaluated all 5 locale objects (EN, TA, KN, HI, TE)!');
 } catch (e) {
   console.error('Error evaluating locale objects:', e);
   process.exit(1);
 }
 
-const translations = { en: enObj, ta: taObj, kn: knObj, hi: hiObj };
+const translations = { en: enObj, ta: taObj, kn: knObj, hi: hiObj, te: teObj };
 
 function getTranslation(lang, key) {
   const keys = key.split('.');
@@ -83,10 +85,11 @@ files.forEach(file => {
     const taVal = getTranslation('ta', key);
     const knVal = getTranslation('kn', key);
     const hiVal = getTranslation('hi', key);
+    const teVal = getTranslation('te', key);
 
     const fallback = match[2] || match[3] || match[4] || match[5] || match[6] || match[7] || key;
 
-    if (!enVal || !taVal || !knVal || !hiVal) {
+    if (!enVal || !taVal || !knVal || !hiVal || !teVal) {
       missingReport.push({
         file: relFile,
         key,
@@ -94,7 +97,8 @@ files.forEach(file => {
         en: !!enVal,
         ta: !!taVal,
         kn: !!knVal,
-        hi: !!hiVal
+        hi: !!hiVal,
+        te: !!teVal
       });
     }
   }
@@ -104,7 +108,7 @@ console.log(`Total true missing translations count: ${missingReport.length}`);
 const uniqueKeys = new Map();
 missingReport.forEach(item => {
   if (!uniqueKeys.has(item.key)) {
-    uniqueKeys.set(item.key, { key: item.key, fallback: item.fallback, missingIn: { en: !item.en, ta: !item.ta, kn: !item.kn, hi: !item.hi } });
+    uniqueKeys.set(item.key, { key: item.key, fallback: item.fallback, missingIn: { en: !item.en, ta: !item.ta, kn: !item.kn, hi: !item.hi, te: !item.te } });
   }
 });
 

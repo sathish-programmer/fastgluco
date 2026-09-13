@@ -2,19 +2,31 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Check, Minus, User, Trash2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { useToast } from '../../context/ToastContext';
 import { HabitsService, type HabitLog } from '../../services/habitsService';
 
 interface MovementLogScreenProps {
   onBack: () => void;
 }
 
+const LOCALE_MAP: Record<string, string> = {
+  en: 'en-US',
+  ta: 'ta-IN',
+  te: 'te-IN',
+  kn: 'kn-IN',
+  hi: 'hi-IN'
+};
+
 export const MovementLogScreen: React.FC<MovementLogScreenProps> = ({ onBack }) => {
   const { user, token, apiUrl } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const { showToast } = useToast();
   const [minutes, setMinutes] = useState(30);
   const [history, setHistory] = useState<HabitLog[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [loading, setLoading] = useState(false);
+
+  const activeLocale = LOCALE_MAP[language] || 'en-US';
 
   useEffect(() => {
     if (user?.id) loadHistory();
@@ -37,9 +49,11 @@ export const MovementLogScreen: React.FC<MovementLogScreenProps> = ({ onBack }) 
     if (!token) return;
     try {
       await HabitsService.deleteHabit(apiUrl, token, id);
+      showToast(t('habits.habitDeleted', 'Log deleted'), 'info');
       await loadHistory();
     } catch (err) {
       console.error('Failed to delete habit', err);
+      showToast(t('habits.habitDeleteFailed', 'Failed to delete log'), 'error');
     }
   };
 
@@ -48,9 +62,11 @@ export const MovementLogScreen: React.FC<MovementLogScreenProps> = ({ onBack }) 
     setLoading(true);
     try {
       await HabitsService.logHabit(apiUrl, token, 'Movement', { minutes });
+      showToast(t('habits.movementLoggedSuccess', 'Movement logged successfully!'), 'success');
       await loadHistory();
     } catch (err) {
       console.error('Failed to log movement', err);
+      showToast(t('habits.movementLogFailed', 'Failed to log movement. Please try again.'), 'error');
     } finally {
       setLoading(false);
     }
@@ -133,7 +149,7 @@ export const MovementLogScreen: React.FC<MovementLogScreenProps> = ({ onBack }) 
                     {h.value.minutes >= 30 ? '🏃‍♂️' : '🚶‍♂️'} {t('habits.minutesCount', { count: h.value.minutes }, `${h.value.minutes} minutes`)}
                   </span>
                   <span className="text-[10px] text-slate-400 mt-1 block">
-                    {new Date(h.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                    {new Date(h.timestamp).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric' })}
                   </span>
                 </div>
                 {h.value.minutes >= 30 ? (

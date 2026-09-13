@@ -608,12 +608,12 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
                 <div className="flex flex-wrap gap-2 mb-3">
                   {selectedProduct.doctorRecommended && (
                     <span className="bg-emerald-500 text-white text-[8px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1 shadow-sm">
-                      <Sparkles className="h-3 w-3" /> Doctor Recommended
+                      <Sparkles className="h-3 w-3" /> {t('shop.doctorRecommended', 'Doctor Recommended')}
                     </span>
                   )}
                   {selectedProduct.prescriptionRequired && (
                     <span className="bg-amber-500 text-white text-[8px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider shadow-sm">
-                      Rx Prescribed
+                      {t('shop.rxPrescribed', 'Rx Prescribed')}
                     </span>
                   )}
                 </div>
@@ -764,14 +764,14 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
                   onClick={() => {
                     const stockVal = selectedVariant ? selectedVariant.stock : selectedProduct.stock;
                     if (stockVal <= 0) {
-                      showToast('This item is currently sold out.', 'info');
+                      showToast(t('shop.soldOutToast', 'This item is currently sold out.'), 'info');
                       return;
                     }
                     addToBasket(selectedProduct, selectedVariant?.name);
                   }}
                   className="flex-1 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs font-black transition-all shadow-md flex items-center justify-center gap-2 transform active:scale-98 cursor-pointer"
                 >
-                  <ShoppingCart className="h-4.5 w-4.5" /> Add to Order Basket
+                  <ShoppingCart className="h-4.5 w-4.5" /> {t('shop.addToOrderBasket', 'Add to Order Basket')}
                 </button>
 
                 <button
@@ -779,7 +779,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
                   onClick={() => {
                     const stockVal = selectedVariant ? selectedVariant.stock : selectedProduct.stock;
                     if (stockVal <= 0) {
-                      showToast('This item is currently sold out.', 'info');
+                      showToast(t('shop.soldOutToast', 'This item is currently sold out.'), 'info');
                       return;
                     }
                     addToBasket(selectedProduct, selectedVariant?.name);
@@ -810,14 +810,14 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
                 onClick={() => {
                   const stockVal = selectedVariant ? selectedVariant.stock : selectedProduct.stock;
                   if (stockVal <= 0) {
-                    showToast('This item is currently sold out.', 'info');
+                    showToast(t('shop.soldOutToast', 'This item is currently sold out.'), 'info');
                     return;
                   }
                   addToBasket(selectedProduct, selectedVariant?.name);
                 }}
                 className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center justify-center gap-1 cursor-pointer"
               >
-                <ShoppingCart className="h-3.5 w-3.5" /> Cart
+                <ShoppingCart className="h-3.5 w-3.5" /> {t('shop.addToCartShort', 'Cart')}
               </button>
 
               <button
@@ -825,7 +825,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
                 onClick={() => {
                   const stockVal = selectedVariant ? selectedVariant.stock : selectedProduct.stock;
                   if (stockVal <= 0) {
-                    showToast('This item is currently sold out.', 'info');
+                    showToast(t('shop.soldOutToast', 'This item is currently sold out.'), 'info');
                     return;
                   }
                   addToBasket(selectedProduct, selectedVariant?.name);

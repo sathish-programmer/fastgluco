@@ -12,7 +12,17 @@ interface AlcoholLogScreenProps {
 
 export const AlcoholLogScreen: React.FC<AlcoholLogScreenProps> = ({ onBack, onBookAppointment }) => {
   const { user, token, apiUrl } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+
+  const LOCALE_MAP: Record<string, string> = {
+    en: 'en-US',
+    ta: 'ta-IN',
+    te: 'te-IN',
+    kn: 'kn-IN',
+    hi: 'hi-IN'
+  };
+  const activeLocale = LOCALE_MAP[language] || 'en-US';
+
   const [drinks, setDrinks] = useState<number>(0);
   const [history, setHistory] = useState<HabitLog[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
@@ -135,7 +145,7 @@ export const AlcoholLogScreen: React.FC<AlcoholLogScreenProps> = ({ onBack, onBo
                     {h.value.drinks === 0 ? '🎉' : '🍷'} {h.value.drinks === 0 ? t('habits.zeroDrinksClean', '0 drinks (Clean day)') : t('habits.drinksCount', { count: h.value.drinks }, `${h.value.drinks} drinks`)}
                   </span>
                   <span className="text-[10px] text-slate-400 mt-1 block">
-                    {new Date(h.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                    {new Date(h.timestamp).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric' })}
                   </span>
                 </div>
                 {h.value.drinks === 0 ? (

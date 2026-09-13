@@ -15,7 +15,17 @@ interface SmokingLogScreenProps {
 
 export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBookAppointment, onOpenAiCheckin }) => {
   const { user, token, apiUrl } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+
+  const LOCALE_MAP: Record<string, string> = {
+    en: 'en-US',
+    ta: 'ta-IN',
+    te: 'te-IN',
+    kn: 'kn-IN',
+    hi: 'hi-IN'
+  };
+  const activeLocale = LOCALE_MAP[language] || 'en-US';
+
   const [count, setCount] = useState<number>(0); // Cigarettes / Bidis
   const [chewingCount, setChewingCount] = useState<number>(0); // Chewing tobacco / Gutkha / Khaini
   const [history, setHistory] = useState<HabitLog[]>([]);
@@ -81,7 +91,7 @@ export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBo
     const now = new Date();
     
     history.forEach(h => {
-      const dStr = new Date(h.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' });
+      const dStr = new Date(h.timestamp).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric' });
       const val = h.value || {};
       const sticks = val.cigarettesCount ?? (val.chewingCount === undefined ? (val.count ?? 0) : 0);
       const chewing = val.chewingCount ?? 0;
@@ -92,7 +102,7 @@ export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBo
     const result = [];
     for (let i = 13; i >= 0; i--) {
       const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-      const label = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      const label = d.toLocaleDateString(activeLocale, { month: 'short', day: 'numeric' });
       const data = daysMap[label] || { total: 0, sticks: 0, chewing: 0 };
       result.push({
         date: label,
@@ -293,7 +303,7 @@ export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBo
         <div className="grid grid-cols-3 gap-3 mb-4">
           <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3 shadow-2xs">
             <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">{t('habits.totalLogged', 'Total Logged')}</span>
-            <span className="text-lg font-black text-rose-500 mt-0.5 block">{totalExposure14Days} <span className="text-xs font-semibold text-slate-400">total</span></span>
+            <span className="text-lg font-black text-rose-500 mt-0.5 block">{totalExposure14Days} <span className="text-xs font-semibold text-slate-400">{t('habits.totalWord', 'total')}</span></span>
           </div>
           <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3 shadow-2xs">
             <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">{t('habits.dailyAvg', 'Daily Avg')}</span>
@@ -337,11 +347,11 @@ export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBo
                       return (
                         <div className="bg-slate-900 text-white p-2.5 rounded-xl text-xs shadow-xl border border-slate-800 font-sans space-y-1">
                           <p className="text-[9px] font-bold text-slate-400 uppercase">{data.date}</p>
-                          <p className="font-black text-rose-400">{data.total} Total Exposures</p>
+                          <p className="font-black text-rose-400">{data.total} {t('habits.totalExposuresWord', 'Total Exposures')}</p>
                           <div className="text-[10px] text-slate-300 flex gap-2">
-                            <span>Smoked: {data.sticks} sticks</span>
+                            <span>{t('habits.smokedLabel', 'Smoked')}: {data.sticks}</span>
                             <span>•</span>
-                            <span>Chewed: {data.chewing} pouches</span>
+                            <span>{t('habits.chewedLabel', 'Chewed')}: {data.chewing}</span>
                           </div>
                         </div>
                       );

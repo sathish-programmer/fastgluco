@@ -19,9 +19,18 @@ interface AnalysisProps {
 
 import { Capacitor } from '@capacitor/core';
 
+const LOCALE_MAP: Record<string, string> = {
+  en: 'en-US',
+  ta: 'ta-IN',
+  te: 'te-IN',
+  kn: 'kn-IN',
+  hi: 'hi-IN'
+};
+
 export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
   const { token, apiUrl, branding } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const activeLocale = LOCALE_MAP[language] || 'en-US';
   const isIOSAppStoreBlocked = Capacitor.getPlatform() === 'ios' && !branding.enableIOSExternalPayments;
 
   const [spikeLogs, setSpikeLogs] = useState<any[]>([]);
@@ -118,11 +127,13 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
         <div className="h-16 w-16 bg-blue-50 dark:bg-blue-900/30 text-primary dark:text-primary-light rounded-full flex items-center justify-center mb-4 shadow-soft">
           <CreditCard className="h-8 w-8" />
         </div>
-        <h3 className="text-lg font-extrabold text-slate-800 dark:text-slate-100">{isIOSAppStoreBlocked ? 'Feature Unavailable' : 'Advanced Analytics Locked'}</h3>
+        <h3 className="text-lg font-extrabold text-slate-800 dark:text-slate-100">
+          {isIOSAppStoreBlocked ? t('analysis.featureUnavailable', 'Feature Unavailable') : t('analysis.analyticsLocked', 'Advanced Analytics Locked')}
+        </h3>
         <p className="text-xs text-slate-500 font-semibold max-w-xs mt-2 mb-6">
           {isIOSAppStoreBlocked 
-            ? 'This feature is currently unavailable on iOS.'
-            : 'Advanced glucose trends, food spikes analysis, and classification are available on our premium plans.'}
+            ? t('analysis.iosUnavailable', 'This feature is currently unavailable on iOS.')
+            : t('analysis.lockedDesc', 'Advanced glucose trends, food spikes analysis, and classification are available on our premium plans.')}
         </p>
         {!isIOSAppStoreBlocked && (
           <button
@@ -133,7 +144,7 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
             }}
             className="bg-primary hover:bg-primary-dark text-white font-extrabold px-6 py-3 rounded-2xl shadow-soft transition-all"
           >
-            View Subscription Plans
+            {t('analysis.viewSubscriptionPlans', 'View Subscription Plans')}
           </button>
         )}
       </div>
@@ -171,7 +182,7 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
           </div>
           <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-2">{t('analysis.premiumFeature', 'Premium Feature')}</h3>
           <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 max-w-sm mx-auto">
-            AI Food Analysis requires a premium subscription. Upgrade to see which exact foods are spiking your glucose.
+            {t('analysis.premiumSubscriptionRequired', 'AI Food Analysis requires a premium subscription. Upgrade to see which exact foods are spiking your glucose.')}
           </p>
           {!isIOSAppStoreBlocked && (
             <button
@@ -182,7 +193,7 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
               }}
               className="bg-gradient-to-r from-primary to-indigo-600 dark:from-indigo-600 dark:to-primary-dark text-white px-6 py-3 rounded-2xl font-bold text-sm shadow-sm hover:shadow transition-all"
             >
-              View Subscription Plans
+              {t('analysis.viewSubscriptionPlans', 'View Subscription Plans')}
             </button>
           )}
         </motion.div>
@@ -231,13 +242,13 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
               <div className="flex items-center justify-between bg-primary/10 border border-primary/20 rounded-2xl p-3 mb-5">
                 <div className="flex items-center gap-2 text-primary font-bold text-xs">
                   <Calendar className="h-4 w-4" />
-                  <span>{t('filteredRangeLabel')} <strong>{new Date(customFrom).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })} – {new Date(customTo).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}</strong></span>
+                  <span>{t('filteredRangeLabel')} <strong>{new Date(customFrom).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric', year: 'numeric' })} – {new Date(customTo).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric', year: 'numeric' })}</strong></span>
                 </div>
                 <button
                   onClick={() => setShowAnalysisRangeModal(true)}
                   className="text-xs font-extrabold text-primary underline hover:text-primary-dark"
                 >
-                  Change
+                  {t('common.change', 'Change')}
                 </button>
               </div>
             )}
@@ -251,7 +262,7 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
               <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-[0_12px_24px_rgba(0,0,0,0.02)] rounded-3xl p-4">
                 <h4 className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-3 flex items-center space-x-1.5">
                   <Smile className="h-4 w-4 shrink-0" />
-                  <span>Top Safe Foods (Peak ≤ {topFoods.safeThreshold ?? 90} mg/dL)</span>
+                  <span>{t('analysis.topSafeFoodsTitle', { threshold: topFoods.safeThreshold ?? 90 }, `Top Safe Foods (Peak ≤ ${topFoods.safeThreshold ?? 90} mg/dL)`)}</span>
                 </h4>
                 {topFoods.safe.length === 0 ? (
                   <p className="text-xs text-slate-400 font-medium pl-5">{t('analysis.noFoodsSafe', 'No foods registered as safe yet.')}</p>
@@ -261,7 +272,7 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
                       <div key={i} className="flex justify-between items-center text-xs font-semibold text-slate-700 dark:text-slate-300">
                         <span>{food.name}</span>
                         <span className="text-[9px] text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-2 py-0.5 rounded-full font-bold">
-                          {food.count} logs • {food.avgPeak} mg/dL peak
+                          {t('analysis.foodCountPeak', { count: food.count, peak: food.avgPeak }, `${food.count} logs • ${food.avgPeak} mg/dL peak`)}
                         </span>
                       </div>
                     ))}
@@ -272,7 +283,7 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
               <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-[0_12px_24px_rgba(0,0,0,0.02)] rounded-3xl p-4">
                 <h4 className="text-[10px] font-bold text-amber-500 dark:text-amber-400 uppercase tracking-wider mb-3 flex items-center space-x-1.5">
                   <AlertTriangle className="h-4 w-4 shrink-0" />
-                  <span>Top Moderate Foods ({(topFoods.safeThreshold ?? 90) + 1} - {topFoods.moderateThreshold ?? 110} mg/dL)</span>
+                  <span>{t('analysis.topModerateFoodsTitle', { min: (topFoods.safeThreshold ?? 90) + 1, max: topFoods.moderateThreshold ?? 110 }, `Top Moderate Foods (${(topFoods.safeThreshold ?? 90) + 1} - ${topFoods.moderateThreshold ?? 110} mg/dL)`)}</span>
                 </h4>
                 {topFoods.moderate.length === 0 ? (
                   <p className="text-xs text-slate-400 font-medium pl-5">{t('analysis.noFoodsModerate', 'No foods registered as moderate yet.')}</p>
@@ -282,7 +293,7 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
                       <div key={i} className="flex justify-between items-center text-xs font-semibold text-slate-700 dark:text-slate-300">
                         <span>{food.name}</span>
                         <span className="text-[9px] text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-2 py-0.5 rounded-full font-bold">
-                          {food.count} logs • {food.avgPeak} mg/dL peak
+                          {t('analysis.foodCountPeak', { count: food.count, peak: food.avgPeak }, `${food.count} logs • ${food.avgPeak} mg/dL peak`)}
                         </span>
                       </div>
                     ))}
@@ -294,7 +305,7 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
               <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-[0_12px_24px_rgba(0,0,0,0.02)] rounded-3xl p-4">
                 <h4 className="text-[10px] font-bold text-rose-500 dark:text-rose-400 uppercase tracking-wider mb-3 flex items-center space-x-1.5">
                   <Frown className="h-4 w-4 shrink-0" />
-                  <span>Top Avoid Foods (Peak &gt; {topFoods.moderateThreshold ?? 110} mg/dL)</span>
+                  <span>{t('analysis.topAvoidFoodsTitle', { threshold: topFoods.moderateThreshold ?? 110 }, `Top Avoid Foods (Peak > ${topFoods.moderateThreshold ?? 110} mg/dL)`)}</span>
                 </h4>
                 {topFoods.avoid.length === 0 ? (
                   <p className="text-xs text-slate-400 font-medium pl-5">{t('analysis.noFoodsAvoid', 'No foods registered to avoid yet.')}</p>
@@ -304,7 +315,7 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
                       <div key={i} className="flex justify-between items-center text-xs font-semibold text-slate-700 dark:text-slate-300">
                         <span>{food.name}</span>
                         <span className="text-[9px] text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-2 py-0.5 rounded-full font-bold">
-                          {food.count} logs • {food.avgPeak} mg/dL peak
+                          {t('analysis.foodCountPeak', { count: food.count, peak: food.avgPeak }, `${food.count} logs • ${food.avgPeak} mg/dL peak`)}
                         </span>
                       </div>
                     ))}
@@ -340,7 +351,7 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
                         <div>
                           <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100">{log.name}</h4>
                           <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                            {new Date(log.loggedAt).toLocaleDateString([], { dateStyle: 'medium' })} • {log.mealType}
+                            {new Date(log.loggedAt).toLocaleDateString(activeLocale, { dateStyle: 'medium' })} • {t('foodLog.' + (log.mealType || '').toLowerCase(), log.mealType)}
                           </span>
                         </div>
                         <span className={`inline-flex items-center text-[9px] font-bold px-2 py-0.5 rounded-full border shadow-sm ${
@@ -348,7 +359,7 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
                           analysis.status === 'Moderate' ? 'bg-amber-50 text-warning border-amber-100/70' :
                           'bg-rose-50 text-danger border-rose-100/70'
                         }`}>
-                          {analysis.status}
+                          {analysis.status === 'Safe' ? t('food.status.safe', 'Safe') : analysis.status === 'Moderate' ? t('food.status.moderate', 'Moderate') : t('food.status.avoid', 'Avoid')}
                         </span>
                       </div>
 
@@ -425,7 +436,7 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
             <div className="space-y-4 my-5">
               <div>
                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                  Start Date (From)
+                  {t('common.startDateFrom', 'Start Date (From)')}
                 </label>
                 <input
                   type="date"
@@ -437,7 +448,7 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
 
               <div>
                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                  End Date (To)
+                  {t('common.endDateTo', 'End Date (To)')}
                 </label>
                 <input
                   type="date"
@@ -454,7 +465,7 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
                 onClick={() => setShowAnalysisRangeModal(false)}
                 className="flex-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-extrabold py-3.5 rounded-2xl transition-all"
               >
-                Cancel
+                {t('common.cancel', 'Cancel')}
               </button>
               <button
                 type="button"
@@ -466,7 +477,7 @@ export const Analysis: React.FC<AnalysisProps> = ({ onNavigateToTab }) => {
                 }}
                 className="flex-1 bg-primary hover:bg-primary-dark text-white text-xs font-extrabold py-3.5 rounded-2xl transition-all shadow-md shadow-primary/20"
               >
-                Apply Range
+                {t('common.applyRange', 'Apply Range')}
               </button>
             </div>
           </div>

@@ -10,10 +10,19 @@ interface StillnessLogScreenProps {
   onBack: () => void;
 }
 
+const LOCALE_MAP: Record<string, string> = {
+  en: 'en-US',
+  ta: 'ta-IN',
+  te: 'te-IN',
+  kn: 'kn-IN',
+  hi: 'hi-IN'
+};
+
 export const StillnessLogScreen: React.FC<StillnessLogScreenProps> = ({ onBack }) => {
   const { user, token, apiUrl } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { showToast } = useToast();
+  const activeLocale = LOCALE_MAP[language] || 'en-US';
   const [didSit, setDidSit] = useState<boolean | null>(null);
   const [reminderTime, setReminderTime] = useState('06:30');
   const [loading, setLoading] = useState(false);
@@ -166,7 +175,7 @@ export const StillnessLogScreen: React.FC<StillnessLogScreenProps> = ({ onBack }
                     {h.value.sat ? '🧘' : '☁️'} {h.value.sat ? t('habits.meditatedOver10', 'Meditated (>=10 min)') : t('common.no', 'No')}
                   </span>
                   <span className="text-[10px] text-slate-400 mt-1 block">
-                    {new Date(h.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                    {new Date(h.timestamp).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric' })}
                   </span>
                 </div>
                 {h.value.sat ? (

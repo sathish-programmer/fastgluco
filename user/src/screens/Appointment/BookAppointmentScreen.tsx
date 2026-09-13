@@ -28,21 +28,47 @@ const isExpired = (apptDate: string, apptTime: string) => {
   }
 };
 
-const formatDate = (dateStr: string | undefined | null): string => {
-  if (!dateStr) return '--';
-  try {
-    const isPlain = /^\d{4}-\d{2}-\d{2}$/.test(dateStr.trim());
-    const date = isPlain ? new Date(dateStr + 'T00:00:00') : new Date(dateStr);
-    if (isNaN(date.getTime())) return dateStr;
-    return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-  } catch { return dateStr; }
+const LOCALE_MAP: Record<string, string> = {
+  en: 'en-US',
+  ta: 'ta-IN',
+  te: 'te-IN',
+  kn: 'kn-IN',
+  hi: 'hi-IN'
 };
 
 export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ onBack }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const activeLocale = LOCALE_MAP[language] || 'en-US';
   const { apiUrl, token, user } = useAuth();
   const { showToast } = useToast();
   const { pendingRecommendationId, setPendingRecommendationId } = useConsultation();
+
+  const formatDate = (dateStr: string | undefined | null): string => {
+    if (!dateStr) return '--';
+    try {
+      const isPlain = /^\d{4}-\d{2}-\d{2}$/.test(dateStr.trim());
+      const date = isPlain ? new Date(dateStr + 'T00:00:00') : new Date(dateStr);
+      if (isNaN(date.getTime())) return dateStr;
+      return date.toLocaleDateString(activeLocale, { day: '2-digit', month: 'short', year: 'numeric' });
+    } catch { return dateStr; }
+  };
+
+  const getLocalizedReason = (reasonStr: string) => {
+    if (!reasonStr) return '';
+    const reasonMap: Record<string, string> = {
+      'General Consultation': t('appointment.generalConsultation', 'General Consultation'),
+      'Diabetes Consultation': t('appointment.diabetesConsultation', 'Diabetes Consultation'),
+      'Endocrinologist Consultation': t('appointment.endocrinologistConsultation', 'Endocrinologist Consultation'),
+      'Dentist Consultation': t('appointment.dentistConsultation', 'Dentist Consultation'),
+      'Gastric Specialist Consultation': t('appointment.gastricSpecialistConsultation', 'Gastric Specialist Consultation'),
+      'Genetic Counselor Consultation': t('appointment.geneticCounselorConsultation', 'Genetic Counselor Consultation'),
+      'Sleep Issues': t('appointment.sleepIssues', 'Sleep Issues'),
+      'Smoking': t('appointment.smoking', 'Smoking'),
+      'Sex Health': t('appointment.sexHealth', 'Sex Health'),
+      'Other': t('common.other', 'Other')
+    };
+    return reasonMap[reasonStr] || reasonStr;
+  };
 
   const [doctors, setDoctors] = useState<any[]>([]);
   const [selectedDoctor, setSelectedDoctor] = useState<any | null>(null);
@@ -663,7 +689,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
         <div className="space-y-4">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-3xl p-5 transition-colors duration-300">
             <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
-              <Clock className="h-5 w-5 text-indigo-500" /> Upcoming & Past Visits
+              <Clock className="h-5 w-5 text-indigo-500" /> {t('appointment.upcomingAndPastVisits', 'Upcoming & Past Visits')}
             </h3>
 
             <div className="space-y-3 overflow-y-auto max-h-[500px]">
@@ -672,7 +698,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                   <div className="flex justify-between items-start">
                     <div>
                       <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">Dr. {appt.doctorId.name}</h4>
-                      <p className="text-[10px] text-slate-400 uppercase font-mono tracking-wide">{formatDate(appt.date)} at {appt.time}</p>
+                      <p className="text-[10px] text-slate-400 uppercase font-mono tracking-wide">{formatDate(appt.date)} {t('common.at', 'at')} {appt.time}</p>
                     </div>
                     <div className="flex flex-col items-end gap-1">
                       <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
@@ -689,22 +715,28 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                                   : 'bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400'
                       }`}>
                         {appt.paymentStatus === 'failed' 
-                          ? 'Payment Failed' 
+                          ? t('appointment.paymentFailed', 'Payment Failed') 
                           : (appt.status === 'pending' || appt.status === 'confirmed') && isExpired(appt.date, appt.time)
-                            ? 'Expired'
-                            : appt.status}
+                            ? t('appointment.expired', 'Expired')
+                            : appt.status === 'confirmed'
+                              ? t('appointment.confirmed', 'Confirmed')
+                              : appt.status === 'completed'
+                                ? t('appointment.completed', 'Completed')
+                                : appt.status === 'cancelled'
+                                  ? t('appointment.cancelled', 'Cancelled')
+                                  : t('appointment.pending', 'Pending')}
                       </span>
                       <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md uppercase ${appt.type === 'online' ? 'bg-teal-50 dark:bg-teal-950/20 text-teal-600' : 'bg-purple-50 dark:bg-purple-950/20 text-purple-600'}`}>
-                        {appt.type || 'offline'}
+                        {appt.type === 'online' ? t('appointment.online', 'Online') : t('appointment.offline', 'Offline')}
                       </span>
                     </div>
                   </div>
                   
-                  <p className="text-xs text-slate-655 dark:text-slate-350"><strong className="text-slate-400">{t('diag.reason', 'Reason:')}</strong> {appt.reason}</p>
+                  <p className="text-xs text-slate-655 dark:text-slate-350"><strong className="text-slate-400">{t('diag.reason', 'Reason:')}</strong> {getLocalizedReason(appt.reason)}</p>
 
                   {appt.patientNotes?.trim() && (
                     <div className="bg-indigo-50/40 dark:bg-indigo-950/10 border border-indigo-100/50 dark:border-indigo-900/30 rounded-xl p-3">
-                      <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider mb-1">📝 My Notes to Doctor:</p>
+                      <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider mb-1">{t('appt.myNotesToDoctor', '📝 My Notes to Doctor:')}</p>
                       <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">{appt.patientNotes}</p>
                     </div>
                   )}
@@ -718,12 +750,12 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                         className="block text-center w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold shadow-sm transition-all"
                       >
                         {appt.meetingLink.includes('calendar.app.google') || appt.meetingLink.includes('calendar.google.com')
-                          ? 'Open Google Calendar Invite'
-                          : 'Join Google Meet'}
+                          ? t('appt.openCalendarInvite', 'Open Google Calendar Invite')
+                          : t('appt.joinGoogleMeet', 'Join Google Meet')}
                       </a>
                     ) : (
                       <div className="bg-purple-50 border border-purple-100 rounded-xl p-3 space-y-1.5">
-                        <p className="text-[9px] font-bold text-purple-400 uppercase tracking-wider">🏥 Clinic Instructions from Doctor:</p>
+                        <p className="text-[9px] font-bold text-purple-400 uppercase tracking-wider">{t('appt.clinicInstructions', '🏥 Clinic Instructions from Doctor:')}</p>
                         <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-wrap">{appt.meetingLink}</p>
                       </div>
                     )
@@ -757,7 +789,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                       }}
                       className="block text-center w-full py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-xs font-bold mt-2 shadow-sm transition-all"
                     >
-                      View Prescription Attachment
+                      {t('diag.viewPrescriptionAttachment', 'View Prescription Attachment')}
                     </button>
                   )}
 
@@ -768,7 +800,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                       rel="noopener noreferrer"
                       className="block text-center w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold mt-2 shadow-sm transition-all"
                     >
-                      Download Invoice PDF
+                      {t('diag.downloadInvoicePdf', 'Download Invoice PDF')}
                     </a>
                   )}
 
@@ -777,7 +809,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                       onClick={() => setRatingApptId(appt._id)}
                       className="w-full py-2 text-xs font-bold text-indigo-500 bg-indigo-50 dark:bg-indigo-950/20 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900 transition-colors mt-2"
                     >
-                      Give Feedback & Rating
+                      {t('diag.giveFeedbackRating', 'Give Feedback & Rating')}
                     </button>
                   )}
 
@@ -806,11 +838,11 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
         <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
           <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-md p-6 shadow-xl border border-slate-100 dark:border-slate-800">
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-slate-800 dark:text-slate-100">
-              <Star className="h-5 w-5 text-amber-500 fill-amber-500" /> Consultation Feedback
+              <Star className="h-5 w-5 text-amber-500 fill-amber-500" /> {t('diag.consultationFeedback', 'Consultation Feedback')}
             </h3>
             <form onSubmit={handleFeedbackSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-2">Rating</label>
+                <label className="block text-xs font-bold text-slate-500 mb-2">{t('diag.ratingLabel', 'Rating')}</label>
                 <div className="flex gap-2 justify-center py-2">
                   {[1, 2, 3, 4, 5].map(star => (
                     <button
@@ -841,13 +873,13 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                   onClick={() => setRatingApptId(null)}
                   className="px-4 py-2 bg-slate-100 rounded-xl text-sm font-bold text-slate-600"
                 >
-                  Cancel
+                  {t('common.cancel', 'Cancel')}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 bg-indigo-600 rounded-xl text-sm font-bold text-white shadow-sm hover:bg-indigo-700"
                 >
-                  Submit
+                  {t('common.submit', 'Submit')}
                 </button>
               </div>
             </form>

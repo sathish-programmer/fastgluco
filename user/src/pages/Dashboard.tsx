@@ -86,11 +86,20 @@ const StabilityScoreGauge: React.FC<StabilityScoreGaugeProps> = ({ percentage, s
   );
 };
 
+const LOCALE_MAP: Record<string, string> = {
+  en: 'en-US',
+  ta: 'ta-IN',
+  te: 'te-IN',
+  kn: 'kn-IN',
+  hi: 'hi-IN'
+};
+
 export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features, onBackToTugOfWar }) => {
   const { token, user, apiUrl, branding, activeMode } = useAuth();
   const { showToast } = useToast();
   const { setPendingRecommendationId } = useConsultation();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const activeLocale = LOCALE_MAP[language] || 'en-US';
 
   const getTodayDateStr = () => {
     const d = new Date();
@@ -149,6 +158,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
     window.addEventListener('openDailyCheckinChatbot', handleOpen);
     return () => window.removeEventListener('openDailyCheckinChatbot', handleOpen);
   }, []);
+
+  const getLocalizedInsight = (text: string) => {
+    if (!text) return text;
+    if (text.includes("Walking for 10-15 minutes after major meals")) return t('insight.walkingAfterMeals', text);
+    if (text.includes("Staying hydrated is key!")) return t('insight.stayingHydrated', text);
+    if (text.includes("Pair your carbohydrates with healthy fats or proteins")) return t('insight.pairCarbsWithProtein', text);
+    if (text.includes("Getting 7-8 hours of quality sleep")) return t('insight.qualitySleepInsulin', text);
+    if (text.includes("High stress releases cortisol")) return t('insight.stressCortisolGlucose', text);
+    if (text.includes("Try to eat your meals in this order")) return t('insight.eatMealsInOrder', text);
+    return text;
+  };
 
   const handleDateStep = (direction: 'prev' | 'next') => {
     const parts = selectedDate.split('-');
@@ -287,8 +307,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
   // Dynamically calculate glucose stability hours below spikeThreshold (defaults to 90)
   const calculateStabilityHours = () => {
     const targetHoursPerDay = 17;
-    const unitText = dateRange === 'day' ? 'hours / 24h' : 'hours / day (avg)';
-    const defaultTargetText = `Target: Stay below ${spikeThreshold} mg/dL for 17 hrs a day`;
+    const unitText = dateRange === 'day' ? t('dash.hours24h', 'hours / 24h') : t('dash.hoursDayAvg', 'hours / day (avg)');
+    const defaultTargetText = t('dash.stabilityTarget', { threshold: spikeThreshold }, `Target: Stay below ${spikeThreshold} mg/dL for 17 hrs a day`);
 
     // 1. If we have readings in database for the queried period (Day, Week, Month, or Custom)
     if (glucoseReadings.length > 0) {
@@ -877,7 +897,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
           const ds = latestSummaryReport.dailySummaries?.find((s: any) => s.dateString === dKey || s.date?.toString().startsWith(dKey));
           const dayAvg = ds?.averageGlucose || repAvg;
           const scaleFactor = dayAvg / repAvg;
-          const dateLabel = cur.toLocaleDateString([], { day: 'numeric', month: 'short' });
+          const dateLabel = cur.toLocaleDateString(activeLocale, { day: 'numeric', month: 'short' });
 
           // Plot 12 2-hourly pattern points per day across the full 24h cycle
           const dayHourOffsets = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22];
@@ -909,8 +929,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
         return {
           ...r,
           timestampMs: date.getTime(),
-          timeLabel: r.timeLabel || (dateRange === 'day' ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : date.toLocaleDateString([], { month: 'short', day: 'numeric' })),
-          displayLabel: date.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }),
+          timeLabel: r.timeLabel || (dateRange === 'day' ? date.toLocaleTimeString(activeLocale, { hour: '2-digit', minute: '2-digit' }) : date.toLocaleDateString(activeLocale, { month: 'short', day: 'numeric' })),
+          displayLabel: date.toLocaleString(activeLocale, { dateStyle: 'short', timeStyle: 'short' }),
           meal: null as any
         };
       } catch (e) {
@@ -977,11 +997,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
       const dateObj = data.timestamp ? new Date(data.timestamp) : (label ? new Date(label) : null);
       let dateString = '';
       if (dateObj && !isNaN(dateObj.getTime())) {
-        dateString = `${dateObj.toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' })} • ${dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+        dateString = `${dateObj.toLocaleDateString(activeLocale, { day: 'numeric', month: 'short', year: 'numeric' })} • ${dateObj.toLocaleTimeString(activeLocale, { hour: '2-digit', minute: '2-digit' })}`;
       } else if (data.hourLabel) {
-        dateString = `${data.hourLabel} • Glucose Reading`;
+        dateString = `${data.hourLabel} • ${t('dashboard.glucoseReading', 'Glucose Reading')}`;
       } else {
-        dateString = 'Glucose Reading';
+        dateString = t('dashboard.glucoseReading', 'Glucose Reading');
       }
 
       return (
@@ -1000,7 +1020,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
 
           {/* Reading Line */}
           <div className="flex items-baseline justify-between mb-1">
-            <span className="text-xs font-semibold text-slate-400">Glucose Level:</span>
+            <span className="text-xs font-semibold text-slate-400">{t('dash.glucoseLevel', 'Glucose Level:')}</span>
             <div className="flex items-baseline gap-1">
               <span className="text-lg font-black text-white tracking-tight">{val}</span>
               <span className="text-[10px] font-bold text-slate-400">mg/dL</span>
@@ -1009,8 +1029,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
 
           {/* Target Reference Info */}
           <div className="flex items-center justify-between text-[8.5px] text-slate-400 pt-1 border-t border-slate-800/80">
-            <span>Target: 70–{spikeThreshold} mg/dL</span>
-            <span className="text-slate-500 font-medium">LibreView CGM</span>
+            <span>{t('dash.targetRange', { max: spikeThreshold })}</span>
+            <span className="text-slate-500 font-medium">{t('dash.libreviewCgm', 'LibreView CGM')}</span>
           </div>
 
           {/* Meal details if logged */}
@@ -1019,10 +1039,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
               <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block mb-1">{t('dash.loggedMeal', 'Logged Meal')}</span>
               <p className="text-xs font-bold text-rose-400 truncate mb-1.5" title={data.meal.name}>🍴 {data.meal.name}</p>
               <div className="grid grid-cols-2 gap-1.5 text-[9px] text-slate-300 bg-slate-950/60 p-2 rounded-xl border border-slate-800">
-                <div>Calories: <span className="font-bold text-white">{data.meal.calories ?? 0} kcal</span></div>
-                <div>Carbs: <span className="font-bold text-white">{data.meal.carbs ?? 0}g</span></div>
-                <div>Protein: <span className="font-bold text-white">{data.meal.protein ?? 0}g</span></div>
-                <div>Fat: <span className="font-bold text-white">{data.meal.fat ?? 0}g</span></div>
+                <div>{t('foodLog.calories', 'Calories')}: <span className="font-bold text-white">{data.meal.calories ?? 0} kcal</span></div>
+                <div>{t('foodLog.carbs', 'Carbs')}: <span className="font-bold text-white">{data.meal.carbs ?? 0}g</span></div>
+                <div>{t('foodLog.protein', 'Protein')}: <span className="font-bold text-white">{data.meal.protein ?? 0}g</span></div>
+                <div>{t('foodLog.fat', 'Fat')}: <span className="font-bold text-white">{data.meal.fat ?? 0}g</span></div>
               </div>
             </div>
           )}
@@ -1125,13 +1145,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
         <div className="mb-5 p-4 bg-teal-50 border border-teal-100 rounded-3xl flex items-center justify-between shadow-soft animate-slide-in">
           <div className="flex items-center space-x-3 text-teal-800 text-sm font-semibold">
             <Info className="h-5 w-5 text-teal-600 shrink-0" />
-            <span>{offlineMealsCount} meal log(s) queued offline.</span>
+            <span>{t('dash.offlineMealsQueued', { count: offlineMealsCount }, `${offlineMealsCount} meal log(s) queued offline.`)}</span>
           </div>
           <button
             onClick={handleSyncOffline}
             className="bg-secondary hover:bg-secondary-dark text-white text-xs font-bold px-4 py-2 rounded-xl transition-all active:scale-95"
           >
-            Sync Now
+            {t('dash.syncNow', 'Sync Now')}
           </button>
         </div>
       )}
@@ -1152,7 +1172,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
             <div>
               <h4 className="font-extrabold text-emerald-850 dark:text-emerald-300 text-xs">{t('dash.upcomingApptScheduled', 'Upcoming Consultation Scheduled')}</h4>
               <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-1 leading-relaxed">
-                Your appointment with <strong>Dr. {upcomingAppt.doctorId?.name || 'Specialist'}</strong> is scheduled on <strong>{upcomingAppt.date}</strong> at <strong>{upcomingAppt.time}</strong>.
+                {t('dash.yourApptWith', 'Your appointment with')} <strong>Dr. {upcomingAppt.doctorId?.name || t('common.specialist', 'Specialist')}</strong> {t('appointmentScheduledOn')} <strong>{upcomingAppt.date}</strong> {t('appointmentAtTime')} <strong>{upcomingAppt.time}</strong>.
               </p>
               {upcomingAppt.meetingLink && (
                 <a
@@ -1162,8 +1182,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
                   className="inline-block mt-3 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-750 px-4 py-2 rounded-xl shadow-sm transition-all"
                 >
                   {upcomingAppt.meetingLink.includes('calendar.app.google') || upcomingAppt.meetingLink.includes('calendar.google.com')
-                    ? 'Open Google Calendar Invite'
-                    : 'Join Google Meet'}
+                    ? t('dash.openGoogleCalendar', 'Open Google Calendar Invite')
+                    : t('dash.joinGoogleMeet', 'Join Google Meet')}
                 </a>
               )}
             </div>
@@ -1218,7 +1238,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
                 {stability.status === 'On Track' && <Activity className="h-2.5 w-2.5 text-amber-500" />}
                 {stability.status === 'No Data' && <Activity className="h-2.5 w-2.5 text-slate-400" />}
                 {stability.status !== 'Goal Achieved' && stability.status !== 'On Track' && stability.status !== 'No Data' && <AlertTriangle className="h-2.5 w-2.5 text-rose-500" />}
-                <span>{stability.status === 'Goal Achieved' ? 'Goal Met' : stability.status === 'On Track' ? 'On Track' : stability.status === 'No Data' ? 'No Data' : 'Attention'}</span>
+                <span>{stability.status === 'Goal Achieved' ? t('dash.goalMet', 'Goal Met') : stability.status === 'On Track' ? t('dash.onTrack', 'On Track') : stability.status === 'No Data' ? t('dash.noData', 'No Data') : t('dash.attention', 'Attention')}</span>
               </span>
             </div>
             <div className="mt-1 flex items-baseline space-x-1">
@@ -1378,7 +1398,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-xs shadow-emerald-500/80"></span>
                     </div>
                     <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-100">
-                      Glucose Curve
+                      {t('dashboard.glucoseCurve', 'Glucose Curve')}
                     </h3>
                   </div>
 
@@ -1400,7 +1420,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
                             const endD = new Date(selectedDate);
                             const startD = new Date(selectedDate);
                             startD.setDate(startD.getDate() - 6);
-                            return `${startD.toLocaleDateString([], { month: 'short', day: 'numeric' })} – ${endD.toLocaleDateString([], { month: 'short', day: 'numeric' })}`;
+                            return `${startD.toLocaleDateString(activeLocale, { month: 'short', day: 'numeric' })} – ${endD.toLocaleDateString(activeLocale, { month: 'short', day: 'numeric' })}`;
                           })()}
                         </span>
                       ) : dateRange === 'month' ? (
@@ -1409,12 +1429,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
                             const endD = new Date(selectedDate);
                             const startD = new Date(selectedDate);
                             startD.setDate(startD.getDate() - 29);
-                            return `${startD.toLocaleDateString([], { month: 'short', day: 'numeric' })} – ${endD.toLocaleDateString([], { month: 'short', day: 'numeric' })}`;
+                            return `${startD.toLocaleDateString(activeLocale, { month: 'short', day: 'numeric' })} – ${endD.toLocaleDateString(activeLocale, { month: 'short', day: 'numeric' })}`;
                           })()}
                         </span>
                       ) : dateRange === 'custom' && customStartDate && customEndDate ? (
                         <button onClick={() => setShowRangeModal(true)} className="hover:underline cursor-pointer">
-                          {new Date(customStartDate).toLocaleDateString([], { month: 'short', day: 'numeric' })} – {new Date(customEndDate).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                          {new Date(customStartDate).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric' })} – {new Date(customEndDate).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric' })}
                         </button>
                       ) : (
                         <input
@@ -1455,7 +1475,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
                             : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'
                         }`}
                       >
-                        {mode === 'custom' ? 'Custom' : mode}
+                        {mode === 'day' ? t('dashboard.day', 'Day') : mode === 'week' ? t('dashboard.week', 'Week') : mode === 'month' ? t('dashboard.month', 'Month') : t('common.customRange', 'Custom')}
                       </button>
                     ))}
                   </div>
@@ -1572,7 +1592,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
                 <div className="h-48 w-full flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 dark:bg-slate-800/30 rounded-2xl border border-dashed border-slate-200/80 dark:border-slate-700 p-4">
                   <Activity className="h-7 w-7 mb-2 opacity-40 text-primary" />
                   <p className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
-                    No Data Available for {dateRange === 'day' ? (selectedDate === getTodayDateStr() ? 'Today' : `Selected Date (${selectedDate})`) : dateRange === 'week' ? 'This Week' : 'This Month'}
+                    {t('dashboard.noDataAvailableFor', 'No Data Available for')} {
+                      dateRange === 'day' 
+                        ? (selectedDate === getTodayDateStr() ? t('dashboard.today', 'Today') : `${t('dashboard.selectedDate', 'Selected Date')} (${selectedDate})`) 
+                        : dateRange === 'week' 
+                          ? t('dashboard.thisWeek', 'This Week') 
+                          : dateRange === 'month'
+                            ? t('dashboard.thisMonth', 'This Month')
+                            : t('common.customRange', 'Custom Range')
+                    }
                   </p>
                   <p className="text-[10px] text-slate-400 mt-0.5 text-center max-w-[220px] mb-3">{t('dash.uploadCgmPrompt', 'Upload a CGM CSV or PDF report to view continuous glucose insights.')}</p>
                   <button
@@ -1773,7 +1801,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
           </div>
           <div className="bg-gradient-to-r from-slate-50 to-slate-100/50 dark:from-slate-800/50 dark:to-slate-900/50 border border-slate-200/30 dark:border-slate-800 p-4 rounded-2xl">
             <p className="text-xs text-slate-650 dark:text-slate-300 leading-relaxed font-semibold">
-              {healthInsight}
+              {getLocalizedInsight(healthInsight)}
             </p>
             <p className="text-[9px] text-slate-400 mt-3 pt-2 border-t border-slate-200/50 dark:border-slate-700 italic leading-relaxed">
               {t('dashboard.geminiAiDisclaimer', '* Insights are generated by a third-party AI provider (Google Gemini) based on your input. Do not use this as a substitute for professional medical advice. Always consult a doctor before making medical decisions.')}
@@ -1841,13 +1869,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
           </div>
           <div>
             <h4 className="text-sm font-extrabold text-slate-800 dark:text-slate-100">{t('dash.uploadedReports', 'Uploaded Reports')}</h4>
-            <p className="text-xs text-slate-400 font-semibold mt-0.5">CGM history & sync details</p>
+            <p className="text-xs text-slate-400 font-semibold mt-0.5">{t('dash.cgmHistoryDetails', 'CGM history & sync details')}</p>
           </div>
         </div>
         <div className="flex items-center space-x-3">
           <div className="text-right bg-primary/5 border border-primary/10 px-4 py-2 rounded-2xl font-bold text-primary flex items-baseline space-x-1 shadow-sm">
             <span className="text-lg font-black leading-none">{reportsCount}</span>
-            <span className="text-[9px] text-primary/80 font-extrabold block uppercase tracking-wider">files</span>
+            <span className="text-[9px] text-primary/80 font-extrabold block uppercase tracking-wider">{t('dash.filesCount', 'files')}</span>
           </div>
           <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
         </div>
@@ -1858,13 +1886,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 w-full max-w-sm border border-slate-150 dark:border-slate-800 shadow-2xl animate-scaleIn text-slate-800 dark:text-slate-100">
             <h3 className="text-lg font-black text-slate-900 mb-1">{t('dash.logGlucoseReading', 'Log Glucose Reading')}</h3>
             <p className="text-xs text-slate-400 font-semibold mb-5">
-              Enter a manual blood glucose reading from your glucometer.
+              {t('dash.logManualReadingPrompt', 'Enter a manual blood glucose reading from your glucometer.')}
             </p>
 
             <form onSubmit={handleLogGlucose} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                  Glucose Level (mg/dL)
+                  {t('dash.glucoseLevel', 'Glucose Level')} (mg/dL)
                 </label>
                 <input
                   type="number"
@@ -1898,14 +1926,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
                   onClick={() => setShowGlucoseModal(false)}
                   className="flex-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-655 dark:text-slate-300 text-xs font-extrabold py-3.5 rounded-2xl transition-all"
                 >
-                  Cancel
+                  {t('common.cancel', 'Cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={submittingGlucose}
                   className="flex-1 bg-primary hover:bg-primary-dark text-white text-xs font-extrabold py-3.5 rounded-2xl transition-all shadow-md shadow-primary/20 flex items-center justify-center disabled:opacity-50"
                 >
-                  {submittingGlucose ? 'Saving...' : 'Save Glucose'}
+                  {submittingGlucose ? t('common.saving', 'Saving...') : t('dash.saveGlucose', 'Save Glucose')}
                 </button>
               </div>
             </form>
@@ -1921,7 +1949,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
             </div>
             <h3 className="text-lg font-black text-slate-900 mb-1">{t('dash.consultDietician', 'Consult a Dietician')}</h3>
             <p className="text-xs text-slate-500 leading-relaxed mb-5">
-              Your CGM data shows you are not able to achieve a blood sugar level of &lt;90 mg/dL for at least 14 hours. We highly recommend consulting a dietician.
+              {t('dash.cgm14HoursWarning', 'Your CGM data shows you are not able to achieve a blood sugar level of <90 mg/dL for at least 14 hours. We highly recommend consulting a dietician.')}
             </p>
             <div className="flex flex-col gap-2">
               <button
@@ -1932,7 +1960,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
                 }}
                 className="w-full bg-primary hover:bg-primary-dark text-white text-xs font-extrabold py-3.5 rounded-2xl transition-all shadow-sm"
               >
-                Book Dietician Consult
+                {t('dash.bookDieticianConsult', 'Book Dietician Consult')}
               </button>
               <button
                 onClick={() => {
@@ -1941,7 +1969,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
                 }}
                 className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-extrabold py-3.5 rounded-2xl transition-all"
               >
-                Dismiss
+                {t('dash.dismiss', 'Dismiss')}
               </button>
             </div>
           </div>

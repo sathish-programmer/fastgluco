@@ -6,7 +6,8 @@
       "en": true,
       "ta": true,
       "kn": true,
-      "hi": true
+      "hi": true,
+      "te": true
     }
   },
   {
@@ -16,7 +17,8 @@
       "en": true,
       "ta": true,
       "kn": true,
-      "hi": true
+      "hi": true,
+      "te": true
     }
   },
   {
@@ -26,7 +28,52 @@
       "en": true,
       "ta": true,
       "kn": true,
-      "hi": true
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "navigateToHabitScreen",
+    "fallback": "navigateToHabitScreen",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "logFasterWithAi",
+    "fallback": "Log ${targetFeatureName} 10x Faster with AI!",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "aiCheckinNotice",
+    "fallback": "Did you know? You can answer a quick 60-second voice check-in or upload reports with our AI Assistant — no manual typing needed!",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "continueManually",
+    "fallback": "Continue Manually",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
     }
   },
   {
@@ -36,7 +83,415 @@
       "en": true,
       "ta": true,
       "kn": true,
-      "hi": true
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "mia.returningBetter",
+    "fallback": "I feel noticeably better",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "mia.returningSame",
+    "fallback": "About the same — no real change",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "mia.returningWorse",
+    "fallback": "I feel worse actually",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "mia.returningSome",
+    "fallback": "I tried some things but not all",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "mia.lifestyleTitle",
+    "fallback": "🌿 4 Personalised Changes for You",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "mia.lifestyleOutro",
+    "fallback": "📅 Try these 4 steps today and come back tomorrow to tell me how you feel.",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "mia.feelBetterChoice",
+    "fallback": "I feel noticeably better",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "mia.stillStrugglingChoice",
+    "fallback": "Still struggling / Feeling worse",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "common.stopAudio",
+    "fallback": "Stop Audio",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "common.listenAudio",
+    "fallback": "Listen",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "mia.followUpCardDesc",
+    "fallback": "I've saved your personalised 4-step plan. Please try these steps today and return tomorrow to check in with me. We'll decide your next steps together!",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "mia.feelBetter",
+    "fallback": "I feel better!",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "mia.stillStruggling",
+    "fallback": "Still struggling",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "mia.continueCardTitle",
+    "fallback": "That's wonderful — you're making real progress!",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "mia.continueCardDesc",
+    "fallback": "Keep going with your 4 lifestyle changes for the next 2 full weeks. Small consistent steps create lasting change at the cellular level. Come back anytime you need support. You are doing brilliantly! 💚",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "gia.askFollowupOrBook",
+    "fallback": "Ask Gia any follow-up question or book a counselor below for professional panel ordering.",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "gia.geneticAiCounselor",
+    "fallback": "Genetic AI Counselor",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "gia.guidelinesAdherence",
+    "fallback": "NCCN v2.2025 & ASCO 2024 Guidelines",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "gia.restartAssessment",
+    "fallback": "Restart",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "gia.whatToPrepare",
+    "fallback": "💡 What to prepare for your consultation:",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "gia.quickToolsTitle",
+    "fallback": "Gia's Genetic Counseling Quick Tools",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "gia.highRiskSyndromeGuides",
+    "fallback": "🧬 High-Risk Syndrome Guides",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "gia.brcaDesc",
+    "fallback": "Hereditary breast & ovarian cancer red flags",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "gia.lynchDesc",
+    "fallback": "Colorectal & uterine hereditary risk factors",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "gia.pedigreeDesc",
+    "fallback": "How to prepare family medical history tree",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "gia.jumpToQuestion",
+    "fallback": "⚡ Jump to Specific Genetic Question",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "gia.jumpPanelTest",
+    "fallback": "What panel test do I need?",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "gia.jumpPanelTestPrompt",
+    "fallback": "Which multi-gene panel testing should I consider based on my family tree?",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "gia.jumpGinaProtection",
+    "fallback": "Genetic Discrimination Protection (GINA)",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "gia.jumpGinaProtectionPrompt",
+    "fallback": "Explain genetic discrimination protection laws and health insurance implications.",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "gia.jumpDtcVsClinical",
+    "fallback": "Direct-to-Consumer vs Clinical Gene Testing",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "gia.jumpDtcVsClinicalPrompt",
+    "fallback": "What is the difference between 23andMe DTC tests and clinical diagnostic germline testing?",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "gia.jumpVariantMeaning",
+    "fallback": "Pathogenic Variant Meaning",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "gia.jumpVariantMeaningPrompt",
+    "fallback": "What is a Variant of Uncertain Significance (VUS) vs Pathogenic Mutation?",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "gia.inputPlaceholder",
+    "fallback": "Ask Gia about cancer genes, guidelines, or risk...",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "common.default",
+    "fallback": "Default",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "profile.tapToSetDefault",
+    "fallback": "Tap to set default",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
     }
   },
   {
@@ -46,7 +501,8 @@
       "en": true,
       "ta": true,
       "kn": true,
-      "hi": true
+      "hi": true,
+      "te": true
     }
   },
   {
@@ -56,7 +512,8 @@
       "en": true,
       "ta": true,
       "kn": true,
-      "hi": true
+      "hi": true,
+      "te": true
     }
   },
   {
@@ -66,47 +523,8 @@
       "en": true,
       "ta": true,
       "kn": true,
-      "hi": true
-    }
-  },
-  {
-    "key": "foodLog.diet",
-    "fallback": "Diet",
-    "missingIn": {
-      "en": true,
-      "ta": true,
-      "kn": true,
-      "hi": true
-    }
-  },
-  {
-    "key": "ml",
-    "fallback": "ml",
-    "missingIn": {
-      "en": true,
-      "ta": true,
-      "kn": true,
-      "hi": true
-    }
-  },
-  {
-    "key": "g",
-    "fallback": "g",
-    "missingIn": {
-      "en": true,
-      "ta": true,
-      "kn": true,
-      "hi": true
-    }
-  },
-  {
-    "key": "serving",
-    "fallback": "serving",
-    "missingIn": {
-      "en": true,
-      "ta": true,
-      "kn": true,
-      "hi": true
+      "hi": true,
+      "te": true
     }
   },
   {
@@ -116,7 +534,8 @@
       "en": true,
       "ta": true,
       "kn": true,
-      "hi": true
+      "hi": true,
+      "te": true
     }
   },
   {
@@ -126,7 +545,8 @@
       "en": true,
       "ta": true,
       "kn": true,
-      "hi": true
+      "hi": true,
+      "te": true
     }
   },
   {
@@ -136,7 +556,8 @@
       "en": true,
       "ta": true,
       "kn": true,
-      "hi": true
+      "hi": true,
+      "te": true
     }
   },
   {
@@ -146,7 +567,8 @@
       "en": true,
       "ta": true,
       "kn": true,
-      "hi": true
+      "hi": true,
+      "te": true
     }
   },
   {
@@ -156,7 +578,8 @@
       "en": true,
       "ta": true,
       "kn": true,
-      "hi": true
+      "hi": true,
+      "te": true
     }
   },
   {
@@ -166,7 +589,8 @@
       "en": true,
       "ta": true,
       "kn": true,
-      "hi": true
+      "hi": true,
+      "te": true
     }
   },
   {
@@ -176,17 +600,140 @@
       "en": true,
       "ta": true,
       "kn": true,
-      "hi": true
+      "hi": true,
+      "te": true
     }
   },
   {
-    "key": "status",
-    "fallback": "Tracking",
+    "key": "open_whats_new",
+    "fallback": "open_whats_new",
     "missingIn": {
       "en": true,
       "ta": true,
       "kn": true,
-      "hi": true
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "habits.yesMinus1",
+    "fallback": "Yes (-1)",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "habits.noZero",
+    "fallback": "No (0)",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "env.pulmonologistConsultDesc",
+    "fallback": "Your score flags significant particulate, chemical, or passive smoke inhalation risks. Consider speaking to a pulmonologist to check lung health.",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "env.airExposureRecDesc",
+    "fallback": "Reduce your exposure to air pollution and passive second-hand smoke where possible. Use an N95 mask and an air purifier when appropriate.",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "habits.yesSafeZero",
+    "fallback": "Yes (Safe - 0)",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "habits.noRiskMinus1",
+    "fallback": "No (Risk -1)",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "env.naturalKitchenGuidelines",
+    "fallback": "Natural Kitchen & Utensil Guidelines",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "env.lookingForPlasticFree",
+    "fallback": "Looking for plastic-free stainless steel or glass kitchen storage containers?",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "env.doneWithKitchenCategory",
+    "fallback": "Done with Kitchen Category",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "env.airSafetyDesc",
+    "fallback": "Reduce your exposure to air pollution where possible. Use an N95 mask and an air purifier when appropriate.",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
+    }
+  },
+  {
+    "key": "habits.fastingEatingWindowGuidelines",
+    "fallback": "Eating window guidelines: Wind up dinner by 7 PM, take breakfast by 9 AM. Maintain your calorie intake, and avoid processed and unhealthy food.",
+    "missingIn": {
+      "en": true,
+      "ta": true,
+      "kn": true,
+      "hi": true,
+      "te": true
     }
   }
 ]
