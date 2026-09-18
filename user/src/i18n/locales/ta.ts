@@ -2314,7 +2314,7 @@ export const ta = {
   "whatsNew.chooseLanguageSubtitle": "முழு செயலியையும் உங்கள் தாய்மொழியில் அனுபவியுங்கள். மேலே உள்ள தலைப்பிலிருந்தோ சுயவிவரத்திலிருந்தோ எப்போது வேண்டுமானாலும் மாற்றலாம்:",
   "whatsNew.multilingual.title": "பிராந்திய பன்மொழி ஆதரவு",
   "whatsNew.multilingual.desc": "English, தமிழ், తెలుగు, ಕನ್ನಡ மற்றும் हिन्दी ஆகியவற்றில் முழுமையான மொழிபெயர்ப்பு மற்றும் உடனடி மாற்றம்.",
-  "whatsNew.openWhatsNew": "பதிப்பு 5.12.0 இல் புதிய அம்சங்கள்",
+  "whatsNew.openWhatsNew": "பதிப்பு 5.13.0 இல் புதிய அம்சங்கள்",
 
   // --- CRITICAL 5-LANGUAGE AI & SCREEN COMPLETIONS ---
   "common.default": "இயல்புநிலை",
