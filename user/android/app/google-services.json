@@ -12,7 +12,20 @@
           "package_name": "com.mitoreboot.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1063510630357-iq95a8la6ljvstgugn8b1446p2mk921a.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mitoreboot.app",
+            "certificate_hash": "716e62e2445ca8454a44d2523ab4978d7cab55d8"
+          }
+        },
+        {
+          "client_id": "1063510630357-8sum2hv3oppc4edu4i7b4ilmfv6p91ri.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDT2oDnXrC5G2XOWb9bRCrNkn3au138KLo"
@@ -20,7 +33,15 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1063510630357-4o0uc036j3i1tu127atfb9h1pfqh0lq3.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.mitoreboot.app"
+              }
+            }
+          ]
         }
       }
     }

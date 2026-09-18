@@ -26,6 +26,8 @@ public class MainActivity extends BridgeActivity {
         SplashScreen.installSplashScreen(this);
         super.onCreate(savedInstanceState);
         
+
+        
         // Enable modern Edge-to-Edge display (compatible with Android 15/API 35+)
         try {
             EdgeToEdge.enable(this);

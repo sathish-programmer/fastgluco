@@ -22,6 +22,12 @@ const config: CapacitorConfig = {
       '*.idbibank.co.in',
       '*.canarabank.com'
     ]
+  },
+  plugins: {
+    FirebaseAuthentication: {
+      skipNativeAuth: false,
+      providers: ['phone']
+    }
   }
 };
 

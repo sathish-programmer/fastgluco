@@ -41,10 +41,6 @@ export class AdminNotificationService {
           status.sms = { status: 'failed', error: 'User does not have a phone number' };
           continue;
         }
-        if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN || !process.env.TWILIO_PHONE_NUMBER) {
-          status.sms = { status: 'failed', error: 'Twilio environment variables are not configured (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER)' };
-          continue;
-        }
         try {
           const success = await SMSService.sendSMS(
             user.mobileNumber,
@@ -53,7 +49,7 @@ export class AdminNotificationService {
           if (success) {
             status.sms = { status: 'delivered', sentAt: new Date() };
           } else {
-            status.sms = { status: 'failed', error: 'Twilio API failed' };
+            status.sms = { status: 'failed', error: 'SMS delivery failed' };
           }
         } catch (err: any) {
           status.sms = { status: 'failed', error: err.message || 'SMS delivery failed' };

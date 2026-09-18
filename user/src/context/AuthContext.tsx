@@ -81,7 +81,9 @@ interface AuthContextType {
   isLoading: boolean;
   error: string | null;
   isOnline: boolean;
+  sendOtp: (mobileNumber: string, email: string, sendSms?: boolean) => Promise<{ success: boolean; message?: string }>;
   verifyOtp: (mobileNumber: string, otp: string, email: string) => Promise<{ isNewUser: boolean } | null>;
+  loginWithFirebaseToken: (idToken: string, email: string, mobileNumber: string) => Promise<{ isNewUser: boolean } | null>;
   completeOnboarding: (profileData: Partial<UserProfile>) => Promise<boolean>;
   logout: () => void;
   refreshProfile: () => Promise<void>;
@@ -273,6 +275,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loadProfile();
   }, [token]);
 
+  const sendOtp = async (mobileNumber: string, email: string, sendSms: boolean = true): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const response = await fetch(`${apiUrl}/auth/send-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mobileNumber, email, sendSms }),
+      });
+
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        return { success: false, message: `Server error (${response.status})` };
+      }
+
+      const data = await response.json();
+      if (!response.ok) {
+        return { success: false, message: data.message || 'Failed to send OTP.' };
+      }
+      return { success: true, message: data.message };
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Failed to send OTP.' };
+    }
+  };
+
   const verifyOtp = async (mobileNumber: string, otp: string, email: string): Promise<{ isNewUser: boolean } | null> => {
     setIsLoading(true);
     setError(null);
@@ -282,6 +307,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mobileNumber, otp, email }),
       });
+
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        const errorText = await response.text();
+        console.error('[Auth] Server returned non-JSON response:', errorText);
+        throw new Error(`Server returned unexpected format (${response.status}).`);
+      }
 
       const data = await response.json();
 
@@ -295,7 +327,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser({ ...data.user, id: data.user._id || data.user.id });
       return { isNewUser: data.isNewUser };
     } catch (err: any) {
+      console.error('[Auth] verifyOtp error:', err);
       setError(err.message || 'An error occurred during OTP verification.');
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loginWithFirebaseToken = async (idToken: string, email: string, mobileNumber: string): Promise<{ isNewUser: boolean } | null> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`${apiUrl}/auth/firebase-login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken, email, mobileNumber }),
+      });
+
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        const errorText = await response.text();
+        console.error('[Auth] Server returned non-JSON response:', errorText);
+        throw new Error(`Server returned error ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Firebase login verification failed.');
+      }
+
+      localStorage.setItem('fastgluco_token', data.accessToken);
+      localStorage.setItem('fastgluco_refresh_token', data.refreshToken);
+      setToken(data.accessToken);
+      setUser({ ...data.user, id: data.user._id || data.user.id });
+      return { isNewUser: data.isNewUser };
+    } catch (err: any) {
+      console.error('[Auth] loginWithFirebaseToken error:', err);
+      setError(err.message || 'An error occurred during verification.');
       return null;
     } finally {
       setIsLoading(false);
@@ -457,7 +527,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         error,
         isOnline,
+        sendOtp,
         verifyOtp,
+        loginWithFirebaseToken,
         completeOnboarding,
         logout,
         refreshProfile,

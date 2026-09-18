@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import { User } from '../models/User';
 import { Otp } from '../models/Otp';
 import { EmailService } from '../services/emailService';
+import { SMSService } from '../services/smsService';
 import admin from '../config/firebaseAdmin';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_12345!';
@@ -20,19 +21,19 @@ export class AuthController {
         return res.status(400).json({ message: 'Mobile number and email are required.' });
       }
 
-      // Normalize phone number to E.164
-      const cleanPhone = mobileNumber.replace(/[\s\-\(\)]/g, '');
+      // Normalize phone number to E.164 (+91 for 10-digit Indian numbers)
+      const cleanPhone = SMSService.normalizePhoneNumber(mobileNumber);
 
       // APPLE APP STORE REVIEWER BYPASS
-      const isReviewAccount = process.env.ENABLE_APPLE_REVIEW_BYPASS === 'true' && 
-        (cleanPhone === '+15555555555' || cleanPhone === '15555555555' || 
-         cleanPhone === '+919999999999' || cleanPhone === '9999999999' || 
-         cleanPhone === '+919597042107' || cleanPhone === '9597042107' || 
-         cleanPhone === '919597042107' || cleanPhone === '+91919597042107' || cleanPhone === '91919597042107' ||
-         email?.toLowerCase() === 'review@mitoreboot.in' || 
-         email?.toLowerCase() === 'sathishkumarksk007@gmail.com' || 
-         email?.toLowerCase().endsWith('@apple.com'));
-        
+      const isReviewAccount = process.env.ENABLE_APPLE_REVIEW_BYPASS === 'true' &&
+        (cleanPhone === '+15555555555' || cleanPhone === '15555555555' ||
+          cleanPhone === '+919999999999' || cleanPhone === '9999999999' ||
+          cleanPhone === '+919597042108' || cleanPhone === '9597042108' ||
+          cleanPhone === '919597042108' || cleanPhone === '+91919597042108' || cleanPhone === '91919597042108' ||
+          email?.toLowerCase() === 'review@mitoreboot.in' ||
+          email?.toLowerCase() === 'sathishkumar@gmail.com' ||
+          email?.toLowerCase().endsWith('@apple.com'));
+
       if (isReviewAccount) {
         return res.status(200).json({ success: true, message: 'OTP sent successfully (Apple Reviewer Account)' });
       }
@@ -55,7 +56,7 @@ export class AuthController {
         return res.status(400).json({ message: 'This email address is already associated with a different mobile number.' });
       }
 
-      let otpRecord = await Otp.findOne({ 
+      let otpRecord = await Otp.findOne({
         $or: [
           { mobileNumber: cleanPhone },
           { email: cleanEmail }
@@ -67,7 +68,7 @@ export class AuthController {
         if (otpRecord.blockedUntil && otpRecord.blockedUntil > now) {
           return res.status(429).json({ message: 'Too many attempts. Please try again later.' });
         }
-        
+
         // Reset resendCount after 1 hour
         if (now.getTime() - otpRecord.lastSentAt.getTime() > 60 * 60 * 1000) {
           otpRecord.resendCount = 0;
@@ -111,71 +112,27 @@ export class AuthController {
       }
       await otpRecord.save();
 
-      let methodUsed = 'email';
+      let methodUsed = 'sms_and_email';
 
       // Check mock mode
       if (process.env.OTP_MOCK_MODE === 'true') {
         console.log(`[MOCK OTP] OTP for ${cleanPhone} / ${cleanEmail} is: ${plainOtp}`);
         methodUsed = 'mock';
       } else {
-        const config = await PaymentGatewayConfig.findOne();
-        const useTwilio = config?.enableTwilioOtp || (process.env.TWILIO_ACCOUNT_SID ? true : false);
-
-        if (useTwilio) {
-          methodUsed = 'sms_and_email';
-          const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
-          const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
-          const TWILIO_PHONE_NUMBER = process.env.TWILIO_PHONE_NUMBER;
-          
-          if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER) {
-            console.error("Twilio credentials missing in environment variables!", { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER });
-            // Fallback to email only
-            methodUsed = 'email';
-            EmailService.sendOtpEmail(cleanEmail, plainOtp).catch(err => {
-              console.error('[Background] Failed to send OTP email after Twilio config missing:', err);
-            });
-          } else {
-            try {
-              // Call Twilio API using standard fetch
-              const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;
-              
-              const params = new URLSearchParams();
-              params.append('To', cleanPhone);
-              params.append('From', TWILIO_PHONE_NUMBER);
-              params.append('Body', `Your Mito Reboot verification code is: ${plainOtp}. Valid for 10 minutes.`);
-
-              const twilioResponse = await fetch(twilioUrl, {
-                method: 'POST',
-                headers: {
-                  'Authorization': 'Basic ' + Buffer.from(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`).toString('base64'),
-                  'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: params
-              });
-              
-              const twilioData = await twilioResponse.json();
-              
-              if (!twilioResponse.ok) {
-                console.error(`Twilio Error (${twilioResponse.status}):`, twilioData);
-                // Fallback to email only, do not return 500
-                methodUsed = 'email';
-              }
-            } catch (twilioErr) {
-              console.error('Failed to send Twilio SMS due to network/fetch error:', twilioErr);
-              methodUsed = 'email';
-            }
-
-            // Always send OTP via email as fallback/secondary
-            EmailService.sendOtpEmail(cleanEmail, plainOtp).catch(err => {
-              console.error('[Background] Failed to send OTP email:', err);
-            });
-          }
-        } else {
-          // Send via Email (SMTP) asynchronously to avoid blocking the API response
-          EmailService.sendOtpEmail(cleanEmail, plainOtp).catch(err => {
-            console.error('[Background] Failed to send OTP email:', err);
+        const shouldSendSms = req.body.sendSms !== false;
+        if (shouldSendSms) {
+          // 1. Send SMS via Fast2SMS
+          SMSService.sendSMS(cleanPhone, `Your Mito Reboot verification code is: ${plainOtp}. Valid for 10 minutes.`, plainOtp).catch(err => {
+            console.error('[SMS Service] Failed to send SMS via Fast2SMS:', err);
           });
+        } else {
+          methodUsed = 'email_only';
         }
+
+        // 2. ALWAYS send Email via Brevo SMTP / configured email service
+        EmailService.sendOtpEmail(cleanEmail, plainOtp).catch(err => {
+          console.error('[Background] Failed to send OTP email:', err);
+        });
       }
 
       return res.status(200).json({ success: true, message: 'OTP sent successfully', method: methodUsed });
@@ -188,7 +145,7 @@ export class AuthController {
   }
 
   /**
-   * Verify MSG91 OTP
+   * Verify OTP (sent via Fast2SMS / Email)
    */
   public static async verifyOtp(req: Request, res: Response) {
     try {
@@ -197,22 +154,22 @@ export class AuthController {
         return res.status(400).json({ message: 'Mobile number, email and OTP are required.' });
       }
 
-      const cleanPhone = mobileNumber.replace(/[\s\-\(\)]/g, '');
-      
+      const cleanPhone = SMSService.normalizePhoneNumber(mobileNumber);
+
       // APPLE APP STORE REVIEWER BYPASS
-      const isReviewAccount = process.env.ENABLE_APPLE_REVIEW_BYPASS === 'true' && 
-        (cleanPhone === '+15555555555' || cleanPhone === '15555555555' || 
-         cleanPhone === '+919999999999' || cleanPhone === '9999999999' || 
-         cleanPhone === '+919597042107' || cleanPhone === '9597042107' || 
-         email?.toLowerCase() === 'review@mitoreboot.in' || 
-         email?.toLowerCase() === 'sathishkumarksk007@gmail.com' || 
-         email?.toLowerCase().endsWith('@apple.com')) && 
+      const isReviewAccount = process.env.ENABLE_APPLE_REVIEW_BYPASS === 'true' &&
+        (cleanPhone === '+15555555555' || cleanPhone === '15555555555' ||
+          cleanPhone === '+919999999999' || cleanPhone === '9999999999' ||
+          cleanPhone === '+919597042108' || cleanPhone === '9597042108' ||
+          email?.toLowerCase() === 'review@mitoreboot.in' ||
+          email?.toLowerCase() === 'sathishkumar@gmail.com' ||
+          email?.toLowerCase().endsWith('@apple.com')) &&
         otp === '123456';
 
       if (isReviewAccount) {
         // Skip OTP verification, proceed directly to JWT generation
       } else {
-        const otpRecord = await Otp.findOne({ 
+        const otpRecord = await Otp.findOne({
           mobileNumber: cleanPhone,
           email: email.toLowerCase().trim()
         });
@@ -222,10 +179,10 @@ export class AuthController {
         }
 
         const now = new Date();
-        
+
         if (now.getTime() - otpRecord.createdAt.getTime() > 10 * 60 * 1000) {
-           await Otp.deleteOne({ _id: otpRecord._id });
-           return res.status(400).json({ message: 'OTP expired.' });
+          await Otp.deleteOne({ _id: otpRecord._id });
+          return res.status(400).json({ message: 'OTP expired.' });
         }
 
         if (otpRecord.blockedUntil && otpRecord.blockedUntil > now) {
@@ -236,7 +193,7 @@ export class AuthController {
         if (otpRecord.otpHash !== inputHash) {
           otpRecord.attemptCount += 1;
           if (otpRecord.attemptCount >= 3) {
-             otpRecord.blockedUntil = new Date(now.getTime() + 15 * 60 * 1000); // Block for 15 mins
+            otpRecord.blockedUntil = new Date(now.getTime() + 15 * 60 * 1000); // Block for 15 mins
           }
           await otpRecord.save();
           return res.status(400).json({ message: 'Invalid OTP.' });
@@ -303,6 +260,121 @@ export class AuthController {
         }
       });
     } catch (error: any) {
+      return res.status(500).json({ message: error.message || 'An error occurred during verification.' });
+    }
+  }
+
+  /**
+   * Verify Firebase ID Token after successful Phone Auth on client,
+   * find or create user, and issue App JWT.
+   */
+  public static async firebaseLogin(req: Request, res: Response) {
+    try {
+      const { idToken, email, mobileNumber } = req.body;
+      if (!idToken) {
+        return res.status(400).json({ message: 'Firebase ID Token is required.' });
+      }
+
+      // Verify the ID token using Firebase Admin SDK
+      let decodedToken;
+      try {
+        decodedToken = await admin.auth().verifyIdToken(idToken);
+      } catch (tokenErr: any) {
+        console.error('Firebase token verification error:', tokenErr);
+        return res.status(401).json({ message: 'Invalid or expired Firebase verification.' });
+      }
+
+      // Extract verified credentials from decoded token
+      const firebaseUid = decodedToken.uid;
+      const firebasePhone = decodedToken.phone_number;
+
+      if (!firebasePhone) {
+        return res.status(400).json({ message: 'Verified phone number not found in Firebase ID token.' });
+      }
+
+      const cleanPhone = SMSService.normalizePhoneNumber(firebasePhone);
+      const cleanEmail = (decodedToken.email || email || '').toLowerCase().trim();
+
+      // Find existing user by mobileNumber or email
+      let user = null;
+      if (cleanPhone) {
+        user = await User.findOne({ mobileNumber: cleanPhone });
+      }
+      if (!user && cleanEmail) {
+        user = await User.findOne({ email: cleanEmail });
+      }
+
+      let isNewUser = false;
+      if (!user) {
+        user = new User({
+          mobileNumber: cleanPhone,
+          email: cleanEmail,
+          isPhoneVerified: true,
+          spikeThreshold: 90,
+          currency: 'INR'
+        });
+        await user.save();
+        isNewUser = true;
+      } else {
+        if (!user.name) {
+          isNewUser = true;
+        }
+        user.isPhoneVerified = true;
+        if (cleanEmail && !user.email) {
+          user.email = cleanEmail;
+        }
+        if (cleanPhone && !user.mobileNumber) {
+          user.mobileNumber = cleanPhone;
+        }
+        await user.save();
+      }
+
+      if (user.isBlocked) {
+        return res.status(403).json({ message: 'Your account has been suspended by an administrator.' });
+      }
+
+      // Clean up any pending OTP record for this phone/email
+      try {
+        await Otp.deleteMany({
+          $or: [
+            ...(cleanPhone ? [{ mobileNumber: cleanPhone }] : []),
+            ...(cleanEmail ? [{ email: cleanEmail }] : [])
+          ]
+        });
+      } catch (cleanupErr) {
+        console.warn('Failed to cleanup OTP records after Firebase login:', cleanupErr);
+      }
+
+      // Generate App JWT (valid for 365 days)
+      const accessToken = jwt.sign({ id: user._id, email: user.email || '', role: 'User' }, JWT_SECRET, { expiresIn: '365d' });
+      const refreshToken = jwt.sign({ id: user._id, email: user.email || '', role: 'User' }, JWT_REFRESH_SECRET, { expiresIn: '365d' });
+
+      return res.status(200).json({
+        accessToken,
+        refreshToken,
+        isNewUser,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          mobileNumber: user.mobileNumber,
+          gender: user.gender,
+          age: user.age,
+          height: user.height,
+          weight: user.weight,
+          activityLevel: user.activityLevel,
+          goal: user.goal,
+          spikeThreshold: user.spikeThreshold,
+          dailyCalorieTarget: user.dailyCalorieTarget,
+          cancerJourney: user.cancerJourney,
+          cancerDisclaimerAccepted: user.cancerDisclaimerAccepted,
+          termsAccepted: user.termsAccepted || false,
+          termsAcceptedAt: user.termsAcceptedAt,
+          acceptedTermsVersion: user.acceptedTermsVersion || null
+        }
+      });
+    } catch (error: any) {
+      console.error('Firebase Login Controller Error:', error);
       return res.status(500).json({ message: error.message || 'An error occurred during verification.' });
     }
   }

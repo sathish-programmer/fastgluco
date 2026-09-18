@@ -131,6 +131,7 @@ router.post('/admin/upload-media', authenticateToken, requireRole(['SuperAdmin',
 // ==========================================
 router.post('/auth/send-otp', AuthController.sendOtp);
 router.post('/auth/verify-otp', AuthController.verifyOtp);
+router.post('/auth/firebase-login', AuthController.firebaseLogin);
 router.post('/auth/onboard', authenticateToken, AuthController.onboardNewUser);
 
 // Public System Configuration Endpoint
