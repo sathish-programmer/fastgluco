@@ -40,3 +40,7 @@
     public static int d(...);
     public static int i(...);
 }
+
+# Suppress optional Facebook Login SDK warnings used by @capacitor-firebase/authentication
+-dontwarn com.facebook.**
+-dontwarn com.google.android.play.core.**
