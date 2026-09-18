@@ -24,9 +24,14 @@ export class SMSService {
    * Send OTP via Fast2SMS (Instant Indian SMS gateway)
    */
   public static async sendFast2SmsOtp(phoneNumber: string, otp: string): Promise<boolean> {
+    if (process.env.ENABLE_FAST2SMS !== 'true') {
+      console.log('[Fast2SMS] Fast2SMS is explicitly DISABLED on this server (ENABLE_FAST2SMS is not true). Skipping SMS delivery.');
+      return false;
+    }
+
     const apiKey = process.env.FAST2SMS_API_KEY;
-    if (!apiKey) {
-      console.error('[Fast2SMS] Missing FAST2SMS_API_KEY environment variable.');
+    if (!apiKey || apiKey === 'disabled') {
+      console.log('[Fast2SMS] FAST2SMS_API_KEY is missing or disabled. Skipping SMS delivery.');
       return false;
     }
 
@@ -101,6 +106,11 @@ export class SMSService {
         console.log(`Reason  : OTP_MOCK_MODE is enabled`);
         console.log(`------------------------\n`);
         return true;
+      }
+
+      if (process.env.ENABLE_FAST2SMS !== 'true') {
+        console.log(`[SMS Service] Fast2SMS is explicitly DISABLED. SMS to ${normalizedTo} skipped.`);
+        return false;
       }
 
       // Send via Fast2SMS
