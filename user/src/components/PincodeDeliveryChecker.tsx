@@ -8,7 +8,12 @@ interface PincodeCheckResult {
   city?: string;
   state?: string;
   shippingFee: number;
+  isFreeShipping?: boolean;
+  freeShippingThreshold?: number;
+  estimatedDeliveryDate?: string;
   estimatedDeliveryTime: string;
+  courierPartner?: string;
+  vendorName?: string;
   distanceKm?: number;
   isFallback?: boolean;
   message?: string;
@@ -17,15 +22,21 @@ interface PincodeCheckResult {
 interface PincodeDeliveryCheckerProps {
   apiUrl: string;
   token: string;
-  onShippingFeeCalculated: (fee: number, isServiceable: boolean, pincode: string, deliveryTime: string) => void;
+  onShippingFeeCalculated: (fee: number, isServiceable: boolean, pincode: string, deliveryTime: string, courier?: string, deliveryDate?: string) => void;
   className?: string;
+  cartAmount?: number;
+  vendorSlug?: string;
+  address?: { line1?: string; city?: string; state?: string };
 }
 
 export const PincodeDeliveryChecker: React.FC<PincodeDeliveryCheckerProps> = ({
   apiUrl,
   token,
   onShippingFeeCalculated,
-  className = ''
+  className = '',
+  cartAmount,
+  vendorSlug,
+  address
 }) => {
   const { t } = useLanguage();
   const [pincode, setPincode] = useState<string>('');
@@ -40,7 +51,7 @@ export const PincodeDeliveryChecker: React.FC<PincodeDeliveryCheckerProps> = ({
       setPincode(savedPincode);
       checkPincode(savedPincode);
     }
-  }, []);
+  }, [cartAmount, vendorSlug, address?.line1, address?.city, address?.state]);
 
   const checkPincode = async (codeToCheck: string, userLat?: number, userLon?: number) => {
     const cleanCode = codeToCheck.trim();
@@ -57,7 +68,10 @@ export const PincodeDeliveryChecker: React.FC<PincodeDeliveryCheckerProps> = ({
         body: JSON.stringify({
           pincode: cleanCode,
           userLat,
-          userLon
+          userLon,
+          cartAmount,
+          vendorSlug: vendorSlug || 'arivu-foods',
+          address
         })
       });
 
@@ -65,7 +79,14 @@ export const PincodeDeliveryChecker: React.FC<PincodeDeliveryCheckerProps> = ({
         const data: PincodeCheckResult = await res.json();
         setResult(data);
         localStorage.setItem('user_delivery_pincode', cleanCode);
-        onShippingFeeCalculated(data.shippingFee, data.serviceable, cleanCode, data.estimatedDeliveryTime);
+        onShippingFeeCalculated(
+          data.shippingFee, 
+          data.serviceable, 
+          cleanCode, 
+          data.estimatedDeliveryTime,
+          data.courierPartner,
+          data.estimatedDeliveryDate
+        );
       }
     } catch (err) {
       console.error('Error checking pincode:', err);
@@ -187,13 +208,17 @@ export const PincodeDeliveryChecker: React.FC<PincodeDeliveryCheckerProps> = ({
             )}
           </div>
 
-          <div className="flex flex-wrap items-center justify-between text-[10px] opacity-90 border-t border-current/10 pt-1">
+          <div className="flex flex-wrap items-center justify-between gap-1 text-[10px] opacity-90 border-t border-current/10 pt-1.5">
             <span className="flex items-center gap-1 font-semibold">
               <Clock className="h-3 w-3 opacity-70" />
-              <span>{t('shop.estimatedShort', 'Est:')} {result.estimatedDeliveryTime}</span>
+              <span>{result.estimatedDeliveryTime}</span>
             </span>
 
-            {result.isFallback ? (
+            {result.courierPartner ? (
+              <span className="font-bold opacity-90 flex items-center gap-1">
+                <Truck className="h-3 w-3" /> {result.courierPartner}
+              </span>
+            ) : result.isFallback ? (
               <span className="font-bold opacity-80">
                 {t('shop.standardCourier', 'Standard Courier')}
               </span>
@@ -203,6 +228,13 @@ export const PincodeDeliveryChecker: React.FC<PincodeDeliveryCheckerProps> = ({
               </span>
             ) : null}
           </div>
+
+          {result.vendorName && (
+            <div className="text-[9px] opacity-80 pt-0.5 flex items-center gap-1 font-medium">
+              <span>🌱</span>
+              <span>Fulfilled & direct dispatch by {result.vendorName}</span>
+            </div>
+          )}
         </div>
       )}
     </div>

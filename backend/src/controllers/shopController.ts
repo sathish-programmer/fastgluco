@@ -8,8 +8,11 @@ import { PaymentGatewayConfig } from '../models/PaymentGatewayConfig';
 import { PincodeShippingRule } from '../models/PincodeShippingRule';
 import { Coupon } from '../models/Coupon';
 import { User } from '../models/User';
+import { Vendor } from '../models/Vendor';
+import { VendorAdapterFactory } from '../services/vendorAdapters/VendorAdapterFactory';
 import Razorpay from 'razorpay';
 import { FCMService } from '../services/fcmService';
+
 
 // Predefined categories
 export const PREDEFINED_CATEGORIES = [
@@ -136,8 +139,13 @@ export const getCategories = async (req: Request, res: Response) => {
   try {
     const dbCategories = await ShopCategory.find({ isActive: true }).sort({ name: 1 });
     const customNames = dbCategories.map(c => c.name);
-    // Merge predefined with custom ones ensuring unique
-    const merged = Array.from(new Set([...PREDEFINED_CATEGORIES, ...customNames]));
+    const activeProductCategories = await ShopProduct.distinct('category', { isActive: true });
+    // Active product categories first, then predefined and custom
+    const merged = Array.from(new Set([
+      ...activeProductCategories.filter(Boolean),
+      ...PREDEFINED_CATEGORIES,
+      ...customNames
+    ]));
     res.json(merged.map(name => ({
       name,
       isCustom: !PREDEFINED_CATEGORIES.includes(name)
@@ -166,15 +174,31 @@ export const createAdminCategory = async (req: Request, res: Response) => {
 
 export const getProducts = async (req: Request, res: Response) => {
   try {
-    const { category, brand, minPrice, maxPrice, healthBenefit, doctorRecommended, available, search, sortBy } = req.query;
+    const { category, brand, vendor, minPrice, maxPrice, healthBenefit, doctorRecommended, available, search, sortBy } = req.query;
 
     const filterQuery: any = { isActive: true };
 
-    if (category) {
+    if (category && category !== 'All') {
       filterQuery.category = category;
     }
-    if (brand) {
-      filterQuery.brand = brand;
+    if (vendor) {
+      if (vendor === 'arivu-foods' || vendor === 'Arivu Foods') {
+        filterQuery.$or = [
+          { brand: { $regex: 'Arivu', $options: 'i' } },
+          { name: { $regex: 'Arivu', $options: 'i' } }
+        ];
+      } else {
+        filterQuery.vendorId = vendor;
+      }
+    } else if (brand && brand !== 'All') {
+      if (brand === 'Arivu Foods') {
+        filterQuery.$or = [
+          { brand: { $regex: 'Arivu', $options: 'i' } },
+          { name: { $regex: 'Arivu', $options: 'i' } }
+        ];
+      } else {
+        filterQuery.brand = brand;
+      }
     }
     if (doctorRecommended === 'true') {
       filterQuery.doctorRecommended = true;
@@ -283,10 +307,12 @@ export const validateShopCoupon = async (req: Request, res: Response) => {
     const gstAmount = (discountedAmount * (config?.shopGstPercentage || 0)) / 100;
 
     const pincode = req.body.pincode || req.body.deliveryPincode || '';
+    const address = req.body.address || req.body.shippingAddress;
+    const vendorSlug = req.body.vendorSlug;
     const userLat = req.body.userLat ? Number(req.body.userLat) : undefined;
     const userLon = req.body.userLon ? Number(req.body.userLon) : undefined;
 
-    const shippingRes = await computeShippingFeeForPincode(pincode, userLat, userLon);
+    const shippingRes = await computeShippingFeeForPincode(pincode, userLat, userLon, address, totalAmount, vendorSlug);
     const shippingFee = shippingRes.shippingFee;
     const finalAmount = discountedAmount + gstAmount + shippingFee;
 
@@ -298,6 +324,14 @@ export const validateShopCoupon = async (req: Request, res: Response) => {
       shippingFee,
       isServiceable: shippingRes.serviceable,
       estimatedDeliveryTime: shippingRes.estimatedDeliveryTime,
+      estimatedDeliveryDate: shippingRes.estimatedDeliveryDate,
+      courierPartner: shippingRes.courierPartner,
+      vendorName: shippingRes.vendorName,
+      localityName: shippingRes.localityName,
+      city: shippingRes.city,
+      state: shippingRes.state,
+      isFreeShipping: shippingRes.isFreeShipping,
+      freeShippingThreshold: shippingRes.freeShippingThreshold || 499,
       finalAmount,
       shopGstPercentage: config?.shopGstPercentage || 0,
       shopDiscountPercentage: config?.shopDiscountPercentage || 0
@@ -307,6 +341,115 @@ export const validateShopCoupon = async (req: Request, res: Response) => {
   }
 };
 
+// Helper: Auto-assign order to vendor and dispatch order via vendor adapter
+
+async function autoAssignAndSubmitVendorOrder(order: any) {
+  try {
+    let matchedVendorId = order.vendorId;
+
+    if (!matchedVendorId && order.products && order.products.length > 0) {
+      for (const item of order.products) {
+        const prod = await ShopProduct.findById(item.productId);
+        if (prod && prod.vendorId) {
+          matchedVendorId = prod.vendorId;
+          break;
+        }
+      }
+    }
+
+    if (!matchedVendorId && order.products) {
+      for (const item of order.products) {
+        if ((item.name && item.name.includes('Arivu')) || (item.brand && item.brand.includes('Arivu'))) {
+          const arivu = await Vendor.findOne({ slug: 'arivu-foods' });
+          if (arivu) {
+            matchedVendorId = arivu._id;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!matchedVendorId) return;
+
+    const vendor = await Vendor.findById(matchedVendorId);
+    if (!vendor) return;
+
+    order.vendorId = vendor._id;
+
+    // Financial calculations per vendor agreement (Arivu Foods 30% + 18% GST + 100% shipping pass-through)
+    const listedProductPrice = order.products.reduce((acc: number, p: any) => acc + (p.price * p.qty), 0);
+    const commissionRate = vendor.commissionConfig?.rate ?? (vendor.commissionValue || 30);
+    const gstRate = vendor.commissionConfig?.gstOnCommissionRate ?? 18;
+    const passThroughShipping = vendor.commissionConfig?.passThroughShipping ?? true;
+
+    const platformComm = Number(((listedProductPrice * commissionRate) / 100).toFixed(2));
+    const gstComm = Number(((platformComm * gstRate) / 100).toFixed(2));
+    const totalRetention = Number((platformComm + gstComm).toFixed(2));
+    const vendorProductShare = Number((listedProductPrice - totalRetention).toFixed(2));
+    const shipping = passThroughShipping ? (order.shippingCharge || 0) : 0;
+    const customerGatewayCharge = Number(((order.totalAmount * 2.36) / 100).toFixed(2));
+    const finalPayable = Number((vendorProductShare + shipping).toFixed(2));
+
+    order.platformCommission = totalRetention;
+    order.vendorEarnings = finalPayable;
+    order.deliveryStatus = 'assigned';
+    order.financialBreakdown = {
+      listedProductPrice,
+      platformCommissionRate: commissionRate,
+      platformCommission: platformComm,
+      gstOnCommissionRate: gstRate,
+      gstOnCommission: gstComm,
+      totalPlatformRetention: totalRetention,
+      vendorProductShare,
+      shippingCharge: order.shippingCharge || 0,
+      customerGatewayCharge,
+      finalVendorPayable: finalPayable
+    };
+
+    // Auto-submit to vendor via adapter
+    const adapter = VendorAdapterFactory.getAdapter(vendor);
+    const submitResult = await adapter.submitOrder(vendor, order);
+
+    if (submitResult.success) {
+      order.vendorOrderId = submitResult.vendorOrderId || '';
+      order.vendorOrderStatus = submitResult.vendorOrderStatus || 'PROCESSING';
+      order.vendorSubmissionStatus = 'SUBMITTED';
+      order.vendorSubmissionAttempts = (order.vendorSubmissionAttempts || 0) + 1;
+
+      if (submitResult.trackingNumber) {
+        order.trackingDetails = {
+          courierName: submitResult.courierName || 'Blue Dart Express',
+          trackingId: submitResult.trackingNumber,
+          trackingUrl: submitResult.trackingUrl || ''
+        };
+        order.deliveryStatus = 'shipped';
+      }
+
+      if (submitResult.estimatedDeliveryDate) {
+        order.estimatedDeliveryDate = submitResult.estimatedDeliveryDate;
+      }
+      if (submitResult.statusMessage) {
+        order.vendorStatusMessage = submitResult.statusMessage;
+      }
+
+      order.orderTimeline = order.orderTimeline || [];
+      order.orderTimeline.push({
+        status: 'assigned_and_submitted',
+        timestamp: new Date(),
+        comment: `Order submitted to ${vendor.name}. External ref: ${order.vendorOrderId || 'N/A'}${order.estimatedDeliveryDate ? ` • Est. Delivery: ${order.estimatedDeliveryDate.toDateString()}` : ''}`
+      });
+    } else {
+      order.vendorSubmissionStatus = 'FAILED';
+      order.vendorSubmissionError = submitResult.errorMessage || 'Auto-dispatch failed';
+      order.vendorSubmissionAttempts = (order.vendorSubmissionAttempts || 0) + 1;
+    }
+
+    await order.save();
+  } catch (e) {
+    console.error('Error in autoAssignAndSubmitVendorOrder:', e);
+  }
+}
+
 // --- CHECKOUT FLOW ---
 
 export const createOrder = async (req: Request, res: Response) => {
@@ -315,6 +458,7 @@ export const createOrder = async (req: Request, res: Response) => {
     const { items, totalAmount, couponCode, patientName, patientEmail, patientPhone, shippingAddress, billingAddress } = req.body;
 
     if (!items || items.length === 0) {
+
       return res.status(400).json({ message: 'No items in the order.' });
     }
 
@@ -392,7 +536,14 @@ export const createOrder = async (req: Request, res: Response) => {
     const userLat = req.body.userLat ? Number(req.body.userLat) : undefined;
     const userLon = req.body.userLon ? Number(req.body.userLon) : undefined;
 
-    const shippingRes = await computeShippingFeeForPincode(orderPincode, userLat, userLon);
+    const shippingRes = await computeShippingFeeForPincode(
+      orderPincode,
+      userLat,
+      userLon,
+      shippingAddress,
+      discountedAmount,
+      req.body.vendorSlug
+    );
     if (!shippingRes.serviceable) {
       return res.status(400).json({ message: shippingRes.message || `Delivery is unavailable for pincode ${orderPincode}.` });
     }
@@ -418,10 +569,17 @@ export const createOrder = async (req: Request, res: Response) => {
       patientPhone: patientPhone || user?.mobileNumber || '',
       shippingAddress: shippingAddress || { line1: '', city: '', state: '', postalCode: '', country: 'India' },
       billingAddress: billingAddress || shippingAddress || { line1: '', city: '', state: '', postalCode: '', country: 'India' },
+      estimatedDeliveryDate: shippingRes.estimatedDeliveryDateIso,
+      vendorStatusMessage: shippingRes.message || `Delivery estimated by ${shippingRes.estimatedDeliveryDate} via ${shippingRes.courierPartner}`,
+      trackingDetails: {
+        courierName: shippingRes.courierPartner || 'Delhivery Express',
+        trackingId: '',
+        trackingUrl: ''
+      },
       orderTimeline: [{
         status: 'pending',
         timestamp: new Date(),
-        comment: 'Order placed, awaiting admin review'
+        comment: `Order placed. Estimated delivery: ${shippingRes.estimatedDeliveryDate || 'N/A'} via ${shippingRes.courierPartner || 'Partner Logistics'}`
       }]
     });
     await newOrder.save();
@@ -446,7 +604,11 @@ export const createOrder = async (req: Request, res: Response) => {
         }
       }).catch(console.error);
 
+      // Auto-assign and submit to Vendor if order contains vendor items (e.g. Arivu Foods)
+      await autoAssignAndSubmitVendorOrder(newOrder);
+
       return res.json({
+
         gateway: 'manual_bypass',
         orderId: newOrder._id,
         amount: finalAmount,
@@ -547,6 +709,9 @@ export const verifyPayment = async (req: Request, res: Response) => {
         orderId: order._id.toString()
       }
     }).catch(console.error);
+
+    // Auto-assign and submit to Vendor if order contains vendor items (e.g. Arivu Foods)
+    await autoAssignAndSubmitVendorOrder(order);
 
     res.json({ message: 'Payment verified successfully', order });
   } catch (err) {
@@ -745,8 +910,74 @@ export function validatePincodeFormat(pincode: string): { valid: boolean; cleanP
 }
 
 // Shared Shipping Fee & Serviceability Calculation Helper
-export const computeShippingFeeForPincode = async (pincode?: string, userLat?: number, userLon?: number) => {
-  const cleanPincode = (pincode || '').toString().trim();
+export const computeShippingFeeForPincode = async (
+  pincode?: string,
+  userLat?: number,
+  userLon?: number,
+  address?: { line1?: string; city?: string; state?: string },
+  cartAmount?: number,
+  vendorSlug?: string
+) => {
+  const cleanPincode = (pincode || '').toString().trim().replace(/\D/g, '');
+
+  // 1. Check if vendor adapter is available for delivery estimation
+  let activeVendor = null;
+  if (vendorSlug) {
+    activeVendor = await Vendor.findOne({ slug: vendorSlug, isActive: true, isDeleted: { $ne: true } });
+  }
+  if (!activeVendor) {
+    // If no specific vendor requested, check if Arivu Foods or any active vendor is in the system
+    activeVendor = await Vendor.findOne({ slug: 'arivu-foods', isActive: true, isDeleted: { $ne: true } }) || 
+                   await Vendor.findOne({ isActive: true, isDeleted: { $ne: true } });
+  }
+
+  if (activeVendor && cleanPincode && cleanPincode.length === 6) {
+    try {
+      const adapter = VendorAdapterFactory.getAdapter(activeVendor);
+      const estimate = await adapter.checkDeliveryEstimate(activeVendor, cleanPincode, address, cartAmount || 0);
+
+      // Check if there is also an admin override in PincodeShippingRule
+      const rule = await PincodeShippingRule.findOne({ pincode: cleanPincode });
+      if (rule && !rule.isServiceable) {
+        return {
+          serviceable: false,
+          pincode: cleanPincode,
+          shippingFee: 0,
+          estimatedDeliveryTime: 'N/A',
+          estimatedDeliveryDate: 'N/A',
+          courierPartner: 'N/A',
+          isFallback: false,
+          distanceKm: 0,
+          message: `Delivery to ${rule.localityName} (${cleanPincode}) is currently suspended.`
+        };
+      }
+
+      return {
+        serviceable: estimate.serviceable,
+        pincode: cleanPincode,
+        localityName: estimate.localityName || rule?.localityName || address?.city || 'Delivery Area',
+        city: estimate.city || rule?.city || address?.city || 'India',
+        state: estimate.state || rule?.state || address?.state || 'India',
+        zone: estimate.zone || 'South Zone',
+        shippingFee: estimate.shippingFee,
+        isFreeShipping: estimate.isFreeShipping,
+        freeShippingThreshold: estimate.freeShippingThreshold,
+        estimatedDeliveryDate: estimate.estimatedDeliveryDate,
+        estimatedDeliveryDateIso: estimate.estimatedDeliveryDateIso,
+        estimatedDeliveryTime: estimate.estimatedDeliveryTime,
+        courierPartner: estimate.courierPartner,
+        vendorName: estimate.vendorName || activeVendor.name,
+        vendorOrigin: estimate.vendorOrigin || 'Central Warehouse',
+        distanceKm: 0,
+        isFallback: false,
+        message: estimate.message
+      };
+    } catch (err) {
+      console.warn('Vendor delivery estimate error, falling back to standard calculator:', err);
+    }
+  }
+
+  // Fallback to standard shop rule / global distance calculation
   const config = await PaymentGatewayConfig.findOne();
   const globalShippingFee = config?.shopShippingFee || 0;
   const storeLat = config?.storeOriginLat || 12.9716;
@@ -765,6 +996,8 @@ export const computeShippingFeeForPincode = async (pincode?: string, userLat?: n
       serviceable: true,
       shippingFee: globalShippingFee,
       estimatedDeliveryTime: 'Standard Delivery (3-5 Days)',
+      estimatedDeliveryDate: '3-5 Business Days',
+      courierPartner: 'Standard Courier',
       isFallback: true,
       distanceKm: 0,
       message: 'Using global standard shipping fee.'
@@ -780,6 +1013,8 @@ export const computeShippingFeeForPincode = async (pincode?: string, userLat?: n
         serviceable: false,
         shippingFee: 0,
         estimatedDeliveryTime: 'N/A',
+        estimatedDeliveryDate: 'N/A',
+        courierPartner: 'N/A',
         isFallback: false,
         distanceKm: 0,
         message: `Delivery is currently unavailable for pincode ${cleanPincode}.`
@@ -790,6 +1025,8 @@ export const computeShippingFeeForPincode = async (pincode?: string, userLat?: n
       serviceable: true,
       shippingFee: globalShippingFee,
       estimatedDeliveryTime: 'Standard Delivery (3-5 Days)',
+      estimatedDeliveryDate: '3-5 Business Days',
+      courierPartner: 'Standard Courier',
       isFallback: true,
       distanceKm: 0,
       message: `Standard delivery to ${cleanPincode}.`
@@ -802,6 +1039,8 @@ export const computeShippingFeeForPincode = async (pincode?: string, userLat?: n
       serviceable: false,
       shippingFee: 0,
       estimatedDeliveryTime: 'N/A',
+      estimatedDeliveryDate: 'N/A',
+      courierPartner: 'N/A',
       isFallback: false,
       distanceKm: 0,
       message: `Delivery to ${rule.localityName} (${cleanPincode}) is currently suspended.`
@@ -836,6 +1075,8 @@ export const computeShippingFeeForPincode = async (pincode?: string, userLat?: n
     state: rule.state,
     shippingFee: calculatedFee,
     estimatedDeliveryTime: deliveryEstimate,
+    estimatedDeliveryDate: deliveryEstimate,
+    courierPartner: 'Local Express Courier',
     distanceKm,
     isFallback: false,
     message: `Delivery available to ${rule.localityName} (${distanceKm} km from Warehouse).`
@@ -937,8 +1178,8 @@ export const deleteAdminPincodeRule = async (req: Request, res: Response) => {
 // Public/User Serviceability & Distance Shipping Fee Calculation Check
 export const checkPincodeServiceability = async (req: Request, res: Response) => {
   try {
-    const { pincode, userLat, userLon } = req.body;
-    const result = await computeShippingFeeForPincode(pincode, userLat, userLon);
+    const { pincode, userLat, userLon, address, cartAmount, vendorSlug } = req.body;
+    const result = await computeShippingFeeForPincode(pincode, userLat, userLon, address, cartAmount, vendorSlug);
     return res.status(200).json(result);
   } catch (err: any) {
     return res.status(500).json({ message: err.message || 'Error checking pincode serviceability.' });

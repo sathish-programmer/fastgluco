@@ -584,8 +584,19 @@ router.get('/admin/doctors/:id/availability', authenticateToken, requireRole(['S
 // --- VENDOR MANAGEMENT FOR ADMIN ---
 router.get('/admin/vendors', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminGetVendors);
 router.post('/admin/vendors', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminAddVendor);
+router.get('/admin/vendors/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminGetVendorById);
 router.put('/admin/vendors/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminEditVendor);
+router.post('/admin/vendors/seed', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminSeedVendors);
+router.post('/admin/vendors/:id/sync-products', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminSyncProducts);
+router.post('/admin/vendors/:id/orders/:orderId/submit', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminSubmitVendorOrder);
+router.post('/admin/vendors/:id/orders/:orderId/sync-status', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminSyncOrderStatus);
+router.get('/admin/vendors/:id/settlements', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminGetVendorSettlements);
+router.post('/admin/vendors/:id/settlements/generate', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminGenerateSettlement);
+router.post('/admin/vendors/settlements/:settlementId/finalize', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminFinalizeSettlement);
+router.get('/admin/vendors/settlements/:settlementId/export-csv', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminExportSettlementCsv);
+router.get('/admin/vendors/:id/sync-logs', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminGetVendorSyncLogs);
 router.post('/admin/orders/:orderId/assign', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminAssignOrder);
+
 
 // Admin-specific confirmation for appointments
 router.post('/admin/appointments/:appointmentId/confirm', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), AppointmentController.adminConfirmAppointment);
@@ -667,7 +678,7 @@ router.put('/patient/consultations/:id/status', authenticateToken, requireRole([
 router.post('/patient/feedback', authenticateToken, requireRole(['User']), AppointmentController.addFeedback);
 router.get('/patient/doctors/:doctorId/feedback', authenticateToken, requireRole(['User']), AppointmentController.getDoctorFeedback);
 
-// Patient retrieval of own orders (Shop history tracker)
+// Patient retrieval of own orders (Shop history tracker with live Vendor tracking sync)
 router.get('/patient/orders', authenticateToken, requireRole(['User']), async (req, res) => {
   try {
     const userId = (req as any).user.id;
@@ -676,11 +687,48 @@ router.get('/patient/orders', authenticateToken, requireRole(['User']), async (r
       .populate('vendorId')
       .populate({ path: 'products.productId', select: 'image' })
       .sort({ createdAt: -1 });
+
+    // Sync live tracking from vendor API for active in-progress vendor orders
+    for (const order of orders) {
+      if (order.vendorId && order.vendorOrderId && order.deliveryStatus !== 'delivered' && order.deliveryStatus !== 'cancelled') {
+        try {
+          const { VendorAdapterFactory } = require('../services/vendorAdapters/VendorAdapterFactory');
+          const adapter = VendorAdapterFactory.getAdapter(order.vendorId);
+          const statusResult = await adapter.getOrderStatus(order.vendorId, order.vendorOrderId);
+          if (statusResult.success) {
+            order.vendorOrderStatus = statusResult.status;
+            order.deliveryStatus = statusResult.deliveryStatus;
+            if (statusResult.statusMessage) order.vendorStatusMessage = statusResult.statusMessage;
+            if (statusResult.estimatedDeliveryDate) order.estimatedDeliveryDate = statusResult.estimatedDeliveryDate;
+            if (statusResult.trackingNumber) {
+              order.trackingDetails = {
+                courierName: statusResult.courierName || order.trackingDetails?.courierName || 'Blue Dart Express',
+                trackingId: statusResult.trackingNumber,
+                trackingUrl: statusResult.trackingUrl || order.trackingDetails?.trackingUrl || ''
+              };
+            }
+            if (statusResult.deliveryStatus === 'delivered' && !order.deliveryDate) {
+              order.deliveryDate = statusResult.actualDeliveryDate || new Date();
+            }
+            await order.save();
+          }
+        } catch (syncErr) {
+          // Non-blocking sync error
+        }
+      }
+    }
+
     res.json(orders);
   } catch (err) {
     res.status(500).json({ message: 'Error fetching patient orders.' });
   }
 });
+
+// Patient live tracking query directly against vendor's logistics API
+router.get('/patient/orders/:id/track', authenticateToken, requireRole(['User']), VendorController.getPatientOrderTracking);
+
+// Real-time Vendor Webhook Listener (Vendor pushes tracking & delivery status directly to our app)
+router.post('/vendors/webhook/:slug', VendorController.handleVendorWebhook);
 
 // --- USER & ADMIN FEEDBACK ROUTES ---
 router.post('/user/feedback', authenticateToken, FeedbackController.submitFeedback);

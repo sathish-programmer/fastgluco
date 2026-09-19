@@ -2284,6 +2284,17 @@ const AdminPanelContent: React.FC = () => {
                       Products
                     </button>
                     <button 
+                      onClick={() => { setActiveView('vendors-management'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold flex items-center justify-between ${
+                        activeView === 'vendors-management' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <span>Vendors</span>
+                      <span className="bg-emerald-500/20 text-emerald-400 text-[9px] font-extrabold px-1.5 py-0.5 rounded border border-emerald-500/30">
+                        Multi-Vendor
+                      </span>
+                    </button>
+                    <button 
                       onClick={() => { setActiveView('store-orders'); setSearchQuery(''); }}
                       className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
                         activeView === 'store-orders' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
@@ -2302,6 +2313,7 @@ const AdminPanelContent: React.FC = () => {
                   </div>
                 )}
               </div>
+
 
               {/* GROUP 4.5: REPORTS & ANALYTICS */}
               <button 

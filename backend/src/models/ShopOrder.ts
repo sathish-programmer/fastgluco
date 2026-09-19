@@ -56,6 +56,29 @@ export interface IShopOrder extends Document {
     comment?: string;
   }[];
 
+  // Multi-Vendor Tracking & Financial Breakdown
+  vendorOrderId?: string; // External vendor order ID (e.g. Arivu Foods order #)
+  vendorOrderStatus?: string; // Vendor's native order status
+  vendorStatusMessage?: string; // Live status message from vendor API
+  estimatedDeliveryDate?: Date; // Delivery date estimated by vendor API
+  vendorSubmissionStatus?: 'NOT_SUBMITTED' | 'PENDING' | 'SUBMITTED' | 'FAILED' | 'RETRY';
+  vendorSubmissionError?: string;
+  vendorSubmissionAttempts?: number;
+  settlementId?: mongoose.Types.ObjectId;
+  settlementStatus?: 'UNSETTLED' | 'PENDING' | 'SETTLED';
+  financialBreakdown?: {
+    listedProductPrice: number;
+    platformCommissionRate: number; // 30%
+    platformCommission: number; // 30% of listed price
+    gstOnCommissionRate: number; // 18%
+    gstOnCommission: number; // 18% of platform commission
+    totalPlatformRetention: number; // Commission + GST
+    vendorProductShare: number; // Listed price - Platform retention
+    shippingCharge: number; // Pass-through to vendor (Free >599, 90 <599)
+    customerGatewayCharge: number; // Borne by customer (2.36%)
+    finalVendorPayable: number; // Vendor product share + shipping
+  };
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -114,7 +137,39 @@ const ShopOrderSchema: Schema = new Schema({
     status: { type: String, required: true },
     timestamp: { type: Date, default: Date.now },
     comment: { type: String, default: '' }
-  }]
+  }],
+
+  // Multi-Vendor fields
+  vendorOrderId: { type: String, default: '' },
+  vendorOrderStatus: { type: String, default: '' },
+  vendorStatusMessage: { type: String, default: '' },
+  estimatedDeliveryDate: { type: Date },
+  vendorSubmissionStatus: { 
+    type: String, 
+    enum: ['NOT_SUBMITTED', 'PENDING', 'SUBMITTED', 'FAILED', 'RETRY'], 
+    default: 'NOT_SUBMITTED' 
+  },
+  vendorSubmissionError: { type: String, default: '' },
+  vendorSubmissionAttempts: { type: Number, default: 0 },
+  settlementId: { type: Schema.Types.ObjectId, ref: 'VendorSettlement' },
+  settlementStatus: { 
+    type: String, 
+    enum: ['UNSETTLED', 'PENDING', 'SETTLED'], 
+    default: 'UNSETTLED' 
+  },
+  financialBreakdown: {
+    listedProductPrice: { type: Number, default: 0 },
+    platformCommissionRate: { type: Number, default: 30 },
+    platformCommission: { type: Number, default: 0 },
+    gstOnCommissionRate: { type: Number, default: 18 },
+    gstOnCommission: { type: Number, default: 0 },
+    totalPlatformRetention: { type: Number, default: 0 },
+    vendorProductShare: { type: Number, default: 0 },
+    shippingCharge: { type: Number, default: 0 },
+    customerGatewayCharge: { type: Number, default: 0 },
+    finalVendorPayable: { type: Number, default: 0 }
+  }
 }, { timestamps: true });
 
 export default mongoose.model<IShopOrder>('ShopOrder', ShopOrderSchema);
+

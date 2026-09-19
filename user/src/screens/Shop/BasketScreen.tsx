@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Minus, Plus, Trash2, ShieldCheck, Tag, Landmark, User, Mail, Phone, MapPin } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, Trash2, ShieldCheck, Tag, Landmark, User, Mail, Phone, MapPin, Truck } from 'lucide-react';
 import type { ShopItem } from './ShopScreen';
 import { ProductImage } from './ShopScreen';
 import { useAuth } from '../../context/AuthContext';
@@ -30,7 +30,7 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
   const [line1, setLine1] = useState(user?.addressLine1 || '');
   const [city, setCity] = useState(user?.addressCity || '');
   const [state, setState] = useState(user?.addressState || '');
-  const [postalCode, setPostalCode] = useState(user?.addressPinCode || '');
+  const [postalCode, setPostalCode] = useState(user?.addressPinCode || localStorage.getItem('user_delivery_pincode') || '');
   const [country, setCountry] = useState('India');
 
   const [couponCode, setCouponCode] = useState('');
@@ -42,10 +42,17 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
   const [validatingCoupon, setValidatingCoupon] = useState(false);
   const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
   const [isPincodeServiceable, setIsPincodeServiceable] = useState<boolean>(true);
+  const [deliveryEstimate, setDeliveryEstimate] = useState<string>('');
+  const [deliveryCourier, setDeliveryCourier] = useState<string>('');
+  const [deliveryDate, setDeliveryDate] = useState<string>('');
 
-  const handleShippingFeeCalculated = (fee: number, serviceable: boolean) => {
+  const handleShippingFeeCalculated = (fee: number, serviceable: boolean, pincode: string, estimate: string, courier?: string, date?: string) => {
     setShippingFee(fee);
     setIsPincodeServiceable(serviceable);
+    if (pincode) setPostalCode(pincode);
+    if (estimate) setDeliveryEstimate(estimate);
+    if (courier) setDeliveryCourier(courier);
+    if (date) setDeliveryDate(date);
     const discounted = Math.max(0, subtotal - discountAmount);
     setFinalTotal(discounted + gstAmount + fee);
   };
@@ -54,6 +61,16 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
   
   // Subtotal calculated with variants prices
   const subtotal = basket.reduce((sum, p) => {
+    let price = p.item.price;
+    if (p.variantName && p.item.variants) {
+      const v = p.item.variants.find(x => x.name === p.variantName);
+      if (v) price = v.price;
+    }
+    return sum + (price * p.qty);
+  }, 0);
+
+  const arivuItems = basket.filter(b => b.item.brand === 'Arivu Foods' || b.item.vendorSku);
+  const arivuSubtotal = arivuItems.reduce((sum, p) => {
     let price = p.item.price;
     if (p.variantName && p.item.variants) {
       const v = p.item.variants.find(x => x.name === p.variantName);
@@ -205,7 +222,9 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
           patientEmail,
           patientPhone,
           shippingAddress,
-          billingAddress
+          billingAddress,
+          vendorSlug: arivuItems.length > 0 ? 'arivu-foods' : undefined,
+          pincode: postalCode
         })
       });
 
@@ -364,7 +383,48 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
             
             {/* Cart Items list */}
             <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-4">
-              <h3 className="font-bold text-sm text-slate-850">{t('selectedMedicalSupplies')}</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-sm text-slate-850">{t('selectedMedicalSupplies')}</h3>
+                <span className="text-xs text-slate-400 font-bold">{basket.length} {basket.length === 1 ? 'Item' : 'Items'}</span>
+              </div>
+
+              {/* Arivu Foods Partner Fulfillment & Free Shipping Progress */}
+              {arivuItems.length > 0 && (
+                <div className="bg-emerald-50 border border-emerald-200/80 rounded-2xl p-3.5 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-emerald-900 flex items-center gap-1.5">
+                      <span>🌱</span> Fulfilled directly by <strong>Arivu Foods</strong>
+                    </span>
+                    <span className="font-black text-emerald-800">
+                      Subtotal: {curr}{arivuSubtotal.toFixed(2)}
+                    </span>
+                  </div>
+
+                  {arivuSubtotal < 499 ? (
+                    <div>
+                      <div className="flex justify-between text-[11px] font-bold text-emerald-800 mb-1">
+                        <span>Add {curr}{(499 - arivuSubtotal).toFixed(2)} more of Arivu items for <strong>FREE Delivery</strong></span>
+                        <span>{Math.min(100, Math.round((arivuSubtotal / 499) * 100))}%</span>
+                      </div>
+                      <div className="w-full bg-emerald-200/70 rounded-full h-2 overflow-hidden">
+                        <div 
+                          className="bg-emerald-600 h-full rounded-full transition-all duration-300"
+                          style={{ width: `${Math.min(100, (arivuSubtotal / 499) * 100)}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] text-emerald-700 mt-1 block">
+                        Orders below ₹499 incur state shipping fee (e.g. ₹80 for Tamil Nadu, ₹69 for Karnataka).
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5 text-xs font-black text-emerald-800 bg-emerald-100/70 px-2.5 py-1 rounded-xl">
+                      <span>🎉</span>
+                      <span>You have unlocked <strong>FREE Delivery</strong> on all Arivu Foods items!</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="divide-y divide-slate-100">
                 {basket.map((p, idx) => {
                   let price = p.item.price;
@@ -372,6 +432,7 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
                     const v = p.item.variants.find(x => x.name === p.variantName);
                     if (v) price = v.price;
                   }
+                  const isArivu = p.item.brand === 'Arivu Foods' || p.item.vendorSku;
 
                   return (
                     <div key={idx} className="py-4 flex gap-4 items-center">
@@ -380,11 +441,18 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
                       </div>
                       <div className="flex-1">
                         <h4 className="font-bold text-slate-800 text-xs leading-tight mb-1">{p.item.name}</h4>
-                        {p.variantName && (
-                          <span className="bg-slate-100 text-slate-500 text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide inline-block mb-1">
-                            {t('sizePrefix', { size: p.variantName })}
-                          </span>
-                        )}
+                        <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                          {p.variantName && (
+                            <span className="bg-slate-100 text-slate-500 text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide inline-block">
+                              {t('sizePrefix', { size: p.variantName })}
+                            </span>
+                          )}
+                          {isArivu && (
+                            <span className="bg-emerald-100 text-emerald-800 text-[8px] font-black px-1.5 py-0.5 rounded border border-emerald-200 inline-flex items-center gap-0.5">
+                              🌱 Arivu Foods Dispatch
+                            </span>
+                          )}
+                        </div>
                         <p className="font-black text-indigo-650 text-xs">{curr}{(price * p.qty).toFixed(2)}</p>
                       </div>
                       <div className="flex items-center gap-1.5 bg-slate-50 p-1 rounded-lg border border-slate-200">
@@ -577,8 +645,23 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
               <PincodeDeliveryChecker
                 apiUrl={apiUrl}
                 token={token || ''}
+                cartAmount={subtotal}
+                vendorSlug={arivuItems.length > 0 ? 'arivu-foods' : undefined}
+                address={{ line1, city, state }}
                 onShippingFeeCalculated={handleShippingFeeCalculated}
               />
+
+              {(deliveryEstimate || deliveryDate) && (
+                <div className="flex items-center justify-between text-[11px] text-emerald-800 bg-emerald-50/80 p-2.5 rounded-xl border border-emerald-200">
+                  <div className="flex items-center gap-1.5">
+                    <Truck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                    <span className="font-bold">{deliveryEstimate || `Delivered by ${deliveryDate}`}</span>
+                  </div>
+                  {deliveryCourier && (
+                    <span className="text-[10px] text-emerald-700/80 font-medium">via {deliveryCourier}</span>
+                  )}
+                </div>
+              )}
 
               <div className="space-y-2.5 text-xs">
                 <div className="flex justify-between text-slate-500">

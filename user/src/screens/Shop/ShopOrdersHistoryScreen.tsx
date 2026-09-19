@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { ArrowLeft, Package, Truck, Download, Calendar, Star, Beaker, FileText, HelpCircle } from 'lucide-react';
+import { ArrowLeft, Package, Truck, Download, Calendar, Star, Beaker, FileText, HelpCircle, RefreshCw, ExternalLink } from 'lucide-react';
 import { ProductImage } from './ShopScreen';
 import { Capacitor } from '@capacitor/core';
 
@@ -34,6 +34,40 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [supportForm, setSupportForm] = useState({ name: '', email: '', question: '', relatedId: '', type: 'GENERAL' });
   const [submittingSupport, setSubmittingSupport] = useState(false);
+  const [refreshingOrderId, setRefreshingOrderId] = useState<string | null>(null);
+
+  const handleRefreshTracking = async (orderId: string) => {
+    setRefreshingOrderId(orderId);
+    try {
+      const res = await fetch(`${apiUrl}/patient/orders/${orderId}/track`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setOrders(prev => prev.map(o => o._id === orderId ? {
+          ...o,
+          deliveryStatus: data.deliveryStatus,
+          vendorOrderStatus: data.vendorOrderStatus,
+          vendorStatusMessage: data.vendorStatusMessage,
+          estimatedDeliveryDate: data.estimatedDeliveryDate,
+          trackingDetails: data.trackingNumber ? {
+            courierName: data.courierName,
+            trackingId: data.trackingNumber,
+            trackingUrl: data.trackingUrl
+          } : o.trackingDetails,
+          orderTimeline: data.orderTimeline || o.orderTimeline
+        } : o));
+        showToast('Live tracking refreshed from vendor API.', 'success');
+      } else {
+        showToast('Vendor API tracking currently unavailable.', 'info');
+      }
+    } catch (e) {
+      console.error(e);
+      showToast('Could not reach vendor logistics API.', 'error');
+    } finally {
+      setRefreshingOrderId(null);
+    }
+  };
 
   useEffect(() => {
     if (activeTab === 'products') {
@@ -297,8 +331,85 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
                   </div>
                 </div>
 
-                {/* Shipping & Tracking details */}
-                {order.trackingDetails?.trackingId && (
+                {/* Shipping & Tracking details (Direct from Vendor APIs) */}
+                {order.vendorId ? (
+                  <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-800/40 rounded-2xl p-4 space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5">
+                        <span className="h-7 w-7 rounded-xl bg-emerald-600/15 border border-emerald-500/30 flex items-center justify-center text-emerald-700 dark:text-emerald-400 text-sm">
+                          🌱
+                        </span>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h5 className="text-[11px] font-black text-emerald-950 dark:text-emerald-300 uppercase tracking-wide">
+                              Fulfilled & Shipped by {order.vendorId?.name || 'Arivu Foods'}
+                            </h5>
+                            <span className="bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 text-[8px] font-black px-2 py-0.5 rounded-md border border-emerald-300 dark:border-emerald-700">
+                              Vendor API Integrated
+                            </span>
+                          </div>
+                          {order.vendorOrderId && (
+                            <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400 font-bold block">
+                              Vendor Order Ref: {order.vendorOrderId}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleRefreshTracking(order._id)}
+                          disabled={refreshingOrderId === order._id}
+                          className="px-2.5 py-1 bg-white dark:bg-slate-800 hover:bg-emerald-100/50 border border-emerald-200 dark:border-emerald-700 rounded-lg text-[10px] font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1 shadow-2xs transition-all cursor-pointer disabled:opacity-50"
+                          title="Fetch latest status from vendor API"
+                        >
+                          <RefreshCw className={`h-3 w-3 ${refreshingOrderId === order._id ? 'animate-spin text-emerald-600' : ''}`} />
+                          <span>{refreshingOrderId === order._id ? 'Syncing...' : 'Live Sync'}</span>
+                        </button>
+
+                        {order.trackingDetails?.trackingUrl && (
+                          <a 
+                            href={order.trackingDetails.trackingUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white text-[9px] font-black px-3 py-1.5 rounded-lg shadow-xs transition-all flex items-center gap-1"
+                          >
+                            <span>Track Package</span>
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+
+                    {order.vendorStatusMessage && (
+                      <p className="text-[11px] text-emerald-800 dark:text-emerald-300 font-medium bg-white/70 dark:bg-slate-900/70 p-2.5 rounded-xl border border-emerald-100 dark:border-emerald-900/30 italic">
+                        "{order.vendorStatusMessage}"
+                      </p>
+                    )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs pt-0.5">
+                      <div className="bg-white/90 dark:bg-slate-900/90 p-2.5 rounded-xl border border-emerald-100/70 dark:border-emerald-900/30">
+                        <span className="text-[8px] text-slate-400 block font-bold uppercase tracking-wider">Courier Partner</span>
+                        <span className="font-extrabold text-slate-800 dark:text-slate-200 text-xs mt-0.5 block">
+                          {order.trackingDetails?.courierName || 'Assigned by Vendor'}
+                        </span>
+                      </div>
+                      <div className="bg-white/90 dark:bg-slate-900/90 p-2.5 rounded-xl border border-emerald-100/70 dark:border-emerald-900/30">
+                        <span className="text-[8px] text-slate-400 block font-bold uppercase tracking-wider">Tracking Number</span>
+                        <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400 text-xs mt-0.5 block">
+                          {order.trackingDetails?.trackingId || 'Generated on dispatch'}
+                        </span>
+                      </div>
+                      <div className="bg-white/90 dark:bg-slate-900/90 p-2.5 rounded-xl border border-emerald-100/70 dark:border-emerald-900/30">
+                        <span className="text-[8px] text-slate-400 block font-bold uppercase tracking-wider">Vendor Status</span>
+                        <span className="font-extrabold text-indigo-600 dark:text-indigo-400 text-xs mt-0.5 block uppercase">
+                          {order.vendorOrderStatus || order.deliveryStatus || 'Processing'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ) : order.trackingDetails?.trackingId ? (
                   <div className="bg-indigo-50/40 dark:bg-indigo-950/10 border border-indigo-100/60 dark:border-indigo-900/30 rounded-2xl p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <h5 className="text-[10px] font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-widest flex items-center gap-1.5">
@@ -309,9 +420,9 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
                           href={order.trackingDetails.trackingUrl} 
                           target="_blank" 
                           rel="noopener noreferrer" 
-                          className="bg-indigo-600 hover:bg-indigo-700 text-white text-[9px] font-extrabold px-3 py-1 rounded-lg shadow-sm hover:shadow transition-all"
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white text-[9px] font-extrabold px-3 py-1 rounded-lg shadow-sm hover:shadow transition-all flex items-center gap-1"
                         >
-                          Track Package →
+                          <span>Track Package →</span>
                         </a>
                       )}
                     </div>
@@ -327,7 +438,7 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
                       </div>
                     </div>
                   </div>
-                )}
+                ) : null}
 
                 {/* Timeline Visual Tracker */}
                 {!isCancelled ? (

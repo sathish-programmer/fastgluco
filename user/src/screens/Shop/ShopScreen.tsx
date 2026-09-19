@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Search, SlidersHorizontal, Sparkles, AlertCircle, ShoppingCart, Package, MapPin, Truck, XCircle, Navigation, Star, Plus, Minus, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Search, SlidersHorizontal, Sparkles, AlertCircle, ShoppingCart, Package, MapPin, Truck, XCircle, Navigation, Star, Plus, Minus, ChevronRight, ExternalLink } from 'lucide-react';
 import { BasketScreen } from './BasketScreen';
 import { PincodeDeliveryChecker } from '../../components/PincodeDeliveryChecker';
 import { useAuth } from '../../context/AuthContext';
@@ -79,7 +79,14 @@ export interface ShopItem {
   discountPercent?: number;
   offerPrice?: number;
   regularPrice?: number;
+  vendorId?: string;
+  vendorSku?: string;
+  buyOnAmazonUrl?: string;
+  nutritionFacts?: Record<string, any>;
+  allergens?: string[];
+  fssaiNumber?: string;
 }
+
 
 export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSearch }) => {
   const { t } = useLanguage();
@@ -112,6 +119,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
   const [search, setSearch] = useState(defaultSearch || '');
   const [selectedCategory, setSelectedCategory] = useState<string>(type || 'All');
   const [selectedBrand, setSelectedBrand] = useState<string>('All');
+  const [selectedVendor, setSelectedVendor] = useState<string>('All');
   const [minPrice, setMinPrice] = useState<string>('');
   const [maxPrice, setMaxPrice] = useState<string>('');
   const [onlyDoctorRecommended, setOnlyDoctorRecommended] = useState(false);
@@ -120,15 +128,24 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
   const [showFiltersPanel, setShowFiltersPanel] = useState(false);
 
   // Delivery Pincode Bar state
-  const [userDeliveryPincode, setUserDeliveryPincode] = useState<string>(() => localStorage.getItem('user_delivery_pincode') || '560001');
+  const [userDeliveryPincode, setUserDeliveryPincode] = useState<string>(() => localStorage.getItem('user_delivery_pincode') || user?.addressPinCode || '560001');
   const [deliveryLocality, setDeliveryLocality] = useState<string>('');
   const [deliveryEstimate, setDeliveryEstimate] = useState<string>('');
+  const [deliveryDate, setDeliveryDate] = useState<string>('');
+  const [deliveryCourier, setDeliveryCourier] = useState<string>('');
   const [deliveryFee, setDeliveryFee] = useState<number>(0);
   const [isDeliveryServiceable, setIsDeliveryServiceable] = useState<boolean | null>(null);
   const [showPincodeModal, setShowPincodeModal] = useState<boolean>(false);
   const [isEditingPincode, setIsEditingPincode] = useState<boolean>(false);
   const [tempPincodeInput, setTempPincodeInput] = useState<string>('');
   const [checkingPincode, setCheckingPincode] = useState<boolean>(false);
+
+  // Sync profile pincode if not manually overridden in localStorage
+  useEffect(() => {
+    if (!localStorage.getItem('user_delivery_pincode') && user?.addressPinCode) {
+      setUserDeliveryPincode(user.addressPinCode);
+    }
+  }, [user?.addressPinCode]);
 
   const handleApplyPincode = async (codeToApply?: string, userLat?: number, userLon?: number) => {
     const code = (codeToApply || tempPincodeInput || userDeliveryPincode).toString().trim().replace(/\D/g, '');
@@ -145,7 +162,17 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ pincode: code, userLat, userLon })
+        body: JSON.stringify({ 
+          pincode: code, 
+          userLat, 
+          userLon,
+          vendorSlug: 'arivu-foods',
+          address: {
+            line1: user?.addressLine1,
+            city: user?.addressCity,
+            state: user?.addressState
+          }
+        })
       });
 
       if (res.ok) {
@@ -155,6 +182,8 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
         setIsDeliveryServiceable(data.serviceable);
         setDeliveryFee(data.shippingFee || 0);
         setDeliveryEstimate(data.estimatedDeliveryTime || '');
+        setDeliveryDate(data.estimatedDeliveryDate || '');
+        setDeliveryCourier(data.courierPartner || '');
         setDeliveryLocality(data.localityName || data.city || '');
         setIsEditingPincode(false);
         setShowPincodeModal(false);
@@ -176,18 +205,28 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ pincode: userDeliveryPincode })
+        body: JSON.stringify({ 
+          pincode: userDeliveryPincode, 
+          vendorSlug: 'arivu-foods',
+          address: {
+            line1: user?.addressLine1,
+            city: user?.addressCity,
+            state: user?.addressState
+          }
+        })
       })
         .then(res => res.json())
         .then(data => {
           setIsDeliveryServiceable(data.serviceable);
           setDeliveryFee(data.shippingFee || 0);
           setDeliveryEstimate(data.estimatedDeliveryTime || '');
+          setDeliveryDate(data.estimatedDeliveryDate || '');
+          setDeliveryCourier(data.courierPartner || '');
           setDeliveryLocality(data.localityName || data.city || '');
         })
         .catch(console.error);
     }
-  }, [apiUrl, token, userDeliveryPincode]);
+  }, [apiUrl, token, userDeliveryPincode, user]);
 
   // Selected Product Detail Modal
   const [selectedProduct, setSelectedProduct] = useState<ShopItem | null>(null);
@@ -210,7 +249,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
   useEffect(() => {
     fetchCategories();
     fetchProducts();
-  }, [selectedCategory, selectedBrand, onlyDoctorRecommended, onlyAvailable, sortBy]);
+  }, [selectedCategory, selectedBrand, selectedVendor, onlyDoctorRecommended, onlyAvailable, sortBy]);
 
   // Load product details if product query param is in URL or changes via popstate
   useEffect(() => {
@@ -291,7 +330,9 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
       if (selectedCategory !== 'All') {
         url += `&category=${encodeURIComponent(selectedCategory)}`;
       }
-      if (selectedBrand !== 'All') {
+      if (selectedVendor && selectedVendor !== 'All') {
+        url += `&vendor=${encodeURIComponent(selectedVendor)}`;
+      } else if (selectedBrand !== 'All') {
         url += `&brand=${encodeURIComponent(selectedBrand)}`;
       }
       if (onlyDoctorRecommended) {
@@ -339,9 +380,16 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
           stock: d.stock,
           discountPercent: d.discountPercent,
           offerPrice: d.offerPrice,
-          regularPrice: d.regularPrice
+          regularPrice: d.regularPrice,
+          vendorId: d.vendorId,
+          vendorSku: d.vendorSku,
+          buyOnAmazonUrl: d.buyOnAmazonUrl,
+          nutritionFacts: d.nutritionFacts,
+          allergens: d.allergens,
+          fssaiNumber: d.fssaiNumber
         }));
         setProducts(mapped);
+
       }
     } catch (err) {
       console.error(err);
@@ -738,57 +786,120 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
                     </div>
                   </div>
                 )}
+
+                {/* Vendor Trust & FSSAI Badge */}
+                {(selectedProduct.brand === 'Arivu Foods' || selectedProduct.fssaiNumber) && (
+                  <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 rounded-2xl p-3.5 flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-300">
+                    <span className="font-bold flex items-center gap-2">
+                      <Package className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                      Partner Vendor: {selectedProduct.brand || 'Arivu Foods'} (Direct Delivery)
+                    </span>
+                    {selectedProduct.fssaiNumber && (
+                      <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400 font-semibold bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
+                        FSSAI: {selectedProduct.fssaiNumber}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Nutritional Facts Grid */}
+                {selectedProduct.nutritionFacts && Object.keys(selectedProduct.nutritionFacts).length > 0 && (
+                  <div className="space-y-2 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4">
+                    <h4 className="text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                      <Sparkles className="h-3.5 w-3.5 text-emerald-500" /> Nutritional Facts
+                    </h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                      {Object.entries(selectedProduct.nutritionFacts).map(([key, val]) => (
+                        <div key={key} className="bg-white dark:bg-slate-800/80 p-2.5 rounded-xl border border-slate-100 dark:border-slate-700">
+                          <span className="text-[9px] text-slate-400 uppercase font-semibold block">{key.replace(/([A-Z])/g, ' $1')}</span>
+                          <span className="text-xs font-bold text-slate-900 dark:text-slate-100">{String(val)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Allergens Warning */}
+                {selectedProduct.allergens && selectedProduct.allergens.length > 0 && (
+                  <div className="flex items-center gap-2 text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 p-3 rounded-2xl border border-amber-200 dark:border-amber-800/40">
+                    <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
+                    <span><strong>Allergens:</strong> {selectedProduct.allergens.join(', ')}</span>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Delivery Pincode Checker inside Product Details View */}
-            <div className="pt-4 border-t border-slate-100 space-y-2">
-              <span className="font-extrabold text-slate-800 uppercase tracking-wider text-[10px] block">{t('shop.checkDelivery', 'Check Delivery Serviceability')}</span>
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
+              <span className="font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-wider text-[10px] block">{t('shop.checkDelivery', 'Check Delivery Serviceability')}</span>
               <PincodeDeliveryChecker
                 apiUrl={apiUrl}
                 token={token}
-                onShippingFeeCalculated={(fee, serviceable, code, estimate) => {
+                cartAmount={selectedProduct.price}
+                vendorSlug={selectedProduct.brand === 'Arivu Foods' || selectedProduct.vendorSku ? 'arivu-foods' : undefined}
+                address={{
+                  line1: user?.addressLine1,
+                  city: user?.addressCity,
+                  state: user?.addressState
+                }}
+                onShippingFeeCalculated={(fee, serviceable, code, estimate, courier, date) => {
                   setUserDeliveryPincode(code);
                   setIsDeliveryServiceable(serviceable);
                   setDeliveryFee(fee);
                   setDeliveryEstimate(estimate);
+                  if (courier) setDeliveryCourier(courier);
+                  if (date) setDeliveryDate(date);
                 }}
               />
             </div>
 
-            {/* Checkout Options */}
+            {/* Checkout Options (Desktop) */}
             {branding.enableExternalPayments !== false && (
               <div className="pt-6 border-t border-slate-100 flex gap-3 flex-wrap">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const stockVal = selectedVariant ? selectedVariant.stock : selectedProduct.stock;
-                    if (stockVal <= 0) {
-                      showToast(t('shop.soldOutToast', 'This item is currently sold out.'), 'info');
-                      return;
-                    }
-                    addToBasket(selectedProduct, selectedVariant?.name);
-                  }}
-                  className="flex-1 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs font-black transition-all shadow-md flex items-center justify-center gap-2 transform active:scale-98 cursor-pointer"
-                >
-                  <ShoppingCart className="h-4.5 w-4.5" /> {t('shop.addToOrderBasket', 'Add to Order Basket')}
-                </button>
+                {selectedProduct.buyOnAmazonUrl ? (
+                  <a
+                    href={selectedProduct.buyOnAmazonUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 py-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 rounded-2xl text-xs font-black transition-all shadow-md flex items-center justify-center gap-2 transform active:scale-98 cursor-pointer"
+                  >
+                    <span>Buy on Amazon</span>
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const stockVal = selectedVariant ? selectedVariant.stock : selectedProduct.stock;
+                        if (stockVal <= 0) {
+                          showToast(t('shop.soldOutToast', 'This item is currently sold out.'), 'info');
+                          return;
+                        }
+                        addToBasket(selectedProduct, selectedVariant?.name);
+                      }}
+                      className="flex-1 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs font-black transition-all shadow-md flex items-center justify-center gap-2 transform active:scale-98 cursor-pointer"
+                    >
+                      <ShoppingCart className="h-4.5 w-4.5" /> {t('shop.addToOrderBasket', 'Add to Order Basket')}
+                    </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    const stockVal = selectedVariant ? selectedVariant.stock : selectedProduct.stock;
-                    if (stockVal <= 0) {
-                      showToast(t('shop.soldOutToast', 'This item is currently sold out.'), 'info');
-                      return;
-                    }
-                    addToBasket(selectedProduct, selectedVariant?.name);
-                    setShowBasket(true);
-                  }}
-                  className="flex-1 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-2xl text-xs font-black transition-all shadow-md flex items-center justify-center gap-2 transform active:scale-98 cursor-pointer"
-                >
-                  <span>{t('buyNow')}</span>
-                </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const stockVal = selectedVariant ? selectedVariant.stock : selectedProduct.stock;
+                        if (stockVal <= 0) {
+                          showToast(t('shop.soldOutToast', 'This item is currently sold out.'), 'info');
+                          return;
+                        }
+                        addToBasket(selectedProduct, selectedVariant?.name);
+                        setShowBasket(true);
+                      }}
+                      className="flex-1 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-2xl text-xs font-black transition-all shadow-md flex items-center justify-center gap-2 transform active:scale-98 cursor-pointer"
+                    >
+                      <span>{t('buyNow')}</span>
+                    </button>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -805,39 +916,54 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
             </div>
 
             <div className="flex items-center gap-2 flex-1 justify-end max-w-[240px]">
-              <button
-                type="button"
-                onClick={() => {
-                  const stockVal = selectedVariant ? selectedVariant.stock : selectedProduct.stock;
-                  if (stockVal <= 0) {
-                    showToast(t('shop.soldOutToast', 'This item is currently sold out.'), 'info');
-                    return;
-                  }
-                  addToBasket(selectedProduct, selectedVariant?.name);
-                }}
-                className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center justify-center gap-1 cursor-pointer"
-              >
-                <ShoppingCart className="h-3.5 w-3.5" /> {t('shop.addToCartShort', 'Cart')}
-              </button>
+              {selectedProduct.buyOnAmazonUrl ? (
+                <a
+                  href={selectedProduct.buyOnAmazonUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 rounded-xl text-xs font-black shadow-xs flex items-center justify-center gap-1 cursor-pointer"
+                >
+                  <span>Buy on Amazon</span>
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const stockVal = selectedVariant ? selectedVariant.stock : selectedProduct.stock;
+                      if (stockVal <= 0) {
+                        showToast(t('shop.soldOutToast', 'This item is currently sold out.'), 'info');
+                        return;
+                      }
+                      addToBasket(selectedProduct, selectedVariant?.name);
+                    }}
+                    className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center justify-center gap-1 cursor-pointer"
+                  >
+                    <ShoppingCart className="h-3.5 w-3.5" /> {t('shop.addToCartShort', 'Cart')}
+                  </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  const stockVal = selectedVariant ? selectedVariant.stock : selectedProduct.stock;
-                  if (stockVal <= 0) {
-                    showToast(t('shop.soldOutToast', 'This item is currently sold out.'), 'info');
-                    return;
-                  }
-                  addToBasket(selectedProduct, selectedVariant?.name);
-                  setShowBasket(true);
-                }}
-                className="flex-1 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl text-xs font-black shadow-xs flex items-center justify-center gap-1 cursor-pointer"
-              >
-                Buy Now
-              </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const stockVal = selectedVariant ? selectedVariant.stock : selectedProduct.stock;
+                      if (stockVal <= 0) {
+                        showToast(t('shop.soldOutToast', 'This item is currently sold out.'), 'info');
+                        return;
+                      }
+                      addToBasket(selectedProduct, selectedVariant?.name);
+                      setShowBasket(true);
+                    }}
+                    className="flex-1 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl text-xs font-black shadow-xs flex items-center justify-center gap-1 cursor-pointer"
+                  >
+                    Buy Now
+                  </button>
+                </>
+              )}
             </div>
           </div>
         )}
+
 
         {/* Customer Reviews Section */}
         <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-[0_12px_40px_rgba(0,0,0,0.03)] p-6 md:p-10 mt-6 space-y-6">
@@ -949,8 +1075,14 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
                     <XCircle className="h-3.5 w-3.5" /> {t('deliveryUnavailableThisPincode')}
                   </span>
                 ) : deliveryEstimate ? (
-                  <span className="text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
-                    <Truck className="h-3.5 w-3.5 text-emerald-600" /> {deliveryEstimate} • <span className="font-black">{deliveryFee === 0 ? t('freeShipping') : `₹${deliveryFee} ${t('shippingFee')}`}</span>
+                  <span className="text-emerald-700 dark:text-emerald-400 flex items-center gap-1 flex-wrap">
+                    <Truck className="h-3.5 w-3.5 text-emerald-600 shrink-0" /> 
+                    <span>{deliveryEstimate}</span>
+                    <span>•</span>
+                    <span className="font-black">{deliveryFee === 0 ? t('freeShipping') : `₹${deliveryFee} Shipping Fee`}</span>
+                    {deliveryCourier && (
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">via {deliveryCourier}</span>
+                    )}
                   </span>
                 ) : (
                   <span className="text-slate-400">{t('enterPincodeEstimate')}</span>
@@ -1011,6 +1143,60 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
         )}
       </div>
 
+      {/* Featured Partner Vendor Spotlight Banner (Adaptive Light/Dark Theme) */}
+      <div className="mb-6 bg-gradient-to-br from-emerald-50 via-teal-50/50 to-green-50 dark:from-emerald-950 dark:via-slate-900 dark:to-teal-950 text-slate-800 dark:text-white rounded-3xl p-5 sm:p-6 shadow-sm dark:shadow-xl border border-emerald-200/90 dark:border-emerald-500/30 relative overflow-hidden transition-colors">
+        <div className="absolute -right-10 -bottom-10 w-44 h-44 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 relative z-10">
+          <div className="space-y-1.5 max-w-2xl">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="bg-emerald-600 text-white dark:bg-emerald-500 dark:text-slate-950 font-black text-[9px] uppercase px-2.5 py-0.5 rounded-full tracking-wider flex items-center gap-1 shadow-xs">
+                <Sparkles className="h-3 w-3" /> Official Partner Store
+              </span>
+              <span className="bg-emerald-100 dark:bg-emerald-900/60 border border-emerald-300 dark:border-emerald-700/60 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                FSSAI Lic: 12423008001192
+              </span>
+              <span className="text-emerald-700 dark:text-emerald-400 text-xs font-black tracking-wide">
+                • Free Shipping on orders above ₹499
+              </span>
+            </div>
+            <h3 className="text-base sm:text-xl font-black tracking-tight text-emerald-950 dark:text-white flex items-center gap-2">
+              <span>🌱</span> Arivu Foods: Certified Organic & Traditional Nutrition
+            </h3>
+            <p className="text-xs text-emerald-800/85 dark:text-emerald-100/80 leading-relaxed font-medium">
+              100% cold-pressed wood expeller oils, unpolished tenai millets, and shade-dried organic herbs. Direct from farm dispatch with live tracking.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0 pt-1 lg:pt-0">
+            {selectedVendor === 'Arivu Foods' ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedVendor('All');
+                  setSelectedBrand('All');
+                }}
+                className="w-full sm:w-auto px-4 py-2.5 bg-emerald-100 hover:bg-emerald-200 border border-emerald-300 text-emerald-900 dark:bg-white/10 dark:hover:bg-white/20 dark:border-white/20 dark:text-white rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <span>Reset to All Products</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedVendor('Arivu Foods');
+                  setSelectedCategory('All');
+                  setSelectedBrand('Arivu Foods');
+                }}
+                className="w-full sm:w-auto px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-slate-950 rounded-xl text-xs font-black transition-all shadow-md cursor-pointer flex items-center justify-center gap-1.5 active:scale-95"
+              >
+                <span>Explore Arivu Foods</span>
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Main Search and Filters Banner */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         
@@ -1024,6 +1210,29 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
               <button onClick={() => setShowFiltersPanel(false)} className="text-xs text-indigo-500 font-bold md:hidden">Close</button>
             )}
           </div>
+
+          {/* Partner Store / Vendor Filter */}
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Partner Store / Vendor</label>
+            <select 
+              value={selectedVendor} 
+              onChange={(e) => {
+                const val = e.target.value;
+                setSelectedVendor(val);
+                if (val === 'Arivu Foods') {
+                  setSelectedCategory('All');
+                  setSelectedBrand('Arivu Foods');
+                } else {
+                  setSelectedBrand('All');
+                }
+              }}
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-xs text-slate-700 dark:text-slate-200 font-bold focus:outline-none focus:border-indigo-400 cursor-pointer"
+            >
+              <option value="All">All Stores & Vendors</option>
+              <option value="Arivu Foods">🌱 Arivu Foods (Direct Delivery)</option>
+            </select>
+          </div>
+
           {/* Categories Filter */}
           <div className="space-y-2">
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">{t('shop.category', 'Category')}</label>
@@ -1145,9 +1354,72 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
             </div>
           </div>
 
+          {/* Partner Store Selector Tabs */}
+          <div className="flex gap-2 items-center overflow-x-auto pb-1 scrollbar-none">
+            <span className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider shrink-0 mr-1">
+              Store:
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedVendor('All');
+                if (selectedBrand === 'Arivu Foods') setSelectedBrand('All');
+              }}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                selectedVendor === 'All'
+                  ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs'
+                  : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-slate-400'
+              }`}
+            >
+              <span>🏪 All Stores</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedVendor('Arivu Foods');
+                setSelectedCategory('All');
+                setSelectedBrand('Arivu Foods');
+              }}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 border ${
+                selectedVendor === 'Arivu Foods'
+                  ? 'bg-emerald-600 border-emerald-600 text-white shadow-xs'
+                  : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100'
+              }`}
+            >
+              <span>🌱 Arivu Foods Store</span>
+              <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-black ${
+                selectedVendor === 'Arivu Foods' ? 'bg-emerald-800 text-white' : 'bg-emerald-200 dark:bg-emerald-800 text-emerald-900 dark:text-emerald-100'
+              }`}>
+                {products.filter(p => p.brand === 'Arivu Foods' || p.vendorSku).length} Products
+              </span>
+            </button>
+          </div>
+
+          {/* Active Partner Banner */}
+          {selectedVendor === 'Arivu Foods' && (
+            <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 rounded-2xl p-3 flex items-center justify-between gap-3 text-xs text-emerald-800 dark:text-emerald-200">
+              <div className="flex items-center gap-2">
+                <Package className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span>
+                  Showing all items from <strong>Arivu Foods</strong>. Automated direct dispatch • <strong>Free delivery on orders above ₹499</strong>
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedVendor('All');
+                  setSelectedBrand('All');
+                }}
+                className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 underline shrink-0 hover:text-emerald-900 cursor-pointer"
+              >
+                Clear Filter
+              </button>
+            </div>
+          )}
+
           {/* Quick Categories Bar */}
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-            {['All', ...categories.slice(0, 8).map(c => c.name)].map((cat, idx) => (
+            {['All', ...categories.slice(0, 16).map(c => c.name)].map((cat, idx) => (
               <button 
                 key={idx}
                 onClick={() => setSelectedCategory(cat)}
@@ -1221,19 +1493,35 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
 
                       {/* Brand & Star Rating */}
                       <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest truncate">
-                          {item.brand || item.category}
-                        </span>
-                        <div className="flex items-center gap-1 text-[10px] font-black text-amber-500 bg-amber-50 dark:bg-amber-950/30 px-1.5 py-0.5 rounded-md">
+                        <div className="flex items-center gap-1.5 truncate">
+                          <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest truncate">
+                            {item.brand || item.category}
+                          </span>
+                          {(item.brand === 'Arivu Foods' || item.vendorSku) && (
+                            <span className="bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 text-[8px] font-black px-1.5 py-0.5 rounded border border-emerald-300 dark:border-emerald-700 shrink-0 flex items-center gap-0.5">
+                              🌱 Partner Store
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 text-[10px] font-black text-amber-500 bg-amber-50 dark:bg-amber-950/30 px-1.5 py-0.5 rounded-md shrink-0">
                           <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
                           <span>4.8</span>
                         </div>
                       </div>
                       
                       <h4 className="font-extrabold text-slate-900 dark:text-slate-100 text-sm mb-1 leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-2">{item.name}</h4>
-                      <p className="text-[10px] text-slate-400 dark:text-slate-500 mb-3 line-clamp-2 leading-relaxed font-semibold">
+                      <p className="text-[10px] text-slate-400 dark:text-slate-500 mb-2 line-clamp-2 leading-relaxed font-semibold">
                         {(item.desc || '').replace(/<[^>]*>/g, '')}
                       </p>
+
+                      {(item.brand === 'Arivu Foods' || item.vendorSku) && (
+                        <div className="mb-2.5 flex items-center gap-1.5 text-[9px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50/70 dark:bg-emerald-950/30 px-2 py-1 rounded-lg border border-emerald-100 dark:border-emerald-900/40">
+                          <Truck className="h-3 w-3 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                          <span className="truncate">
+                            {deliveryDate ? `Est. Delivery: ${deliveryDate} • Free ≥ ₹499` : 'Direct Dispatch • Free Ship ≥ ₹499'}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Price & Action Section */}
@@ -1257,6 +1545,17 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
                       
                       {isOutOfStock ? (
                         <span className="text-[9px] font-black text-rose-500 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/40 px-2.5 py-1.5 rounded-xl uppercase">{t('shop.soldOut', 'Sold Out')}</span>
+                      ) : item.buyOnAmazonUrl ? (
+                        <a
+                          href={item.buyOnAmazonUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-[11px] font-black text-amber-950 bg-amber-400 hover:bg-amber-300 px-3 py-2 rounded-xl shadow-xs transition-all duration-200 cursor-pointer flex items-center gap-1 shrink-0"
+                        >
+                          <span>Buy on Amazon</span>
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
                       ) : branding.enableExternalPayments !== false ? (
                         hasVariants ? (
                           <button 
@@ -1301,6 +1600,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
                         <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 px-3 py-1.5 rounded-xl">{t('viewInfo')}</span>
                       )}
                     </div>
+
                   </div>
                 );
               })}
@@ -1328,8 +1628,20 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, type, defaultSea
             <PincodeDeliveryChecker
               apiUrl={apiUrl}
               token={token}
-              onShippingFeeCalculated={(_fee, _serviceable, code) => {
-                handleApplyPincode(code);
+              vendorSlug="arivu-foods"
+              address={{
+                line1: user?.addressLine1,
+                city: user?.addressCity,
+                state: user?.addressState
+              }}
+              onShippingFeeCalculated={(fee, serviceable, code, estimate, courier, date) => {
+                setUserDeliveryPincode(code);
+                setIsDeliveryServiceable(serviceable);
+                setDeliveryFee(fee);
+                setDeliveryEstimate(estimate);
+                if (courier) setDeliveryCourier(courier);
+                if (date) setDeliveryDate(date);
+                setShowPincodeModal(false);
               }}
             />
           </div>

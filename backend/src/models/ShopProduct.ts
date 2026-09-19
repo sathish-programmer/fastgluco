@@ -44,6 +44,16 @@ export interface IShopProduct extends Document {
   offerStartDate?: Date;
   offerEndDate?: Date;
 
+  // Multi-Vendor & External Fields
+  vendorId?: mongoose.Types.ObjectId;
+  vendorSku?: string;
+  vendorExternalId?: string;
+  vendorSyncAt?: Date;
+  buyOnAmazonUrl?: string; // For Pure & Pure, Swasa Products
+  nutritionFacts?: Record<string, any>; // Calories, Protein, Carbs, Fat, Fibre, etc.
+  allergens?: string[];
+  fssaiNumber?: string;
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -88,7 +98,18 @@ const ShopProductSchema: Schema = new Schema({
   offerPrice: { type: Number, default: 0 },
   regularPrice: { type: Number, default: 0 },
   offerStartDate: { type: Date },
-  offerEndDate: { type: Date }
+  offerEndDate: { type: Date },
+
+  // Multi-Vendor fields
+  vendorId: { type: Schema.Types.ObjectId, ref: 'Vendor', index: true },
+  vendorSku: { type: String, default: '' },
+  vendorExternalId: { type: String, default: '' },
+  vendorSyncAt: { type: Date },
+  buyOnAmazonUrl: { type: String, default: '' },
+  nutritionFacts: { type: Schema.Types.Mixed, default: {} },
+  allergens: [{ type: String }],
+  fssaiNumber: { type: String, default: '' }
 }, { timestamps: true });
 
 export default mongoose.model<IShopProduct>('ShopProduct', ShopProductSchema);
+
