@@ -1,10 +1,40 @@
 import { Schema, model, Document } from 'mongoose';
 
+export type NotificationType = 
+  | 'General'
+  | 'SpikeAlert'
+  | 'LogReminder'
+  | 'ReportProcessed'
+  | 'SubscriptionActivated'
+  | 'SubscriptionExpired'
+  | 'RefundProcessed'
+  | 'AppointmentBooked'
+  | 'AppointmentConfirmed'
+  | 'AppointmentRescheduled'
+  | 'AppointmentCancelled'
+  | 'AppointmentReminder'
+  | 'OrderPlaced'
+  | 'OrderPaid'
+  | 'OrderProcessing'
+  | 'OrderShipped'
+  | 'OrderDelivered'
+  | 'OrderCancelled'
+  | 'DoctorConsultation';
+
+export interface INotificationMetadata {
+  appointmentId?: string;
+  orderId?: string;
+  route?: string;
+  status?: string;
+  [key: string]: any;
+}
+
 export interface INotification extends Document {
   userId?: Schema.Types.ObjectId; // Reference to specific user, or null/undefined for broadcast to all users
   title: string;
   body: string;
-  type: 'General' | 'SpikeAlert' | 'LogReminder' | 'ReportProcessed' | 'SubscriptionActivated' | 'SubscriptionExpired' | 'RefundProcessed';
+  type: NotificationType;
+  metadata?: INotificationMetadata;
   isRead: boolean;
   scheduledFor?: Date;
   sentAt?: Date;
@@ -21,9 +51,17 @@ const notificationSchema = new Schema<INotification>(
     body: { type: String, required: true, trim: true },
     type: { 
       type: String, 
-      enum: ['General', 'SpikeAlert', 'LogReminder', 'ReportProcessed', 'SubscriptionActivated', 'SubscriptionExpired', 'RefundProcessed'], 
+      enum: [
+        'General', 'SpikeAlert', 'LogReminder', 'ReportProcessed', 
+        'SubscriptionActivated', 'SubscriptionExpired', 'RefundProcessed',
+        'AppointmentBooked', 'AppointmentConfirmed', 'AppointmentRescheduled', 
+        'AppointmentCancelled', 'AppointmentReminder',
+        'OrderPlaced', 'OrderPaid', 'OrderProcessing', 'OrderShipped', 
+        'OrderDelivered', 'OrderCancelled', 'DoctorConsultation'
+      ], 
       required: true 
     },
+    metadata: { type: Schema.Types.Mixed },
     isRead: { type: Boolean, default: false },
     scheduledFor: { type: Date },
     sentAt: { type: Date },

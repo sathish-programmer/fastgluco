@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { SupportedLanguage } from '../i18n/types';
+import { pushNotificationService } from '../services/pushNotificationService';
 
 export type FocusModeType =
   | 'PREVENTION'
@@ -273,6 +274,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     loadProfile();
+    if (token) {
+      pushNotificationService.init(apiUrl, token);
+    }
   }, [token]);
 
   const sendOtp = async (mobileNumber: string, email: string, sendSms: boolean = true): Promise<{ success: boolean; message?: string }> => {
@@ -406,6 +410,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    if (token) {
+      pushNotificationService.logout(apiUrl, token);
+    }
     localStorage.removeItem('fastgluco_token');
     localStorage.removeItem('fastgluco_refresh_token');
     localStorage.removeItem('fastgluco_user_cache');

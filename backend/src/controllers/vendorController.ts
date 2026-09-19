@@ -5,6 +5,7 @@ import { Vendor } from '../models/Vendor';
 import ShopOrder from '../models/ShopOrder';
 import { EmailService } from '../services/emailService';
 import { InvoiceService } from '../services/invoiceService';
+import { FCMService } from '../services/fcmService';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_12345!';
 
@@ -291,13 +292,60 @@ export class VendorController {
 
       await order.save();
 
-      // Trigger email updates
+      // Trigger email and push updates
+      const targetUserId = (order.userId as any)?._id ? (order.userId as any)._id.toString() : order.userId?.toString();
+
       if (deliveryStatus === 'delivered') {
         EmailService.sendOrderEmail('delivered', order._id.toString()).catch(console.error);
-      } else if (deliveryStatus === 'accepted') {
+        if (targetUserId) {
+          FCMService.sendNotificationToUser(targetUserId, {
+            title: 'Order Delivered',
+            body: `Your order #${order._id.toString().slice(-6).toUpperCase()} has been delivered successfully!`,
+            type: 'OrderDelivered',
+            data: {
+              route: 'Shop Orders',
+              orderId: order._id.toString()
+            }
+          }).catch(console.error);
+        }
+      } else if (deliveryStatus === 'accepted' || deliveryStatus === 'processing' || deliveryStatus === 'packed') {
         EmailService.sendOrderEmail('accepted', order._id.toString()).catch(console.error);
-      } else if (deliveryStatus === 'shipped') {
+        if (targetUserId) {
+          FCMService.sendNotificationToUser(targetUserId, {
+            title: 'Order Processing',
+            body: `Your order #${order._id.toString().slice(-6).toUpperCase()} is being prepared for dispatch.`,
+            type: 'OrderProcessing',
+            data: {
+              route: 'Shop Orders',
+              orderId: order._id.toString()
+            }
+          }).catch(console.error);
+        }
+      } else if (deliveryStatus === 'shipped' || deliveryStatus === 'out_for_delivery') {
         EmailService.sendOrderEmail('shipped', order._id.toString()).catch(console.error);
+        if (targetUserId) {
+          FCMService.sendNotificationToUser(targetUserId, {
+            title: 'Order Shipped',
+            body: `Great news! Your order #${order._id.toString().slice(-6).toUpperCase()} has been shipped.`,
+            type: 'OrderShipped',
+            data: {
+              route: 'Shop Orders',
+              orderId: order._id.toString()
+            }
+          }).catch(console.error);
+        }
+      } else if (deliveryStatus === 'cancelled') {
+        if (targetUserId) {
+          FCMService.sendNotificationToUser(targetUserId, {
+            title: 'Order Cancelled',
+            body: `Your order #${order._id.toString().slice(-6).toUpperCase()} has been cancelled.`,
+            type: 'OrderCancelled',
+            data: {
+              route: 'Shop Orders',
+              orderId: order._id.toString()
+            }
+          }).catch(console.error);
+        }
       }
 
       res.json(order);

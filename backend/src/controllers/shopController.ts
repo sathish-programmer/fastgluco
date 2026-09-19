@@ -9,6 +9,7 @@ import { PincodeShippingRule } from '../models/PincodeShippingRule';
 import { Coupon } from '../models/Coupon';
 import { User } from '../models/User';
 import Razorpay from 'razorpay';
+import { FCMService } from '../services/fcmService';
 
 // Predefined categories
 export const PREDEFINED_CATEGORIES = [
@@ -434,6 +435,17 @@ export const createOrder = async (req: Request, res: Response) => {
       const { EmailService } = require('../services/emailService');
       EmailService.sendOrderEmail('placed', newOrder._id.toString()).catch(console.error);
 
+      // Trigger FCM Push Notification
+      FCMService.sendNotificationToUser(userId.toString(), {
+        title: 'Order Placed Successfully',
+        body: `Your order for ₹${finalAmount} has been placed.`,
+        type: 'OrderPlaced',
+        data: {
+          route: 'Shop Orders',
+          orderId: newOrder._id.toString()
+        }
+      }).catch(console.error);
+
       return res.json({
         gateway: 'manual_bypass',
         orderId: newOrder._id,
@@ -524,6 +536,17 @@ export const verifyPayment = async (req: Request, res: Response) => {
     // Trigger confirmation email
     const { EmailService } = require('../services/emailService');
     EmailService.sendOrderEmail('placed', order._id.toString()).catch(console.error);
+
+    // Trigger FCM Push Notification
+    FCMService.sendNotificationToUser(order.userId.toString(), {
+      title: 'Order Payment Confirmed',
+      body: `Payment verified for order #${order._id.toString().slice(-6).toUpperCase()}. Your order is confirmed!`,
+      type: 'OrderPaid',
+      data: {
+        route: 'Shop Orders',
+        orderId: order._id.toString()
+      }
+    }).catch(console.error);
 
     res.json({ message: 'Payment verified successfully', order });
   } catch (err) {

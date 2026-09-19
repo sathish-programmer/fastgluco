@@ -1,5 +1,12 @@
 import { Schema, model, Document } from 'mongoose';
 
+export interface IDeviceToken {
+  token: string;
+  platform: 'android' | 'ios' | 'web';
+  deviceId?: string;
+  updatedAt: Date;
+}
+
 export interface IUser extends Document {
   name?: string;
   email?: string;
@@ -12,6 +19,7 @@ export interface IUser extends Document {
   goal?: 'Lose weight' | 'Maintain weight' | 'Gain weight';
   dailyCalorieTarget?: number;
   fcmToken?: string;
+  fcmTokens?: IDeviceToken[];
   spikeThreshold: number; // default: 90 mg/dL
   currency?: 'INR' | 'USD';
   lastGlucoseAlertSentAt?: Date;
@@ -64,6 +72,12 @@ const userSchema = new Schema<IUser>(
     },
     dailyCalorieTarget: { type: Number },
     fcmToken: { type: String },
+    fcmTokens: [{
+      token: { type: String, required: true },
+      platform: { type: String, enum: ['android', 'ios', 'web'], default: 'android' },
+      deviceId: { type: String },
+      updatedAt: { type: Date, default: Date.now }
+    }],
     spikeThreshold: { type: Number, default: 90 },
     currency: { type: String, enum: ['INR', 'USD'], default: 'INR' },
     lastGlucoseAlertSentAt: { type: Date },

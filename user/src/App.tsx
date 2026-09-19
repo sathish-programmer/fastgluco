@@ -138,11 +138,25 @@ const MainAppContent: React.FC = () => {
     const handleNav = (e: any) => {
       if (e.detail) setActiveTab(e.detail);
     };
+    const handleFCMNav = (e: any) => {
+      const { route, notificationType } = e.detail || {};
+      if (route === 'Appointments' || (notificationType && notificationType.startsWith('Appointment'))) {
+        setActiveTab('Book Appointment');
+      } else if (route === 'Shop Orders' || route === 'Orders' || (notificationType && notificationType.startsWith('Order'))) {
+        setActiveTab('Shop Orders');
+      } else if (route === 'Food Log') {
+        setActiveTab('Food Log');
+      } else if (route === 'Reports') {
+        setActiveTab('Reports');
+      }
+    };
     window.addEventListener('subScreenChange', handleSubScreen);
     window.addEventListener('navigateToTab', handleNav);
+    window.addEventListener('fcm_navigate_to_route', handleFCMNav);
     return () => {
       window.removeEventListener('subScreenChange', handleSubScreen);
       window.removeEventListener('navigateToTab', handleNav);
+      window.removeEventListener('fcm_navigate_to_route', handleFCMNav);
     };
   }, []);
 

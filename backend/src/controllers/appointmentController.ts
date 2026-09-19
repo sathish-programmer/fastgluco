@@ -8,6 +8,7 @@ import { EmailService } from '../services/emailService';
 import Razorpay from 'razorpay';
 import { PaymentGatewayConfig } from '../models/PaymentGatewayConfig';
 import { InvoiceService } from '../services/invoiceService';
+import { FCMService } from '../services/fcmService';
 
 /** Generate a valid Google Meet room code in the format: abc-defg-hij */
 function generateMeetCode(): string {
@@ -225,6 +226,17 @@ export class AppointmentController {
       // Trigger Email log in background
       EmailService.sendAppointmentEmail('booked', appointment._id.toString()).catch(console.error);
 
+      // Trigger FCM Push Notification
+      FCMService.sendNotificationToUser(appointment.userId.toString(), {
+        title: 'Appointment Booked',
+        body: `Your consultation request for ${appointment.date} at ${appointment.time} has been received.`,
+        type: 'AppointmentBooked',
+        data: {
+          route: 'Appointments',
+          appointmentId: appointment._id.toString()
+        }
+      }).catch(console.error);
+
       // Update recommendation status if provided
       if (recommendationId) {
         await ConsultationRecommendation.findByIdAndUpdate(recommendationId, {
@@ -254,6 +266,15 @@ export class AppointmentController {
         appt.status = 'pending';
         await appt.save();
         EmailService.sendAppointmentEmail('booked', appt._id.toString()).catch(console.error);
+        FCMService.sendNotificationToUser(appt.userId.toString(), {
+          title: 'Appointment Confirmed',
+          body: `Your appointment for ${appt.date} at ${appt.time} has been confirmed.`,
+          type: 'AppointmentConfirmed',
+          data: {
+            route: 'Appointments',
+            appointmentId: appt._id.toString()
+          }
+        }).catch(console.error);
         return res.json({ message: 'Payment verified (Bypassed)', appointment: appt });
       }
 
@@ -280,6 +301,16 @@ export class AppointmentController {
       await appt.save();
 
       EmailService.sendAppointmentEmail('booked', appt._id.toString()).catch(console.error);
+
+      FCMService.sendNotificationToUser(appt.userId.toString(), {
+        title: 'Payment Received & Appointment Confirmed',
+        body: `Payment completed for your appointment on ${appt.date} at ${appt.time}.`,
+        type: 'AppointmentConfirmed',
+        data: {
+          route: 'Appointments',
+          appointmentId: appt._id.toString()
+        }
+      }).catch(console.error);
 
       res.json({ message: 'Payment verified successfully.', appointment: appt });
     } catch (err: any) {
@@ -422,8 +453,29 @@ export class AppointmentController {
 
         // Trigger Email log in background
         EmailService.sendAppointmentEmail('completed', appt._id.toString()).catch(console.error);
+
+        // Send FCM notification for completed consultation
+        FCMService.sendNotificationToUser(appt.userId.toString(), {
+          title: 'Consultation Completed',
+          body: 'Your doctor has completed the consultation and uploaded notes/prescriptions.',
+          type: 'DoctorConsultation',
+          data: {
+            route: 'Appointments',
+            appointmentId: appt._id.toString()
+          }
+        }).catch(console.error);
       } else if (prescriptionUrl) {
         EmailService.sendAppointmentEmail('prescription', appt._id.toString()).catch(console.error);
+
+        FCMService.sendNotificationToUser(appt.userId.toString(), {
+          title: 'Prescription Available',
+          body: 'Your doctor has uploaded a prescription for your consultation.',
+          type: 'DoctorConsultation',
+          data: {
+            route: 'Appointments',
+            appointmentId: appt._id.toString()
+          }
+        }).catch(console.error);
       }
 
       res.json(appt);
@@ -450,6 +502,17 @@ export class AppointmentController {
 
       EmailService.sendAppointmentEmail('confirmed', appt._id.toString()).catch(console.error);
 
+      // Trigger FCM Push Notification for confirmation
+      FCMService.sendNotificationToUser(appt.userId.toString(), {
+        title: 'Appointment Confirmed',
+        body: `Your consultation on ${appt.date} at ${appt.time} has been confirmed.`,
+        type: 'AppointmentConfirmed',
+        data: {
+          route: 'Appointments',
+          appointmentId: appt._id.toString()
+        }
+      }).catch(console.error);
+
       res.json(appt);
     } catch (err: any) {
       res.status(500).json({ message: err.message || 'Error confirming appointment' });
@@ -466,6 +529,17 @@ export class AppointmentController {
       await appt.save();
 
       EmailService.sendAppointmentEmail('cancelled', appt._id.toString()).catch(console.error);
+
+      // Trigger FCM Push Notification for cancellation
+      FCMService.sendNotificationToUser(appt.userId.toString(), {
+        title: 'Appointment Cancelled',
+        body: `Your appointment for ${appt.date} at ${appt.time} was cancelled by the doctor.`,
+        type: 'AppointmentCancelled',
+        data: {
+          route: 'Appointments',
+          appointmentId: appt._id.toString()
+        }
+      }).catch(console.error);
 
       res.json(appt);
     } catch (err: any) {

@@ -78,7 +78,20 @@ export const NotificationBell: React.FC = () => {
     };
 
     const interval = setInterval(pollNotifications, 15000); // Poll every 15s
-    return () => clearInterval(interval);
+
+    const handleFCMReceived = (e: any) => {
+      const notif = e.detail || {};
+      if (notif.title) {
+        showToast(`${notif.title}: ${notif.body || ''}`, 'info');
+      }
+      pollNotifications();
+    };
+    window.addEventListener('fcm_notification_received', handleFCMReceived);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('fcm_notification_received', handleFCMReceived);
+    };
   }, [token, showToast]);
 
   // Handle click outside to close dropdown

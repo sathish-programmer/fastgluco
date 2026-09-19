@@ -339,6 +339,8 @@ router.get('/notifications/unread-count', NotificationController.getUnreadCount)
 router.get('/notifications', NotificationController.listRecent);
 router.post('/notifications/read-all', NotificationController.markAllAsRead);
 router.post('/notifications/:id/read', NotificationController.markAsRead);
+router.post('/notifications/fcm-token', NotificationController.registerFCMToken);
+router.delete('/notifications/fcm-token', NotificationController.removeFCMToken);
 router.delete('/notifications/:id', NotificationController.deleteNotification);
 router.delete('/notifications', NotificationController.clearAll);
 
