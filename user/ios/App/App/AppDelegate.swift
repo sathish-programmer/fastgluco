@@ -52,11 +52,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             completionHandler(.noData)
             return
         }
-        NotificationCenter.default.post(name: Notification.Name.capacitorDidReceiveRemoteNotification, object: [
-            "notification": userInfo,
-            "completionHandler": completionHandler
-        ])
-        completionHandler(.newData)
+        NotificationCenter.default.post(name: Notification.Name.init("didReceiveRemoteNotification"), object: completionHandler, userInfo: userInfo)
     }
 
 }
