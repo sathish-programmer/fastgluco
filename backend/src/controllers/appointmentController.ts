@@ -9,6 +9,9 @@ import Razorpay from 'razorpay';
 import { PaymentGatewayConfig } from '../models/PaymentGatewayConfig';
 import { InvoiceService } from '../services/invoiceService';
 import { FCMService } from '../services/fcmService';
+import path from 'path';
+import fs from 'fs';
+import { AuthRequest } from '../middlewares/authMiddleware';
 
 /** Generate a valid Google Meet room code in the format: abc-defg-hij */
 function generateMeetCode(): string {
@@ -558,4 +561,57 @@ export class AppointmentController {
     const min = m % 60;
     return `${h.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`;
   }
+
+  /**
+   * On-demand authenticated appointment invoice download
+   */
+  public static async downloadAppointmentInvoice(req: AuthRequest, res: Response) {
+    try {
+      const { id } = req.params;
+      const userId = req.user?.id;
+      const userRole = req.user?.role;
+
+      const appt = await Appointment.findById(id)
+        .populate('doctorId')
+        .populate('userId');
+
+      if (!appt) {
+        return res.status(404).json({ message: 'Appointment not found.' });
+      }
+
+      // Check authorization: owner, doctor, or Admin
+      const apptUserId = (appt.userId as any)?._id?.toString() || appt.userId?.toString();
+      const doctorUserId = (appt.doctorId as any)?._id?.toString();
+      if (apptUserId !== userId && userRole !== 'SuperAdmin' && userRole !== 'Admin' && req.user?.id !== doctorUserId) {
+        return res.status(403).json({ message: 'Access denied.' });
+      }
+
+      let filePath: string | null = null;
+      if (appt.invoiceUrl) {
+        const candidatePath = path.join(__dirname, '../../', appt.invoiceUrl);
+        if (fs.existsSync(candidatePath)) {
+          filePath = candidatePath;
+        }
+      }
+
+      if (!filePath) {
+        const invoicePath = await InvoiceService.generateAppointmentInvoicePDF(appt);
+        appt.invoiceUrl = invoicePath;
+        await appt.save();
+        filePath = path.join(__dirname, '../../', invoicePath);
+      }
+
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ message: 'Invoice file could not be generated.' });
+      }
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="Invoice-Consultation-${appt._id}.pdf"`);
+      return res.sendFile(filePath);
+    } catch (error: any) {
+      console.error('Error downloading appointment invoice:', error);
+      return res.status(500).json({ message: error.message || 'Failed to download invoice.' });
+    }
+  }
 }
+

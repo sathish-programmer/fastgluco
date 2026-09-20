@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Download, ExternalLink, FileText, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Download, FileText, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { downloadFile } from '../../utils/fileDownloader';
 
 interface ReportViewerScreenProps {
   bookingId: string;
@@ -11,8 +13,10 @@ interface ReportViewerScreenProps {
 export const ReportViewerScreen: React.FC<ReportViewerScreenProps> = ({ bookingId, onBack }) => {
   const { apiUrl, token } = useAuth();
   const { t } = useLanguage();
+  const { showToast } = useToast();
   const [report, setReport] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     fetchReport();
@@ -29,6 +33,27 @@ export const ReportViewerScreen: React.FC<ReportViewerScreenProps> = ({ bookingI
       console.error(e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownload = async () => {
+    if (!report?.pdfUrl || downloading) return;
+    setDownloading(true);
+    try {
+      const fullUrl = report.pdfUrl.startsWith('http')
+        ? report.pdfUrl
+        : `${apiUrl.replace(/\/api$/, '')}${report.pdfUrl}`;
+      await downloadFile({
+        url: fullUrl,
+        filename: `LabReport-${report._id.slice(-6).toUpperCase()}.pdf`,
+        token
+      });
+      showToast(t('reportDownloaded', 'Report downloaded successfully.'), 'success');
+    } catch (err: any) {
+      console.error('Error downloading lab report:', err);
+      showToast(err.message || 'Failed to download report.', 'error');
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -56,14 +81,14 @@ export const ReportViewerScreen: React.FC<ReportViewerScreenProps> = ({ bookingI
         </div>
         
         {report.pdfUrl && (
-          <a 
-            href={report.pdfUrl}
-            download
-            className="h-10 w-10 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-center text-indigo-600 hover:bg-indigo-100 transition-all shrink-0"
+          <button 
+            onClick={handleDownload}
+            disabled={downloading}
+            className="h-10 w-10 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-center text-indigo-600 hover:bg-indigo-100 disabled:opacity-50 transition-all shrink-0"
             title={t('downloadPdfReport', 'Download PDF Report')}
           >
-            <Download className="h-4 w-4" />
-          </a>
+            {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+          </button>
         )}
       </div>
 
@@ -73,14 +98,23 @@ export const ReportViewerScreen: React.FC<ReportViewerScreenProps> = ({ bookingI
             <FileText className="h-16 w-16 text-slate-300 mb-4" />
             <h3 className="font-bold text-slate-700">{t('pdfReportAvailable', 'PDF Report Available')}</h3>
             <p className="text-xs text-slate-500 mb-6 max-w-xs text-center mt-2">{t('pdfReportReadyDesc', 'Your detailed diagnostic results are ready. Download or view them externally.')}</p>
-            <a 
-              href={report.pdfUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-sm flex items-center gap-2"
+            <button 
+              onClick={handleDownload}
+              disabled={downloading}
+              className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-sm flex items-center gap-2 transition-all"
             >
-              {t('openPdfDocument', 'Open PDF Document')} <ExternalLink className="h-4 w-4" />
-            </a>
+              {downloading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>{t('common.downloading', 'Downloading...')}</span>
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4" />
+                  <span>{t('downloadPdfReport', 'Download PDF Report')}</span>
+                </>
+              )}
+            </button>
           </div>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center min-h-[300px]">

@@ -22,7 +22,7 @@ const allowedOrigins = [
   'http://localhost:3000'
 ];
 
-app.use(cors({
+const corsOptions: cors.CorsOptions = {
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps, curl, postman)
     if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.mitoreboot.in')) {
@@ -31,12 +31,25 @@ app.use(cors({
     return callback(null, true); // Fallback allow all origins to prevent CORS blocks
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'Accept',
+    'Origin',
+    'X-Platform',
+    'x-platform',
+    'Cache-Control',
+    'sec-ch-ua',
+    'sec-ch-ua-mobile',
+    'sec-ch-ua-platform'
+  ],
   credentials: true,
   optionsSuccessStatus: 200
-}));
+};
 
-app.options('*', cors());
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // 3. Rate Limiter Middleware to avoid DDoS and brute force
 const limiter = rateLimit({

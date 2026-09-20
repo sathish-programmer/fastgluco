@@ -460,7 +460,7 @@ const MainAppContent: React.FC = () => {
         }}
       />
       {/* Dynamic Header with safe area padding for mobile notches */}
-      {!isSubScreenActive && activeTab !== 'Subscription' && (
+      {!isSubScreenActive && (
         <header className={`sticky top-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-100 dark:border-slate-800/80 z-20 px-2.5 sm:px-4 ${
           !isOnline ? 'pt-2.5' : 'pt-[calc(env(safe-area-inset-top,0px)+10px)]'
         } pb-2.5 max-w-5xl w-full mx-auto flex items-center justify-between gap-1.5 sm:gap-3 transition-all duration-300`}>
@@ -554,7 +554,7 @@ const MainAppContent: React.FC = () => {
         {activeTab === 'Profile' && <Profile onNavigateToTab={setActiveTab} />}
         {activeTab === 'Subscription' && (
           <Subscription 
-            onBack={() => setActiveTab('Dashboard')} 
+            onBack={() => setActiveTab('Home')} 
             onSuccess={() => {
               checkSubscription();
               setActiveTab('Home');

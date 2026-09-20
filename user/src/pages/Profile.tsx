@@ -62,7 +62,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
   const { showToast } = useToast();
   const { setTheme, isDark } = useTheme();
   const { t, language, currentLanguageOption } = useLanguage();
-  const isIOSAppStoreBlocked = Capacitor.getPlatform() === 'ios';
+  const isIOSAppStoreBlocked = Capacitor.getPlatform() === 'ios' && !branding.enableIOSExternalPayments;
 
   // Tabs for profile section: 'settings' or 'education' or 'subscription' or 'notifications'
   const [subView, setSubView] = useState<'settings' | 'education' | 'subscription' | 'notifications'>('settings');

@@ -14,10 +14,15 @@ import {
   Percent,
   Sparkles,
   Download,
-  ShieldCheck
+  ShieldCheck,
+  Ticket,
+  Loader2,
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 
 import { Capacitor } from '@capacitor/core';
+import { downloadFile } from '../utils/fileDownloader';
 
 interface FeatureFlag {
   unlimitedReports: boolean;
@@ -87,7 +92,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
   const { user, token, apiUrl, branding } = useAuth();
   const { t, language } = useLanguage();
   const activeLocale = LOCALE_MAP[language] || 'en-US';
-  const isIOSAppStoreBlocked = Capacitor.getPlatform() === 'ios';
+  const isIOSAppStoreBlocked = Capacitor.getPlatform() === 'ios' && !branding.enableIOSExternalPayments;
 
   const [plans, setPlans] = useState<Plan[]>([]);
   const [activeSub, setActiveSub] = useState<SubscriptionDetails | null>(null);
@@ -124,7 +129,8 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'X-Platform': Capacitor.getPlatform()
         },
         body: JSON.stringify({ couponCode: couponCode.trim() })
       });
@@ -248,40 +254,17 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
   const handleDownloadPDF = async (invoiceId: string, invoiceNumber: string) => {
     setError(null);
     setSuccessMsg(null);
-
-    if (Capacitor.isNativePlatform()) {
-      const downloadUrl = `${apiUrl}/subscriptions/invoices/${invoiceId}/download?token=${encodeURIComponent(token || '')}`;
-      window.open(downloadUrl, '_system');
-      setSuccessMsg('Invoice download started.');
-      return;
-    }
-
     setActionLoading(true);
+
     try {
-      const res = await fetch(`${apiUrl}/subscriptions/invoices/${invoiceId}/download`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      await downloadFile({
+        url: `${apiUrl}/subscriptions/invoices/${invoiceId}/download`,
+        filename: `Invoice-${invoiceNumber}.pdf`,
+        token
       });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || 'Failed to generate PDF invoice.');
-      }
-
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `Invoice-${invoiceNumber}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      if (link.parentNode) {
-        link.parentNode.removeChild(link);
-      }
-      window.URL.revokeObjectURL(url);
       setSuccessMsg('Invoice PDF downloaded successfully.');
     } catch (err: any) {
+      console.error('Error downloading invoice PDF:', err);
       setError(err.message || 'Error downloading invoice PDF.');
     } finally {
       setActionLoading(false);
@@ -299,7 +282,8 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'X-Platform': Capacitor.getPlatform()
         },
         body: JSON.stringify({
           planId,
@@ -324,7 +308,8 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${token}`,
+            'X-Platform': Capacitor.getPlatform()
           },
           body: JSON.stringify({ orderId: orderData.orderId })
         });
@@ -350,7 +335,8 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}`
+                  'Authorization': `Bearer ${token}`,
+                  'X-Platform': Capacitor.getPlatform()
                 },
                 body: JSON.stringify({
                   razorpay_order_id: response.razorpay_order_id,
@@ -491,10 +477,10 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
 
   return (
     <div className="pb-32 px-4 sm:px-6 md:px-10 lg:px-16 max-w-3xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-full h-full overflow-y-auto w-full">
-      {/* Sleek Sticky Notch-Safe Header */}
+      {/* Sleek Sticky Header */}
       <div 
-        className="sticky top-0 z-40 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 -mx-4 sm:-mx-6 md:-mx-10 lg:-mx-16 px-4 sm:px-6 md:px-10 lg:px-16 pb-3 mb-6 shadow-xs flex items-center justify-between"
-        style={{ paddingTop: 'calc(env(safe-area-inset-top, 24px) + 12px)' }}
+        className={`sticky top-0 z-40 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 -mx-4 sm:-mx-6 md:-mx-10 lg:-mx-16 px-4 sm:px-6 md:px-10 lg:px-16 pb-3 ${isBlocking ? 'mb-6' : 'mb-4'} shadow-xs flex items-center justify-between`}
+        style={isBlocking ? { paddingTop: 'calc(env(safe-area-inset-top, 24px) + 12px)' } : { paddingTop: '12px' }}
       >
         <div className="flex items-center space-x-3">
           {!isBlocking && (
@@ -664,40 +650,75 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
 
       {/* Pricing Cards Listing */}
       <div className="mb-8">
-        <div className="flex justify-between items-center mb-4">
-          <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{t('sub.availablePlans', 'Available Pricing Plans')}</h4>
+        {/* Modern Section Header & Segmented Billing Cycle Selector */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+          <div>
+            <h4 className="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+              <span>{t('sub.availablePlans', 'Available Pricing Plans')}</span>
+            </h4>
+            <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium mt-0.5">
+              {t('sub.flexibleBilling', 'Flexible billing • Cancel anytime')}
+            </p>
+          </div>
 
-          {/* Toggle Cycle */}
-          <div className="bg-slate-200 dark:bg-slate-800 p-0.5 rounded-full inline-flex items-center text-[10px] font-bold">
+          {/* Premium Segmented Toggle */}
+          <div className="self-stretch sm:self-auto bg-slate-100 dark:bg-slate-800/90 p-1 rounded-2xl flex items-center border border-slate-200/80 dark:border-slate-700/60 shadow-inner">
             <button
+              type="button"
               onClick={() => setBillingCycle('monthly')}
-              className={`px-3 py-1 rounded-full transition-all ${billingCycle === 'monthly' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}
+              className={`flex-1 sm:flex-initial text-center px-4 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 ${
+                billingCycle === 'monthly'
+                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm font-black'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
             >
               {t('sub.monthly', 'Monthly')}
             </button>
             <button
+              type="button"
               onClick={() => setBillingCycle('yearly')}
-              className={`px-3 py-1 rounded-full transition-all ${billingCycle === 'yearly' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}
+              className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 ${
+                billingCycle === 'yearly'
+                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm font-black'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
             >
-              {t('sub.yearly', 'Yearly')} ({yearlySavingsPercentage > 0 ? t('sub.savePercentage', { pct: yearlySavingsPercentage }, `Save ~${yearlySavingsPercentage}%`) : t('sub.yearlyBilling', 'Billing')})
+              <span>{t('sub.yearly', 'Yearly')}</span>
+              {yearlySavingsPercentage > 0 && (
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-black bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
+                  {t('sub.savePercentage', { percent: yearlySavingsPercentage, pct: yearlySavingsPercentage }, `Save ${yearlySavingsPercentage}%`)}
+                </span>
+              )}
             </button>
           </div>
         </div>
 
         {/* Coupon Input Area */}
         {branding.enableSubscriptionCoupons && !isIOSAppStoreBlocked && (
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-200 dark:border-slate-800 shadow-soft mb-4">
-            <label className="block text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5">
-              Have a promo coupon code?
-            </label>
-            <div className="flex space-x-2">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800 shadow-soft mb-6 transition-all">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                <Ticket className="w-3.5 h-3.5 text-primary" />
+                <span>{t('sub.haveCoupon', 'Have a promo coupon code?')}</span>
+              </label>
+              {appliedCoupon && (
+                <span className="text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                  Applied: {appliedCoupon.code}
+                </span>
+              )}
+            </div>
+            <div className="flex gap-2">
               <input
                 type="text"
-                placeholder={t('enterPromoCodePlaceholder')}
+                placeholder={t('enterPromoCodePlaceholder', 'e.g. SAVE20, FREE100')}
                 value={couponCode}
-                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                onChange={(e) => {
+                  setCouponCode(e.target.value.toUpperCase());
+                  if (couponError) setCouponError(null);
+                }}
                 disabled={couponLoading || !!appliedCoupon}
-                className="flex-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800 uppercase focus:outline-none focus:ring-2 focus:ring-primary focus:bg-white dark:focus:bg-slate-900 disabled:opacity-70"
+                className="flex-1 px-3.5 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 bg-slate-50 dark:bg-slate-800/60 uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary focus:bg-white dark:focus:bg-slate-900 disabled:opacity-60 transition-all"
               />
               {appliedCoupon ? (
                 <button
@@ -707,7 +728,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                     setCouponCode('');
                     setCouponSuccess(null);
                   }}
-                  className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-extrabold px-4 py-2 rounded-xl transition-all border border-slate-200 dark:border-slate-700"
+                  className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-extrabold px-4 py-2.5 rounded-xl transition-all border border-slate-200 dark:border-slate-700"
                 >
                   Clear
                 </button>
@@ -717,21 +738,24 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                   id="apply-coupon-btn"
                   onClick={handleApplyCoupon}
                   disabled={couponLoading || !couponCode.trim()}
-                  className="bg-primary hover:bg-primary-dark text-white text-xs font-extrabold px-4 py-2 rounded-xl transition-all shadow-sm disabled:opacity-50"
+                  className="bg-primary hover:bg-primary-dark disabled:opacity-50 text-white text-xs font-black px-5 py-2.5 rounded-xl transition-all shadow-md shadow-primary/20 flex items-center gap-1.5 shrink-0"
                 >
-                  {couponLoading ? 'Checking...' : 'Apply'}
+                  {couponLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>{couponLoading ? 'Checking...' : 'Apply'}</span>
                 </button>
               )}
             </div>
             {couponError && (
-              <p className="text-[10px] text-red-500 font-bold mt-1.5 flex items-center space-x-1">
-                <span>⚠️ {couponError}</span>
-              </p>
+              <div className="mt-2.5 flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200/60 dark:border-rose-900/40 text-rose-700 dark:text-rose-400 text-xs font-semibold">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-500" />
+                <span>{couponError}</span>
+              </div>
             )}
             {couponSuccess && (
-              <p className="text-[10px] text-green-600 dark:text-green-400 font-extrabold mt-1.5 flex items-center space-x-1">
-                <span>✅ {couponSuccess}</span>
-              </p>
+              <div className="mt-2.5 flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-900/40 text-emerald-700 dark:text-emerald-400 text-xs font-semibold">
+                <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-emerald-500" />
+                <span>{couponSuccess}</span>
+              </div>
             )}
           </div>
         )}
@@ -838,8 +862,9 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                     </div>
                     {plan.trialDays > 0 && (
                       <div className="pt-1 flex items-center justify-between">
-                        <span className="text-[10px] font-extrabold text-blue-700 dark:text-blue-300 bg-blue-50/90 dark:bg-blue-900/30 border border-blue-200/80 dark:border-blue-800/40 px-2.5 py-0.5 rounded-full">
-                          🎁 {plan.trialDays} Days Free Trial included
+                        <span className="text-[10px] font-extrabold text-blue-700 dark:text-blue-300 bg-blue-50/90 dark:bg-blue-900/30 border border-blue-200/80 dark:border-blue-800/40 px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
+                          <Sparkles className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                          <span>{plan.trialDays} Days Free Trial included</span>
                         </span>
                       </div>
                     )}

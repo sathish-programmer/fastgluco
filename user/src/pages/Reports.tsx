@@ -28,6 +28,7 @@ interface ReportsProps {
 }
 
 import { Capacitor } from '@capacitor/core';
+import { downloadFile } from '../utils/fileDownloader';
 
 export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) => {
   const { token, apiUrl, branding } = useAuth();
@@ -41,6 +42,8 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
   const [history, setHistory] = useState<any[]>([]);
   const [reprocessingId, setReprocessingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [downloadingReportId, setDownloadingReportId] = useState<string | null>(null);
+  const [isGeneratingUserReport, setIsGeneratingUserReport] = useState<boolean>(false);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [exportRange, setExportRange] = useState<string>('week');
   const [exportCustomFrom, setExportCustomFrom] = useState<string>('');
@@ -264,45 +267,52 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
     }
   };
 
-  const handleDownloadReport = async (reportId: string) => {
-    if (!token) return;
+  const handleDownloadReport = async (reportId: string, originalFileName?: string) => {
+    if (!token || downloadingReportId) return;
+    setDownloadingReportId(reportId);
     try {
-      showToast('Report download started.', 'success');
-      const downloadUrl = `${apiUrl}/reports/${reportId}/download?token=${encodeURIComponent(token)}`;
-      if (Capacitor.isNativePlatform()) {
-        // In native Android/iOS app shell containers, window.open fails due to strict Webview sandbox rules.
-        // Opening directly in the native device browser allows native OS file download handlers to function.
-        window.open(downloadUrl, '_system');
-      } else {
-        window.open(downloadUrl, '_blank');
-      }
-    } catch (err) {
-      console.error(err);
-      showToast('Error downloading file.', 'error');
+      const filename = originalFileName || `Report-${reportId}.pdf`;
+      const downloadUrl = `${apiUrl}/reports/${reportId}/download`;
+      await downloadFile({
+        url: downloadUrl,
+        filename,
+        token
+      });
+      showToast('Report downloaded successfully.', 'success');
+    } catch (err: any) {
+      console.error('Error downloading report:', err);
+      showToast(err.message || 'Error downloading file.', 'error');
+    } finally {
+      setDownloadingReportId(null);
     }
   };
 
-  const handleDownloadUserReport = async () => {
-    if (!token) return;
+  const handleDownloadUserReport = async (explicitRange?: string) => {
+    if (!token || isGeneratingUserReport) return;
+    setIsGeneratingUserReport(true);
+    showToast('Generating report PDF. Please wait...', 'info');
+
+    const effectiveRange = explicitRange || exportRange;
     try {
-      showToast('Generating report PDF. Please wait...', 'info');
-      const safeAppName = branding.appName.replace(/[^a-z0-9]/gi, '_');
-      let rangeParam = exportRange;
-      if (exportRange === 'custom' && exportCustomFrom && exportCustomTo) {
+      const safeAppName = (branding?.appName || 'MitoReboot').replace(/[^a-z0-9]/gi, '_');
+      let rangeParam = effectiveRange;
+      if (effectiveRange === 'custom' && exportCustomFrom && exportCustomTo) {
         rangeParam = `custom&startDate=${exportCustomFrom}&endDate=${exportCustomTo}`;
       }
-      const filename = `${safeAppName}_Health_Report-${exportRange}-${new Date().toISOString().split('T')[0]}.pdf`;
-      const downloadUrl = `${apiUrl}/reports/user-pdf?range=${rangeParam}&token=${encodeURIComponent(token)}&filename=${encodeURIComponent(filename)}`;
+      const filename = `${safeAppName}_Health_Report-${effectiveRange}-${new Date().toISOString().split('T')[0]}.pdf`;
+      const downloadUrl = `${apiUrl}/reports/user-pdf?range=${rangeParam}&filename=${encodeURIComponent(filename)}`;
       
-      if (Capacitor.isNativePlatform()) {
-        // Trigger system external browser to handle download on native iOS/Android devices
-        window.open(downloadUrl, '_system');
-      } else {
-        window.open(downloadUrl, '_blank');
-      }
+      await downloadFile({
+        url: downloadUrl,
+        filename,
+        token
+      });
+      showToast('Report PDF downloaded successfully.', 'success');
     } catch (err: any) {
-      console.error(err);
-      showToast('Error generating report.', 'error');
+      console.error('Error generating report PDF:', err);
+      showToast(err.message || 'Error generating report.', 'error');
+    } finally {
+      setIsGeneratingUserReport(false);
     }
   };
 
@@ -477,13 +487,18 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
         <button
           onClick={() => {
             setExportRange('week');
-            handleDownloadUserReport();
+            handleDownloadUserReport('week');
           }}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-black py-3 px-4 rounded-2xl shadow-md shadow-blue-600/20 transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer"
+          disabled={isGeneratingUserReport}
+          className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-black py-3 px-4 rounded-2xl shadow-md shadow-blue-600/20 transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer"
         >
-          <FileText className="h-4 w-4" />
-          <span>{t('reports.exportDoctorSummaryPdf', 'Export 1-Page Doctor Summary PDF')}</span>
-          <ArrowRight className="h-3.5 w-3.5" />
+          {isGeneratingUserReport ? (
+            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+          ) : (
+            <FileText className="h-4 w-4" />
+          )}
+          <span>{isGeneratingUserReport ? t('sub.generatingPdf', 'Generating PDF...') : t('reports.exportDoctorSummaryPdf', 'Export 1-Page Doctor Summary PDF')}</span>
+          {!isGeneratingUserReport && <ArrowRight className="h-3.5 w-3.5" />}
         </button>
       </motion.div>
 
@@ -554,11 +569,16 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
         )}
 
         <button
-          onClick={handleDownloadUserReport}
-          className="w-full bg-primary hover:bg-primary/95 dark:bg-primary-dark text-white text-xs font-bold px-5 py-2.5 rounded-2xl shadow-soft transition-all flex items-center justify-center gap-1.5"
+          onClick={() => handleDownloadUserReport()}
+          disabled={isGeneratingUserReport}
+          className="w-full bg-primary hover:bg-primary/95 dark:bg-primary-dark disabled:opacity-50 text-white text-xs font-bold px-5 py-2.5 rounded-2xl shadow-soft transition-all flex items-center justify-center gap-1.5 cursor-pointer"
         >
-          <FileText className="h-3.5 w-3.5" />
-          {t('reports.downloadPdf', 'Download PDF')}
+          {isGeneratingUserReport ? (
+            <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent" />
+          ) : (
+            <FileText className="h-3.5 w-3.5" />
+          )}
+          <span>{isGeneratingUserReport ? t('sub.generatingPdf', 'Generating PDF...') : t('reports.downloadPdf', 'Download PDF')}</span>
         </button>
       </motion.div>
 
@@ -640,11 +660,16 @@ export const Reports: React.FC<ReportsProps> = ({ onNavigateToTab, features }) =
                 <div className="text-right flex items-center space-x-1 shrink-0">
                   {features?.exportReports && (
                     <button
-                      onClick={() => handleDownloadReport(report._id)}
-                      className="p-2 rounded-xl text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-primary dark:hover:text-primary-light transition-all"
+                      onClick={() => handleDownloadReport(report._id, report.fileName)}
+                      disabled={downloadingReportId === report._id}
+                      className="p-2 rounded-xl text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-primary dark:hover:text-primary-light transition-all disabled:opacity-50 cursor-pointer"
                       title={t('downloadOriginalReport')}
                     >
-                      <DownloadCloud className="h-4 w-4" />
+                      {downloadingReportId === report._id ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                      ) : (
+                        <DownloadCloud className="h-4 w-4" />
+                      )}
                     </button>
                   )}
                   <button

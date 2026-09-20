@@ -371,6 +371,7 @@ router.post('/shop/check-pincode', authenticateToken, requireRole(['User', 'Supe
 router.get('/shop/coupons', authenticateToken, requireRole(['User']), ShopController.getAvailableCoupons);
 router.post('/shop/create-order', authenticateToken, requireRole(['User']), ShopController.createOrder);
 router.post('/shop/verify-payment', authenticateToken, requireRole(['User']), ShopController.verifyPayment);
+router.get('/shop/orders/:orderId/invoice', authenticateToken, requireRole(['User', 'SuperAdmin', 'Admin']), ShopController.downloadShopOrderInvoice);
 router.post('/shop/reviews', authenticateToken, requireRole(['User']), ShopController.submitProductReview);
 router.get('/shop/products/:id/reviews', authenticateToken, requireRole(['User']), ShopController.getProductReviews);
 router.get('/patient/reviews', authenticateToken, requireRole(['User']), ShopController.getPatientReviews);
@@ -669,6 +670,8 @@ router.post('/patient/appointments', authenticateToken, requireRole(['User']), A
 router.get('/patient/appointments', authenticateToken, requireRole(['User']), AppointmentController.getPatientAppointments);
 router.post('/patient/appointments/verify-payment', authenticateToken, requireRole(['User']), AppointmentController.verifyAppointmentPayment);
 router.post('/patient/appointments/:appointmentId/cancel-payment', authenticateToken, requireRole(['User']), AppointmentController.cancelAppointmentPayment);
+router.get('/patient/appointments/:id/invoice', authenticateToken, requireRole(['User', 'Doctor', 'SuperAdmin', 'Admin']), AppointmentController.downloadAppointmentInvoice);
+router.get('/appointments/:id/invoice', authenticateToken, requireRole(['User', 'Doctor', 'SuperAdmin', 'Admin']), AppointmentController.downloadAppointmentInvoice);
 
 // Consultation Recommendation Endpoints
 router.get('/admin/consultations/analytics', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ConsultationController.getAnalytics);

@@ -12,6 +12,10 @@ import { Vendor } from '../models/Vendor';
 import { VendorAdapterFactory } from '../services/vendorAdapters/VendorAdapterFactory';
 import Razorpay from 'razorpay';
 import { FCMService } from '../services/fcmService';
+import path from 'path';
+import fs from 'fs';
+import { InvoiceService } from '../services/invoiceService';
+import { AuthRequest } from '../middlewares/authMiddleware';
 
 
 // Predefined categories
@@ -1185,3 +1189,54 @@ export const checkPincodeServiceability = async (req: Request, res: Response) =>
     return res.status(500).json({ message: err.message || 'Error checking pincode serviceability.' });
   }
 };
+
+// On-demand authenticated Shop Order Invoice download
+export const downloadShopOrderInvoice = async (req: AuthRequest, res: Response) => {
+  try {
+    const { orderId } = req.params;
+    const userId = req.user?.id;
+    const userRole = req.user?.role;
+
+    const order = await ShopOrder.findById(orderId)
+      .populate('userId', 'name email mobileNumber')
+      .populate('vendorId');
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found.' });
+    }
+
+    // Authorization: owner or Admin/SuperAdmin
+    const orderUserId = (order.userId as any)?._id?.toString() || order.userId?.toString();
+    if (orderUserId !== userId && userRole !== 'SuperAdmin' && userRole !== 'Admin') {
+      return res.status(403).json({ message: 'Access denied.' });
+    }
+
+    let filePath: string | null = null;
+    if (order.invoiceUrl) {
+      const candidatePath = path.join(__dirname, '../../', order.invoiceUrl);
+      if (fs.existsSync(candidatePath)) {
+        filePath = candidatePath;
+      }
+    }
+
+    // If invoice not generated yet or file missing on disk, generate dynamically
+    if (!filePath) {
+      const relPath = await InvoiceService.generateInvoicePDF(order);
+      order.invoiceUrl = relPath;
+      await order.save();
+      filePath = path.join(__dirname, '../../', relPath);
+    }
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: 'Invoice file could not be generated.' });
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="Invoice-${order._id}.pdf"`);
+    return res.sendFile(filePath);
+  } catch (error: any) {
+    console.error('Error downloading shop order invoice:', error);
+    return res.status(500).json({ message: error.message || 'Failed to download invoice.' });
+  }
+};
+

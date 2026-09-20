@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { Calendar as CalendarIcon, Clock, ArrowLeft, Star, Sparkles, Globe, Video, Building2 } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, ArrowLeft, Star, Sparkles, Globe, Video, Building2, Download, FileText, Loader2 } from 'lucide-react';
 import { useConsultation } from '../../context/ConsultationContext';
-import { Capacitor } from '@capacitor/core';
+import { downloadFile } from '../../utils/fileDownloader';
 
 interface BookAppointmentScreenProps {
   onBack?: () => void;
@@ -88,6 +88,51 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
   const [ratingApptId, setRatingApptId] = useState<string | null>(null);
   const [ratingVal, setRatingVal] = useState(5);
   const [feedbackText, setFeedbackText] = useState('');
+
+  // Download states
+  const [downloadingApptInvoiceId, setDownloadingApptInvoiceId] = useState<string | null>(null);
+  const [downloadingPrescriptionId, setDownloadingPrescriptionId] = useState<string | null>(null);
+
+  const handleDownloadAppointmentInvoice = async (apptId: string) => {
+    if (downloadingApptInvoiceId) return;
+    setDownloadingApptInvoiceId(apptId);
+    try {
+      const url = `${apiUrl}/appointments/${apptId}/invoice`;
+      await downloadFile({
+        url,
+        filename: `Invoice-Consultation-${apptId.slice(-6).toUpperCase()}.pdf`,
+        token
+      });
+      showToast('Invoice downloaded successfully.', 'success');
+    } catch (err: any) {
+      console.error('Error downloading consultation invoice:', err);
+      showToast(err.message || 'Failed to download invoice.', 'error');
+    } finally {
+      setDownloadingApptInvoiceId(null);
+    }
+  };
+
+  const handleDownloadPrescription = async (apptId: string, prescriptionUrl: string) => {
+    if (downloadingPrescriptionId) return;
+    setDownloadingPrescriptionId(apptId);
+    try {
+      const url = prescriptionUrl.startsWith('http') 
+        ? prescriptionUrl 
+        : `${apiUrl.replace(/\/api$/, '')}${prescriptionUrl}`;
+      const ext = prescriptionUrl.split('.').pop() || 'pdf';
+      await downloadFile({
+        url,
+        filename: `Prescription-${apptId.slice(-6).toUpperCase()}.${ext}`,
+        token
+      });
+      showToast('Prescription downloaded successfully.', 'success');
+    } catch (err: any) {
+      console.error('Error downloading prescription:', err);
+      showToast(err.message || 'Failed to download prescription.', 'error');
+    } finally {
+      setDownloadingPrescriptionId(null);
+    }
+  };
 
   // Generate next 14 days for the date picker
   const upcomingDates = Array.from({length: 14}, (_, i) => {
@@ -777,31 +822,42 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
 
                   {appt.prescriptionUrl && (
                     <button
-                      onClick={() => {
-                        const downloadUrl = appt.prescriptionUrl.startsWith('http') 
-                          ? appt.prescriptionUrl 
-                          : `${apiUrl.replace(/\/api$/, '')}${appt.prescriptionUrl}`;
-                        if (Capacitor.isNativePlatform()) {
-                          window.open(downloadUrl, '_system');
-                        } else {
-                          window.open(downloadUrl, '_blank');
-                        }
-                      }}
-                      className="block text-center w-full py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-xs font-bold mt-2 shadow-sm transition-all"
+                      onClick={() => handleDownloadPrescription(appt._id, appt.prescriptionUrl)}
+                      disabled={downloadingPrescriptionId === appt._id}
+                      className="flex items-center justify-center gap-2 w-full py-2 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white rounded-lg text-xs font-bold mt-2 shadow-sm transition-all"
                     >
-                      {t('diag.viewPrescriptionAttachment', 'View Prescription Attachment')}
+                      {downloadingPrescriptionId === appt._id ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>{t('common.downloading', 'Downloading...')}</span>
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="w-3.5 h-3.5" />
+                          <span>{t('diag.viewPrescriptionAttachment', 'Download Prescription Attachment')}</span>
+                        </>
+                      )}
                     </button>
                   )}
 
-                  {appt.invoiceUrl && (
-                    <a
-                      href={`${apiUrl.replace(/\/api$/, '')}${appt.invoiceUrl}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block text-center w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold mt-2 shadow-sm transition-all"
+                  {(appt.invoiceUrl || appt.status === 'completed' || appt.paymentStatus === 'paid') && (
+                    <button
+                      onClick={() => handleDownloadAppointmentInvoice(appt._id)}
+                      disabled={downloadingApptInvoiceId === appt._id}
+                      className="flex items-center justify-center gap-2 w-full py-2 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white rounded-lg text-xs font-bold mt-2 shadow-sm transition-all"
                     >
-                      {t('diag.downloadInvoicePdf', 'Download Invoice PDF')}
-                    </a>
+                      {downloadingApptInvoiceId === appt._id ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>{t('common.downloading', 'Downloading...')}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Download className="w-3.5 h-3.5" />
+                          <span>{t('diag.downloadInvoicePdf', 'Download Invoice PDF')}</span>
+                        </>
+                      )}
+                    </button>
                   )}
 
                   {appt.status === 'completed' && !appt.hasFeedback && (

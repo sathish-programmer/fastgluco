@@ -27,6 +27,23 @@ export class SubscriptionController {
   }
 
   /**
+   * Helper to detect if request originates strictly from native iOS App Store build (Capacitor iOS)
+   * Apple Guideline 3.1.1 applies strictly to iOS App Store native builds, NOT Web or Android.
+   */
+  private static isIOSNativeApp(req: AuthRequest): boolean {
+    const platformHeader = (req.headers['x-platform'] as string || '').toLowerCase().trim();
+    if (platformHeader === 'ios') return true;
+    if (platformHeader === 'android' || platformHeader === 'web') return false;
+
+    const origin = (req.headers['origin'] as string || '').toLowerCase();
+    const isNativeScheme = origin.startsWith('capacitor://') || origin.startsWith('ionic://');
+    if (isNativeScheme && /iPhone|iPad|iPod/i.test(req.headers['user-agent'] || '')) {
+      return true;
+    }
+    return false;
+  }
+
+  /**
    * Validate coupon code for a selected plan
    */
   public static async validateCoupon(req: AuthRequest, res: Response) {
@@ -37,8 +54,7 @@ export class SubscriptionController {
       }
 
       const config = await PaymentGatewayConfig.findOne();
-      const platformHeader = req.headers['x-platform'];
-      const isIOS = platformHeader === 'ios' || (!platformHeader && /iPhone|iPad|iPod/i.test(req.headers['user-agent'] || ''));
+      const isIOS = SubscriptionController.isIOSNativeApp(req);
       if (isIOS && config && !config.enableIOSExternalPayments) {
         return res.status(403).json({ message: 'Promo code unlock is disabled on iOS.' });
       }
@@ -169,8 +185,7 @@ export class SubscriptionController {
 
       // Fetch gateway configuration details early for hardblock check
       const config = await PaymentGatewayConfig.findOne();
-      const platformHeader = req.headers['x-platform'];
-      const isIOS = platformHeader === 'ios' || (!platformHeader && /iPhone|iPad|iPod/i.test(req.headers['user-agent'] || ''));
+      const isIOS = SubscriptionController.isIOSNativeApp(req);
       if (isIOS && config && !config.enableIOSExternalPayments) {
         return res.status(403).json({ message: 'External subscription payments disabled on iOS.' });
       }
@@ -380,8 +395,7 @@ export class SubscriptionController {
       // Fetch gateway configurations
       const config = await PaymentGatewayConfig.findOne();
 
-      const platformHeader = req.headers['x-platform'];
-      const isIOS = platformHeader === 'ios' || (!platformHeader && /iPhone|iPad|iPod/i.test(req.headers['user-agent'] || ''));
+      const isIOS = SubscriptionController.isIOSNativeApp(req);
       if (isIOS && config && !config.enableIOSExternalPayments) {
         return res.status(403).json({ message: 'Payment verification is disabled on iOS.' });
       }
@@ -469,8 +483,7 @@ export class SubscriptionController {
       }
 
       const config = await PaymentGatewayConfig.findOne();
-      const platformHeader = req.headers['x-platform'];
-      const isIOS = platformHeader === 'ios' || (!platformHeader && /iPhone|iPad|iPod/i.test(req.headers['user-agent'] || ''));
+      const isIOS = SubscriptionController.isIOSNativeApp(req);
       if (isIOS && config && !config.enableIOSExternalPayments) {
         return res.status(403).json({ message: 'Mock payment verification is disabled on iOS.' });
       }

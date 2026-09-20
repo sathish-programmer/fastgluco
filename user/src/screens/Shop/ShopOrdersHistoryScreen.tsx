@@ -4,7 +4,7 @@ import { useToast } from '../../context/ToastContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { ArrowLeft, Package, Truck, Download, Calendar, Star, Beaker, FileText, HelpCircle, RefreshCw, ExternalLink } from 'lucide-react';
 import { ProductImage } from './ShopScreen';
-import { Capacitor } from '@capacitor/core';
+import { downloadFile } from '../../utils/fileDownloader';
 
 interface ShopOrdersHistoryScreenProps {
   onBack?: () => void;
@@ -35,6 +35,9 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
   const [supportForm, setSupportForm] = useState({ name: '', email: '', question: '', relatedId: '', type: 'GENERAL' });
   const [submittingSupport, setSubmittingSupport] = useState(false);
   const [refreshingOrderId, setRefreshingOrderId] = useState<string | null>(null);
+  const [downloadingShopInvoiceId, setDownloadingShopInvoiceId] = useState<string | null>(null);
+  const [downloadingLabInvoiceId, setDownloadingLabInvoiceId] = useState<string | null>(null);
+  const [downloadingLabReportId, setDownloadingLabReportId] = useState<string | null>(null);
 
   const handleRefreshTracking = async (orderId: string) => {
     setRefreshingOrderId(orderId);
@@ -166,7 +169,49 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
     }));
   };
 
+  const handleDownloadShopInvoice = async (orderId: string, invoiceUrl?: string) => {
+    if (downloadingShopInvoiceId) return;
+    setDownloadingShopInvoiceId(orderId);
+    try {
+      const url = invoiceUrl 
+        ? (invoiceUrl.startsWith('http') ? invoiceUrl : `${apiUrl.replace(/\/api$/, '')}${invoiceUrl}`)
+        : `${apiUrl}/shop/orders/${orderId}/invoice`;
+      await downloadFile({
+        url,
+        filename: `Invoice-Order-${orderId.slice(-6).toUpperCase()}.pdf`,
+        token
+      });
+      showToast('Invoice downloaded successfully.', 'success');
+    } catch (err: any) {
+      console.error('Error downloading shop invoice:', err);
+      showToast(err.message || 'Failed to download invoice.', 'error');
+    } finally {
+      setDownloadingShopInvoiceId(null);
+    }
+  };
+
+  const handleDownloadLabInvoice = async (bookingId: string) => {
+    if (downloadingLabInvoiceId) return;
+    setDownloadingLabInvoiceId(bookingId);
+    try {
+      const url = `${apiUrl}/labs/booking/${bookingId}/invoice`;
+      await downloadFile({
+        url,
+        filename: `Invoice-Lab-${bookingId.slice(-6).toUpperCase()}.pdf`,
+        token
+      });
+      showToast('Lab invoice downloaded successfully.', 'success');
+    } catch (err: any) {
+      console.error('Error downloading lab invoice:', err);
+      showToast(err.message || 'Failed to download lab invoice.', 'error');
+    } finally {
+      setDownloadingLabInvoiceId(null);
+    }
+  };
+
   const handleDownloadReport = async (bookingId: string) => {
+    if (downloadingLabReportId) return;
+    setDownloadingLabReportId(bookingId);
     try {
       const res = await fetch(`${apiUrl}/labs/booking/${bookingId}/report`, {
         headers: {
@@ -177,20 +222,24 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
         const report = await res.json();
         if (report && report.pdfUrl) {
           const downloadUrl = report.pdfUrl.startsWith('http') ? report.pdfUrl : `${apiUrl.replace(/\/api$/, '')}${report.pdfUrl}`;
-          if (Capacitor.isNativePlatform()) {
-            window.open(downloadUrl, '_system');
-          } else {
-            window.open(downloadUrl, '_blank');
-          }
+          await downloadFile({
+            url: downloadUrl,
+            filename: `Lab-Report-${bookingId.slice(-6).toUpperCase()}.pdf`,
+            token
+          });
+          showToast('Lab report downloaded successfully.', 'success');
         } else {
           showToast('Report file not found. It might be available for physical pickup.', 'error');
         }
       } else {
-        showToast('Failed to fetch report.', 'error');
+        const data = await res.json().catch(() => null);
+        showToast(data?.message || data?.error || 'Failed to fetch report.', 'error');
       }
-    } catch (e) {
-      console.error(e);
-      showToast('An error occurred while fetching the report.', 'error');
+    } catch (e: any) {
+      console.error('Error downloading lab report:', e);
+      showToast(e.message || 'An error occurred while fetching the report.', 'error');
+    } finally {
+      setDownloadingLabReportId(null);
     }
   };
 
@@ -501,21 +550,18 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
                     >
                       <HelpCircle className="h-3.5 w-3.5 text-slate-500" /> {t('shop.needHelp', 'Need Help?')}
                     </button>
-                    {invoiceDownloadLink && (
+                    {(invoiceDownloadLink || order.status === 'completed' || order.deliveryStatus !== 'cancelled') && (
                       <button 
-                        onClick={() => {
-                          const downloadUrl = invoiceDownloadLink.startsWith('http') 
-                            ? invoiceDownloadLink 
-                            : `${apiUrl.replace(/\/api$/, '')}${order.invoiceUrl}`;
-                          if (Capacitor.isNativePlatform()) {
-                            window.open(downloadUrl, '_system');
-                          } else {
-                            window.open(downloadUrl, '_blank');
-                          }
-                        }}
-                        className="py-2 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl text-xs font-bold text-slate-650 dark:text-slate-300 flex items-center gap-1.5 transition-all shadow-sm"
+                        onClick={() => handleDownloadShopInvoice(order._id, order.invoiceUrl)}
+                        disabled={downloadingShopInvoiceId === order._id}
+                        className="py-2 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl text-xs font-bold text-slate-650 dark:text-slate-300 flex items-center gap-1.5 transition-all shadow-sm disabled:opacity-50 cursor-pointer"
                       >
-                        <Download className="h-3.5 w-3.5 text-indigo-500" /> {t('shop.invoicePdf', 'Invoice PDF')}
+                        {downloadingShopInvoiceId === order._id ? (
+                          <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-indigo-500 border-t-transparent" />
+                        ) : (
+                          <Download className="h-3.5 w-3.5 text-indigo-500" />
+                        )}
+                        <span>{downloadingShopInvoiceId === order._id ? t('sub.generatingPdf', 'Generating PDF...') : t('shop.invoicePdf', 'Invoice PDF')}</span>
                       </button>
                     )}
                     {order.deliveryStatus === 'delivered' && hasRated && (
@@ -604,22 +650,32 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
                       >
                         <HelpCircle className="h-3.5 w-3.5 text-slate-500" /> {t('shop.needHelp', 'Need Help?')}
                       </button>
-                      <a
-                        href={`${apiUrl.replace(/\/api$/, '')}/api/labs/booking/${booking._id}/invoice`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="py-2 px-4 border border-indigo-200 dark:border-indigo-800/40 bg-indigo-50/60 dark:bg-indigo-950/30 hover:bg-indigo-100 rounded-xl text-xs font-bold text-indigo-700 dark:text-indigo-300 flex items-center gap-1.5 transition-all shadow-sm"
+                      <button
+                        onClick={() => handleDownloadLabInvoice(booking._id)}
+                        disabled={downloadingLabInvoiceId === booking._id}
+                        className="py-2 px-4 border border-indigo-200 dark:border-indigo-800/40 bg-indigo-50/60 dark:bg-indigo-950/30 hover:bg-indigo-100 rounded-xl text-xs font-bold text-indigo-700 dark:text-indigo-300 flex items-center gap-1.5 transition-all shadow-sm disabled:opacity-50 cursor-pointer"
                       >
-                        <FileText className="h-3.5 w-3.5 text-indigo-500" /> {t('shop.invoice', 'Invoice')}
-                      </a>
+                        {downloadingLabInvoiceId === booking._id ? (
+                          <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-indigo-500 border-t-transparent" />
+                        ) : (
+                          <FileText className="h-3.5 w-3.5 text-indigo-500" />
+                        )}
+                        <span>{downloadingLabInvoiceId === booking._id ? t('sub.generatingPdf', 'Generating PDF...') : t('shop.invoice', 'Invoice')}</span>
+                      </button>
                     </div>
                     <div className="flex items-center gap-2">
                       {reportReady ? (
                         <button 
                           onClick={() => handleDownloadReport(booking._id)}
-                          className="py-2 px-4 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-405 border border-emerald-100 dark:border-emerald-900/30 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-emerald-100 transition-colors cursor-pointer"
+                          disabled={downloadingLabReportId === booking._id}
+                          className="py-2 px-4 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-405 border border-emerald-100 dark:border-emerald-900/30 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-emerald-100 transition-colors disabled:opacity-50 cursor-pointer"
                         >
-                          <FileText className="h-3.5 w-3.5" /> {t('shop.downloadReport', 'Download Report')}
+                          {downloadingLabReportId === booking._id ? (
+                            <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-emerald-600 border-t-transparent" />
+                          ) : (
+                            <FileText className="h-3.5 w-3.5" />
+                          )}
+                          <span>{downloadingLabReportId === booking._id ? t('sub.generatingPdf', 'Downloading...') : t('shop.downloadReport', 'Download Report')}</span>
                         </button>
                       ) : (
                         <span className="text-[10px] font-bold text-slate-405 dark:text-slate-500 flex items-center gap-1">
