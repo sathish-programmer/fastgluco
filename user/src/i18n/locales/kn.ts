@@ -6,6 +6,7 @@ export const kn = {
     "analysis": "ವಿಶ್ಲೇಷಣೆ",
     "learn": "ಕಲಿಯಿರಿ",
     "bookAppt": "ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್",
+    "shop": "ಶಾಪ್",
     "myOrders": "ನನ್ನ ಆದೇಶಗಳು",
     "profile": "ಪ್ರೊಫೈಲ್",
     "askMito": "ಮಿಟೊಗೆ ಕೇಳಿ",

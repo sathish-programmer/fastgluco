@@ -12,6 +12,7 @@ import { SubscriptionCron } from './cron/subscriptionCron';
 import { AppointmentReminderCron } from './cron/appointmentReminderCron';
 import { LibreSyncService } from './services/libreSyncService';
 import { FoodSyncService } from './services/foodSyncService';
+import { VendorOrderStatusCron } from './cron/vendorOrderStatusCron';
 import { seedWorkflows } from './utils/seedWorkflows';
 import { seedAskMitoTopics } from './utils/seedAskMitoTopics';
 
@@ -67,6 +68,12 @@ const bootstrap = async () => {
       // Sends email reminders 30 mins and 10 mins before confirmed appointments
       cron.schedule('* * * * *', async () => {
         await AppointmentReminderCron.sendUpcomingReminders();
+      });
+
+      // Vendor orders status tracking cron — runs every 15 minutes
+      // Syncs active vendor orders (Arivu Foods) and notifies users on dispatch/delivery
+      cron.schedule('*/15 * * * *', async () => {
+        await VendorOrderStatusCron.syncActiveVendorOrders();
       });
 
       console.log('Cron jobs scheduled successfully.');

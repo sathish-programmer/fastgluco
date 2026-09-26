@@ -20,6 +20,7 @@ import { Educational } from './pages/Educational';
 import { Coaching } from './pages/Coaching';
 import { BookAppointmentScreen } from './screens/Appointment/BookAppointmentScreen';
 import { ShopOrdersHistoryScreen } from './screens/Shop/ShopOrdersHistoryScreen';
+import { ShopScreen } from './screens/Shop/ShopScreen';
 import { ProductRatingScreen } from './screens/Shop/ProductRatingScreen';
 import { HelpSupportModal } from './components/HelpSupportModal';
 import {
@@ -36,7 +37,8 @@ import {
   Sparkles,
   Crown,
   ShieldCheck,
-  WifiOff
+  WifiOff,
+  ShoppingBag
 } from 'lucide-react';
 import { AskMitoDrawer } from './components/AskMitoDrawer';
 import { GlobalAICoachPopup } from './components/GlobalAICoachPopup';
@@ -53,19 +55,135 @@ const MainAppContent: React.FC = () => {
   const { t } = useLanguage();
   // Theme toggle moved to Profile settings
 
-  // Navigation tabs: 'Home' | 'Reports' | 'Food Log' | 'Analysis' | 'Profile'
-  const [activeTab, _setActiveTab] = useState<string>('Home');
-  const [navigationHistory, setNavigationHistory] = useState<string[]>(['Home']);
+  // Parse route and orderId from URL (supports https://app.mitoreboot.in/orders/:id and ?tab=orders)
+  const getRouteInfoFromLocation = (): { tab: string; orderId: string | null } => {
+    if (typeof window === 'undefined') return { tab: 'Home', orderId: null };
+    const pathname = window.location.pathname || '';
+    const params = new URLSearchParams(window.location.search);
 
-  const setActiveTab = (tab: string | ((prev: string) => string)) => {
+    // 1. Pathname-based deep links like /orders/:id or /orders
+    const orderPathMatch = pathname.match(/^\/orders?(?:\/([a-zA-Z0-9_-]+))?/i);
+    if (orderPathMatch) {
+      const matchedOrderId = orderPathMatch[1] || params.get('orderId') || params.get('id') || null;
+      return { tab: 'Shop Orders', orderId: matchedOrderId };
+    }
+
+    // 2. Query param based deep links
+    const tabParam = params.get('tab');
+    if (tabParam) {
+      const lower = tabParam.toLowerCase();
+      if (lower === 'shop') return { tab: 'Shop', orderId: null };
+      if (lower === 'orders' || lower === 'shop-orders') {
+        return { tab: 'Shop Orders', orderId: params.get('orderId') || params.get('id') || null };
+      }
+      if (lower === 'profile') return { tab: 'Profile', orderId: null };
+      if (lower === 'foodlog' || lower === 'food-log') return { tab: 'Food Log', orderId: null };
+      if (lower === 'reports') return { tab: 'Reports', orderId: null };
+      if (lower === 'analysis') return { tab: 'Analysis', orderId: null };
+      if (lower === 'educational' || lower === 'learn') return { tab: 'Educational', orderId: null };
+      if (lower === 'book-appointment' || lower === 'appointment') return { tab: 'Book Appointment', orderId: null };
+    }
+
+    if (params.get('orderId')) {
+      return { tab: 'Shop Orders', orderId: params.get('orderId') };
+    }
+
+    if (params.get('product') || params.get('shop') || pathname.startsWith('/shop')) {
+      return { tab: 'Shop', orderId: null };
+    }
+
+    return { tab: 'Home', orderId: null };
+  };
+
+  const initialRoute = getRouteInfoFromLocation();
+  const [activeTab, _setActiveTab] = useState<string>(initialRoute.tab);
+  const [targetOrderId, setTargetOrderId] = useState<string | null>(initialRoute.orderId);
+  const [navigationHistory, setNavigationHistory] = useState<string[]>([initialRoute.tab]);
+
+  const syncUrlWithTab = (nextTab: string, specificOrderId?: string | null) => {
+    try {
+      const url = new URL(window.location.href);
+      if (nextTab === 'Shop') {
+        url.searchParams.set('tab', 'shop');
+        if (url.pathname.startsWith('/orders')) url.pathname = '/';
+      } else if (nextTab === 'Shop Orders') {
+        const orderIdToUse = specificOrderId !== undefined ? specificOrderId : targetOrderId;
+        if (orderIdToUse) {
+          url.pathname = `/orders/${orderIdToUse}`;
+          url.searchParams.delete('tab');
+        } else {
+          url.pathname = '/orders';
+          url.searchParams.delete('tab');
+        }
+      } else if (nextTab === 'Home') {
+        url.pathname = '/';
+        url.searchParams.delete('tab');
+        url.searchParams.delete('shop');
+      } else {
+        if (url.pathname.startsWith('/orders')) url.pathname = '/';
+        url.searchParams.set('tab', nextTab.toLowerCase().replace(/\s+/g, '-'));
+      }
+      window.history.replaceState({ tab: nextTab }, document.title, url.pathname + url.search + url.hash);
+    } catch (err) {
+      console.error('Failed to sync URL with tab:', err);
+    }
+  };
+
+  const setActiveTab = (tab: string | ((prev: string) => string), specificOrderId?: string | null) => {
     const nextTab = typeof tab === 'function' ? tab(activeTab) : tab;
     _setActiveTab(nextTab);
+    if (specificOrderId !== undefined) {
+      setTargetOrderId(specificOrderId);
+    }
+    syncUrlWithTab(nextTab, specificOrderId);
     setNavigationHistory(prev => {
-      // Don't add duplicate consecutive tabs
       if (prev[prev.length - 1] === nextTab) return prev;
       return [...prev, nextTab];
     });
   };
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const routeInfo = getRouteInfoFromLocation();
+      _setActiveTab(routeInfo.tab);
+      if (routeInfo.orderId) {
+        setTargetOrderId(routeInfo.orderId);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Native App Deep Linking Listener (Capacitor for iOS & Android)
+  useEffect(() => {
+    let isMounted = true;
+    import('@capacitor/app').then(({ App: CapApp }) => {
+      CapApp.addListener('appUrlOpen', (event) => {
+        if (!isMounted || !event?.url) return;
+        try {
+          const parsed = new URL(event.url);
+          const path = parsed.pathname || '';
+          const orderMatch = path.match(/\/orders?(?:\/([a-zA-Z0-9_-]+))?/i);
+          if (orderMatch) {
+            const id = orderMatch[1] || parsed.searchParams.get('orderId') || parsed.searchParams.get('id');
+            if (id) setTargetOrderId(id);
+            setActiveTab('Shop Orders', id);
+          } else if (parsed.host === 'orders') {
+            const id = path.replace(/^\/+/, '') || parsed.searchParams.get('id');
+            if (id) setTargetOrderId(id);
+            setActiveTab('Shop Orders', id);
+          }
+        } catch (err) {
+          console.error('Error handling native deep link:', err);
+        }
+      });
+    }).catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const [resetToken, setResetToken] = useState<string | null>(null);
   const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
   const [rateOrderId, setRateOrderId] = useState<string | null>(null);
@@ -115,15 +233,18 @@ const MainAppContent: React.FC = () => {
     initNotificationScheduler();
   }, []);
 
-  // Reset tab to Home and trigger onboarding modal for new users upon successful authentication
+  // Sync tab with URL on authentication and trigger onboarding modal for new users upon successful authentication
   useEffect(() => {
     if (isAuthenticated) {
-      _setActiveTab('Home');
-      setNavigationHistory(['Home']);
+      const routeInfo = getRouteInfoFromLocation();
+      const urlTab = routeInfo.tab;
+      if (routeInfo.orderId) setTargetOrderId(routeInfo.orderId);
+      _setActiveTab(urlTab);
+      setNavigationHistory([urlTab]);
       const params = new URLSearchParams(window.location.search);
       const isViewingSharedProduct = !!params.get('product');
       const completed = localStorage.getItem('mito_welcome_onboarding_completed') || localStorage.getItem('fastgluco_onboarding_completed');
-      if (!completed && !isViewingSharedProduct) {
+      if (!completed && !isViewingSharedProduct && urlTab === 'Home') {
         setShowOnboarding(true);
       }
     }
@@ -564,11 +685,24 @@ const MainAppContent: React.FC = () => {
         {activeTab === 'Educational' && <Educational />}
         {activeTab === 'Coaching' && <Coaching features={planFeatures} />}
         {activeTab === 'Book Appointment' && <BookAppointmentScreen />}
+        {activeTab === 'Shop' && (
+          <ShopScreen 
+            onBack={() => setActiveTab('Home')} 
+            onOpenOrders={() => setActiveTab('Shop Orders')} 
+          />
+        )}
         {activeTab === 'Shop Orders' && (
-          <ShopOrdersHistoryScreen onRateOrder={(orderId) => {
-            setRateOrderId(orderId);
-            setActiveTab('RateProduct');
-          }} />
+          <ShopOrdersHistoryScreen 
+            initialOrderId={targetOrderId || undefined}
+            onBack={() => {
+              setTargetOrderId(null);
+              setActiveTab('Shop');
+            }}
+            onRateOrder={(orderId) => {
+              setRateOrderId(orderId);
+              setActiveTab('RateProduct');
+            }} 
+          />
         )}
         {activeTab === 'RateProduct' && rateOrderId && (
           <ProductRatingScreen orderId={rateOrderId} onBack={() => {
@@ -654,14 +788,14 @@ const MainAppContent: React.FC = () => {
             </button>
           )}
 
-          {/* Shop Orders Tab — Non-treatment patients only */}
+          {/* Shop Tab — Non-treatment patients */}
           {(activeMode !== 'TREATMENT') && (
             <button
-              onClick={() => setActiveTab('Shop Orders')}
-              className={`flex-1 flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Shop Orders' ? 'text-primary' : 'text-slate-400'}`}
+              onClick={() => setActiveTab('Shop')}
+              className={`flex-1 flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Shop' ? 'text-primary' : 'text-slate-400'}`}
             >
-              <Activity className="h-5.5 w-5.5" />
-              <span className="text-[9px] font-extrabold uppercase tracking-wide">{t('nav.myOrders')}</span>
+              <ShoppingBag className="h-5.5 w-5.5" />
+              <span className="text-[9px] font-extrabold uppercase tracking-wide">{t('nav.shop', 'Shop')}</span>
             </button>
           )}
 

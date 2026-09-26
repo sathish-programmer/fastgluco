@@ -24,9 +24,16 @@ import {
   Download,
   Settings,
   Check,
-  Building
+  Building,
+  Receipt,
+  CreditCard,
+  Banknote,
+  FileCheck,
+  Printer,
+  Clock,
+  Info,
+  CheckCircle
 } from 'lucide-react';
-
 
 interface AdminVendorManagementProps {
   apiUrl: string;
@@ -45,11 +52,23 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
   const [selectedVendorData, setSelectedVendorData] = useState<any | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'settlements' | 'logs' | 'config'>('overview');
 
-  // Search & Filter
+  // Search & Filter (ACTIVE vendors focused by default)
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ACTIVE' | 'INACTIVE' | 'ALL'>('ACTIVE');
   const [typeFilter, setTypeFilter] = useState<'ALL' | 'API' | 'MANUAL' | 'EXTERNAL_AMAZON'>('ALL');
+  const [sortBy, setSortBy] = useState<'ACTIVE_FIRST' | 'GMV' | 'ORDERS' | 'NAME'>('ACTIVE_FIRST');
   const [viewMode, setViewMode] = useState<'GRID' | 'TABLE'>('GRID');
+
+  // Helper to reliably construct absolute logo URLs with backend host
+  const getVendorLogoUrl = (logo?: string) => {
+    if (!logo) return '';
+    if (logo.startsWith('http://') || logo.startsWith('https://') || logo.startsWith('data:')) {
+      return logo;
+    }
+    const baseUrl = (apiUrl || '').replace(/\/api\/?$/, '');
+    const cleanPath = logo.startsWith('/') ? logo : `/${logo}`;
+    return `${baseUrl}${cleanPath}`;
+  };
 
   // Add Vendor Modal
   const [showAddModal, setShowAddModal] = useState(false);
@@ -85,6 +104,20 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
 
   // Order Details Modal
   const [selectedOrderForDetails, setSelectedOrderForDetails] = useState<any | null>(null);
+
+  // Record Bank Payout & Proof State
+  const [selectedSettlementForPayout, setSelectedSettlementForPayout] = useState<any | null>(null);
+  const [payoutForm, setPayoutForm] = useState({
+    paymentReference: '',
+    paymentMode: 'NEFT',
+    paymentDate: new Date().toISOString().slice(0, 10),
+    bankProofNotes: ''
+  });
+  const [recordingPayout, setRecordingPayout] = useState(false);
+
+  // Settlement Voucher Printable View
+  const [selectedSettlementForVoucher, setSelectedSettlementForVoucher] = useState<any | null>(null);
+  const [selectedProofData, setSelectedProofData] = useState<any | null>(null);
 
   // Edit Config Form in Tab 6
   const [editConfigForm, setEditConfigForm] = useState<any>({});
@@ -127,7 +160,7 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
           businessName: data.vendor.businessName || '',
           licenseNumber: data.vendor.licenseNumber || '',
           taxId: data.vendor.taxId || '',
-          businessAddress: data.vendor.businessAddress || '',
+          businessAddress: data.vendor.businessAddress || data.vendor.address || '',
           externalStoreUrl: data.vendor.externalStoreUrl || '',
           commissionRate: data.vendor.commissionConfig?.rate ?? 30,
           settlementCycleDays: data.vendor.commissionConfig?.settlementCycleDays ?? 30,
@@ -224,6 +257,33 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
     }
   };
 
+  const handleToggleVendorStatus = async (vendorId: string, currentStatus: boolean, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    try {
+      const res = await fetch(`${apiUrl}/admin/vendors/${vendorId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ isActive: !currentStatus })
+      });
+      if (res.ok) {
+        setVendors(prev => prev.map(v => v._id === vendorId ? { ...v, isActive: !currentStatus } : v));
+        if (selectedVendorData && selectedVendorData.vendor?._id === vendorId) {
+          setSelectedVendorData({
+            ...selectedVendorData,
+            vendor: { ...selectedVendorData.vendor, isActive: !currentStatus }
+          });
+        }
+        setSyncMessage(`Vendor status updated: ${!currentStatus ? 'ACTIVE (Live)' : 'INACTIVE (Template)'}.`);
+        setTimeout(() => setSyncMessage(null), 4000);
+      }
+    } catch (err: any) {
+      console.error('Error toggling vendor status:', err);
+    }
+  };
+
   const handlePollOrderStatus = async (orderId: string) => {
     if (!selectedVendorId) return;
     try {
@@ -262,7 +322,7 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
       });
       const data = await res.json();
       if (res.ok) {
-        setSyncMessage(`Settlement cycle created: ${data.settlementCode} for ₹${data.finalSettlementAmount}!`);
+        setSyncMessage(`Settlement cycle created: ${data.settlementCode} for ₹${data.finalSettlementAmount.toLocaleString()}!`);
         fetchVendorDetails(selectedVendorId);
       } else {
         setSyncMessage(`Failed to generate settlement: ${data.message}`);
@@ -294,6 +354,80 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
     }
   };
 
+  const handleDownloadSettlementCsv = async (settlementId: string, settlementCode: string) => {
+    try {
+      const activeToken = token || localStorage.getItem('fastgluco_admin_token') || '';
+      const res = await fetch(`${apiUrl}/admin/vendors/settlements/${settlementId}/export-csv?token=${encodeURIComponent(activeToken)}`, {
+        headers: {
+          'Authorization': `Bearer ${activeToken}`
+        }
+      });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: 'Failed to download CSV' }));
+        throw new Error(errorData.message || 'Failed to download CSV');
+      }
+      const blob = await res.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `${settlementCode || 'settlement'}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (err: any) {
+      console.error('Error downloading settlement CSV:', err);
+      alert(err.message || 'Error downloading CSV');
+    }
+  };
+
+  const handleRecordPayout = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedSettlementForPayout) return;
+    setRecordingPayout(true);
+    try {
+      await fetch(`${apiUrl}/admin/vendors/settlements/${selectedSettlementForPayout._id}/pay`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          paymentReference: payoutForm.paymentReference,
+          paymentMode: payoutForm.paymentMode,
+          paidAt: payoutForm.paymentDate || new Date().toISOString(),
+          notes: payoutForm.bankProofNotes
+        })
+      }).catch(() => null);
+
+      if (selectedVendorData && selectedVendorData.settlements) {
+        selectedVendorData.settlements = selectedVendorData.settlements.map((s: any) => {
+          if (s._id === selectedSettlementForPayout._id) {
+            return {
+              ...s,
+              status: 'PAID',
+              paidAt: payoutForm.paymentDate || new Date().toISOString(),
+              paymentReference: payoutForm.paymentReference,
+              paymentMode: payoutForm.paymentMode,
+              bankProofNotes: payoutForm.bankProofNotes
+            };
+          }
+          return s;
+        });
+        setSelectedVendorData({ ...selectedVendorData });
+      }
+
+      setSyncMessage(`Payout of ₹${selectedSettlementForPayout.finalSettlementAmount.toLocaleString()} marked as PAID! UTR: ${payoutForm.paymentReference}`);
+      setSelectedSettlementForPayout(null);
+      if (selectedVendorId) fetchVendorDetails(selectedVendorId);
+      setTimeout(() => setSyncMessage(null), 5000);
+    } catch (e: any) {
+      setSyncMessage(`Payout recording error: ${e.message}`);
+    } finally {
+      setRecordingPayout(false);
+    }
+  };
+
   const handleSaveVendorConfig = async () => {
     if (!selectedVendorId) return;
     setSaving(true);
@@ -314,6 +448,7 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
           licenseNumber: editConfigForm.licenseNumber,
           taxId: editConfigForm.taxId,
           businessAddress: editConfigForm.businessAddress,
+          address: editConfigForm.businessAddress,
           externalStoreUrl: editConfigForm.externalStoreUrl,
           capabilities: {
             checkoutType: editConfigForm.checkoutType,
@@ -394,30 +529,46 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
     }
   };
 
-  // Filtered vendors list
+  // Filtered and sorted vendors list (Active vendors always first by default)
   const filteredVendors = useMemo(() => {
-    return vendors.filter(v => {
-      const q = searchQuery.toLowerCase();
-      const matchesSearch = 
-        v.name?.toLowerCase().includes(q) || 
-        v.slug?.toLowerCase().includes(q) || 
-        v.email?.toLowerCase().includes(q) || 
-        v.businessName?.toLowerCase().includes(q);
+    return vendors
+      .filter(v => {
+        const q = searchQuery.toLowerCase();
+        const matchesSearch = 
+          v.name?.toLowerCase().includes(q) || 
+          v.slug?.toLowerCase().includes(q) || 
+          v.email?.toLowerCase().includes(q) || 
+          v.businessName?.toLowerCase().includes(q);
 
-      const matchesStatus = 
-        statusFilter === 'ALL' ? true : 
-        statusFilter === 'ACTIVE' ? v.isActive : !v.isActive;
+        const matchesStatus = 
+          statusFilter === 'ALL' ? true : 
+          statusFilter === 'ACTIVE' ? v.isActive : !v.isActive;
 
-      const checkoutType = v.capabilities?.checkoutType || 'INTERNAL';
-      const syncMethod = v.capabilities?.productSyncMethod || 'API';
-      const matchesType = 
-        typeFilter === 'ALL' ? true :
-        typeFilter === 'EXTERNAL_AMAZON' ? checkoutType === 'EXTERNAL_AMAZON' :
-        typeFilter === 'API' ? syncMethod === 'API' : syncMethod === 'MANUAL';
+        const checkoutType = v.capabilities?.checkoutType || 'INTERNAL';
+        const syncMethod = v.capabilities?.productSyncMethod || 'API';
+        const matchesType = 
+          typeFilter === 'ALL' ? true :
+          typeFilter === 'EXTERNAL_AMAZON' ? checkoutType === 'EXTERNAL_AMAZON' :
+          typeFilter === 'API' ? syncMethod === 'API' : syncMethod === 'MANUAL';
 
-      return matchesSearch && matchesStatus && matchesType;
-    });
-  }, [vendors, searchQuery, statusFilter, typeFilter]);
+        return matchesSearch && matchesStatus && matchesType;
+      })
+      .sort((a, b) => {
+        if (sortBy === 'ACTIVE_FIRST') {
+          if (a.isActive && !b.isActive) return -1;
+          if (!a.isActive && b.isActive) return 1;
+          if (a.slug === 'arivu-foods') return -1;
+          if (b.slug === 'arivu-foods') return 1;
+          return (b.metrics?.totalOrderValue || 0) - (a.metrics?.totalOrderValue || 0);
+        } else if (sortBy === 'GMV') {
+          return (b.metrics?.totalOrderValue || 0) - (a.metrics?.totalOrderValue || 0);
+        } else if (sortBy === 'ORDERS') {
+          return (b.metrics?.orderCount || 0) - (a.metrics?.orderCount || 0);
+        } else {
+          return (a.name || '').localeCompare(b.name || '');
+        }
+      });
+  }, [vendors, searchQuery, statusFilter, typeFilter, sortBy]);
 
   // Overall statistics banner
   const overallStats = useMemo(() => {
@@ -431,15 +582,15 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
   }, [vendors]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-slate-800">
       {/* GLOBAL FEEDBACK NOTIFICATION BANNER */}
       {syncMessage && (
-        <div className="bg-emerald-900/90 border border-emerald-500/40 text-emerald-100 px-4 py-3 rounded-xl flex items-center justify-between shadow-lg backdrop-blur animate-in fade-in slide-in-from-top-2">
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-2xl flex items-center justify-between shadow-sm animate-in fade-in slide-in-from-top-2">
           <div className="flex items-center gap-3">
-            <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
-            <span className="text-sm font-medium">{syncMessage}</span>
+            <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+            <span className="text-sm font-semibold">{syncMessage}</span>
           </div>
-          <button onClick={() => setSyncMessage(null)} className="text-emerald-400 hover:text-white">
+          <button onClick={() => setSyncMessage(null)} className="text-emerald-500 hover:text-emerald-700 p-1">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -449,35 +600,31 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
       {!selectedVendorId && (
         <div className="space-y-6">
           {/* HEADER & ACTIONS */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-slate-900 to-slate-800 border border-slate-700/60 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-            {/* subtle emerald glow */}
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-600/8 via-transparent to-teal-600/5 pointer-events-none" />
-            <div className="relative">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-gradient-to-br from-emerald-400 to-teal-600 rounded-xl text-white shadow-lg shadow-emerald-500/25">
-                  <Store className="h-6 w-6" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-white tracking-tight">Multi-Vendor E-Commerce Console</h1>
-                  <p className="text-xs text-slate-400 mt-0.5">Manage partner integrations, catalog synchronization, order fulfillment & commission settlements</p>
-                </div>
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div className="p-3 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-2xl shadow-inner">
+                <Store className="h-6 w-6" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-black text-slate-900 tracking-tight">Multi-Vendor E-Commerce Console</h1>
+                <p className="text-xs text-slate-500 mt-0.5 font-medium">Manage partner integrations, catalog synchronization, order fulfillment & commission settlements</p>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2.5 relative">
+            <div className="flex flex-wrap items-center gap-2.5">
               <button
                 onClick={handleSeedDefaults}
                 disabled={loading}
-                className="px-3.5 py-2 bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-white rounded-xl text-xs font-semibold flex items-center gap-2 border border-slate-600/60 transition shadow-sm"
+                className="px-4 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold rounded-xl text-xs flex items-center gap-2 border border-slate-200 shadow-sm transition"
                 title="Seeds Arivu Foods (with 30% commission & mock catalog) and future vendor templates"
               >
-                <Sparkles className="h-4 w-4 text-amber-400" />
+                <Sparkles className="h-4 w-4 text-amber-500" />
                 <span>Seed Vendors & Templates</span>
               </button>
 
               <button
                 onClick={() => setShowAddModal(true)}
-                className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-emerald-900/50 transition"
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow-sm transition"
               >
                 <Plus className="h-4 w-4" />
                 <span>Onboard New Vendor</span>
@@ -487,122 +634,184 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
 
           {/* KPI STATS BANNER */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-            <div className="relative bg-gradient-to-br from-blue-950/80 to-slate-900 border border-blue-800/40 rounded-2xl p-4 flex items-center gap-3.5 overflow-hidden shadow-lg">
-              <div className="absolute top-0 right-0 w-16 h-16 bg-blue-500/10 rounded-full -translate-y-4 translate-x-4 blur-xl" />
-              <div className="p-3 bg-blue-500/15 rounded-xl text-blue-400 border border-blue-500/20">
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm hover:shadow-md transition duration-200 flex items-center gap-3.5">
+              <div className="p-3 bg-blue-50 text-blue-600 border border-blue-100 rounded-xl">
                 <Store className="h-5 w-5" />
               </div>
-              <div className="relative">
-                <p className="text-[10px] font-bold text-blue-400/80 uppercase tracking-wider">Total Vendors</p>
-                <p className="text-2xl font-black text-white leading-none mt-1">{overallStats.totalVendors}</p>
-                <p className="text-[10px] text-slate-400 mt-0.5">{overallStats.activeVendors} Active</p>
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Vendors</p>
+                <p className="text-2xl font-black text-slate-900 leading-none mt-1">{overallStats.totalVendors}</p>
+                <p className="text-[11px] text-emerald-600 font-bold mt-0.5">{overallStats.activeVendors} Active (Live)</p>
               </div>
             </div>
 
-            <div className="relative bg-gradient-to-br from-emerald-950/80 to-slate-900 border border-emerald-800/40 rounded-2xl p-4 flex items-center gap-3.5 overflow-hidden shadow-lg">
-              <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-500/10 rounded-full -translate-y-4 translate-x-4 blur-xl" />
-              <div className="p-3 bg-emerald-500/15 rounded-xl text-emerald-400 border border-emerald-500/20">
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm hover:shadow-md transition duration-200 flex items-center gap-3.5">
+              <div className="p-3 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl">
                 <Package className="h-5 w-5" />
               </div>
-              <div className="relative">
-                <p className="text-[10px] font-bold text-emerald-400/80 uppercase tracking-wider">Vendor Products</p>
-                <p className="text-2xl font-black text-white leading-none mt-1">{overallStats.totalProducts}</p>
-                <p className="text-[10px] text-emerald-400/70 mt-0.5">Catalog Synced</p>
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Vendor Products</p>
+                <p className="text-2xl font-black text-slate-900 leading-none mt-1">{overallStats.totalProducts}</p>
+                <p className="text-[11px] text-emerald-600 font-semibold mt-0.5">Catalog Synced</p>
               </div>
             </div>
 
-            <div className="relative bg-gradient-to-br from-indigo-950/80 to-slate-900 border border-indigo-800/40 rounded-2xl p-4 flex items-center gap-3.5 overflow-hidden shadow-lg">
-              <div className="absolute top-0 right-0 w-16 h-16 bg-indigo-500/10 rounded-full -translate-y-4 translate-x-4 blur-xl" />
-              <div className="p-3 bg-indigo-500/15 rounded-xl text-indigo-400 border border-indigo-500/20">
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm hover:shadow-md transition duration-200 flex items-center gap-3.5">
+              <div className="p-3 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl">
                 <TrendingUp className="h-5 w-5" />
               </div>
-              <div className="relative">
-                <p className="text-[10px] font-bold text-indigo-400/80 uppercase tracking-wider">Total GMV</p>
-                <p className="text-2xl font-black text-white leading-none mt-1">₹{overallStats.totalGmv.toLocaleString('en-IN')}</p>
-                <p className="text-[10px] text-slate-400 mt-0.5">Gross vendor orders</p>
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total GMV</p>
+                <p className="text-2xl font-black text-slate-900 leading-none mt-1">₹{overallStats.totalGmv.toLocaleString('en-IN')}</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">Gross vendor orders</p>
               </div>
             </div>
 
-            <div className="relative bg-gradient-to-br from-purple-950/80 to-slate-900 border border-purple-800/40 rounded-2xl p-4 flex items-center gap-3.5 overflow-hidden shadow-lg">
-              <div className="absolute top-0 right-0 w-16 h-16 bg-purple-500/10 rounded-full -translate-y-4 translate-x-4 blur-xl" />
-              <div className="p-3 bg-purple-500/15 rounded-xl text-purple-400 border border-purple-500/20">
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm hover:shadow-md transition duration-200 flex items-center gap-3.5">
+              <div className="p-3 bg-purple-50 text-purple-600 border border-purple-100 rounded-xl">
                 <Percent className="h-5 w-5" />
               </div>
-              <div className="relative">
-                <p className="text-[10px] font-bold text-purple-400/80 uppercase tracking-wider">Arivu Agreement</p>
-                <p className="text-2xl font-black text-white leading-none mt-1">{vendors.find(v => v.slug === 'arivu-foods')?.commissionConfig?.rate ?? 30}% Comm</p>
-                <p className="text-[10px] text-purple-400/70 mt-0.5">+ {vendors.find(v => v.slug === 'arivu-foods')?.commissionConfig?.gstOnCommissionRate ?? 18}% GST retention</p>
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Arivu Agreement</p>
+                <p className="text-2xl font-black text-purple-700 leading-none mt-1">{vendors.find(v => v.slug === 'arivu-foods')?.commissionConfig?.rate ?? 30}% Comm</p>
+                <p className="text-[10px] text-purple-600/80 font-medium mt-0.5">+18% GST retention</p>
               </div>
             </div>
 
-            <div className="relative bg-gradient-to-br from-amber-950/80 to-slate-900 border border-amber-800/40 rounded-2xl p-4 flex items-center gap-3.5 overflow-hidden shadow-lg">
-              <div className="absolute top-0 right-0 w-16 h-16 bg-amber-500/10 rounded-full -translate-y-4 translate-x-4 blur-xl" />
-              <div className="p-3 bg-amber-500/15 rounded-xl text-amber-400 border border-amber-500/20">
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm hover:shadow-md transition duration-200 flex items-center gap-3.5">
+              <div className="p-3 bg-amber-50 text-amber-600 border border-amber-100 rounded-xl">
                 <IndianRupee className="h-5 w-5" />
               </div>
-              <div className="relative">
-                <p className="text-[10px] font-bold text-amber-400/80 uppercase tracking-wider">Pending Settlement</p>
-                <p className="text-2xl font-black text-amber-300 leading-none mt-1">₹{overallStats.totalPendingSettlement.toLocaleString('en-IN')}</p>
-                <p className="text-[10px] text-slate-400 mt-0.5">Unsettled orders</p>
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pending Settlement</p>
+                <p className="text-2xl font-black text-amber-600 leading-none mt-1">₹{overallStats.totalPendingSettlement.toLocaleString('en-IN')}</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">Unsettled orders</p>
               </div>
             </div>
           </div>
 
+          {/* MODERN SEGMENTED TABS: ACTIVE VENDORS (FOCUSED) vs INACTIVE VENDORS vs ALL */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-2.5 rounded-2xl border border-slate-200/90 shadow-sm">
+            <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200/60">
+              {/* ACTIVE VENDORS TAB (FOCUSED BY DEFAULT) */}
+              <button
+                type="button"
+                onClick={() => setStatusFilter('ACTIVE')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black transition-all ${
+                  statusFilter === 'ACTIVE'
+                    ? 'bg-white text-emerald-700 shadow-sm border border-emerald-200 ring-2 ring-emerald-500/10'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
+                }`}
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span>Active Vendors</span>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                  statusFilter === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'
+                }`}>
+                  {overallStats.activeVendors}
+                </span>
+              </button>
+
+              {/* INACTIVE VENDORS TAB */}
+              <button
+                type="button"
+                onClick={() => setStatusFilter('INACTIVE')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black transition-all ${
+                  statusFilter === 'INACTIVE'
+                    ? 'bg-white text-slate-800 shadow-sm border border-slate-200 ring-2 ring-slate-400/10'
+                    : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200/50'
+                }`}
+              >
+                <Clock className="h-3.5 w-3.5 text-slate-400" />
+                <span>Inactive Vendors</span>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                  statusFilter === 'INACTIVE' ? 'bg-slate-200 text-slate-800' : 'bg-slate-200/70 text-slate-500'
+                }`}>
+                  {overallStats.totalVendors - overallStats.activeVendors}
+                </span>
+              </button>
+
+              {/* ALL VENDORS TAB */}
+              <button
+                type="button"
+                onClick={() => setStatusFilter('ALL')}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-all ${
+                  statusFilter === 'ALL'
+                    ? 'bg-white text-indigo-700 shadow-sm border border-indigo-200 ring-2 ring-indigo-500/10'
+                    : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200/50'
+                }`}
+              >
+                <span>All ({overallStats.totalVendors})</span>
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 text-xs text-slate-500 px-2">
+              <span className="font-medium hidden sm:inline">Current View:</span>
+              <span className="font-bold text-slate-800 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200/60">
+                {statusFilter === 'ACTIVE' ? `🔥 ${overallStats.activeVendors} Active Fulfillment Partner(s)` : statusFilter === 'INACTIVE' ? `💤 ${overallStats.totalVendors - overallStats.activeVendors} Inactive / Staged Vendors` : `🌐 All ${overallStats.totalVendors} Vendors`}
+              </span>
+            </div>
+          </div>
+
           {/* FILTER AND SEARCH BAR */}
-          <div className="flex flex-col md:flex-row items-center justify-between gap-3 bg-slate-900/80 border border-slate-700/60 p-3.5 rounded-xl backdrop-blur-sm">
-            <div className="flex items-center gap-3 w-full md:w-auto flex-1">
-              <div className="relative flex-1 max-w-md">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-3 bg-white border border-slate-200/80 p-3 rounded-2xl shadow-sm">
+            <div className="flex items-center gap-3 w-full md:w-auto flex-1 flex-wrap">
+              <div className="relative flex-1 min-w-[220px] max-w-md">
                 <Search className="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   placeholder="Search vendor name, slug, email, business..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-slate-800/80 border border-slate-600/60 rounded-lg pl-9 pr-4 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/70 focus:ring-1 focus:ring-emerald-500/20"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                 />
               </div>
-
-              {/* Status Filter */}
-              <select
-                value={statusFilter}
-                onChange={(e: any) => setStatusFilter(e.target.value)}
-                className="bg-slate-800/80 border border-slate-600/60 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500/70"
-              >
-                <option value="ALL">All Status</option>
-                <option value="ACTIVE">Active Only</option>
-                <option value="INACTIVE">Inactive Only</option>
-              </select>
 
               {/* Integration Type Filter */}
               <select
                 value={typeFilter}
                 onChange={(e: any) => setTypeFilter(e.target.value)}
-                className="bg-slate-800/80 border border-slate-600/60 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500/70"
+                className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-700 font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
               >
                 <option value="ALL">All Integration Types</option>
                 <option value="API">API Sync (Arivu)</option>
                 <option value="MANUAL">Manual / Portal (Babu/Wig/Oncocur)</option>
                 <option value="EXTERNAL_AMAZON">Buy on Amazon (Pure & Pure / Swasa)</option>
               </select>
+
+              {/* Sort By Dropdown */}
+              <select
+                value={sortBy}
+                onChange={(e: any) => setSortBy(e.target.value)}
+                className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-700 font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+              >
+                <option value="ACTIVE_FIRST">Active Vendors First</option>
+                <option value="GMV">Highest GMV First</option>
+                <option value="ORDERS">Most Orders First</option>
+                <option value="NAME">Vendor Name A-Z</option>
+              </select>
             </div>
 
-            <div className="flex items-center gap-1.5 bg-slate-800/60 p-1 rounded-lg border border-slate-700/50">
+            <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200/60 shrink-0">
               <button
                 onClick={() => setViewMode('GRID')}
-                className={`p-1.5 rounded-md border transition text-xs ${
+                className={`p-1.5 rounded-lg transition text-xs ${
                   viewMode === 'GRID'
-                    ? 'bg-emerald-600/30 text-emerald-300 border-emerald-500/30'
-                    : 'text-slate-400 border-transparent hover:text-white hover:bg-slate-700'
+                    ? 'bg-white text-emerald-700 shadow-sm font-bold'
+                    : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
                 <LayoutGrid className="h-4 w-4" />
               </button>
               <button
                 onClick={() => setViewMode('TABLE')}
-                className={`p-1.5 rounded-md border transition text-xs ${
+                className={`p-1.5 rounded-lg transition text-xs ${
                   viewMode === 'TABLE'
-                    ? 'bg-emerald-600/30 text-emerald-300 border-emerald-500/30'
-                    : 'text-slate-400 border-transparent hover:text-white hover:bg-slate-700'
+                    ? 'bg-white text-emerald-700 shadow-sm font-bold'
+                    : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
                 <List className="h-4 w-4" />
@@ -613,17 +822,17 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
           {/* VENDORS DISPLAY (GRID OR TABLE) */}
           {loading ? (
             <div className="p-12 text-center text-slate-400 flex flex-col items-center justify-center gap-3">
-              <RefreshCw className="h-6 w-6 animate-spin text-emerald-400" />
-              <p className="text-sm">Loading vendors from database...</p>
+              <RefreshCw className="h-6 w-6 animate-spin text-emerald-500" />
+              <p className="text-sm font-medium">Loading vendors from database...</p>
             </div>
           ) : filteredVendors.length === 0 ? (
-            <div className="bg-slate-900/60 border border-dashed border-slate-800 rounded-2xl p-12 text-center text-slate-400 space-y-3">
-              <Store className="h-10 w-10 mx-auto text-slate-600" />
-              <p className="text-base font-semibold text-white">No Vendors Found</p>
-              <p className="text-xs max-w-md mx-auto text-slate-400">Click "Seed Vendors & Templates" above to automatically create Arivu Foods (with accepted 30% agreement terms) and future vendor templates.</p>
+            <div className="bg-white border border-dashed border-slate-300 rounded-2xl p-12 text-center text-slate-500 space-y-3 shadow-sm">
+              <Store className="h-10 w-10 mx-auto text-slate-400" />
+              <p className="text-base font-bold text-slate-900">No Vendors Found</p>
+              <p className="text-xs max-w-md mx-auto text-slate-500">Click "Seed Vendors & Templates" above to automatically create Arivu Foods (with accepted 30% agreement terms) and future vendor templates.</p>
               <button
                 onClick={handleSeedDefaults}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition"
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition shadow-sm"
               >
                 Seed Default Vendors Now
               </button>
@@ -644,125 +853,144 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
                 return (
                   <div
                     key={vendor._id}
-                    className={`relative bg-gradient-to-br from-slate-900 to-slate-950 border rounded-2xl p-5 flex flex-col justify-between space-y-4 shadow-xl hover:shadow-2xl transition-all duration-200 group overflow-hidden ${
-                      isArivu
-                        ? 'border-emerald-700/40 hover:border-emerald-600/60'
-                        : isApi
-                        ? 'border-blue-700/30 hover:border-blue-600/50'
-                        : 'border-slate-700/60 hover:border-slate-600/80'
+                    className={`bg-white border rounded-2xl p-5 shadow-sm hover:shadow-xl transition-all duration-200 flex flex-col justify-between space-y-4 group ${
+                      vendor.isActive 
+                        ? 'border-emerald-300/90 ring-2 ring-emerald-500/10 shadow-emerald-500/5' 
+                        : 'border-slate-200/90 hover:border-slate-300'
                     }`}
                   >
-                    {/* Card accent glow */}
-                    <div className={`absolute inset-x-0 top-0 h-px bg-gradient-to-r ${
-                      isArivu ? 'from-transparent via-emerald-500/60 to-transparent' :
-                      isApi ? 'from-transparent via-blue-500/50 to-transparent' :
-                      'from-transparent via-slate-600/50 to-transparent'
-                    }`} />
-
-                    <div className="space-y-3">
-                      {/* Top Bar: Logo, Name, Status Badge */}
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <div className={`h-12 w-12 rounded-xl border overflow-hidden flex items-center justify-center shrink-0 ${
-                            isArivu ? 'bg-emerald-900/40 border-emerald-700/40' :
-                            isApi ? 'bg-blue-900/30 border-blue-700/30' :
-                            'bg-slate-800 border-slate-700'
-                          }`}>
+                    <div className="space-y-3.5">
+                      {/* Top Bar: Logo, Name & Live badge, Status Toggle */}
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <div className="h-12 w-12 rounded-xl bg-white border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 shadow-xs">
                             {vendor.logo ? (
-                              <img src={vendor.logo} alt={vendor.name} className="h-full w-full object-cover" />
+                              <img 
+                                src={getVendorLogoUrl(vendor.logo)} 
+                                alt={vendor.name} 
+                                onError={(e: any) => {
+                                  if (vendor.slug === 'arivu-foods' || vendor.name?.toLowerCase().includes('arivu')) {
+                                    e.currentTarget.src = '/assets/arivu-logo.png';
+                                  }
+                                }}
+                                className="h-full w-full object-contain p-1" 
+                              />
                             ) : (
-                              <Store className={`h-6 w-6 ${isArivu ? 'text-emerald-400' : isApi ? 'text-blue-400' : 'text-slate-400'}`} />
+                              <Store className="h-5 w-5 text-slate-500" />
                             )}
                           </div>
-                          <div>
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <h3 className="text-base font-bold text-white group-hover:text-emerald-300 transition">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                              <h3 className="text-sm font-black text-slate-900 group-hover:text-emerald-600 transition truncate">
                                 {vendor.name}
                               </h3>
                               {isArivu && (
-                                <span className="bg-emerald-500/20 text-emerald-300 text-[9px] font-black px-1.5 py-0.5 rounded border border-emerald-500/30">
-                                  PHASE 1
+                                <span className="bg-emerald-50 text-emerald-700 text-[9px] font-black px-1.5 py-0.5 rounded border border-emerald-200 shrink-0">
+                                  LIVE
                                 </span>
                               )}
                             </div>
-                            <p className="text-xs text-slate-400">{vendor.businessName || vendor.slug}</p>
+                            <p className="text-xs text-slate-500 truncate mt-0.5 font-medium">{vendor.businessName || vendor.slug}</p>
                           </div>
                         </div>
 
-                        <span
-                          className={`text-[10px] font-bold px-2.5 py-1 rounded-full border shadow-sm ${
+                        {/* Interactive Status Toggle Pill */}
+                        <button
+                          type="button"
+                          onClick={(e) => handleToggleVendorStatus(vendor._id, vendor.isActive, e)}
+                          title={vendor.isActive ? 'Click to deactivate vendor' : 'Click to activate vendor'}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border transition-all cursor-pointer shrink-0 shadow-xs ${
                             vendor.isActive
-                              ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/25 shadow-emerald-900/30'
-                              : 'bg-rose-500/15 text-rose-400 border-rose-500/25'
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300'
+                              : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200/80 hover:text-slate-700'
                           }`}
                         >
-                          {vendor.isActive ? 'Active' : 'Inactive'}
-                        </span>
+                          <span className={`h-1.5 w-1.5 rounded-full ${vendor.isActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
+                          <span>{vendor.isActive ? 'Active' : 'Inactive'}</span>
+                        </button>
                       </div>
 
-                      {/* Capabilities Pill */}
-                      <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                      {/* Capabilities & Commission Badges */}
+                      <div className="flex flex-wrap items-center gap-1.5">
                         {isApi ? (
-                          <span className="bg-blue-500/15 text-blue-300 text-[10px] font-semibold px-2 py-0.5 rounded border border-blue-500/25 flex items-center gap-1">
+                          <span className="bg-blue-50 text-blue-700 text-[11px] font-bold px-2.5 py-1 rounded-lg border border-blue-200/80 flex items-center gap-1 shadow-xs">
                             <RefreshCw className="h-3 w-3" /> API Sync
                           </span>
                         ) : isAmazon ? (
-                          <span className="bg-amber-500/15 text-amber-300 text-[10px] font-semibold px-2 py-0.5 rounded border border-amber-500/25 flex items-center gap-1">
+                          <span className="bg-amber-50 text-amber-700 text-[11px] font-bold px-2.5 py-1 rounded-lg border border-amber-200/80 flex items-center gap-1 shadow-xs">
                             <ExternalLink className="h-3 w-3" /> Buy on Amazon
                           </span>
                         ) : (
-                          <span className="bg-slate-700/60 text-slate-300 text-[10px] font-semibold px-2 py-0.5 rounded border border-slate-600/60">
+                          <span className="bg-slate-100 text-slate-600 text-[11px] font-semibold px-2.5 py-1 rounded-lg border border-slate-200 shadow-xs">
                             Manual Fulfillment
                           </span>
                         )}
 
-                        <span className="bg-purple-500/15 text-purple-300 text-[10px] font-semibold px-2 py-0.5 rounded border border-purple-500/25">
+                        <span className="bg-purple-50 text-purple-700 text-[11px] font-bold px-2.5 py-1 rounded-lg border border-purple-200/80 shadow-xs">
                           {commRate}% Commission
                         </span>
 
                         {vendor.apiConfig?.mockMode && (
-                          <span className="bg-amber-900/40 text-amber-400 text-[10px] font-semibold px-2 py-0.5 rounded border border-amber-600/30">
+                          <span className="bg-slate-100 text-slate-600 text-[11px] font-semibold px-2 py-1 rounded-lg border border-slate-200">
                             Mock API
                           </span>
                         )}
                       </div>
 
+                      {/* Location & Website Preview */}
+                      {(vendor.businessAddress || vendor.address || vendor.website) && (
+                        <div className="text-[11px] text-slate-600 space-y-1 bg-slate-50/80 rounded-xl p-2.5 border border-slate-100">
+                          {(vendor.businessAddress || vendor.address) && (
+                            <div className="flex items-start gap-1.5 truncate">
+                              <span className="text-slate-400 font-bold shrink-0">📍</span>
+                              <span className="truncate text-slate-700 font-medium">{vendor.businessAddress || vendor.address}</span>
+                            </div>
+                          )}
+                          {vendor.website && (
+                            <div className="flex items-center gap-1.5 truncate">
+                              <span className="text-slate-400 font-bold shrink-0">🌐</span>
+                              <a href={vendor.website} target="_blank" rel="noreferrer" className="text-emerald-600 hover:underline truncate font-semibold">
+                                {vendor.website.replace(/^https?:\/\//, '')}
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       {/* Metrics 3-Col Box */}
-                      <div className={`grid grid-cols-3 gap-2 rounded-xl p-3 border text-center ${
-                        isArivu
-                          ? 'bg-emerald-950/30 border-emerald-800/30'
-                          : 'bg-slate-800/50 border-slate-700/50'
-                      }`}>
-                        <div>
-                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wide">Products</p>
-                          <p className="text-base font-black text-white mt-0.5">{productCount}</p>
+                      <div className="grid grid-cols-3 divide-x divide-slate-200/80 bg-slate-50/80 border border-slate-200/70 rounded-xl p-2.5 text-center">
+                        <div className="px-1">
+                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Products</p>
+                          <p className="text-sm font-black text-slate-900 mt-0.5">{productCount}</p>
                         </div>
-                        <div className="border-x border-slate-700/50">
-                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wide">Orders</p>
-                          <p className="text-base font-black text-white mt-0.5">{orderCount}</p>
+                        <div className="px-1">
+                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Orders</p>
+                          <p className="text-sm font-black text-slate-900 mt-0.5">{orderCount}</p>
                         </div>
-                        <div>
-                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wide">Pending Set.</p>
-                          <p className="text-base font-black text-amber-300 mt-0.5">₹{pendingAmt > 0 ? pendingAmt.toLocaleString('en-IN') : '0'}</p>
+                        <div className="px-1">
+                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Pending Set.</p>
+                          <p className={`text-sm font-black mt-0.5 ${pendingAmt > 0 ? 'text-amber-600' : 'text-slate-700'}`}>
+                            ₹{pendingAmt > 0 ? pendingAmt.toLocaleString('en-IN') : '0'}
+                          </p>
                         </div>
                       </div>
 
                       {/* GMV row */}
                       {gmv > 0 && (
-                        <div className="flex items-center justify-between text-[11px] text-slate-400 bg-slate-800/30 rounded-lg px-2.5 py-1.5 border border-slate-700/30">
-                          <span>Total GMV</span>
-                          <span className="text-white font-bold">₹{gmv.toLocaleString('en-IN')}</span>
+                        <div className="flex items-center justify-between text-xs text-slate-600 bg-slate-50/80 rounded-xl px-3 py-2 border border-slate-200/70">
+                          <span className="font-medium text-slate-500">Total GMV</span>
+                          <span className="text-slate-900 font-extrabold">₹{gmv.toLocaleString('en-IN')}</span>
                         </div>
                       )}
 
                       {/* Sync Status info */}
                       {isApi && (
-                        <div className="text-[11px] text-slate-400 flex items-center justify-between border-t border-slate-700/50 pt-2">
+                        <div className="text-[11px] text-slate-500 flex items-center justify-between border-t border-slate-100 pt-2">
                           <span className="flex items-center gap-1.5">
-                            <span className={`h-2 w-2 rounded-full shadow-sm ${
-                              isHealthy ? 'bg-emerald-400 shadow-emerald-400/50' : 'bg-rose-400 shadow-rose-400/50'
+                            <span className={`h-2 w-2 rounded-full ${
+                              isHealthy ? 'bg-emerald-500' : 'bg-rose-500'
                             }`} />
-                            Health: <span className={isHealthy ? 'text-emerald-400' : 'text-rose-400'}>{vendor.metrics?.healthStatus || 'HEALTHY'}</span>
+                            Health: <span className={isHealthy ? 'text-emerald-600 font-bold' : 'text-rose-600 font-bold'}>{vendor.metrics?.healthStatus || 'HEALTHY'}</span>
                           </span>
                           <span>Last sync: {vendor.metrics?.lastSyncAt ? new Date(vendor.metrics.lastSyncAt).toLocaleDateString('en-IN') : 'Never'}</span>
                         </div>
@@ -770,12 +998,12 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
                     </div>
 
                     {/* Action buttons */}
-                    <div className="pt-2.5 border-t border-slate-700/50 flex items-center justify-between gap-2">
+                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
                       {isApi && (
                         <button
                           onClick={() => handleSyncCatalog(vendor._id)}
                           disabled={syncingCatalog}
-                          className="px-3 py-1.5 bg-slate-800/80 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition border border-slate-700/60"
+                          className="px-3 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition border border-slate-200"
                         >
                           <RefreshCw className={`h-3 w-3 ${syncingCatalog ? 'animate-spin' : ''}`} />
                           <span>Sync</span>
@@ -784,11 +1012,7 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
 
                       <button
                         onClick={() => openVendorDetail(vendor)}
-                        className={`flex-1 px-4 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition ${
-                          isArivu
-                            ? 'bg-emerald-600/25 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30'
-                            : 'bg-slate-700/60 hover:bg-slate-600 text-slate-300 hover:text-white border border-slate-600/60'
-                        }`}
+                        className="flex-1 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm transition"
                       >
                         <span>Manage Vendor</span>
                         <ChevronRight className="h-3.5 w-3.5" />
@@ -800,10 +1024,10 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
             </div>
           ) : (
             /* TABLE VIEW */
-            <div className="bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-700/60 rounded-2xl overflow-hidden shadow-xl">
+            <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-800/80 text-slate-400 font-bold border-b border-slate-700/80 text-[10px] uppercase tracking-wider">
+                  <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 text-[10px] uppercase tracking-wider">
                     <tr>
                       <th className="px-5 py-3.5">Vendor</th>
                       <th className="px-4 py-3.5">Integration Method</th>
@@ -817,16 +1041,29 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
                       <th className="px-5 py-3.5 text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/60 text-slate-300">
+                  <tbody className="divide-y divide-slate-100 text-slate-700">
                     {filteredVendors.map((vendor) => (
-                      <tr key={vendor._id} className="hover:bg-slate-800/40 transition group">
+                      <tr key={vendor._id} className="hover:bg-slate-50/80 transition">
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-3">
-                            <div className="h-9 w-9 rounded-lg bg-slate-800/80 border border-slate-700/60 flex items-center justify-center overflow-hidden shrink-0">
-                              {vendor.logo ? <img src={vendor.logo} alt="" className="h-full w-full object-cover" /> : <Store className="h-4 w-4 text-slate-400" />}
+                            <div className="h-9 w-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center overflow-hidden shrink-0">
+                              {vendor.logo ? (
+                                <img 
+                                  src={getVendorLogoUrl(vendor.logo)} 
+                                  alt="" 
+                                  onError={(e: any) => {
+                                    if (vendor.slug === 'arivu-foods' || vendor.name?.toLowerCase().includes('arivu')) {
+                                      e.currentTarget.src = '/assets/arivu-logo.png';
+                                    }
+                                  }}
+                                  className="h-full w-full object-contain p-0.5" 
+                                />
+                              ) : (
+                                <Store className="h-4 w-4 text-slate-500" />
+                              )}
                             </div>
                             <div>
-                              <p className="font-bold text-white text-sm group-hover:text-emerald-300 transition">{vendor.name}</p>
+                              <p className="font-bold text-slate-900 text-sm">{vendor.name}</p>
                               <p className="text-[11px] text-slate-500">{vendor.slug}</p>
                             </div>
                           </div>
@@ -835,56 +1072,66 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
                         <td className="px-4 py-4">
                           <span className={`text-[11px] px-2 py-0.5 rounded border font-medium ${
                             vendor.capabilities?.checkoutType === 'EXTERNAL_AMAZON'
-                              ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                              ? 'bg-amber-50 text-amber-700 border-amber-200'
                               : vendor.capabilities?.productSyncMethod === 'API'
-                              ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
-                              : 'bg-slate-700/60 text-slate-300 border-slate-600/60'
+                              ? 'bg-blue-50 text-blue-700 border-blue-200'
+                              : 'bg-slate-100 text-slate-600 border-slate-200'
                           }`}>
                             {vendor.capabilities?.checkoutType === 'EXTERNAL_AMAZON' ? 'Amazon External' : vendor.capabilities?.productSyncMethod === 'API' ? 'API Sync' : 'Manual Portal'}
                           </span>
                         </td>
 
                         <td className="px-4 py-4">
-                          <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${vendor.isActive ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/25' : 'bg-rose-500/15 text-rose-400 border-rose-500/25'}`}>
-                            {vendor.isActive ? 'Active' : 'Inactive'}
-                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => handleToggleVendorStatus(vendor._id, vendor.isActive, e)}
+                            title={vendor.isActive ? 'Click to deactivate' : 'Click to activate'}
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border transition-all cursor-pointer shadow-xs ${
+                              vendor.isActive
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                                : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'
+                            }`}
+                          >
+                            <span className={`h-1.5 w-1.5 rounded-full ${vendor.isActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
+                            <span>{vendor.isActive ? 'Active' : 'Inactive'}</span>
+                          </button>
                         </td>
 
-                        <td className="px-4 py-4 text-center font-bold text-white">
+                        <td className="px-4 py-4 text-center font-bold text-slate-900">
                           {vendor.metrics?.productCount || 0}
                         </td>
 
-                        <td className="px-4 py-4 text-center font-bold text-white">
+                        <td className="px-4 py-4 text-center font-bold text-slate-900">
                           {vendor.metrics?.orderCount || 0}
                         </td>
 
-                        <td className="px-4 py-4 font-bold text-white">
+                        <td className="px-4 py-4 font-bold text-slate-900">
                           ₹{(vendor.metrics?.totalOrderValue || 0).toLocaleString('en-IN')}
                         </td>
 
-                        <td className="px-4 py-4 text-purple-300 font-semibold">
+                        <td className="px-4 py-4 text-purple-700 font-semibold">
                           {vendor.commissionConfig?.rate ?? 30}%
                         </td>
 
-                        <td className="px-4 py-4 text-amber-300 font-bold">
+                        <td className="px-4 py-4 text-amber-600 font-bold">
                           ₹{(vendor.metrics?.pendingSettlementAmount || 0).toLocaleString('en-IN')}
                         </td>
 
                         <td className="px-4 py-4">
-                          <span className="flex items-center gap-1.5 text-xs text-slate-300">
-                            <span className={`h-2 w-2 rounded-full shadow-sm ${
+                          <span className="flex items-center gap-1.5 text-xs">
+                            <span className={`h-2 w-2 rounded-full ${
                               vendor.metrics?.healthStatus !== 'UNHEALTHY'
-                                ? 'bg-emerald-400 shadow-emerald-400/40'
-                                : 'bg-rose-400 shadow-rose-400/40'
+                                ? 'bg-emerald-500'
+                                : 'bg-rose-500'
                             }`} />
-                            {vendor.metrics?.healthStatus || 'HEALTHY'}
+                            <span className="font-semibold text-slate-700">{vendor.metrics?.healthStatus || 'HEALTHY'}</span>
                           </span>
                         </td>
 
                         <td className="px-5 py-4 text-right">
                           <button
                             onClick={() => openVendorDetail(vendor)}
-                            className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition"
+                            className="px-3 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition shadow-sm"
                           >
                             Details
                           </button>
@@ -903,37 +1150,53 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
       {selectedVendorId && selectedVendorData && (
         <div className="space-y-6">
           {/* TOP BACK BAR */}
-          <div className="flex items-center justify-between bg-gradient-to-r from-slate-900 via-slate-900 to-slate-800 border border-slate-700/60 rounded-2xl p-5 shadow-xl relative overflow-hidden">
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-slate-500/30 to-transparent" />
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => { setSelectedVendorId(null); setSelectedVendorData(null); fetchVendors(); }}
-                className="p-2 bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl border border-slate-600/60 transition"
+                className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl border border-slate-200 transition"
               >
                 <ArrowLeft className="h-5 w-5" />
               </button>
 
-              <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden">
+              <div className="flex items-center gap-3.5">
+                <div className="h-14 w-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center overflow-hidden shadow-sm">
                   {selectedVendorData.vendor?.logo ? (
-                    <img src={selectedVendorData.vendor.logo} alt="" className="h-full w-full object-cover" />
+                    <img 
+                      src={getVendorLogoUrl(selectedVendorData.vendor.logo)} 
+                      alt="" 
+                      onError={(e: any) => {
+                        if (selectedVendorData.vendor?.slug === 'arivu-foods' || selectedVendorData.vendor?.name?.toLowerCase().includes('arivu')) {
+                          e.currentTarget.src = '/assets/arivu-logo.png';
+                        }
+                      }}
+                      className="h-full w-full object-contain p-1" 
+                    />
                   ) : (
-                    <Store className="h-6 w-6 text-slate-400" />
+                    <Store className="h-7 w-7 text-slate-400" />
                   )}
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-xl font-bold text-white">{selectedVendorData.vendor?.name}</h2>
-                    <span className="bg-emerald-500/20 text-emerald-400 text-xs px-2 py-0.5 rounded font-bold border border-emerald-500/30">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <h2 className="text-xl font-black text-slate-900">{selectedVendorData.vendor?.name}</h2>
+                    <span className="bg-slate-100 text-slate-700 text-xs px-2.5 py-0.5 rounded-lg font-bold border border-slate-200">
                       {selectedVendorData.vendor?.slug}
                     </span>
-                    {selectedVendorData.vendor?.apiConfig?.mockMode && (
-                      <span className="bg-amber-500/20 text-amber-400 text-[10px] px-2 py-0.5 rounded font-bold border border-amber-500/30">
-                        Mock API Mode
-                      </span>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleToggleVendorStatus(selectedVendorData.vendor?._id, selectedVendorData.vendor?.isActive)}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border transition-all cursor-pointer shadow-xs ${
+                        selectedVendorData.vendor?.isActive
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                          : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'
+                      }`}
+                      title={selectedVendorData.vendor?.isActive ? 'Click to deactivate' : 'Click to activate'}
+                    >
+                      <span className={`h-2 w-2 rounded-full ${selectedVendorData.vendor?.isActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
+                      <span>{selectedVendorData.vendor?.isActive ? 'Active Partner (Live)' : 'Inactive (Template)'}</span>
+                    </button>
                   </div>
-                  <p className="text-xs text-slate-400 mt-0.5">{selectedVendorData.vendor?.businessName} • {selectedVendorData.vendor?.email}</p>
+                  <p className="text-xs text-slate-500 mt-1 font-medium">{selectedVendorData.vendor?.businessName} • {selectedVendorData.vendor?.email}</p>
                 </div>
               </div>
             </div>
@@ -943,9 +1206,9 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
                 <button
                   onClick={() => handleSyncCatalog(selectedVendorId)}
                   disabled={syncingCatalog}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 rounded-xl text-xs font-bold flex items-center gap-2 transition"
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 rounded-xl text-xs font-bold flex items-center gap-2 transition"
                 >
-                  <RefreshCw className={`h-4 w-4 ${syncingCatalog ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`h-4 w-4 text-emerald-600 ${syncingCatalog ? 'animate-spin' : ''}`} />
                   <span>Sync Catalog Now</span>
                 </button>
               )}
@@ -953,7 +1216,7 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
           </div>
 
           {/* 6 TABS NAVIGATION */}
-          <div className="flex flex-wrap items-center gap-2 border-b border-slate-700/60 pb-2">
+          <div className="flex flex-wrap items-center gap-2 bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200/80 shadow-inner">
             {[
               { id: 'overview', label: 'Overview', icon: BarChart3 },
               { id: 'products', label: `Products (${selectedVendorData.products?.length || 0})`, icon: Package },
@@ -968,13 +1231,13 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 border transition ${
+                  className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition ${
                     isActive
-                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-emerald-500/60 shadow-lg shadow-emerald-900/40'
-                      : 'bg-slate-900/80 text-slate-400 border-slate-700/60 hover:text-white hover:border-slate-600 hover:bg-slate-800'
+                      ? 'bg-white text-slate-900 shadow-sm border border-slate-200/80'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
                   }`}
                 >
-                  <Icon className="h-4 w-4" />
+                  <Icon className={`h-4 w-4 ${isActive ? 'text-emerald-600' : 'text-slate-500'}`} />
                   <span>{tab.label}</span>
                 </button>
               );
@@ -985,81 +1248,186 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
           {activeTab === 'overview' && (
             <div className="space-y-6">
               {/* AGREEMENT HIGHLIGHT BANNER */}
-              <div className="relative bg-gradient-to-r from-emerald-950/70 via-slate-900 to-slate-900 border border-emerald-700/40 rounded-2xl p-6 shadow-xl space-y-4 overflow-hidden">
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/50 to-transparent" />
-                <div className="absolute top-4 right-6 opacity-10">
-                  <ShieldCheck className="h-20 w-20 text-emerald-400" />
-                </div>
+              <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm space-y-4">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <ShieldCheck className="h-7 w-7 text-emerald-400" />
+                    <div className="p-2.5 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl">
+                      <ShieldCheck className="h-6 w-6" />
+                    </div>
                     <div>
-                      <h3 className="text-base font-bold text-white">Commercial Partnership Terms (Accepted Agreement 02.09.2026)</h3>
-                      <p className="text-xs text-slate-400">Formal agreement governing product listing, order processing, commission retention & settlement terms.</p>
+                      <h3 className="text-base font-black text-slate-900">Commercial Partnership Terms (Accepted Agreement 02.09.2026)</h3>
+                      <p className="text-xs text-slate-500">Formal agreement governing product listing, order processing, commission retention & settlement terms.</p>
                     </div>
                   </div>
-                  <span className="bg-emerald-500/20 text-emerald-300 text-xs font-bold px-2.5 py-1 rounded-full border border-emerald-500/30 shrink-0">
+                  <span className="bg-emerald-50 text-emerald-700 text-xs font-bold px-3 py-1 rounded-full border border-emerald-200 shrink-0">
                     Active Contract
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2 border-t border-slate-700/50">
-                  <div className="bg-slate-800/40 rounded-xl p-3 border border-emerald-800/20">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-3 border-t border-slate-100">
+                  <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-200/60">
                     <p className="text-[10px] uppercase font-bold text-slate-400">Platform Commission</p>
-                    <p className="text-lg font-black text-white mt-0.5">{selectedVendorData.vendor?.commissionConfig?.rate ?? 30}% Listed Price</p>
-                    <p className="text-[10px] text-slate-500">Excludes shipping & gateway fee</p>
+                    <p className="text-lg font-black text-slate-900 mt-0.5">{selectedVendorData.vendor?.commissionConfig?.rate ?? 30}% Listed Price</p>
+                    <p className="text-[11px] text-slate-500">Excludes shipping & gateway fee</p>
                   </div>
-                  <div className="bg-slate-800/40 rounded-xl p-3 border border-purple-800/20">
-                    <p className="text-[10px] uppercase font-bold text-slate-400">GST on Commission</p>
-                    <p className="text-lg font-black text-white mt-0.5">{selectedVendorData.vendor?.commissionConfig?.gstOnCommissionRate ?? 18}% of Commission</p>
-                    <p className="text-[10px] text-slate-500">Total platform retention: {((selectedVendorData.vendor?.commissionConfig?.rate ?? 30) * (1 + (selectedVendorData.vendor?.commissionConfig?.gstOnCommissionRate ?? 18) / 100)).toFixed(1)}%</p>
+                  <div className="bg-purple-50/50 rounded-xl p-3.5 border border-purple-100">
+                    <p className="text-[10px] uppercase font-bold text-purple-700">GST on Commission</p>
+                    <p className="text-lg font-black text-purple-900 mt-0.5">{selectedVendorData.vendor?.commissionConfig?.gstOnCommissionRate ?? 18}% of Commission</p>
+                    <p className="text-[11px] text-purple-700/80">Total platform retention: {((selectedVendorData.vendor?.commissionConfig?.rate ?? 30) * (1 + (selectedVendorData.vendor?.commissionConfig?.gstOnCommissionRate ?? 18) / 100)).toFixed(1)}%</p>
                   </div>
-                  <div className="bg-slate-800/40 rounded-xl p-3 border border-teal-800/20">
-                    <p className="text-[10px] uppercase font-bold text-slate-400">Shipping Pass-Through</p>
-                    <p className="text-lg font-black text-emerald-400 mt-0.5">100% to Vendor</p>
-                    <p className="text-[10px] text-slate-500">Free ≥ ₹499 / state-based fee</p>
+                  <div className="bg-emerald-50/50 rounded-xl p-3.5 border border-emerald-100">
+                    <p className="text-[10px] uppercase font-bold text-emerald-700">Shipping Pass-Through</p>
+                    <p className="text-lg font-black text-emerald-800 mt-0.5">100% to Vendor</p>
+                    <p className="text-[11px] text-emerald-700/80">Free ≥ ₹499 / state-based fee</p>
                   </div>
-                  <div className="bg-slate-800/40 rounded-xl p-3 border border-blue-800/20">
-                    <p className="text-[10px] uppercase font-bold text-slate-400">Payment Gateway Fee</p>
-                    <p className="text-lg font-black text-blue-400 mt-0.5">Borne by Customer</p>
-                    <p className="text-[10px] text-slate-500">2% + 18% GST (2.36%)</p>
+                  <div className="bg-blue-50/50 rounded-xl p-3.5 border border-blue-100">
+                    <p className="text-[10px] uppercase font-bold text-blue-700">Payment Gateway Fee</p>
+                    <p className="text-lg font-black text-blue-900 mt-0.5">Borne by Customer</p>
+                    <p className="text-[11px] text-blue-700/80">2% + 18% GST (2.36%)</p>
                   </div>
                 </div>
               </div>
 
-              {/* STATS TILES */}
+              {/* STATS & COMMISSION SETTLEMENT EXECUTIVE LEDGER */}
               {(() => {
                 const totalOrders = selectedVendorData.orders?.length || 0;
-                const deliveredOrders = selectedVendorData.orders?.filter((o: any) => o.deliveryStatus === 'delivered').length || 0;
-                const grossSales = selectedVendorData.orders?.reduce((sum: number, o: any) => sum + (o.totalAmount || 0), 0) || 0;
-                const commEarned = selectedVendorData.orders?.reduce((sum: number, o: any) => sum + (o.platformCommission || (o.totalAmount * (selectedVendorData.vendor?.commissionConfig?.rate ?? 30) / 100) || 0), 0) || 0;
-                const pendingOrders = selectedVendorData.orders?.filter((o: any) => o.deliveryStatus === 'pending' || o.deliveryStatus === 'processing').length || 0;
-                const shippedOrders = selectedVendorData.orders?.filter((o: any) => o.deliveryStatus === 'shipped').length || 0;
+                const deliveredOrders = selectedVendorData.orders?.filter((o: any) => o.deliveryStatus === 'delivered') || [];
+                const deliveredGrossSales = deliveredOrders.reduce((sum: number, o: any) => sum + (o.totalAmount || 0), 0);
+                
+                const commRate = selectedVendorData.vendor?.commissionConfig?.rate ?? 30;
+                const gstRate = selectedVendorData.vendor?.commissionConfig?.gstOnCommissionRate ?? 18;
+
+                // 1. Delivered Listed Product GMV (Base on which commission is computed)
+                const deliveredListedGmv = deliveredOrders.reduce((sum: number, o: any) => {
+                  const listed = Number(o.financialBreakdown?.listedProductPrice ?? (o.products?.reduce((acc: number, p: any) => acc + (p.price * p.qty), 0) || o.totalAmount || 0));
+                  return sum + listed;
+                }, 0);
+                
+                // 2. Base Platform Commission (e.g. 30%)
+                const commEarned = deliveredOrders.reduce((sum: number, o: any) => {
+                  if (o.financialBreakdown?.platformCommission != null && o.financialBreakdown?.platformCommission !== 0) {
+                    return sum + Number(o.financialBreakdown.platformCommission);
+                  }
+                  const listed = Number(o.financialBreakdown?.listedProductPrice ?? (o.products?.reduce((acc: number, p: any) => acc + (p.price * p.qty), 0) || o.totalAmount || 0));
+                  return sum + Number(((listed * commRate) / 100).toFixed(2));
+                }, 0);
+                
+                // 3. GST on Commission (e.g. 18%)
+                const gstRetained = deliveredOrders.reduce((sum: number, o: any) => {
+                  if (o.financialBreakdown?.gstOnCommission != null && o.financialBreakdown?.gstOnCommission !== 0) {
+                    return sum + Number(o.financialBreakdown.gstOnCommission);
+                  }
+                  const comm = o.financialBreakdown?.platformCommission != null && o.financialBreakdown?.platformCommission !== 0
+                    ? Number(o.financialBreakdown.platformCommission)
+                    : Number((((o.financialBreakdown?.listedProductPrice || o.totalAmount || 0) * commRate) / 100).toFixed(2));
+                  return sum + Number(((comm * gstRate) / 100).toFixed(2));
+                }, 0);
+
+                // 4. Total Platform Retention (Commission + GST on commission = 35.4%)
+                const totalRetention = deliveredOrders.reduce((sum: number, o: any) => {
+                  if (o.financialBreakdown?.totalPlatformRetention != null && o.financialBreakdown?.totalPlatformRetention !== 0) {
+                    return sum + Number(o.financialBreakdown.totalPlatformRetention);
+                  }
+                  if (o.platformCommission != null && o.platformCommission !== 0) {
+                    return sum + Number(o.platformCommission);
+                  }
+                  const comm = Number((((o.financialBreakdown?.listedProductPrice || o.totalAmount || 0) * commRate) / 100).toFixed(2));
+                  const gst = Number(((comm * gstRate) / 100).toFixed(2));
+                  return sum + Number((comm + gst).toFixed(2));
+                }, 0);
+
+                // 5. Shipping Pass-Through (100% to vendor)
+                const shippingTransferred = deliveredOrders.reduce((sum: number, o: any) => sum + (Number(o.shippingCharge) || 0), 0);
+                
+                // 6. Net Vendor Earned (Exact matching finalVendorPayable / vendorEarnings: 64.6% + shipping)
+                const totalNetVendorEarned = deliveredOrders.reduce((sum: number, o: any) => {
+                  if (o.financialBreakdown?.finalVendorPayable != null && o.financialBreakdown?.finalVendorPayable !== 0) {
+                    return sum + Number(o.financialBreakdown.finalVendorPayable);
+                  }
+                  if (o.vendorEarnings != null && o.vendorEarnings !== 0) {
+                    return sum + Number(o.vendorEarnings);
+                  }
+                  const listed = Number(o.financialBreakdown?.listedProductPrice ?? (o.products?.reduce((acc: number, p: any) => acc + (p.price * p.qty), 0) || o.totalAmount || 0));
+                  const comm = Number(((listed * commRate) / 100).toFixed(2));
+                  const gst = Number(((comm * gstRate) / 100).toFixed(2));
+                  const ret = comm + gst;
+                  return sum + Number((listed - ret + (o.shippingCharge || 0)).toFixed(2));
+                }, 0);
+                
+                const settledPaidAmount = (selectedVendorData.settlements || [])
+                  .filter((s: any) => s.status === 'PAID')
+                  .reduce((sum: number, s: any) => sum + (s.finalSettlementAmount || 0), 0);
+                
+                const currentOutstandingDue = Math.max(0, totalNetVendorEarned - settledPaidAmount);
+
                 return (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                    <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/60 rounded-xl p-4 col-span-1">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Orders</p>
-                      <p className="text-2xl font-black text-white mt-1">{totalOrders}</p>
+                  <div className="space-y-4">
+                    {/* Executive Payable Banner */}
+                    <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-emerald-700 block mb-1">
+                          Executive Settlement Balance
+                        </span>
+                        <h4 className="text-xl font-black text-slate-900 flex items-center gap-2">
+                          <IndianRupee className="h-6 w-6 text-emerald-600" />
+                          <span>Net Payable to Vendor: <span className="text-emerald-700">₹{totalNetVendorEarned.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span></span>
+                        </h4>
+                        <p className="text-xs text-slate-500 mt-0.5 font-medium">
+                          Calculated from {deliveredOrders.length} delivered orders • Listed GMV ₹{deliveredListedGmv.toLocaleString('en-IN', { maximumFractionDigits: 2 })} - 35.4% Platform Retention (₹{totalRetention.toLocaleString('en-IN', { maximumFractionDigits: 2 })}) + Shipping (₹{shippingTransferred.toLocaleString('en-IN')})
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <div className="bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl text-right">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase block">Settled to Date</span>
+                          <span className="text-sm font-black text-slate-900 font-mono">₹{settledPaidAmount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                        </div>
+                        <div className="bg-amber-50 border border-amber-200 px-4 py-2 rounded-xl text-right">
+                          <span className="text-[10px] font-bold text-amber-700 uppercase block">Outstanding Due</span>
+                          <span className="text-base font-black text-amber-700 font-mono">₹{currentOutstandingDue.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                        </div>
+                        <button
+                          onClick={() => setActiveTab('settlements')}
+                          className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer flex items-center gap-1.5"
+                        >
+                          <IndianRupee className="h-4 w-4" />
+                          <span>Settle Cycles</span>
+                        </button>
+                      </div>
                     </div>
-                    <div className="bg-gradient-to-br from-emerald-950/60 to-slate-900 border border-emerald-800/30 rounded-xl p-4">
-                      <p className="text-[10px] font-bold text-emerald-400/80 uppercase tracking-wider">Delivered</p>
-                      <p className="text-2xl font-black text-emerald-300 mt-1">{deliveredOrders}</p>
-                    </div>
-                    <div className="bg-gradient-to-br from-blue-950/60 to-slate-900 border border-blue-800/30 rounded-xl p-4">
-                      <p className="text-[10px] font-bold text-blue-400/80 uppercase tracking-wider">Shipped</p>
-                      <p className="text-2xl font-black text-blue-300 mt-1">{shippedOrders}</p>
-                    </div>
-                    <div className="bg-gradient-to-br from-amber-950/60 to-slate-900 border border-amber-800/30 rounded-xl p-4">
-                      <p className="text-[10px] font-bold text-amber-400/80 uppercase tracking-wider">Pending</p>
-                      <p className="text-2xl font-black text-amber-300 mt-1">{pendingOrders}</p>
-                    </div>
-                    <div className="bg-gradient-to-br from-indigo-950/60 to-slate-900 border border-indigo-800/30 rounded-xl p-4">
-                      <p className="text-[10px] font-bold text-indigo-400/80 uppercase tracking-wider">Gross Sales</p>
-                      <p className="text-2xl font-black text-white mt-1">₹{grossSales.toLocaleString('en-IN')}</p>
-                    </div>
-                    <div className="bg-gradient-to-br from-purple-950/60 to-slate-900 border border-purple-800/30 rounded-xl p-4">
-                      <p className="text-[10px] font-bold text-purple-400/80 uppercase tracking-wider">Commission ({selectedVendorData.vendor?.commissionConfig?.rate ?? 30}%)</p>
-                      <p className="text-2xl font-black text-purple-300 mt-1">₹{commEarned.toLocaleString('en-IN')}</p>
+
+                    {/* Breakdown Tiles */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                      <div className="bg-white border border-slate-200/80 rounded-xl p-3.5 shadow-sm">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Orders</p>
+                        <p className="text-xl font-black text-slate-900 mt-1">{totalOrders}</p>
+                        <p className="text-[10px] text-emerald-600 mt-0.5 font-semibold">{deliveredOrders.length} delivered</p>
+                      </div>
+                      <div className="bg-white border border-slate-200/80 rounded-xl p-3.5 shadow-sm">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Listed Product GMV</p>
+                        <p className="text-xl font-black text-slate-900 mt-1">₹{deliveredListedGmv.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</p>
+                        <p className="text-[10px] text-slate-500 mt-0.5">Paid: ₹{deliveredGrossSales.toLocaleString('en-IN')}</p>
+                      </div>
+                      <div className="bg-purple-50/40 border border-purple-100 rounded-xl p-3.5 shadow-sm">
+                        <p className="text-[10px] font-bold text-purple-700 uppercase tracking-wider">Platform Comm (30%)</p>
+                        <p className="text-xl font-black text-purple-800 mt-1">₹{commEarned.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</p>
+                        <p className="text-[10px] text-purple-600 mt-0.5 font-medium">Mito Platform Profit</p>
+                      </div>
+                      <div className="bg-purple-50/40 border border-purple-100 rounded-xl p-3.5 shadow-sm">
+                        <p className="text-[10px] font-bold text-purple-700 uppercase tracking-wider">GST on Comm (18%)</p>
+                        <p className="text-xl font-black text-purple-800 mt-1">₹{gstRetained.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</p>
+                        <p className="text-[10px] text-slate-500 mt-0.5 font-medium">Tax Compliance (SAC 9983)</p>
+                      </div>
+                      <div className="bg-emerald-50/40 border border-emerald-100 rounded-xl p-3.5 shadow-sm">
+                        <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Shipping Pass-Through</p>
+                        <p className="text-xl font-black text-emerald-800 mt-1">₹{shippingTransferred.toLocaleString('en-IN')}</p>
+                        <p className="text-[10px] text-emerald-600 mt-0.5 font-medium">100% to Vendor</p>
+                      </div>
+                      <div className="bg-emerald-50/70 border border-emerald-200 rounded-xl p-3.5 shadow-sm">
+                        <p className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">Net Vendor Payable</p>
+                        <p className="text-xl font-black text-emerald-900 mt-1">₹{totalNetVendorEarned.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</p>
+                        <p className="text-[10px] text-amber-700 mt-0.5 font-bold">₹{currentOutstandingDue.toLocaleString('en-IN', { maximumFractionDigits: 0 })} Outstanding</p>
+                      </div>
                     </div>
                   </div>
                 );
@@ -1067,58 +1435,69 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
 
               {/* INTEGRATION HEALTH & DETAILS */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div className="bg-gradient-to-br from-slate-900 to-slate-950 border border-blue-800/30 rounded-2xl p-5 space-y-4">
-                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                    <Activity className="h-4 w-4 text-blue-400" />
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-4">
+                  <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <Activity className="h-4 w-4 text-blue-600" />
                     <span>API & Fulfillment Architecture</span>
                   </h4>
-                  <div className="space-y-0 text-xs divide-y divide-slate-700/40">
+                  <div className="space-y-0 text-xs divide-y divide-slate-100">
                     <div className="flex justify-between py-2">
-                      <span className="text-slate-400">Product Sync Method:</span>
-                      <span className="text-white font-semibold">{selectedVendorData.vendor?.capabilities?.productSyncMethod || 'API'}</span>
+                      <span className="text-slate-500 font-medium">Product Sync Method:</span>
+                      <span className="text-slate-900 font-bold">{selectedVendorData.vendor?.capabilities?.productSyncMethod || 'API'}</span>
                     </div>
                     <div className="flex justify-between py-2">
-                      <span className="text-slate-400">Checkout Flow:</span>
-                      <span className="text-white font-semibold">{selectedVendorData.vendor?.capabilities?.checkoutType || 'INTERNAL'}</span>
+                      <span className="text-slate-500 font-medium">Checkout Flow:</span>
+                      <span className="text-slate-900 font-bold">{selectedVendorData.vendor?.capabilities?.checkoutType || 'INTERNAL'}</span>
                     </div>
                     <div className="flex justify-between py-2">
-                      <span className="text-slate-400">Delivery & Logistics:</span>
-                      <span className="text-emerald-400 font-semibold">Vendor Managed</span>
+                      <span className="text-slate-500 font-medium">Delivery & Logistics:</span>
+                      <span className="text-emerald-700 font-bold">Vendor Managed</span>
                     </div>
                     <div className="flex justify-between py-2">
-                      <span className="text-slate-400">Tracking Method:</span>
-                      <span className="text-white font-semibold">{selectedVendorData.vendor?.capabilities?.trackingMethod || 'API_POLLING'}</span>
+                      <span className="text-slate-500 font-medium">Tracking Method:</span>
+                      <span className="text-slate-900 font-bold">{selectedVendorData.vendor?.capabilities?.trackingMethod || 'API_POLLING'}</span>
                     </div>
                     <div className="flex justify-between py-2">
-                      <span className="text-slate-400">API Endpoint Base:</span>
-                      <span className="text-blue-400 font-mono text-[11px]">{selectedVendorData.vendor?.apiConfig?.baseUrl || 'N/A'}</span>
+                      <span className="text-slate-500 font-medium">API Endpoint Base:</span>
+                      <span className="text-blue-600 font-mono text-[11px] font-bold">{selectedVendorData.vendor?.apiConfig?.baseUrl || 'N/A'}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-slate-900 to-slate-950 border border-amber-800/30 rounded-2xl p-5 space-y-4">
-                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                    <Building className="h-4 w-4 text-amber-400" />
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-4">
+                  <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <Building className="h-4 w-4 text-amber-600" />
                     <span>Vendor Profile & Compliance</span>
                   </h4>
-                  <div className="space-y-0 text-xs divide-y divide-slate-700/40">
+                  <div className="space-y-0 text-xs divide-y divide-slate-100">
                     <div className="flex justify-between py-2">
-                      <span className="text-slate-400">FSSAI License:</span>
-                      <span className="text-white font-mono">{selectedVendorData.vendor?.licenseNumber || 'N/A'}</span>
+                      <span className="text-slate-500 font-medium">FSSAI License:</span>
+                      <span className="text-slate-900 font-mono font-bold">{selectedVendorData.vendor?.licenseNumber || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between py-2">
-                      <span className="text-slate-400">GST Registration:</span>
-                      <span className="text-white font-mono">{selectedVendorData.vendor?.taxId || 'N/A'}</span>
+                      <span className="text-slate-500 font-medium">GST Registration:</span>
+                      <span className="text-slate-900 font-mono font-bold">{selectedVendorData.vendor?.taxId || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between py-2">
-                      <span className="text-slate-400">Official Website:</span>
-                      <a href={selectedVendorData.vendor?.website || '#'} target="_blank" rel="noreferrer" className="text-emerald-400 hover:underline flex items-center gap-1">
-                        {selectedVendorData.vendor?.website || 'N/A'} {selectedVendorData.vendor?.website && <ExternalLink className="h-3 w-3" />}
-                      </a>
+                      <span className="text-slate-500 font-medium">Official Website:</span>
+                      {(selectedVendorData.vendor?.website || selectedVendorData.vendor?.externalStoreUrl) ? (
+                        <a 
+                          href={selectedVendorData.vendor?.website || selectedVendorData.vendor?.externalStoreUrl} 
+                          target="_blank" 
+                          rel="noreferrer" 
+                          className="text-emerald-600 hover:underline flex items-center gap-1 font-bold"
+                        >
+                          {selectedVendorData.vendor?.website || selectedVendorData.vendor?.externalStoreUrl} <ExternalLink className="h-3 w-3" />
+                        </a>
+                      ) : (
+                        <span className="text-slate-400 font-medium">N/A</span>
+                      )}
                     </div>
                     <div className="flex justify-between py-2">
-                      <span className="text-slate-400">Registered Address:</span>
-                      <span className="text-white text-right max-w-xs">{selectedVendorData.vendor?.businessAddress || 'N/A'}</span>
+                      <span className="text-slate-500 font-medium">Registered Address:</span>
+                      <span className="text-slate-900 text-right max-w-xs font-medium">
+                        {selectedVendorData.vendor?.businessAddress || selectedVendorData.vendor?.address || 'N/A'}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -1131,22 +1510,22 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-base font-bold text-white">Vendor Product Catalog ({selectedVendorData.products?.length || 0})</h3>
-                  <p className="text-xs text-slate-400">Products mapped or synchronized from Arivu Foods API / manual catalog</p>
+                  <h3 className="text-base font-black text-slate-900">Vendor Product Catalog ({selectedVendorData.products?.length || 0})</h3>
+                  <p className="text-xs text-slate-500 font-medium">Products mapped or synchronized from Arivu Foods API / manual catalog</p>
                 </div>
                 <button
                   onClick={() => handleSyncCatalog(selectedVendorId)}
                   disabled={syncingCatalog}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 transition"
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-2 transition shadow-sm"
                 >
                   <RefreshCw className={`h-4 w-4 ${syncingCatalog ? 'animate-spin' : ''}`} />
                   <span>Sync Catalog Now</span>
                 </button>
               </div>
 
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+              <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-800/80 text-slate-400 font-semibold border-b border-slate-700">
+                  <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 text-[10px] uppercase tracking-wider">
                     <tr>
                       <th className="px-5 py-3.5">Product</th>
                       <th className="px-4 py-3.5">Vendor SKU</th>
@@ -1157,47 +1536,47 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
                       <th className="px-4 py-3.5 text-right">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800 text-slate-300">
+                  <tbody className="divide-y divide-slate-100 text-slate-700">
                     {selectedVendorData.products?.map((prod: any) => (
-                      <tr key={prod._id} className="hover:bg-slate-800/50 transition">
+                      <tr key={prod._id} className="hover:bg-slate-50/80 transition">
                         <td className="px-5 py-3.5">
                           <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-lg bg-slate-800 border border-slate-700 overflow-hidden shrink-0 flex items-center justify-center">
-                              {prod.image ? <img src={prod.image} alt="" className="h-full w-full object-cover" /> : <Package className="h-5 w-5 text-slate-500" />}
+                            <div className="h-10 w-10 rounded-lg bg-slate-50 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center shadow-sm">
+                              {prod.image ? <img src={prod.image} alt="" className="h-full w-full object-cover" /> : <Package className="h-5 w-5 text-slate-400" />}
                             </div>
                             <div>
-                              <p className="font-bold text-white text-xs">{prod.name}</p>
+                              <p className="font-bold text-slate-900 text-xs">{prod.name}</p>
                               <p className="text-[10px] text-slate-500">{prod.productWeight || 'Standard size'}</p>
                             </div>
                           </div>
                         </td>
 
-                        <td className="px-4 py-3.5 font-mono text-[11px] text-slate-400">
+                        <td className="px-4 py-3.5 font-mono text-[11px] text-slate-600 font-medium">
                           {prod.vendorSku || prod.sku || 'N/A'}
                         </td>
 
                         <td className="px-4 py-3.5">
-                          <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded text-[10px] border border-slate-700 font-medium">
+                          <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[10px] border border-slate-200 font-medium">
                             {prod.category}
                           </span>
                         </td>
 
-                        <td className="px-4 py-3.5 font-bold text-white">
+                        <td className="px-4 py-3.5 font-bold text-slate-900">
                           ₹{prod.price}
                         </td>
 
                         <td className="px-4 py-3.5 text-center">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${prod.stock > 10 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${prod.stock > 10 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
                             {prod.stock} units
                           </span>
                         </td>
 
-                        <td className="px-4 py-3.5 text-slate-400 text-[11px]">
-                          {prod.fssaiNumber ? <span className="font-mono text-emerald-400">FSSAI: {prod.fssaiNumber}</span> : 'Standard'}
+                        <td className="px-4 py-3.5 text-slate-600 text-[11px]">
+                          {prod.fssaiNumber ? <span className="font-mono text-emerald-700 font-semibold">FSSAI: {prod.fssaiNumber}</span> : 'Standard'}
                         </td>
 
                         <td className="px-4 py-3.5 text-right">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${prod.isActive ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-slate-800 text-slate-500 border-slate-700'}`}>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${prod.isActive ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
                             {prod.isActive ? 'Active' : 'Inactive'}
                           </span>
                         </td>
@@ -1214,191 +1593,457 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-base font-bold text-white">Vendor Order Management ({selectedVendorData.orders?.length || 0})</h3>
-                  <p className="text-xs text-slate-400">Orders submitted to vendor for fulfillment, tracking & status updates</p>
+                  <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-emerald-600" />
+                    <span>Vendor Order Stream & Financial Proof ({selectedVendorData.orders?.length || 0})</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium">Track fulfillment status, 30% commission retention, shipping allocation, and net payable calculation per order</p>
                 </div>
               </div>
 
               {selectedVendorData.orders?.length === 0 ? (
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center text-slate-400 space-y-2">
-                  <FileText className="h-8 w-8 mx-auto text-slate-600" />
-                  <p className="font-bold text-white">No Orders Placed Yet</p>
-                  <p className="text-xs">Orders placed by customers for this vendor's items will appear here automatically.</p>
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-12 text-center text-slate-400 space-y-2 shadow-sm">
+                  <FileText className="h-8 w-8 mx-auto text-slate-400" />
+                  <p className="font-bold text-slate-900">No Orders Placed Yet</p>
+                  <p className="text-xs text-slate-500">Orders placed by customers for this vendor's items will appear here automatically.</p>
                 </div>
               ) : (
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-800/80 text-slate-400 font-semibold border-b border-slate-700">
-                      <tr>
-                        <th className="px-5 py-3.5">Mito Order</th>
-                        <th className="px-4 py-3.5">Vendor Order Ref</th>
-                        <th className="px-4 py-3.5">Date & Customer</th>
-                        <th className="px-4 py-3.5">Items</th>
-                        <th className="px-4 py-3.5">Order Total</th>
-                        <th className="px-4 py-3.5">Delivery Status</th>
-                        <th className="px-4 py-3.5">API Submission</th>
-                        <th className="px-5 py-3.5 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800 text-slate-300">
-                      {selectedVendorData.orders?.map((order: any) => (
-                        <tr key={order._id} className="hover:bg-slate-800/50 transition">
-                          <td className="px-5 py-3.5 font-mono font-bold text-white">
-                            #{order._id.slice(-6).toUpperCase()}
-                          </td>
-
-                          <td className="px-4 py-3.5 font-mono text-[11px] text-blue-400">
-                            {order.vendorOrderId || <span className="text-slate-500 italic">Not generated</span>}
-                          </td>
-
-                          <td className="px-4 py-3.5">
-                            <p className="text-white font-semibold">{order.patientName || 'Customer'}</p>
-                            <p className="text-[10px] text-slate-500">{new Date(order.createdAt).toLocaleDateString()}</p>
-                          </td>
-
-                          <td className="px-4 py-3.5">
-                            <span className="text-slate-300 font-medium">{order.products?.length || 0} items</span>
-                          </td>
-
-                          <td className="px-4 py-3.5 font-bold text-white">
-                            ₹{order.totalAmount}
-                          </td>
-
-                          <td className="px-4 py-4">
-                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase border ${
-                              order.deliveryStatus === 'delivered' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                              order.deliveryStatus === 'shipped' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
-                              order.deliveryStatus === 'cancelled' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
-                              'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                            }`}>
-                              {order.deliveryStatus || 'pending'}
-                            </span>
-                          </td>
-
-                          <td className="px-4 py-4">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                              order.vendorSubmissionStatus === 'SUBMITTED' ? 'bg-emerald-500/10 text-emerald-400' :
-                              order.vendorSubmissionStatus === 'FAILED' ? 'bg-rose-500/10 text-rose-400' :
-                              'bg-slate-800 text-slate-400'
-                            }`}>
-                              {order.vendorSubmissionStatus || 'NOT_SUBMITTED'}
-                            </span>
-                          </td>
-
-                          <td className="px-5 py-4 text-right space-x-2">
-                            <button
-                              onClick={() => setSelectedOrderForDetails(order)}
-                              className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg text-xs font-semibold transition"
-                            >
-                              Financials
-                            </button>
-
-                            {order.vendorSubmissionStatus !== 'SUBMITTED' ? (
-                              <button
-                                onClick={() => handleSubmitOrderToVendor(order._id)}
-                                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition"
-                                title="Submit to Arivu Foods API"
-                              >
-                                Submit Order
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handlePollOrderStatus(order._id)}
-                                className="px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/30 rounded-lg text-xs font-semibold transition"
-                                title="Poll latest tracking from vendor"
-                              >
-                                Poll Status
-                              </button>
-                            )}
-                          </td>
+                <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs min-w-[950px]">
+                      <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 text-[10px] uppercase tracking-wider">
+                        <tr>
+                          <th className="px-4 py-3.5">Order Ref</th>
+                          <th className="px-4 py-3.5">Customer</th>
+                          <th className="px-3 py-3.5">Product Price</th>
+                          <th className="px-3 py-3.5 text-purple-700">30% Comm + GST</th>
+                          <th className="px-3 py-3.5 text-emerald-700">Shipping (100%)</th>
+                          <th className="px-3 py-3.5 text-slate-900">Net Vendor Due</th>
+                          <th className="px-3 py-3.5">Delivery Status</th>
+                          <th className="px-3 py-3.5">Settlement</th>
+                          <th className="px-4 py-3.5 text-right">Actions</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-slate-700">
+                        {selectedVendorData.orders?.map((order: any) => {
+                          const gross = Number(order.totalAmount || 0);
+                          const listedPrice = Number(order.financialBreakdown?.listedProductPrice ?? (order.products?.reduce((acc: number, p: any) => acc + (p.price * p.qty), 0) || gross));
+                          const comm = Number(order.financialBreakdown?.platformCommission ?? (listedPrice * 0.30));
+                          const gst = Number(order.financialBreakdown?.gstOnCommission ?? (comm * 0.18));
+                          const totalRetention = Number(order.financialBreakdown?.totalPlatformRetention ?? order.platformCommission ?? (comm + gst));
+                          const shipping = Number(order.shippingCharge || 0);
+                          const netVendor = Number(order.financialBreakdown?.finalVendorPayable ?? order.vendorEarnings ?? Math.max(0, listedPrice - totalRetention + shipping));
+                          const isDelivered = order.deliveryStatus === 'delivered';
+                          const isSettled = order.settlementStatus === 'SETTLED' || order.settlementStatus === 'INCLUDED';
+
+                          return (
+                            <tr key={order._id} className="hover:bg-slate-50/80 transition">
+                              <td className="px-4 py-3.5">
+                                <div className="font-mono font-bold text-slate-900">
+                                  {order.vendorOrderId ? order.vendorOrderId : `#${order._id.slice(-6).toUpperCase()}`}
+                                </div>
+                                <div className="font-mono text-[10px] text-blue-600 font-semibold">
+                                  {order.vendorOrderId ? `Mito Ref: #${order._id.slice(-6).toUpperCase()}` : <span className="text-slate-400">Internal Ref</span>}
+                                </div>
+                              </td>
+
+                              <td className="px-4 py-3.5">
+                                <p className="text-slate-900 font-bold">{order.patientName || 'Customer'}</p>
+                                <p className="text-[10px] text-slate-400">{new Date(order.createdAt).toLocaleDateString()}</p>
+                              </td>
+
+                              <td className="px-3 py-3.5">
+                                <div className="font-bold text-slate-900">₹{listedPrice.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</div>
+                                {gross !== listedPrice && (
+                                  <div className="text-[10px] text-slate-400 font-medium">Customer: ₹{gross.toLocaleString('en-IN')}</div>
+                                )}
+                              </td>
+
+                              <td className="px-3 py-3.5">
+                                <div className="font-bold text-purple-700">₹{totalRetention.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</div>
+                                <div className="text-[10px] text-purple-600/80 font-medium">₹{comm.toFixed(1)} + ₹{gst.toFixed(1)} GST</div>
+                              </td>
+
+                              <td className="px-3 py-3.5 font-bold text-emerald-700">
+                                +₹{shipping}
+                              </td>
+
+                              <td className="px-3 py-3.5">
+                                <div className="font-black text-slate-900 text-sm">₹{netVendor.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</div>
+                                <div className="text-[10px] text-slate-500 font-medium">
+                                  {isDelivered ? 'Delivered & Payable' : 'Accruing'}
+                                </div>
+                              </td>
+
+                              <td className="px-3 py-3.5">
+                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase border ${
+                                  order.deliveryStatus === 'delivered' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                  order.deliveryStatus === 'shipped' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                  order.deliveryStatus === 'cancelled' ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                                  'bg-amber-50 text-amber-700 border-amber-200'
+                                }`}>
+                                  {order.deliveryStatus || 'pending'}
+                                </span>
+                              </td>
+
+                              <td className="px-3 py-3.5">
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                                  isSettled ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                  isDelivered ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                  'bg-slate-100 text-slate-500 border-slate-200'
+                                }`}>
+                                  {isSettled ? 'Settled / Run Added' : isDelivered ? 'Pending Payout' : 'In Transit'}
+                                </span>
+                              </td>
+
+                              <td className="px-4 py-3.5 text-right space-x-1.5 whitespace-nowrap">
+                                <button
+                                  onClick={() => setSelectedOrderForDetails(order)}
+                                  className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition inline-flex items-center gap-1 border border-slate-200"
+                                  title="View exact math proof"
+                                >
+                                  <Receipt className="h-3 w-3 text-purple-600" />
+                                  <span>Proof</span>
+                                </button>
+
+                                {order.vendorSubmissionStatus !== 'SUBMITTED' ? (
+                                  <button
+                                    onClick={() => handleSubmitOrderToVendor(order._id)}
+                                    className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition shadow-sm"
+                                    title="Submit to Arivu Foods API"
+                                  >
+                                    Submit
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => handlePollOrderStatus(order._id)}
+                                    className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-bold transition"
+                                    title="Poll latest tracking from vendor"
+                                  >
+                                    Poll Status
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
             </div>
           )}
 
           {/* TAB 4: COMMISSION & SETTLEMENTS */}
-          {activeTab === 'settlements' && (
+          {activeTab === 'settlements' && (() => {
+            const deliveredOrders = selectedVendorData.orders?.filter((o: any) => o.deliveryStatus === 'delivered') || [];
+            const unsettledDeliveredOrders = deliveredOrders.filter((o: any) => o.settlementStatus !== 'SETTLED');
+            const commRate = selectedVendorData.vendor?.commissionConfig?.rate ?? 30;
+            const gstRate = selectedVendorData.vendor?.commissionConfig?.gstOnCommissionRate ?? 18;
+
+            const deliveredListedGmv = deliveredOrders.reduce((sum: number, o: any) => {
+              const listed = Number(o.financialBreakdown?.listedProductPrice ?? (o.products?.reduce((acc: number, p: any) => acc + (p.price * p.qty), 0) || o.totalAmount || 0));
+              return sum + listed;
+            }, 0);
+
+            const commEarned = deliveredOrders.reduce((sum: number, o: any) => {
+              if (o.financialBreakdown?.platformCommission != null && o.financialBreakdown?.platformCommission !== 0) {
+                return sum + Number(o.financialBreakdown.platformCommission);
+              }
+              const listed = Number(o.financialBreakdown?.listedProductPrice ?? (o.products?.reduce((acc: number, p: any) => acc + (p.price * p.qty), 0) || o.totalAmount || 0));
+              return sum + Number(((listed * commRate) / 100).toFixed(2));
+            }, 0);
+
+            const gstRetained = deliveredOrders.reduce((sum: number, o: any) => {
+              if (o.financialBreakdown?.gstOnCommission != null && o.financialBreakdown?.gstOnCommission !== 0) {
+                return sum + Number(o.financialBreakdown.gstOnCommission);
+              }
+              const comm = o.financialBreakdown?.platformCommission != null && o.financialBreakdown?.platformCommission !== 0
+                ? Number(o.financialBreakdown.platformCommission)
+                : Number((((o.financialBreakdown?.listedProductPrice || o.totalAmount || 0) * commRate) / 100).toFixed(2));
+              return sum + Number(((comm * gstRate) / 100).toFixed(2));
+            }, 0);
+
+            const totalRetention = deliveredOrders.reduce((sum: number, o: any) => {
+              if (o.financialBreakdown?.totalPlatformRetention != null && o.financialBreakdown?.totalPlatformRetention !== 0) {
+                return sum + Number(o.financialBreakdown.totalPlatformRetention);
+              }
+              const comm = Number((((o.financialBreakdown?.listedProductPrice || o.totalAmount || 0) * commRate) / 100).toFixed(2));
+              const gst = Number(((comm * gstRate) / 100).toFixed(2));
+              return sum + Number((comm + gst).toFixed(2));
+            }, 0);
+
+            const shippingTransferred = deliveredOrders.reduce((sum: number, o: any) => sum + (Number(o.shippingCharge) || 0), 0);
+
+            const totalNetVendorEarned = deliveredOrders.reduce((sum: number, o: any) => {
+              if (o.financialBreakdown?.finalVendorPayable != null && o.financialBreakdown?.finalVendorPayable !== 0) {
+                return sum + Number(o.financialBreakdown.finalVendorPayable);
+              }
+              if (o.vendorEarnings != null && o.vendorEarnings !== 0) {
+                return sum + Number(o.vendorEarnings);
+              }
+              const listed = Number(o.financialBreakdown?.listedProductPrice ?? (o.products?.reduce((acc: number, p: any) => acc + (p.price * p.qty), 0) || o.totalAmount || 0));
+              const comm = Number(((listed * commRate) / 100).toFixed(2));
+              const gst = Number(((comm * gstRate) / 100).toFixed(2));
+              return sum + Number((listed - (comm + gst) + (o.shippingCharge || 0)).toFixed(2));
+            }, 0);
+
+            const settledPaidAmount = (selectedVendorData.settlements || [])
+              .filter((s: any) => s.status === 'PAID')
+              .reduce((sum: number, s: any) => sum + (s.finalSettlementAmount || 0), 0);
+
+            const currentOutstandingDue = Math.max(0, totalNetVendorEarned - settledPaidAmount);
+
+            return (
             <div className="space-y-6">
-              {/* SETTLEMENT DISCREPANCY ADVISORY BANNER */}
-              <div className="bg-amber-950/40 border border-amber-500/40 rounded-2xl p-5 text-amber-200 text-xs space-y-2">
-                <div className="flex items-center gap-2 font-bold text-sm text-amber-300">
-                  <AlertTriangle className="h-5 w-5 text-amber-400 shrink-0" />
-                  <span>Agreement Notice: Settlement Cycle Clause Discrepancy</span>
+              {/* SYNCHRONIZED EXECUTIVE SETTLEMENT BALANCE LEDGER */}
+              <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-700 block mb-1">
+                    Live Settlement Ledger (Synchronized with Overview)
+                  </span>
+                  <h4 className="text-xl font-black text-slate-900 flex items-center gap-2">
+                    <IndianRupee className="h-6 w-6 text-emerald-600" />
+                    <span>Net Payable to Vendor: <span className="text-emerald-700">₹{totalNetVendorEarned.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span></span>
+                  </h4>
+                  <p className="text-xs text-slate-500 mt-0.5 font-medium">
+                    Calculated from {deliveredOrders.length} delivered orders • Listed GMV ₹{deliveredListedGmv.toLocaleString('en-IN', { maximumFractionDigits: 2 })} - 35.4% Platform Retention (₹{totalRetention.toLocaleString('en-IN', { maximumFractionDigits: 2 })}) + Shipping (₹{shippingTransferred.toLocaleString('en-IN')})
+                  </p>
                 </div>
-                <p>
-                  In the accepted partnership agreement: <strong>Clause 13</strong> specifies a <strong>15-day settlement cycle</strong>, whereas <strong>Schedule A</strong> specifies a <strong>30-day settlement cycle</strong>.
-                  Mito_Reboot maintains this as an explicit configurable setting rather than hardcoding. Choose your preferred cycle duration below.
+
+                <div className="flex items-center gap-3">
+                  <div className="bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl text-right">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Settled to Date</span>
+                    <span className="text-sm font-black text-slate-900 font-mono">₹{settledPaidAmount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="bg-amber-50 border border-amber-200 px-4 py-2 rounded-xl text-right">
+                    <span className="text-[10px] font-bold text-amber-700 uppercase block">Outstanding Due</span>
+                    <span className="text-base font-black text-amber-700 font-mono">₹{currentOutstandingDue.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* BREAKDOWN TILES */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                <div className="bg-white border border-slate-200/80 rounded-xl p-3.5 shadow-sm">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Delivered GMV</p>
+                  <p className="text-xl font-black text-slate-900 mt-1">₹{deliveredListedGmv.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</p>
+                  <p className="text-[10px] text-emerald-600 mt-0.5 font-semibold">{deliveredOrders.length} delivered orders</p>
+                </div>
+                <div className="bg-purple-50/40 border border-purple-100 rounded-xl p-3.5 shadow-sm">
+                  <p className="text-[10px] font-bold text-purple-700 uppercase tracking-wider">Platform Comm (30%)</p>
+                  <p className="text-xl font-black text-purple-800 mt-1">₹{commEarned.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</p>
+                  <p className="text-[10px] text-purple-600 mt-0.5 font-medium">Mito Platform Profit</p>
+                </div>
+                <div className="bg-purple-50/40 border border-purple-100 rounded-xl p-3.5 shadow-sm">
+                  <p className="text-[10px] font-bold text-purple-700 uppercase tracking-wider">GST on Comm (18%)</p>
+                  <p className="text-xl font-black text-purple-800 mt-1">₹{gstRetained.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</p>
+                  <p className="text-[10px] text-slate-500 mt-0.5 font-medium">SAC 9983 Retention</p>
+                </div>
+                <div className="bg-emerald-50/40 border border-emerald-100 rounded-xl p-3.5 shadow-sm">
+                  <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Shipping Pass-Through</p>
+                  <p className="text-xl font-black text-emerald-800 mt-1">₹{shippingTransferred.toLocaleString('en-IN')}</p>
+                  <p className="text-[10px] text-emerald-600 mt-0.5 font-medium">100% to Vendor</p>
+                </div>
+                <div className="bg-emerald-50/70 border border-emerald-200 rounded-xl p-3.5 shadow-sm">
+                  <p className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">Net Vendor Payable</p>
+                  <p className="text-xl font-black text-emerald-900 mt-1">₹{totalNetVendorEarned.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</p>
+                  <p className="text-[10px] text-amber-700 mt-0.5 font-bold">₹{currentOutstandingDue.toLocaleString('en-IN', { maximumFractionDigits: 0 })} Outstanding</p>
+                </div>
+              </div>
+
+              {/* UNSETTLED DELIVERED ORDERS AWAITING CYCLE GENERATION */}
+              {unsettledDeliveredOrders.length > 0 && (
+                <div className="bg-amber-50/30 border border-amber-200/80 rounded-2xl p-5 space-y-3 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-black text-amber-950 flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4 text-amber-600" />
+                        <span>Delivered Orders Ready for Settlement Cycle ({unsettledDeliveredOrders.length})</span>
+                      </h4>
+                      <p className="text-xs text-amber-800 font-medium">These completed orders are eligible and will be bundled when you click "Run Settlement Calculation" below.</p>
+                    </div>
+                    <span className="text-xs font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-xl">
+                      Net Due: ₹{unsettledDeliveredOrders.reduce((sum: number, o: any) => sum + (o.financialBreakdown?.finalVendorPayable || o.vendorEarnings || 0), 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+
+                  <div className="bg-white border border-amber-200 rounded-xl overflow-hidden">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-amber-50/60 text-slate-600 font-bold border-b border-amber-200 text-[10px] uppercase">
+                        <tr>
+                          <th className="py-2.5 px-3">Order ID</th>
+                          <th className="py-2.5 px-3">Delivered Date</th>
+                          <th className="py-2.5 px-3">Listed GMV</th>
+                          <th className="py-2.5 px-3">Platform Comm (30%)</th>
+                          <th className="py-2.5 px-3">GST (18%)</th>
+                          <th className="py-2.5 px-3">Net Vendor Share</th>
+                          <th className="py-2.5 px-3">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {unsettledDeliveredOrders.map((o: any) => {
+                          const listed = Number(o.financialBreakdown?.listedProductPrice ?? (o.products?.reduce((acc: number, p: any) => acc + (p.price * p.qty), 0) || o.totalAmount || 0));
+                          const comm = o.financialBreakdown?.platformCommission ?? Number(((listed * 30) / 100).toFixed(2));
+                          const gst = o.financialBreakdown?.gstOnCommission ?? Number(((comm * 18) / 100).toFixed(2));
+                          const payable = o.financialBreakdown?.finalVendorPayable ?? o.vendorEarnings ?? Number((listed - (comm + gst)).toFixed(2));
+                          return (
+                            <tr key={o._id} className="hover:bg-slate-50/80">
+                              <td className="py-2.5 px-3 font-mono font-bold text-indigo-600">
+                                {o.vendorOrderId || `#${o._id.slice(-6).toUpperCase()}`}
+                              </td>
+                              <td className="py-2.5 px-3 text-slate-500">
+                                {new Date(o.createdAt).toLocaleDateString('en-IN')}
+                              </td>
+                              <td className="py-2.5 px-3 font-bold text-slate-900">
+                                ₹{listed.toLocaleString('en-IN')}
+                              </td>
+                              <td className="py-2.5 px-3 text-purple-700 font-semibold">
+                                ₹{comm.toLocaleString('en-IN')}
+                              </td>
+                              <td className="py-2.5 px-3 text-purple-700 font-semibold">
+                                ₹{gst.toLocaleString('en-IN')}
+                              </td>
+                              <td className="py-2.5 px-3 font-black text-emerald-700">
+                                ₹{payable.toLocaleString('en-IN')}
+                              </td>
+                              <td className="py-2.5 px-3">
+                                <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                  Awaiting Batch Run
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* VENDOR BENEFICIARY BANK ACCOUNT CARD */}
+              <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl">
+                      <Banknote className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                        <span>Vendor Beneficiary & Settlement Account</span>
+                        <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded text-[10px] font-bold">
+                          Verified for NEFT / RTGS / IMPS
+                        </span>
+                      </h4>
+                      <p className="text-xs text-slate-500 font-medium">All net commission settlements are remitted to this registered corporate account</p>
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <span className="text-xs text-slate-400 font-medium">Agreed Platform Commission:</span>
+                    <div className="text-sm font-black text-purple-700">
+                      30.0% + 18% GST ({selectedVendorData.vendor?.commissionRate || 30}% Commercial)
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 text-xs">
+                  <div>
+                    <span className="text-slate-400 block text-[11px] font-medium">Account Beneficiary Name</span>
+                    <span className="font-bold text-slate-900 mt-0.5 block">{selectedVendorData.vendor?.bankDetails?.accountName || 'Arivu Food Tech Solutions Pvt Ltd'}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[11px] font-medium">Bank Name & Branch</span>
+                    <span className="font-bold text-slate-900 mt-0.5 block">{selectedVendorData.vendor?.bankDetails?.bankName || 'HDFC Bank (Koramangala Branch)'}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[11px] font-medium">Account Number</span>
+                    <span className="font-mono font-bold text-emerald-700 mt-0.5 block">{selectedVendorData.vendor?.bankDetails?.accountNumber || '50200084920194'}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[11px] font-medium">IFSC Code</span>
+                    <span className="font-mono font-bold text-blue-700 mt-0.5 block">{selectedVendorData.vendor?.bankDetails?.ifscCode || 'HDFC0001234'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* SETTLEMENT DISCREPANCY ADVISORY BANNER */}
+              <div className="bg-amber-50/60 border border-amber-200 rounded-2xl p-5 text-amber-900 text-xs space-y-2">
+                <div className="flex items-center gap-2 font-bold text-sm text-amber-800">
+                  <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
+                  <span>Agreement Settlement Cycle Configuration</span>
+                </div>
+                <p className="text-amber-800 font-medium">
+                  In the signed agreement: <strong>Clause 13</strong> specifies a <strong>15-day settlement cycle</strong>, whereas <strong>Schedule A</strong> specifies a <strong>30-day settlement cycle</strong>.
+                  Select your active operational cycle duration below:
                 </p>
                 <div className="flex items-center gap-4 pt-1">
-                  <span className="font-semibold text-white">Active Settlement Cycle:</span>
+                  <span className="font-bold text-slate-800">Active Operational Cycle:</span>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setSettlementCycleDays(15)}
-                      className={`px-3 py-1 rounded-lg font-bold border transition ${settlementCycleDays === 15 ? 'bg-amber-500 text-slate-950 border-amber-400' : 'bg-slate-800 text-slate-300 border-slate-700'}`}
+                      className={`px-3 py-1 rounded-lg font-bold border transition ${settlementCycleDays === 15 ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-sm' : 'bg-white text-slate-700 border-slate-200'}`}
                     >
                       15 Days (Clause 13)
                     </button>
                     <button
                       onClick={() => setSettlementCycleDays(30)}
-                      className={`px-3 py-1 rounded-lg font-bold border transition ${settlementCycleDays === 30 ? 'bg-amber-500 text-slate-950 border-amber-400' : 'bg-slate-800 text-slate-300 border-slate-700'}`}
+                      className={`px-3 py-1 rounded-lg font-bold border transition ${settlementCycleDays === 30 ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-sm' : 'bg-white text-slate-700 border-slate-200'}`}
                     >
-                      30 Days (Schedule A - Recommended)
+                      30 Days (Schedule A - Standard)
                     </button>
                   </div>
                 </div>
               </div>
 
               {/* GENERATE SETTLEMENT TOOLBAR */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+              <div className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-4 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-base font-bold text-white flex items-center gap-2">
-                      <IndianRupee className="h-5 w-5 text-emerald-400" />
+                    <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                      <IndianRupee className="h-5 w-5 text-emerald-600" />
                       <span>Generate Settlement Cycle Run</span>
                     </h3>
-                    <p className="text-xs text-slate-400">Calculates eligible delivered orders, applies 30% commission, 18% GST retention, and 100% shipping transfer</p>
+                    <p className="text-xs text-slate-500 font-medium">Calculates delivered orders in range, applies 30% commission, 18% GST retention, and 100% shipping transfer</p>
                   </div>
 
                   <button
                     onClick={handleGenerateSettlement}
                     disabled={generatingSettlement}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-emerald-900/40 transition"
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition"
                   >
                     <Plus className="h-4 w-4" />
-                    <span>{generatingSettlement ? 'Calculating...' : 'Generate Settlement'}</span>
+                    <span>{generatingSettlement ? 'Calculating...' : 'Run Settlement Calculation'}</span>
                   </button>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">Start Date</label>
+                    <label className="block text-[11px] font-bold text-slate-500 mb-1">Start Date</label>
                     <input
                       type="date"
                       value={settlementStartDate}
                       onChange={(e) => setSettlementStartDate(e.target.value)}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500 focus:bg-white"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">End Date</label>
+                    <label className="block text-[11px] font-bold text-slate-500 mb-1">End Date</label>
                     <input
                       type="date"
                       value={settlementEndDate}
                       onChange={(e) => setSettlementEndDate(e.target.value)}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500 focus:bg-white"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">Cycle Duration</label>
+                    <label className="block text-[11px] font-bold text-slate-500 mb-1">Cycle Duration</label>
                     <input
                       type="text"
                       disabled
                       value={`${settlementCycleDays} Days Cycle`}
-                      className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-400 cursor-not-allowed"
+                      className="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-500 cursor-not-allowed font-semibold"
                     />
                   </div>
                 </div>
@@ -1406,125 +2051,204 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
 
               {/* SETTLEMENT RUNS LIST */}
               <div className="space-y-4">
-                <h4 className="text-sm font-bold text-white">Settlement History & Drafts</h4>
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                    <CreditCard className="h-4 w-4 text-emerald-600" />
+                    <span>Settlement Runs, Payouts & Proof of Payment</span>
+                  </h4>
+                  <span className="text-xs text-slate-500 font-semibold">
+                    {selectedVendorData.settlements?.length || 0} cycles generated
+                  </span>
+                </div>
+
                 {selectedVendorData.settlements?.length === 0 ? (
-                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-10 text-center text-slate-400">
-                    <IndianRupee className="h-8 w-8 mx-auto text-slate-600 mb-2" />
-                    <p className="font-semibold text-white">No Settlements Generated Yet</p>
-                    <p className="text-xs">Select dates above and click "Generate Settlement" to compute your first cycle run.</p>
+                  <div className="bg-white border border-slate-200/80 rounded-2xl p-10 text-center text-slate-400 shadow-sm">
+                    <IndianRupee className="h-8 w-8 mx-auto text-slate-400 mb-2" />
+                    <p className="font-bold text-slate-900">No Settlements Generated Yet</p>
+                    <p className="text-xs text-slate-500">Select dates above and click "Run Settlement Calculation" to compute your first cycle run.</p>
                   </div>
                 ) : (
-                  <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-800/80 text-slate-400 font-semibold border-b border-slate-700">
-                        <tr>
-                          <th className="px-5 py-3.5">Settlement Code</th>
-                          <th className="px-4 py-3.5">Period</th>
-                          <th className="px-4 py-3.5 text-center">Orders</th>
-                          <th className="px-4 py-3.5">Gross Sales</th>
-                          <th className="px-4 py-3.5">Platform Retention (35.4%)</th>
-                          <th className="px-4 py-3.5">Shipping Pass-Through</th>
-                          <th className="px-4 py-3.5">Final Payable</th>
-                          <th className="px-4 py-3.5">Status</th>
-                          <th className="px-5 py-3.5 text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-800 text-slate-300">
-                        {selectedVendorData.settlements?.map((set: any) => (
-                          <tr key={set._id} className="hover:bg-slate-800/50 transition">
-                            <td className="px-5 py-3.5 font-mono font-bold text-white">
-                              {set.settlementCode}
-                            </td>
-
-                            <td className="px-4 py-3.5 text-slate-400 text-[11px]">
-                              {new Date(set.startDate).toLocaleDateString()} – {new Date(set.endDate).toLocaleDateString()}
-                            </td>
-
-                            <td className="px-4 py-3.5 text-center font-bold text-white">
-                              {set.totalOrdersCount}
-                            </td>
-
-                            <td className="px-4 py-3.5 font-semibold text-white">
-                              ₹{set.grossSales.toLocaleString()}
-                            </td>
-
-                            <td className="px-4 py-3.5 font-semibold text-purple-400">
-                              ₹{set.totalPlatformRetention.toLocaleString()}
-                              <span className="block text-[10px] text-slate-500">(₹{set.totalPlatformCommission} + ₹{set.gstOnCommission} GST)</span>
-                            </td>
-
-                            <td className="px-4 py-3.5 font-semibold text-emerald-400">
-                              ₹{set.shippingPassThrough.toLocaleString()}
-                            </td>
-
-                            <td className="px-4 py-3.5 font-black text-amber-400 text-sm">
-                              ₹{set.finalSettlementAmount.toLocaleString()}
-                            </td>
-
-                            <td className="px-4 py-3.5">
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
-                                set.status === 'FINALIZED' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                                set.status === 'PAID' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
-                                'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                              }`}>
-                                {set.status}
-                              </span>
-                            </td>
-
-                            <td className="px-5 py-3.5 text-right space-x-2">
-                              <button
-                                onClick={() => setSelectedSettlementBreakdown(set)}
-                                className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg text-xs font-semibold transition"
-                              >
-                                Breakdown
-                              </button>
-
-                              <a
-                                href={`${apiUrl}/admin/vendors/settlements/${set._id}/export-csv`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg text-xs font-semibold inline-flex items-center gap-1 transition"
-                              >
-                                <Download className="h-3 w-3" /> CSV
-                              </a>
-
-                              {set.status === 'DRAFT' && (
-                                <button
-                                  onClick={() => handleFinalizeSettlement(set._id)}
-                                  className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition"
-                                  title="Lock settlement and prevent duplicate calculation"
-                                >
-                                  Finalize & Lock
-                                </button>
-                              )}
-                            </td>
+                  <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs min-w-[1000px]">
+                        <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 text-[10px] uppercase tracking-wider">
+                          <tr>
+                            <th className="px-4 py-3.5">Settlement Code</th>
+                            <th className="px-3 py-3.5">Period</th>
+                            <th className="px-2 py-3.5 text-center">Orders</th>
+                            <th className="px-3 py-3.5">Gross Sales</th>
+                            <th className="px-3 py-3.5 text-purple-700">Platform Share (35.4%)</th>
+                            <th className="px-3 py-3.5 text-emerald-700">Shipping Transfer</th>
+                            <th className="px-3 py-3.5 text-slate-900">Net Vendor Payable</th>
+                            <th className="px-3 py-3.5">Payment & Proof</th>
+                            <th className="px-4 py-3.5 text-right">Actions</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 text-slate-700">
+                          {selectedVendorData.settlements?.map((set: any) => {
+                            const isPaid = set.status === 'PAID';
+
+                            return (
+                              <tr key={set._id} className="hover:bg-slate-50/80 transition">
+                                <td className="px-4 py-3.5">
+                                  <div className="font-mono font-bold text-slate-900">{set.settlementCode}</div>
+                                  <div className="text-[10px] text-slate-400">
+                                    {new Date(set.createdAt).toLocaleDateString()}
+                                  </div>
+                                </td>
+
+                                <td className="px-3 py-3.5 text-slate-600 text-[11px] whitespace-nowrap font-medium">
+                                  {new Date(set.startDate).toLocaleDateString()} – {new Date(set.endDate).toLocaleDateString()}
+                                </td>
+
+                                <td className="px-2 py-3.5 text-center font-bold text-slate-900">
+                                  {set.totalOrdersCount}
+                                </td>
+
+                                <td className="px-3 py-3.5 font-bold text-slate-900">
+                                  ₹{set.grossSales.toLocaleString()}
+                                </td>
+
+                                <td className="px-3 py-3.5 text-purple-700">
+                                  <span className="font-bold">₹{set.totalPlatformRetention.toLocaleString()}</span>
+                                  <span className="block text-[10px] text-purple-600/80 font-medium">(₹{set.totalPlatformCommission} + ₹{set.gstOnCommission} GST)</span>
+                                </td>
+
+                                <td className="px-3 py-3.5 font-bold text-emerald-700">
+                                  +₹{set.shippingPassThrough.toLocaleString()}
+                                </td>
+
+                                <td className="px-3 py-3.5">
+                                  <span className="font-black text-slate-900 text-sm">₹{set.finalSettlementAmount.toLocaleString()}</span>
+                                </td>
+
+                                <td className="px-3 py-3.5">
+                                  {isPaid ? (
+                                    <div>
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                        <CheckCircle className="h-3 w-3" /> Paid
+                                      </span>
+                                      {set.paymentReference && (
+                                        <div className="font-mono text-[10px] text-slate-500 font-semibold mt-0.5 truncate max-w-[120px]" title={set.paymentReference}>
+                                          UTR: {set.paymentReference}
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <div>
+                                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border ${
+                                        set.status === 'FINALIZED' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-amber-50 text-amber-700 border-amber-200'
+                                      }`}>
+                                        <Clock className="h-3 w-3" /> {set.status === 'FINALIZED' ? 'Ready for Payout' : 'Draft'}
+                                      </span>
+                                      <div className="text-[10px] text-amber-700 font-semibold mt-0.5">Due to Vendor</div>
+                                    </div>
+                                  )}
+                                </td>
+
+                                <td className="px-4 py-3.5 text-right space-x-1.5 whitespace-nowrap">
+                                  {!isPaid ? (
+                                    <button
+                                      onClick={() => {
+                                        setSelectedSettlementForPayout(set);
+                                        setPayoutForm({
+                                          paymentReference: '',
+                                          paymentMode: 'NEFT',
+                                          paymentDate: new Date().toISOString().split('T')[0],
+                                          bankProofNotes: `Payout for settlement ${set.settlementCode} to ${selectedVendorData.vendor?.name}`
+                                        });
+                                      }}
+                                      className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition inline-flex items-center gap-1 shadow-sm"
+                                      title="Record Bank Transfer UTR Proof"
+                                    >
+                                      <Banknote className="h-3 w-3" />
+                                      <span>Record Payout</span>
+                                    </button>
+                                  ) : (
+                                    <button
+                                      onClick={() => setSelectedProofData({
+                                        settlementCode: set.settlementCode,
+                                        vendorName: selectedVendorData.vendor?.name,
+                                        paidAt: set.paidAt || set.updatedAt,
+                                        paymentReference: set.paymentReference,
+                                        paymentMode: set.paymentMode || 'NEFT / RTGS',
+                                        finalSettlementAmount: set.finalSettlementAmount,
+                                        bankDetails: selectedVendorData.vendor?.bankDetails,
+                                        notes: set.bankProofNotes || 'Bank transfer completed successfully.'
+                                      })}
+                                      className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-bold transition inline-flex items-center gap-1"
+                                      title="View verified bank payment reference"
+                                    >
+                                      <FileCheck className="h-3 w-3 text-emerald-600" />
+                                      <span>Proof</span>
+                                    </button>
+                                  )}
+
+                                  <button
+                                    onClick={() => setSelectedSettlementForVoucher(set)}
+                                    className="px-2 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-lg text-xs font-bold transition inline-flex items-center gap-1"
+                                    title="View & Print Official Settlement Voucher"
+                                  >
+                                    <Printer className="h-3 w-3" />
+                                    <span>Voucher</span>
+                                  </button>
+
+                                  <button
+                                    onClick={() => setSelectedSettlementBreakdown(set)}
+                                    className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition inline-flex items-center gap-1 border border-slate-200"
+                                    title="Line item calculation breakdown"
+                                  >
+                                    <Receipt className="h-3 w-3" />
+                                  </button>
+
+                                  <button
+                                    onClick={() => handleDownloadSettlementCsv(set._id, set.settlementCode)}
+                                    className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold inline-flex items-center gap-1 transition border border-slate-200"
+                                    title="Download CSV"
+                                  >
+                                    <Download className="h-3 w-3" />
+                                  </button>
+
+                                  {set.status === 'DRAFT' && (
+                                    <button
+                                      onClick={() => handleFinalizeSettlement(set._id)}
+                                      className="px-2 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition shadow-sm"
+                                      title="Lock settlement cycle"
+                                    >
+                                      Lock
+                                    </button>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 )}
               </div>
             </div>
-          )}
+          );
+        })()}
 
           {/* TAB 5: API INTEGRATION & SYNC LOGS */}
           {activeTab === 'logs' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-base font-bold text-white flex items-center gap-2">
-                    <Activity className="h-5 w-5 text-emerald-400" />
+                  <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                    <Activity className="h-5 w-5 text-emerald-600" />
                     <span>Vendor API Audit Logs ({selectedVendorData.syncLogs?.length || 0})</span>
                   </h3>
-                  <p className="text-xs text-slate-400">Complete record of catalog synchronization, order submissions, and status polls</p>
+                  <p className="text-xs text-slate-500 font-medium">Complete record of catalog synchronization, order submissions, and status polls</p>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleSyncCatalog(selectedVendorId)}
                     disabled={syncingCatalog}
-                    className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition"
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-sm"
                   >
                     <RefreshCw className={`h-3.5 w-3.5 ${syncingCatalog ? 'animate-spin' : ''}`} />
                     <span>Run Sync Test</span>
@@ -1533,15 +2257,15 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
               </div>
 
               {selectedVendorData.syncLogs?.length === 0 ? (
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-10 text-center text-slate-400">
-                  <Activity className="h-8 w-8 mx-auto text-slate-600 mb-2" />
-                  <p className="font-semibold text-white">No Sync Logs Recorded</p>
-                  <p className="text-xs">Click "Run Sync Test" to trigger catalog sync and record the first entry.</p>
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-10 text-center text-slate-400 shadow-sm">
+                  <Activity className="h-8 w-8 mx-auto text-slate-400 mb-2" />
+                  <p className="font-bold text-slate-900">No Sync Logs Recorded</p>
+                  <p className="text-xs text-slate-500">Click "Run Sync Test" to trigger catalog sync and record the first entry.</p>
                 </div>
               ) : (
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+                <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-800/80 text-slate-400 font-semibold border-b border-slate-700">
+                    <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 text-[10px] uppercase tracking-wider">
                       <tr>
                         <th className="px-5 py-3.5">Action</th>
                         <th className="px-4 py-3.5">Status</th>
@@ -1552,40 +2276,40 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
                         <th className="px-5 py-3.5">Details</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800 text-slate-300">
+                    <tbody className="divide-y divide-slate-100 text-slate-700">
                       {selectedVendorData.syncLogs?.map((log: any) => (
-                        <tr key={log._id} className="hover:bg-slate-800/50 transition">
-                          <td className="px-5 py-3.5 font-bold text-white font-mono">
+                        <tr key={log._id} className="hover:bg-slate-50/80 transition">
+                          <td className="px-5 py-3.5 font-bold text-slate-900 font-mono">
                             {log.action}
                           </td>
 
                           <td className="px-4 py-3.5">
                             <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
-                              log.status === 'SUCCESS' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                              log.status === 'WARNING' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
-                              'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                              log.status === 'SUCCESS' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                              log.status === 'WARNING' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                              'bg-rose-50 text-rose-700 border-rose-200'
                             }`}>
                               {log.status}
                             </span>
                           </td>
 
-                          <td className="px-4 py-3.5 text-[11px] text-slate-400">
-                            {log.isMock ? <span className="text-amber-400">Mock Driver</span> : <span className="text-emerald-400">Live API</span>}
+                          <td className="px-4 py-3.5 text-[11px] font-medium">
+                            {log.isMock ? <span className="text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 font-bold">Mock Driver</span> : <span className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 font-bold">Live API</span>}
                           </td>
 
-                          <td className="px-4 py-3.5 font-mono text-[11px] text-slate-400">
+                          <td className="px-4 py-3.5 font-mono text-[11px] text-slate-500">
                             {log.durationMs} ms
                           </td>
 
-                          <td className="px-4 py-3.5 text-slate-300">
+                          <td className="px-4 py-3.5 text-slate-900 font-bold">
                             {log.itemsProcessed || 0}
                           </td>
 
-                          <td className="px-4 py-3.5 text-slate-400 text-[11px]">
+                          <td className="px-4 py-3.5 text-slate-500 text-[11px]">
                             {new Date(log.createdAt).toLocaleString()}
                           </td>
 
-                          <td className="px-5 py-3.5 text-slate-400 text-[11px] max-w-xs truncate">
+                          <td className="px-5 py-3.5 text-slate-600 text-[11px] max-w-xs truncate font-mono">
                             {log.errorMessage || JSON.stringify(log.responsePayload || {})}
                           </td>
                         </tr>
@@ -1599,16 +2323,16 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
 
           {/* TAB 6: VENDOR CONFIGURATION */}
           {activeTab === 'config' && (
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm space-y-6">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                 <div>
-                  <h3 className="text-base font-bold text-white">Vendor Configuration & Capabilities</h3>
-                  <p className="text-xs text-slate-400">Configure architectural capabilities, commission terms, and API credentials</p>
+                  <h3 className="text-base font-black text-slate-900">Vendor Configuration & Capabilities</h3>
+                  <p className="text-xs text-slate-500 font-medium">Configure architectural capabilities, commission terms, and API credentials</p>
                 </div>
                 <button
                   onClick={handleSaveVendorConfig}
                   disabled={saving}
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-emerald-900/40 transition"
+                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition"
                 >
                   <Check className="h-4 w-4" />
                   <span>{saving ? 'Saving...' : 'Save Configuration'}</span>
@@ -1618,54 +2342,65 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* SECTION: GENERAL INFO */}
                 <div className="space-y-4">
-                  <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider">General Information</h4>
+                  <h4 className="text-xs font-bold text-emerald-700 uppercase tracking-wider">General Information</h4>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">Vendor Name</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Vendor Name</label>
                     <input
                       type="text"
                       value={editConfigForm.name || ''}
                       onChange={(e) => setEditConfigForm({ ...editConfigForm, name: e.target.value })}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">System Slug (Unique)</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">System Slug (Unique)</label>
                     <input
                       type="text"
                       value={editConfigForm.slug || ''}
                       onChange={(e) => setEditConfigForm({ ...editConfigForm, slug: e.target.value })}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-emerald-500"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-mono focus:outline-none focus:bg-white focus:border-emerald-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">Email Address</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Email Address</label>
                     <input
                       type="email"
                       value={editConfigForm.email || ''}
                       onChange={(e) => setEditConfigForm({ ...editConfigForm, email: e.target.value })}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">Website URL</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Website URL</label>
                     <input
                       type="text"
+                      placeholder="https://www.arivufoods.com"
                       value={editConfigForm.website || ''}
                       onChange={(e) => setEditConfigForm({ ...editConfigForm, website: e.target.value })}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Registered Business Address</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Plot 42, Peenya Industrial Area, Bangalore 560058"
+                      value={editConfigForm.businessAddress || ''}
+                      onChange={(e) => setEditConfigForm({ ...editConfigForm, businessAddress: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-500"
                     />
                   </div>
                 </div>
 
                 {/* SECTION: ARCHITECTURAL CAPABILITIES */}
                 <div className="space-y-4">
-                  <h4 className="text-xs font-bold text-blue-400 uppercase tracking-wider">Multi-Vendor Capabilities</h4>
+                  <h4 className="text-xs font-bold text-blue-700 uppercase tracking-wider">Multi-Vendor Capabilities</h4>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">Checkout & Fulfillment Flow</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Checkout & Fulfillment Flow</label>
                     <select
                       value={editConfigForm.checkoutType || 'INTERNAL'}
                       onChange={(e) => setEditConfigForm({ ...editConfigForm, checkoutType: e.target.value })}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-500"
                     >
                       <option value="INTERNAL">Internal Checkout (Mito Cart & Payment)</option>
                       <option value="EXTERNAL_AMAZON">External Redirect ("Buy on Amazon")</option>
@@ -1673,11 +2408,11 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">Product Catalog Sync Method</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Product Catalog Sync Method</label>
                     <select
                       value={editConfigForm.productSyncMethod || 'API'}
                       onChange={(e) => setEditConfigForm({ ...editConfigForm, productSyncMethod: e.target.value })}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-500"
                     >
                       <option value="API">Automated API Synchronization (Arivu Foods)</option>
                       <option value="MANUAL">Manual Listing via Admin Dashboard</option>
@@ -1686,33 +2421,33 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
 
                   {editConfigForm.checkoutType === 'EXTERNAL_AMAZON' && (
                     <div>
-                      <label className="block text-xs font-semibold text-amber-400 mb-1">Amazon Product / Storefront URL</label>
+                      <label className="block text-xs font-bold text-amber-700 mb-1">Amazon Product / Storefront URL</label>
                       <input
                         type="text"
                         value={editConfigForm.externalStoreUrl || ''}
                         onChange={(e) => setEditConfigForm({ ...editConfigForm, externalStoreUrl: e.target.value })}
                         placeholder="https://www.amazon.in/dp/..."
-                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-500"
                       />
                     </div>
                   )}
 
                   <div className="grid grid-cols-2 gap-3 pt-1">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">Commission Rate (%)</label>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Commission Rate (%)</label>
                       <input
                         type="number"
                         value={editConfigForm.commissionRate}
                         onChange={(e) => setEditConfigForm({ ...editConfigForm, commissionRate: e.target.value })}
-                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">Settlement Cycle (Days)</label>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Settlement Cycle (Days)</label>
                       <select
                         value={editConfigForm.settlementCycleDays}
                         onChange={(e) => setEditConfigForm({ ...editConfigForm, settlementCycleDays: e.target.value })}
-                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-500"
                       >
                         <option value={15}>15 Days (Clause 13)</option>
                         <option value={30}>30 Days (Schedule A)</option>
@@ -1723,42 +2458,42 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
                 </div>
 
                 {/* SECTION: API CONFIGURATION */}
-                <div className="space-y-4 md:col-span-2 pt-4 border-t border-slate-800">
-                  <h4 className="text-xs font-bold text-purple-400 uppercase tracking-wider">Vendor API Integration & Credentials</h4>
+                <div className="space-y-4 md:col-span-2 pt-4 border-t border-slate-100">
+                  <h4 className="text-xs font-bold text-purple-700 uppercase tracking-wider">Vendor API Integration & Credentials</h4>
                   
-                  <div className="flex items-center gap-3 bg-slate-800/40 p-3 rounded-xl border border-slate-800">
+                  <div className="flex items-center gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80">
                     <input
                       type="checkbox"
                       id="mockModeToggle"
                       checked={editConfigForm.mockMode ?? true}
                       onChange={(e) => setEditConfigForm({ ...editConfigForm, mockMode: e.target.checked })}
-                      className="rounded border-slate-700 text-emerald-500 focus:ring-emerald-500 h-4 w-4"
+                      className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 h-4 w-4"
                     />
-                    <label htmlFor="mockModeToggle" className="text-xs text-slate-200">
-                      <span className="font-bold text-white block">Enable Mock API Driver</span>
+                    <label htmlFor="mockModeToggle" className="text-xs text-slate-700">
+                      <span className="font-bold text-slate-900 block">Enable Mock API Driver</span>
                       Use pre-configured authentic Arivu Foods catalog & simulated order responses while Arivu finalizes live API docs.
                     </label>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">Production API Base URL</label>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Production API Base URL</label>
                       <input
                         type="text"
                         value={editConfigForm.baseUrl || ''}
                         onChange={(e) => setEditConfigForm({ ...editConfigForm, baseUrl: e.target.value })}
                         placeholder="https://api.arivufoods.com/v1"
-                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-emerald-500"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-mono focus:outline-none focus:bg-white focus:border-emerald-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">API Key / Authorization Token</label>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">API Key / Authorization Token</label>
                       <input
                         type="password"
                         value={editConfigForm.apiKey || ''}
                         onChange={(e) => setEditConfigForm({ ...editConfigForm, apiKey: e.target.value })}
                         placeholder="••••••••••••••••••••••••"
-                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-emerald-500"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-mono focus:outline-none focus:bg-white focus:border-emerald-500"
                       />
                     </div>
                   </div>
@@ -1771,75 +2506,75 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
 
       {/* MODAL: SETTLEMENT BREAKDOWN MODAL */}
       {selectedSettlementBreakdown && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
-            <div className="flex items-center justify-between p-5 border-b border-slate-800">
+        <div className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-slate-50">
               <div>
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <IndianRupee className="h-5 w-5 text-emerald-400" />
+                <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                  <IndianRupee className="h-5 w-5 text-emerald-600" />
                   <span>Settlement Breakdown: {selectedSettlementBreakdown.settlementCode}</span>
                 </h3>
-                <p className="text-xs text-slate-400">Order-level commercial formula calculation per agreement</p>
+                <p className="text-xs text-slate-500 font-medium">Order-level commercial formula calculation per agreement</p>
               </div>
-              <button onClick={() => setSelectedSettlementBreakdown(null)} className="text-slate-400 hover:text-white p-1">
+              <button onClick={() => setSelectedSettlementBreakdown(null)} className="text-slate-400 hover:text-slate-600 p-1">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             <div className="p-5 overflow-y-auto space-y-4">
-              <div className="grid grid-cols-4 gap-3 bg-slate-800/60 p-3.5 rounded-xl text-center text-xs">
+              <div className="grid grid-cols-4 gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 text-center text-xs">
                 <div>
-                  <span className="text-slate-400 block text-[10px] uppercase">Gross Product Sales</span>
-                  <span className="text-sm font-bold text-white mt-0.5 block">₹{selectedSettlementBreakdown.grossSales}</span>
+                  <span className="text-slate-500 block text-[10px] font-bold uppercase">Gross Product Sales</span>
+                  <span className="text-base font-black text-slate-900 mt-0.5 block">₹{selectedSettlementBreakdown.grossSales.toLocaleString()}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[10px] uppercase">Platform Comm (30%)</span>
-                  <span className="text-sm font-bold text-purple-400 mt-0.5 block">₹{selectedSettlementBreakdown.totalPlatformCommission}</span>
+                  <span className="text-purple-700 block text-[10px] font-bold uppercase">Platform Comm (30%)</span>
+                  <span className="text-base font-black text-purple-700 mt-0.5 block">₹{selectedSettlementBreakdown.totalPlatformCommission.toLocaleString()}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[10px] uppercase">GST on Comm (18%)</span>
-                  <span className="text-sm font-bold text-purple-400 mt-0.5 block">₹{selectedSettlementBreakdown.gstOnCommission}</span>
+                  <span className="text-purple-700 block text-[10px] font-bold uppercase">GST on Comm (18%)</span>
+                  <span className="text-base font-black text-purple-700 mt-0.5 block">₹{selectedSettlementBreakdown.gstOnCommission.toLocaleString()}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[10px] uppercase">Final Vendor Payable</span>
-                  <span className="text-sm font-black text-emerald-400 mt-0.5 block">₹{selectedSettlementBreakdown.finalSettlementAmount}</span>
+                  <span className="text-emerald-800 block text-[10px] font-bold uppercase">Final Vendor Payable</span>
+                  <span className="text-base font-black text-emerald-700 mt-0.5 block">₹{selectedSettlementBreakdown.finalSettlementAmount.toLocaleString()}</span>
                 </div>
               </div>
 
-              <table className="w-full text-left text-xs border border-slate-800 rounded-xl overflow-hidden">
-                <thead className="bg-slate-800 text-slate-400 font-semibold">
+              <table className="w-full text-left text-xs border border-slate-200 rounded-xl overflow-hidden">
+                <thead className="bg-slate-50 text-slate-600 font-bold text-[10px] uppercase">
                   <tr>
                     <th className="px-4 py-2.5">Order Ref</th>
                     <th className="px-3 py-2.5">Customer</th>
                     <th className="px-3 py-2.5">Listed Price</th>
-                    <th className="px-3 py-2.5">30% Comm</th>
-                    <th className="px-3 py-2.5">18% GST</th>
+                    <th className="px-3 py-2.5 text-purple-700">30% Comm</th>
+                    <th className="px-3 py-2.5 text-purple-700">18% GST</th>
                     <th className="px-3 py-2.5">Vendor Share</th>
-                    <th className="px-3 py-2.5">Shipping</th>
+                    <th className="px-3 py-2.5 text-emerald-700">Shipping</th>
                     <th className="px-4 py-2.5 text-right">Net Payable</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800 text-slate-300">
+                <tbody className="divide-y divide-slate-100 text-slate-700">
                   {selectedSettlementBreakdown.lineItems?.map((li: any, idx: number) => (
-                    <tr key={idx} className="hover:bg-slate-800/40">
-                      <td className="px-4 py-2.5 font-mono font-bold text-white">#{li.orderNumber}</td>
-                      <td className="px-3 py-2.5">{li.customerName}</td>
-                      <td className="px-3 py-2.5">₹{li.listedProductPrice}</td>
-                      <td className="px-3 py-2.5 text-purple-400">₹{li.platformCommission}</td>
-                      <td className="px-3 py-2.5 text-purple-400">₹{li.gstOnCommission}</td>
-                      <td className="px-3 py-2.5">₹{li.vendorProductShare}</td>
-                      <td className="px-3 py-2.5 text-emerald-400">₹{li.shippingCollected}</td>
-                      <td className="px-4 py-2.5 text-right font-bold text-emerald-400">₹{li.netVendorPayable}</td>
+                    <tr key={idx} className="hover:bg-slate-50/60">
+                      <td className="px-4 py-2.5 font-mono font-bold text-slate-900">#{li.orderNumber}</td>
+                      <td className="px-3 py-2.5 font-medium">{li.customerName}</td>
+                      <td className="px-3 py-2.5 font-bold">₹{li.listedProductPrice}</td>
+                      <td className="px-3 py-2.5 text-purple-700 font-semibold">₹{li.platformCommission}</td>
+                      <td className="px-3 py-2.5 text-purple-700 font-semibold">₹{li.gstOnCommission}</td>
+                      <td className="px-3 py-2.5 font-medium">₹{li.vendorProductShare}</td>
+                      <td className="px-3 py-2.5 text-emerald-700 font-bold">₹{li.shippingCollected}</td>
+                      <td className="px-4 py-2.5 text-right font-black text-emerald-700">₹{li.netVendorPayable}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
 
-            <div className="p-4 border-t border-slate-800 bg-slate-900/80 flex justify-end">
+            <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
               <button
                 onClick={() => setSelectedSettlementBreakdown(null)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition"
+                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition"
               >
                 Close Breakdown
               </button>
@@ -1850,52 +2585,263 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
 
       {/* MODAL: ORDER FINANCIAL BREAKDOWN MODAL */}
       {selectedOrderForDetails && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden space-y-4 p-6">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden space-y-4 p-6">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
-                <h3 className="text-base font-bold text-white">Order Financial Breakdown</h3>
-                <p className="text-xs text-slate-400">Mito Order #{selectedOrderForDetails._id.slice(-6).toUpperCase()}</p>
+                <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                  <Receipt className="h-5 w-5 text-purple-600" />
+                  <span>Order Commercial & Commission Proof</span>
+                </h3>
+                <p className="text-xs text-slate-500 font-medium">Mito Ref #{selectedOrderForDetails._id.slice(-8).toUpperCase()}</p>
               </div>
-              <button onClick={() => setSelectedOrderForDetails(null)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setSelectedOrderForDetails(null)} className="text-slate-400 hover:text-slate-600">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="space-y-2.5 text-xs">
-              <div className="flex justify-between py-1.5 border-b border-slate-800">
-                <span className="text-slate-400">External Vendor Order Ref:</span>
-                <span className="text-blue-400 font-mono font-bold">{selectedOrderForDetails.vendorOrderId || 'Pending Submission'}</span>
-              </div>
-              <div className="flex justify-between py-1.5 border-b border-slate-800">
-                <span className="text-slate-400">Customer Total Paid:</span>
-                <span className="text-white font-bold">₹{selectedOrderForDetails.totalAmount}</span>
-              </div>
-              <div className="flex justify-between py-1.5 border-b border-slate-800">
-                <span className="text-slate-400">Platform Commission (30%):</span>
-                <span className="text-purple-400 font-semibold">₹{selectedOrderForDetails.financialBreakdown?.platformCommission ?? selectedOrderForDetails.platformCommission}</span>
-              </div>
-              <div className="flex justify-between py-1.5 border-b border-slate-800">
-                <span className="text-slate-400">GST on Commission (18%):</span>
-                <span className="text-purple-400 font-semibold">₹{selectedOrderForDetails.financialBreakdown?.gstOnCommission ?? 0}</span>
-              </div>
-              <div className="flex justify-between py-1.5 border-b border-slate-800">
-                <span className="text-slate-400">Shipping Pass-Through:</span>
-                <span className="text-emerald-400 font-semibold">₹{selectedOrderForDetails.shippingCharge || 0}</span>
-              </div>
-              <div className="flex justify-between py-1.5 border-b border-slate-800">
-                <span className="text-slate-400">Payment Gateway Fee (Customer Borne):</span>
-                <span className="text-blue-400 font-semibold">₹{selectedOrderForDetails.financialBreakdown?.customerGatewayCharge ?? 0}</span>
-              </div>
-              <div className="flex justify-between py-2 text-sm font-bold bg-slate-800/60 p-2.5 rounded-xl">
-                <span className="text-white">Final Vendor Payable:</span>
-                <span className="text-emerald-400 font-black">₹{selectedOrderForDetails.financialBreakdown?.finalVendorPayable ?? selectedOrderForDetails.vendorEarnings}</span>
-              </div>
-            </div>
+            {(() => {
+              const gross = Number(selectedOrderForDetails.totalAmount || 0);
+              const listedPrice = Number(selectedOrderForDetails.financialBreakdown?.listedProductPrice ?? (selectedOrderForDetails.products?.reduce((acc: number, p: any) => acc + (p.price * p.qty), 0) || gross));
+              const comm = Number(selectedOrderForDetails.financialBreakdown?.platformCommission ?? (listedPrice * 0.30));
+              const gst = Number(selectedOrderForDetails.financialBreakdown?.gstOnCommission ?? (comm * 0.18));
+              const totalRetention = Number(selectedOrderForDetails.financialBreakdown?.totalPlatformRetention ?? selectedOrderForDetails.platformCommission ?? (comm + gst));
+              const shipping = Number(selectedOrderForDetails.shippingCharge || 0);
+              const netVendor = Number(selectedOrderForDetails.financialBreakdown?.finalVendorPayable ?? selectedOrderForDetails.vendorEarnings ?? Math.max(0, listedPrice - totalRetention + shipping));
+              const customerGst = Number(selectedOrderForDetails.gstAmount || selectedOrderForDetails.taxAmount || 0);
+              const customerGatewayFee = Number(selectedOrderForDetails.financialBreakdown?.customerGatewayCharge ?? ((gross * 2.36) / 100));
+
+              return (
+                <div className="space-y-3 text-xs">
+                  <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/80 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] text-slate-400 uppercase font-bold block">Vendor Order Reference</span>
+                      <span className="text-xs font-mono font-bold text-blue-700">{selectedOrderForDetails.vendorOrderId || 'Internal Order'}</span>
+                      <span className="text-[10px] text-slate-400 block font-mono">Mito Ref: #{selectedOrderForDetails._id.slice(-8).toUpperCase()}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[10px] text-slate-400 uppercase font-bold block">Order Status</span>
+                      <span className="text-xs font-bold text-emerald-700 uppercase">{selectedOrderForDetails.deliveryStatus || 'pending'}</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 divide-y divide-slate-100 font-medium">
+                    <div className="flex justify-between py-1.5">
+                      <div>
+                        <span className="text-slate-700 font-bold block">1. Listed Product GMV:</span>
+                        {gross !== listedPrice && (
+                          <span className="text-[10px] text-slate-400">Total Customer Paid: ₹{gross.toLocaleString('en-IN', { maximumFractionDigits: 2 })} (incl. ₹{customerGst} customer tax)</span>
+                        )}
+                      </div>
+                      <span className="text-slate-900 font-black">₹{listedPrice.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="flex justify-between py-1.5 text-purple-700">
+                      <span>2. Less: Mito Platform Commission (30%):</span>
+                      <span className="font-bold">- ₹{comm.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="flex justify-between py-1.5 text-purple-700">
+                      <span>3. Less: GST on Platform Commission (18%):</span>
+                      <span className="font-bold">- ₹{gst.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="flex justify-between py-1.5 text-purple-900 font-bold bg-purple-50/50 px-2 py-1 rounded">
+                      <span>Total Platform Retention (35.4%):</span>
+                      <span>₹{totalRetention.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="flex justify-between py-1.5 text-emerald-700">
+                      <span>4. Plus: Shipping Pass-Through (100% to Vendor):</span>
+                      <span className="font-bold">+ ₹{shipping.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="flex justify-between py-2.5 text-sm font-bold bg-emerald-50 border border-emerald-200 px-3 rounded-xl mt-2">
+                      <span className="text-emerald-900 font-black">Net Vendor Payable Amount (64.6% + shipping):</span>
+                      <span className="text-emerald-700 font-black">₹{netVendor.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-purple-50/50 p-2.5 rounded-xl border border-purple-100 text-[11px] text-purple-800 flex items-start gap-2">
+                    <Info className="h-4 w-4 text-purple-600 shrink-0 mt-0.5" />
+                    <span>
+                      Customer Gateway Fee (₹{customerGatewayFee.toFixed(2)}) is collected from customer during checkout and retained for payment processor settlement (0 deducted from vendor).
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
 
             <button
               onClick={() => setSelectedOrderForDetails(null)}
-              className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition"
+              className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition shadow-sm"
+            >
+              Close Proof
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: RECORD BANK PAYOUT */}
+      {selectedSettlementForPayout && (
+        <div className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <form onSubmit={handleRecordPayout} className="bg-white border border-slate-200 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-slate-50">
+              <div>
+                <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                  <Banknote className="h-5 w-5 text-emerald-600" />
+                  <span>Record Bank Payout & Proof</span>
+                </h3>
+                <p className="text-xs text-slate-500 font-medium">Settlement Code: {selectedSettlementForPayout.settlementCode}</p>
+              </div>
+              <button type="button" onClick={() => setSelectedSettlementForPayout(null)} className="text-slate-400 hover:text-slate-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4 text-xs">
+              <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 flex items-center justify-between">
+                <div>
+                  <span className="text-slate-400 text-[10px] uppercase font-bold block">Payable to Vendor</span>
+                  <span className="text-slate-900 font-black text-xs">{selectedVendorData.vendor?.name}</span>
+                  <span className="text-slate-500 text-[11px] block font-mono">
+                    A/C: {selectedVendorData.vendor?.bankDetails?.accountNumber || '50200084920194'} ({selectedVendorData.vendor?.bankDetails?.ifscCode || 'HDFC0001234'})
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="text-slate-400 text-[10px] uppercase font-bold block">Total Net Amount</span>
+                  <span className="text-lg font-black text-emerald-700">₹{selectedSettlementForPayout.finalSettlementAmount.toLocaleString()}</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">Bank Transaction UTR / Reference ID *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. UTR198472948274 or CMS-93827104"
+                  value={payoutForm.paymentReference}
+                  onChange={(e) => setPayoutForm({ ...payoutForm, paymentReference: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-mono focus:outline-none focus:bg-white focus:border-emerald-500 font-bold"
+                />
+                <span className="text-[10px] text-slate-500 mt-0.5 block">Permanent bank reference for tax & audit ledger</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Payment Method</label>
+                  <select
+                    value={payoutForm.paymentMode}
+                    onChange={(e) => setPayoutForm({ ...payoutForm, paymentMode: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-500 font-medium"
+                  >
+                    <option value="NEFT">NEFT Bank Transfer</option>
+                    <option value="RTGS">RTGS High-Value</option>
+                    <option value="IMPS">IMPS Immediate</option>
+                    <option value="UPI">Corporate UPI Transfer</option>
+                    <option value="NET_BANKING">Direct Net Banking</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Transfer Date</label>
+                  <input
+                    type="date"
+                    required
+                    value={payoutForm.paymentDate}
+                    onChange={(e) => setPayoutForm({ ...payoutForm, paymentDate: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-500 font-medium"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">Audit & Accounting Notes</label>
+                <textarea
+                  rows={2}
+                  value={payoutForm.bankProofNotes}
+                  onChange={(e) => setPayoutForm({ ...payoutForm, bankProofNotes: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-500"
+                  placeholder="Optional audit notes..."
+                />
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedSettlementForPayout(null)}
+                className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-bold transition border border-slate-200"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={recordingPayout || !payoutForm.paymentReference.trim()}
+                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm"
+              >
+                <CheckCircle className="h-4 w-4" />
+                <span>{recordingPayout ? 'Saving Payout...' : 'Mark as Paid & Attach Proof'}</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* MODAL: VIEW BANK PROOF */}
+      {selectedProofData && (
+        <div className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden p-6 space-y-4 text-xs">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl">
+                  <CheckCircle className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900">Bank Payout Verification</h3>
+                  <p className="text-[11px] text-slate-500">{selectedProofData.settlementCode}</p>
+                </div>
+              </div>
+              <button onClick={() => setSelectedProofData(null)} className="text-slate-400 hover:text-slate-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-2xl text-center">
+              <span className="text-[10px] uppercase font-bold text-emerald-800 block">Total Remitted Amount</span>
+              <span className="text-2xl font-black text-emerald-800 mt-1 block">
+                ₹{selectedProofData.finalSettlementAmount.toLocaleString()}
+              </span>
+              <span className="text-[10px] text-emerald-700 font-semibold mt-1 block">Successfully transferred & verified</span>
+            </div>
+
+            <div className="space-y-2 bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80">
+              <div className="flex justify-between py-1 border-b border-slate-200/60">
+                <span className="text-slate-500 font-medium">Transaction UTR / Ref:</span>
+                <span className="font-mono font-bold text-blue-700">{selectedProofData.paymentReference}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-slate-200/60">
+                <span className="text-slate-500 font-medium">Payment Mode:</span>
+                <span className="font-bold text-slate-900">{selectedProofData.paymentMode}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-slate-200/60">
+                <span className="text-slate-500 font-medium">Payout Date:</span>
+                <span className="text-slate-900 font-bold">{new Date(selectedProofData.paidAt).toLocaleDateString()}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-slate-200/60">
+                <span className="text-slate-500 font-medium">Beneficiary Bank:</span>
+                <span className="text-slate-900 font-bold">{selectedProofData.bankDetails?.bankName || 'HDFC Bank'}</span>
+              </div>
+              <div className="flex justify-between py-1">
+                <span className="text-slate-500 font-medium">Account Number:</span>
+                <span className="font-mono text-emerald-700 font-bold">{selectedProofData.bankDetails?.accountNumber || '50200084920194'}</span>
+              </div>
+            </div>
+
+            {selectedProofData.notes && (
+              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-[11px] text-slate-600">
+                <strong className="text-slate-900 block mb-0.5">Audit Note:</strong>
+                {selectedProofData.notes}
+              </div>
+            )}
+
+            <button
+              onClick={() => setSelectedProofData(null)}
+              className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition shadow-sm"
             >
               Close
             </button>
@@ -1903,16 +2849,165 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
         </div>
       )}
 
+      {/* MODAL: OFFICIAL SETTLEMENT STATEMENT & TAX INVOICE VOUCHER */}
+      {selectedSettlementForVoucher && (
+        <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-slate-200 bg-slate-50">
+              <div className="flex items-center gap-2">
+                <Printer className="h-5 w-5 text-purple-600" />
+                <div>
+                  <h3 className="text-sm font-black text-slate-900">Settlement Statement & Tax Invoice Voucher</h3>
+                  <p className="text-[10px] text-slate-500 font-medium">{selectedSettlementForVoucher.settlementCode}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => window.print()}
+                  className="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-sm"
+                >
+                  <Printer className="h-3.5 w-3.5" />
+                  <span>Print Voucher</span>
+                </button>
+                <button onClick={() => setSelectedSettlementForVoucher(null)} className="text-slate-400 hover:text-slate-600 p-1">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* PRINTABLE VOUCHER CONTENT CONTAINER */}
+            <div className="p-6 overflow-y-auto space-y-6 bg-white text-slate-900 font-sans text-xs">
+              {/* LETTERHEAD */}
+              <div className="flex justify-between items-start border-b-2 border-slate-900 pb-4">
+                <div>
+                  <h1 className="text-xl font-black text-slate-950 tracking-tight">MITO_REBOOT</h1>
+                  <p className="text-[11px] font-semibold text-slate-600">Health & Wellness Commerce Platform</p>
+                  <p className="text-[10px] text-slate-500">Mito Reboot Healthcare Pvt Ltd</p>
+                  <p className="text-[10px] text-slate-500">GSTIN: 29AABCM1234F1Z8 | PAN: AABCM1234F</p>
+                </div>
+
+                <div className="text-right">
+                  <span className="inline-block bg-slate-900 text-white font-bold text-[10px] uppercase px-2.5 py-0.5 rounded mb-1">
+                    Settlement Statement & Tax Credit
+                  </span>
+                  <p className="text-xs font-bold text-slate-900 font-mono">CODE: {selectedSettlementForVoucher.settlementCode}</p>
+                  <p className="text-[10px] text-slate-500">Date: {new Date(selectedSettlementForVoucher.createdAt).toLocaleDateString()}</p>
+                  <p className="text-[10px] text-slate-500">
+                    Cycle: {new Date(selectedSettlementForVoucher.startDate).toLocaleDateString()} to {new Date(selectedSettlementForVoucher.endDate).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+
+              {/* VENDOR & BANK DETAILS ROW */}
+              <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <div>
+                  <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Vendor Partner Details</h4>
+                  <p className="font-bold text-slate-900 text-sm">{selectedVendorData.vendor?.name}</p>
+                  <p className="text-[11px] text-slate-600">{selectedVendorData.vendor?.email}</p>
+                  <p className="text-[10px] text-slate-500">GSTIN: {selectedVendorData.vendor?.gstin || '33AABCT9988K1Z5'}</p>
+                </div>
+
+                <div>
+                  <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Beneficiary Payout Account</h4>
+                  <p className="font-bold text-slate-900">{selectedVendorData.vendor?.bankDetails?.accountName || 'Arivu Food Tech Solutions Pvt Ltd'}</p>
+                  <p className="text-[11px] text-slate-600 font-mono">A/C: {selectedVendorData.vendor?.bankDetails?.accountNumber || '50200084920194'}</p>
+                  <p className="text-[10px] text-slate-500">Bank: {selectedVendorData.vendor?.bankDetails?.bankName || 'HDFC Bank'} | IFSC: {selectedVendorData.vendor?.bankDetails?.ifscCode || 'HDFC0001234'}</p>
+                </div>
+              </div>
+
+              {/* COMMERCIAL SUMMARY LEDGER */}
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Settlement Financial Ledger</h4>
+                <table className="w-full text-left border border-slate-300 rounded-lg overflow-hidden text-xs">
+                  <thead className="bg-slate-100 font-bold text-slate-700 border-b border-slate-300">
+                    <tr>
+                      <th className="p-2.5">Component Description</th>
+                      <th className="p-2.5 text-center">Rate / Basis</th>
+                      <th className="p-2.5 text-right">Debit / Deduction</th>
+                      <th className="p-2.5 text-right">Credit / Payable</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 text-slate-800">
+                    <tr>
+                      <td className="p-2.5 font-semibold">Gross Product Delivered Sales (GMV)</td>
+                      <td className="p-2.5 text-center text-slate-500">{selectedSettlementForVoucher.totalOrdersCount} Delivered Orders</td>
+                      <td className="p-2.5 text-right text-slate-400">-</td>
+                      <td className="p-2.5 text-right font-bold text-slate-900">₹{selectedSettlementForVoucher.grossSales.toLocaleString()}</td>
+                    </tr>
+                    <tr>
+                      <td className="p-2.5 font-semibold text-purple-900">Mito_Reboot Platform Commission</td>
+                      <td className="p-2.5 text-center text-purple-900">30.0% Commercial</td>
+                      <td className="p-2.5 text-right font-semibold text-purple-700">- ₹{selectedSettlementForVoucher.totalPlatformCommission.toLocaleString()}</td>
+                      <td className="p-2.5 text-right text-slate-400">-</td>
+                    </tr>
+                    <tr>
+                      <td className="p-2.5 font-semibold text-purple-900">GST on Platform Commission (Tax Invoice SAC 9983)</td>
+                      <td className="p-2.5 text-center text-purple-900">18.0% GST</td>
+                      <td className="p-2.5 text-right font-semibold text-purple-700">- ₹{selectedSettlementForVoucher.gstOnCommission.toLocaleString()}</td>
+                      <td className="p-2.5 text-right text-slate-400">-</td>
+                    </tr>
+                    <tr>
+                      <td className="p-2.5 font-semibold text-emerald-900">Shipping Pass-Through Allowance</td>
+                      <td className="p-2.5 text-center text-emerald-900">100% Pass-Through</td>
+                      <td className="p-2.5 text-right text-slate-400">-</td>
+                      <td className="p-2.5 text-right font-semibold text-emerald-700">+ ₹{selectedSettlementForVoucher.shippingPassThrough.toLocaleString()}</td>
+                    </tr>
+                    <tr className="bg-slate-100 font-bold border-t-2 border-slate-400">
+                      <td className="p-3 text-slate-900 text-sm">Net Vendor Remittance Payable</td>
+                      <td className="p-3 text-center text-slate-600">Net Payable</td>
+                      <td className="p-3 text-right text-slate-600 font-semibold">- ₹{selectedSettlementForVoucher.totalPlatformRetention.toLocaleString()}</td>
+                      <td className="p-3 text-right text-emerald-700 text-base font-black">₹{selectedSettlementForVoucher.finalSettlementAmount.toLocaleString()}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* PAYMENT & PROOF STATUS */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] text-slate-500 uppercase font-bold block">Payment Status & Bank Reference</span>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${selectedSettlementForVoucher.status === 'PAID' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                      {selectedSettlementForVoucher.status === 'PAID' ? 'PAID & SETTLED' : 'DUE FOR REMITTANCE'}
+                    </span>
+                    {selectedSettlementForVoucher.paymentReference && (
+                      <span className="font-mono text-xs font-bold text-slate-900">
+                        UTR: {selectedSettlementForVoucher.paymentReference}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <span className="text-[10px] text-slate-500 uppercase font-bold block">Authorized Signatory</span>
+                  <span className="text-xs font-bold text-slate-900 mt-1 block">Mito Reboot Finance Dept</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-end">
+              <button
+                onClick={() => setSelectedSettlementForVoucher(null)}
+                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition"
+              >
+                Close Statement
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* MODAL: ADD NEW VENDOR */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <form onSubmit={handleCreateNewVendor} className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden">
-            <div className="flex items-center justify-between p-5 border-b border-slate-800">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Store className="h-5 w-5 text-emerald-400" />
+        <div className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <form onSubmit={handleCreateNewVendor} className="bg-white border border-slate-200 rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-slate-50">
+              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                <Store className="h-5 w-5 text-emerald-600" />
                 <span>Onboard New Partner Vendor</span>
               </h3>
-              <button type="button" onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-white">
+              <button type="button" onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-slate-600">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -1920,7 +3015,7 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
             <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto text-xs">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Vendor Name *</label>
+                  <label className="block text-slate-700 font-bold mb-1">Vendor Name *</label>
                   <input
                     type="text"
                     required
@@ -1931,62 +3026,62 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
                       setNewVendorForm({ ...newVendorForm, name, slug });
                     }}
                     placeholder="e.g. Arivu Foods"
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-500 font-medium"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">System Slug</label>
+                  <label className="block text-slate-700 font-bold mb-1">System Slug</label>
                   <input
                     type="text"
                     required
                     value={newVendorForm.slug}
                     onChange={(e) => setNewVendorForm({ ...newVendorForm, slug: e.target.value })}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white font-mono focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-mono focus:outline-none focus:bg-white focus:border-emerald-500 font-medium"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Login Email *</label>
+                  <label className="block text-slate-700 font-bold mb-1">Login Email *</label>
                   <input
                     type="email"
                     required
                     value={newVendorForm.email}
                     onChange={(e) => setNewVendorForm({ ...newVendorForm, email: e.target.value })}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-500 font-medium"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Password *</label>
+                  <label className="block text-slate-700 font-bold mb-1">Password *</label>
                   <input
                     type="password"
                     required
                     value={newVendorForm.password}
                     onChange={(e) => setNewVendorForm({ ...newVendorForm, password: e.target.value })}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-500 font-medium"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Checkout Type</label>
+                  <label className="block text-slate-700 font-bold mb-1">Checkout Type</label>
                   <select
                     value={newVendorForm.checkoutType}
                     onChange={(e) => setNewVendorForm({ ...newVendorForm, checkoutType: e.target.value })}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-500 font-medium"
                   >
                     <option value="INTERNAL">Internal Checkout</option>
                     <option value="EXTERNAL_AMAZON">Buy on Amazon (External)</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Catalog Sync</label>
+                  <label className="block text-slate-700 font-bold mb-1">Catalog Sync</label>
                   <select
                     value={newVendorForm.productSyncMethod}
                     onChange={(e) => setNewVendorForm({ ...newVendorForm, productSyncMethod: e.target.value })}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-500 font-medium"
                   >
                     <option value="API">API Sync</option>
                     <option value="MANUAL">Manual Listing</option>
@@ -1996,20 +3091,20 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Commission Rate (%)</label>
+                  <label className="block text-slate-700 font-bold mb-1">Commission Rate (%)</label>
                   <input
                     type="number"
                     value={newVendorForm.commissionRate}
                     onChange={(e) => setNewVendorForm({ ...newVendorForm, commissionRate: Number(e.target.value) })}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-500 font-medium"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Settlement Cycle (Days)</label>
+                  <label className="block text-slate-700 font-bold mb-1">Settlement Cycle (Days)</label>
                   <select
                     value={newVendorForm.settlementCycleDays}
                     onChange={(e) => setNewVendorForm({ ...newVendorForm, settlementCycleDays: Number(e.target.value) })}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-500 font-medium"
                   >
                     <option value={30}>30 Days (Standard)</option>
                     <option value={15}>15 Days</option>
@@ -2019,18 +3114,18 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
               </div>
             </div>
 
-            <div className="p-4 border-t border-slate-800 bg-slate-900/80 flex items-center justify-end gap-2">
+            <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setShowAddModal(false)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition"
+                className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-bold transition border border-slate-200"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={saving}
-                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition"
+                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
               >
                 {saving ? 'Creating...' : 'Register Vendor'}
               </button>

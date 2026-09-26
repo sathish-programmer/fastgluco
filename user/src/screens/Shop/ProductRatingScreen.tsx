@@ -165,16 +165,16 @@ export const ProductRatingScreen: React.FC<ProductRatingScreenProps> = ({ orderI
       <div className="px-4 max-w-2xl mx-auto pt-4">
 
       {/* Main Card */}
-      <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-[0_12px_40px_rgba(0,0,0,0.02)] p-6 mb-6">
-        <h2 className="text-xl font-black text-slate-850 flex items-center gap-2">
+      <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200/90 dark:border-slate-800 shadow-sm p-6 mb-6">
+        <h2 className="text-xl font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
           ⭐ {t('shop.rateYourProducts', 'Rate Your Products')}
         </h2>
-        <p className="text-xs text-slate-500 mt-1">
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
           {t('shop.thankYouForPurchaseDesc', 'Thank you for your purchase! Let us know how your new items worked out.')}
         </p>
 
-        <div className="bg-slate-50 p-4 border border-slate-100 rounded-2xl mt-4 flex justify-between items-center text-xs font-bold text-slate-655">
-          <span>{t('shop.orderId', 'Order ID:')} {order._id.slice(-8).toUpperCase()}</span>
+        <div className="bg-slate-50 dark:bg-slate-950 p-4 border border-slate-100 dark:border-slate-800 rounded-2xl mt-4 flex justify-between items-center text-xs font-bold text-slate-700 dark:text-slate-300">
+          <span>{t('shop.orderId', 'Order ID:')} #{order.vendorOrderId || order._id.slice(-8).toUpperCase()}</span>
           <span>{t('shop.deliveredDate', 'Delivered:')} {new Date(order.deliveryDate || order.updatedAt).toLocaleDateString(activeLocale)}</span>
         </div>
       </div>
@@ -187,24 +187,24 @@ export const ProductRatingScreen: React.FC<ProductRatingScreenProps> = ({ orderI
           const state = reviewsState[pId] || { rating: 5, comment: '', submitting: false, submitted: false };
 
           return (
-            <div key={pId} className="bg-white border border-slate-200 rounded-[2rem] p-5 shadow-sm space-y-4">
+            <div key={pId} className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-[2rem] p-5 shadow-sm space-y-4">
               <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden shrink-0">
+                <div className="h-12 w-12 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 flex items-center justify-center overflow-hidden shrink-0">
                   <ProductImage src={pImage || '💊'} apiUrl={apiUrl} className="h-9 w-9 object-contain" textClassName="text-2xl" />
                 </div>
                 <div>
-                  <h4 className="font-extrabold text-slate-800 text-xs leading-snug">{p.name}</h4>
-                  {p.variantName && <span className="text-[9px] text-slate-400 block mt-0.5">{p.variantName}</span>}
+                  <h4 className="font-extrabold text-slate-900 dark:text-slate-100 text-xs leading-snug">{p.name}</h4>
+                  {p.variantName && <span className="text-[10px] text-slate-400 block mt-0.5 font-bold">Pack: {p.variantName}</span>}
                 </div>
               </div>
 
               {state.submitted ? (
-                <div className="bg-emerald-50 text-emerald-800 border border-emerald-100 rounded-2xl p-4 flex items-center gap-3 animate-in fade-in duration-200">
-                  <CheckCircle className="h-5 w-5 text-emerald-555 shrink-0" />
+                <div className="bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40 rounded-2xl p-4 flex items-center gap-3 animate-in fade-in duration-200">
+                  <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   <span className="text-xs font-bold">{t('shop.reviewSubmitted', 'Review submitted successfully! Pending moderator approval.')}</span>
                 </div>
               ) : (
-                <div className="space-y-4 pt-2 border-t border-slate-100">
+                <div className="space-y-4 pt-2 border-t border-slate-100 dark:border-slate-800">
                   {/* Stars input */}
                   <div className="space-y-1">
                     <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">{t('shop.productRating', 'Product Rating')}</label>
@@ -219,13 +219,13 @@ export const ProductRatingScreen: React.FC<ProductRatingScreenProps> = ({ orderI
                               [pId]: { ...prev[pId], rating: star }
                             }));
                           }}
-                          className="focus:outline-none transition-transform hover:scale-110"
+                          className="focus:outline-none transition-transform hover:scale-110 cursor-pointer"
                         >
                           <Star
                             className={`h-6 w-6 ${
                               star <= state.rating
                                 ? 'fill-amber-400 text-amber-400'
-                                : 'text-slate-200'
+                                : 'text-slate-200 dark:text-slate-700'
                             }`}
                           />
                         </button>
@@ -244,9 +244,9 @@ export const ProductRatingScreen: React.FC<ProductRatingScreenProps> = ({ orderI
                           [pId]: { ...prev[pId], comment: e.target.value }
                         }));
                       }}
-                      placeholder={t('explainReviewPlaceholder')}
+                      placeholder={t('explainReviewPlaceholder', 'Tell us about your experience with this formulation...')}
                       rows={2}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3 text-xs focus:outline-none focus:border-indigo-400"
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-indigo-400 font-medium"
                     />
                   </div>
 
@@ -255,7 +255,7 @@ export const ProductRatingScreen: React.FC<ProductRatingScreenProps> = ({ orderI
                     type="button"
                     disabled={state.submitting}
                     onClick={() => handleSubmitRating(pId)}
-                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-750 text-white text-xs font-bold rounded-2xl shadow-sm hover:shadow transition-all disabled:opacity-50"
+                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-2xl shadow-sm hover:shadow transition-all disabled:opacity-50 cursor-pointer"
                   >
                     {state.submitting ? t('common.submitting', 'Submitting...') : t('submitReview', 'Submit Review')}
                   </button>

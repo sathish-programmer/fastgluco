@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import crypto from 'crypto';
 import ShopProduct from '../models/ShopProduct';
 import ProductReview from '../models/ProductReview';
@@ -56,20 +57,7 @@ export const getAdminProducts = async (req: Request, res: Response) => {
   try {
     let products = await ShopProduct.find().sort({ createdAt: -1 });
     
-    // Seed default template if empty
-    if (products.length === 0) {
-      const defaults = [
-        { name: 'Mito-C Complex', description: 'High absorption Vitamin C with bioflavonoids.', price: 24.99, image: '🍊', category: 'Vitamins & Supplements', isActive: true, stock: 50, brand: 'MitoLife' },
-        { name: 'Cellular Glutathione', description: 'The master antioxidant, liposomal delivery.', price: 39.99, image: '🛡️', category: 'Vitamins & Supplements', isActive: true, stock: 30, brand: 'MitoLife' },
-        { name: 'Resveratrol Elite', description: 'Trans-resveratrol for mitochondrial repair.', price: 29.99, image: '🍇', category: 'Nutrition', isActive: true, stock: 45, brand: 'CellMax' },
-        { name: 'Blood Glucose Monitor Kit', description: 'Accurate Blood Glucose Monitoring system.', price: 49.99, image: '🩸', category: 'Blood Glucose Monitoring', isActive: true, stock: 20, brand: 'AccuCheck' },
-        { name: 'CGM Sensor Patch', description: 'Waterproof protective patch for CGM sensors.', price: 15.99, image: '🩹', category: 'CGM Accessories', isActive: true, stock: 100, brand: 'Freestyle' },
-        { name: 'Organic Almond Bar', description: 'Healthy Snacks with zero added sugar.', price: 3.99, image: '🍫', category: 'Healthy Snacks', isActive: true, stock: 200, brand: 'NutriBite' }
-      ];
-      await ShopProduct.insertMany(defaults);
-      products = await ShopProduct.find().sort({ createdAt: -1 });
-    }
-
+    // Clean return of dynamic products without injecting fake legacy templates
     res.json(products);
   } catch (err) {
     res.status(500).json({ message: 'Error fetching products' });
@@ -141,18 +129,18 @@ export const deleteAdminProduct = async (req: Request, res: Response) => {
 
 export const getCategories = async (req: Request, res: Response) => {
   try {
-    const dbCategories = await ShopCategory.find({ isActive: true }).sort({ name: 1 });
-    const customNames = dbCategories.map(c => c.name);
-    const activeProductCategories = await ShopProduct.distinct('category', { isActive: true });
-    // Active product categories first, then predefined and custom
-    const merged = Array.from(new Set([
-      ...activeProductCategories.filter(Boolean),
-      ...PREDEFINED_CATEGORIES,
-      ...customNames
-    ]));
-    res.json(merged.map(name => ({
+    // Only return categories from active verified vendor products (Arivu Foods)
+    const activeProductCategories = await ShopProduct.distinct('category', { 
+      isActive: true,
+      $or: [
+        { brand: 'Arivu Foods' },
+        { vendorSku: { $regex: '^ARIVU' } }
+      ]
+    });
+    const validCategories = activeProductCategories.filter(Boolean).sort();
+    res.json(validCategories.map(name => ({
       name,
-      isCustom: !PREDEFINED_CATEGORIES.includes(name)
+      isCustom: false
     })));
   } catch (err) {
     res.status(500).json({ message: 'Error fetching categories' });
@@ -180,52 +168,62 @@ export const getProducts = async (req: Request, res: Response) => {
   try {
     const { category, brand, vendor, minPrice, maxPrice, healthBenefit, doctorRecommended, available, search, sortBy } = req.query;
 
-    const filterQuery: any = { isActive: true };
+    // Enforce real verified vendor (Arivu Foods) products only; exclude legacy/test items
+    const baseVendorFilter: any = {
+      isActive: true,
+      $or: [
+        { brand: 'Arivu Foods' },
+        { vendorSku: { $regex: '^ARIVU' } }
+      ]
+    };
+
+    const andConditions: any[] = [baseVendorFilter];
 
     if (category && category !== 'All') {
-      filterQuery.category = category;
-    }
-    if (vendor) {
-      if (vendor === 'arivu-foods' || vendor === 'Arivu Foods') {
-        filterQuery.$or = [
-          { brand: { $regex: 'Arivu', $options: 'i' } },
-          { name: { $regex: 'Arivu', $options: 'i' } }
-        ];
+      const catStr = String(category).trim();
+      if (catStr.toLowerCase() === 'antioxidants' || catStr.toLowerCase() === 'antioxidant' || catStr.toLowerCase() === 'saferproducts') {
+        const hasExplicitCat = await ShopProduct.exists({ ...baseVendorFilter, category: catStr });
+        if (hasExplicitCat) {
+          andConditions.push({ category: catStr });
+        }
       } else {
-        filterQuery.vendorId = vendor;
-      }
-    } else if (brand && brand !== 'All') {
-      if (brand === 'Arivu Foods') {
-        filterQuery.$or = [
-          { brand: { $regex: 'Arivu', $options: 'i' } },
-          { name: { $regex: 'Arivu', $options: 'i' } }
-        ];
-      } else {
-        filterQuery.brand = brand;
+        andConditions.push({ category: catStr });
       }
     }
     if (doctorRecommended === 'true') {
-      filterQuery.doctorRecommended = true;
+      andConditions.push({ doctorRecommended: true });
     }
     if (healthBenefit) {
-      filterQuery.healthBenefits = { $in: [healthBenefit] };
+      andConditions.push({ healthBenefits: { $in: [healthBenefit] } });
     }
     if (available === 'true') {
-      filterQuery.stock = { $gt: 0 };
+      andConditions.push({ stock: { $gt: 0 } });
     }
     if (search) {
-      filterQuery.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-        { brand: { $regex: search, $options: 'i' } }
-      ];
+      const searchTerms = String(search).trim().split(/\s+/).filter(Boolean);
+      searchTerms.forEach(term => {
+        const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        andConditions.push({
+          $or: [
+            { name: { $regex: escaped, $options: 'i' } },
+            { description: { $regex: escaped, $options: 'i' } },
+            { shortDescription: { $regex: escaped, $options: 'i' } },
+            { brand: { $regex: escaped, $options: 'i' } },
+            { category: { $regex: escaped, $options: 'i' } },
+            { 'variants.name': { $regex: escaped, $options: 'i' } }
+          ]
+        });
+      });
     }
 
     if (minPrice || maxPrice) {
-      filterQuery.price = {};
-      if (minPrice) filterQuery.price.$gte = Number(minPrice);
-      if (maxPrice) filterQuery.price.$lte = Number(maxPrice);
+      const priceFilter: any = {};
+      if (minPrice) priceFilter.$gte = Number(minPrice);
+      if (maxPrice) priceFilter.$lte = Number(maxPrice);
+      andConditions.push({ price: priceFilter });
     }
+
+    const filterQuery = andConditions.length > 1 ? { $and: andConditions } : baseVendorFilter;
 
     let query = ShopProduct.find(filterQuery);
 
@@ -243,6 +241,74 @@ export const getProducts = async (req: Request, res: Response) => {
     res.json(products);
   } catch (err) {
     res.status(500).json({ message: 'Error fetching products' });
+  }
+};
+
+export const validateCart = async (req: Request, res: Response) => {
+  try {
+    const { items } = req.body;
+    if (!items || !Array.isArray(items)) {
+      return res.status(400).json({ message: 'Items array is required' });
+    }
+
+    const validatedItems = await Promise.all(items.map(async (item: any) => {
+      const prodId = item.productId || item.item?.id || item.item?._id || item.id;
+      const product = await ShopProduct.findById(prodId);
+      const requestedQty = Number(item.qty || 1);
+
+      if (!product || !product.isActive) {
+        return {
+          productId: prodId,
+          name: item.item?.name || item.name || 'Product',
+          variantName: item.variantName || null,
+          requestedQty,
+          availableStock: 0,
+          isOutOfStock: true,
+          isInsufficient: true,
+          notFound: true,
+          message: `${item.item?.name || item.name || 'This product'} is currently unavailable.`
+        };
+      }
+
+      let availableStock = Number(product.stock ?? 0);
+      if (item.variantName && product.variants && product.variants.length > 0) {
+        const v = product.variants.find((x: any) => x.name === item.variantName);
+        availableStock = v ? Number(v.stock ?? 0) : 0;
+      }
+
+      const isOutOfStock = availableStock <= 0;
+      const isInsufficient = requestedQty > availableStock;
+
+      return {
+        productId: product._id.toString(),
+        name: product.name,
+        variantName: item.variantName || null,
+        requestedQty,
+        availableStock,
+        price: product.price,
+        image: product.image,
+        isOutOfStock,
+        isInsufficient,
+        message: isOutOfStock
+          ? `${product.name}${item.variantName ? ` (${item.variantName})` : ''} is currently out of stock.`
+          : isInsufficient
+            ? `Only ${availableStock} units left for ${product.name}${item.variantName ? ` (${item.variantName})` : ''}.`
+            : null
+      };
+    }));
+
+    const hasOutOfStock = validatedItems.some(i => i.isOutOfStock);
+    const hasInsufficient = validatedItems.some(i => i.isInsufficient);
+
+    return res.json({
+      valid: !hasOutOfStock && !hasInsufficient,
+      hasOutOfStock,
+      hasInsufficient,
+      items: validatedItems
+    });
+  } catch (err) {
+    console.error('Error validating cart:', err);
+    return res.status(500).json({ message: 'Error validating cart items' });
   }
 };
 
@@ -297,18 +363,18 @@ export const validateShopCoupon = async (req: Request, res: Response) => {
       }
 
       if (couponRes.discountType === 'percentage') {
-        discountAmount = (totalAmount * couponRes.discountValue) / 100;
+        discountAmount = Number(((totalAmount * couponRes.discountValue) / 100).toFixed(2));
       } else {
-        discountAmount = couponRes.discountValue;
+        discountAmount = Number((couponRes.discountValue).toFixed(2));
       }
     }
 
     const config = await PaymentGatewayConfig.findOne();
-    const shopDiscountAmount = (totalAmount * (config?.shopDiscountPercentage || 0)) / 100;
-    const totalDiscountAmount = discountAmount + shopDiscountAmount;
+    const shopDiscountAmount = Number(((totalAmount * (config?.shopDiscountPercentage || 0)) / 100).toFixed(2));
+    const totalDiscountAmount = Number((discountAmount + shopDiscountAmount).toFixed(2));
     
-    const discountedAmount = Math.max(0, totalAmount - totalDiscountAmount);
-    const gstAmount = (discountedAmount * (config?.shopGstPercentage || 0)) / 100;
+    const discountedAmount = Number(Math.max(0, totalAmount - totalDiscountAmount).toFixed(2));
+    const gstAmount = Number(((discountedAmount * (config?.shopGstPercentage || 0)) / 100).toFixed(2));
 
     const pincode = req.body.pincode || req.body.deliveryPincode || '';
     const address = req.body.address || req.body.shippingAddress;
@@ -317,8 +383,8 @@ export const validateShopCoupon = async (req: Request, res: Response) => {
     const userLon = req.body.userLon ? Number(req.body.userLon) : undefined;
 
     const shippingRes = await computeShippingFeeForPincode(pincode, userLat, userLon, address, totalAmount, vendorSlug);
-    const shippingFee = shippingRes.shippingFee;
-    const finalAmount = discountedAmount + gstAmount + shippingFee;
+    const shippingFee = Number((shippingRes.shippingFee || 0).toFixed(2));
+    const finalAmount = Number((discountedAmount + gstAmount + shippingFee).toFixed(2));
 
     return res.status(200).json({
       valid: true,
@@ -529,11 +595,11 @@ export const createOrder = async (req: Request, res: Response) => {
       }
     }
 
-    const shopDiscountAmount = (totalAmount * (config?.shopDiscountPercentage || 0)) / 100;
-    const totalDiscountAmount = couponDiscountAmount + shopDiscountAmount;
-    const discountedAmount = Math.max(0, totalAmount - totalDiscountAmount);
+    const shopDiscountAmount = Number(((totalAmount * (config?.shopDiscountPercentage || 0)) / 100).toFixed(2));
+    const totalDiscountAmount = Number((couponDiscountAmount + shopDiscountAmount).toFixed(2));
+    const discountedAmount = Number(Math.max(0, totalAmount - totalDiscountAmount).toFixed(2));
     
-    const gstAmount = (discountedAmount * (config?.shopGstPercentage || 0)) / 100;
+    const gstAmount = Number(((discountedAmount * (config?.shopGstPercentage || 0)) / 100).toFixed(2));
     
     // Extract delivery pincode and calculate shipping fee on backend
     const orderPincode = shippingAddress?.postalCode || shippingAddress?.zip || shippingAddress?.pincode || req.body.pincode || '';
@@ -552,8 +618,12 @@ export const createOrder = async (req: Request, res: Response) => {
       return res.status(400).json({ message: shippingRes.message || `Delivery is unavailable for pincode ${orderPincode}.` });
     }
 
-    const shippingCharge = shippingRes.shippingFee;
-    const finalAmount = discountedAmount + gstAmount + shippingCharge;
+    const shippingCharge = Number((shippingRes.shippingFee || 0).toFixed(2));
+    const finalAmount = Number((discountedAmount + gstAmount + shippingCharge).toFixed(2));
+
+    // Pre-generate deterministic vendor order ID (MR-XXXXXXXX-XXXX)
+    const orderHex = new mongoose.Types.ObjectId().toString().slice(-8).toUpperCase();
+    const vendorOrderId = `MR-${orderHex}-${Math.floor(1000 + Math.random() * 9000)}`;
 
     // Create DB Order pending
     const newOrder = new ShopOrder({
@@ -568,6 +638,7 @@ export const createOrder = async (req: Request, res: Response) => {
       currency,
       status: 'pending',
       deliveryStatus: 'pending',
+      vendorOrderId,
       patientName: patientName || user?.name || '',
       patientEmail: patientEmail || user?.email || '',
       patientPhone: patientPhone || user?.mobileNumber || '',
@@ -576,14 +647,14 @@ export const createOrder = async (req: Request, res: Response) => {
       estimatedDeliveryDate: shippingRes.estimatedDeliveryDateIso,
       vendorStatusMessage: shippingRes.message || `Delivery estimated by ${shippingRes.estimatedDeliveryDate} via ${shippingRes.courierPartner}`,
       trackingDetails: {
-        courierName: shippingRes.courierPartner || 'Delhivery Express',
+        courierName: shippingRes.courierPartner && shippingRes.courierPartner !== 'N/A' ? shippingRes.courierPartner : '',
         trackingId: '',
         trackingUrl: ''
       },
       orderTimeline: [{
         status: 'pending',
         timestamp: new Date(),
-        comment: `Order placed. Estimated delivery: ${shippingRes.estimatedDeliveryDate || 'N/A'} via ${shippingRes.courierPartner || 'Partner Logistics'}`
+        comment: `Order placed. Delivery address: ${shippingAddress?.city || ''} (${orderPincode}). Awaiting vendor dispatch.`
       }]
     });
     await newOrder.save();
@@ -593,28 +664,31 @@ export const createOrder = async (req: Request, res: Response) => {
       newOrder.status = 'completed';
       await newOrder.save();
 
-      // Trigger confirmation email
+      // Auto-assign and submit to Vendor first so vendorOrderId and shipment info are fully established
+      await autoAssignAndSubmitVendorOrder(newOrder);
+
+      // Trigger confirmation email with vendorOrderId
       const { EmailService } = require('../services/emailService');
       EmailService.sendOrderEmail('placed', newOrder._id.toString()).catch(console.error);
 
       // Trigger FCM Push Notification
+      const displayId = newOrder.vendorOrderId || newOrder._id.toString().slice(-6).toUpperCase();
       FCMService.sendNotificationToUser(userId.toString(), {
         title: 'Order Placed Successfully',
-        body: `Your order for ₹${finalAmount} has been placed.`,
+        body: `Your order #${displayId} for ₹${finalAmount} has been placed.`,
         type: 'OrderPlaced',
         data: {
           route: 'Shop Orders',
-          orderId: newOrder._id.toString()
+          orderId: newOrder._id.toString(),
+          vendorOrderId: newOrder.vendorOrderId || ''
         }
       }).catch(console.error);
 
-      // Auto-assign and submit to Vendor if order contains vendor items (e.g. Arivu Foods)
-      await autoAssignAndSubmitVendorOrder(newOrder);
-
       return res.json({
-
         gateway: 'manual_bypass',
         orderId: newOrder._id,
+        vendorOrderId: newOrder.vendorOrderId,
+        displayOrderId: newOrder.vendorOrderId || newOrder._id,
         amount: finalAmount,
         currency,
         breakdown: {
@@ -646,6 +720,8 @@ export const createOrder = async (req: Request, res: Response) => {
     res.json({
       gateway: 'razorpay',
       orderId: newOrder._id,
+      vendorOrderId: newOrder.vendorOrderId,
+      displayOrderId: newOrder.vendorOrderId || newOrder._id,
       rzpOrderId: rzpOrder.id,
       amount: rzpOrder.amount,
       currency: rzpOrder.currency,
@@ -666,11 +742,20 @@ export const createOrder = async (req: Request, res: Response) => {
 
 export const verifyPayment = async (req: Request, res: Response) => {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
-    
+    const razorpay_order_id = req.body.razorpay_order_id || req.body.razorpayOrderId;
+    const razorpay_payment_id = req.body.razorpay_payment_id || req.body.razorpayPaymentId;
+    const razorpay_signature = req.body.razorpay_signature || req.body.razorpaySignature;
+    const orderId = req.body.orderId || req.body.order_id;
+
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return res.status(400).json({ 
+        message: 'Missing required Razorpay payment verification parameters (razorpayOrderId, razorpayPaymentId, razorpaySignature).' 
+      });
+    }
+
     const config = await PaymentGatewayConfig.findOne();
     if (!config || !config.razorpayKeySecret) {
-      return res.status(500).json({ message: 'Payment gateway error' });
+      return res.status(500).json({ message: 'Payment gateway error: configuration or key secret missing' });
     }
 
     const generatedSignature = crypto
@@ -682,12 +767,19 @@ export const verifyPayment = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Invalid payment signature' });
     }
 
-    const order = await ShopOrder.findOne({ razorpayOrderId: razorpay_order_id });
+    const order = (orderId ? await ShopOrder.findById(orderId) : null) || 
+                  await ShopOrder.findOne({ razorpayOrderId: razorpay_order_id });
     if (!order) return res.status(404).json({ message: 'Order not found' });
 
     order.status = 'completed';
     order.razorpayPaymentId = razorpay_payment_id;
     order.razorpaySignature = razorpay_signature;
+
+    // Ensure vendorOrderId exists
+    if (!order.vendorOrderId) {
+      const orderHex = order._id.toString().slice(-8).toUpperCase();
+      order.vendorOrderId = `MR-${orderHex}-${Math.floor(1000 + Math.random() * 9000)}`;
+    }
     
     // Add to timeline
     order.orderTimeline = order.orderTimeline || [];
@@ -699,25 +791,33 @@ export const verifyPayment = async (req: Request, res: Response) => {
 
     await order.save();
 
+    // Auto-assign and submit to Vendor if order contains vendor items (e.g. Arivu Foods)
+    // Run this BEFORE sending the email so vendorOrderId is fully populated & synced
+    await autoAssignAndSubmitVendorOrder(order);
+
     // Trigger confirmation email
     const { EmailService } = require('../services/emailService');
     EmailService.sendOrderEmail('placed', order._id.toString()).catch(console.error);
 
     // Trigger FCM Push Notification
+    const displayId = order.vendorOrderId || order._id.toString().slice(-6).toUpperCase();
     FCMService.sendNotificationToUser(order.userId.toString(), {
       title: 'Order Payment Confirmed',
-      body: `Payment verified for order #${order._id.toString().slice(-6).toUpperCase()}. Your order is confirmed!`,
+      body: `Payment verified for order #${displayId}. Your order is confirmed!`,
       type: 'OrderPaid',
       data: {
         route: 'Shop Orders',
-        orderId: order._id.toString()
+        orderId: order._id.toString(),
+        vendorOrderId: order.vendorOrderId || ''
       }
     }).catch(console.error);
 
-    // Auto-assign and submit to Vendor if order contains vendor items (e.g. Arivu Foods)
-    await autoAssignAndSubmitVendorOrder(order);
-
-    res.json({ message: 'Payment verified successfully', order });
+    res.json({
+      message: 'Payment verified successfully',
+      order,
+      vendorOrderId: order.vendorOrderId,
+      displayOrderId: order.vendorOrderId || order._id
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Error verifying payment' });
@@ -956,20 +1056,33 @@ export const computeShippingFeeForPincode = async (
         };
       }
 
+      if (!estimate.serviceable) {
+        return {
+          serviceable: false,
+          pincode: cleanPincode,
+          shippingFee: 0,
+          estimatedDeliveryTime: '',
+          courierPartner: '',
+          isFallback: false,
+          distanceKm: 0,
+          message: estimate.message || `Delivery is unavailable for pincode ${cleanPincode}.`
+        };
+      }
+
       return {
-        serviceable: estimate.serviceable,
+        serviceable: true,
         pincode: cleanPincode,
-        localityName: estimate.localityName || rule?.localityName || address?.city || 'Delivery Area',
-        city: estimate.city || rule?.city || address?.city || 'India',
-        state: estimate.state || rule?.state || address?.state || 'India',
+        localityName: estimate.localityName || (rule?.localityName ? `${rule.localityName}, ${rule.city}` : undefined) || 'Delivery Area',
+        city: estimate.city || rule?.city || 'India',
+        state: estimate.state || rule?.state || 'India',
         zone: estimate.zone || 'South Zone',
-        shippingFee: estimate.shippingFee,
-        isFreeShipping: estimate.isFreeShipping,
+        shippingFee: estimate.shippingFee || 0,
+        isFreeShipping: estimate.isFreeShipping !== false,
         freeShippingThreshold: estimate.freeShippingThreshold,
         estimatedDeliveryDate: estimate.estimatedDeliveryDate,
         estimatedDeliveryDateIso: estimate.estimatedDeliveryDateIso,
-        estimatedDeliveryTime: estimate.estimatedDeliveryTime,
-        courierPartner: estimate.courierPartner,
+        estimatedDeliveryTime: estimate.estimatedDeliveryTime || '',
+        courierPartner: estimate.courierPartner || '',
         vendorName: estimate.vendorName || activeVendor.name,
         vendorOrigin: estimate.vendorOrigin || 'Central Warehouse',
         distanceKm: 0,

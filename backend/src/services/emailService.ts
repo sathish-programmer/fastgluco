@@ -94,6 +94,186 @@ const generateEmailTemplate = (title: string, contentHTML: string, appName: stri
   `;
 };
 
+interface ShopCoBrandedTemplateParams {
+  vendorName: string;
+  vendorLogoUrl?: string;
+  appLogoUrl?: string;
+  categoryTag: string;
+  heading: string;
+  displayOrderId: string;
+  mainMessage: string;
+  statusBadgeText: string;
+  statusBadgeColor?: 'emerald' | 'indigo' | 'amber' | 'blue';
+  statusRightText?: string;
+  summaryRows: Array<{ label: string; value: string }>;
+  itemsList?: Array<{ name: string; qty: number; price?: number }>;
+  buttonText?: string;
+  buttonUrl?: string;
+  additionalNote?: string;
+}
+
+export const generateShopCoBrandedEmailTemplate = ({
+  vendorName,
+  vendorLogoUrl,
+  appLogoUrl,
+  categoryTag,
+  heading,
+  displayOrderId,
+  mainMessage,
+  statusBadgeText,
+  statusBadgeColor = 'emerald',
+  statusRightText,
+  summaryRows,
+  itemsList,
+  buttonText,
+  buttonUrl,
+  additionalNote
+}: ShopCoBrandedTemplateParams): string => {
+  const badgeStyles = {
+    emerald: { bg: '#f0fdf4', text: '#15803d', border: '#bbf7d0', dot: '#22c55e' },
+    indigo: { bg: '#eef2ff', text: '#4338ca', border: '#c7d2fe', dot: '#6366f1' },
+    amber: { bg: '#fffbeb', text: '#b45309', border: '#fde68a', dot: '#f59e0b' },
+    blue: { bg: '#eff6ff', text: '#1d4ed8', border: '#bfdbfe', dot: '#3b82f6' }
+  }[statusBadgeColor] || { bg: '#f0fdf4', text: '#15803d', border: '#bbf7d0', dot: '#22c55e' };
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 20px; -webkit-font-smoothing: antialiased;">
+  <div style="max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;">
+    
+    <!-- Top Co-Branded Header: Mito_Reboot FIRST, then Vendor -->
+    <div style="text-align: center; padding: 24px 20px 20px; border-bottom: 2px solid #ecfdf5; background: #ffffff;">
+      <div style="font-size: 10px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #64748b; margin-bottom: 14px;">IN PARTNERSHIP WITH</div>
+      <table align="center" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+        <tr>
+          <!-- 1. Mito_Reboot Logo & Name FIRST -->
+          <td align="center" valign="middle" style="padding-right: 14px;">
+            <table border="0" cellpadding="0" cellspacing="0">
+              <tr>
+                ${appLogoUrl ? `
+                  <td valign="middle" style="padding-right: 8px;">
+                    <img src="${appLogoUrl}" alt="Mito_Reboot" height="34" width="34" style="height: 34px; width: 34px; border-radius: 8px; display: inline-block; vertical-align: middle; border: 0;" />
+                  </td>
+                ` : ''}
+                <td valign="middle" style="font-size: 19px; font-weight: 900; color: #4338ca; letter-spacing: -0.5px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                  Mito_Reboot
+                </td>
+              </tr>
+            </table>
+          </td>
+          <!-- Separator &times; -->
+          <td align="center" valign="middle" style="color: #94a3b8; font-size: 20px; font-weight: 300; padding: 0 4px; line-height: 1;">
+            &times;
+          </td>
+          <!-- 2. Vendor Logo / Details SECOND -->
+          <td align="center" valign="middle" style="padding-left: 14px;">
+            ${vendorLogoUrl ? `
+              <img src="${vendorLogoUrl}" alt="${vendorName}" height="38" style="height: 38px; max-height: 44px; max-width: 160px; width: auto; object-fit: contain; display: inline-block; vertical-align: middle; border: 0;" />
+            ` : `
+              <span style="font-size: 17px; font-weight: 900; color: #15803d; letter-spacing: -0.3px;">🌱 ${vendorName}</span>
+            `}
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Title Section -->
+    <div style="padding: 28px 28px 16px; text-align: center; background: #ffffff;">
+      <div style="display: inline-block; font-size: 10px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: ${badgeStyles.text}; background: ${badgeStyles.bg}; border: 1px solid ${badgeStyles.border}; padding: 4px 12px; border-radius: 9999px; margin-bottom: 12px;">
+        ${categoryTag}
+      </div>
+      <h1 style="font-size: 22px; font-weight: 800; color: #0f172a; margin: 0 0 6px; letter-spacing: -0.5px;">
+        ${heading}
+      </h1>
+      <div style="font-size: 12px; font-weight: 700; color: #64748b; font-family: monospace;">
+        Order #${displayOrderId}
+      </div>
+    </div>
+
+    <!-- Main Message -->
+    <div style="padding: 0 28px 20px; color: #334155; font-size: 15px; line-height: 1.6;">
+      ${mainMessage}
+    </div>
+
+    <!-- Status Badge Card -->
+    <div style="margin: 0 28px 20px; background: ${badgeStyles.bg}; border: 1px solid ${badgeStyles.border}; border-radius: 12px; padding: 12px 16px;">
+      <table style="width: 100%;">
+        <tr>
+          <td style="font-size: 12px; font-weight: 700; color: ${badgeStyles.text};">
+            <span style="display: inline-block; width: 8px; height: 8px; background-color: ${badgeStyles.dot}; border-radius: 50%; margin-right: 6px;"></span>
+            Status: ${statusBadgeText}
+          </td>
+          <td style="font-size: 12px; font-weight: 600; color: ${badgeStyles.text}; text-align: right;">
+            ${statusRightText || 'Confirmed'}
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Summary Details Table -->
+    <div style="margin: 0 28px 24px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+        ${summaryRows.map((row, idx) => `
+          <tr style="border-bottom: ${idx < summaryRows.length - 1 ? '1px solid #e2e8f0' : 'none'};">
+            <td style="padding: 12px 16px; color: #64748b; font-weight: 700; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; width: 38%;">${row.label}</td>
+            <td style="padding: 12px 16px; color: #0f172a; font-weight: 700; text-align: right;">${row.value}</td>
+          </tr>
+        `).join('')}
+      </table>
+    </div>
+
+    <!-- Items List if present -->
+    ${itemsList && itemsList.length > 0 ? `
+      <div style="margin: 0 28px 24px; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px; background: #ffffff;">
+        <div style="font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">
+          Items in this Package (${itemsList.reduce((acc, i) => acc + (i.qty || 1), 0)} items)
+        </div>
+        ${itemsList.map(item => `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 13px;">
+            <span style="color: #1e293b; font-weight: 600;">${item.name} &times; ${item.qty}</span>
+            ${item.price ? `<span style="color: #0f172a; font-weight: 700;">₹${(item.price * item.qty).toFixed(2)}</span>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    ` : ''}
+
+    <!-- Call to Action Button -->
+    ${buttonText && buttonUrl ? `
+      <div style="text-align: center; margin: 0 28px 24px;">
+        <a href="${buttonUrl}" style="background-color: #15803d; color: #ffffff; text-decoration: none; padding: 13px 32px; border-radius: 10px; font-weight: 800; font-size: 14px; display: inline-block; box-shadow: 0 4px 10px rgba(21, 128, 61, 0.2);">
+          ${buttonText}
+        </a>
+      </div>
+    ` : ''}
+
+    ${additionalNote ? `
+      <div style="padding: 0 28px 20px; font-size: 12px; color: #64748b; line-height: 1.5; text-align: center;">
+        ${additionalNote}
+      </div>
+    ` : ''}
+
+    <!-- Help & Assistance Line -->
+    <div style="padding: 0 28px 24px; font-size: 12px; color: #64748b; text-align: center; line-height: 1.5;">
+      Questions about this order? Reply directly to this email or contact support at <a href="mailto:support@mitoreboot.in" style="color: #4338ca; text-decoration: underline; font-weight: 600;">support@mitoreboot.in</a> &mdash; we're here to help.
+    </div>
+
+    <!-- Official Partnership Footer -->
+    <div style="background-color: #f8fafc; padding: 20px 24px; text-align: center; color: #94a3b8; font-size: 11px; border-top: 1px solid #f1f5f9; line-height: 1.6;">
+      <p style="margin: 0 0 6px;">This order update is sent as part of the <strong>MitoReboot &times; ${vendorName}</strong> fulfillment and delivery partnership.</p>
+      <p style="margin: 0;">&copy; ${new Date().getFullYear()} MitoReboot &bull; Healthy Living &amp; Nutrition Sourcing</p>
+    </div>
+
+  </div>
+</body>
+</html>
+  `;
+};
+
 export class EmailService {
   /**
    * Verifies SMTP connection to Brevo on application startup
@@ -667,6 +847,8 @@ export class EmailService {
   public static async sendOrderEmail(type: 'placed' | 'assigned' | 'accepted' | 'shipped' | 'delivered', orderId: string) {
     const { appName, appTagline } = await EmailService.getBranding();
     const ShopOrder = require('../models/ShopOrder').default;
+    const ShopProduct = require('../models/ShopProduct').default;
+    const Vendor = require('../models/Vendor').default;
 
     const order = await ShopOrder.findById(orderId)
       .populate('userId')
@@ -674,27 +856,135 @@ export class EmailService {
 
     if (!order) return;
 
+    // Dynamically resolve Vendor (from order.vendorId, or order's products, or active vendor in database)
+    let vendor = order.vendorId;
+    if (!vendor && order.products && order.products.length > 0) {
+      try {
+        const firstProd = await ShopProduct.findById(order.products[0].productId);
+        if (firstProd?.vendorId) {
+          vendor = await Vendor.findById(firstProd.vendorId);
+        }
+      } catch (err) {
+        console.error('[EmailService] Error resolving vendor from product:', err);
+      }
+    }
+    if (!vendor) {
+      try {
+        vendor = await Vendor.findOne({ isActive: true });
+      } catch (err) {
+        console.error('[EmailService] Error resolving default active vendor:', err);
+      }
+    }
+
+    const vendorName = vendor?.name || 'Arivu Foods';
+    const displayOrderId = order.vendorOrderId || order._id.toString();
+    const customerName = order.patientName || order.userId?.name || 'Valued Patient';
+    const currencySymbol = order.currency === 'USD' ? '$' : '₹';
+    const totalFormatted = `${currencySymbol}${Number(order.totalAmount || 0).toFixed(2)}`;
+    const orderViewUrl = `https://app.mitoreboot.in/orders/${order._id}`;
+
+    // Resolve Vendor Logo & App Logo attachments dynamically
+    let vendorLogoUrl: string | undefined;
+    let appLogoUrl: string | undefined;
+    const vendorEmailAttachments: any[] = [];
+
+    // 1. Vendor Logo resolution
+    const vendorLogoField = vendor?.logo;
+    if (vendorLogoField) {
+      if (vendorLogoField.startsWith('http://') || vendorLogoField.startsWith('https://')) {
+        vendorLogoUrl = vendorLogoField;
+      } else {
+        const cleanPath = vendorLogoField.replace(/^\//, '');
+        const localVendorPath = path.join(__dirname, '../../', cleanPath);
+        if (fs.existsSync(localVendorPath)) {
+          vendorEmailAttachments.push({
+            filename: path.basename(localVendorPath),
+            path: localVendorPath,
+            cid: 'vendor-logo'
+          });
+          vendorLogoUrl = 'cid:vendor-logo';
+        } else {
+          vendorLogoUrl = `https://app.mitoreboot.in/${cleanPath}`;
+        }
+      }
+    } else if (vendorName.toLowerCase().includes('arivu')) {
+      const localArivuPath = path.join(__dirname, '../../uploads/vendors/arivu-logo.png');
+      if (fs.existsSync(localArivuPath)) {
+        vendorEmailAttachments.push({
+          filename: 'arivu-logo.png',
+          path: localArivuPath,
+          cid: 'vendor-logo'
+        });
+        vendorLogoUrl = 'cid:vendor-logo';
+      } else {
+        vendorLogoUrl = 'https://app.mitoreboot.in/assets/arivu-logo.png';
+      }
+    }
+
+    // 2. MitoReboot App Logo resolution
+    const localAppLogoPath = path.join(__dirname, '../../uploads/app-logo.png');
+    if (fs.existsSync(localAppLogoPath)) {
+      vendorEmailAttachments.push({
+        filename: 'app-logo.png',
+        path: localAppLogoPath,
+        cid: 'app-logo'
+      });
+      appLogoUrl = 'cid:app-logo';
+    } else {
+      appLogoUrl = 'https://app.mitoreboot.in/icon.png';
+    }
+
+    const shippingAddressText = order.shippingAddress 
+      ? [order.shippingAddress.line1, order.shippingAddress.city, order.shippingAddress.state, order.shippingAddress.postalCode].filter(Boolean).join(', ')
+      : 'Address on file';
+
+    const itemsList = (order.products || []).map((p: any) => ({
+      name: p.name || 'Product',
+      qty: p.quantity || 1,
+      price: p.unitPrice || 0
+    }));
+
     let subject = '';
-    let body = '';
     let attachments: any[] = [];
 
-    const currencySymbol = order.currency === 'USD' ? '$' : '₹';
-
     if (type === 'placed') {
-      // 1. Send Placed confirmation to Patient
+      // 1. Send Co-Branded Placed confirmation to Patient
       if (order.userId?.email) {
-        subject = `Order Placed Successfully`;
-        body = `<p>Hi ${order.userId.name || 'Patient'},</p>
-                <p>Your order of total amount <strong>${currencySymbol}${order.totalAmount}</strong> has been successfully placed.</p>
-                <p><strong>Order ID:</strong> ${order._id}</p>
-                <p>We are reviewing your order and will assign a vendor shortly.</p>`;
-        const html = generateEmailTemplate(subject, body, appName, appTagline);
+        subject = `Order Placed Successfully (#${displayOrderId})`;
+        const userHtml = generateShopCoBrandedEmailTemplate({
+          vendorName,
+          vendorLogoUrl,
+          appLogoUrl,
+          categoryTag: 'ORDER CONFIRMATION',
+          heading: `Order Confirmed with ${vendorName}`,
+          displayOrderId,
+          mainMessage: `
+            <p>Hi <strong>${customerName}</strong>,</p>
+            <p>Thank you for choosing MitoReboot! Your order of total amount <strong>${totalFormatted}</strong> has been received and confirmed.</p>
+            <p>We have assigned your order directly to our trusted fulfillment partner <strong>${vendorName}</strong>. Their team is carefully preparing your order for safe and fresh delivery.</p>
+          `,
+          statusBadgeText: `Order Placed Successfully (${vendorName})`,
+          statusBadgeColor: 'emerald',
+          statusRightText: 'Confirmed',
+          summaryRows: [
+            { label: 'Order ID', value: `#${displayOrderId}` },
+            { label: 'Fulfillment Partner', value: `🌱 ${vendorName}` },
+            { label: 'Total Amount', value: totalFormatted },
+            { label: 'Delivery Address', value: shippingAddressText }
+          ],
+          itemsList,
+          buttonText: 'View Order in App',
+          buttonUrl: orderViewUrl,
+          additionalNote: `Your items are sourced directly from verified organic and wellness producers under the ${vendorName} quality pledge.`
+        });
+
         try {
           await transporter.sendMail({
             from: `"${appName} Shop" <support@mitoreboot.in>`,
             to: order.userId.email,
             subject: `[${appName}] ${subject}`,
-            html
+            html: userHtml,
+            attachments: vendorEmailAttachments
           });
         } catch (err) {
           console.error('Error sending order placed mail to user:', err);
@@ -703,12 +993,14 @@ export class EmailService {
 
       // 2. Send New Order notification to Admin
       try {
-        const adminSubject = `New Order Placed - ID: ${order._id}`;
+        const adminSubject = `New Order Placed - ID: ${displayOrderId}`;
         const adminBody = `<p>A new order has been placed on the platform.</p>
-                           <p><strong>Order ID:</strong> ${order._id}</p>
-                           <p><strong>Patient Name:</strong> ${order.patientName || (order.userId as any)?.name || 'N/A'}</p>
-                           <p><strong>Total Amount:</strong> ${currencySymbol}${order.totalAmount}</p>
-                           <p>Please review and assign this order to a vendor in the Admin Dashboard.</p>`;
+                           <p><strong>Order ID:</strong> ${displayOrderId}</p>
+                           <p><strong>Internal Database Ref:</strong> ${order._id}</p>
+                           <p><strong>Assigned Vendor:</strong> ${vendorName}</p>
+                           <p><strong>Patient Name:</strong> ${customerName}</p>
+                           <p><strong>Total Amount:</strong> ${totalFormatted}</p>
+                           <p>Fulfillment partner has been assigned and notified.</p>`;
         const adminHtml = generateEmailTemplate(adminSubject, adminBody, appName, appTagline);
         
         await transporter.sendMail({
@@ -727,17 +1019,39 @@ export class EmailService {
     if (type === 'assigned') {
       // Send mail to Patient
       if (order.userId?.email) {
-        subject = `Your Order has been Assigned`;
-        body = `<p>Hi ${order.userId.name || 'Patient'},</p>
-                <p>Your order (ID: ${order._id}) has been assigned to our trusted vendor partner <strong>${order.vendorId?.name || 'Local Pharmacy Vendor'}</strong>.</p>
-                <p>They are packing your items and will ship them soon.</p>`;
-        const html = generateEmailTemplate(subject, body, appName, appTagline);
+        subject = `Your Order #${displayOrderId} has been Assigned`;
+        const userHtml = generateShopCoBrandedEmailTemplate({
+          vendorName,
+          vendorLogoUrl,
+          appLogoUrl,
+          categoryTag: 'FULFILLMENT UPDATE',
+          heading: `Your Order is Being Prepared with ${vendorName}`,
+          displayOrderId,
+          mainMessage: `
+            <p>Hi <strong>${customerName}</strong>,</p>
+            <p>Good news! Your order is now being packed and prepared by our partner <strong>${vendorName}</strong>.</p>
+            <p>The team is ensuring your items meet the highest standards of quality, freshness, and packaging, and will issue tracking details shortly.</p>
+          `,
+          statusBadgeText: `Preparing at ${vendorName}`,
+          statusBadgeColor: 'indigo',
+          statusRightText: 'In Progress',
+          summaryRows: [
+            { label: 'Order ID', value: `#${displayOrderId}` },
+            { label: 'Fulfillment Partner', value: `🌱 ${vendorName}` },
+            { label: 'Delivery Address', value: shippingAddressText }
+          ],
+          itemsList,
+          buttonText: 'View Order in App',
+          buttonUrl: orderViewUrl
+        });
+
         try {
           await transporter.sendMail({
             from: `"${appName} Shop" <support@mitoreboot.in>`,
             to: order.userId.email,
             subject: `[${appName}] ${subject}`,
-            html
+            html: userHtml,
+            attachments: vendorEmailAttachments
           });
         } catch (e) {
           console.error(e);
@@ -746,9 +1060,9 @@ export class EmailService {
 
       // Send mail to Vendor
       if (order.vendorId?.email) {
-        const vendorSubject = `New Order Assigned - ID: ${order._id}`;
+        const vendorSubject = `New Order Assigned - ID: ${displayOrderId}`;
         const vendorBody = `<p>Hello ${order.vendorId.name},</p>
-                            <p>You have been assigned a new fulfillment order (ID: ${order._id}).</p>
+                            <p>You have been assigned a new fulfillment order (ID: <strong>${displayOrderId}</strong>).</p>
                             <p>Please log in to your Vendor Portal to accept and process the shipment.</p>`;
         const vendorHtml = generateEmailTemplate(vendorSubject, vendorBody, appName, appTagline);
         try {
@@ -769,8 +1083,8 @@ export class EmailService {
     if (type === 'accepted') {
       // Vendor Accepted order - Notify Admin
       try {
-        const adminSubject = `Vendor Accepted Order - ID: ${order._id}`;
-        const adminBody = `<p>Vendor <strong>${order.vendorId?.name || 'Vendor'}</strong> has accepted the order ${order._id} and started processing it.</p>`;
+        const adminSubject = `Vendor Accepted Order - ID: ${displayOrderId}`;
+        const adminBody = `<p>Vendor <strong>${vendorName}</strong> has accepted the order <strong>${displayOrderId}</strong> and started processing it.</p>`;
         const adminHtml = generateEmailTemplate(adminSubject, adminBody, appName, appTagline);
         await transporter.sendMail({
           from: `"${appName} Shop" <support@mitoreboot.in>`,
@@ -786,21 +1100,46 @@ export class EmailService {
 
     if (type === 'shipped') {
       if (order.userId?.email) {
-        subject = `Your Order has been Shipped!`;
-        const courier = order.trackingDetails?.courierName || 'Courier Partner';
-        const trackingId = order.trackingDetails?.trackingId || 'N/A';
-        body = `<p>Hi ${order.userId.name || 'Patient'},</p>
-                <p>Great news! Your order (ID: ${order._id}) has been shipped.</p>
-                <p><strong>Courier:</strong> ${courier}</p>
-                <p><strong>Tracking ID:</strong> ${trackingId}</p>
-                <p>You can track the progress of your delivery directly in the app.</p>`;
-        const html = generateEmailTemplate(subject, body, appName, appTagline);
+        subject = `Your Order #${displayOrderId} has been Shipped!`;
+        const courier = order.trackingDetails?.courierName || `${vendorName} Logistics`;
+        const trackingId = order.trackingDetails?.trackingId || 'In Transit';
+        const trackingUrl = order.trackingDetails?.trackingUrl;
+
+        const userHtml = generateShopCoBrandedEmailTemplate({
+          vendorName,
+          vendorLogoUrl,
+          appLogoUrl,
+          categoryTag: 'SHIPMENT UPDATE',
+          heading: `Your Order is on the Way!`,
+          displayOrderId,
+          mainMessage: `
+            <p>Hi <strong>${customerName}</strong>,</p>
+            <p>Great news! Your package has been dispatched by <strong>${vendorName}</strong> and is currently on its way to your delivery address.</p>
+          `,
+          statusBadgeText: 'Shipped & Out for Delivery',
+          statusBadgeColor: 'emerald',
+          statusRightText: 'On the Way',
+          summaryRows: [
+            { label: 'Order ID', value: displayOrderId },
+            { label: 'Tracking Number', value: trackingId },
+            { label: 'Logistics Provider', value: courier },
+            { label: 'Destination', value: shippingAddressText }
+          ],
+          itemsList,
+          buttonText: 'View Order in App',
+          buttonUrl: orderViewUrl,
+          additionalNote: trackingUrl 
+            ? `You can also track with the carrier directly: <a href="${trackingUrl}" style="color: #15803d; font-weight: bold; text-decoration: underline;" target="_blank">Track on ${courier}</a>`
+            : undefined
+        });
+
         try {
           await transporter.sendMail({
             from: `"${appName} Shop" <support@mitoreboot.in>`,
             to: order.userId.email,
             subject: `[${appName}] ${subject}`,
-            html
+            html: userHtml,
+            attachments: vendorEmailAttachments
           });
         } catch (e) {
           console.error(e);
@@ -810,12 +1149,12 @@ export class EmailService {
     }
 
     if (type === 'delivered') {
-      // Attach Invoice PDF
+      // Attach Invoice PDF if present
       if (order.invoiceUrl) {
         const fullPath = path.join(__dirname, '../../', order.invoiceUrl);
         if (fs.existsSync(fullPath)) {
           attachments.push({
-            filename: `Invoice-${order._id}.pdf`,
+            filename: `Invoice-${displayOrderId}.pdf`,
             path: fullPath
           });
         }
@@ -823,24 +1162,42 @@ export class EmailService {
 
       // Send to Patient
       if (order.userId?.email) {
-        const appUrl = process.env.APP_URL || 'http://localhost:3000';
-        const rateLink = `${appUrl}/?rateOrder=${order._id}`;
-        subject = `Your Order has been Delivered 🎉`;
-        body = `<p>Hi ${order.userId.name || 'Patient'},</p>
-                <p>Your order (ID: ${order._id}) has been successfully delivered. We hope you are satisfied with the items!</p>
-                <p>We have attached the official PDF invoice to this email for your records.</p>
-                <p>We would love to hear your feedback! Please click the link below to rate the products in this order:</p>
-                <div style="margin: 24px 0;">
-                  <a href="${rateLink}" style="background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; font-size: 14px; display: inline-block; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.15);">Rate & Review Products</a>
-                </div>`;
-        const html = generateEmailTemplate(subject, body, appName, appTagline);
+        subject = `Your Order #${displayOrderId} has been Delivered 🎉`;
+        
+        const userHtml = generateShopCoBrandedEmailTemplate({
+          vendorName,
+          vendorLogoUrl,
+          appLogoUrl,
+          categoryTag: 'DELIVERY CONFIRMATION',
+          heading: 'Your Order Has Arrived!',
+          displayOrderId,
+          mainMessage: `
+            <p>Hi <strong>${customerName}</strong>,</p>
+            <p>Your order fulfilled by <strong>${vendorName}</strong> has been successfully delivered. We hope you are satisfied with the items!</p>
+            ${order.invoiceUrl ? `<p>Your official tax invoice is attached to this email for your records.</p>` : ''}
+            <p>We would love to hear your feedback on the items and delivery experience.</p>
+          `,
+          statusBadgeText: 'Delivered Successfully',
+          statusBadgeColor: 'emerald',
+          statusRightText: 'Delivered',
+          summaryRows: [
+            { label: 'Order ID', value: `#${displayOrderId}` },
+            { label: 'Fulfilled By', value: `🌱 ${vendorName}` },
+            { label: 'Delivered To', value: shippingAddressText },
+            { label: 'Total Paid', value: totalFormatted }
+          ],
+          itemsList,
+          buttonText: 'View Order in App',
+          buttonUrl: orderViewUrl
+        });
+
         try {
           await transporter.sendMail({
             from: `"${appName} Shop" <support@mitoreboot.in>`,
             to: order.userId.email,
             subject: `[${appName}] ${subject}`,
-            html,
-            attachments
+            html: userHtml,
+            attachments: [...vendorEmailAttachments, ...attachments]
           });
         } catch (e) {
           console.error(e);
@@ -849,8 +1206,8 @@ export class EmailService {
 
       // Notify Admin
       try {
-        const adminSubject = `Order Delivered successfully - ID: ${order._id}`;
-        const adminBody = `<p>Order ${order._id} has been marked as <strong>Delivered</strong> by Vendor <strong>${order.vendorId?.name || 'Vendor'}</strong>.</p>
+        const adminSubject = `Order Delivered successfully - ID: ${displayOrderId}`;
+        const adminBody = `<p>Order <strong>${displayOrderId}</strong> has been marked as <strong>Delivered</strong> by Vendor <strong>${vendorName}</strong>.</p>
                            <p>Fulfillment completed successfully.</p>`;
         const adminHtml = generateEmailTemplate(adminSubject, adminBody, appName, appTagline);
         await transporter.sendMail({

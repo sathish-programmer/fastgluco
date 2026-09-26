@@ -145,7 +145,11 @@ export const VendorPortal: React.FC<VendorPortalProps> = ({ apiUrl, token, onLog
 
   const filteredOrders = orders.filter(o => {
     const matchStatus = statusFilter === 'All' || o.deliveryStatus === statusFilter;
-    const matchSearch = !orderSearch || o._id.includes(orderSearch) || (o.patientName && o.patientName.toLowerCase().includes(orderSearch.toLowerCase())) || (o.userId?.name && o.userId.name.toLowerCase().includes(orderSearch.toLowerCase()));
+    const matchSearch = !orderSearch || 
+      (o.vendorOrderId && o.vendorOrderId.toLowerCase().includes(orderSearch.toLowerCase())) ||
+      o._id.includes(orderSearch) || 
+      (o.patientName && o.patientName.toLowerCase().includes(orderSearch.toLowerCase())) || 
+      (o.userId?.name && o.userId.name.toLowerCase().includes(orderSearch.toLowerCase()));
     return matchStatus && matchSearch;
   });
 
@@ -278,7 +282,7 @@ export const VendorPortal: React.FC<VendorPortalProps> = ({ apiUrl, token, onLog
                   {dashboardData?.recentOrders?.map((order: any) => (
                     <div key={order._id} className="py-3.5 flex justify-between items-center gap-4">
                       <div className="space-y-1">
-                        <span className="text-xs font-mono font-bold text-slate-700">Order ID: {order._id}</span>
+                        <span className="text-xs font-mono font-bold text-slate-700">Order ID: {order.vendorOrderId || order._id}</span>
                         <div className="flex gap-2 text-[10px] text-slate-450 font-semibold">
                           <span>Patient: {order.patientName || order.userId?.name || 'N/A'}</span>
                           <span>•</span>
@@ -340,10 +344,17 @@ export const VendorPortal: React.FC<VendorPortalProps> = ({ apiUrl, token, onLog
                     <div className="space-y-3">
                       <div className="flex justify-between items-start">
                         <div>
-                          <h4 className="font-mono text-slate-800 text-xs font-bold">Order ID: {order._id}</h4>
-                          <span className="text-[10px] text-slate-400 font-bold block mt-0.5">
-                            Created: {new Date(order.createdAt).toLocaleDateString()}
-                          </span>
+                          <h4 className="font-mono text-slate-800 text-xs font-bold">Order ID: {order.vendorOrderId || order._id}</h4>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[10px] text-slate-400 font-bold block">
+                              Created: {new Date(order.createdAt).toLocaleDateString()}
+                            </span>
+                            {order.vendorOrderId && (
+                              <span className="text-[10px] font-mono text-slate-400 bg-slate-100 px-1 rounded">
+                                Ref: #{order._id.slice(-6).toUpperCase()}
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <span className={`text-[9px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider border ${getStatusBadgeColor(order.deliveryStatus)}`}>
                           {order.deliveryStatus || 'pending'}

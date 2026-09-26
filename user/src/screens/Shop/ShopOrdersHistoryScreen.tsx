@@ -2,16 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { ArrowLeft, Package, Truck, Download, Calendar, Star, Beaker, FileText, HelpCircle, RefreshCw, ExternalLink } from 'lucide-react';
+import { 
+  ArrowLeft, Package, Truck, Download, Calendar, Star, Beaker, FileText, 
+  HelpCircle, ExternalLink, Copy, Check, ChevronRight, Clock
+} from 'lucide-react';
 import { ProductImage } from './ShopScreen';
 import { downloadFile } from '../../utils/fileDownloader';
+import { ShopOrderDetailView } from './ShopOrderDetailView';
 
 interface ShopOrdersHistoryScreenProps {
   onBack?: () => void;
   onRateOrder?: (orderId: string) => void;
+  initialOrderId?: string;
 }
 
-export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = ({ onBack, onRateOrder }) => {
+export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = ({ onBack, onRateOrder, initialOrderId }) => {
   const { t, language } = useLanguage();
 
   const LOCALE_MAP: Record<string, string> = {
@@ -23,13 +28,17 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
   };
   const activeLocale = LOCALE_MAP[language] || 'en-US';
 
-  const { apiUrl, token } = useAuth();
+  const { apiUrl, token, user } = useAuth();
   const { showToast } = useToast();
   const [orders, setOrders] = useState<any[]>([]);
   const [labBookings, setLabBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [userReviews, setUserReviews] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'products' | 'tests'>('products');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'delivered' | 'cancelled'>('all');
+
+  // Selected Order for Full Dedicated Detail View
+  const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
 
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [supportForm, setSupportForm] = useState({ name: '', email: '', question: '', relatedId: '', type: 'GENERAL' });
@@ -38,6 +47,15 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
   const [downloadingShopInvoiceId, setDownloadingShopInvoiceId] = useState<string | null>(null);
   const [downloadingLabInvoiceId, setDownloadingLabInvoiceId] = useState<string | null>(null);
   const [downloadingLabReportId, setDownloadingLabReportId] = useState<string | null>(null);
+  const [copiedOrderId, setCopiedOrderId] = useState<string | null>(null);
+
+  const handleCopyOrderId = (e: React.MouseEvent, orderId: string) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(orderId);
+    setCopiedOrderId(orderId);
+    showToast(t('copiedToClipboard', 'Order ID copied to clipboard'), 'info');
+    setTimeout(() => setCopiedOrderId(null), 2000);
+  };
 
   const handleRefreshTracking = async (orderId: string) => {
     setRefreshingOrderId(orderId);
@@ -60,13 +78,30 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
           } : o.trackingDetails,
           orderTimeline: data.orderTimeline || o.orderTimeline
         } : o));
-        showToast('Live tracking refreshed from vendor API.', 'success');
+
+        if (selectedOrder && selectedOrder._id === orderId) {
+          setSelectedOrder((prev: any) => prev ? {
+            ...prev,
+            deliveryStatus: data.deliveryStatus,
+            vendorOrderStatus: data.vendorOrderStatus,
+            vendorStatusMessage: data.vendorStatusMessage,
+            estimatedDeliveryDate: data.estimatedDeliveryDate,
+            trackingDetails: data.trackingNumber ? {
+              courierName: data.courierName,
+              trackingId: data.trackingNumber,
+              trackingUrl: data.trackingUrl
+            } : prev.trackingDetails,
+            orderTimeline: data.orderTimeline || prev.orderTimeline
+          } : prev);
+        }
+
+        showToast('Live tracking status updated.', 'success');
       } else {
-        showToast('Vendor API tracking currently unavailable.', 'info');
+        showToast('Live tracking is being updated by courier partner.', 'info');
       }
     } catch (e) {
       console.error(e);
-      showToast('Could not reach vendor logistics API.', 'error');
+      showToast('Could not reach logistics tracking API.', 'error');
     } finally {
       setRefreshingOrderId(null);
     }
@@ -88,13 +123,44 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
-      setOrders(Array.isArray(data) ? data : []);
+      const list = Array.isArray(data) ? data : [];
+      setOrders(list);
+
+      if (initialOrderId) {
+        let found = list.find((o: any) => o._id === initialOrderId || o.vendorOrderId === initialOrderId);
+        if (!found) {
+          try {
+            const singleRes = await fetch(`${apiUrl}/patient/orders/${initialOrderId}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (singleRes.ok) {
+              const singleOrder = await singleRes.json();
+              found = singleOrder;
+              setOrders(prev => [singleOrder, ...prev.filter(o => o._id !== singleOrder._id)]);
+            }
+          } catch (err) {
+            console.error('Error fetching single order by direct ID:', err);
+          }
+        }
+        if (found) {
+          setSelectedOrder(found);
+        }
+      }
     } catch (e) {
       console.error(e);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (initialOrderId && orders.length > 0) {
+      const found = orders.find((o: any) => o._id === initialOrderId || o.vendorOrderId === initialOrderId);
+      if (found) {
+        setSelectedOrder(found);
+      }
+    }
+  }, [initialOrderId, orders]);
 
   const fetchLabBookings = async () => {
     setLoading(true);
@@ -125,48 +191,60 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
     }
   };
 
-  const getStatusColor = (status?: string) => {
+  const getStatusBadge = (status?: string) => {
     switch (status) {
-      case 'delivered': return 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-405 border-emerald-150 dark:border-emerald-900/30';
-      case 'shipped': return 'bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-405 border-blue-150 dark:border-blue-900/30';
+      case 'delivered':
+        return {
+          label: t('shop.statusDelivered', 'Delivered'),
+          color: 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/40',
+          dot: 'bg-emerald-500'
+        };
+      case 'shipped':
+      case 'in_transit':
+        return {
+          label: t('shop.statusShipped', 'In Transit / Shipped'),
+          color: 'bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/40',
+          dot: 'bg-blue-500 animate-pulse'
+        };
       case 'out_for_delivery':
-      case 'out for delivery': return 'bg-cyan-50 dark:bg-cyan-950/20 text-cyan-600 dark:text-cyan-405 border-cyan-150 dark:border-cyan-900/30';
-      case 'packed': return 'bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-405 border-indigo-150 dark:border-indigo-900/30';
-      case 'accepted': return 'bg-purple-50 dark:bg-purple-950/20 text-purple-650 dark:text-purple-400 border-purple-150 dark:border-purple-900/30';
-      case 'assigned': return 'bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-405 border-amber-150 dark:border-amber-900/30';
-      case 'cancelled': return 'bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-405 border-red-155 dark:border-red-900/30';
-      default: return 'bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800';
+      case 'out for delivery':
+        return {
+          label: 'Out for Delivery',
+          color: 'bg-cyan-50 dark:bg-cyan-950/20 text-cyan-600 dark:text-cyan-400 border-cyan-200 dark:border-cyan-800/40',
+          dot: 'bg-cyan-500 animate-ping'
+        };
+      case 'packed':
+        return {
+          label: t('shop.stepPacked', 'Packed & Ready'),
+          color: 'bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800/40',
+          dot: 'bg-indigo-500'
+        };
+      case 'accepted':
+      case 'processing':
+        return {
+          label: t('shop.stepAccepted', 'Order Confirmed'),
+          color: 'bg-purple-50 dark:bg-purple-950/20 text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-800/40',
+          dot: 'bg-purple-500'
+        };
+      case 'assigned':
+        return {
+          label: t('shop.stepPreparing', 'Preparing for Dispatch'),
+          color: 'bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800/40',
+          dot: 'bg-amber-500'
+        };
+      case 'cancelled':
+        return {
+          label: 'Cancelled',
+          color: 'bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800/40',
+          dot: 'bg-rose-500'
+        };
+      default:
+        return {
+          label: t('shop.stepOrderPlaced', 'Order Placed'),
+          color: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700',
+          dot: 'bg-slate-400'
+        };
     }
-  };
-
-  const getFulfillmentSteps = (currentStatus?: string) => {
-    const steps = [
-      { key: 'placed', label: t('shop.stepOrderPlaced', 'Order Placed') },
-      { key: 'assigned', label: t('shop.stepVendorAssigned', 'Vendor Assigned') },
-      { key: 'accepted', label: t('shop.stepAccepted', 'Accepted') },
-      { key: 'packed', label: t('shop.stepPacked', 'Packed') },
-      { key: 'shipped', label: t('shop.stepShipped', 'Shipped') },
-      { key: 'delivered', label: t('shop.stepDelivered', 'Delivered') }
-    ];
-
-    const statusMap: Record<string, number> = {
-      pending: 0,
-      assigned: 1,
-      accepted: 2,
-      processing: 2,
-      packed: 3,
-      shipped: 4,
-      out_for_delivery: 4,
-      delivered: 5
-    };
-
-    const currentStepIndex = statusMap[currentStatus || 'pending'] ?? 0;
-
-    return steps.map((s, idx) => ({
-      ...s,
-      isCompleted: currentStepIndex >= idx,
-      isCurrent: currentStepIndex === idx
-    }));
   };
 
   const handleDownloadShopInvoice = async (orderId: string, invoiceUrl?: string) => {
@@ -181,7 +259,7 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
         filename: `Invoice-Order-${orderId.slice(-6).toUpperCase()}.pdf`,
         token
       });
-      showToast('Invoice downloaded successfully.', 'success');
+      showToast('Tax invoice downloaded successfully.', 'success');
     } catch (err: any) {
       console.error('Error downloading shop invoice:', err);
       showToast(err.message || 'Failed to download invoice.', 'error');
@@ -273,495 +351,573 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
     }
   };
 
+  const handleReorder = (products: any[]) => {
+    try {
+      const currentCart = JSON.parse(localStorage.getItem('mitoreboot_health_cart') || '[]');
+      const newCart = [...currentCart];
+      products.forEach((p: any) => {
+        const pId = p.productId?._id || p.productId || p.name;
+        const existingIdx = newCart.findIndex(x => x.item.id === pId && x.variantName === p.variantName);
+        if (existingIdx > -1) {
+          newCart[existingIdx].qty += p.qty;
+        } else {
+          newCart.push({
+            item: {
+              id: pId,
+              name: p.name,
+              price: p.price,
+              image: p.productId?.image || p.image,
+              category: p.productId?.category || 'Functional Nutrition',
+              stock: 99
+            },
+            variantName: p.variantName,
+            qty: p.qty
+          });
+        }
+      });
+      localStorage.setItem('mitoreboot_health_cart', JSON.stringify(newCart));
+      showToast('Order items added to your basket!', 'success');
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const renderSupportModal = () => {
+    if (!showSupportModal) return null;
+    return (
+      <div className="fixed inset-0 bg-slate-900/60 dark:bg-slate-950/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col border border-slate-100 dark:border-slate-800 animate-in fade-in zoom-in-95 duration-200">
+          <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+            <div>
+              <h3 className="font-black text-slate-900 dark:text-slate-100 text-base">Support & Helpdesk</h3>
+              <p className="text-[11px] text-slate-400 mt-0.5">We respond within 24 hours.</p>
+            </div>
+            <button 
+              onClick={() => setShowSupportModal(false)}
+              className="h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-slate-800 cursor-pointer"
+            >
+              ✕
+            </button>
+          </div>
+          
+          <form onSubmit={handleSupportSubmit} className="p-5 space-y-4">
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Your Name</label>
+              <input 
+                type="text" 
+                required
+                placeholder="Enter full name"
+                value={supportForm.name}
+                onChange={(e) => setSupportForm(prev => ({ ...prev, name: e.target.value }))}
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Your Email</label>
+              <input 
+                type="email" 
+                required
+                placeholder="name@example.com"
+                value={supportForm.email}
+                onChange={(e) => setSupportForm(prev => ({ ...prev, email: e.target.value }))}
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">How can we assist you?</label>
+              <textarea 
+                required
+                rows={3}
+                placeholder="Tell us what you need help with regarding this order..."
+                value={supportForm.question}
+                onChange={(e) => setSupportForm(prev => ({ ...prev, question: e.target.value }))}
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-xs font-semibold focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={submittingSupport}
+              className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black transition-all shadow-md cursor-pointer disabled:opacity-50"
+            >
+              {submittingSupport ? 'Submitting Ticket...' : 'Submit Support Request'}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  };
+
+  // If user selected an order, render the dedicated Order Detailed View page
+  if (selectedOrder) {
+    return (
+      <>
+        <ShopOrderDetailView
+          order={selectedOrder}
+          onBack={() => setSelectedOrder(null)}
+          onRateOrder={onRateOrder}
+          onReorder={handleReorder}
+          onRefreshTracking={handleRefreshTracking}
+          isRefreshingTracking={refreshingOrderId === selectedOrder._id}
+          onDownloadInvoice={handleDownloadShopInvoice}
+          isDownloadingInvoice={downloadingShopInvoiceId === selectedOrder._id}
+          onOpenSupport={(orderId) => {
+            const displayId = selectedOrder.vendorOrderId || orderId.slice(-6).toUpperCase();
+            setSupportForm({ 
+              name: user?.name || '', 
+              email: user?.email || '', 
+              question: `Hi, I need assistance regarding Order #${displayId}. `, 
+              relatedId: orderId, 
+              type: 'PRODUCT' 
+            });
+            setShowSupportModal(true);
+          }}
+          hasRated={userReviews.some(r => r.orderId === selectedOrder._id)}
+        />
+        {renderSupportModal()}
+      </>
+    );
+  }
+
+  // Filter orders based on statusFilter
+  const filteredOrders = orders.filter(o => {
+    if (statusFilter === 'all') return true;
+    if (statusFilter === 'delivered') return o.deliveryStatus === 'delivered';
+    if (statusFilter === 'cancelled') return o.deliveryStatus === 'cancelled';
+    if (statusFilter === 'active') return o.deliveryStatus !== 'delivered' && o.deliveryStatus !== 'cancelled';
+    return true;
+  });
+
   return (
-    <div className="pb-24 bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 transition-colors duration-300">
+    <div className="pb-28 bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 transition-colors duration-300">
       
       {/* Sticky Header with Safe Notch Clearance */}
       <div 
-        className="sticky top-0 z-50 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 px-4 pb-3 shadow-xs"
+        className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800/80 px-4 pb-3 shadow-xs"
         style={{ paddingTop: 'calc(env(safe-area-inset-top, 24px) + 12px)' }}
       >
-        <div className="max-w-5xl mx-auto flex justify-between items-center">
+        <div className="max-w-5xl mx-auto flex justify-between items-center gap-3">
           <div>
-            <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 tracking-[0.2em] uppercase block">{t('shop.storeTitle', 'MitoReboot Store')}</span>
-            <h2 className="text-xl sm:text-2xl font-sans font-black text-slate-850 dark:text-slate-100 leading-none mt-0.5">{t('shop.myOrdersHistory', 'My Orders & History')}</h2>
+            <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 tracking-[0.2em] uppercase block">
+              {t('shop.storeTitle', 'MitoReboot Store')}
+            </span>
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100 leading-none mt-0.5">
+              {t('shop.myOrdersHistory', 'Order History')}
+            </h2>
           </div>
           {onBack && (
             <button 
               onClick={onBack} 
-              className="h-10 w-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 shadow-2xs transition-all cursor-pointer"
+              className="h-10 px-3.5 bg-slate-100/90 dark:bg-slate-800/90 hover:bg-slate-200/90 dark:hover:bg-slate-700/90 border border-slate-200/60 dark:border-slate-700/60 rounded-xl flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200 transition-all cursor-pointer shadow-2xs"
             >
-              <ArrowLeft className="h-5 w-5" />
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">Back to Shop</span>
+              <span className="sm:hidden">Back</span>
             </button>
           )}
         </div>
       </div>
 
-      <div className="px-4 max-w-5xl mx-auto pt-4">
+      <div className="px-4 max-w-5xl mx-auto pt-6 space-y-5">
 
-      <div className="flex bg-slate-200/50 dark:bg-slate-800/50 p-1 rounded-xl mb-6 shadow-inner">
-        <button
-          onClick={() => setActiveTab('products')}
-          className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${activeTab === 'products' ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
-        >
-          <Package className="h-4 w-4" /> {t('shop.productsTab', 'Products')}
-        </button>
-        <button
-          onClick={() => setActiveTab('tests')}
-          className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${activeTab === 'tests' ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
-        >
-          <Beaker className="h-4 w-4" /> {t('shop.testsTab', 'Test History')}
-        </button>
-      </div>
-
-      {loading ? (
-        <div className="text-center py-16">
-          <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-650/0 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-sm font-bold text-slate-450">{t('shop.loadingHistory', 'Loading history...')}</p>
+        {/* Tab Switcher: Products vs Lab Tests */}
+        <div className="flex bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-2xl max-w-md mx-auto border border-slate-200/60 dark:border-slate-700/60 shadow-xs">
+          <button
+            onClick={() => setActiveTab('products')}
+            className={`flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+              activeTab === 'products'
+                ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+            }`}
+          >
+            <Package className="h-4 w-4" />
+            <span>{t('shop.productsTab', 'Product Orders')} ({orders.length})</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('tests')}
+            className={`flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+              activeTab === 'tests'
+                ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+            }`}
+          >
+            <Beaker className="h-4 w-4" />
+            <span>{t('shop.testsTab', 'Lab Tests')} ({labBookings.length})</span>
+          </button>
         </div>
-      ) : activeTab === 'products' ?
-        orders.length === 0 ? (
-        <div className="text-center py-16 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm">
-          <Package className="h-12 w-12 text-slate-355 mx-auto mb-4" />
-          <h3 className="font-bold text-slate-700 dark:text-slate-200">{t('shop.noOrdersYet', 'No orders placed yet')}</h3>
-          <p className="text-xs text-slate-450 mt-1">{t('shop.firstOrderHelp', 'Navigate to the Health Store to place your first order.')}</p>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {orders.map(order => {
-            const steps = getFulfillmentSteps(order.deliveryStatus);
-            const isCancelled = order.deliveryStatus === 'cancelled';
-            const invoiceDownloadLink = order.invoiceUrl ? `${apiUrl.replace(/\/api$/, '')}${order.invoiceUrl}` : null;
-            const currencySymbol = order.currency === 'USD' ? '$' : '₹';
-            const hasRated = userReviews.some(r => r.orderId === order._id);
 
-            return (
-              <div key={order._id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-3xl p-5 space-y-4 hover:shadow-md transition-all">
-                {/* Header Row */}
-                <div className="flex flex-wrap justify-between items-center gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
-                  <div className="space-y-1">
-                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">{t('shop.orderId', 'Order ID')}</span>
-                    <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-200">{order._id}</span>
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-2">
-                    <span className={`text-[9px] font-bold px-2.5 py-1 rounded-xl border uppercase tracking-wider ${getStatusColor(order.deliveryStatus)}`}>
-                      {order.deliveryStatus === 'delivered' ? t('shop.statusDelivered', 'Status: Delivered') : order.deliveryStatus === 'shipped' ? t('shop.statusShipped', 'Status: Shipped') : order.deliveryStatus === 'completed' ? t('shop.statusCompleted', 'Status: Completed') : t('shop.statusPending', 'Status: Pending')}
-                    </span>
-                    <span className={`text-[9px] font-bold px-2.5 py-1 rounded-xl border uppercase tracking-wider ${order.status === 'completed' ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-405 border-emerald-100 dark:border-emerald-900/30' : 'bg-rose-50 dark:bg-rose-955/20 text-rose-600 dark:text-rose-405 border-rose-100 dark:border-rose-900/30'}`}>
-                      {order.status === 'completed' ? t('shop.paymentCompleted', 'Payment: Completed') : t('shop.paymentPending', 'Payment: Pending')}
-                    </span>
-                  </div>
-                </div>
+        {/* Sub-filter chips for Products */}
+        {activeTab === 'products' && orders.length > 0 && (
+          <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-none">
+            {[
+              { id: 'all', label: `All Orders (${orders.length})` },
+              { id: 'active', label: `Active / In Transit (${orders.filter(o => o.deliveryStatus !== 'delivered' && o.deliveryStatus !== 'cancelled').length})` },
+              { id: 'delivered', label: `Delivered (${orders.filter(o => o.deliveryStatus === 'delivered').length})` },
+              { id: 'cancelled', label: `Cancelled (${orders.filter(o => o.deliveryStatus === 'cancelled').length})` },
+            ].map(f => (
+              <button
+                key={f.id}
+                onClick={() => setStatusFilter(f.id as any)}
+                className={`px-4 py-2 rounded-2xl text-xs font-black transition-all duration-200 whitespace-nowrap cursor-pointer shadow-2xs ${
+                  statusFilter === f.id
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 scale-[1.02]'
+                    : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200/90 dark:border-slate-800 hover:border-indigo-300 hover:bg-slate-50/50'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        )}
 
-                {/* Products Summary */}
-                <div className="space-y-3 pt-1">
-                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">{t('shop.orderedSupplies', 'Ordered Supplies')}</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {order.products.map((p: any, idx: number) => (
-                      <div key={idx} className="flex items-center gap-3 bg-slate-50 dark:bg-slate-950 border border-slate-100/80 dark:border-slate-800 rounded-2xl p-3">
-                        <div className="h-11 w-11 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
-                          <ProductImage src={p.productId?.image || p.image} apiUrl={apiUrl} className="h-8 w-8 object-contain" textClassName="text-xl" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h5 className="font-extrabold text-slate-800 dark:text-slate-100 text-xs truncate leading-snug">{p.name}</h5>
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                            {p.variantName && (
-                              <span className="text-[9px] text-slate-400 font-bold bg-slate-205 dark:bg-slate-800 px-1 py-0.2 rounded-md">
-                                {p.variantName}
-                              </span>
+        {/* Loading State */}
+        {loading ? (
+          <div className="text-center py-20 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl shadow-sm">
+            <div className="w-9 h-9 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-xs font-bold text-slate-400 tracking-wide uppercase">
+              {t('shop.loadingHistory', 'Loading order history...')}
+            </p>
+          </div>
+        ) : activeTab === 'products' ? (
+          filteredOrders.length === 0 ? (
+            <div className="text-center py-20 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl shadow-sm space-y-4">
+              <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-500 rounded-3xl flex items-center justify-center mx-auto">
+                <Package className="h-8 w-8" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-slate-900 dark:text-slate-100">
+                  {statusFilter === 'all' ? t('shop.noOrdersYet', 'No orders placed yet') : 'No orders in this status'}
+                </h3>
+                <p className="text-xs text-slate-450 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+                  {t('shop.firstOrderHelp', 'Browse our medical store for certified supplements, diagnostic tests, and health kits.')}
+                </p>
+              </div>
+              {onBack && statusFilter === 'all' && (
+                <button
+                  onClick={onBack}
+                  className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-sm transition-all"
+                >
+                  Explore Store
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredOrders.map(order => {
+                const currencySymbol = order.currency === 'USD' ? '$' : '₹';
+                const hasRated = userReviews.some(r => r.orderId === order._id);
+                const isDelivered = order.deliveryStatus === 'delivered';
+                const statusMeta = getStatusBadge(order.deliveryStatus);
+                const formattedDate = new Date(order.createdAt || order.updatedAt || Date.now()).toLocaleDateString(activeLocale, {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric'
+                });
+
+                return (
+                  <div 
+                    key={order._id}
+                    onClick={() => setSelectedOrder(order)}
+                    className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/90 shadow-[0_4px_20px_rgba(0,0,0,0.02)] hover:shadow-[0_16px_36px_rgba(0,0,0,0.06)] hover:border-indigo-200 dark:hover:border-indigo-800/60 rounded-[2rem] p-5 sm:p-6 space-y-4.5 transition-all duration-300 cursor-pointer group"
+                  >
+                    {/* Top Row: Order ID, Date, Status Badges */}
+                    <div className="flex flex-wrap justify-between items-center gap-3 pb-3.5 border-b border-slate-100 dark:border-slate-800/80">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-mono font-black text-slate-900 dark:text-slate-100 group-hover:text-indigo-600 transition-colors">
+                            #{order.vendorOrderId || order._id.slice(-8).toUpperCase()}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => handleCopyOrderId(e, order.vendorOrderId || order._id)}
+                            className="p-1 text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                            title="Copy Order ID"
+                          >
+                            {copiedOrderId === (order.vendorOrderId || order._id) ? (
+                              <Check className="h-3.5 w-3.5 text-emerald-500" />
+                            ) : (
+                              <Copy className="h-3.5 w-3.5" />
                             )}
-                            <span className="text-[10px] text-slate-450 dark:text-slate-500 font-semibold">{t('shop.qty', { count: p.qty }, 'Qty: {{count}}')}</span>
-                          </div>
+                          </button>
                         </div>
-                        <span className="font-black text-slate-800 dark:text-slate-105 text-xs shrink-0">{currencySymbol}{(p.price * p.qty).toFixed(2)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Shipping & Tracking details (Direct from Vendor APIs) */}
-                {order.vendorId ? (
-                  <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-800/40 rounded-2xl p-4 space-y-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-2.5">
-                        <span className="h-7 w-7 rounded-xl bg-emerald-600/15 border border-emerald-500/30 flex items-center justify-center text-emerald-700 dark:text-emerald-400 text-sm">
-                          🌱
-                        </span>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h5 className="text-[11px] font-black text-emerald-950 dark:text-emerald-300 uppercase tracking-wide">
-                              Fulfilled & Shipped by {order.vendorId?.name || 'Arivu Foods'}
-                            </h5>
-                            <span className="bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 text-[8px] font-black px-2 py-0.5 rounded-md border border-emerald-300 dark:border-emerald-700">
-                              Vendor API Integrated
-                            </span>
-                          </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-slate-400 font-semibold block">
+                            Ordered on {formattedDate}
+                          </span>
                           {order.vendorOrderId && (
-                            <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400 font-bold block">
-                              Vendor Order Ref: {order.vendorOrderId}
+                            <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
+                              Ref: #{order._id.slice(-6).toUpperCase()}
                             </span>
                           )}
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {/* Status Badge */}
+                        <div className={`px-3 py-1 rounded-full border flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider shadow-2xs ${statusMeta.color}`}>
+                          <span className={`h-2 w-2 rounded-full ${statusMeta.dot}`} />
+                          <span>{statusMeta.label}</span>
+                        </div>
+
+                        {/* Payment Pill */}
+                        <span className={`text-[11px] font-black px-3 py-1 rounded-full border uppercase tracking-wider shadow-2xs ${
+                          order.status === 'completed'
+                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                            : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
+                        }`}>
+                          {order.status === 'completed' ? '✓ Paid Online' : 'Payment Pending'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Middle Row: Items preview strip */}
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 overflow-x-auto pb-1 max-w-full scrollbar-none">
+                        {order.products?.slice(0, 4).map((p: any, pIdx: number) => (
+                          <div key={pIdx} className="flex items-center gap-2.5 bg-slate-50/80 dark:bg-slate-950/70 border border-slate-200/70 dark:border-slate-800 rounded-2xl p-2.5 shrink-0">
+                            <div className="h-12 w-12 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex items-center justify-center overflow-hidden shrink-0 shadow-2xs p-1">
+                              <ProductImage 
+                                src={p.productId?.image || p.image} 
+                                apiUrl={apiUrl} 
+                                title={p.name} 
+                                className="h-full w-full object-contain" 
+                                textClassName="text-lg" 
+                              />
+                            </div>
+                            <div className="max-w-[140px] pr-1">
+                              <span className="text-xs font-black text-slate-800 dark:text-slate-200 truncate block leading-snug">
+                                {p.name}
+                              </span>
+                              <span className="text-[11px] text-slate-400 font-semibold block mt-0.5">
+                                Qty: {p.qty} {p.variantName ? `• ${p.variantName}` : ''}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+
+                        {order.products && order.products.length > 4 && (
+                          <span className="text-xs font-black text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-2 rounded-xl shrink-0">
+                            +{order.products.length - 4} more
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Recipient Snippet */}
+                      {order.shippingAddress && (
+                        <div className="text-xs text-slate-400 dark:text-slate-500 shrink-0 hidden md:block text-right">
+                          <span className="block font-medium">Deliver to</span>
+                          <span className="font-extrabold text-slate-700 dark:text-slate-300">
+                            {order.patientName || 'Recipient'} ({order.shippingAddress.postalCode})
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Bottom Row: Actions & Total Amount */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 pt-3.5 border-t border-slate-100 dark:border-slate-800/80">
+                      <div>
+                        <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest block mb-0.5">
+                          Total Amount Paid
+                        </span>
+                        <span className="text-xl font-black text-slate-900 dark:text-white leading-none tracking-tight">
+                          {currencySymbol}{order.totalAmount.toFixed(2)}
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        {/* Primary View Order Details Button */}
                         <button
                           type="button"
-                          onClick={() => handleRefreshTracking(order._id)}
-                          disabled={refreshingOrderId === order._id}
-                          className="px-2.5 py-1 bg-white dark:bg-slate-800 hover:bg-emerald-100/50 border border-emerald-200 dark:border-emerald-700 rounded-lg text-[10px] font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1 shadow-2xs transition-all cursor-pointer disabled:opacity-50"
-                          title="Fetch latest status from vendor API"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedOrder(order);
+                          }}
+                          className="py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs font-black flex items-center gap-1.5 shadow-sm shadow-indigo-600/20 transition-all cursor-pointer active:scale-98"
                         >
-                          <RefreshCw className={`h-3 w-3 ${refreshingOrderId === order._id ? 'animate-spin text-emerald-600' : ''}`} />
-                          <span>{refreshingOrderId === order._id ? 'Syncing...' : 'Live Sync'}</span>
+                          <span>View Order Details</span>
+                          <ChevronRight className="h-3.5 w-3.5 stroke-[2.5]" />
                         </button>
 
-                        {order.trackingDetails?.trackingUrl && (
-                          <a 
-                            href={order.trackingDetails.trackingUrl} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white text-[9px] font-black px-3 py-1.5 rounded-lg shadow-xs transition-all flex items-center gap-1"
+                        {/* INVOICE PDF: STRICTLY ONLY SHOWN WHEN ORDER IS DELIVERED */}
+                        {isDelivered && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDownloadShopInvoice(order._id, order.invoiceUrl);
+                            }}
+                            disabled={downloadingShopInvoiceId === order._id}
+                            className="py-2.5 px-4 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-2xl text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+                            title="Download official tax invoice"
                           >
+                            {downloadingShopInvoiceId === order._id ? (
+                              <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-indigo-500 border-t-transparent" />
+                            ) : (
+                              <Download className="h-3.5 w-3.5 text-indigo-500" />
+                            )}
+                            <span>{downloadingShopInvoiceId === order._id ? 'Generating...' : 'Invoice PDF'}</span>
+                          </button>
+                        )}
+
+                        {/* Rate Products Button (Delivered Only) */}
+                        {isDelivered && !hasRated && onRateOrder && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onRateOrder(order._id);
+                            }}
+                            className="py-2.5 px-4 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-2xs"
+                          >
+                            <Star className="h-3.5 w-3.5 fill-white" />
+                            <span>Rate Products</span>
+                          </button>
+                        )}
+
+                        {/* Track external link if available */}
+                        {order.trackingDetails?.trackingUrl && (
+                          <a
+                            href={order.trackingDetails.trackingUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="py-2.5 px-3.5 bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30 rounded-2xl text-xs font-bold flex items-center gap-1.5 hover:bg-blue-100 transition-colors"
+                          >
+                            <Truck className="h-3.5 w-3.5" />
                             <span>Track Package</span>
                             <ExternalLink className="h-3 w-3" />
                           </a>
                         )}
-                      </div>
-                    </div>
 
-                    {order.vendorStatusMessage && (
-                      <p className="text-[11px] text-emerald-800 dark:text-emerald-300 font-medium bg-white/70 dark:bg-slate-900/70 p-2.5 rounded-xl border border-emerald-100 dark:border-emerald-900/30 italic">
-                        "{order.vendorStatusMessage}"
-                      </p>
-                    )}
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs pt-0.5">
-                      <div className="bg-white/90 dark:bg-slate-900/90 p-2.5 rounded-xl border border-emerald-100/70 dark:border-emerald-900/30">
-                        <span className="text-[8px] text-slate-400 block font-bold uppercase tracking-wider">Courier Partner</span>
-                        <span className="font-extrabold text-slate-800 dark:text-slate-200 text-xs mt-0.5 block">
-                          {order.trackingDetails?.courierName || 'Assigned by Vendor'}
-                        </span>
-                      </div>
-                      <div className="bg-white/90 dark:bg-slate-900/90 p-2.5 rounded-xl border border-emerald-100/70 dark:border-emerald-900/30">
-                        <span className="text-[8px] text-slate-400 block font-bold uppercase tracking-wider">Tracking Number</span>
-                        <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400 text-xs mt-0.5 block">
-                          {order.trackingDetails?.trackingId || 'Generated on dispatch'}
-                        </span>
-                      </div>
-                      <div className="bg-white/90 dark:bg-slate-900/90 p-2.5 rounded-xl border border-emerald-100/70 dark:border-emerald-900/30">
-                        <span className="text-[8px] text-slate-400 block font-bold uppercase tracking-wider">Vendor Status</span>
-                        <span className="font-extrabold text-indigo-600 dark:text-indigo-400 text-xs mt-0.5 block uppercase">
-                          {order.vendorOrderStatus || order.deliveryStatus || 'Processing'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ) : order.trackingDetails?.trackingId ? (
-                  <div className="bg-indigo-50/40 dark:bg-indigo-950/10 border border-indigo-100/60 dark:border-indigo-900/30 rounded-2xl p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h5 className="text-[10px] font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-widest flex items-center gap-1.5">
-                        <Truck className="h-4 w-4 text-indigo-600" /> Shipment Dispatched
-                      </h5>
-                      {order.trackingDetails.trackingUrl && (
-                        <a 
-                          href={order.trackingDetails.trackingUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
-                          className="bg-indigo-600 hover:bg-indigo-700 text-white text-[9px] font-extrabold px-3 py-1 rounded-lg shadow-sm hover:shadow transition-all flex items-center gap-1"
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSupportForm({ name: '', email: '', question: '', relatedId: order._id, type: 'PRODUCT' });
+                            setShowSupportModal(true);
+                          }}
+                          className="py-2.5 px-3.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-2xl text-xs font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5 transition-all shadow-2xs"
                         >
-                          <span>Track Package →</span>
-                        </a>
-                      )}
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4 text-xs pt-1">
-                      <div className="bg-white/80 dark:bg-slate-900/80 p-2.5 rounded-xl border border-indigo-50/50 dark:border-indigo-900/30">
-                        <span className="text-[8px] text-slate-400 block font-bold uppercase tracking-wider">{t('shop.courierPartner', 'Courier Partner')}</span>
-                        <span className="font-extrabold text-slate-800 dark:text-slate-200 text-xs mt-0.5 block">{order.trackingDetails.courierName}</span>
-                      </div>
-                      <div className="bg-white/80 dark:bg-slate-900/80 p-2.5 rounded-xl border border-indigo-50/50 dark:border-indigo-900/30">
-                        <span className="text-[8px] text-slate-400 block font-bold uppercase tracking-wider">{t('shop.trackingId', 'Tracking ID')}</span>
-                        <span className="font-mono font-bold text-slate-800 dark:text-slate-200 text-xs mt-0.5 block">{order.trackingDetails.trackingId}</span>
+                          <HelpCircle className="h-3.5 w-3.5" />
+                          <span>Help</span>
+                        </button>
                       </div>
                     </div>
                   </div>
-                ) : null}
-
-                {/* Timeline Visual Tracker */}
-                {!isCancelled ? (
-                  <div className="py-3 bg-slate-50/60 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl p-4">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-4">{t('shop.deliveryTimeline', 'Delivery Timeline')}</span>
-                    
-                    <div className="relative flex justify-between items-center px-2">
-                      {/* Connector Line */}
-                      {(() => {
-                        const stepIndex = steps.findIndex(s => s.isCurrent);
-                        const currentStepIndex = stepIndex !== -1 ? stepIndex : (steps.filter(s => s.isCompleted).length - 1);
-                        const progressPercent = Math.max(0, Math.min(100, (currentStepIndex / (steps.length - 1)) * 100));
-                        return (
-                          <div className="absolute top-[11px] left-3 right-3 h-[3px] bg-slate-200 dark:bg-slate-800 z-0 rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-indigo-600 transition-all duration-500 rounded-full" 
-                              style={{ width: `${progressPercent}%` }}
-                            ></div>
-                          </div>
-                        );
-                      })()}
-                      
-                      {steps.map((step, sIdx) => {
-                        const isActive = step.isCurrent;
-                        const isCompleted = step.isCompleted;
-                        return (
-                          <div key={sIdx} className="flex flex-col items-center z-10 relative">
-                            <div className={`h-6 w-6 rounded-full flex items-center justify-center border-2 text-[9px] font-black transition-all duration-300 ${
-                              isCompleted
-                                ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm scale-105'
-                                : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-355 dark:text-slate-500'
-                            } ${isActive ? 'ring-4 ring-indigo-105 dark:ring-indigo-950/50 animate-pulse' : ''}`}>
-                              {isCompleted ? '✓' : sIdx + 1}
-                            </div>
-                            <span className={`text-[7px] sm:text-[9px] font-extrabold mt-1.5 text-center block max-w-[48px] sm:max-w-none leading-none ${
-                              isCompleted ? 'text-slate-855 dark:text-slate-200' : 'text-slate-400'
-                            } ${isActive ? 'text-indigo-650 dark:text-indigo-400 font-black' : ''}`}>
-                              {step.label}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-3 bg-red-50 dark:bg-red-955/20 text-red-700 dark:text-red-405 text-xs font-semibold rounded-2xl border border-red-100 dark:border-red-900/30 text-center">
-                    This order was cancelled and refunded.
-                  </div>
-                )}
-
-                {/* Total row with Action buttons */}
-                <div className="flex justify-between items-center pt-3 border-t border-slate-100 dark:border-slate-800">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button 
-                      onClick={() => {
-                        setSupportForm({ name: '', email: '', question: '', relatedId: order._id, type: 'PRODUCT' });
-                        setShowSupportModal(true);
-                      }}
-                      className="py-2 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl text-xs font-bold text-slate-650 dark:text-slate-300 flex items-center gap-1.5 transition-all shadow-sm"
-                    >
-                      <HelpCircle className="h-3.5 w-3.5 text-slate-500" /> {t('shop.needHelp', 'Need Help?')}
-                    </button>
-                    {(invoiceDownloadLink || order.status === 'completed' || order.deliveryStatus !== 'cancelled') && (
-                      <button 
-                        onClick={() => handleDownloadShopInvoice(order._id, order.invoiceUrl)}
-                        disabled={downloadingShopInvoiceId === order._id}
-                        className="py-2 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl text-xs font-bold text-slate-650 dark:text-slate-300 flex items-center gap-1.5 transition-all shadow-sm disabled:opacity-50 cursor-pointer"
-                      >
-                        {downloadingShopInvoiceId === order._id ? (
-                          <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-indigo-500 border-t-transparent" />
-                        ) : (
-                          <Download className="h-3.5 w-3.5 text-indigo-500" />
-                        )}
-                        <span>{downloadingShopInvoiceId === order._id ? t('sub.generatingPdf', 'Generating PDF...') : t('shop.invoicePdf', 'Invoice PDF')}</span>
-                      </button>
-                    )}
-                    {order.deliveryStatus === 'delivered' && hasRated && (
-                      <span className="py-2 px-4 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-405 border border-emerald-100 dark:border-emerald-900/30 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm">
-                        {t('shop.ratedAndReviewed', '✓ Rated & Reviewed')}
-                      </span>
-                    )}
-                    {order.deliveryStatus === 'delivered' && !hasRated && onRateOrder && (
-                      <button 
-                        onClick={() => onRateOrder(order._id)}
-                        className="py-2 px-4 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
-                      >
-                        <Star className="h-3.5 w-3.5 fill-white" /> {t('shop.rateProducts', 'Rate Products')}
-                      </button>
-                    )}
-                    {order.deliveryDate && (
-                      <span className="text-[10px] text-slate-400 font-bold flex items-center gap-1">
-                        <Calendar className="h-3.5 w-3.5" /> {t('shop.deliveredDate', 'Delivered:')} {new Date(order.deliveryDate).toLocaleDateString(activeLocale)}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="text-right">
-                    <span className="text-[9px] text-slate-400 block font-bold">{t('shop.totalAmountPaid', 'Total Amount Paid')}</span>
-                    <span className="text-lg font-black text-slate-850 dark:text-slate-100">{currencySymbol}{order.totalAmount.toFixed(2)}</span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : labBookings.length === 0 ? (
-          <div className="text-center py-16 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm">
-            <Beaker className="h-12 w-12 text-slate-355 mx-auto mb-4" />
-            <h3 className="font-bold text-slate-700 dark:text-slate-200">{t('shop.noTestHistory', 'No test history')}</h3>
-            <p className="text-xs text-slate-450 mt-1">{t('shop.bookTestHelp', 'Book a lab test to see your history here.')}</p>
-          </div>
+                );
+              })}
+            </div>
+          )
         ) : (
-          <div className="space-y-6">
-            {labBookings.map((booking: any) => {
-              const reportReady = booking.status === 'REPORT_READY' || booking.status === 'COMPLETED';
-              return (
-                <div key={booking._id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-3xl p-5 space-y-4 hover:shadow-md transition-all">
-                  <div className="flex flex-wrap justify-between items-center gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
-                    <div className="space-y-1">
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">{t('shop.bookingId', 'Booking ID')}</span>
-                      <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-200">{booking._id}</span>
+          /* Lab Test Bookings */
+          labBookings.length === 0 ? (
+            <div className="text-center py-20 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm space-y-4">
+              <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-500 rounded-3xl flex items-center justify-center mx-auto">
+                <Beaker className="h-8 w-8" />
+              </div>
+              <h3 className="font-bold text-slate-700 dark:text-slate-200">{t('shop.noTestHistory', 'No test history')}</h3>
+              <p className="text-xs text-slate-450 mt-1">{t('shop.bookTestHelp', 'Book a lab test to see your history here.')}</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {labBookings.map((booking: any) => {
+                const reportReady = booking.status === 'REPORT_READY' || booking.status === 'COMPLETED';
+                return (
+                  <div key={booking._id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-3xl p-5 space-y-4 hover:shadow-md transition-all">
+                    <div className="flex flex-wrap justify-between items-center gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+                      <div className="space-y-0.5">
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">{t('shop.bookingId', 'Booking ID')}</span>
+                        <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-200">#{booking._id.slice(-8).toUpperCase()}</span>
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-2">
+                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-xl border uppercase tracking-wider ${
+                          reportReady ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border-emerald-200' : 'bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border-amber-200'
+                        }`}>
+                          {t('common.status', 'Status')}: {booking.status === 'COMPLETED' ? 'Completed' : booking.status === 'CONFIRMED' ? 'Confirmed' : booking.status.replace('_', ' ')}
+                        </span>
+                      </div>
                     </div>
-                    
-                    <div className="flex flex-wrap gap-2">
-                      <span className={`text-[9px] font-bold px-2.5 py-1 rounded-xl border uppercase tracking-wider ${reportReady ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-405 border-emerald-100 dark:border-emerald-900/30' : 'bg-amber-50 dark:bg-amber-955/20 text-amber-600 dark:text-amber-405 border-amber-100 dark:border-amber-900/30'}`}>
-                        {t('common.status', 'Status')}: {booking.status === 'COMPLETED' ? t('shop.statusCompleted', 'Completed') : booking.status === 'CONFIRMED' ? t('appointment.confirmed', 'Confirmed') : booking.status === 'CANCELLED' ? t('appointment.cancelled', 'Cancelled') : booking.status.replace('_', ' ')}
-                      </span>
-                    </div>
-                  </div>
 
-                  <div className="space-y-3 pt-1">
-                    <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-950 border border-slate-100/80 dark:border-slate-800 rounded-2xl p-3">
+                    <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl p-4">
                       <div className="flex-1 min-w-0">
-                        <h5 className="font-extrabold text-slate-800 dark:text-slate-100 text-sm truncate leading-snug">{booking.labTestId?.cancerScreeningTestId?.name || booking.labTestId?.name || 'Unknown Test'}</h5>
+                        <h4 className="font-extrabold text-slate-800 dark:text-slate-100 text-sm truncate leading-snug">
+                          {booking.labTestId?.cancerScreeningTestId?.name || booking.labTestId?.name || 'Diagnostic Health Test'}
+                        </h4>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="text-[10px] text-slate-550 dark:text-slate-450 font-semibold flex items-center gap-1">
+                          <span className="text-[10px] text-slate-500 font-semibold flex items-center gap-1">
                             <Calendar className="h-3 w-3" /> {new Date(booking.preferredDate).toLocaleDateString(activeLocale, { year: 'numeric', month: 'short', day: 'numeric' })}
                           </span>
-                          <span className="text-[10px] text-slate-550 dark:text-slate-455 font-semibold">• {booking.preferredTime}</span>
+                          <span className="text-[10px] text-slate-500 font-semibold">• {booking.preferredTime}</span>
                         </div>
-                        <div className="text-[10px] text-slate-550 dark:text-slate-455 mt-1">
-                          {t('shop.collectionType', 'Collection')}: {booking.collectionType === 'HOME' ? t('shop.homeCollection', 'Home Collection') : t('shop.labVisit', 'Lab Visit')}
+                        <div className="text-[10px] text-slate-500 mt-1">
+                          Collection: {booking.collectionType === 'HOME' ? 'Home Collection' : 'Lab Visit'}
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <span className="text-[9px] text-slate-400 block font-bold">{t('shop.totalPaid', 'Total Paid')}</span>
-                        <span className="font-black text-slate-800 dark:text-slate-100 text-sm block">₹{booking.totalAmount.toFixed(2)}</span>
+                        <span className="text-[9px] text-slate-400 block font-bold">Total Paid</span>
+                        <span className="font-black text-slate-900 dark:text-slate-100 text-base block">₹{booking.totalAmount.toFixed(2)}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center pt-3 border-t border-slate-100 dark:border-slate-800">
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => {
+                            setSupportForm({ name: '', email: '', question: '', relatedId: booking._id, type: 'LAB_TEST' });
+                            setShowSupportModal(true);
+                          }}
+                          className="py-2 px-3 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                        >
+                          <HelpCircle className="h-3.5 w-3.5 text-slate-500" /> Need Help?
+                        </button>
+
+                        {/* Lab invoice */}
+                        <button
+                          onClick={() => handleDownloadLabInvoice(booking._id)}
+                          disabled={downloadingLabInvoiceId === booking._id}
+                          className="py-2 px-3.5 border border-indigo-200 dark:border-indigo-800/40 bg-indigo-50/60 dark:bg-indigo-950/30 hover:bg-indigo-100 rounded-xl text-xs font-bold text-indigo-700 dark:text-indigo-300 flex items-center gap-1.5 transition-all shadow-sm cursor-pointer disabled:opacity-50"
+                        >
+                          {downloadingLabInvoiceId === booking._id ? (
+                            <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-indigo-500 border-t-transparent" />
+                          ) : (
+                            <FileText className="h-3.5 w-3.5 text-indigo-500" />
+                          )}
+                          <span>Invoice</span>
+                        </button>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {reportReady ? (
+                          <button 
+                            onClick={() => handleDownloadReport(booking._id)}
+                            disabled={downloadingLabReportId === booking._id}
+                            className="py-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all disabled:opacity-50 cursor-pointer"
+                          >
+                            <FileText className="h-3.5 w-3.5" />
+                            <span>Download Report</span>
+                          </button>
+                        ) : (
+                          <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
+                            <Clock className="h-3.5 w-3.5" /> Awaiting Report
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
-
-                  <div className="flex justify-between items-center pt-3 border-t border-slate-100 dark:border-slate-800">
-                    <div className="flex items-center gap-2">
-                      <button 
-                        onClick={() => {
-                          setSupportForm({ name: '', email: '', question: '', relatedId: booking._id, type: 'LAB_TEST' });
-                          setShowSupportModal(true);
-                        }}
-                        className="py-2 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl text-xs font-bold text-slate-655 dark:text-slate-300 flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
-                      >
-                        <HelpCircle className="h-3.5 w-3.5 text-slate-500" /> {t('shop.needHelp', 'Need Help?')}
-                      </button>
-                      <button
-                        onClick={() => handleDownloadLabInvoice(booking._id)}
-                        disabled={downloadingLabInvoiceId === booking._id}
-                        className="py-2 px-4 border border-indigo-200 dark:border-indigo-800/40 bg-indigo-50/60 dark:bg-indigo-950/30 hover:bg-indigo-100 rounded-xl text-xs font-bold text-indigo-700 dark:text-indigo-300 flex items-center gap-1.5 transition-all shadow-sm disabled:opacity-50 cursor-pointer"
-                      >
-                        {downloadingLabInvoiceId === booking._id ? (
-                          <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-indigo-500 border-t-transparent" />
-                        ) : (
-                          <FileText className="h-3.5 w-3.5 text-indigo-500" />
-                        )}
-                        <span>{downloadingLabInvoiceId === booking._id ? t('sub.generatingPdf', 'Generating PDF...') : t('shop.invoice', 'Invoice')}</span>
-                      </button>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {reportReady ? (
-                        <button 
-                          onClick={() => handleDownloadReport(booking._id)}
-                          disabled={downloadingLabReportId === booking._id}
-                          className="py-2 px-4 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-405 border border-emerald-100 dark:border-emerald-900/30 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-emerald-100 transition-colors disabled:opacity-50 cursor-pointer"
-                        >
-                          {downloadingLabReportId === booking._id ? (
-                            <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-emerald-600 border-t-transparent" />
-                          ) : (
-                            <FileText className="h-3.5 w-3.5" />
-                          )}
-                          <span>{downloadingLabReportId === booking._id ? t('sub.generatingPdf', 'Downloading...') : t('shop.downloadReport', 'Download Report')}</span>
-                        </button>
-                      ) : (
-                        <span className="text-[10px] font-bold text-slate-405 dark:text-slate-500 flex items-center gap-1">
-                          <FileText className="h-4 w-4" /> {t('shop.awaitingReport', 'Awaiting Report')}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )
-      }
-
-      {showSupportModal && (
-        <div className="fixed inset-0 bg-slate-900/60 dark:bg-slate-950/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col border border-slate-100 dark:border-slate-800">
-            <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-950">
-              <h3 className="text-lg font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                <HelpCircle className="h-5 w-5 text-indigo-600" /> {t('shop.needHelp', 'Need Help?')}
-              </h3>
-              <button 
-                onClick={() => setShowSupportModal(false)}
-                className="text-slate-400 hover:text-slate-655 cursor-pointer"
-              >
-                ✕
-              </button>
+                );
+              })}
             </div>
-            <div className="p-6">
-              <form onSubmit={handleSupportSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-450 mb-1">{t('auth.fullName', 'Your Name')}</label>
-                  <input
-                    type="text"
-                    required
-                    value={supportForm.name}
-                    onChange={e => setSupportForm({ ...supportForm, name: e.target.value })}
-                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-medium focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-950/30 text-slate-800 dark:text-slate-150 transition-all"
-                    placeholder={t('fullNamePlaceholder')}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-450 mb-1">{t('auth.email')}</label>
-                  <input
-                    type="email"
-                    required
-                    value={supportForm.email}
-                    onChange={e => setSupportForm({ ...supportForm, email: e.target.value })}
-                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-medium focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-950/30 text-slate-800 dark:text-slate-150 transition-all"
-                    placeholder={t('emailAddressPlaceholder')}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-450 mb-1">{t('faqTitle')}</label>
-                  <textarea
-                    required
-                    rows={4}
-                    value={supportForm.question}
-                    onChange={e => setSupportForm({ ...supportForm, question: e.target.value })}
-                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-medium focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-950/30 text-slate-800 dark:text-slate-150 transition-all resize-none"
-                    placeholder={t('describeIssuePlaceholder')}
-                  ></textarea>
-                </div>
-                <div className="pt-2 flex gap-3">
-                  <button 
-                    type="button" 
-                    onClick={() => setShowSupportModal(false)}
-                    className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all cursor-pointer"
-                  >
-                    {t('common.cancel', 'Cancel')}
-                  </button>
-                  <button 
-                    type="submit" 
-                    disabled={submittingSupport}
-                    className="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all disabled:opacity-50 flex items-center justify-center cursor-pointer"
-                  >
-                    {submittingSupport ? t('common.submitting', 'Submitting...') : t('shop.submitTicket', 'Submit Ticket')}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+          )
+        )}
+
       </div>
+
+      {/* Support Ticket Modal */}
+      {renderSupportModal()}
+
     </div>
   );
 };

@@ -6,6 +6,7 @@ export const te = {
     "analysis": "విశ్లేషణ",
     "learn": "నేర్చుకోండి",
     "bookAppt": "అపాయింట్‌మెంట్",
+    "shop": "షాప్",
     "myOrders": "నా ఆర్డర్‌లు",
     "profile": "ప్రొఫైల్",
     "askMito": "మిటోను అడగండి",

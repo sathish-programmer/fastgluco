@@ -1146,7 +1146,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     if (activeScreen === 'Kitchen') return <KitchenLogScreen onBack={handleCloseActiveScreen} onNavigateToShop={(query) => { setShopQuery(query); setActiveScreen('EnvironmentalShop'); }} />;
     if (activeScreen === 'EnvironmentalShop') {
       if (shopQuery === 'SaferProducts') {
-        return <ShopScreen type="SaferProducts" onBack={() => setActiveScreen('Environmental')} />;
+        return <ShopScreen type="All" onBack={() => setActiveScreen('Environmental')} />;
       }
       return <ShopScreen type="All" defaultSearch={shopQuery} onBack={() => setActiveScreen('Environmental')} />;
     }
@@ -1158,8 +1158,8 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     if (activeScreen === 'Breath') return <BreathLogScreen onBack={handleCloseActiveScreen} />;
     if (activeScreen === 'Joy') return <JoyLogScreen onBack={handleCloseActiveScreen} />;
     if (activeScreen === 'Antioxidants') return <AntioxidantLogScreen onBack={handleCloseActiveScreen} onViewShop={() => setActiveScreen('AntioxidantsShop')} onNavigateToDiagnostics={() => setActiveScreen('CancerScreening')} />;
-    if (activeScreen === 'AntioxidantsShop') return <ShopScreen type="Antioxidants" onBack={() => setActiveScreen('Antioxidants')} />;
-    if (activeScreen === 'SaferProducts') return <ShopScreen type="SaferProducts" onBack={handleCloseActiveScreen} />;
+    if (activeScreen === 'AntioxidantsShop') return <ShopScreen type="All" onBack={() => setActiveScreen('Antioxidants')} />;
+    if (activeScreen === 'SaferProducts') return <ShopScreen type="All" onBack={handleCloseActiveScreen} />;
     if (activeScreen === 'CancerScreening') return <CancerScreeningScreen onBack={handleCloseActiveScreen} />;
     if (activeScreen === 'IndianCancers') return <IndianCancersScreen onBack={handleCloseActiveScreen} />;
     if (activeScreen === 'Obesity') return <ObesityLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} />;
@@ -1169,7 +1169,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     if (activeScreen === 'Genetic') return <GeneticLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} onNavigateToShop={(query) => { setShopQuery(query); setActiveScreen('GeneticShop'); }} />;
     if (activeScreen === 'GeneticShop') return <ShopScreen type="All" defaultSearch={shopQuery} onBack={() => setActiveScreen('Genetic')} />;
     if (activeScreen === 'WigShop') return <ShopScreen type="All" defaultSearch="wig" onBack={handleCloseActiveScreen} />;
-    if (activeScreen === 'Shop') return <ShopScreen type="All" onBack={handleCloseActiveScreen} />;
+    if (activeScreen === 'Shop') return <ShopScreen type="All" onBack={handleCloseActiveScreen} onOpenOrders={() => onNavigateToTab?.('Shop Orders')} />;
     return null;
   };
 

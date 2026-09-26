@@ -6,6 +6,7 @@ export const hi = {
     "analysis": "विश्लेषण",
     "learn": "सीखें",
     "bookAppt": "अपॉइंटमेंट",
+    "shop": "शॉप",
     "myOrders": "मेरे ऑर्डर",
     "profile": "प्रोफ़ाइल",
     "askMito": "माइटो से पूछें",

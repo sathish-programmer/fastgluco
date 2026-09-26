@@ -369,6 +369,7 @@ router.get('/shop/categories', authenticateToken, requireRole(['User', 'SuperAdm
 router.post('/shop/validate-coupon', authenticateToken, requireRole(['User']), ShopController.validateShopCoupon);
 router.post('/shop/check-pincode', authenticateToken, requireRole(['User', 'SuperAdmin', 'Admin', 'Editor']), ShopController.checkPincodeServiceability);
 router.get('/shop/coupons', authenticateToken, requireRole(['User']), ShopController.getAvailableCoupons);
+router.post('/shop/validate-cart', authenticateToken, requireRole(['User']), ShopController.validateCart);
 router.post('/shop/create-order', authenticateToken, requireRole(['User']), ShopController.createOrder);
 router.post('/shop/verify-payment', authenticateToken, requireRole(['User']), ShopController.verifyPayment);
 router.get('/shop/orders/:orderId/invoice', authenticateToken, requireRole(['User', 'SuperAdmin', 'Admin']), ShopController.downloadShopOrderInvoice);
@@ -594,6 +595,7 @@ router.post('/admin/vendors/:id/orders/:orderId/sync-status', authenticateToken,
 router.get('/admin/vendors/:id/settlements', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminGetVendorSettlements);
 router.post('/admin/vendors/:id/settlements/generate', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminGenerateSettlement);
 router.post('/admin/vendors/settlements/:settlementId/finalize', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminFinalizeSettlement);
+router.post('/admin/vendors/settlements/:settlementId/pay', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminRecordSettlementPayout);
 router.get('/admin/vendors/settlements/:settlementId/export-csv', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminExportSettlementCsv);
 router.get('/admin/vendors/:id/sync-logs', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminGetVendorSyncLogs);
 router.post('/admin/orders/:orderId/assign', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminAssignOrder);
@@ -724,6 +726,60 @@ router.get('/patient/orders', authenticateToken, requireRole(['User']), async (r
     res.json(orders);
   } catch (err) {
     res.status(500).json({ message: 'Error fetching patient orders.' });
+  }
+});
+
+// Single patient order retrieval by ID or vendorOrderId for direct app link / web routing
+router.get('/patient/orders/:id', authenticateToken, requireRole(['User']), async (req, res) => {
+  try {
+    const userId = (req as any).user.id;
+    const { id } = req.params;
+    const ShopOrder = require('../models/ShopOrder').default;
+    const mongoose = require('mongoose');
+
+    let query: any = { userId };
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      query.$or = [{ _id: id }, { vendorOrderId: id }];
+    } else {
+      query.vendorOrderId = id;
+    }
+
+    const order = await ShopOrder.findOne(query)
+      .populate('vendorId')
+      .populate({ path: 'products.productId', select: 'image name price' });
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found.' });
+    }
+
+    // Sync live tracking if active
+    if (order.vendorId && order.vendorOrderId && order.deliveryStatus !== 'delivered' && order.deliveryStatus !== 'cancelled') {
+      try {
+        const { VendorAdapterFactory } = require('../services/vendorAdapters/VendorAdapterFactory');
+        const adapter = VendorAdapterFactory.getAdapter(order.vendorId);
+        const statusResult = await adapter.getOrderStatus(order.vendorId, order.vendorOrderId);
+        if (statusResult.success) {
+          order.vendorOrderStatus = statusResult.status;
+          order.deliveryStatus = statusResult.deliveryStatus;
+          if (statusResult.statusMessage) order.vendorStatusMessage = statusResult.statusMessage;
+          if (statusResult.estimatedDeliveryDate) order.estimatedDeliveryDate = statusResult.estimatedDeliveryDate;
+          if (statusResult.trackingNumber) {
+            order.trackingDetails = {
+              courierName: statusResult.courierName || order.trackingDetails?.courierName || 'Blue Dart Express',
+              trackingId: statusResult.trackingNumber,
+              trackingUrl: statusResult.trackingUrl || order.trackingDetails?.trackingUrl || ''
+            };
+          }
+          await order.save();
+        }
+      } catch (syncErr) {
+        // Non-blocking sync error
+      }
+    }
+
+    res.json(order);
+  } catch (err) {
+    res.status(500).json({ message: 'Error retrieving order details.' });
   }
 });
 

@@ -32,8 +32,13 @@ export class InvoiceService {
         doc.fillColor('#64748B').fontSize(10).font('Helvetica-Bold').text(appTagline, 50, 78);
 
         doc.fillColor('#1E293B').fontSize(20).font('Helvetica-Bold').text('INVOICE', 350, 50, { width: 200, align: 'right' });
-        doc.fillColor('#64748B').fontSize(8).font('Helvetica').text(`Invoice/Order ID: ${order._id}`, 300, 72, { width: 250, align: 'right' });
-        doc.text(`Date: ${new Date(order.deliveryDate || order.updatedAt).toLocaleDateString()}`, 300, 92, { width: 250, align: 'right' });
+        doc.fillColor('#64748B').fontSize(8).font('Helvetica').text(`Order ID: ${order.vendorOrderId || order._id}`, 300, 72, { width: 250, align: 'right' });
+        if (order.vendorOrderId) {
+          doc.text(`Internal Ref: #${order._id.toString().slice(-8).toUpperCase()}`, 300, 82, { width: 250, align: 'right' });
+          doc.text(`Date: ${new Date(order.deliveryDate || order.updatedAt).toLocaleDateString()}`, 300, 93, { width: 250, align: 'right' });
+        } else {
+          doc.text(`Date: ${new Date(order.deliveryDate || order.updatedAt).toLocaleDateString()}`, 300, 84, { width: 250, align: 'right' });
+        }
 
         // Divider
         doc.moveTo(50, 115).lineTo(550, 115).strokeColor('#E2E8F0').lineWidth(1).stroke();

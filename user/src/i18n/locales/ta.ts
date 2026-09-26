@@ -6,6 +6,7 @@ export const ta = {
     "analysis": "பகுப்பாய்வு",
     "learn": "கற்க",
     "bookAppt": "முன்பதிவு",
+    "shop": "ஷாப்",
     "myOrders": "என் ஆர்டர்கள்",
     "profile": "சுயவிவரம்",
     "askMito": "மிட்டோவிடம் கேட்க",

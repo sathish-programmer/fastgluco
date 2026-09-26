@@ -191,7 +191,7 @@ export class VendorController {
 
   public static async adminGetVendors(req: Request, res: Response) {
     try {
-      const vendors = await Vendor.find().populate('assignedProducts').sort({ createdAt: -1 });
+      const vendors = await Vendor.find().populate('assignedProducts').sort({ isActive: -1, createdAt: -1 });
 
       // Enrich vendors with live metrics for the listing table
       const enriched = await Promise.all(
@@ -410,8 +410,14 @@ export class VendorController {
       const vendor = await Vendor.findById(id);
       if (!vendor) return res.status(404).json({ message: 'Vendor not found.' });
 
-      const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-      const end = endDate ? new Date(endDate) : new Date();
+      let start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      if (startDate) {
+        start = new Date(new Date(startDate).setHours(0, 0, 0, 0));
+      }
+      let end = endDate ? new Date(endDate) : new Date();
+      if (endDate) {
+        end = new Date(new Date(endDate).setHours(23, 59, 59, 999));
+      }
       const settlementDays = cycleDays || vendor.commissionConfig?.settlementCycleDays || 30;
 
       // Find delivered orders for this vendor in date range that are not yet settled
@@ -546,6 +552,34 @@ export class VendorController {
     }
   }
 
+  public static async adminRecordSettlementPayout(req: Request, res: Response) {
+    try {
+      const { settlementId } = req.params;
+      const { paymentReference, paymentMode, paidAt, bankName, accountNumber, ifsc, notes } = req.body;
+
+      const settlement = await VendorSettlement.findById(settlementId);
+      if (!settlement) return res.status(404).json({ message: 'Settlement not found.' });
+
+      settlement.status = 'PAID';
+      settlement.paidAt = paidAt ? new Date(paidAt) : new Date();
+      settlement.paymentReference = paymentReference || `UTR-${Date.now()}`;
+      if (notes) {
+        settlement.notes = settlement.notes ? `${settlement.notes} | ${notes}` : notes;
+      }
+      await settlement.save();
+
+      // Ensure all associated orders are updated to SETTLED
+      await ShopOrder.updateMany(
+        { _id: { $in: settlement.orderIds } },
+        { $set: { settlementStatus: 'SETTLED', settlementId: settlement._id } }
+      );
+
+      res.json({ message: 'Settlement payout recorded successfully with bank proof.', settlement });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message || 'Error recording payout.' });
+    }
+  }
+
   public static async adminExportSettlementCsv(req: Request, res: Response) {
     try {
       const { settlementId } = req.params;
@@ -616,7 +650,7 @@ export class VendorController {
           email: 'support@arivufoods.com',
           passwordHash,
           phone: '+91 98450 12345',
-          logo: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&auto=format&fit=crop&q=80',
+          logo: '/uploads/vendors/arivu-logo.png',
           website: 'https://www.arivufoods.com',
           businessName: 'Arivu Natural Foods Private Limited',
           licenseNumber: 'FSSAI: 11223333000542',
@@ -665,6 +699,14 @@ export class VendorController {
         // Perform initial catalog sync for Arivu Foods
         const adapter = VendorAdapterFactory.getAdapter(arivu);
         await adapter.syncProducts(arivu);
+      } else {
+        let needsSave = false;
+        if (!arivu.website) { arivu.website = 'https://www.arivufoods.com'; needsSave = true; }
+        if (!arivu.businessAddress) { arivu.businessAddress = 'Plot 42, Peenya Industrial Area, Bangalore 560058, Karnataka'; needsSave = true; }
+        if (!arivu.address) { arivu.address = 'Plot 42, Peenya Industrial Area, Bangalore 560058, Karnataka'; needsSave = true; }
+        if (!arivu.logo) { arivu.logo = '/uploads/vendors/arivu-logo.png'; needsSave = true; }
+        if (!arivu.phone) { arivu.phone = '+91 98450 12345'; needsSave = true; }
+        if (needsSave) await arivu.save();
       }
 
       // 2. Future Vendor Stubs (Babu, Oncocur, Wig, Genomics, Pure and Pure, Swasa Products)
@@ -785,12 +827,29 @@ export class VendorController {
             commissionConfig: fv.commissionConfig,
             apiConfig: fv.apiConfig,
             externalStoreUrl: fv.externalStoreUrl || '',
-            isActive: true
+            isActive: false, // Inactive / Upcoming template by default; only Arivu Foods is currently live
+            deactivatedAt: new Date()
           });
+        } else if (exists.slug !== 'arivu-foods') {
+          // If already created previously with active, ensure it is set to inactive
+          exists.isActive = false;
+          exists.deactivatedAt = exists.deactivatedAt || new Date();
+          await exists.save();
         }
       }
 
-      res.json({ message: 'Arivu Foods and future vendor architectural records seeded successfully.' });
+      // Also ensure any non-Arivu vendors in database are marked inactive by default
+      await Vendor.updateMany(
+        { slug: { $ne: 'arivu-foods' }, name: { $not: /arivu/i } },
+        { $set: { isActive: false } }
+      );
+      // Ensure Arivu is active
+      await Vendor.updateMany(
+        { $or: [{ slug: 'arivu-foods' }, { name: /arivu/i }] },
+        { $set: { isActive: true } }
+      );
+
+      res.json({ message: 'Arivu Foods set as ACTIVE (Live Partner). All other partner templates marked as INACTIVE.' });
     } catch (err: any) {
       res.status(500).json({ message: err.message || 'Error seeding vendors.' });
     }
