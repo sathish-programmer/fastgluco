@@ -374,17 +374,18 @@ export const validateShopCoupon = async (req: Request, res: Response) => {
     const totalDiscountAmount = Number((discountAmount + shopDiscountAmount).toFixed(2));
     
     const discountedAmount = Number(Math.max(0, totalAmount - totalDiscountAmount).toFixed(2));
-    const gstAmount = Number(((discountedAmount * (config?.shopGstPercentage || 0)) / 100).toFixed(2));
+    // Confirmed: Product MRP is inclusive of GST. No additional GST charged to customer.
+    const gstAmount = 0;
 
     const pincode = req.body.pincode || req.body.deliveryPincode || '';
     const address = req.body.address || req.body.shippingAddress;
-    const vendorSlug = req.body.vendorSlug;
+    const vendorSlug = req.body.vendorSlug || 'arivu-foods';
     const userLat = req.body.userLat ? Number(req.body.userLat) : undefined;
     const userLon = req.body.userLon ? Number(req.body.userLon) : undefined;
 
-    const shippingRes = await computeShippingFeeForPincode(pincode, userLat, userLon, address, totalAmount, vendorSlug);
+    const shippingRes = await computeShippingFeeForPincode(pincode, userLat, userLon, address, discountedAmount, vendorSlug);
     const shippingFee = Number((shippingRes.shippingFee || 0).toFixed(2));
-    const finalAmount = Number((discountedAmount + gstAmount + shippingFee).toFixed(2));
+    const finalAmount = Number((discountedAmount + shippingFee).toFixed(2));
 
     return res.status(200).json({
       valid: true,
@@ -403,7 +404,7 @@ export const validateShopCoupon = async (req: Request, res: Response) => {
       isFreeShipping: shippingRes.isFreeShipping,
       freeShippingThreshold: shippingRes.freeShippingThreshold || 499,
       finalAmount,
-      shopGstPercentage: config?.shopGstPercentage || 0,
+      shopGstPercentage: 0,
       shopDiscountPercentage: config?.shopDiscountPercentage || 0
     });
   } catch (error: any) {
@@ -443,6 +444,14 @@ async function autoAssignAndSubmitVendorOrder(order: any) {
 
     const vendor = await Vendor.findById(matchedVendorId);
     if (!vendor) return;
+
+    // Self-heal: ensure Arivu Foods vendor in database always has the verified brand logo
+    if (vendor.slug === 'arivu-foods' || (vendor.name && vendor.name.toLowerCase().includes('arivu'))) {
+      if (!vendor.logo || !vendor.logo.includes('arivu-logo')) {
+        vendor.logo = 'https://app.mitoreboot.in/assets/arivu-logo.png';
+        await vendor.save().catch(() => {});
+      }
+    }
 
     order.vendorId = vendor._id;
 
@@ -536,7 +545,9 @@ export const createOrder = async (req: Request, res: Response) => {
     const currency = user?.currency || 'INR';
     const config = await PaymentGatewayConfig.findOne();
 
-    // 1. INVENTORY STOCK VALIDATION & UPDATE PREPARATION
+    // 1. INVENTORY STOCK VALIDATION & SERVER-SIDE PRICE ENFORCEMENT
+    // Never trust product prices or totalAmount directly received from the mobile frontend!
+    let verifiedSubtotal = 0;
     const productsToUpdate = [];
 
     for (const item of items) {
@@ -545,8 +556,10 @@ export const createOrder = async (req: Request, res: Response) => {
         return res.status(400).json({ message: `Product ${item.name} is no longer available.` });
       }
 
+      let officialUnitPrice = product.price;
+
       if (item.variantName) {
-        // Variant stock check
+        // Variant stock and price check
         const variant = product.variants?.find(v => v.name === item.variantName);
         if (!variant) {
           return res.status(400).json({ message: `Variant ${item.variantName} for product ${item.name} not found.` });
@@ -554,6 +567,7 @@ export const createOrder = async (req: Request, res: Response) => {
         if (variant.stock < item.qty) {
           return res.status(400).json({ message: `Insufficient stock for product ${item.name} (${item.variantName}). Only ${variant.stock} left.` });
         }
+        officialUnitPrice = variant.price;
         productsToUpdate.push({ product, variant, qty: item.qty });
       } else {
         // Main stock check
@@ -562,6 +576,10 @@ export const createOrder = async (req: Request, res: Response) => {
         }
         productsToUpdate.push({ product, qty: item.qty });
       }
+
+      // Enforce the genuine DB price
+      item.price = officialUnitPrice;
+      verifiedSubtotal += Number((officialUnitPrice * item.qty).toFixed(2));
     }
 
     // 2. REDUCE STOCK (AUTO REDUCE STOCK AFTER ORDER)
@@ -577,13 +595,13 @@ export const createOrder = async (req: Request, res: Response) => {
       await update.product.save();
     }
 
-    // 3. CALCULATION
+    // 3. SERVER-SIDE CALCULATION
     let couponDiscountAmount = 0;
     if (couponCode) {
       const coupon = await Coupon.findOne({ code: couponCode, isActive: true, isDeleted: false });
       if (coupon) {
         if (coupon.discountType === 'percentage') {
-          couponDiscountAmount = (totalAmount * coupon.discountValue) / 100;
+          couponDiscountAmount = (verifiedSubtotal * coupon.discountValue) / 100;
         } else {
           couponDiscountAmount = coupon.discountValue;
         }
@@ -595,11 +613,12 @@ export const createOrder = async (req: Request, res: Response) => {
       }
     }
 
-    const shopDiscountAmount = Number(((totalAmount * (config?.shopDiscountPercentage || 0)) / 100).toFixed(2));
+    const shopDiscountAmount = Number(((verifiedSubtotal * (config?.shopDiscountPercentage || 0)) / 100).toFixed(2));
     const totalDiscountAmount = Number((couponDiscountAmount + shopDiscountAmount).toFixed(2));
-    const discountedAmount = Number(Math.max(0, totalAmount - totalDiscountAmount).toFixed(2));
+    const discountedAmount = Number(Math.max(0, verifiedSubtotal - totalDiscountAmount).toFixed(2));
     
-    const gstAmount = Number(((discountedAmount * (config?.shopGstPercentage || 0)) / 100).toFixed(2));
+    // Confirmed: Product MRP is inclusive of GST. No additional GST added on top of product prices.
+    const gstAmount = 0;
     
     // Extract delivery pincode and calculate shipping fee on backend
     const orderPincode = shippingAddress?.postalCode || shippingAddress?.zip || shippingAddress?.pincode || req.body.pincode || '';
@@ -612,14 +631,11 @@ export const createOrder = async (req: Request, res: Response) => {
       userLon,
       shippingAddress,
       discountedAmount,
-      req.body.vendorSlug
+      req.body.vendorSlug || 'arivu-foods'
     );
-    if (!shippingRes.serviceable) {
-      return res.status(400).json({ message: shippingRes.message || `Delivery is unavailable for pincode ${orderPincode}.` });
-    }
 
     const shippingCharge = Number((shippingRes.shippingFee || 0).toFixed(2));
-    const finalAmount = Number((discountedAmount + gstAmount + shippingCharge).toFixed(2));
+    const finalAmount = Number((discountedAmount + shippingCharge).toFixed(2));
 
     // Pre-generate deterministic vendor order ID (MR-XXXXXXXX-XXXX)
     const orderHex = new mongoose.Types.ObjectId().toString().slice(-8).toUpperCase();
@@ -1350,6 +1366,63 @@ export const downloadShopOrderInvoice = async (req: AuthRequest, res: Response) 
   } catch (error: any) {
     console.error('Error downloading shop order invoice:', error);
     return res.status(500).json({ message: error.message || 'Failed to download invoice.' });
+  }
+};
+
+/**
+ * Customer Order Cancellation / Return / Refund Request
+ * Allows customer to raise a cancellation, return, or refund request.
+ * Admin can subsequently review, process gateway refund if eligible, and communicate with Arivu team manually.
+ */
+export const requestOrderCancellation = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    const { orderId } = req.params;
+    const { type, reason } = req.body;
+
+    if (!type || !['cancellation', 'return', 'refund'].includes(type)) {
+      return res.status(400).json({ message: 'Valid request type (cancellation, return, or refund) is required.' });
+    }
+
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({ message: 'Please provide a reason for the request.' });
+    }
+
+    const order = await ShopOrder.findOne({ _id: orderId, userId });
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found.' });
+    }
+
+    if (order.cancellationRequest && order.cancellationRequest.status === 'PENDING') {
+      return res.status(400).json({ message: 'A request is already pending review for this order.' });
+    }
+
+    order.cancellationRequest = {
+      type,
+      reason: reason.trim(),
+      requestedAt: new Date(),
+      status: 'PENDING',
+      refundAmount: order.totalAmount,
+      refundStatus: 'NONE',
+      arivuActionRequired: true
+    };
+
+    order.orderTimeline = order.orderTimeline || [];
+    order.orderTimeline.push({
+      status: `request_${type}`,
+      timestamp: new Date(),
+      comment: `Customer submitted a ${type} request: "${reason.trim()}". Awaiting administrative review.`
+    });
+
+    await order.save();
+    return res.json({ 
+      success: true, 
+      message: `Your ${type} request has been submitted successfully and is under review.`, 
+      order 
+    });
+  } catch (error: any) {
+    console.error('Error processing customer cancellation request:', error);
+    return res.status(500).json({ message: error.message || 'Error submitting cancellation request.' });
   }
 };
 

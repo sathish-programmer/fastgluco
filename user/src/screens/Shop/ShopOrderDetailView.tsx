@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   ArrowLeft, Package, Truck, Download, Star, HelpCircle, 
   RefreshCw, ExternalLink, MapPin, Copy, Check, Clock, ShieldCheck, 
-  Receipt, AlertCircle, RotateCcw
+  Receipt, AlertCircle, RotateCcw, X, AlertTriangle
 } from 'lucide-react';
 import { ProductImage } from './ShopScreen';
 import { useLanguage } from '../../context/LanguageContext';
@@ -23,7 +23,7 @@ interface ShopOrderDetailViewProps {
 }
 
 export const ShopOrderDetailView: React.FC<ShopOrderDetailViewProps> = ({
-  order,
+  order: initialOrder,
   onBack,
   onRateOrder,
   onReorder,
@@ -35,8 +35,9 @@ export const ShopOrderDetailView: React.FC<ShopOrderDetailViewProps> = ({
   hasRated = false,
 }) => {
   const { t, language } = useLanguage();
-  const { apiUrl } = useAuth();
+  const { apiUrl, token } = useAuth();
   const { showToast } = useToast();
+  const [order, setOrder] = useState(initialOrder);
 
   const LOCALE_MAP: Record<string, string> = {
     en: 'en-US',
@@ -49,6 +50,52 @@ export const ShopOrderDetailView: React.FC<ShopOrderDetailViewProps> = ({
 
   const [copiedOrderId, setCopiedOrderId] = useState(false);
   const [copiedTrackingId, setCopiedTrackingId] = useState(false);
+
+  // Cancellation / Return Request Modal State
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelType, setCancelType] = useState<'cancellation' | 'return' | 'refund'>(
+    order.deliveryStatus === 'delivered' ? 'return' : 'cancellation'
+  );
+  const [cancelReasonPreset, setCancelReasonPreset] = useState('');
+  const [cancelReasonText, setCancelReasonText] = useState('');
+  const [submittingCancel, setSubmittingCancel] = useState(false);
+
+  const handleSubmitCancelRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const finalReason = [cancelReasonPreset, cancelReasonText].filter(Boolean).join(' - ').trim();
+    if (!finalReason) {
+      showToast('Please select or write a reason for this request.', 'error');
+      return;
+    }
+    setSubmittingCancel(true);
+    try {
+      const res = await fetch(`${apiUrl}/shop/orders/${order._id}/cancel-request`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          type: cancelType,
+          reason: finalReason
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast(data.message || 'Your request has been submitted.', 'success');
+        if (data.order) {
+          setOrder(data.order);
+        }
+        setShowCancelModal(false);
+      } else {
+        showToast(data.message || 'Failed to submit request.', 'error');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Error submitting request.', 'error');
+    } finally {
+      setSubmittingCancel(false);
+    }
+  };
 
   const handleCopyOrderId = () => {
     navigator.clipboard.writeText(order.vendorOrderId || order._id);
@@ -177,12 +224,11 @@ export const ShopOrderDetailView: React.FC<ShopOrderDetailViewProps> = ({
   const discountAmount = order.discountAmount ?? 0;
 
   return (
-    <div className="pb-28 bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 transition-colors duration-300">
+    <div className="shop-screen-container pb-28 bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 transition-colors duration-300">
       
-      {/* Sticky Header with Safe Area Clearance */}
+      {/* Sticky Header */}
       <div 
-        className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800/80 px-4 pb-3 shadow-xs"
-        style={{ paddingTop: 'calc(env(safe-area-inset-top, 24px) + 12px)' }}
+        className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800/80 px-4 py-2.5 sm:py-3 shadow-xs"
       >
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -297,6 +343,60 @@ export const ShopOrderDetailView: React.FC<ShopOrderDetailViewProps> = ({
             <statusMeta.icon className="h-4 w-4 text-indigo-500 shrink-0" />
             <span className="font-semibold">{statusMeta.desc}</span>
           </div>
+
+          {/* Cancellation / Return Request Status Banner */}
+          {order.cancellationRequest ? (
+            <div className={`p-4 rounded-2xl border text-xs space-y-2 ${
+              order.cancellationRequest.status === 'APPROVED'
+                ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900/50 text-emerald-900 dark:text-emerald-200'
+                : order.cancellationRequest.status === 'REJECTED'
+                ? 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900/50 text-rose-900 dark:text-rose-200'
+                : 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/50 text-amber-900 dark:text-amber-200'
+            }`}>
+              <div className="flex items-center justify-between">
+                <span className="font-black uppercase tracking-wider flex items-center gap-1.5 text-[11px]">
+                  <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  <span>
+                    {order.cancellationRequest.type === 'cancellation' ? 'Order Cancellation' : order.cancellationRequest.type === 'return' ? 'Order Return' : 'Refund'} Request: {order.cancellationRequest.status}
+                  </span>
+                </span>
+                <span className="text-[10px] font-bold opacity-75">
+                  Requested on {new Date(order.cancellationRequest.requestedAt).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric' })}
+                </span>
+              </div>
+              <p className="text-[11px] leading-relaxed opacity-90">
+                Reason: "{order.cancellationRequest.reason}"
+              </p>
+              {order.cancellationRequest.adminNotes && (
+                <p className="text-[11px] font-semibold pt-1 border-t border-amber-200/60 dark:border-amber-900/40">
+                  Update: {order.cancellationRequest.adminNotes}
+                </p>
+              )}
+              {order.cancellationRequest.status === 'PENDING' && (
+                <p className="text-[10px] text-amber-700 dark:text-amber-300 font-medium">
+                  Our customer care team is reviewing your request. For eligible orders, refunds are issued directly to your original payment method.
+                </p>
+              )}
+            </div>
+          ) : !isCancelled ? (
+            <div className="flex items-center justify-between p-3 bg-slate-50/80 dark:bg-slate-950/40 rounded-2xl border border-slate-200/60 dark:border-slate-800 text-xs">
+              <span className="text-slate-500 dark:text-slate-400 font-medium text-[11px]">
+                {isDelivered ? 'Need to return or request a refund for this order?' : 'Need to cancel this order?'}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setCancelType(isDelivered ? 'return' : 'cancellation');
+                  setCancelReasonPreset('');
+                  setCancelReasonText('');
+                  setShowCancelModal(true);
+                }}
+                className="px-3 py-1 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold transition shadow-2xs"
+              >
+                {isDelivered ? 'Request Return / Refund' : 'Request Cancellation'}
+              </button>
+            </div>
+          ) : null}
         </div>
 
         {/* Visual Fulfillment Timeline Card */}
@@ -372,20 +472,20 @@ export const ShopOrderDetailView: React.FC<ShopOrderDetailViewProps> = ({
               </div>
             </div>
 
-            {/* Courier & Tracking Details Box */}
+            {/* Courier & Tracking Details Box matching Arivu schema */}
             {order.trackingDetails?.trackingId ? (
-              <div className="bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100/80 dark:border-indigo-900/40 rounded-2xl p-4 space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100/80 dark:border-indigo-900/40 rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-indigo-100/60 dark:border-indigo-900/30">
                   <div className="flex items-center gap-2">
                     <div className="h-8 w-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center">
                       <Truck className="h-4 w-4" />
                     </div>
                     <div>
                       <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider block">
-                        Shipment Tracking
+                        Shipment & Tracking Information
                       </span>
                       <span className="text-xs font-black text-slate-900 dark:text-slate-100">
-                        {order.trackingDetails.courierName || 'Courier Partner Assigned'}
+                        {order.vendorId?.name || 'Arivu Foods'} Direct Dispatch
                       </span>
                     </div>
                   </div>
@@ -395,18 +495,36 @@ export const ShopOrderDetailView: React.FC<ShopOrderDetailViewProps> = ({
                       href={order.trackingDetails.trackingUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all"
+                      className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black flex items-center gap-1.5 shadow-sm transition-all"
                     >
-                      <span>Track on Courier Site</span>
+                      <span>Track Shipment: [Track Order]</span>
                       <ExternalLink className="h-3.5 w-3.5" />
                     </a>
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 text-xs">
                   <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-indigo-50/80 dark:border-slate-800">
                     <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">
-                      Tracking Number (AWB)
+                      Order Status:
+                    </span>
+                    <span className="font-black text-emerald-600 dark:text-emerald-400 text-xs mt-0.5 block uppercase">
+                      {statusMeta.label}
+                    </span>
+                  </div>
+
+                  <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-indigo-50/80 dark:border-slate-800">
+                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">
+                      Logistics Provider:
+                    </span>
+                    <span className="font-extrabold text-slate-900 dark:text-slate-100 text-xs mt-0.5 block">
+                      {order.trackingDetails.courierName || 'Logistics Provider Assigned'}
+                    </span>
+                  </div>
+
+                  <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-indigo-50/80 dark:border-slate-800">
+                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">
+                      Tracking ID:
                     </span>
                     <div className="flex items-center justify-between gap-2 mt-0.5">
                       <span className="font-mono font-bold text-slate-800 dark:text-slate-200 text-xs">
@@ -416,22 +534,11 @@ export const ShopOrderDetailView: React.FC<ShopOrderDetailViewProps> = ({
                         type="button"
                         onClick={() => handleCopyTracking(order.trackingDetails.trackingId)}
                         className="p-1 text-slate-400 hover:text-indigo-600 rounded transition-colors"
-                        title="Copy tracking number"
+                        title="Copy tracking ID"
                       >
                         {copiedTrackingId ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
                       </button>
                     </div>
-                  </div>
-
-                  <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-indigo-50/80 dark:border-slate-800">
-                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">
-                      Estimated Delivery
-                    </span>
-                    <span className="font-extrabold text-emerald-600 dark:text-emerald-400 text-xs mt-0.5 block">
-                      {order.estimatedDeliveryDate 
-                        ? new Date(order.estimatedDeliveryDate).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric', year: 'numeric' })
-                        : '3 - 5 Business Days'}
-                    </span>
                   </div>
                 </div>
               </div>
@@ -695,6 +802,111 @@ export const ShopOrderDetailView: React.FC<ShopOrderDetailViewProps> = ({
         </div>
 
       </div>
+
+      {/* Customer Cancellation / Return / Refund Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden p-6 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div>
+                <h3 className="text-base font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                  <span>
+                    {cancelType === 'cancellation' ? 'Request Order Cancellation' : cancelType === 'return' ? 'Request Return' : 'Request Refund'}
+                  </span>
+                </h3>
+                <p className="text-xs text-slate-500 font-medium">Order #{order.vendorOrderId || order._id.slice(-8).toUpperCase()}</p>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setShowCancelModal(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitCancelRequest} className="space-y-4 text-xs">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Request Type
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(['cancellation', 'return', 'refund'] as const).map(type => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setCancelType(type)}
+                      className={`py-2 px-2 rounded-xl text-xs font-extrabold capitalize border transition ${
+                        cancelType === type
+                          ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                          : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Reason for Request
+                </label>
+                <select
+                  value={cancelReasonPreset}
+                  onChange={(e) => setCancelReasonPreset(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-slate-100 font-medium focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="">-- Select a reason --</option>
+                  <option value="Ordered by mistake">Ordered by mistake</option>
+                  <option value="Need to change delivery address">Need to change delivery address</option>
+                  <option value="Found alternative / cheaper product">Found alternative / cheaper product</option>
+                  <option value="Expected delivery takes too long">Expected delivery takes too long</option>
+                  <option value="Product arrived damaged or defective">Product arrived damaged or defective</option>
+                  <option value="Incorrect item or quantity received">Incorrect item or quantity received</option>
+                  <option value="Quality concerns or allergic sensitivity">Quality concerns or allergic sensitivity</option>
+                  <option value="Other reason">Other reason</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Additional Details
+                </label>
+                <textarea
+                  rows={3}
+                  value={cancelReasonText}
+                  onChange={(e) => setCancelReasonText(e.target.value)}
+                  placeholder="Please provide any additional comments or context for our team..."
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div className="bg-indigo-50/60 dark:bg-indigo-950/30 p-3 rounded-2xl border border-indigo-100/80 dark:border-indigo-900/40 text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                Requests are reviewed by our fulfillment team. Where eligible, refunds are credited back through our payment gateway to your original payment method.
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCancelModal(false)}
+                  className="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition"
+                >
+                  Close
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingCancel || (!cancelReasonPreset && !cancelReasonText.trim())}
+                  className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black transition shadow-sm disabled:opacity-50"
+                >
+                  {submittingCancel ? 'Submitting...' : 'Submit Request'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );

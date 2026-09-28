@@ -20,6 +20,20 @@ export interface IVendorCommissionConfig {
   standardShippingFee?: number; // 90 for Arivu
 }
 
+export interface IVendorShippingConfig {
+  freeShippingThreshold: number; // default 499 for Arivu Foods
+  shippingChargeBelowThreshold: number; // configurable amount (not hardcoded)
+}
+
+export interface IVendorPollingConfig {
+  frequency: 'TWICE_DAILY' | 'DAILY_TWICE' | 'EVERY_6_HOURS' | 'EVERY_12_HOURS' | 'HOURLY' | 'EVERY_15_MIN' | 'EVERY_4_HOURS' | 'CUSTOM';
+  pollingTimes?: string[]; // e.g. ['09:00', '22:00']
+  cronExpression?: string; // e.g. '0 9,22 * * *'
+  lastPolledAt?: Date;
+  lastPollStatus?: 'SUCCESS' | 'FAILED' | 'IDLE';
+  lastPollMessage?: string;
+}
+
 export interface IVendorApiConfig {
   baseUrl?: string;
   apiKey?: string;
@@ -59,6 +73,8 @@ export interface IVendor extends Document {
   commissionValue?: number;
   capabilities?: IVendorCapabilities;
   commissionConfig?: IVendorCommissionConfig;
+  shippingConfig?: IVendorShippingConfig;
+  pollingConfig?: IVendorPollingConfig;
   apiConfig?: IVendorApiConfig;
   externalStoreUrl?: string; // Amazon affiliate/store link
   agreementNotes?: string;
@@ -101,8 +117,24 @@ const VendorSchema: Schema = new Schema(
       settlementCycleDays: { type: Number, default: 30 },
       customerPaysGatewayFee: { type: Boolean, default: true },
       passThroughShipping: { type: Boolean, default: true },
-      minFreeShippingOrderValue: { type: Number, default: 599 },
-      standardShippingFee: { type: Number, default: 90 }
+      minFreeShippingOrderValue: { type: Number, default: 499 },
+      standardShippingFee: { type: Number, default: 70 }
+    },
+    shippingConfig: {
+      freeShippingThreshold: { type: Number, default: 499 },
+      shippingChargeBelowThreshold: { type: Number, default: 70 }
+    },
+    pollingConfig: {
+      frequency: { 
+        type: String, 
+        enum: ['TWICE_DAILY', 'DAILY_TWICE', 'EVERY_6_HOURS', 'EVERY_12_HOURS', 'HOURLY', 'EVERY_15_MIN', 'EVERY_4_HOURS', 'CUSTOM'], 
+        default: 'TWICE_DAILY' 
+      },
+      pollingTimes: { type: [String], default: ['09:00', '22:00'] },
+      cronExpression: { type: String, default: '0 9,22 * * *' },
+      lastPolledAt: { type: Date },
+      lastPollStatus: { type: String, default: 'IDLE' },
+      lastPollMessage: { type: String, default: '' }
     },
     apiConfig: {
       baseUrl: { type: String, default: 'https://api.arivufoods.com/v1' },
@@ -110,11 +142,14 @@ const VendorSchema: Schema = new Schema(
       apiSecret: { type: String, default: '' },
       webhookSecret: { type: String, default: '' },
       endpoints: {
-        catalogSync: { type: String, default: '/catalog/products' },
-        orderSubmit: { type: String, default: '/orders/submit' },
-        orderStatus: { type: String, default: '/orders/:id/status' },
-        shipmentTracking: { type: String, default: '/orders/:id/tracking' },
-        cancelOrder: { type: String, default: '/orders/:id/cancel' }
+        type: Object,
+        default: () => ({
+          catalogSync: '/catalog/products',
+          orderSubmit: '/orders/submit',
+          orderStatus: '/orders/:id/status',
+          shipmentTracking: '/orders/:id/tracking',
+          cancelOrder: '/orders/:id/cancel'
+        })
       },
       mockMode: { type: Boolean, default: true },
       lastSyncStatus: { type: String, enum: ['IDLE', 'SUCCESS', 'FAILED', 'IN_PROGRESS'], default: 'IDLE' },

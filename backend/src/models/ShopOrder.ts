@@ -79,6 +79,22 @@ export interface IShopOrder extends Document {
     finalVendorPayable: number; // Vendor product share + shipping
   };
 
+  // Customer Cancellation / Return / Refund Workflow
+  cancellationRequest?: {
+    type: 'cancellation' | 'return' | 'refund';
+    reason: string;
+    requestedAt: Date;
+    status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'PROCESSED';
+    adminNotes?: string;
+    reviewedBy?: mongoose.Types.ObjectId;
+    reviewedAt?: Date;
+    refundAmount?: number;
+    refundStatus?: 'NONE' | 'INITIATED' | 'COMPLETED' | 'FAILED';
+    refundTransactionId?: string;
+    arivuActionRequired?: boolean;
+    arivuActionNotes?: string;
+  };
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -168,6 +184,20 @@ const ShopOrderSchema: Schema = new Schema({
     shippingCharge: { type: Number, default: 0 },
     customerGatewayCharge: { type: Number, default: 0 },
     finalVendorPayable: { type: Number, default: 0 }
+  },
+  cancellationRequest: {
+    type: { type: String, enum: ['cancellation', 'return', 'refund'] },
+    reason: { type: String, default: '' },
+    requestedAt: { type: Date },
+    status: { type: String, enum: ['PENDING', 'APPROVED', 'REJECTED', 'PROCESSED'], default: 'PENDING' },
+    adminNotes: { type: String, default: '' },
+    reviewedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    reviewedAt: { type: Date },
+    refundAmount: { type: Number, default: 0 },
+    refundStatus: { type: String, enum: ['NONE', 'INITIATED', 'COMPLETED', 'FAILED'], default: 'NONE' },
+    refundTransactionId: { type: String, default: '' },
+    arivuActionRequired: { type: Boolean, default: false },
+    arivuActionNotes: { type: String, default: '' }
   }
 }, { timestamps: true });
 

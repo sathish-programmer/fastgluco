@@ -92,6 +92,7 @@ export interface IVendorAdapter {
   syncProducts(vendor: IVendor): Promise<IProductSyncResult>;
   submitOrder(vendor: IVendor, order: IShopOrder): Promise<IOrderSubmissionResult>;
   getOrderStatus(vendor: IVendor, vendorOrderId: string): Promise<IOrderStatusResult>;
+  getMultipleOrdersStatus?(vendor: IVendor, vendorOrderIds: string[]): Promise<IOrderStatusResult[]>;
   checkDeliveryEstimate(
     vendor: IVendor, 
     pincode: string, 

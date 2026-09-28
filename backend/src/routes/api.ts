@@ -372,6 +372,7 @@ router.get('/shop/coupons', authenticateToken, requireRole(['User']), ShopContro
 router.post('/shop/validate-cart', authenticateToken, requireRole(['User']), ShopController.validateCart);
 router.post('/shop/create-order', authenticateToken, requireRole(['User']), ShopController.createOrder);
 router.post('/shop/verify-payment', authenticateToken, requireRole(['User']), ShopController.verifyPayment);
+router.post('/shop/orders/:orderId/cancel-request', authenticateToken, requireRole(['User']), ShopController.requestOrderCancellation);
 router.get('/shop/orders/:orderId/invoice', authenticateToken, requireRole(['User', 'SuperAdmin', 'Admin']), ShopController.downloadShopOrderInvoice);
 router.post('/shop/reviews', authenticateToken, requireRole(['User']), ShopController.submitProductReview);
 router.get('/shop/products/:id/reviews', authenticateToken, requireRole(['User']), ShopController.getProductReviews);
@@ -598,6 +599,9 @@ router.post('/admin/vendors/settlements/:settlementId/finalize', authenticateTok
 router.post('/admin/vendors/settlements/:settlementId/pay', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminRecordSettlementPayout);
 router.get('/admin/vendors/settlements/:settlementId/export-csv', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminExportSettlementCsv);
 router.get('/admin/vendors/:id/sync-logs', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminGetVendorSyncLogs);
+router.post('/admin/vendors/:id/poll-orders', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminPollVendorOrders);
+router.post('/admin/vendors/orders/:orderId/review-cancellation', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminReviewCancellationRequest);
+router.put('/admin/vendors/orders/:orderId/manual-status', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminUpdateOrderStatusManually);
 router.post('/admin/orders/:orderId/assign', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminAssignOrder);
 
 

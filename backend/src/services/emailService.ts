@@ -103,7 +103,7 @@ interface ShopCoBrandedTemplateParams {
   displayOrderId: string;
   mainMessage: string;
   statusBadgeText: string;
-  statusBadgeColor?: 'emerald' | 'indigo' | 'amber' | 'blue';
+  statusBadgeColor?: 'emerald' | 'indigo' | 'amber' | 'blue' | 'rose';
   statusRightText?: string;
   summaryRows: Array<{ label: string; value: string }>;
   itemsList?: Array<{ name: string; qty: number; price?: number }>;
@@ -133,7 +133,8 @@ export const generateShopCoBrandedEmailTemplate = ({
     emerald: { bg: '#f0fdf4', text: '#15803d', border: '#bbf7d0', dot: '#22c55e' },
     indigo: { bg: '#eef2ff', text: '#4338ca', border: '#c7d2fe', dot: '#6366f1' },
     amber: { bg: '#fffbeb', text: '#b45309', border: '#fde68a', dot: '#f59e0b' },
-    blue: { bg: '#eff6ff', text: '#1d4ed8', border: '#bfdbfe', dot: '#3b82f6' }
+    blue: { bg: '#eff6ff', text: '#1d4ed8', border: '#bfdbfe', dot: '#3b82f6' },
+    rose: { bg: '#fff1f2', text: '#be123c', border: '#fecdd3', dot: '#f43f5e' }
   }[statusBadgeColor] || { bg: '#f0fdf4', text: '#15803d', border: '#bbf7d0', dot: '#22c55e' };
 
   return `
@@ -173,7 +174,13 @@ export const generateShopCoBrandedEmailTemplate = ({
           <!-- 2. Vendor Logo / Details SECOND -->
           <td align="center" valign="middle" style="padding-left: 14px;">
             ${vendorLogoUrl ? `
-              <img src="${vendorLogoUrl}" alt="${vendorName}" height="38" style="height: 38px; max-height: 44px; max-width: 160px; width: auto; object-fit: contain; display: inline-block; vertical-align: middle; border: 0;" />
+              <table border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto; display: inline-table;">
+                <tr>
+                  <td align="center" valign="middle" style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 3px 8px;">
+                    <img src="${vendorLogoUrl}" alt="${vendorName}" height="32" style="height: 32px; max-height: 36px; max-width: 140px; width: auto; object-fit: contain; display: block; border: 0;" />
+                  </td>
+                </tr>
+              </table>
             ` : `
               <span style="font-size: 17px; font-weight: 900; color: #15803d; letter-spacing: -0.3px;">🌱 ${vendorName}</span>
             `}
@@ -844,7 +851,7 @@ export class EmailService {
     }
   }
 
-  public static async sendOrderEmail(type: 'placed' | 'assigned' | 'accepted' | 'shipped' | 'delivered', orderId: string) {
+  public static async sendOrderEmail(type: 'placed' | 'assigned' | 'accepted' | 'shipped' | 'delivered' | 'cancelled', orderId: string) {
     const { appName, appTagline } = await EmailService.getBranding();
     const ShopOrder = require('../models/ShopOrder').default;
     const ShopProduct = require('../models/ShopProduct').default;
@@ -888,50 +895,69 @@ export class EmailService {
     let appLogoUrl: string | undefined;
     const vendorEmailAttachments: any[] = [];
 
-    // 1. Vendor Logo resolution
-    const vendorLogoField = vendor?.logo;
-    if (vendorLogoField) {
-      if (vendorLogoField.startsWith('http://') || vendorLogoField.startsWith('https://')) {
-        vendorLogoUrl = vendorLogoField;
-      } else {
-        const cleanPath = vendorLogoField.replace(/^\//, '');
-        const localVendorPath = path.join(__dirname, '../../', cleanPath);
-        if (fs.existsSync(localVendorPath)) {
-          vendorEmailAttachments.push({
-            filename: path.basename(localVendorPath),
-            path: localVendorPath,
-            cid: 'vendor-logo'
-          });
-          vendorLogoUrl = 'cid:vendor-logo';
-        } else {
-          vendorLogoUrl = `https://app.mitoreboot.in/${cleanPath}`;
-        }
-      }
-    } else if (vendorName.toLowerCase().includes('arivu')) {
-      const localArivuPath = path.join(__dirname, '../../uploads/vendors/arivu-logo.png');
-      if (fs.existsSync(localArivuPath)) {
+    // 1. Vendor Logo resolution - Always guarantee authentic Arivu Foods brand logo
+    const isArivu = (vendorName && vendorName.toLowerCase().includes('arivu')) || vendor?.slug === 'arivu-foods';
+    const arivuOfficialCdnLogo = 'https://app.mitoreboot.in/assets/arivu-logo.png';
+
+    if (isArivu) {
+      const arivuLocalCandidates = [
+        path.join(__dirname, '../../uploads/vendors/arivu-logo.png'),
+        path.join(process.cwd(), 'uploads/vendors/arivu-logo.png'),
+        path.join(process.cwd(), 'backend/uploads/vendors/arivu-logo.png'),
+        path.join(__dirname, '../../../user/public/assets/arivu-logo.png'),
+        path.join(process.cwd(), '../user/public/assets/arivu-logo.png')
+      ];
+      const validArivuPath = arivuLocalCandidates.find(p => fs.existsSync(p));
+      if (validArivuPath) {
         vendorEmailAttachments.push({
           filename: 'arivu-logo.png',
-          path: localArivuPath,
+          path: validArivuPath,
           cid: 'vendor-logo'
         });
         vendorLogoUrl = 'cid:vendor-logo';
       } else {
-        vendorLogoUrl = 'https://app.mitoreboot.in/assets/arivu-logo.png';
+        vendorLogoUrl = arivuOfficialCdnLogo;
+      }
+    } else {
+      const vendorLogoField = vendor?.logo;
+      if (vendorLogoField) {
+        if (vendorLogoField.startsWith('http://') || vendorLogoField.startsWith('https://')) {
+          vendorLogoUrl = vendorLogoField;
+        } else {
+          const cleanPath = vendorLogoField.replace(/^\//, '');
+          const localVendorPath = path.join(__dirname, '../../', cleanPath);
+          if (fs.existsSync(localVendorPath)) {
+            vendorEmailAttachments.push({
+              filename: path.basename(localVendorPath),
+              path: localVendorPath,
+              cid: 'vendor-logo'
+            });
+            vendorLogoUrl = 'cid:vendor-logo';
+          } else {
+            vendorLogoUrl = `https://api.mitoreboot.in/${cleanPath}`;
+          }
+        }
       }
     }
 
     // 2. MitoReboot App Logo resolution
-    const localAppLogoPath = path.join(__dirname, '../../uploads/app-logo.png');
-    if (fs.existsSync(localAppLogoPath)) {
+    const localAppLogoCandidates = [
+      path.join(__dirname, '../../uploads/app-logo.png'),
+      path.join(process.cwd(), 'uploads/app-logo.png'),
+      path.join(process.cwd(), 'backend/uploads/app-logo.png'),
+      path.join(__dirname, '../../../user/public/assets/mitoreboot-logo.png'),
+      path.join(process.cwd(), '../user/public/assets/mitoreboot-logo.png')
+    ];
+    const validAppLogoPath = localAppLogoCandidates.find(p => fs.existsSync(p));
+    if (validAppLogoPath) {
       vendorEmailAttachments.push({
         filename: 'app-logo.png',
-        path: localAppLogoPath,
+        path: validAppLogoPath,
         cid: 'app-logo'
       });
       appLogoUrl = 'cid:app-logo';
     } else {
-      appLogoUrl = 'https://app.mitoreboot.in/icon.png';
+      appLogoUrl = 'https://app.mitoreboot.in/assets/mitoreboot-logo.png';
     }
 
     const shippingAddressText = order.shippingAddress 
@@ -1218,6 +1244,51 @@ export class EmailService {
         });
       } catch (e) {
         console.error(e);
+      }
+      return;
+    }
+
+    if (type === 'cancelled') {
+      if (order.userId?.email || order.patientEmail) {
+        const recipientEmail = order.patientEmail || order.userId?.email;
+        subject = `Order #${displayOrderId} Cancellation & Refund Update`;
+        const userHtml = generateShopCoBrandedEmailTemplate({
+          vendorName,
+          vendorLogoUrl,
+          appLogoUrl,
+          categoryTag: 'ORDER CANCELLED',
+          heading: 'Order Cancellation Update',
+          displayOrderId,
+          mainMessage: `
+            <p>Hi <strong>${customerName}</strong>,</p>
+            <p>Your cancellation / refund request for order <strong>#${displayOrderId}</strong> has been processed.</p>
+            <p>${order.cancellationRequest?.adminNotes ? `<strong>Note from our team:</strong> ${order.cancellationRequest.adminNotes}` : ''}</p>
+            <p>If you were charged, your refund has been initiated back to your original payment method.</p>
+          `,
+          statusBadgeText: 'Order Cancelled',
+          statusBadgeColor: 'rose',
+          statusRightText: 'Cancelled',
+          summaryRows: [
+            { label: 'Order ID', value: `#${displayOrderId}` },
+            { label: 'Total Amount', value: totalFormatted },
+            { label: 'Refund Status', value: order.cancellationRequest?.refundStatus || 'Processing' }
+          ],
+          itemsList,
+          buttonText: 'View Order Details',
+          buttonUrl: orderViewUrl
+        });
+
+        try {
+          await transporter.sendMail({
+            from: `"${appName} Support" <support@mitoreboot.in>`,
+            to: recipientEmail,
+            subject: `[${appName}] ${subject}`,
+            html: userHtml,
+            attachments: vendorEmailAttachments
+          });
+        } catch (e) {
+          console.error('Error sending cancellation email:', e);
+        }
       }
       return;
     }

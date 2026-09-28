@@ -12,6 +12,9 @@ import { EmailService } from '../services/emailService';
 import { InvoiceService } from '../services/invoiceService';
 import { FCMService } from '../services/fcmService';
 import { NotificationType } from '../models/Notification';
+import { PaymentGatewayConfig } from '../models/PaymentGatewayConfig';
+import Razorpay from 'razorpay';
+import { VendorOrderStatusCron } from '../cron/vendorOrderStatusCron';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_12345!';
 
@@ -38,6 +41,8 @@ export class VendorController {
         commissionValue,
         capabilities,
         commissionConfig,
+        shippingConfig,
+        pollingConfig,
         apiConfig,
         externalStoreUrl,
         agreementNotes
@@ -54,6 +59,9 @@ export class VendorController {
 
       const vendorSlug = slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
       const passwordHash = await bcrypt.hash(password, 10);
+
+      const resolvedFreeThreshold = Number(shippingConfig?.freeShippingThreshold ?? commissionConfig?.minFreeShippingOrderValue ?? 499);
+      const resolvedBelowThresholdFee = Number(shippingConfig?.shippingChargeBelowThreshold ?? commissionConfig?.standardShippingFee ?? 70);
 
       const vendor = new Vendor({
         name,
@@ -86,13 +94,22 @@ export class VendorController {
           settlementCycleDays: 30,
           customerPaysGatewayFee: true,
           passThroughShipping: true,
-          minFreeShippingOrderValue: 599,
-          standardShippingFee: 90
+          minFreeShippingOrderValue: resolvedFreeThreshold,
+          standardShippingFee: resolvedBelowThresholdFee
+        },
+        shippingConfig: shippingConfig || {
+          freeShippingThreshold: resolvedFreeThreshold,
+          shippingChargeBelowThreshold: resolvedBelowThresholdFee
+        },
+        pollingConfig: pollingConfig || {
+          frequency: 'TWICE_DAILY',
+          pollingTimes: ['09:00', '22:00'],
+          cronExpression: '0 9,22 * * *'
         },
         apiConfig: apiConfig || {
-          baseUrl: 'https://api.arivufoods.com/v1',
+          baseUrl: 'https://backend.arivufoods.com',
           apiKey: '',
-          mockMode: true,
+          mockMode: false,
           lastSyncStatus: 'IDLE',
           healthStatus: 'HEALTHY'
         },
@@ -128,6 +145,8 @@ export class VendorController {
         commissionValue,
         capabilities,
         commissionConfig,
+        shippingConfig,
+        pollingConfig,
         apiConfig,
         externalStoreUrl,
         agreementNotes,
@@ -153,20 +172,95 @@ export class VendorController {
       if (externalStoreUrl !== undefined) vendor.externalStoreUrl = externalStoreUrl;
       if (agreementNotes !== undefined) vendor.agreementNotes = agreementNotes;
 
-      if (capabilities) {
-        vendor.capabilities = { ...vendor.capabilities, ...capabilities };
+      if (capabilities && typeof capabilities === 'object') {
+        vendor.capabilities = {
+          productType: capabilities.productType ?? vendor.capabilities?.productType ?? 'MULTIPLE',
+          productSyncMethod: capabilities.productSyncMethod ?? vendor.capabilities?.productSyncMethod ?? 'API',
+          checkoutType: capabilities.checkoutType ?? vendor.capabilities?.checkoutType ?? 'INTERNAL',
+          fulfillmentType: capabilities.fulfillmentType ?? vendor.capabilities?.fulfillmentType ?? 'API',
+          deliveryManagedBy: capabilities.deliveryManagedBy ?? vendor.capabilities?.deliveryManagedBy ?? 'VENDOR',
+          trackingMethod: capabilities.trackingMethod ?? vendor.capabilities?.trackingMethod ?? 'API_POLLING'
+        };
+        vendor.markModified('capabilities');
       }
 
-      if (commissionConfig) {
-        vendor.commissionConfig = { ...vendor.commissionConfig, ...commissionConfig };
-        // Sync root commissionValue if rate is provided
-        if (commissionConfig.rate !== undefined) {
-          vendor.commissionValue = commissionConfig.rate;
+      if (commissionConfig && typeof commissionConfig === 'object') {
+        const rate = commissionConfig.rate !== undefined ? Number(commissionConfig.rate) : (vendor.commissionConfig?.rate ?? 30);
+        vendor.commissionConfig = {
+          rate,
+          type: commissionConfig.type || vendor.commissionConfig?.type || 'PERCENTAGE',
+          gstOnCommissionRate: commissionConfig.gstOnCommissionRate !== undefined ? Number(commissionConfig.gstOnCommissionRate) : (vendor.commissionConfig?.gstOnCommissionRate ?? 18),
+          settlementCycleDays: commissionConfig.settlementCycleDays !== undefined ? Number(commissionConfig.settlementCycleDays) : (vendor.commissionConfig?.settlementCycleDays ?? 30),
+          customerPaysGatewayFee: commissionConfig.customerPaysGatewayFee !== undefined ? Boolean(commissionConfig.customerPaysGatewayFee) : (vendor.commissionConfig?.customerPaysGatewayFee ?? true),
+          passThroughShipping: commissionConfig.passThroughShipping !== undefined ? Boolean(commissionConfig.passThroughShipping) : (vendor.commissionConfig?.passThroughShipping ?? true),
+          minFreeShippingOrderValue: commissionConfig.minFreeShippingOrderValue !== undefined ? Number(commissionConfig.minFreeShippingOrderValue) : (vendor.commissionConfig?.minFreeShippingOrderValue ?? 499),
+          standardShippingFee: commissionConfig.standardShippingFee !== undefined ? Number(commissionConfig.standardShippingFee) : (vendor.commissionConfig?.standardShippingFee ?? 70)
+        };
+        vendor.commissionValue = rate;
+        vendor.markModified('commissionConfig');
+      }
+
+      if (shippingConfig && typeof shippingConfig === 'object') {
+        const freeShippingThreshold = Number(shippingConfig.freeShippingThreshold ?? vendor.shippingConfig?.freeShippingThreshold ?? 499);
+        const shippingChargeBelowThreshold = Number(shippingConfig.shippingChargeBelowThreshold ?? vendor.shippingConfig?.shippingChargeBelowThreshold ?? 70);
+        vendor.shippingConfig = {
+          freeShippingThreshold,
+          shippingChargeBelowThreshold
+        };
+        if (vendor.commissionConfig) {
+          vendor.commissionConfig.minFreeShippingOrderValue = freeShippingThreshold;
+          vendor.commissionConfig.standardShippingFee = shippingChargeBelowThreshold;
         }
+        vendor.markModified('shippingConfig');
       }
 
-      if (apiConfig) {
-        vendor.apiConfig = { ...vendor.apiConfig, ...apiConfig };
+      if (pollingConfig && typeof pollingConfig === 'object') {
+        let freq = pollingConfig.frequency || vendor.pollingConfig?.frequency || 'TWICE_DAILY';
+        if (freq === 'DAILY_TWICE') freq = 'TWICE_DAILY';
+        vendor.pollingConfig = {
+          frequency: freq,
+          pollingTimes: pollingConfig.pollingTimes || vendor.pollingConfig?.pollingTimes || ['09:00', '22:00'],
+          cronExpression: pollingConfig.cronExpression || vendor.pollingConfig?.cronExpression || '0 9,22 * * *',
+          lastPolledAt: vendor.pollingConfig?.lastPolledAt,
+          lastPollStatus: vendor.pollingConfig?.lastPollStatus || 'IDLE',
+          lastPollMessage: vendor.pollingConfig?.lastPollMessage || ''
+        };
+        vendor.markModified('pollingConfig');
+      }
+
+      if (apiConfig && typeof apiConfig === 'object') {
+        // Retain existing real secrets if user submits masked bullets '••••••••' or empty string
+        const isMaskedOrEmpty = (val: any) => !val || /^[•*]+$/.test(String(val).trim());
+        const safeApiKey = !isMaskedOrEmpty(apiConfig.apiKey) ? apiConfig.apiKey : vendor.apiConfig?.apiKey;
+        const safeApiSecret = !isMaskedOrEmpty(apiConfig.apiSecret) ? apiConfig.apiSecret : vendor.apiConfig?.apiSecret;
+        const safeWebhookSecret = !isMaskedOrEmpty(apiConfig.webhookSecret) ? apiConfig.webhookSecret : vendor.apiConfig?.webhookSecret;
+
+        const defaultEndpoints = {
+          catalogSync: '/catalog/products',
+          orderSubmit: '/orders/submit',
+          orderStatus: '/orders/:id/status',
+          shipmentTracking: '/orders/:id/tracking',
+          cancelOrder: '/orders/:id/cancel'
+        };
+
+        const existingEndpoints = vendor.apiConfig?.endpoints ? (typeof vendor.apiConfig.endpoints === 'object' ? vendor.apiConfig.endpoints : {}) : defaultEndpoints;
+        const mergedEndpoints = (apiConfig.endpoints && typeof apiConfig.endpoints === 'object')
+          ? { ...existingEndpoints, ...apiConfig.endpoints }
+          : existingEndpoints;
+
+        vendor.apiConfig = {
+          baseUrl: apiConfig.baseUrl !== undefined ? apiConfig.baseUrl : (vendor.apiConfig?.baseUrl || 'https://backend.arivufoods.com'),
+          apiKey: safeApiKey || '',
+          apiSecret: safeApiSecret || '',
+          webhookSecret: safeWebhookSecret || '',
+          mockMode: apiConfig.mockMode !== undefined ? Boolean(apiConfig.mockMode) : (vendor.apiConfig?.mockMode ?? false),
+          lastSyncStatus: vendor.apiConfig?.lastSyncStatus || 'IDLE',
+          lastSyncAt: vendor.apiConfig?.lastSyncAt,
+          lastSyncError: vendor.apiConfig?.lastSyncError || '',
+          healthStatus: vendor.apiConfig?.healthStatus || 'HEALTHY',
+          endpoints: mergedEndpoints
+        };
+        vendor.markModified('apiConfig');
       }
 
       if (password) {
@@ -218,6 +312,12 @@ export class VendorController {
             0
           );
 
+          // Security: Never leak full raw backend API key
+          if (vendorObj.apiConfig?.apiKey) {
+            vendorObj.apiConfig.apiKey = '••••••••••••';
+          }
+          delete (vendorObj as any).passwordHash;
+
           return {
             ...vendorObj,
             metrics: {
@@ -245,6 +345,12 @@ export class VendorController {
       const vendor = await Vendor.findById(id).populate('assignedProducts');
       if (!vendor) return res.status(404).json({ message: 'Vendor not found.' });
 
+      const vendorObj = vendor.toObject();
+      if (vendorObj.apiConfig?.apiKey) {
+        vendorObj.apiConfig.apiKey = '••••••••••••';
+      }
+      delete (vendorObj as any).passwordHash;
+
       // Fetch products
       const products = await ShopProduct.find({
         $or: [{ vendorId: vendor._id }, { _id: { $in: vendor.assignedProducts || [] } }]
@@ -260,7 +366,7 @@ export class VendorController {
       const settlements = await VendorSettlement.find({ vendorId: vendor._id }).sort({ createdAt: -1 });
 
       res.json({
-        vendor,
+        vendor: vendorObj,
         products,
         orders,
         syncLogs,
@@ -1366,6 +1472,164 @@ export class VendorController {
       });
     } catch (err: any) {
       res.status(500).json({ message: err.message || 'Error retrieving live order tracking.' });
+    }
+  }
+
+  /**
+   * Admin Trigger: Immediately polls active orders for a vendor (e.g. Arivu Foods)
+   * POST /api/admin/vendors/:id/poll-orders
+   */
+  public static async adminPollVendorOrders(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const vendor = await Vendor.findById(id);
+      if (!vendor) return res.status(404).json({ message: 'Vendor not found.' });
+
+      const result = await VendorOrderStatusCron.syncActiveVendorOrders(vendor._id.toString(), true);
+      res.json({
+        success: true,
+        message: `Vendor status poll completed. Checked ${result?.polledCount || 0} order(s), updated ${result?.updatedCount || 0}.`,
+        result
+      });
+    } catch (err: any) {
+      console.error('Error in adminPollVendorOrders:', err);
+      res.status(500).json({ message: err.message || 'Error polling vendor orders.' });
+    }
+  }
+
+  /**
+   * Admin Review: Process Customer Cancellation / Return / Refund Request
+   * Supports manual review, optional Razorpay gateway refund, and manual coordination with Arivu team.
+   * POST /api/admin/vendors/orders/:orderId/review-cancellation
+   */
+  public static async adminReviewCancellationRequest(req: Request, res: Response) {
+    try {
+      const { orderId } = req.params;
+      const {
+        action, // 'APPROVE' | 'REJECT'
+        adminNotes,
+        refundAmount,
+        processGatewayRefund,
+        arivuActionRequired,
+        arivuActionNotes,
+        newDeliveryStatus
+      } = req.body;
+
+      if (!action || !['APPROVE', 'REJECT'].includes(action)) {
+        return res.status(400).json({ message: 'Action must be either APPROVE or REJECT.' });
+      }
+
+      const order = await ShopOrder.findById(orderId).populate('vendorId');
+      if (!order) return res.status(404).json({ message: 'Order not found.' });
+
+      if (!order.cancellationRequest) {
+        return res.status(400).json({ message: 'No customer cancellation or refund request found on this order.' });
+      }
+
+      order.cancellationRequest.status = action === 'APPROVE' ? 'APPROVED' : 'REJECTED';
+      order.cancellationRequest.adminNotes = adminNotes || '';
+      order.cancellationRequest.reviewedBy = (req as any).user?.id;
+      order.cancellationRequest.reviewedAt = new Date();
+      order.cancellationRequest.arivuActionRequired = !!arivuActionRequired;
+      order.cancellationRequest.arivuActionNotes = arivuActionNotes || '';
+
+      let refundMessage = '';
+      if (action === 'APPROVE') {
+        if (newDeliveryStatus) {
+          order.deliveryStatus = newDeliveryStatus;
+        } else if (order.cancellationRequest.type === 'cancellation') {
+          order.deliveryStatus = 'cancelled';
+          order.status = 'failed';
+        }
+
+        // Process Gateway Refund via Razorpay if requested and payment ID exists
+        if (processGatewayRefund && order.razorpayPaymentId) {
+          try {
+            const config = await PaymentGatewayConfig.findOne();
+            if (config && config.razorpayKeyId && config.razorpayKeySecret) {
+              const razorpay = new Razorpay({
+                key_id: config.razorpayKeyId,
+                key_secret: config.razorpayKeySecret
+              });
+              const amountInPaise = Math.round((Number(refundAmount) || order.totalAmount) * 100);
+              const refund: any = await razorpay.payments.refund(order.razorpayPaymentId, {
+                amount: amountInPaise,
+                notes: {
+                  orderId: order._id.toString(),
+                  vendorOrderId: order.vendorOrderId || '',
+                  reason: adminNotes || 'Admin approved refund'
+                }
+              });
+              order.cancellationRequest.refundAmount = Number(refundAmount) || order.totalAmount;
+              order.cancellationRequest.refundStatus = 'COMPLETED';
+              order.cancellationRequest.refundTransactionId = refund.id;
+              refundMessage = ` Gateway refund of ₹${Number(refundAmount) || order.totalAmount} processed (ID: ${refund.id}).`;
+            } else {
+              order.cancellationRequest.refundStatus = 'FAILED';
+              refundMessage = ' Payment gateway credentials missing. Recorded manual refund required.';
+            }
+          } catch (refundErr: any) {
+            console.error('Error processing Razorpay refund:', refundErr);
+            order.cancellationRequest.refundStatus = 'FAILED';
+            refundMessage = ` Refund gateway error: ${refundErr.message}.`;
+          }
+        }
+      }
+
+      order.orderTimeline = order.orderTimeline || [];
+      order.orderTimeline.push({
+        status: `cancellation_${action.toLowerCase()}`,
+        timestamp: new Date(),
+        comment: `Admin ${action.toLowerCase()}d ${order.cancellationRequest.type} request.${refundMessage}${
+          arivuActionRequired ? ` Manual Arivu action required: ${arivuActionNotes || 'Yes'}.` : ''
+        }`
+      });
+
+      await order.save();
+
+      // Dispatch email notification if cancelled
+      if (order.patientEmail && action === 'APPROVE') {
+        EmailService.sendOrderEmail('cancelled', order._id.toString()).catch(console.error);
+      }
+
+      res.json({
+        success: true,
+        message: `Request ${action.toLowerCase()}d successfully.${refundMessage}`,
+        order
+      });
+    } catch (err: any) {
+      console.error('Error in adminReviewCancellationRequest:', err);
+      res.status(500).json({ message: err.message || 'Error reviewing cancellation request.' });
+    }
+  }
+
+  /**
+   * Admin Manual Order Status Update
+   * PUT /api/admin/vendors/orders/:orderId/manual-status
+   */
+  public static async adminUpdateOrderStatusManually(req: Request, res: Response) {
+    try {
+      const { orderId } = req.params;
+      const { deliveryStatus, vendorOrderStatus, comment } = req.body;
+
+      const order = await ShopOrder.findById(orderId);
+      if (!order) return res.status(404).json({ message: 'Order not found.' });
+
+      if (deliveryStatus) order.deliveryStatus = deliveryStatus;
+      if (vendorOrderStatus) order.vendorOrderStatus = vendorOrderStatus;
+
+      order.orderTimeline = order.orderTimeline || [];
+      order.orderTimeline.push({
+        status: deliveryStatus || order.deliveryStatus || 'status_update',
+        timestamp: new Date(),
+        comment: comment || `Admin manually updated order status to ${deliveryStatus || 'updated'}.`
+      });
+
+      await order.save();
+      res.json({ success: true, message: 'Order status updated manually.', order });
+    } catch (err: any) {
+      console.error('Error in adminUpdateOrderStatusManually:', err);
+      res.status(500).json({ message: err.message || 'Error updating order status.' });
     }
   }
 }

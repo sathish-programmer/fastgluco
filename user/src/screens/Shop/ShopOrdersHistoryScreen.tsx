@@ -491,12 +491,11 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
   });
 
   return (
-    <div className="pb-28 bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 transition-colors duration-300">
+    <div className="shop-screen-container pb-28 bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 transition-colors duration-300">
       
-      {/* Sticky Header with Safe Notch Clearance */}
+      {/* Sticky Header */}
       <div 
-        className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800/80 px-4 pb-3 shadow-xs"
-        style={{ paddingTop: 'calc(env(safe-area-inset-top, 24px) + 12px)' }}
+        className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800/80 px-4 py-2.5 sm:py-3 shadow-xs"
       >
         <div className="max-w-5xl mx-auto flex justify-between items-center gap-3">
           <div>

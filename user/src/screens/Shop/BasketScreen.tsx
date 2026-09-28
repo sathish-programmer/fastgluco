@@ -452,12 +452,11 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
   };
 
   return (
-    <div className="pb-28 bg-slate-50/50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 transition-colors duration-300">
+    <div className="shop-screen-container pb-28 bg-slate-50/50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 transition-colors duration-300">
       
       {/* Sleek Top Navigation Bar */}
       <div 
-        className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800/80 px-4 pb-3 shadow-xs"
-        style={{ paddingTop: 'calc(env(safe-area-inset-top, 24px) + 8px)' }}
+        className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800/80 px-4 py-2.5 sm:py-3 shadow-xs"
       >
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -482,7 +481,7 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
         </div>
       </div>
 
-      <div className="px-4 max-w-6xl mx-auto pt-6">
+      <div className="px-4 max-w-6xl mx-auto pt-3 sm:pt-4">
 
       {ordered ? (
         /* Order Placed Success View */
@@ -965,10 +964,15 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
                     <span>{city && state ? `${city}, ${state}` : 'Pan-India Delivery'}</span>
                   </span>
                   <span className="font-black uppercase text-[10px] text-emerald-600 dark:text-emerald-400">
-                    {shippingFee === 0 ? 'FREE Shipping' : `₹${shippingFee.toFixed(2)}`}
+                    {shippingFee === 0 ? 'FREE Shipping' : `₹${shippingFee.toFixed(0)} (FREE above ₹499)`}
                   </span>
                 </div>
                 <p className="text-[10px] text-emerald-800/80 dark:text-emerald-400/80 leading-relaxed font-medium">
+                  {subtotal < 499 && (
+                    <span className="font-bold text-emerald-700 dark:text-emerald-300 block mb-0.5">
+                      💡 Add {curr}{(499 - subtotal).toFixed(0)} more to get FREE delivery!
+                    </span>
+                  )}
                   {deliveryEstimate ? `Estimated Timeline: ${deliveryEstimate}${deliveryCourier ? ` via ${deliveryCourier}` : ''}. ` : ''}
                   Dispatched directly from fresh certified stock by Arivu Foods. Tracking ID is issued upon dispatch.
                 </p>
@@ -995,8 +999,13 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
                   </div>
                 )}
 
-                <div className="flex justify-between text-slate-500 dark:text-slate-400 font-medium pb-3 border-b border-slate-100 dark:border-slate-800">
-                  <span>Standard Shipping</span>
+                <div className="flex justify-between items-baseline text-slate-500 dark:text-slate-400 font-medium pb-3 border-b border-slate-100 dark:border-slate-800">
+                  <div>
+                    <span>Standard Shipping</span>
+                    <span className="text-[10px] text-slate-400 block font-normal">
+                      {subtotal >= 499 ? 'Free on orders above ₹499' : 'Free above ₹499 (₹70 below ₹499)'}
+                    </span>
+                  </div>
                   {shippingFee > 0 ? (
                     <span className="font-bold text-slate-800 dark:text-slate-200">+{curr}{shippingFee.toFixed(2)}</span>
                   ) : (

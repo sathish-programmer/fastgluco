@@ -618,12 +618,11 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
       : null;
 
     return (
-      <div className="pb-32 bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 transition-colors duration-300">
+      <div className="shop-screen-container pb-32 bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 transition-colors duration-300">
 
         {/* Sticky Header Bar */}
         <div
-          className="sticky top-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800/80 px-4 pb-3 shadow-xs"
-          style={{ paddingTop: 'calc(env(safe-area-inset-top, 24px) + 12px)' }}
+          className="sticky top-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800/80 px-4 py-2.5 sm:py-3 shadow-xs"
         >
           <div className="max-w-5xl mx-auto flex items-center justify-between gap-3">
             <button
@@ -1143,12 +1142,11 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
   // MAIN STORE CATALOG & PRODUCT LIST VIEW
   // ==========================================
   return (
-    <div className="pb-28 bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 transition-colors duration-300">
+    <div className="shop-screen-container pb-28 bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 transition-colors duration-300">
 
-      {/* Sticky Notch-Safe Header */}
+      {/* Sticky Shop Header */}
       <div
-        className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800/80 px-4 pb-3 shadow-xs"
-        style={{ paddingTop: 'calc(env(safe-area-inset-top, 24px) + 12px)' }}
+        className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800/80 px-4 py-2.5 sm:py-3 shadow-xs"
       >
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -1266,10 +1264,10 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
               <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold">
                 {isDeliveryServiceable === false ? (
                   <span className="text-rose-500 font-bold">Unserviceable</span>
-                ) : deliveryFee > 0 ? (
-                  <span>Shipping: ₹{deliveryFee}</span>
+                ) : deliveryFee === 0 ? (
+                  <span>✓ Free Delivery (Orders above ₹499)</span>
                 ) : (
-                  <>✓ Free delivery above ₹499</>
+                  <span>Free delivery above ₹499 (₹70 below ₹499)</span>
                 )}
               </span>
               <span>•</span>

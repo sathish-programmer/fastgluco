@@ -550,84 +550,102 @@ export class ArivuFoodsAdapter implements IVendorAdapter {
   }
 
   /**
-   * Fetch official state-wise shipping pricing and free shipping threshold directly from Arivu Foods live API.
-   * Cached in-memory for 10 minutes to maintain fast response times.
+   * Batch order status check using documented partner endpoint: POST /api/mitoreboot/orders/status
    */
-  public async getOfficialShippingConfig(vendor?: IVendor): Promise<{
-    statePrices: Record<string, number>;
-    freeShippingThreshold: number;
-  }> {
-    if (cachedShippingConfig && Date.now() - cachedShippingConfig.timestamp < SHIPPING_CONFIG_TTL) {
-      return cachedShippingConfig;
-    }
-
-    const baseUrl = (vendor?.apiConfig?.baseUrl || 'https://backend.arivufoods.com').replace(/\/+$/, '');
-    const shippingEndpoint = (vendor?.apiConfig?.endpoints as any)?.shipping || '/api/common/shipping';
-    const shopApiKey = (vendor?.apiConfig as any)?.shopApiKey || 'shop_arivu_sk_6e0bf4b02de26929f2274bdd8816a34891be4ef9bb3c3f5b';
+  public async getMultipleOrdersStatus(vendor: IVendor, vendorOrderIds: string[]): Promise<IOrderStatusResult[]> {
+    if (!vendorOrderIds || vendorOrderIds.length === 0) return [];
+    const baseUrl = this.getBaseUrl(vendor).replace(/\/+$/, '');
+    const apiKey = this.getApiKey(vendor);
 
     try {
-      const url = `${baseUrl}${shippingEndpoint}`;
-      const response = await fetch(url, {
+      const endpoint = `${baseUrl}/api/mitoreboot/orders/status`;
+      const response = await fetch(endpoint, {
+        method: 'POST',
         headers: {
-          'accept': 'application/json, text/plain, */*',
-          'origin': 'https://www.arivufoods.com',
-          'referer': 'https://www.arivufoods.com/',
-          'x-shop-api-key': shopApiKey
+          'Content-Type': 'application/json',
+          'accept': 'application/json',
+          'x-mitoreboot-api-key': apiKey
         },
-        signal: AbortSignal.timeout(6000)
+        body: JSON.stringify({ orderIds: vendorOrderIds })
       });
 
-      if (response.ok) {
-        const data = (await response.json()) as any;
-        if (data && data.statePrices) {
-          cachedShippingConfig = {
-            statePrices: data.statePrices,
-            freeShippingThreshold: Number(data.freeShippingThreshold) || 499,
-            timestamp: Date.now()
-          };
-          return cachedShippingConfig;
-        }
+      const resJson: any = await response.json();
+      if (!response.ok || !resJson.success || !Array.isArray(resJson.data)) {
+        throw new Error(resJson.message || `Batch status check failed with HTTP ${response.status}`);
       }
-    } catch (err: any) {
-      console.warn('[ArivuFoodsAdapter] Warning fetching live shipping rates:', err.message);
-    }
 
-    // Official Arivu default rate fallback
-    return {
-      statePrices: {
-        'Karnataka': 69,
-        'Tamil Nadu': 80,
-        'Telangana': 80,
-        'Andhra Pradesh': 85,
-        'Goa': 90,
-        'Pondicherry': 90,
-        'Kerala': 95,
-        'Maharashtra': 100,
-        'Madhya Pradesh': 100,
-        'Chhattisgarh': 100,
-        'Gujarat': 110,
-        'Jharkhand': 110,
-        'Odisha': 110,
-        'Bihar': 120,
-        'Rajasthan': 120,
-        'Delhi': 130,
-        'Haryana': 130,
-        'Uttar Pradesh': 130,
-        'West Bengal': 130,
-        'Punjab': 140,
-        'Chandigarh': 140,
-        'Uttarakhand': 140,
-        'Himachal Pradesh': 140,
-        'Assam': 150
-      },
-      freeShippingThreshold: 499
-    };
+      return resJson.data.map((orderData: any) => {
+        const rawStatus = (orderData.orderStatus || '').trim();
+        let deliveryStatus: any = 'processing';
+
+        switch (rawStatus.toLowerCase()) {
+          case 'ordered':
+            deliveryStatus = 'assigned';
+            break;
+          case 'packed':
+            deliveryStatus = 'packed';
+            break;
+          case 'shipped':
+            deliveryStatus = 'shipped';
+            break;
+          case 'delivered':
+            deliveryStatus = 'delivered';
+            break;
+          case 'rejected':
+            deliveryStatus = 'cancelled';
+            break;
+          default:
+            deliveryStatus = 'processing';
+        }
+
+        const shipment = orderData.shipmentDetails || {};
+        const trackerId = (shipment.trackerId || '').trim();
+        const logisticsProvider = (shipment.logisticsProvider || '').trim();
+        let resolvedTrackingUrl = (shipment.trackerURL || '').trim();
+
+        if (!resolvedTrackingUrl && trackerId) {
+          const lowerCourier = logisticsProvider.toLowerCase();
+          if (lowerCourier.includes('bluedart') || lowerCourier.includes('blue dart')) {
+            resolvedTrackingUrl = `https://www.bluedart.com/tracking?numbers=${encodeURIComponent(trackerId)}`;
+          } else if (lowerCourier.includes('delhivery')) {
+            resolvedTrackingUrl = `https://www.delhivery.com/track/package/${encodeURIComponent(trackerId)}`;
+          } else if (lowerCourier.includes('dtdc')) {
+            resolvedTrackingUrl = `https://www.dtdc.in/tracking/shipment-tracking.asp?strCnno=${encodeURIComponent(trackerId)}`;
+          }
+        }
+
+        return {
+          success: true,
+          isMock: false,
+          vendorOrderId: orderData.orderId,
+          status: rawStatus.toUpperCase(),
+          deliveryStatus,
+          trackingNumber: trackerId || undefined,
+          courierName: logisticsProvider || undefined,
+          trackingUrl: resolvedTrackingUrl || undefined,
+          statusMessage: `Vendor Status: ${rawStatus}${logisticsProvider ? ` via ${logisticsProvider}` : ''}`
+        };
+      });
+    } catch (err: any) {
+      console.warn('[ArivuFoodsAdapter] Batch status check error, falling back to individual calls:', err.message);
+      // Fallback to checking individually
+      const results: IOrderStatusResult[] = [];
+      for (const id of vendorOrderIds) {
+        const single = await this.getOrderStatus(vendor, id);
+        results.push(single);
+      }
+      return results;
+    }
   }
 
   /**
    * Pincode Serviceability & Delivery Estimation
-   * Resolves real-time Indian postal locality, district/city, and state.
-   * Matches resolved state against Arivu Foods' live statePrices matrix and enforces official free shipping rules.
+   * Confirmed Requirements:
+   * 1. Arivu provides Pan-India delivery. There is no pincode/delivery availability API.
+   *    Pincode should be stored only as customer address information. No pincode coverage validation is required.
+   * 2. Product MRP is inclusive of GST.
+   * 3. Orders with value >= ₹499 have FREE shipping.
+   * 4. Shipping charge below threshold is configurable via Admin -> Vendor Management -> Arivu Foods -> Shipping Configuration.
    */
   public async checkDeliveryEstimate(
     vendor: IVendor,
@@ -637,67 +655,18 @@ export class ArivuFoodsAdapter implements IVendorAdapter {
   ): Promise<any> {
     const cleanPincode = (pincode || '').toString().trim().replace(/\D/g, '');
 
-    if (!cleanPincode || cleanPincode.length !== 6) {
-      return {
-        serviceable: false,
-        pincode: cleanPincode,
-        message: 'Please enter a valid 6-digit Indian delivery pincode.',
-        hasDedicatedApi: true
-      };
-    }
+    // Read dynamic shipping configuration from vendor settings (never hardcoded)
+    const freeThreshold = vendor?.shippingConfig?.freeShippingThreshold ?? 
+                          vendor?.commissionConfig?.minFreeShippingOrderValue ?? 
+                          499;
+    const belowThresholdFee = vendor?.shippingConfig?.shippingChargeBelowThreshold ?? 
+                              vendor?.commissionConfig?.standardShippingFee ?? 
+                              70;
 
-    // 1. Resolve real locality, district and state from official India Post records
-    const geo = await resolveIndiaPostPincode(cleanPincode);
-    if (!geo.valid) {
-      return {
-        serviceable: false,
-        pincode: cleanPincode,
-        message: geo.message || `Delivery is unavailable for pincode ${cleanPincode}.`,
-        hasDedicatedApi: true
-      };
-    }
-
-    const localityDisplay = geo.localityName && geo.city && !geo.localityName.toLowerCase().includes(geo.city.toLowerCase())
-      ? `${geo.localityName}, ${geo.city}`
-      : (geo.localityName || geo.city || 'Delivery Area');
-
-    // 2. Fetch live official shipping rates from Arivu Foods' backend API
-    const shippingConfig = await this.getOfficialShippingConfig(vendor);
-    const resolvedState = (geo.state || address?.state || '').trim();
-
-    // 3. Match user's state to Arivu's statePrices matrix
-    const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
-    const userStateNorm = normalize(resolvedState);
-
-    let stateShippingFee = 90; // Default if state not found
-    let matchedState = resolvedState;
-
-    for (const [stateName, price] of Object.entries(shippingConfig.statePrices)) {
-      const stateNorm = normalize(stateName);
-      if (stateNorm === userStateNorm || userStateNorm.includes(stateNorm) || stateNorm.includes(userStateNorm)) {
-        stateShippingFee = Number(price);
-        matchedState = stateName;
-        break;
-      }
-    }
-
-    // 4. Free shipping threshold rule (official Arivu threshold: 499)
-    const freeThreshold = shippingConfig.freeShippingThreshold || 499;
     const isFreeShipping = cartAmount >= freeThreshold;
-    const effectiveFee = isFreeShipping ? 0 : stateShippingFee;
+    const effectiveFee = isFreeShipping ? 0 : belowThresholdFee;
 
-    // 5. Zone classification & transit timelines from Bangalore hub
-    const isKarnataka = normalize(matchedState) === 'karnataka' || cleanPincode.startsWith('56');
-    const isSouthIndia = ['karnataka', 'tamilnadu', 'kerala', 'andhrapradesh', 'telangana', 'goa', 'pondicherry'].includes(normalize(matchedState));
-
-    const estimatedDeliveryTime = isKarnataka 
-      ? '1-2 Days (Direct Bangalore Dispatch)'
-      : isSouthIndia
-      ? '2-3 Days (South Zone Express)'
-      : '3-5 Days (Pan-India Express)';
-
-    const daysToAdd = isKarnataka ? 2 : isSouthIndia ? 3 : 5;
-    const targetDate = new Date(Date.now() + daysToAdd * 24 * 60 * 60 * 1000);
+    const targetDate = new Date(Date.now() + 4 * 24 * 60 * 60 * 1000);
     const estimatedDeliveryDate = targetDate.toLocaleDateString('en-IN', {
       weekday: 'short',
       month: 'short',
@@ -705,27 +674,31 @@ export class ArivuFoodsAdapter implements IVendorAdapter {
     });
 
     const statusMessage = isFreeShipping
-      ? `FREE Shipping unlocked for orders >= ₹${freeThreshold} to ${matchedState}.`
-      : `₹${effectiveFee} shipping to ${matchedState}. Add ₹${Math.max(0, freeThreshold - cartAmount).toFixed(0)} more for FREE delivery.`;
+      ? `FREE Shipping unlocked for orders >= ₹${freeThreshold} (Pan-India).`
+      : `₹${effectiveFee} shipping for orders below ₹${freeThreshold}. Add ₹${Math.max(0, freeThreshold - cartAmount).toFixed(0)} more for FREE delivery.`;
+
+    const localityDisplay = address?.city 
+      ? `${address.city}${address.state ? `, ${address.state}` : ''}`
+      : (cleanPincode ? `Delivery Area (${cleanPincode})` : 'Pan-India');
 
     return {
-      serviceable: true,
+      serviceable: true, // Arivu provides Pan-India delivery. No pincode rejection.
       pincode: cleanPincode,
       localityName: localityDisplay,
-      city: geo.city || 'India',
-      state: matchedState,
-      zone: isKarnataka ? 'Local Hub' : isSouthIndia ? 'South Zone' : 'National',
+      city: address?.city || 'India',
+      state: address?.state || 'India',
+      zone: 'Pan-India Express',
       vendorName: 'Arivu Foods',
-      vendorOrigin: 'Bangalore, Karnataka',
-      courierPartner: 'Arivu Direct Logistics',
+      vendorOrigin: 'Arivu Bangalore Central Hub',
+      courierPartner: 'Arivu Partner Logistics',
       shippingFee: effectiveFee,
-      baseShippingFee: stateShippingFee,
+      baseShippingFee: belowThresholdFee,
       isFreeShipping,
       freeShippingThreshold: freeThreshold,
-      estimatedDeliveryTime,
+      estimatedDeliveryTime: '3-5 Business Days (Pan-India Express)',
       estimatedDeliveryDate,
       estimatedDeliveryDateIso: targetDate.toISOString(),
-      hasDedicatedApi: true,
+      hasDedicatedApi: false, // Confirmed: Arivu has no pincode coverage API
       message: statusMessage
     };
   }

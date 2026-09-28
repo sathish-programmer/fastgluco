@@ -142,12 +142,11 @@ export const ProductRatingScreen: React.FC<ProductRatingScreenProps> = ({ orderI
   }
 
   return (
-    <div className="pb-24 bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 animate-in fade-in duration-300">
+    <div className="shop-screen-container pb-24 bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 animate-in fade-in duration-300">
       
       {/* Sticky Header Banner */}
       <div 
-        className="sticky top-0 z-50 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 px-4 pb-3 shadow-xs"
-        style={{ paddingTop: 'calc(env(safe-area-inset-top, 24px) + 12px)' }}
+        className="sticky top-0 z-50 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 px-4 py-2.5 sm:py-3 shadow-xs"
       >
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <button 

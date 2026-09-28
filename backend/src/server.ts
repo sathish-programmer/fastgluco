@@ -70,10 +70,16 @@ const bootstrap = async () => {
         await AppointmentReminderCron.sendUpcomingReminders();
       });
 
-      // Vendor orders status tracking cron — runs every 15 minutes
-      // Syncs active vendor orders (Arivu Foods) and notifies users on dispatch/delivery
-      cron.schedule('*/15 * * * *', async () => {
+      // Vendor orders status tracking cron (Arivu Foods)
+      // Arivu confirmed requirement: Polling at 9 AM and 10 PM IST fetches shipments processed during the day.
+      cron.schedule('0 9,22 * * *', async () => {
+        console.log('[VendorOrderStatusCron] Running scheduled 9 AM / 10 PM IST vendor order status sync...');
         await VendorOrderStatusCron.syncActiveVendorOrders();
+      }, { timezone: 'Asia/Kolkata' });
+
+      // Periodic evaluator (every 15 mins) to also respect any custom interval configured by Admin
+      cron.schedule('*/15 * * * *', async () => {
+        await VendorOrderStatusCron.checkAndRunPeriodicPoll();
       });
 
       console.log('Cron jobs scheduled successfully.');

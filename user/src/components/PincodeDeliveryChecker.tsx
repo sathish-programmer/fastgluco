@@ -211,7 +211,7 @@ export const PincodeDeliveryChecker: React.FC<PincodeDeliveryCheckerProps> = ({
 
             {result.serviceable && (
               <span className="font-black text-xs shrink-0 px-2.5 py-1 rounded-xl bg-white/80 dark:bg-slate-900/80 shadow-2xs border border-emerald-200/60 dark:border-emerald-800/40 text-emerald-700 dark:text-emerald-300">
-                {result.shippingFee === 0 ? t('shop.freeShipping', 'FREE Shipping') : `₹${result.shippingFee.toFixed(2)}`}
+                {result.shippingFee === 0 ? t('shop.freeShipping', 'FREE Shipping') : `₹${result.shippingFee.toFixed(0)} (FREE above ₹499)`}
               </span>
             )}
           </div>

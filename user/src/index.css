@@ -366,6 +366,12 @@ main.flex-1 > div {
   padding-top: 8px !important;
 }
 
+/* Eliminate unwanted space between main app header and shop screens with their own sticky header */
+main.flex-1 > .shop-screen-container,
+main.flex-1 > div:has(> .sticky.top-0) {
+  padding-top: 0px !important;
+}
+
 /* Razorpay Safe Area Inset Support for Notch & Status Bar & Bottom Nav */
 .razorpay-container {
   top: env(safe-area-inset-top, 0px) !important;

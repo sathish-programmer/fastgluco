@@ -32,7 +32,8 @@ import {
   Printer,
   Clock,
   Info,
-  CheckCircle
+  CheckCircle,
+  Truck
 } from 'lucide-react';
 
 interface AdminVendorManagementProps {
@@ -122,6 +123,26 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
   // Edit Config Form in Tab 6
   const [editConfigForm, setEditConfigForm] = useState<any>({});
 
+  // Polling All Orders State
+  const [pollingVendorOrders, setPollingVendorOrders] = useState(false);
+
+  // Cancellation Review Modal State
+  const [cancellationReviewModal, setCancellationReviewModal] = useState<any | null>(null);
+  const [reviewAction, setReviewAction] = useState<'approve' | 'reject'>('approve');
+  const [reviewNotes, setReviewNotes] = useState('');
+  const [processGatewayRefund, setProcessGatewayRefund] = useState(true);
+  const [arivuActionRequired, setArivuActionRequired] = useState(true);
+  const [processingCancellation, setProcessingCancellation] = useState(false);
+
+  // Manual Order Status Update State
+  const [manualStatusModal, setManualStatusModal] = useState<any | null>(null);
+  const [manualDeliveryStatus, setManualDeliveryStatus] = useState('shipped');
+  const [manualCourierName, setManualCourierName] = useState('');
+  const [manualTrackingId, setManualTrackingId] = useState('');
+  const [manualTrackingUrl, setManualTrackingUrl] = useState('');
+  const [manualStatusNotes, setManualStatusNotes] = useState('');
+  const [updatingManualStatus, setUpdatingManualStatus] = useState(false);
+
   useEffect(() => {
     fetchVendors();
   }, []);
@@ -171,7 +192,12 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
           apiKey: data.vendor.apiConfig?.apiKey || '',
           checkoutType: data.vendor.capabilities?.checkoutType || 'INTERNAL',
           productSyncMethod: data.vendor.capabilities?.productSyncMethod || 'API',
-          productType: data.vendor.capabilities?.productType || 'MULTIPLE'
+          productType: data.vendor.capabilities?.productType || 'MULTIPLE',
+          freeShippingThreshold: data.vendor.shippingConfig?.freeShippingThreshold ?? 499,
+          shippingChargeBelowThreshold: data.vendor.shippingConfig?.shippingChargeBelowThreshold ?? 50,
+          pollingFrequency: data.vendor.pollingConfig?.frequency || 'DAILY_TWICE',
+          pollingIsActive: data.vendor.pollingConfig?.isActive ?? true,
+          lastPolledAt: data.vendor.pollingConfig?.lastPolledAt
         });
         setSettlementCycleDays(data.vendor.commissionConfig?.settlementCycleDays ?? 30);
       }
@@ -301,6 +327,101 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
       }
     } catch (e) {
       console.error('Error polling status:', e);
+    }
+  };
+
+  const handlePollAllVendorOrders = async () => {
+    if (!selectedVendorId) return;
+    setPollingVendorOrders(true);
+    try {
+      const res = await fetch(`${apiUrl}/admin/vendors/${selectedVendorId}/poll-orders`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSyncMessage(`Order polling complete! ${data.message || ''}`);
+        fetchVendorDetails(selectedVendorId);
+      } else {
+        setSyncMessage(`Polling error: ${data.message || 'Failed to poll vendor orders'}`);
+      }
+    } catch (e: any) {
+      setSyncMessage(`Polling error: ${e.message}`);
+    } finally {
+      setPollingVendorOrders(false);
+      setTimeout(() => setSyncMessage(null), 5000);
+    }
+  };
+
+  const handleReviewCancellation = async () => {
+    if (!cancellationReviewModal) return;
+    setProcessingCancellation(true);
+    try {
+      const res = await fetch(`${apiUrl}/admin/vendors/orders/${cancellationReviewModal._id}/review-cancellation`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          action: reviewAction,
+          adminNotes: reviewNotes,
+          processGatewayRefund: reviewAction === 'approve' ? processGatewayRefund : false,
+          arivuActionRequired
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSyncMessage(data.message || 'Customer cancellation/refund request processed!');
+        if (selectedVendorId) fetchVendorDetails(selectedVendorId);
+        setCancellationReviewModal(null);
+        setSelectedOrderForDetails(null);
+      } else {
+        setSyncMessage(`Review error: ${data.message}`);
+      }
+    } catch (e: any) {
+      setSyncMessage(`Review error: ${e.message}`);
+    } finally {
+      setProcessingCancellation(false);
+      setTimeout(() => setSyncMessage(null), 5000);
+    }
+  };
+
+  const handleUpdateManualStatus = async () => {
+    if (!manualStatusModal) return;
+    setUpdatingManualStatus(true);
+    try {
+      const res = await fetch(`${apiUrl}/admin/vendors/orders/${manualStatusModal._id}/manual-status`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          deliveryStatus: manualDeliveryStatus,
+          courierName: manualCourierName,
+          trackingId: manualTrackingId,
+          trackingUrl: manualTrackingUrl,
+          notes: manualStatusNotes
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSyncMessage(data.message || 'Order status updated manually!');
+        if (selectedVendorId) fetchVendorDetails(selectedVendorId);
+        setManualStatusModal(null);
+        setSelectedOrderForDetails(null);
+      } else {
+        setSyncMessage(`Update error: ${data.message}`);
+      }
+    } catch (e: any) {
+      setSyncMessage(`Update error: ${e.message}`);
+    } finally {
+      setUpdatingManualStatus(false);
+      setTimeout(() => setSyncMessage(null), 5000);
     }
   };
 
@@ -460,6 +581,16 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
             settlementCycleDays: Number(editConfigForm.settlementCycleDays),
             gstOnCommissionRate: Number(editConfigForm.gstOnCommissionRate),
             passThroughShipping: editConfigForm.passThroughShipping
+          },
+          shippingConfig: {
+            freeShippingThreshold: Number(editConfigForm.freeShippingThreshold ?? 499),
+            shippingChargeBelowThreshold: Number(editConfigForm.shippingChargeBelowThreshold ?? 0)
+          },
+          pollingConfig: {
+            frequency: editConfigForm.pollingFrequency || 'DAILY_TWICE',
+            isActive: editConfigForm.pollingIsActive !== false,
+            pollingTimes: ['09:00', '22:00'],
+            cronExpression: '0 9,22 * * *'
           },
           apiConfig: {
             mockMode: editConfigForm.mockMode,
@@ -1591,13 +1722,25 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
           {/* TAB 3: ORDERS */}
           {activeTab === 'orders' && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                     <FileText className="h-5 w-5 text-emerald-600" />
                     <span>Vendor Order Stream & Financial Proof ({selectedVendorData.orders?.length || 0})</span>
                   </h3>
                   <p className="text-xs text-slate-500 font-medium">Track fulfillment status, 30% commission retention, shipping allocation, and net payable calculation per order</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handlePollAllVendorOrders}
+                    disabled={pollingVendorOrders}
+                    className="px-3.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-2xs transition disabled:opacity-50"
+                    title="Poll order tracking from Arivu Foods for all active orders"
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 ${pollingVendorOrders ? 'animate-spin' : ''}`} />
+                    <span>{pollingVendorOrders ? 'Polling Orders...' : 'Poll All Vendor Orders'}</span>
+                  </button>
                 </div>
               </div>
 
@@ -1635,6 +1778,7 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
                           const netVendor = Number(order.financialBreakdown?.finalVendorPayable ?? order.vendorEarnings ?? Math.max(0, listedPrice - totalRetention + shipping));
                           const isDelivered = order.deliveryStatus === 'delivered';
                           const isSettled = order.settlementStatus === 'SETTLED' || order.settlementStatus === 'INCLUDED';
+                          const hasCancelReq = !!order.cancellationRequest;
 
                           return (
                             <tr key={order._id} className="hover:bg-slate-50/80 transition">
@@ -1645,6 +1789,11 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
                                 <div className="font-mono text-[10px] text-blue-600 font-semibold">
                                   {order.vendorOrderId ? `Mito Ref: #${order._id.slice(-6).toUpperCase()}` : <span className="text-slate-400">Internal Ref</span>}
                                 </div>
+                                {hasCancelReq && (
+                                  <span className="inline-block mt-1 px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded text-[9px] font-bold uppercase tracking-wider">
+                                    ⚠️ {order.cancellationRequest.type}: {order.cancellationRequest.status}
+                                  </span>
+                                )}
                               </td>
 
                               <td className="px-4 py-3.5">
@@ -1700,10 +1849,39 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
                                 <button
                                   onClick={() => setSelectedOrderForDetails(order)}
                                   className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition inline-flex items-center gap-1 border border-slate-200"
-                                  title="View exact math proof"
+                                  title="View exact math proof and tracking"
                                 >
                                   <Receipt className="h-3 w-3 text-purple-600" />
-                                  <span>Proof</span>
+                                  <span>Details</span>
+                                </button>
+
+                                {hasCancelReq && order.cancellationRequest.status === 'PENDING' && (
+                                  <button
+                                    onClick={() => {
+                                      setCancellationReviewModal(order);
+                                      setReviewAction('approve');
+                                      setReviewNotes('');
+                                    }}
+                                    className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition shadow-sm"
+                                    title="Review customer cancellation/refund request"
+                                  >
+                                    Review
+                                  </button>
+                                )}
+
+                                <button
+                                  onClick={() => {
+                                    setManualStatusModal(order);
+                                    setManualDeliveryStatus(order.deliveryStatus || 'pending');
+                                    setManualCourierName(order.trackingDetails?.courierName || '');
+                                    setManualTrackingId(order.trackingDetails?.trackingId || '');
+                                    setManualTrackingUrl(order.trackingDetails?.trackingUrl || '');
+                                    setManualStatusNotes('');
+                                  }}
+                                  className="px-2 py-1 bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg text-xs font-semibold transition"
+                                  title="Manually update order and tracking status"
+                                >
+                                  Status
                                 </button>
 
                                 {order.vendorSubmissionStatus !== 'SUBMITTED' ? (
@@ -2498,6 +2676,138 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
                     </div>
                   </div>
                 </div>
+
+                {/* SECTION: SHIPPING CONFIGURATION (Admin -> Vendor Management -> Arivu Foods -> Shipping Configuration) */}
+                <div className="space-y-4 md:col-span-2 pt-4 border-t border-slate-100">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-xs font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1.5">
+                        <Truck className="h-4 w-4 text-emerald-600" />
+                        <span>Shipping Configuration</span>
+                      </h4>
+                      <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                        Arivu provides Pan-India delivery. Orders value ≥ Free Shipping Threshold qualify for FREE shipping.
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">
+                      Pan-India Delivery
+                    </span>
+                  </div>
+
+                  <div className="bg-emerald-50/50 border border-emerald-100 rounded-2xl p-4 space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-800 mb-1">
+                          Free Shipping Threshold (₹) <span className="text-slate-400 font-normal">(Default: ₹499)</span>
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-2 text-xs font-bold text-slate-400">₹</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={editConfigForm.freeShippingThreshold ?? 499}
+                            onChange={(e) => setEditConfigForm({ ...editConfigForm, freeShippingThreshold: e.target.value })}
+                            className="w-full bg-white border border-slate-200 rounded-xl pl-7 pr-3 py-2 text-xs text-slate-900 font-bold focus:outline-none focus:border-emerald-500"
+                            placeholder="499"
+                          />
+                        </div>
+                        <span className="text-[10px] text-slate-400 mt-1 block">
+                          Orders of ₹{editConfigForm.freeShippingThreshold || 499} or higher will have free delivery automatically applied.
+                        </span>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-800 mb-1">
+                          Shipping Charge Below Threshold (₹)
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-2 text-xs font-bold text-slate-400">₹</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={editConfigForm.shippingChargeBelowThreshold ?? 50}
+                            onChange={(e) => setEditConfigForm({ ...editConfigForm, shippingChargeBelowThreshold: e.target.value })}
+                            className="w-full bg-white border border-slate-200 rounded-xl pl-7 pr-3 py-2 text-xs text-slate-900 font-bold focus:outline-none focus:border-emerald-500"
+                            placeholder="50"
+                          />
+                        </div>
+                        <span className="text-[10px] text-amber-700 mt-1 block font-medium">
+                          Note: Arivu has not yet finalized below-threshold charge. Update here anytime without redeployment.
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* SECTION: ORDER STATUS POLLING SCHEDULE CONFIGURATION */}
+                <div className="space-y-4 md:col-span-2 pt-4 border-t border-slate-100">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-xs font-bold text-blue-800 uppercase tracking-wider flex items-center gap-1.5">
+                        <Clock className="h-4 w-4 text-blue-600" />
+                        <span>Order Status & Tracking Polling Configuration</span>
+                      </h4>
+                      <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                        Arivu does not provide webhooks. Automated background polling synchronizes shipments and tracking numbers once dispatched.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handlePollAllVendorOrders}
+                      disabled={pollingVendorOrders}
+                      className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition disabled:opacity-50"
+                    >
+                      <RefreshCw className={`h-3.5 w-3.5 ${pollingVendorOrders ? 'animate-spin' : ''}`} />
+                      <span>{pollingVendorOrders ? 'Polling Orders...' : 'Poll Vendor Orders Now'}</span>
+                    </button>
+                  </div>
+
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">Polling Frequency</label>
+                        <select
+                          value={editConfigForm.pollingFrequency || 'DAILY_TWICE'}
+                          onChange={(e) => setEditConfigForm({ ...editConfigForm, pollingFrequency: e.target.value })}
+                          className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500 font-medium"
+                        >
+                          <option value="DAILY_TWICE">Twice Daily at 9:00 AM & 10:00 PM IST (Arivu Recommended)</option>
+                          <option value="EVERY_6_HOURS">Every 6 Hours</option>
+                          <option value="EVERY_12_HOURS">Every 12 Hours</option>
+                          <option value="CUSTOM">Custom Server Cron (0 9,22 * * *)</option>
+                        </select>
+                      </div>
+
+                      <div className="flex items-center gap-3 pt-4">
+                        <input
+                          type="checkbox"
+                          id="pollingIsActiveToggle"
+                          checked={editConfigForm.pollingIsActive !== false}
+                          onChange={(e) => setEditConfigForm({ ...editConfigForm, pollingIsActive: e.target.checked })}
+                          className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
+                        />
+                        <label htmlFor="pollingIsActiveToggle" className="text-xs text-slate-700">
+                          <span className="font-bold text-slate-900 block">Enable Automated Background Polling</span>
+                          Runs scheduled job to fetch AWB tracking from Arivu API for active orders.
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between text-[11px] text-slate-500 pt-2 border-t border-slate-200/60">
+                      <span>
+                        Recommended schedule: <strong>9:00 AM & 10:00 PM IST</strong> captures all daytime and evening dispatches without rate limiting.
+                      </span>
+                      <span>
+                        Last polled:{' '}
+                        <strong className="text-slate-700">
+                          {editConfigForm.lastPolledAt ? new Date(editConfigForm.lastPolledAt).toLocaleString() : 'Never / Automated on schedule'}
+                        </strong>
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -2657,6 +2967,99 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
                     </div>
                   </div>
 
+                  {/* SHIPMENT & TRACKING DETAILS BOX (ARIVU CONFIRMED SCHEMA) */}
+                  <div className="bg-blue-50/60 border border-blue-200/80 rounded-2xl p-3.5 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-blue-800 uppercase tracking-wider flex items-center gap-1.5">
+                        <Truck className="h-3.5 w-3.5 text-blue-600" />
+                        <span>Shipment & Courier Tracking</span>
+                      </span>
+                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-white text-blue-700 border border-blue-200">
+                        Status: {selectedOrderForDetails.deliveryStatus || 'pending'}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
+                      <div>
+                        <span className="text-slate-400 block text-[9px] uppercase font-bold">Logistics Provider</span>
+                        <span className="font-bold text-slate-800">
+                          {selectedOrderForDetails.trackingDetails?.courierName || 'Pending Dispatch'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[9px] uppercase font-bold">Tracking ID (AWB)</span>
+                        <span className="font-mono font-bold text-slate-900">
+                          {selectedOrderForDetails.trackingDetails?.trackingId || 'Not Assigned'}
+                        </span>
+                      </div>
+                    </div>
+                    {selectedOrderForDetails.trackingDetails?.trackingUrl && (
+                      <div className="pt-1.5 border-t border-blue-100 flex items-center justify-between">
+                        <span className="text-[10px] text-slate-500 font-medium">Track Shipment:</span>
+                        <a
+                          href={selectedOrderForDetails.trackingDetails.trackingUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 underline"
+                        >
+                          <span>[Track Order]</span>
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* CANCELLATION / RETURN / REFUND REQUEST BOX */}
+                  {selectedOrderForDetails.cancellationRequest && (
+                    <div className={`p-3.5 rounded-2xl border text-xs space-y-2.5 ${
+                      selectedOrderForDetails.cancellationRequest.status === 'APPROVED' ? 'bg-emerald-50 border-emerald-200 text-emerald-900' :
+                      selectedOrderForDetails.cancellationRequest.status === 'REJECTED' ? 'bg-rose-50 border-rose-200 text-rose-900' :
+                      'bg-amber-50 border-amber-200 text-amber-900'
+                    }`}>
+                      <div className="flex items-center justify-between">
+                        <span className="font-black text-[11px] uppercase tracking-wider flex items-center gap-1.5">
+                          <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+                          <span>Customer {selectedOrderForDetails.cancellationRequest.type.toUpperCase()} Request</span>
+                        </span>
+                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${
+                          selectedOrderForDetails.cancellationRequest.status === 'APPROVED' ? 'bg-emerald-100 border-emerald-300 text-emerald-800' :
+                          selectedOrderForDetails.cancellationRequest.status === 'REJECTED' ? 'bg-rose-100 border-rose-300 text-rose-800' :
+                          'bg-amber-100 border-amber-300 text-amber-800'
+                        }`}>
+                          {selectedOrderForDetails.cancellationRequest.status}
+                        </span>
+                      </div>
+
+                      <div className="space-y-1 text-[11px]">
+                        <div>
+                          <strong className="text-slate-700">Reason:</strong> {selectedOrderForDetails.cancellationRequest.reason}
+                        </div>
+                        {selectedOrderForDetails.cancellationRequest.adminNotes && (
+                          <div>
+                            <strong className="text-slate-700">Admin Notes:</strong> {selectedOrderForDetails.cancellationRequest.adminNotes}
+                          </div>
+                        )}
+                        <div className="flex justify-between pt-1 text-[10px] text-slate-500">
+                          <span>Refund Status: <strong>{selectedOrderForDetails.cancellationRequest.refundStatus}</strong></span>
+                          <span>Arivu Action: <strong>{selectedOrderForDetails.cancellationRequest.arivuActionRequired ? 'Required Manually' : 'None'}</strong></span>
+                        </div>
+                      </div>
+
+                      {selectedOrderForDetails.cancellationRequest.status === 'PENDING' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCancellationReviewModal(selectedOrderForDetails);
+                            setReviewAction('approve');
+                            setReviewNotes('');
+                          }}
+                          className="w-full py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition shadow-sm mt-1"
+                        >
+                          Review & Process Customer Request
+                        </button>
+                      )}
+                    </div>
+                  )}
+
                   <div className="bg-purple-50/50 p-2.5 rounded-xl border border-purple-100 text-[11px] text-purple-800 flex items-start gap-2">
                     <Info className="h-4 w-4 text-purple-600 shrink-0 mt-0.5" />
                     <span>
@@ -2667,12 +3070,257 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
               );
             })()}
 
-            <button
-              onClick={() => setSelectedOrderForDetails(null)}
-              className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition shadow-sm"
-            >
-              Close Proof
-            </button>
+            <div className="flex gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => {
+                  setManualStatusModal(selectedOrderForDetails);
+                  setManualDeliveryStatus(selectedOrderForDetails.deliveryStatus || 'pending');
+                  setManualCourierName(selectedOrderForDetails.trackingDetails?.courierName || '');
+                  setManualTrackingId(selectedOrderForDetails.trackingDetails?.trackingId || '');
+                  setManualTrackingUrl(selectedOrderForDetails.trackingDetails?.trackingUrl || '');
+                  setManualStatusNotes('');
+                }}
+                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5"
+              >
+                <Settings className="h-3.5 w-3.5 text-slate-600" />
+                <span>Update Status Manually</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedOrderForDetails(null)}
+                className="flex-1 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition shadow-sm"
+              >
+                Close Details
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: REVIEW CANCELLATION / RETURN / REFUND REQUEST */}
+      {cancellationReviewModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-amber-600" />
+                  <span>Review {cancellationReviewModal.cancellationRequest?.type?.toUpperCase() || 'Cancellation'} Request</span>
+                </h3>
+                <p className="text-xs text-slate-500 font-medium">Order Ref: #{cancellationReviewModal.vendorOrderId || cancellationReviewModal._id.slice(-8).toUpperCase()}</p>
+              </div>
+              <button onClick={() => setCancellationReviewModal(null)} className="text-slate-400 hover:text-slate-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 text-xs space-y-1.5">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Customer:</span>
+                <span className="font-bold text-slate-900">{cancellationReviewModal.patientName || 'Customer'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Total Order Amount:</span>
+                <span className="font-bold text-slate-900">₹{cancellationReviewModal.totalAmount}</span>
+              </div>
+              <div className="pt-1 border-t border-slate-200">
+                <span className="text-slate-500 block text-[10px] uppercase font-bold">Reason Provided:</span>
+                <p className="font-medium text-slate-800 mt-0.5 italic">"{cancellationReviewModal.cancellationRequest?.reason}"</p>
+              </div>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Decision</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setReviewAction('approve')}
+                    className={`py-2 rounded-xl text-xs font-bold border transition ${
+                      reviewAction === 'approve'
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    ✓ Approve Request
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReviewAction('reject')}
+                    className={`py-2 rounded-xl text-xs font-bold border transition ${
+                      reviewAction === 'reject'
+                        ? 'bg-rose-600 text-white border-rose-600 shadow-sm'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    ✕ Reject Request
+                  </button>
+                </div>
+              </div>
+
+              {reviewAction === 'approve' && (
+                <div className="space-y-2 bg-emerald-50/60 p-3 rounded-2xl border border-emerald-100">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="gatewayRefundToggle"
+                      checked={processGatewayRefund}
+                      onChange={(e) => setProcessGatewayRefund(e.target.checked)}
+                      className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 h-4 w-4"
+                    />
+                    <label htmlFor="gatewayRefundToggle" className="text-xs text-slate-800 font-medium">
+                      Process refund of ₹{cancellationReviewModal.totalAmount} via Payment Gateway (Razorpay)
+                    </label>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-1 border-t border-emerald-100/60">
+                    <input
+                      type="checkbox"
+                      id="arivuActionToggle"
+                      checked={arivuActionRequired}
+                      onChange={(e) => setArivuActionRequired(e.target.checked)}
+                      className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 h-4 w-4"
+                    />
+                    <label htmlFor="arivuActionToggle" className="text-xs text-slate-800 font-medium">
+                      Coordinate fulfillment / dispatch cancellation with Arivu team manually
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Administrative Notes</label>
+                <textarea
+                  rows={2}
+                  value={reviewNotes}
+                  onChange={(e) => setReviewNotes(e.target.value)}
+                  placeholder="Internal notes or customer notification message..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setCancellationReviewModal(null)}
+                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleReviewCancellation}
+                disabled={processingCancellation}
+                className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm disabled:opacity-50"
+              >
+                {processingCancellation ? 'Processing...' : 'Submit Decision'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: MANUAL ORDER STATUS & TRACKING UPDATE */}
+      {manualStatusModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                  <Settings className="h-5 w-5 text-indigo-600" />
+                  <span>Manual Order Status Update</span>
+                </h3>
+                <p className="text-xs text-slate-500 font-medium">
+                  Order Ref: #{manualStatusModal.vendorOrderId || manualStatusModal._id.slice(-8).toUpperCase()}
+                </p>
+              </div>
+              <button onClick={() => setManualStatusModal(null)} className="text-slate-400 hover:text-slate-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Delivery Status</label>
+                <select
+                  value={manualDeliveryStatus}
+                  onChange={(e) => setManualDeliveryStatus(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-bold focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="pending">Pending</option>
+                  <option value="processing">Processing</option>
+                  <option value="shipped">Shipped</option>
+                  <option value="out_for_delivery">Out for Delivery</option>
+                  <option value="delivered">Delivered</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Logistics Provider (Courier Partner)</label>
+                <input
+                  type="text"
+                  value={manualCourierName}
+                  onChange={(e) => setManualCourierName(e.target.value)}
+                  placeholder="e.g. DTDC, Blue Dart, Delhivery"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Tracking ID (AWB Number)</label>
+                <input
+                  type="text"
+                  value={manualTrackingId}
+                  onChange={(e) => setManualTrackingId(e.target.value)}
+                  placeholder="e.g. D123456789"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-mono focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Tracking URL</label>
+                <input
+                  type="text"
+                  value={manualTrackingUrl}
+                  onChange={(e) => setManualTrackingUrl(e.target.value)}
+                  placeholder="https://track.courier.com/..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-mono focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Status Notes</label>
+                <textarea
+                  rows={2}
+                  value={manualStatusNotes}
+                  onChange={(e) => setManualStatusNotes(e.target.value)}
+                  placeholder="Add notes for audit trail..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-900 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setManualStatusModal(null)}
+                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleUpdateManualStatus}
+                disabled={updatingManualStatus}
+                className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition shadow-sm disabled:opacity-50"
+              >
+                {updatingManualStatus ? 'Updating...' : 'Save Status Update'}
+              </button>
+            </div>
           </div>
         </div>
       )}
