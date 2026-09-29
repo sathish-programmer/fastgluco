@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, Minus, Plus, Trash2, ShieldCheck, Tag, Landmark, User, Mail, 
-  Phone, MapPin, Truck, CheckCircle, AlertCircle, RefreshCw, Lock, Sparkles, ShoppingBag, ChevronRight, Package
+  Phone, MapPin, Truck, CheckCircle, AlertCircle, RefreshCw, Lock, Sparkles, ShoppingBag, ChevronRight, Package, Stethoscope
 } from 'lucide-react';
 import type { ShopItem } from './ShopScreen';
 import { ProductImage } from './ShopScreen';
@@ -1133,7 +1133,11 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
               </button>
 
               {/* Trust Badges */}
-              <div className="pt-2 flex items-center justify-center gap-3 text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+              <div className="pt-2 flex flex-wrap items-center justify-center gap-3 text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold">
+                  <Stethoscope className="h-3.5 w-3.5" /> Doctor Formulated & Certified
+                </span>
+                <span>•</span>
                 <span className="flex items-center gap-1">
                   <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" /> 100% Genuine Supplies
                 </span>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, Search, SlidersHorizontal, Sparkles, AlertCircle, ShoppingCart, 
   Package, MapPin, Plus, Minus, ChevronRight, ExternalLink,
-  Check, X, Share2, ShieldCheck
+  Check, X, Share2, ShieldCheck, Stethoscope, Leaf, Zap, CheckCircle2, Truck
 } from 'lucide-react';
 import { BasketScreen } from './BasketScreen';
 import { PincodeDeliveryChecker } from '../../components/PincodeDeliveryChecker';
@@ -704,8 +704,8 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                     </span>
 
                     {selectedProduct.doctorRecommended && (
-                      <span className="bg-emerald-500 text-white text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider flex items-center gap-1 shadow-xs">
-                        <Sparkles className="h-3 w-3" /> Doctor Recommended
+                      <span className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-xs">
+                        <Stethoscope className="h-3 w-3" /> Doctor Formulated
                       </span>
                     )}
 
@@ -731,6 +731,23 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                       <span className="text-xs font-bold text-slate-600 dark:text-slate-300">
                         {avgRating} <span className="text-slate-400">({productReviews.length} verified reviews)</span>
                       </span>
+                    </div>
+                  )}
+
+                  {/* Doctor Formulated Assurance Card */}
+                  {selectedProduct.doctorRecommended && (
+                    <div className="mt-3 flex items-center gap-3 bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/50 rounded-2xl p-3 text-xs">
+                      <div className="h-8 w-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                        <Stethoscope className="h-4 w-4" />
+                      </div>
+                      <div className="leading-snug">
+                        <span className="font-extrabold text-emerald-950 dark:text-emerald-200 block text-xs">
+                          Physician Formulated & Clinically Approved
+                        </span>
+                        <span className="text-[11px] text-emerald-700/90 dark:text-emerald-400/90 font-medium">
+                          Crafted with clinical-grade, unadulterated whole foods for optimal metabolic health.
+                        </span>
+                      </div>
                     </div>
                   )}
 
@@ -1202,86 +1219,123 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
         </div>
       </div>
 
-      <div className="px-4 max-w-6xl mx-auto pt-4 space-y-4">
-
-        {/* Minimalist, Clean Editorial Showcase Strip */}
-        <div className="bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 rounded-[2rem] p-5 sm:p-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col md:flex-row md:items-center justify-between gap-5 relative overflow-hidden">
-          <div className="absolute -top-12 -right-12 w-48 h-48 bg-indigo-500/10 dark:bg-indigo-500/15 rounded-full blur-3xl pointer-events-none" />
-          
-          <div className="space-y-1.5 max-w-xl relative z-10">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider border border-emerald-200/70 dark:border-emerald-800/50 shadow-2xs">
-                <Sparkles className="h-3 w-3" /> Doctor Formulated
-              </span>
-              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest hidden sm:inline">
-                • 100% Whole Food Nutrition
-              </span>
+      {/* Sleek Delivery & Dispatch Utility Strip */}
+      <div className="bg-slate-50/90 dark:bg-slate-950/70 border-b border-slate-200/70 dark:border-slate-800/70">
+        <div className="max-w-6xl mx-auto px-4 py-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 text-xs">
+          <div className="flex items-center gap-2">
+            <div className="h-5 w-5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+              <MapPin className="h-3 w-3" />
             </div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-              Functional Nutrition & Toxin-Free Foods
-            </h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
-              Curated low-glycemic staples, cold-pressed oils, and targeted functional mixes designed for metabolic health and cellular wellness.
-            </p>
+            <span className="text-slate-600 dark:text-slate-400 text-[11px] sm:text-xs">
+              Deliver to: <strong className="text-slate-900 dark:text-white font-mono font-bold">{userDeliveryPincode}</strong> {deliveryLocality ? `(${deliveryLocality})` : ''}
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsEditingPincode(!isEditingPincode)}
+              className="text-[11px] font-black text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 cursor-pointer ml-1"
+            >
+              {isEditingPincode ? 'Cancel' : 'Change'}
+            </button>
           </div>
 
-          {/* Delivery Location Pill & Quick Edit */}
-          <div className="flex flex-col items-start md:items-end gap-2.5 shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-slate-100 dark:border-slate-800/80 relative z-10">
-            <div className="flex items-center gap-2.5 bg-slate-50/90 dark:bg-slate-950/70 px-4 py-2 rounded-2xl border border-slate-200/80 dark:border-slate-800 text-xs shadow-2xs">
-              <div className="h-6 w-6 rounded-lg bg-indigo-100 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
-                <MapPin className="h-3.5 w-3.5" />
-              </div>
-              <span className="text-slate-700 dark:text-slate-300">
-                Deliver to: <strong className="font-mono font-black text-slate-900 dark:text-white">{userDeliveryPincode}</strong> {deliveryLocality ? `(${deliveryLocality})` : ''}
-              </span>
+          <div className="flex items-center gap-2.5 text-[11px] text-slate-500 dark:text-slate-400">
+            <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold">
+              <Truck className="h-3 w-3" />
+              {isDeliveryServiceable === false ? (
+                <span className="text-rose-500 font-bold">Unserviceable</span>
+              ) : deliveryFee === 0 ? (
+                <span>FREE Delivery (Orders &gt; ₹499)</span>
+              ) : (
+                <span>Free delivery above ₹499 (₹70 below)</span>
+              )}
+            </span>
+            <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">•</span>
+            <span className="font-semibold text-slate-700 dark:text-slate-300 hidden sm:inline">
+              {deliveryDate ? `Expected by ${deliveryDate}` : (deliveryEstimate || '2-3 Business Days')}
+            </span>
+            {deliveryCourier && (
+              <>
+                <span className="text-slate-300 dark:text-slate-700 hidden md:inline">•</span>
+                <span className="hidden md:inline">via {deliveryCourier}</span>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Inline Pincode Input if Editing */}
+        {isEditingPincode && (
+          <div className="max-w-6xl mx-auto px-4 pb-2.5 pt-1">
+            <div className="flex items-center gap-2 animate-in fade-in duration-150 max-w-xs">
+              <input
+                type="text"
+                maxLength={6}
+                placeholder="6-digit pincode"
+                value={tempPincodeInput}
+                onChange={(e) => setTempPincodeInput(e.target.value.replace(/\D/g, ''))}
+                className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold w-36 focus:outline-none focus:border-indigo-500 font-mono shadow-inner"
+              />
               <button
                 type="button"
-                onClick={() => setIsEditingPincode(!isEditingPincode)}
-                className="ml-1 text-indigo-600 dark:text-indigo-400 font-extrabold hover:text-indigo-700 cursor-pointer text-xs"
+                onClick={() => handleApplyPincode()}
+                disabled={checkingPincode || tempPincodeInput.length < 6}
+                className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black transition-all cursor-pointer disabled:opacity-50 shadow-2xs"
               >
-                {isEditingPincode ? 'Cancel' : 'Change'}
+                {checkingPincode ? 'Checking...' : 'Apply'}
               </button>
             </div>
+          </div>
+        )}
+      </div>
 
-            {isEditingPincode && (
-              <div className="flex items-center gap-2 w-full animate-in fade-in duration-150">
-                <input
-                  type="text"
-                  maxLength={6}
-                  placeholder="6-digit pincode"
-                  value={tempPincodeInput}
-                  onChange={(e) => setTempPincodeInput(e.target.value.replace(/\D/g, ''))}
-                  className="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold w-32 focus:outline-none focus:border-indigo-500 font-mono"
-                />
-                <button
-                  type="button"
-                  onClick={() => handleApplyPincode()}
-                  disabled={checkingPincode || tempPincodeInput.length < 6}
-                  className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black transition-all cursor-pointer disabled:opacity-50 shadow-2xs"
-                >
-                  {checkingPincode ? '...' : 'Apply'}
-                </button>
-              </div>
-            )}
+      <div className="px-4 max-w-6xl mx-auto pt-4 space-y-4">
 
-            <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400 font-medium">
-              <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold">
-                {isDeliveryServiceable === false ? (
-                  <span className="text-rose-500 font-bold">Unserviceable</span>
-                ) : deliveryFee === 0 ? (
-                  <span>✓ Free Delivery (Orders above ₹499)</span>
-                ) : (
-                  <span>Free delivery above ₹499 (₹70 below ₹499)</span>
-                )}
+        {/* Modern Doctor Formulated Clinical Showcase */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500/[0.08] via-white to-teal-500/[0.04] dark:from-slate-900 dark:via-slate-900 dark:to-emerald-950/20 border border-emerald-500/20 dark:border-emerald-800/40 p-4 sm:p-5 shadow-xs">
+          {/* Subtle medical ambient accent in background */}
+          <div className="absolute -right-8 -top-8 w-40 h-40 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+          <div className="absolute right-6 top-1/2 -translate-y-1/2 hidden md:flex opacity-10 dark:opacity-15 pointer-events-none text-emerald-800 dark:text-emerald-300">
+            <Stethoscope className="w-32 h-32 stroke-[1.2]" />
+          </div>
+
+          <div className="relative z-10 space-y-3 max-w-2xl">
+            {/* Top Badge & Verified Mark */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 bg-emerald-600 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider shadow-xs">
+                <Stethoscope className="h-3 w-3" /> Doctor Formulated & Approved
               </span>
-              <span>•</span>
-              <span className="font-semibold text-slate-600 dark:text-slate-300">{deliveryDate ? `Expected by ${deliveryDate}` : (deliveryEstimate || '2-3 Business Days')}</span>
-              {deliveryCourier && (
-                <>
-                  <span>•</span>
-                  <span>via {deliveryCourier}</span>
-                </>
-              )}
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
+                <CheckCircle2 className="h-3.5 w-3.5" /> Clinical Quality Standard
+              </span>
+            </div>
+
+            {/* Title & Description */}
+            <div className="space-y-1">
+              <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight leading-snug">
+                Prescription-Grade Functional Nutrition & Clean Foods
+              </h2>
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+                Low-glycemic staples, cold-pressed botanicals, and targeted functional mixes curated by lifestyle medicine physicians to support metabolic health and cellular recovery.
+              </p>
+            </div>
+
+            {/* 4 Clinical Pillars */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+              <div className="flex items-center gap-2 bg-white/80 dark:bg-slate-950/60 border border-emerald-200/60 dark:border-slate-800 px-2.5 py-1.5 rounded-xl shadow-2xs">
+                <Stethoscope className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200">Doctor Formulated</span>
+              </div>
+              <div className="flex items-center gap-2 bg-white/80 dark:bg-slate-950/60 border border-emerald-200/60 dark:border-slate-800 px-2.5 py-1.5 rounded-xl shadow-2xs">
+                <Leaf className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200">100% Whole Food</span>
+              </div>
+              <div className="flex items-center gap-2 bg-white/80 dark:bg-slate-950/60 border border-emerald-200/60 dark:border-slate-800 px-2.5 py-1.5 rounded-xl shadow-2xs">
+                <Zap className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200">Low Glycemic</span>
+              </div>
+              <div className="flex items-center gap-2 bg-white/80 dark:bg-slate-950/60 border border-emerald-200/60 dark:border-slate-800 px-2.5 py-1.5 rounded-xl shadow-2xs">
+                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200">Lab Tested & Pure</span>
+              </div>
             </div>
           </div>
         </div>
@@ -1321,8 +1375,8 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                   : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-emerald-300'
               }`}
             >
-              <Sparkles className="h-3.5 w-3.5" />
-              <span>Dr. Recommended</span>
+              <Stethoscope className="h-3.5 w-3.5" />
+              <span>Doctor Formulated</span>
             </button>
 
             <button
@@ -1524,8 +1578,8 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                         ) : null}
 
                         {item.doctorRecommended && (
-                          <span className="absolute top-2.5 right-2.5 z-10 bg-emerald-600/90 backdrop-blur-md text-white text-[8px] font-black px-2 py-0.5 rounded-lg shadow-xs flex items-center gap-0.5">
-                            <Sparkles className="h-2 w-2" /> Dr. Pick
+                          <span className="absolute top-2.5 right-2.5 z-10 bg-emerald-600/95 backdrop-blur-md text-white text-[8px] font-black px-2 py-0.5 rounded-full shadow-xs flex items-center gap-1 border border-white/20">
+                            <Stethoscope className="h-2.5 w-2.5" /> Doctor Formulated
                           </span>
                         )}
 
