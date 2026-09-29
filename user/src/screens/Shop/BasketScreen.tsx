@@ -57,6 +57,15 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
   const [shippingFee, setShippingFee] = useState(0);
   const [validatingCoupon, setValidatingCoupon] = useState(false);
   const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
+
+  // Dynamic Vendor Configuration states (GST, Shipping, Logistics)
+  const [vendorFreeThreshold, setVendorFreeThreshold] = useState<number>(499);
+  const [vendorShippingBelowThreshold, setVendorShippingBelowThreshold] = useState<number>(70);
+  const [vendorShippingNote, setVendorShippingNote] = useState<string>('');
+  const [vendorDisplayName, setVendorDisplayName] = useState<string>('');
+  const [vendorGstPercentage, setVendorGstPercentage] = useState<number>(0);
+  const [vendorGstInclusive, setVendorGstInclusive] = useState<boolean>(true);
+  const [includedGstAmount, setIncludedGstAmount] = useState<number>(0);
   
   // Real-time Cart Stock Validation State
   const [stockValidation, setStockValidation] = useState<{
@@ -138,10 +147,15 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
     return sum + (price * p.qty);
   }, 0);
 
-  // Exact deterministic total: Subtotal - Discount + Shipping
-  const finalTotal = Number((Math.max(0, subtotal - discountAmount) + (shippingFee || 0)).toFixed(2));
+  // Dynamically resolve active vendor from cart items
+  const firstVendorObj = basket.find(b => typeof b.item.vendorId === 'object' && b.item.vendorId !== null)?.item.vendorId;
+  const firstVendorIdStr = basket.find(b => typeof b.item.vendorId === 'string' && b.item.vendorId.trim() !== '')?.item.vendorId;
+  const activeVendorId = (typeof firstVendorObj === 'object' && firstVendorObj?._id) ? firstVendorObj._id : firstVendorIdStr;
+  const activeVendorSlug = (typeof firstVendorObj === 'object' && firstVendorObj?.slug) ? firstVendorObj.slug : (basket.some(b => b.item.brand === 'Arivu Foods' || b.item.vendorSku) ? 'arivu-foods' : undefined);
 
-  const arivuItems = basket.filter(b => b.item.brand === 'Arivu Foods' || b.item.vendorSku);
+  // Exact deterministic total: Subtotal - Discount + (Exclusive GST if any) + Shipping
+  const exclusiveGst = (!vendorGstInclusive && gstAmount > 0) ? gstAmount : 0;
+  const finalTotal = Number((Math.max(0, subtotal - discountAmount + exclusiveGst) + (shippingFee || 0)).toFixed(2));
 
   // Real-time postal code resolution & vendor serviceability verification
   useEffect(() => {
@@ -156,7 +170,8 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
         },
         body: JSON.stringify({
           pincode: cleanPin,
-          vendorSlug: 'arivu-foods',
+          vendorId: activeVendorId,
+          vendorSlug: activeVendorSlug,
           cartAmount: subtotal
         })
       })
@@ -166,6 +181,11 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
         if (data.serviceable) {
           setIsPincodeServiceable(true);
           setShippingFee(data.shippingFee || 0);
+          if (data.freeShippingThreshold !== undefined) setVendorFreeThreshold(data.freeShippingThreshold);
+          if (data.shippingChargeBelowThreshold !== undefined) setVendorShippingBelowThreshold(data.shippingChargeBelowThreshold);
+          if (data.carrierPartnerName) setDeliveryCourier(data.carrierPartnerName);
+          if (data.shippingNote !== undefined) setVendorShippingNote(data.shippingNote);
+          if (data.vendorName) setVendorDisplayName(data.vendorName);
           setPincodeLocality(data.localityName || data.city || '');
           setPincodeStatusMessage(data.message || `Delivery available to ${data.localityName || data.city}`);
           if (data.city) setCity(data.city);
@@ -193,19 +213,31 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
         setIsPincodeServiceable(true);
       }
     }
-  }, [postalCode, apiUrl, token, subtotal]);
+  }, [postalCode, apiUrl, token, subtotal, activeVendorId, activeVendorSlug]);
 
-  // Fetch available coupons
+  // Fetch available coupons filtered specifically by active vendor
   useEffect(() => {
-    fetch(`${apiUrl}/shop/coupons`, {
+    const params = new URLSearchParams();
+    if (activeVendorId) params.append('vendorId', activeVendorId);
+    if (activeVendorSlug) params.append('vendorSlug', activeVendorSlug);
+    const qs = params.toString() ? `?${params.toString()}` : '';
+
+    fetch(`${apiUrl}/shop/coupons${qs}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
     .then(r => r.json())
     .then(data => {
-      if (Array.isArray(data)) setAvailableCoupons(data);
+      if (Array.isArray(data)) {
+        setAvailableCoupons(data);
+      } else {
+        setAvailableCoupons([]);
+      }
     })
-    .catch(console.error);
-  }, [apiUrl, token]);
+    .catch(err => {
+      console.error(err);
+      setAvailableCoupons([]);
+    });
+  }, [apiUrl, token, activeVendorId, activeVendorSlug]);
 
   useEffect(() => {
     if (branding?.enableExternalPayments === false) {
@@ -220,9 +252,10 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
     } else {
       setDiscountAmount(0);
       setGstAmount(0);
+      setIncludedGstAmount(0);
       setShippingFee(0);
     }
-  }, [basket, appliedCoupon]);
+  }, [basket, appliedCoupon, activeVendorId, activeVendorSlug]);
 
   const calculateBreakdown = async (code: string = '') => {
     try {
@@ -237,13 +270,28 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
           couponCode: code || 'NO_COUPON', 
           totalAmount: subtotal,
           pincode: cleanPin,
-          vendorSlug: 'arivu-foods'
+          vendorId: activeVendorId,
+          vendorSlug: activeVendorSlug,
+          cartItems: basket.map(b => ({
+            productId: b.item.id,
+            qty: b.qty,
+            price: b.variantName ? (b.item.variants?.find(v => v.name === b.variantName)?.price ?? b.item.price) : b.item.price
+          }))
         })
       });
       const data = await res.json();
       if (res.ok && data.valid) {
         setDiscountAmount(data.discountAmount || 0);
         setGstAmount(data.gstAmount || 0);
+        if (data.includedGstAmount !== undefined) setIncludedGstAmount(data.includedGstAmount);
+        if (data.gstPercentage !== undefined) setVendorGstPercentage(data.gstPercentage);
+        if (data.gstInclusive !== undefined) setVendorGstInclusive(data.gstInclusive);
+        if (data.freeShippingThreshold !== undefined) setVendorFreeThreshold(data.freeShippingThreshold);
+        if (data.shippingChargeBelowThreshold !== undefined) setVendorShippingBelowThreshold(data.shippingChargeBelowThreshold);
+        if (data.carrierPartnerName) setDeliveryCourier(data.carrierPartnerName);
+        if (data.shippingNote !== undefined) setVendorShippingNote(data.shippingNote);
+        if (data.vendorName) setVendorDisplayName(data.vendorName);
+        if (data.shippingFee !== undefined) setShippingFee(data.shippingFee);
         if (code) {
           setAppliedCoupon(code);
         }
@@ -256,8 +304,19 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
       } else {
         if (data.discountAmount !== undefined) {
           setDiscountAmount(data.discountAmount || 0);
+        }
+        if (data.gstAmount !== undefined) {
           setGstAmount(data.gstAmount || 0);
         }
+        if (data.includedGstAmount !== undefined) setIncludedGstAmount(data.includedGstAmount);
+        if (data.gstPercentage !== undefined) setVendorGstPercentage(data.gstPercentage);
+        if (data.gstInclusive !== undefined) setVendorGstInclusive(data.gstInclusive);
+        if (data.freeShippingThreshold !== undefined) setVendorFreeThreshold(data.freeShippingThreshold);
+        if (data.shippingChargeBelowThreshold !== undefined) setVendorShippingBelowThreshold(data.shippingChargeBelowThreshold);
+        if (data.carrierPartnerName) setDeliveryCourier(data.carrierPartnerName);
+        if (data.shippingNote !== undefined) setVendorShippingNote(data.shippingNote);
+        if (data.vendorName) setVendorDisplayName(data.vendorName);
+        if (data.shippingFee !== undefined) setShippingFee(data.shippingFee);
       }
     } catch (err) {
       console.error(err);
@@ -358,7 +417,7 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
       };
       const billingAddress = shippingAddress;
 
-      // Create order on backend (which connects directly to Arivu Foods API)
+      // Create order on backend
       const orderRes = await fetch(`${apiUrl}/shop/create-order`, {
         method: 'POST',
         headers: {
@@ -374,7 +433,8 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
           patientPhone: patientPhone.trim(),
           shippingAddress,
           billingAddress,
-          vendorSlug: arivuItems.length > 0 ? 'arivu-foods' : undefined,
+          vendorId: activeVendorId,
+          vendorSlug: activeVendorSlug,
           pincode: cleanPin
         })
       });
@@ -388,7 +448,7 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
         setBasket([]);
         setPlacedOrderId(orderData.vendorOrderId || orderData.displayOrderId || orderData.orderId);
         setOrdered(true);
-        showToast('Order confirmed! Arivu Foods is preparing your shipment.', 'success');
+        showToast(`Order confirmed! ${vendorDisplayName || 'Our fulfillment team'} is preparing your shipment.`, 'success');
       } else if (orderData.gateway === 'razorpay') {
         const displayRef = orderData.vendorOrderId || orderData.displayOrderId || orderData.orderId.toString().slice(-6).toUpperCase();
         const options = {
@@ -893,8 +953,8 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
           {/* Right Column: Order Summary & Payment */}
           <div className="lg:col-span-5 space-y-6">
             
-            {/* Promo Coupon Card */}
-            {branding?.enableSaferFoodCoupons !== false && (
+            {/* Promo Coupon Card - Only shown when active vendor has available coupons or a coupon is applied */}
+            {branding?.enableSaferFoodCoupons !== false && (availableCoupons.length > 0 || !!appliedCoupon) && (
               <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-5 shadow-sm space-y-3">
                 <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block flex items-center gap-1.5">
                   <Tag className="h-3.5 w-3.5 text-indigo-600" /> Apply Promo Coupon
@@ -970,17 +1030,17 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
                     <span>{city && state ? `${city}, ${state}` : 'Pan-India Delivery'}</span>
                   </span>
                   <span className="font-black uppercase text-[10px] text-emerald-600 dark:text-emerald-400">
-                    {shippingFee === 0 ? 'FREE Shipping' : `₹${shippingFee.toFixed(0)} (FREE above ₹499)`}
+                    {shippingFee === 0 ? 'FREE Shipping' : `₹${shippingFee.toFixed(0)} (FREE above ₹${vendorFreeThreshold})`}
                   </span>
                 </div>
                 <p className="text-[10px] text-emerald-800/80 dark:text-emerald-400/80 leading-relaxed font-medium">
-                  {subtotal < 499 && (
+                  {subtotal < vendorFreeThreshold && (
                     <span className="font-bold text-emerald-700 dark:text-emerald-300 block mb-0.5">
-                      💡 Add {curr}{(499 - subtotal).toFixed(0)} more to get FREE delivery!
+                      💡 Add {curr}{(vendorFreeThreshold - subtotal).toFixed(0)} more to get FREE delivery!
                     </span>
                   )}
                   {deliveryEstimate ? `Estimated Timeline: ${deliveryEstimate}${deliveryCourier ? ` via ${deliveryCourier}` : ''}. ` : ''}
-                  Dispatched directly from fresh certified stock by Arivu Foods. Tracking ID is issued upon dispatch.
+                  {vendorShippingNote ? vendorShippingNote : `Dispatched directly from fresh certified stock${vendorDisplayName ? ` by ${vendorDisplayName}` : ''}. Tracking ID is issued upon dispatch.`}
                 </p>
               </div>
 
@@ -998,18 +1058,30 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
                   </div>
                 )}
 
-                {gstAmount > 0 && (
-                  <div className="flex justify-between text-slate-500 dark:text-slate-400 font-medium">
-                    <span>GST (Tax Included)</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200">+{curr}{gstAmount.toFixed(2)}</span>
-                  </div>
+                {/* Dynamic Vendor GST */}
+                {vendorGstPercentage > 0 && (
+                  vendorGstInclusive ? (
+                    includedGstAmount > 0 && (
+                      <div className="flex justify-between text-slate-500 dark:text-slate-400 font-medium">
+                        <span>GST ({vendorGstPercentage}% Included in MRP)</span>
+                        <span className="font-bold text-slate-700 dark:text-slate-300">Included ({curr}{includedGstAmount.toFixed(2)})</span>
+                      </div>
+                    )
+                  ) : (
+                    gstAmount > 0 && (
+                      <div className="flex justify-between text-slate-500 dark:text-slate-400 font-medium">
+                        <span>GST ({vendorGstPercentage}% Exclusive)</span>
+                        <span className="font-bold text-slate-800 dark:text-slate-200">+{curr}{gstAmount.toFixed(2)}</span>
+                      </div>
+                    )
+                  )
                 )}
 
                 <div className="flex justify-between items-baseline text-slate-500 dark:text-slate-400 font-medium pb-3 border-b border-slate-100 dark:border-slate-800">
                   <div>
                     <span>Standard Shipping</span>
                     <span className="text-[10px] text-slate-400 block font-normal">
-                      {subtotal >= 499 ? 'Free on orders above ₹499 (Pan-India)' : 'Free above ₹499 (₹70 below ₹499)'}
+                      {subtotal >= vendorFreeThreshold ? `Free on orders above ₹${vendorFreeThreshold} (Pan-India)` : `Free above ₹${vendorFreeThreshold} (₹${vendorShippingBelowThreshold} below ₹${vendorFreeThreshold})`}
                     </span>
                   </div>
                   {shippingFee > 0 ? (
@@ -1023,7 +1095,7 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
                   <div>
                     <span className="font-black text-slate-900 dark:text-slate-100 uppercase tracking-wider block">Total Payable</span>
                     <span className="text-[10px] text-slate-400 font-medium block">
-                      Inclusive of all taxes & delivery ({curr}{subtotal.toFixed(2)} {discountAmount > 0 ? `- ${curr}${discountAmount.toFixed(2)} ` : ''}+ {shippingFee === 0 ? 'FREE shipping' : `${curr}${shippingFee.toFixed(2)} shipping`})
+                      Inclusive of all taxes & delivery ({curr}{subtotal.toFixed(2)} {discountAmount > 0 ? `- ${curr}${discountAmount.toFixed(2)} ` : ''}{(!vendorGstInclusive && gstAmount > 0) ? `+ ${curr}${gstAmount.toFixed(2)} GST ` : ''}+ {shippingFee === 0 ? 'FREE shipping' : `${curr}${shippingFee.toFixed(2)} shipping`})
                     </span>
                   </div>
                   <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight">

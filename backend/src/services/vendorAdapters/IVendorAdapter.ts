@@ -84,6 +84,7 @@ export interface IVendorDeliveryEstimate {
   freeShippingThreshold: number; // 599
   vendorName: string;
   vendorOrigin: string; // "Bangalore Central Warehouse"
+  shippingNote?: string;
   message: string;
 }
 

@@ -23,6 +23,9 @@ export interface IVendorCommissionConfig {
 export interface IVendorShippingConfig {
   freeShippingThreshold: number; // default 499 for Arivu Foods
   shippingChargeBelowThreshold: number; // configurable amount (not hardcoded)
+  carrierPartnerName?: string; // e.g. 'Arivu Partner Logistics' or 'Pan-India Express'
+  estimatedDeliveryDays?: string; // e.g. '3-5 Business Days'
+  shippingNote?: string; // e.g. 'Dispatched directly from fresh certified stock...'
 }
 
 export interface IVendorPollingConfig {
@@ -71,6 +74,8 @@ export interface IVendor extends Document {
   assignedProducts?: mongoose.Types.ObjectId[];
   commissionType?: 'PERCENTAGE' | 'FIXED';
   commissionValue?: number;
+  gstPercentage?: number; // Vendor-level GST percentage (e.g. 5, 12, 18). 0 if no GST.
+  gstInclusive?: boolean; // Whether product prices are inclusive of GST (true for standard packaged food/FMCG)
   capabilities?: IVendorCapabilities;
   commissionConfig?: IVendorCommissionConfig;
   shippingConfig?: IVendorShippingConfig;
@@ -102,6 +107,8 @@ const VendorSchema: Schema = new Schema(
     assignedProducts: [{ type: Schema.Types.ObjectId, ref: 'ShopProduct' }],
     commissionType: { type: String, enum: ['PERCENTAGE', 'FIXED'], default: 'PERCENTAGE' },
     commissionValue: { type: Number, default: 30 },
+    gstPercentage: { type: Number, default: 0, min: 0 },
+    gstInclusive: { type: Boolean, default: true },
     capabilities: {
       productType: { type: String, enum: ['SINGLE', 'MULTIPLE'], default: 'MULTIPLE' },
       productSyncMethod: { type: String, enum: ['MANUAL', 'API'], default: 'API' },
@@ -122,7 +129,10 @@ const VendorSchema: Schema = new Schema(
     },
     shippingConfig: {
       freeShippingThreshold: { type: Number, default: 499 },
-      shippingChargeBelowThreshold: { type: Number, default: 70 }
+      shippingChargeBelowThreshold: { type: Number, default: 70 },
+      carrierPartnerName: { type: String, default: 'Pan-India Express' },
+      estimatedDeliveryDays: { type: String, default: '3-5 Business Days' },
+      shippingNote: { type: String, default: '' }
     },
     pollingConfig: {
       frequency: { 

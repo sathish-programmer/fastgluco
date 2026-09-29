@@ -9,11 +9,21 @@ export class CouponAdminController {
    */
   public static async listCoupons(req: AuthRequest, res: Response) {
     try {
-      const { q, page = '1', limit = '10' } = req.query;
+      const { q, vendorId, includeGlobal, page = '1', limit = '10' } = req.query;
       const filter: any = { isDeleted: false };
 
       if (q) {
         filter.code = { $regex: q as string, $options: 'i' };
+      }
+
+      if (vendorId) {
+        if (vendorId === 'null' || vendorId === 'global') {
+          filter.isGlobal = true;
+        } else if (includeGlobal === 'true') {
+          filter.$or = [{ vendorId }, { isGlobal: true }];
+        } else {
+          filter.vendorId = vendorId;
+        }
       }
 
       const p = parseInt(page as string, 10);
@@ -21,6 +31,7 @@ export class CouponAdminController {
       const skip = (p - 1) * l;
 
       const coupons = await Coupon.find(filter)
+        .populate('vendorId', 'name slug')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(l);
@@ -46,7 +57,7 @@ export class CouponAdminController {
    */
   public static async createCoupon(req: AuthRequest, res: Response) {
     try {
-      const { code, discountType, discountValue, expiryDate, maxRedemptions } = req.body;
+      const { code, discountType, discountValue, expiryDate, maxRedemptions, vendorId, isGlobal } = req.body;
 
       if (!code || !discountType || discountValue === undefined) {
         return res.status(400).json({ message: 'Code, discount type, and discount value are required.' });
@@ -75,7 +86,9 @@ export class CouponAdminController {
         discountType,
         discountValue,
         expiryDate: expiryDate ? new Date(expiryDate) : undefined,
-        maxRedemptions: maxRedemptions !== undefined ? parseInt(maxRedemptions, 10) : undefined
+        maxRedemptions: maxRedemptions !== undefined && maxRedemptions !== '' ? parseInt(maxRedemptions, 10) : undefined,
+        vendorId: vendorId || null,
+        isGlobal: isGlobal === true || (!vendorId && isGlobal !== false)
       });
 
       await coupon.save();
@@ -83,7 +96,7 @@ export class CouponAdminController {
       await AuditLog.create({
         adminId: req.user?.id,
         action: 'CREATE_COUPON',
-        details: `Created coupon code: ${cleanCode} (${discountType}: ${discountValue})`,
+        details: `Created coupon code: ${cleanCode} (${discountType}: ${discountValue}${vendorId ? `, vendor: ${vendorId}` : ', global'})`,
         ipAddress: req.ip
       });
 
@@ -99,7 +112,7 @@ export class CouponAdminController {
   public static async updateCoupon(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
-      const { code, discountType, discountValue, expiryDate, maxRedemptions, isActive } = req.body;
+      const { code, discountType, discountValue, expiryDate, maxRedemptions, isActive, vendorId, isGlobal } = req.body;
 
       const coupon = await Coupon.findById(id);
       if (!coupon || coupon.isDeleted) {
@@ -144,6 +157,14 @@ export class CouponAdminController {
 
       if (isActive !== undefined) {
         coupon.isActive = isActive;
+      }
+
+      if (vendorId !== undefined) {
+        coupon.vendorId = vendorId || null;
+      }
+
+      if (isGlobal !== undefined) {
+        coupon.isGlobal = Boolean(isGlobal);
       }
 
       await coupon.save();

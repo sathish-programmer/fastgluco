@@ -681,6 +681,12 @@ export class ArivuFoodsAdapter implements IVendorAdapter {
       ? `${address.city}${address.state ? `, ${address.state}` : ''}`
       : (cleanPincode ? `Delivery Area (${cleanPincode})` : 'Pan-India');
 
+    const carrierName = vendor?.shippingConfig?.carrierPartnerName || 'Arivu Partner Logistics';
+    const deliveryTimeline = vendor?.shippingConfig?.estimatedDeliveryDays 
+      ? `${vendor.shippingConfig.estimatedDeliveryDays} (Pan-India Express)` 
+      : '3-5 Business Days (Pan-India Express)';
+    const customNote = vendor?.shippingConfig?.shippingNote || 'Dispatched directly from fresh certified stock by Arivu Foods. Tracking ID is issued upon dispatch.';
+
     return {
       serviceable: true, // Arivu provides Pan-India delivery. No pincode rejection.
       pincode: cleanPincode,
@@ -688,16 +694,17 @@ export class ArivuFoodsAdapter implements IVendorAdapter {
       city: address?.city || 'India',
       state: address?.state || 'India',
       zone: 'Pan-India Express',
-      vendorName: 'Arivu Foods',
-      vendorOrigin: 'Arivu Bangalore Central Hub',
-      courierPartner: 'Arivu Partner Logistics',
+      vendorName: vendor?.name || 'Arivu Foods',
+      vendorOrigin: vendor?.businessAddress || 'Arivu Bangalore Central Hub',
+      courierPartner: carrierName,
       shippingFee: effectiveFee,
       baseShippingFee: belowThresholdFee,
       isFreeShipping,
       freeShippingThreshold: freeThreshold,
-      estimatedDeliveryTime: '3-5 Business Days (Pan-India Express)',
+      estimatedDeliveryTime: deliveryTimeline,
       estimatedDeliveryDate,
       estimatedDeliveryDateIso: targetDate.toISOString(),
+      shippingNote: customNote,
       hasDedicatedApi: false, // Confirmed: Arivu has no pincode coverage API
       message: statusMessage
     };

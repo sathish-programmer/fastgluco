@@ -33,7 +33,8 @@ import {
   Clock,
   Info,
   CheckCircle,
-  Truck
+  Truck,
+  Tag
 } from 'lucide-react';
 
 interface AdminVendorManagementProps {
@@ -51,7 +52,7 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
   // Active view: 'LIST' or 'DETAIL'
   const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null);
   const [selectedVendorData, setSelectedVendorData] = useState<any | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'settlements' | 'logs' | 'config'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'coupons' | 'settlements' | 'logs' | 'config'>('overview');
 
   // Search & Filter (ACTIVE vendors focused by default)
   const [searchQuery, setSearchQuery] = useState('');
@@ -123,6 +124,18 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
   // Edit Config Form in Tab 6
   const [editConfigForm, setEditConfigForm] = useState<any>({});
 
+  // Vendor Coupons State
+  const [vendorCoupons, setVendorCoupons] = useState<any[]>([]);
+  const [loadingCoupons, setLoadingCoupons] = useState(false);
+  const [showAddCouponModal, setShowAddCouponModal] = useState(false);
+  const [newCouponForm, setNewCouponForm] = useState({
+    code: '',
+    discountType: 'percentage',
+    discountValue: 10,
+    maxRedemptions: '',
+    expiryDate: ''
+  });
+
   // Polling All Orders State
   const [pollingVendorOrders, setPollingVendorOrders] = useState(false);
 
@@ -193,16 +206,92 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
           checkoutType: data.vendor.capabilities?.checkoutType || 'INTERNAL',
           productSyncMethod: data.vendor.capabilities?.productSyncMethod || 'API',
           productType: data.vendor.capabilities?.productType || 'MULTIPLE',
+          gstPercentage: data.vendor.gstPercentage ?? 0,
+          gstInclusive: data.vendor.gstInclusive !== false,
           freeShippingThreshold: data.vendor.shippingConfig?.freeShippingThreshold ?? 499,
-          shippingChargeBelowThreshold: data.vendor.shippingConfig?.shippingChargeBelowThreshold ?? 50,
+          shippingChargeBelowThreshold: data.vendor.shippingConfig?.shippingChargeBelowThreshold ?? 70,
+          carrierPartnerName: data.vendor.shippingConfig?.carrierPartnerName || 'Pan-India Express',
+          estimatedDeliveryDays: data.vendor.shippingConfig?.estimatedDeliveryDays || '3-5 Business Days',
+          shippingNote: data.vendor.shippingConfig?.shippingNote || '',
           pollingFrequency: data.vendor.pollingConfig?.frequency || 'DAILY_TWICE',
           pollingIsActive: data.vendor.pollingConfig?.isActive ?? true,
           lastPolledAt: data.vendor.pollingConfig?.lastPolledAt
         });
         setSettlementCycleDays(data.vendor.commissionConfig?.settlementCycleDays ?? 30);
+        fetchVendorCoupons(vendorId);
       }
     } catch (e) {
       console.error('Error fetching vendor details:', e);
+    }
+  };
+
+  const fetchVendorCoupons = async (vendorId: string) => {
+    setLoadingCoupons(true);
+    try {
+      const res = await fetch(`${apiUrl}/admin/payments/coupons?vendorId=${vendorId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setVendorCoupons(data.coupons || []);
+      }
+    } catch (e) {
+      console.error('Error fetching vendor coupons:', e);
+    } finally {
+      setLoadingCoupons(false);
+    }
+  };
+
+  const handleCreateVendorCoupon = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedVendorId || !newCouponForm.code) return;
+    try {
+      const res = await fetch(`${apiUrl}/admin/payments/coupons`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          code: newCouponForm.code.trim().toUpperCase(),
+          discountType: newCouponForm.discountType,
+          discountValue: Number(newCouponForm.discountValue),
+          maxRedemptions: newCouponForm.maxRedemptions ? Number(newCouponForm.maxRedemptions) : undefined,
+          expiryDate: newCouponForm.expiryDate || undefined,
+          vendorId: selectedVendorId,
+          isGlobal: false
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSyncMessage(`Coupon '${newCouponForm.code.toUpperCase()}' created successfully!`);
+        setShowAddCouponModal(false);
+        setNewCouponForm({ code: '', discountType: 'percentage', discountValue: 10, maxRedemptions: '', expiryDate: '' });
+        fetchVendorCoupons(selectedVendorId);
+      } else {
+        alert(data.message || 'Error creating coupon');
+      }
+    } catch (err: any) {
+      alert(`Error: ${err.message}`);
+    }
+  };
+
+  const handleDeleteVendorCoupon = async (couponId: string) => {
+    if (!window.confirm('Are you sure you want to delete this vendor coupon?')) return;
+    try {
+      const res = await fetch(`${apiUrl}/admin/payments/coupons/${couponId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setSyncMessage('Coupon deleted successfully!');
+        if (selectedVendorId) fetchVendorCoupons(selectedVendorId);
+      } else {
+        const data = await res.json();
+        alert(data.message || 'Error deleting coupon');
+      }
+    } catch (err: any) {
+      alert(`Error: ${err.message}`);
     }
   };
 
@@ -571,6 +660,8 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
           businessAddress: editConfigForm.businessAddress,
           address: editConfigForm.businessAddress,
           externalStoreUrl: editConfigForm.externalStoreUrl,
+          gstPercentage: Number(editConfigForm.gstPercentage || 0),
+          gstInclusive: editConfigForm.gstInclusive !== false,
           capabilities: {
             checkoutType: editConfigForm.checkoutType,
             productSyncMethod: editConfigForm.productSyncMethod,
@@ -584,7 +675,10 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
           },
           shippingConfig: {
             freeShippingThreshold: Number(editConfigForm.freeShippingThreshold ?? 499),
-            shippingChargeBelowThreshold: Number(editConfigForm.shippingChargeBelowThreshold ?? 0)
+            shippingChargeBelowThreshold: Number(editConfigForm.shippingChargeBelowThreshold ?? 70),
+            carrierPartnerName: editConfigForm.carrierPartnerName || 'Pan-India Express',
+            estimatedDeliveryDays: editConfigForm.estimatedDeliveryDays || '3-5 Business Days',
+            shippingNote: editConfigForm.shippingNote || ''
           },
           pollingConfig: {
             frequency: editConfigForm.pollingFrequency || 'DAILY_TWICE',
@@ -1346,12 +1440,13 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
             </div>
           </div>
 
-          {/* 6 TABS NAVIGATION */}
+          {/* 7 TABS NAVIGATION */}
           <div className="flex flex-wrap items-center gap-2 bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200/80 shadow-inner">
             {[
               { id: 'overview', label: 'Overview', icon: BarChart3 },
               { id: 'products', label: `Products (${selectedVendorData.products?.length || 0})`, icon: Package },
               { id: 'orders', label: `Orders (${selectedVendorData.orders?.length || 0})`, icon: FileText },
+              { id: 'coupons', label: `Coupons (${vendorCoupons.length})`, icon: Tag },
               { id: 'settlements', label: `Commission & Settlements`, icon: IndianRupee },
               { id: 'logs', label: `API Integration & Sync Logs`, icon: Activity },
               { id: 'config', label: `Vendor Configuration`, icon: Settings }
@@ -1908,6 +2003,109 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
                       </tbody>
                     </table>
                   </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 3.5: VENDOR COUPONS */}
+          {activeTab === 'coupons' && (
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                <div>
+                  <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                    <Tag className="h-4 w-4 text-indigo-600" />
+                    <span>Vendor Coupons ({vendorCoupons.length})</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium">
+                    Coupons configured specifically for {selectedVendorData.vendor?.name}. Customers ordering products from this vendor will only see and apply these coupons.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowAddCouponModal(true)}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Create Vendor Coupon</span>
+                </button>
+              </div>
+
+              {loadingCoupons ? (
+                <div className="py-12 text-center text-xs text-slate-500 flex items-center justify-center gap-2">
+                  <RefreshCw className="h-4 w-4 animate-spin text-indigo-600" />
+                  <span>Loading vendor coupons...</span>
+                </div>
+              ) : vendorCoupons.length === 0 ? (
+                <div className="text-center py-12 px-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200 space-y-3">
+                  <div className="h-12 w-12 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto">
+                    <Tag className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-800">No Vendor Coupons Active</h4>
+                    <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                      This vendor has no active coupons. When a customer adds products from this vendor to their cart, the coupon section will be automatically hidden unless you create a coupon here.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowAddCouponModal(true)}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition"
+                  >
+                    Create First Coupon
+                  </button>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[10px] bg-slate-50/50">
+                        <th className="py-3 px-4">Coupon Code</th>
+                        <th className="py-3 px-4">Discount</th>
+                        <th className="py-3 px-4">Usage / Max</th>
+                        <th className="py-3 px-4">Expiry Date</th>
+                        <th className="py-3 px-4">Status</th>
+                        <th className="py-3 px-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {vendorCoupons.map((c) => {
+                        const isExpired = c.expiryDate && new Date(c.expiryDate) < new Date();
+                        const isLimitReached = c.maxRedemptions !== undefined && c.redemptionsCount >= c.maxRedemptions;
+                        return (
+                          <tr key={c._id} className="hover:bg-slate-50/80 transition">
+                            <td className="py-3 px-4 font-mono font-black text-indigo-700">
+                              {c.code}
+                            </td>
+                            <td className="py-3 px-4 font-bold text-slate-800">
+                              {c.discountType === 'percentage' ? `${c.discountValue}% OFF` : `₹${c.discountValue} OFF`}
+                            </td>
+                            <td className="py-3 px-4 text-slate-600">
+                              {c.redemptionsCount || 0} {c.maxRedemptions ? `/ ${c.maxRedemptions}` : '(Unlimited)'}
+                            </td>
+                            <td className="py-3 px-4 text-slate-500">
+                              {c.expiryDate ? new Date(c.expiryDate).toLocaleDateString('en-IN') : 'No Expiry'}
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                !c.isActive || isExpired || isLimitReached
+                                  ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                                  : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              }`}>
+                                {!c.isActive ? 'Inactive' : isExpired ? 'Expired' : isLimitReached ? 'Limit Reached' : 'Active'}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              <button
+                                onClick={() => handleDeleteVendorCoupon(c._id)}
+                                className="px-2.5 py-1 text-rose-600 hover:bg-rose-50 rounded-lg text-xs font-bold transition"
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>
@@ -2677,7 +2875,67 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
                   </div>
                 </div>
 
-                {/* SECTION: SHIPPING CONFIGURATION (Admin -> Vendor Management -> Arivu Foods -> Shipping Configuration) */}
+                {/* SECTION: VENDOR GST CONFIGURATION */}
+                <div className="space-y-4 md:col-span-2 pt-4 border-t border-slate-100">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-xs font-bold text-indigo-800 uppercase tracking-wider flex items-center gap-1.5">
+                        <Receipt className="h-4 w-4 text-indigo-600" />
+                        <span>Vendor GST Configuration</span>
+                      </h4>
+                      <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                        Configure vendor-specific GST rate and pricing model. Products associated with this vendor will dynamically apply these tax rules.
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-full">
+                      Vendor Level Tax
+                    </span>
+                  </div>
+
+                  <div className="bg-indigo-50/50 border border-indigo-100 rounded-2xl p-4 space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-800 mb-1">
+                          GST Percentage (%)
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.5"
+                            value={editConfigForm.gstPercentage ?? 0}
+                            onChange={(e) => setEditConfigForm({ ...editConfigForm, gstPercentage: e.target.value })}
+                            className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-bold focus:outline-none focus:border-indigo-500"
+                            placeholder="0 (e.g. 5, 12, 18)"
+                          />
+                        </div>
+                        <span className="text-[10px] text-slate-400 mt-1 block">
+                          Enter 0 for GST-exempt products (e.g. fresh staple grains, unprocessed natural foods).
+                        </span>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-800 mb-1">
+                          GST Pricing Mode
+                        </label>
+                        <select
+                          value={editConfigForm.gstInclusive ? 'INCLUSIVE' : 'EXCLUSIVE'}
+                          onChange={(e) => setEditConfigForm({ ...editConfigForm, gstInclusive: e.target.value === 'INCLUSIVE' })}
+                          className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-bold focus:outline-none focus:border-indigo-500"
+                        >
+                          <option value="INCLUSIVE">Inclusive in Product MRP (Standard for FMCG / Packaged Foods)</option>
+                          <option value="EXCLUSIVE">Exclusive (Added on top of subtotal at checkout)</option>
+                        </select>
+                        <span className="text-[10px] text-slate-400 mt-1 block">
+                          Indian consumer food law requires listed MRP to be inclusive of GST.
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* SECTION: SHIPPING CONFIGURATION */}
                 <div className="space-y-4 md:col-span-2 pt-4 border-t border-slate-100">
                   <div className="flex items-center justify-between">
                     <div>
@@ -2686,7 +2944,7 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
                         <span>Shipping Configuration</span>
                       </h4>
                       <p className="text-[11px] text-slate-500 font-medium mt-0.5">
-                        Arivu provides Pan-India delivery. Orders value ≥ Free Shipping Threshold qualify for FREE shipping.
+                        Configure vendor-specific free delivery threshold, shipping fee, carrier partner, and customer dispatch messaging.
                       </p>
                     </div>
                     <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">
@@ -2727,14 +2985,62 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
                             type="number"
                             min="0"
                             step="1"
-                            value={editConfigForm.shippingChargeBelowThreshold ?? 50}
+                            value={editConfigForm.shippingChargeBelowThreshold ?? 70}
                             onChange={(e) => setEditConfigForm({ ...editConfigForm, shippingChargeBelowThreshold: e.target.value })}
                             className="w-full bg-white border border-slate-200 rounded-xl pl-7 pr-3 py-2 text-xs text-slate-900 font-bold focus:outline-none focus:border-emerald-500"
-                            placeholder="50"
+                            placeholder="70"
                           />
                         </div>
-                        <span className="text-[10px] text-amber-700 mt-1 block font-medium">
-                          Note: Arivu has not yet finalized below-threshold charge. Update here anytime without redeployment.
+                        <span className="text-[10px] text-slate-400 mt-1 block font-medium">
+                          Shipping fee charged when order total is below the free threshold.
+                        </span>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-800 mb-1">
+                          Courier / Logistics Partner Name
+                        </label>
+                        <input
+                          type="text"
+                          value={editConfigForm.carrierPartnerName || ''}
+                          onChange={(e) => setEditConfigForm({ ...editConfigForm, carrierPartnerName: e.target.value })}
+                          placeholder="e.g. Pan-India Express or Arivu Partner Logistics"
+                          className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-medium focus:outline-none focus:border-emerald-500"
+                        />
+                        <span className="text-[10px] text-slate-400 mt-1 block">
+                          Shown to customer in cart breakdown (e.g. "via {editConfigForm.carrierPartnerName || 'Pan-India Express'}").
+                        </span>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-800 mb-1">
+                          Estimated Delivery Timeline
+                        </label>
+                        <input
+                          type="text"
+                          value={editConfigForm.estimatedDeliveryDays || ''}
+                          onChange={(e) => setEditConfigForm({ ...editConfigForm, estimatedDeliveryDays: e.target.value })}
+                          placeholder="e.g. 3-5 Business Days"
+                          className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-medium focus:outline-none focus:border-emerald-500"
+                        />
+                        <span className="text-[10px] text-slate-400 mt-1 block">
+                          Shown to customer at checkout (e.g. "Estimated Timeline: 3-5 Business Days").
+                        </span>
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <label className="block text-xs font-bold text-slate-800 mb-1">
+                          Custom Shipping Note / Dispatch Message
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={editConfigForm.shippingNote || ''}
+                          onChange={(e) => setEditConfigForm({ ...editConfigForm, shippingNote: e.target.value })}
+                          placeholder="e.g. Dispatched directly from fresh certified stock. Tracking ID is issued upon dispatch."
+                          className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-medium focus:outline-none focus:border-emerald-500"
+                        />
+                        <span className="text-[10px] text-slate-400 mt-0.5 block">
+                          Optional custom dispatch note shown on checkout screen for products from this vendor.
                         </span>
                       </div>
                     </div>
@@ -3776,6 +4082,114 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
                 className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
               >
                 {saving ? 'Creating...' : 'Register Vendor'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Add Vendor Coupon Modal */}
+      {showAddCouponModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <form
+            onSubmit={handleCreateVendorCoupon}
+            className="bg-white rounded-3xl max-w-md w-full shadow-2xl overflow-hidden border border-slate-100 animate-in fade-in zoom-in-95 duration-200"
+          >
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
+                  <Tag className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-900 text-base">Add Vendor Coupon</h3>
+                  <p className="text-xs text-slate-500 font-medium">Coupon will only apply to {selectedVendorData?.name || 'this vendor'}'s products</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddCouponModal(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Coupon Code *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. ARIVU20"
+                  value={newCouponForm.code}
+                  onChange={(e) => setNewCouponForm({ ...newCouponForm, code: e.target.value.toUpperCase() })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-black tracking-wider text-slate-900 uppercase focus:outline-none focus:bg-white focus:border-purple-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Discount Type</label>
+                  <select
+                    value={newCouponForm.discountType}
+                    onChange={(e) => setNewCouponForm({ ...newCouponForm, discountType: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none focus:bg-white focus:border-purple-500 font-medium"
+                  >
+                    <option value="percentage">Percentage (%)</option>
+                    <option value="fixed">Flat Amount (₹)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Discount Value *</label>
+                  <input
+                    type="number"
+                    required
+                    min={1}
+                    value={newCouponForm.discountValue}
+                    onChange={(e) => setNewCouponForm({ ...newCouponForm, discountValue: Number(e.target.value) })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none focus:bg-white focus:border-purple-500 font-bold"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Max Redemptions</label>
+                  <input
+                    type="number"
+                    min={1}
+                    placeholder="Unlimited"
+                    value={newCouponForm.maxRedemptions}
+                    onChange={(e) => setNewCouponForm({ ...newCouponForm, maxRedemptions: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none focus:bg-white focus:border-purple-500 font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Expiry Date</label>
+                  <input
+                    type="date"
+                    value={newCouponForm.expiryDate}
+                    onChange={(e) => setNewCouponForm({ ...newCouponForm, expiryDate: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none focus:bg-white focus:border-purple-500 font-medium"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowAddCouponModal(false)}
+                className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-bold transition border border-slate-200"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loadingCoupons || !newCouponForm.code}
+                className="px-5 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition shadow-sm"
+              >
+                {loadingCoupons ? 'Creating...' : 'Create Coupon'}
               </button>
             </div>
           </form>

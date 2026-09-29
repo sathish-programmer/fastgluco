@@ -112,7 +112,7 @@ export interface ShopItem {
   discountPercent?: number;
   offerPrice?: number;
   regularPrice?: number;
-  vendorId?: string;
+  vendorId?: any;
   vendorSku?: string;
   buyOnAmazonUrl?: string;
   nutritionFacts?: Record<string, any>;
@@ -767,7 +767,11 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                         )}
                       </div>
                       <span className="text-xs text-slate-400 font-medium block mt-1">
-                        Inclusive of all taxes • Doorstep delivery available
+                        {typeof selectedProduct.vendorId === 'object' && selectedProduct.vendorId?.gstPercentage !== undefined
+                          ? (selectedProduct.vendorId.gstPercentage > 0
+                              ? `Inclusive of ${selectedProduct.vendorId.gstPercentage}% GST${selectedProduct.vendorId?.name ? ` • Dispatched by ${selectedProduct.vendorId.name}` : ' • Doorstep delivery available'}`
+                              : `GST Exempt (0%)${selectedProduct.vendorId?.name ? ` • Dispatched by ${selectedProduct.vendorId.name}` : ' • Doorstep delivery available'}`)
+                          : 'Inclusive of all taxes • Doorstep delivery available'}
                       </span>
                     </div>
 

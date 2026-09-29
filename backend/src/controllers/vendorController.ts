@@ -39,6 +39,8 @@ export class VendorController {
         assignedProducts,
         commissionType,
         commissionValue,
+        gstPercentage,
+        gstInclusive,
         capabilities,
         commissionConfig,
         shippingConfig,
@@ -79,6 +81,8 @@ export class VendorController {
         assignedProducts: assignedProducts || [],
         commissionType: commissionType || 'PERCENTAGE',
         commissionValue: commissionValue !== undefined ? Number(commissionValue) : 30,
+        gstPercentage: gstPercentage !== undefined ? Number(gstPercentage) : 0,
+        gstInclusive: gstInclusive !== undefined ? Boolean(gstInclusive) : true,
         capabilities: capabilities || {
           productType: 'MULTIPLE',
           productSyncMethod: 'API',
@@ -99,7 +103,10 @@ export class VendorController {
         },
         shippingConfig: shippingConfig || {
           freeShippingThreshold: resolvedFreeThreshold,
-          shippingChargeBelowThreshold: resolvedBelowThresholdFee
+          shippingChargeBelowThreshold: resolvedBelowThresholdFee,
+          carrierPartnerName: 'Pan-India Express',
+          estimatedDeliveryDays: '3-5 Business Days',
+          shippingNote: ''
         },
         pollingConfig: pollingConfig || {
           frequency: 'TWICE_DAILY',
@@ -143,6 +150,8 @@ export class VendorController {
         isActive,
         commissionType,
         commissionValue,
+        gstPercentage,
+        gstInclusive,
         capabilities,
         commissionConfig,
         shippingConfig,
@@ -169,6 +178,8 @@ export class VendorController {
       if (assignedProducts !== undefined) vendor.assignedProducts = assignedProducts;
       if (commissionType !== undefined) vendor.commissionType = commissionType;
       if (commissionValue !== undefined) vendor.commissionValue = Number(commissionValue);
+      if (gstPercentage !== undefined) vendor.gstPercentage = Number(gstPercentage);
+      if (gstInclusive !== undefined) vendor.gstInclusive = Boolean(gstInclusive);
       if (externalStoreUrl !== undefined) vendor.externalStoreUrl = externalStoreUrl;
       if (agreementNotes !== undefined) vendor.agreementNotes = agreementNotes;
 
@@ -205,7 +216,10 @@ export class VendorController {
         const shippingChargeBelowThreshold = Number(shippingConfig.shippingChargeBelowThreshold ?? vendor.shippingConfig?.shippingChargeBelowThreshold ?? 70);
         vendor.shippingConfig = {
           freeShippingThreshold,
-          shippingChargeBelowThreshold
+          shippingChargeBelowThreshold,
+          carrierPartnerName: shippingConfig.carrierPartnerName !== undefined ? shippingConfig.carrierPartnerName : (vendor.shippingConfig?.carrierPartnerName || 'Pan-India Express'),
+          estimatedDeliveryDays: shippingConfig.estimatedDeliveryDays !== undefined ? shippingConfig.estimatedDeliveryDays : (vendor.shippingConfig?.estimatedDeliveryDays || '3-5 Business Days'),
+          shippingNote: shippingConfig.shippingNote !== undefined ? shippingConfig.shippingNote : (vendor.shippingConfig?.shippingNote || '')
         };
         if (vendor.commissionConfig) {
           vendor.commissionConfig.minFreeShippingOrderValue = freeShippingThreshold;

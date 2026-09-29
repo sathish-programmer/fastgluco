@@ -74,6 +74,18 @@ export class DefaultVendorAdapter implements IVendorAdapter {
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const dateFormatted = `${dayNames[targetDate.getDay()]}, ${targetDate.getDate()} ${monthNames[targetDate.getMonth()]}`;
 
+    const freeThreshold = vendor.shippingConfig?.freeShippingThreshold ?? 
+                          vendor.commissionConfig?.minFreeShippingOrderValue ?? 
+                          499;
+    const belowThresholdFee = vendor.shippingConfig?.shippingChargeBelowThreshold ?? 
+                              vendor.commissionConfig?.standardShippingFee ?? 
+                              70;
+    const isFreeShipping = cartAmount >= freeThreshold;
+    const effectiveFee = isFreeShipping ? 0 : belowThresholdFee;
+
+    const courier = vendor.shippingConfig?.carrierPartnerName || 'Pan-India Express';
+    const deliveryTimeline = vendor.shippingConfig?.estimatedDeliveryDays || `${days} Business Days`;
+
     return {
       serviceable: isServiceable,
       pincode: cleanPincode,
@@ -81,17 +93,20 @@ export class DefaultVendorAdapter implements IVendorAdapter {
       city: address?.city || 'India',
       state: address?.state || 'India',
       zone: 'National',
-      courierPartner: 'Vendor Standard Logistics',
+      courierPartner: courier,
       transitDays: days,
       estimatedDeliveryDate: dateFormatted,
       estimatedDeliveryDateIso: targetDate,
-      estimatedDeliveryTime: `${days} Business Days`,
-      shippingFee: cartAmount >= 599 ? 0 : 90,
-      isFreeShipping: cartAmount >= 599,
-      freeShippingThreshold: 599,
+      estimatedDeliveryTime: deliveryTimeline,
+      shippingFee: effectiveFee,
+      isFreeShipping,
+      freeShippingThreshold: freeThreshold,
       vendorName: vendor.name || 'Partner Store',
-      vendorOrigin: 'Vendor Warehouse',
-      message: `Standard delivery: ${dateFormatted}`
+      vendorOrigin: vendor.businessAddress || 'Vendor Warehouse',
+      shippingNote: vendor.shippingConfig?.shippingNote || undefined,
+      message: isFreeShipping 
+        ? `FREE Shipping for orders >= ₹${freeThreshold}.` 
+        : `₹${effectiveFee} shipping for orders below ₹${freeThreshold}.`
     };
   }
 }

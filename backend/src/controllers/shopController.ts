@@ -225,7 +225,7 @@ export const getProducts = async (req: Request, res: Response) => {
 
     const filterQuery = andConditions.length > 1 ? { $and: andConditions } : baseVendorFilter;
 
-    let query = ShopProduct.find(filterQuery);
+    let query = ShopProduct.find(filterQuery).populate('vendorId', 'name slug gstPercentage gstInclusive shippingConfig');
 
     if (sortBy === 'price_asc') {
       query = query.sort({ price: 1 });
@@ -315,7 +315,7 @@ export const validateCart = async (req: Request, res: Response) => {
 export const getProductDetails = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const product = await ShopProduct.findById(id);
+    const product = await ShopProduct.findById(id).populate('vendorId', 'name slug gstPercentage gstInclusive shippingConfig');
     if (!product) return res.status(404).json({ message: 'Product not found' });
 
     // Find similar products in same category
@@ -335,9 +335,34 @@ export const getProductDetails = async (req: Request, res: Response) => {
 
 export const validateShopCoupon = async (req: Request, res: Response) => {
   try {
-    const { couponCode, totalAmount } = req.body;
+    const { couponCode, totalAmount, vendorSlug, vendorId, items } = req.body;
     if (!couponCode) {
       return res.status(400).json({ message: 'Coupon code is required.' });
+    }
+
+    // 1. Resolve Active Vendor dynamically
+    let activeVendor: any = null;
+    if (vendorId) {
+      activeVendor = await Vendor.findOne({ _id: vendorId, isActive: true, isDeleted: { $ne: true } });
+    }
+    if (!activeVendor && vendorSlug) {
+      activeVendor = await Vendor.findOne({ slug: vendorSlug, isActive: true, isDeleted: { $ne: true } });
+    }
+    if (!activeVendor && items && items.length > 0) {
+      for (const item of items) {
+        const pId = item.productId || item.id;
+        if (pId) {
+          const prod = await ShopProduct.findById(pId);
+          if (prod && prod.vendorId) {
+            activeVendor = await Vendor.findOne({ _id: prod.vendorId, isActive: true, isDeleted: { $ne: true } });
+            if (activeVendor) break;
+          }
+        }
+      }
+    }
+    if (!activeVendor) {
+      activeVendor = await Vendor.findOne({ slug: 'arivu-foods', isActive: true, isDeleted: { $ne: true } }) || 
+                     await Vendor.findOne({ isActive: true, isDeleted: { $ne: true } });
     }
 
     let discountAmount = 0;
@@ -348,7 +373,7 @@ export const validateShopCoupon = async (req: Request, res: Response) => {
         code: couponCode.trim().toUpperCase(),
         isActive: true,
         isDeleted: false
-      });
+      }).populate('vendorId', 'name slug');
 
       if (!couponRes) {
         return res.status(400).json({ valid: false, message: 'Invalid or inactive coupon code.' });
@@ -360,6 +385,26 @@ export const validateShopCoupon = async (req: Request, res: Response) => {
 
       if (couponRes.maxRedemptions !== undefined && couponRes.redemptionsCount >= couponRes.maxRedemptions) {
         return res.status(400).json({ valid: false, message: 'This coupon code has reached its limit.' });
+      }
+
+      // Vendor Eligibility Check:
+      // If coupon is vendor-specific, ensure it matches the vendor of products in cart
+      if (couponRes.vendorId && !couponRes.isGlobal) {
+        const couponVendorIdStr = (couponRes.vendorId._id || couponRes.vendorId).toString();
+        const activeVendorIdStr = activeVendor ? activeVendor._id.toString() : '';
+        if (activeVendorIdStr && couponVendorIdStr !== activeVendorIdStr) {
+          const vendorDisplayName = couponRes.vendorId.name || 'its designated vendor';
+          return res.status(400).json({ 
+            valid: false, 
+            message: `This coupon is valid only for products from ${vendorDisplayName}.` 
+          });
+        }
+      } else if (!couponRes.isGlobal && !couponRes.vendorId && activeVendor) {
+        // Old legacy coupons without vendorId and not flagged isGlobal do not apply to vendor products
+        return res.status(400).json({
+          valid: false,
+          message: 'This coupon code is not valid for vendor products.'
+        });
       }
 
       if (couponRes.discountType === 'percentage') {
@@ -374,37 +419,71 @@ export const validateShopCoupon = async (req: Request, res: Response) => {
     const totalDiscountAmount = Number((discountAmount + shopDiscountAmount).toFixed(2));
     
     const discountedAmount = Number(Math.max(0, totalAmount - totalDiscountAmount).toFixed(2));
-    // Confirmed: Product MRP is inclusive of GST. No additional GST charged to customer.
-    const gstAmount = 0;
+
+    // Dynamic GST calculation based on Vendor configuration
+    let gstAmount = 0;
+    let includedGstAmount = 0;
+    let gstPercentage = 0;
+    let gstInclusive = true;
+
+    if (activeVendor && activeVendor.gstPercentage !== undefined && activeVendor.gstPercentage > 0) {
+      gstPercentage = activeVendor.gstPercentage;
+      gstInclusive = activeVendor.gstInclusive !== false;
+
+      if (!gstInclusive) {
+        // Exclusive GST: Added on top of subtotal
+        gstAmount = Number(((discountedAmount * gstPercentage) / 100).toFixed(2));
+      } else {
+        // Inclusive GST: Built into the product price (standard Indian MRP)
+        gstAmount = 0;
+        includedGstAmount = Number((discountedAmount - (discountedAmount / (1 + (gstPercentage / 100)))).toFixed(2));
+      }
+    } else if (!activeVendor && config?.shopGstPercentage) {
+      // Fallback for legacy non-vendor products
+      gstPercentage = config.shopGstPercentage;
+      gstInclusive = false;
+      gstAmount = Number(((discountedAmount * gstPercentage) / 100).toFixed(2));
+    }
 
     const pincode = req.body.pincode || req.body.deliveryPincode || '';
     const address = req.body.address || req.body.shippingAddress;
-    const vendorSlug = req.body.vendorSlug || 'arivu-foods';
     const userLat = req.body.userLat ? Number(req.body.userLat) : undefined;
     const userLon = req.body.userLon ? Number(req.body.userLon) : undefined;
 
-    const shippingRes = await computeShippingFeeForPincode(pincode, userLat, userLon, address, discountedAmount, vendorSlug);
+    const shippingRes = await computeShippingFeeForPincode(
+      pincode, 
+      userLat, 
+      userLon, 
+      address, 
+      discountedAmount, 
+      activeVendor?.slug,
+      activeVendor?._id?.toString()
+    );
     const shippingFee = Number((shippingRes.shippingFee || 0).toFixed(2));
-    const finalAmount = Number((discountedAmount + shippingFee).toFixed(2));
+    const finalAmount = Number((discountedAmount + gstAmount + shippingFee).toFixed(2));
 
     return res.status(200).json({
       valid: true,
       couponCode: couponRes ? couponRes.code : 'NO_COUPON',
       discountAmount: totalDiscountAmount,
       gstAmount,
+      includedGstAmount,
+      gstInclusive,
+      gstPercentage,
       shippingFee,
       isServiceable: shippingRes.serviceable,
       estimatedDeliveryTime: shippingRes.estimatedDeliveryTime,
       estimatedDeliveryDate: shippingRes.estimatedDeliveryDate,
       courierPartner: shippingRes.courierPartner,
-      vendorName: shippingRes.vendorName,
+      vendorName: shippingRes.vendorName || activeVendor?.name,
+      shippingNote: shippingRes.shippingNote || activeVendor?.shippingConfig?.shippingNote || '',
       localityName: shippingRes.localityName,
       city: shippingRes.city,
       state: shippingRes.state,
       isFreeShipping: shippingRes.isFreeShipping,
-      freeShippingThreshold: shippingRes.freeShippingThreshold || 499,
+      freeShippingThreshold: shippingRes.freeShippingThreshold || activeVendor?.shippingConfig?.freeShippingThreshold || 499,
       finalAmount,
-      shopGstPercentage: 0,
+      shopGstPercentage: gstPercentage,
       shopDiscountPercentage: config?.shopDiscountPercentage || 0
     });
   } catch (error: any) {
@@ -596,10 +675,37 @@ export const createOrder = async (req: Request, res: Response) => {
     }
 
     // 3. SERVER-SIDE CALCULATION
+    // Resolve Vendor dynamically from cart products or payload
+    let activeVendor: any = null;
+    const vendorIdFromProd = productsToUpdate.find(u => u.product.vendorId)?.product.vendorId;
+    if (vendorIdFromProd) {
+      activeVendor = await Vendor.findById(vendorIdFromProd);
+    }
+    if (!activeVendor && req.body.vendorId) {
+      activeVendor = await Vendor.findById(req.body.vendorId);
+    }
+    if (!activeVendor && req.body.vendorSlug) {
+      activeVendor = await Vendor.findOne({ slug: req.body.vendorSlug });
+    }
+    if (!activeVendor) {
+      activeVendor = await Vendor.findOne({ slug: 'arivu-foods' }) || await Vendor.findOne({ isActive: true });
+    }
+
     let couponDiscountAmount = 0;
     if (couponCode) {
-      const coupon = await Coupon.findOne({ code: couponCode, isActive: true, isDeleted: false });
+      const coupon = await Coupon.findOne({ code: couponCode.trim().toUpperCase(), isActive: true, isDeleted: false });
       if (coupon) {
+        // Enforce Vendor eligibility: vendor-specific coupons only apply to that vendor
+        if (coupon.vendorId && !coupon.isGlobal) {
+          const couponVendorIdStr = coupon.vendorId.toString();
+          const hasMatchingVendorItem = productsToUpdate.some(u => u.product.vendorId && u.product.vendorId.toString() === couponVendorIdStr);
+          if (!hasMatchingVendorItem && activeVendor?._id?.toString() !== couponVendorIdStr) {
+            return res.status(400).json({ message: 'This coupon is not valid for the items in your cart.' });
+          }
+        } else if (!coupon.isGlobal && !coupon.vendorId && activeVendor) {
+          return res.status(400).json({ message: 'This coupon code is not valid for vendor products.' });
+        }
+
         if (coupon.discountType === 'percentage') {
           couponDiscountAmount = (verifiedSubtotal * coupon.discountValue) / 100;
         } else {
@@ -617,8 +723,17 @@ export const createOrder = async (req: Request, res: Response) => {
     const totalDiscountAmount = Number((couponDiscountAmount + shopDiscountAmount).toFixed(2));
     const discountedAmount = Number(Math.max(0, verifiedSubtotal - totalDiscountAmount).toFixed(2));
     
-    // Confirmed: Product MRP is inclusive of GST. No additional GST added on top of product prices.
-    const gstAmount = 0;
+    // Dynamic GST calculation based on vendor configuration
+    let gstAmount = 0;
+    if (activeVendor && activeVendor.gstPercentage !== undefined && activeVendor.gstPercentage > 0) {
+      if (activeVendor.gstInclusive === false) {
+        gstAmount = Number(((discountedAmount * activeVendor.gstPercentage) / 100).toFixed(2));
+      } else {
+        gstAmount = 0; // inclusive in product price
+      }
+    } else if (!activeVendor && config?.shopGstPercentage) {
+      gstAmount = Number(((discountedAmount * config.shopGstPercentage) / 100).toFixed(2));
+    }
     
     // Extract delivery pincode and calculate shipping fee on backend
     const orderPincode = shippingAddress?.postalCode || shippingAddress?.zip || shippingAddress?.pincode || req.body.pincode || '';
@@ -631,11 +746,12 @@ export const createOrder = async (req: Request, res: Response) => {
       userLon,
       shippingAddress,
       discountedAmount,
-      req.body.vendorSlug || 'arivu-foods'
+      activeVendor?.slug || req.body.vendorSlug || 'arivu-foods',
+      activeVendor?._id?.toString()
     );
 
     const shippingCharge = Number((shippingRes.shippingFee || 0).toFixed(2));
-    const finalAmount = Number((discountedAmount + shippingCharge).toFixed(2));
+    const finalAmount = Number((discountedAmount + gstAmount + shippingCharge).toFixed(2));
 
     // Pre-generate deterministic vendor order ID (MR-XXXXXXXX-XXXX)
     const orderHex = new mongoose.Types.ObjectId().toString().slice(-8).toUpperCase();
@@ -655,6 +771,7 @@ export const createOrder = async (req: Request, res: Response) => {
       status: 'pending',
       deliveryStatus: 'pending',
       vendorOrderId,
+      vendorId: activeVendor?._id || undefined,
       patientName: patientName || user?.name || '',
       patientEmail: patientEmail || user?.email || '',
       patientPhone: patientPhone || user?.mobileNumber || '',
@@ -842,7 +959,22 @@ export const verifyPayment = async (req: Request, res: Response) => {
 
 export const getAvailableCoupons = async (req: Request, res: Response) => {
   try {
-    const coupons = await Coupon.find({ isActive: true, isDeleted: false }).select('code discountType discountValue');
+    const { vendorId, vendorSlug } = req.query;
+    let targetVendorId = vendorId as string | undefined;
+
+    if (!targetVendorId && vendorSlug) {
+      const v = await Vendor.findOne({ slug: vendorSlug, isActive: true, isDeleted: false });
+      if (v) targetVendorId = v._id.toString();
+    }
+
+    let filter: any = { isActive: true, isDeleted: false };
+    if (targetVendorId) {
+      filter.$or = [{ vendorId: targetVendorId }, { isGlobal: true }];
+    } else {
+      filter.isGlobal = true;
+    }
+
+    const coupons = await Coupon.find(filter).select('code discountType discountValue vendorId isGlobal');
     res.json(coupons);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching coupons' });
@@ -1036,13 +1168,17 @@ export const computeShippingFeeForPincode = async (
   userLon?: number,
   address?: { line1?: string; city?: string; state?: string },
   cartAmount?: number,
-  vendorSlug?: string
+  vendorSlug?: string,
+  vendorId?: string
 ) => {
   const cleanPincode = (pincode || '').toString().trim().replace(/\D/g, '');
 
   // 1. Check if vendor adapter is available for delivery estimation
   let activeVendor = null;
-  if (vendorSlug) {
+  if (vendorId) {
+    activeVendor = await Vendor.findOne({ _id: vendorId, isActive: true, isDeleted: { $ne: true } });
+  }
+  if (!activeVendor && vendorSlug) {
     activeVendor = await Vendor.findOne({ slug: vendorSlug, isActive: true, isDeleted: { $ne: true } });
   }
   if (!activeVendor) {
@@ -1066,6 +1202,7 @@ export const computeShippingFeeForPincode = async (
           estimatedDeliveryTime: 'N/A',
           estimatedDeliveryDate: 'N/A',
           courierPartner: 'N/A',
+          shippingNote: '',
           isFallback: false,
           distanceKm: 0,
           message: `Delivery to ${rule.localityName} (${cleanPincode}) is currently suspended.`
@@ -1079,6 +1216,7 @@ export const computeShippingFeeForPincode = async (
           shippingFee: 0,
           estimatedDeliveryTime: '',
           courierPartner: '',
+          shippingNote: '',
           isFallback: false,
           distanceKm: 0,
           message: estimate.message || `Delivery is unavailable for pincode ${cleanPincode}.`
@@ -1098,7 +1236,8 @@ export const computeShippingFeeForPincode = async (
         estimatedDeliveryDate: estimate.estimatedDeliveryDate,
         estimatedDeliveryDateIso: estimate.estimatedDeliveryDateIso,
         estimatedDeliveryTime: estimate.estimatedDeliveryTime || '',
-        courierPartner: estimate.courierPartner || '',
+        courierPartner: estimate.courierPartner || activeVendor.shippingConfig?.carrierPartnerName || '',
+        shippingNote: estimate.shippingNote || activeVendor.shippingConfig?.shippingNote || '',
         vendorName: estimate.vendorName || activeVendor.name,
         vendorOrigin: estimate.vendorOrigin || 'Central Warehouse',
         distanceKm: 0,

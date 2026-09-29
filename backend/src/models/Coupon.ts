@@ -9,6 +9,8 @@ export interface ICoupon extends Document {
   redemptionsCount: number;
   isActive: boolean;
   isDeleted: boolean;
+  vendorId?: Schema.Types.ObjectId; // Specific vendor this coupon is tied to (null if global)
+  isGlobal?: boolean; // Whether the coupon applies across all vendors
   createdAt: Date;
   updatedAt: Date;
 }
@@ -22,7 +24,9 @@ const couponSchema = new Schema<ICoupon>(
     maxRedemptions: { type: Number, min: 0 },
     redemptionsCount: { type: Number, default: 0, min: 0 },
     isActive: { type: Boolean, default: true, index: true },
-    isDeleted: { type: Boolean, default: false }
+    isDeleted: { type: Boolean, default: false },
+    vendorId: { type: Schema.Types.ObjectId, ref: 'Vendor', default: null, index: true },
+    isGlobal: { type: Boolean, default: false, index: true }
   },
   {
     timestamps: true
