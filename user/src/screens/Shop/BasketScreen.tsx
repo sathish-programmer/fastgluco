@@ -55,7 +55,6 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
   const [discountAmount, setDiscountAmount] = useState(0);
   const [gstAmount, setGstAmount] = useState(0);
   const [shippingFee, setShippingFee] = useState(0);
-  const [finalTotal, setFinalTotal] = useState(0);
   const [validatingCoupon, setValidatingCoupon] = useState(false);
   const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
   
@@ -139,6 +138,9 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
     return sum + (price * p.qty);
   }, 0);
 
+  // Exact deterministic total: Subtotal - Discount + Shipping
+  const finalTotal = Number((Math.max(0, subtotal - discountAmount) + (shippingFee || 0)).toFixed(2));
+
   const arivuItems = basket.filter(b => b.item.brand === 'Arivu Foods' || b.item.vendorSku);
 
   // Real-time postal code resolution & vendor serviceability verification
@@ -219,25 +221,29 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
       setDiscountAmount(0);
       setGstAmount(0);
       setShippingFee(0);
-      setFinalTotal(0);
     }
-  }, [basket, appliedCoupon, curr, shippingFee]);
+  }, [basket, appliedCoupon]);
 
   const calculateBreakdown = async (code: string = '') => {
     try {
+      const cleanPin = (postalCode || '').trim().replace(/\D/g, '');
       const res = await fetch(`${apiUrl}/shop/validate-coupon`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ couponCode: code || 'NO_COUPON', totalAmount: subtotal })
+        body: JSON.stringify({ 
+          couponCode: code || 'NO_COUPON', 
+          totalAmount: subtotal,
+          pincode: cleanPin,
+          vendorSlug: 'arivu-foods'
+        })
       });
       const data = await res.json();
       if (res.ok && data.valid) {
-        setDiscountAmount(data.discountAmount);
-        setGstAmount(data.gstAmount);
-        setFinalTotal(data.finalAmount + shippingFee);
+        setDiscountAmount(data.discountAmount || 0);
+        setGstAmount(data.gstAmount || 0);
         if (code) {
           setAppliedCoupon(code);
         }
@@ -245,12 +251,12 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
         showToast(data.message || 'Invalid coupon', 'error');
         setCouponCode('');
         setAppliedCoupon(null);
+        setDiscountAmount(0);
         calculateBreakdown('');
       } else {
-        if (data.finalAmount !== undefined) {
-          setDiscountAmount(data.discountAmount);
-          setGstAmount(data.gstAmount);
-          setFinalTotal(data.finalAmount + shippingFee);
+        if (data.discountAmount !== undefined) {
+          setDiscountAmount(data.discountAmount || 0);
+          setGstAmount(data.gstAmount || 0);
         }
       }
     } catch (err) {
@@ -361,7 +367,7 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
         },
         body: JSON.stringify({
           items,
-          totalAmount: subtotal,
+          totalAmount: finalTotal,
           couponCode: appliedCoupon,
           patientName: patientName.trim(),
           patientEmail: patientEmail.trim(),
@@ -377,7 +383,7 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
       if (!orderRes.ok) throw new Error(orderData.message || 'Failed to initialize order.');
 
       if (orderData.gateway === 'manual_bypass') {
-        await HabitsService.logHabit(apiUrl, token, 'ShopOrder', { basket, total: subtotal });
+        await HabitsService.logHabit(apiUrl, token, 'ShopOrder', { basket, total: finalTotal });
         localStorage.removeItem('mitoreboot_health_cart');
         setBasket([]);
         setPlacedOrderId(orderData.vendorOrderId || orderData.displayOrderId || orderData.orderId);
@@ -420,7 +426,7 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
               });
               const verifyData = await verifyRes.json();
               if (verifyRes.ok) {
-                await HabitsService.logHabit(apiUrl, token, 'ShopOrder', { basket, total: subtotal });
+                await HabitsService.logHabit(apiUrl, token, 'ShopOrder', { basket, total: finalTotal });
                 localStorage.removeItem('mitoreboot_health_cart');
                 setBasket([]);
                 setPlacedOrderId(verifyData.vendorOrderId || verifyData.displayOrderId || orderData.vendorOrderId || orderData.orderId);
@@ -986,8 +992,8 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
                 </div>
                 
                 {discountAmount > 0 && (
-                  <div className="flex justify-between text-indigo-600 dark:text-indigo-400 font-bold">
-                    <span>Coupon Savings</span>
+                  <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-bold">
+                    <span>Coupon Savings {appliedCoupon ? `(${appliedCoupon})` : ''}</span>
                     <span>-{curr}{discountAmount.toFixed(2)}</span>
                   </div>
                 )}
@@ -1003,7 +1009,7 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
                   <div>
                     <span>Standard Shipping</span>
                     <span className="text-[10px] text-slate-400 block font-normal">
-                      {subtotal >= 499 ? 'Free on orders above ₹499' : 'Free above ₹499 (₹70 below ₹499)'}
+                      {subtotal >= 499 ? 'Free on orders above ₹499 (Pan-India)' : 'Free above ₹499 (₹70 below ₹499)'}
                     </span>
                   </div>
                   {shippingFee > 0 ? (
@@ -1016,7 +1022,9 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
                 <div className="flex justify-between items-center text-sm pt-1">
                   <div>
                     <span className="font-black text-slate-900 dark:text-slate-100 uppercase tracking-wider block">Total Payable</span>
-                    <span className="text-[10px] text-slate-400 font-medium block">Inclusive of all taxes & delivery</span>
+                    <span className="text-[10px] text-slate-400 font-medium block">
+                      Inclusive of all taxes & delivery ({curr}{subtotal.toFixed(2)} {discountAmount > 0 ? `- ${curr}${discountAmount.toFixed(2)} ` : ''}+ {shippingFee === 0 ? 'FREE shipping' : `${curr}${shippingFee.toFixed(2)} shipping`})
+                    </span>
                   </div>
                   <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight">
                     {curr}{finalTotal.toFixed(2)}

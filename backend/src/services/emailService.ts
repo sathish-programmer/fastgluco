@@ -890,34 +890,17 @@ export class EmailService {
     const totalFormatted = `${currencySymbol}${Number(order.totalAmount || 0).toFixed(2)}`;
     const orderViewUrl = `https://app.mitoreboot.in/orders/${order._id}`;
 
-    // Resolve Vendor Logo & App Logo attachments dynamically
+    // Resolve Vendor Logo & App Logo URLs directly via HTTPS CDN (prevents email clients from treating logos as attachment files)
     let vendorLogoUrl: string | undefined;
-    let appLogoUrl: string | undefined;
+    const appLogoUrl = 'https://app.mitoreboot.in/assets/mitoreboot-logo.png';
     const vendorEmailAttachments: any[] = [];
 
-    // 1. Vendor Logo resolution - Always guarantee authentic Arivu Foods brand logo
+    // 1. Vendor Logo resolution - Always guarantee authentic Arivu Foods brand logo via CDN URL
     const isArivu = (vendorName && vendorName.toLowerCase().includes('arivu')) || vendor?.slug === 'arivu-foods';
     const arivuOfficialCdnLogo = 'https://app.mitoreboot.in/assets/arivu-logo.png';
 
     if (isArivu) {
-      const arivuLocalCandidates = [
-        path.join(__dirname, '../../uploads/vendors/arivu-logo.png'),
-        path.join(process.cwd(), 'uploads/vendors/arivu-logo.png'),
-        path.join(process.cwd(), 'backend/uploads/vendors/arivu-logo.png'),
-        path.join(__dirname, '../../../user/public/assets/arivu-logo.png'),
-        path.join(process.cwd(), '../user/public/assets/arivu-logo.png')
-      ];
-      const validArivuPath = arivuLocalCandidates.find(p => fs.existsSync(p));
-      if (validArivuPath) {
-        vendorEmailAttachments.push({
-          filename: 'arivu-logo.png',
-          path: validArivuPath,
-          cid: 'vendor-logo'
-        });
-        vendorLogoUrl = 'cid:vendor-logo';
-      } else {
-        vendorLogoUrl = arivuOfficialCdnLogo;
-      }
+      vendorLogoUrl = arivuOfficialCdnLogo;
     } else {
       const vendorLogoField = vendor?.logo;
       if (vendorLogoField) {
@@ -925,49 +908,23 @@ export class EmailService {
           vendorLogoUrl = vendorLogoField;
         } else {
           const cleanPath = vendorLogoField.replace(/^\//, '');
-          const localVendorPath = path.join(__dirname, '../../', cleanPath);
-          if (fs.existsSync(localVendorPath)) {
-            vendorEmailAttachments.push({
-              filename: path.basename(localVendorPath),
-              path: localVendorPath,
-              cid: 'vendor-logo'
-            });
-            vendorLogoUrl = 'cid:vendor-logo';
-          } else {
-            vendorLogoUrl = `https://api.mitoreboot.in/${cleanPath}`;
-          }
+          vendorLogoUrl = `https://api.mitoreboot.in/${cleanPath}`;
         }
       }
-    }
-
-    // 2. MitoReboot App Logo resolution
-    const localAppLogoCandidates = [
-      path.join(__dirname, '../../uploads/app-logo.png'),
-      path.join(process.cwd(), 'uploads/app-logo.png'),
-      path.join(process.cwd(), 'backend/uploads/app-logo.png'),
-      path.join(__dirname, '../../../user/public/assets/mitoreboot-logo.png'),
-      path.join(process.cwd(), '../user/public/assets/mitoreboot-logo.png')
-    ];
-    const validAppLogoPath = localAppLogoCandidates.find(p => fs.existsSync(p));
-    if (validAppLogoPath) {
-      vendorEmailAttachments.push({
-        filename: 'app-logo.png',
-        path: validAppLogoPath,
-        cid: 'app-logo'
-      });
-      appLogoUrl = 'cid:app-logo';
-    } else {
-      appLogoUrl = 'https://app.mitoreboot.in/assets/mitoreboot-logo.png';
     }
 
     const shippingAddressText = order.shippingAddress 
       ? [order.shippingAddress.line1, order.shippingAddress.city, order.shippingAddress.state, order.shippingAddress.postalCode].filter(Boolean).join(', ')
       : 'Address on file';
 
+    const subtotalNum = (order.products || []).reduce((acc: number, p: any) => acc + ((p.price || 0) * (p.qty || p.quantity || 1)), 0);
+    const shippingNum = Number(order.shippingCharge || 0);
+    const discountNum = Number(order.discountAmount || 0);
+
     const itemsList = (order.products || []).map((p: any) => ({
-      name: p.name || 'Product',
-      qty: p.quantity || 1,
-      price: p.unitPrice || 0
+      name: p.variantName ? `${p.name} (${p.variantName})` : (p.name || 'Product'),
+      qty: p.qty || p.quantity || 1,
+      price: p.price ?? p.unitPrice ?? 0
     }));
 
     let subject = '';
@@ -995,6 +952,9 @@ export class EmailService {
           summaryRows: [
             { label: 'Order ID', value: `#${displayOrderId}` },
             { label: 'Fulfillment Partner', value: `🌱 ${vendorName}` },
+            { label: 'Cart Subtotal', value: `${currencySymbol}${subtotalNum.toFixed(2)}` },
+            ...(discountNum > 0 ? [{ label: 'Coupon Discount', value: `-${currencySymbol}${discountNum.toFixed(2)}` }] : []),
+            { label: 'Standard Shipping', value: shippingNum === 0 ? 'FREE (Pan-India Express)' : `${currencySymbol}${shippingNum.toFixed(2)}` },
             { label: 'Total Amount', value: totalFormatted },
             { label: 'Delivery Address', value: shippingAddressText }
           ],

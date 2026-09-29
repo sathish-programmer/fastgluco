@@ -1124,16 +1124,21 @@ export const computeShippingFeeForPincode = async (
         { minDistanceKm: 15, maxDistanceKm: 30, shippingCharge: 120, estimatedDeliveryTime: '2-3 Business Days' }
       ];
 
+  // Resolve vendor or config shipping thresholds
+  const freeThreshold = activeVendor?.shippingConfig?.freeShippingThreshold ?? 499;
+  const standardFee = activeVendor?.shippingConfig?.shippingChargeBelowThreshold ?? ((activeVendor as any)?.shippingConfig?.shippingFee) ?? (config?.shopShippingFee && config.shopShippingFee <= 70 ? config.shopShippingFee : 70);
+  const effectiveFee = (cartAmount !== undefined && cartAmount >= freeThreshold) ? 0 : standardFee;
+
   if (!cleanPincode) {
     return {
       serviceable: true,
-      shippingFee: globalShippingFee,
-      estimatedDeliveryTime: 'Standard Delivery (3-5 Days)',
+      shippingFee: effectiveFee,
+      estimatedDeliveryTime: '3-5 Business Days',
       estimatedDeliveryDate: '3-5 Business Days',
-      courierPartner: 'Standard Courier',
+      courierPartner: 'Pan-India Express',
       isFallback: true,
       distanceKm: 0,
-      message: 'Using global standard shipping fee.'
+      message: effectiveFee === 0 ? 'Free Shipping unlocked!' : `Standard shipping ₹${effectiveFee}. Free on orders above ₹${freeThreshold}.`
     };
   }
 
@@ -1156,13 +1161,13 @@ export const computeShippingFeeForPincode = async (
     // GLOBAL_FALLBACK
     return {
       serviceable: true,
-      shippingFee: globalShippingFee,
-      estimatedDeliveryTime: 'Standard Delivery (3-5 Days)',
+      shippingFee: effectiveFee,
+      estimatedDeliveryTime: '3-5 Business Days',
       estimatedDeliveryDate: '3-5 Business Days',
-      courierPartner: 'Standard Courier',
+      courierPartner: 'Pan-India Express',
       isFallback: true,
       distanceKm: 0,
-      message: `Standard delivery to ${cleanPincode}.`
+      message: effectiveFee === 0 ? 'Free Shipping unlocked!' : `Standard delivery to ${cleanPincode} (₹${effectiveFee}). Free above ₹${freeThreshold}.`
     };
   }
 
