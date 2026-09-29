@@ -345,7 +345,7 @@ export const ShopOrderDetailView: React.FC<ShopOrderDetailViewProps> = ({
           </div>
 
           {/* Cancellation / Return Request Status Banner */}
-          {order.cancellationRequest ? (
+          {order.cancellationRequest && order.cancellationRequest.requestedAt && order.cancellationRequest.type && order.cancellationRequest.status ? (
             <div className={`p-4 rounded-2xl border text-xs space-y-2 ${
               order.cancellationRequest.status === 'APPROVED'
                 ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900/50 text-emerald-900 dark:text-emerald-200'
