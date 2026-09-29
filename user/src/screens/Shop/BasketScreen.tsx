@@ -186,10 +186,20 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
           if (data.carrierPartnerName) setDeliveryCourier(data.carrierPartnerName);
           if (data.shippingNote !== undefined) setVendorShippingNote(data.shippingNote);
           if (data.vendorName) setVendorDisplayName(data.vendorName);
-          setPincodeLocality(data.localityName || data.city || '');
-          setPincodeStatusMessage(data.message || `Delivery available to ${data.localityName || data.city}`);
-          if (data.city) setCity(data.city);
-          if (data.state) setState(data.state);
+          const resolvedCity = (data.city && data.city !== 'India') 
+            ? data.city 
+            : (data.localityName && data.localityName !== 'India') 
+              ? data.localityName 
+              : '';
+          const resolvedState = (data.state && data.state !== 'India') ? data.state : '';
+          const localityText = (data.localityName && data.localityName !== 'India') 
+            ? data.localityName 
+            : resolvedCity;
+
+          setPincodeLocality(localityText || '');
+          setPincodeStatusMessage(data.message || (localityText ? `Delivery available to ${localityText}` : `Delivery available to pincode ${cleanPin}`));
+          if (resolvedCity) setCity(resolvedCity);
+          if (resolvedState) setState(resolvedState);
           if (data.estimatedDeliveryTime) setDeliveryEstimate(data.estimatedDeliveryTime);
           if (data.courierPartner) setDeliveryCourier(data.courierPartner);
           if (data.estimatedDeliveryDate) setDeliveryDate(data.estimatedDeliveryDate);
@@ -792,68 +802,68 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Used for Courier Dispatch</span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 {/* Recipient Name */}
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Recipient Name</label>
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block">Recipient Full Name</label>
                   <div className="relative">
-                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
                     <input 
                       type="text" 
                       placeholder="e.g. Sathish Kumar" 
                       value={patientName} 
                       onChange={(e) => setPatientName(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 pl-10 pr-3 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2 pl-9 pr-3 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"
                     />
                   </div>
                 </div>
 
                 {/* Contact Phone */}
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Contact Mobile Number</label>
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block">Mobile Number</label>
                   <div className="relative">
-                    <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
                     <input 
                       type="tel" 
                       placeholder="+91 98765 43210" 
                       value={patientPhone} 
                       onChange={(e) => setPatientPhone(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 pl-10 pr-3 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2 pl-9 pr-3 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"
                     />
                   </div>
                 </div>
 
                 {/* Email Address */}
-                <div className="space-y-1.5 sm:col-span-2">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Email Address (For Order Updates & Tracking)</label>
+                <div className="space-y-1 sm:col-span-2">
+                  <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block">Email Address (Order tracking & updates)</label>
                   <div className="relative">
-                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
                     <input 
                       type="email" 
                       placeholder="name@example.com" 
                       value={patientEmail} 
                       onChange={(e) => setPatientEmail(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 pl-10 pr-3 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2 pl-9 pr-3 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"
                     />
                   </div>
                 </div>
 
                 {/* Street Address */}
-                <div className="space-y-1.5 sm:col-span-2">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Delivery Street Address (Flat / House No., Apartment, Street)</label>
+                <div className="space-y-1 sm:col-span-2">
+                  <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block">Street Address (House/Flat No., Building, Street)</label>
                   <input 
                     type="text" 
                     placeholder="e.g. Flat 402, Green Avenue, 7th Cross" 
                     value={line1} 
                     onChange={(e) => setLine1(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-3.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"
                   />
                 </div>
 
                 {/* Postal Code with Real-Time Validation */}
-                <div className="space-y-1.5">
+                <div className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Postal Code (PIN Code)</label>
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block">Postal Pincode</label>
                     {resolvingPincode && (
                       <span className="text-[9px] text-indigo-600 dark:text-indigo-400 font-bold flex items-center gap-1">
                         <RefreshCw className="h-2.5 w-2.5 animate-spin" /> Verifying...
@@ -861,14 +871,14 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
                     )}
                   </div>
                   <div className="relative">
-                    <Landmark className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Landmark className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
                     <input 
                       type="text" 
                       maxLength={6}
-                      placeholder="e.g. 600020 or 560075" 
+                      placeholder="e.g. 560075" 
                       value={postalCode} 
                       onChange={(e) => setPostalCode(e.target.value.replace(/\D/g, ''))}
-                      className={`w-full bg-slate-50 dark:bg-slate-950 border rounded-xl py-2.5 pl-10 pr-3 text-xs font-bold focus:outline-none transition-all ${
+                      className={`w-full bg-slate-50 dark:bg-slate-950 border rounded-xl py-2 pl-9 pr-3 text-xs font-bold focus:outline-none transition-all ${
                         postalCode.length === 6
                           ? isPincodeServiceable
                             ? 'border-emerald-500 text-emerald-900 dark:text-emerald-300 focus:ring-2 focus:ring-emerald-500/20'
@@ -879,38 +889,38 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
                   </div>
                 </div>
 
-                {/* City (Auto-populated from Postal Code) */}
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">City / District</label>
+                {/* City */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block">City / District</label>
                   <input 
                     type="text" 
-                    placeholder="e.g. Chennai" 
-                    value={city} 
+                    placeholder="e.g. Bangalore" 
+                    value={city === 'India' ? '' : city} 
                     onChange={(e) => setCity(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-3.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"
                   />
                 </div>
 
-                {/* State (Auto-populated from Postal Code) */}
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">State</label>
+                {/* State */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block">State</label>
                   <input 
                     type="text" 
-                    placeholder="e.g. Tamil Nadu" 
-                    value={state} 
+                    placeholder="e.g. Karnataka" 
+                    value={state === 'India' ? '' : state} 
                     onChange={(e) => setState(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-3.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"
                   />
                 </div>
 
                 {/* Country */}
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Country</label>
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block">Country</label>
                   <input 
                     type="text" 
                     value={country} 
                     disabled
-                    className="w-full bg-slate-100/80 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-3.5 text-xs font-bold text-slate-500 dark:text-slate-400 cursor-not-allowed opacity-80"
+                    className="w-full bg-slate-100/80 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-xs font-bold text-slate-500 dark:text-slate-400 cursor-not-allowed opacity-80"
                   />
                 </div>
               </div>
@@ -930,7 +940,11 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
                     )}
                     <span>
                       {isPincodeServiceable
-                        ? (pincodeLocality ? `${pincodeLocality}, ${state}` : `${city}, ${state}`)
+                        ? (pincodeLocality && pincodeLocality !== 'India' 
+                            ? `${pincodeLocality}${state && state !== 'India' ? `, ${state}` : ''}` 
+                            : city && city !== 'India' 
+                              ? `${city}${state && state !== 'India' ? `, ${state}` : ''}` 
+                              : `Pincode ${postalCode}`)
                         : 'Invalid or Unserviceable Pincode'}
                     </span>
                     {isPincodeServiceable && (
@@ -1027,7 +1041,13 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
                 <div className="flex items-center justify-between font-bold">
                   <span className="flex items-center gap-1.5">
                     <Truck className="h-4 w-4 text-emerald-600" />
-                    <span>{city && state ? `${city}, ${state}` : 'Pan-India Delivery'}</span>
+                    <span>
+                      {(pincodeLocality && pincodeLocality !== 'India')
+                        ? `${pincodeLocality}${state && state !== 'India' ? `, ${state}` : ''}`
+                        : (city && city !== 'India')
+                          ? `${city}${state && state !== 'India' ? `, ${state}` : ''}`
+                          : (postalCode ? `Delivery Area (${postalCode})` : 'Pan-India Express')}
+                    </span>
                   </span>
                   <span className="font-black uppercase text-[10px] text-emerald-600 dark:text-emerald-400">
                     {shippingFee === 0 ? 'FREE Shipping' : `₹${shippingFee.toFixed(0)} (FREE above ₹${vendorFreeThreshold})`}

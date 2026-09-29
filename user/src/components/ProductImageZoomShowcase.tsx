@@ -167,9 +167,9 @@ export const ProductImageZoomShowcase: React.FC<ProductImageZoomShowcaseProps> =
 
   return (
     <div className="w-full flex flex-col items-center">
-      {/* Sleek Minimalist Zoom & View Toolbar */}
+      {/* Sleek Desktop Zoom & View Toolbar */}
       {resolvedUrl && !imageError && (
-        <div className="w-full flex items-center justify-between gap-2 pb-2.5 text-xs text-slate-500 dark:text-slate-400">
+        <div className="w-full hidden md:flex items-center justify-between gap-2 pb-2.5 text-xs text-slate-500 dark:text-slate-400">
           <div className="inline-flex items-center p-1 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur-md rounded-xl border border-slate-200/60 dark:border-slate-800 text-[11px] font-bold">
             <span className="flex items-center gap-1 px-2 text-slate-700 dark:text-slate-300 font-extrabold">
               <ZoomIn className="h-3 w-3 text-indigo-500" />
@@ -205,8 +205,8 @@ export const ProductImageZoomShowcase: React.FC<ProductImageZoomShowcaseProps> =
             <button
               type="button"
               onClick={() => setZoomMode(zoomMode === 'side' ? 'inner' : 'side')}
-              className="hidden md:flex items-center gap-1.5 text-[11px] font-bold text-slate-700 dark:text-slate-300 hover:text-indigo-600 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-800 hover:border-indigo-300 shadow-2xs transition-all cursor-pointer"
-              title="Toggle between Amazon/Flipkart side zoom and inner container zoom"
+              className="flex items-center gap-1.5 text-[11px] font-bold text-slate-700 dark:text-slate-300 hover:text-indigo-600 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-800 hover:border-indigo-300 shadow-2xs transition-all cursor-pointer"
+              title="Toggle between side zoom and inner container zoom"
             >
               <Layers className="h-3.5 w-3.5 text-indigo-500" />
               <span>{zoomMode === 'side' ? 'Side Magnifier' : 'Inner Loupe'}</span>
@@ -223,13 +223,13 @@ export const ProductImageZoomShowcase: React.FC<ProductImageZoomShowcaseProps> =
               title="Open full-screen inspection"
             >
               <Maximize2 className="h-3 w-3" />
-              <span className="hidden sm:inline">Fullscreen</span>
+              <span>Fullscreen</span>
             </button>
           </div>
         </div>
       )}
 
-      {/* Main Image Showcase Container with Soft Ambient Pedestal */}
+      {/* Main Image Showcase Container with Sleek Proportions */}
       <div 
         ref={containerRef}
         onMouseEnter={() => setIsHovered(true)}
@@ -245,7 +245,7 @@ export const ProductImageZoomShowcase: React.FC<ProductImageZoomShowcaseProps> =
             setIsLightboxOpen(true);
           }
         }}
-        className={`w-full aspect-square bg-gradient-to-b from-slate-50/90 via-white to-slate-50/40 dark:from-slate-900 dark:via-slate-900/80 dark:to-slate-950 border border-slate-200/80 dark:border-slate-800 rounded-[2.5rem] flex items-center justify-center overflow-hidden mb-4 relative shadow-[0_8px_30px_rgba(0,0,0,0.03)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.25)] select-none transition-all duration-200 group ${
+        className={`w-full aspect-[4/4.5] sm:aspect-square max-h-[350px] sm:max-h-[420px] bg-gradient-to-b from-slate-50/70 via-white to-slate-50/30 dark:from-slate-900/70 dark:via-slate-900/90 dark:to-slate-950 border border-slate-200/80 dark:border-slate-800 rounded-3xl flex items-center justify-center overflow-hidden mb-3 relative shadow-xs select-none transition-all duration-200 group ${
           resolvedUrl && !imageError ? 'cursor-crosshair' : ''
         }`}
       >
@@ -255,7 +255,7 @@ export const ProductImageZoomShowcase: React.FC<ProductImageZoomShowcaseProps> =
             src={resolvedUrl}
             alt={productName}
             onError={() => setImageError(true)}
-            className={`h-full w-full object-contain p-6 select-none ${
+            className={`h-full w-full object-contain p-2 sm:p-3 select-none ${
               zoomMode === 'inner' && isHovered 
                 ? 'transition-none pointer-events-none' 
                 : 'transition-transform duration-300 group-hover:scale-[1.03]'
@@ -325,9 +325,9 @@ export const ProductImageZoomShowcase: React.FC<ProductImageZoomShowcaseProps> =
           </div>
         )}
 
-        {/* Floating Ambient Hover Pill */}
+        {/* Floating Ambient Hover Pill (Desktop Only) */}
         {resolvedUrl && !imageError && !isHovered && (
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-white/90 dark:bg-slate-900/90 border border-slate-200/70 dark:border-slate-700/80 backdrop-blur-md text-slate-700 dark:text-slate-200 text-[10px] font-extrabold px-3.5 py-1.5 rounded-full shadow-sm pointer-events-none flex items-center gap-1.5 whitespace-nowrap z-20 transition-all duration-300 opacity-95 group-hover:opacity-0">
+          <div className="hidden md:flex absolute bottom-3 left-1/2 -translate-x-1/2 bg-white/90 dark:bg-slate-900/90 border border-slate-200/70 dark:border-slate-700/80 backdrop-blur-md text-slate-700 dark:text-slate-200 text-[10px] font-extrabold px-3.5 py-1.5 rounded-full shadow-sm pointer-events-none items-center gap-1.5 whitespace-nowrap z-20 transition-all duration-300 opacity-95 group-hover:opacity-0">
             <ZoomIn className="h-3 w-3 text-indigo-500" />
             <span>Hover to zoom • Click for Fullscreen</span>
           </div>
@@ -407,45 +407,37 @@ export const ProductImageZoomShowcase: React.FC<ProductImageZoomShowcaseProps> =
         </div>
       )}
 
-      {/* Modern Boutique Clinical Trust & Quality Badges */}
-      <div className="w-full grid grid-cols-2 gap-2.5 pt-1">
-        <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200/70 dark:border-slate-800/80 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-emerald-200 dark:hover:border-emerald-900/40 transition-all">
-          <div className="h-8 w-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/60 dark:border-emerald-800/40 flex items-center justify-center shrink-0">
-            <Leaf className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-          </div>
-          <div>
-            <span className="text-[11px] font-extrabold text-slate-800 dark:text-slate-200 leading-tight block">100% Organic & Pure</span>
-            <span className="text-[9px] text-slate-400 font-medium">Unprocessed Staples</span>
+      {/* Modern Compact Clinical Trust Badges */}
+      <div className="w-full grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+        <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800/80 shadow-2xs">
+          <Leaf className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <div className="min-w-0">
+            <span className="text-[10px] font-black text-slate-800 dark:text-slate-200 block truncate leading-tight">100% Organic</span>
+            <span className="text-[8px] text-slate-400 block truncate">Unprocessed</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200/70 dark:border-slate-800/80 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-indigo-200 dark:hover:border-indigo-900/40 transition-all">
-          <div className="h-8 w-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/60 dark:border-indigo-800/40 flex items-center justify-center shrink-0">
-            <ShieldCheck className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-          </div>
-          <div>
-            <span className="text-[11px] font-extrabold text-slate-800 dark:text-slate-200 leading-tight block">Lab Verified Quality</span>
-            <span className="text-[9px] text-slate-400 font-medium">Heavy Metal Tested</span>
+        <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800/80 shadow-2xs">
+          <ShieldCheck className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+          <div className="min-w-0">
+            <span className="text-[10px] font-black text-slate-800 dark:text-slate-200 block truncate leading-tight">Lab Verified</span>
+            <span className="text-[8px] text-slate-400 block truncate">Heavy Metal Free</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200/70 dark:border-slate-800/80 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-rose-200 dark:hover:border-rose-900/40 transition-all">
-          <div className="h-8 w-8 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200/60 dark:border-rose-800/40 flex items-center justify-center shrink-0">
-            <HeartPulse className="h-4 w-4 text-rose-500 dark:text-rose-400" />
-          </div>
-          <div>
-            <span className="text-[11px] font-extrabold text-slate-800 dark:text-slate-200 leading-tight block">Therapeutic Grade</span>
-            <span className="text-[9px] text-slate-400 font-medium">Metabolic Nutrition</span>
+        <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800/80 shadow-2xs">
+          <HeartPulse className="h-3.5 w-3.5 text-rose-500 dark:text-rose-400 shrink-0" />
+          <div className="min-w-0">
+            <span className="text-[10px] font-black text-slate-800 dark:text-slate-200 block truncate leading-tight">Therapeutic</span>
+            <span className="text-[8px] text-slate-400 block truncate">Metabolic Care</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200/70 dark:border-slate-800/80 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-cyan-200 dark:hover:border-cyan-900/40 transition-all">
-          <div className="h-8 w-8 rounded-xl bg-cyan-50 dark:bg-cyan-950/60 border border-cyan-200/60 dark:border-cyan-800/40 flex items-center justify-center shrink-0">
-            <Truck className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
-          </div>
-          <div>
-            <span className="text-[11px] font-extrabold text-slate-800 dark:text-slate-200 leading-tight block">Fast Direct Dispatch</span>
-            <span className="text-[9px] text-slate-400 font-medium">Fresh Mill Batches</span>
+        <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800/80 shadow-2xs">
+          <Truck className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400 shrink-0" />
+          <div className="min-w-0">
+            <span className="text-[10px] font-black text-slate-800 dark:text-slate-200 block truncate leading-tight">Direct Dispatch</span>
+            <span className="text-[8px] text-slate-400 block truncate">Fresh Mill Batch</span>
           </div>
         </div>
       </div>

@@ -52,7 +52,10 @@ export const ProductImage: React.FC<{
       return <span className={textClassName}>{resolvedSrc}</span>;
     }
     const baseUrl = apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl;
-    const fullUrl = resolvedSrc.startsWith('http') ? resolvedSrc : `${baseUrl}${resolvedSrc}`;
+    let fullUrl = resolvedSrc.startsWith('http') ? resolvedSrc : `${baseUrl}${resolvedSrc}`;
+    if (fullUrl.includes('res.cloudinary.com') && fullUrl.includes('/image/upload/') && !fullUrl.includes('/image/upload/e_trim/')) {
+      fullUrl = fullUrl.replace('/image/upload/', '/image/upload/e_trim/');
+    }
     return (
       <img
         src={fullUrl}
@@ -1560,26 +1563,26 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                   <div
                     key={item.id}
                     onClick={() => openProductDetails(item)}
-                    className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/90 hover:border-indigo-300 dark:hover:border-indigo-700/80 rounded-[1.75rem] p-3.5 sm:p-4 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_16px_36px_rgba(0,0,0,0.06)] group relative cursor-pointer overflow-hidden"
+                    className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/90 hover:border-indigo-400 dark:hover:border-indigo-600 rounded-2xl p-2.5 sm:p-3 flex flex-col justify-between transition-all duration-200 hover:-translate-y-1 hover:shadow-md group relative cursor-pointer"
                   >
                     <div>
-                      {/* Clean Image Showcase Pedestal */}
-                      <div className="w-full aspect-square bg-gradient-to-b from-slate-50 via-slate-50/50 to-slate-100/40 dark:from-slate-950 dark:via-slate-900/60 dark:to-slate-900/40 rounded-2xl mb-3 flex items-center justify-center overflow-hidden relative border border-slate-100 dark:border-slate-800/60 p-2.5">
+                      {/* Clean Packaging Showcase Pedestal (Tighter Fit, Zero Trapped Whitespace) */}
+                      <div className="w-full aspect-[4/4.5] sm:aspect-square bg-slate-50/70 dark:bg-slate-950/50 rounded-xl mb-2 flex items-center justify-center overflow-hidden relative border border-slate-100 dark:border-slate-800/60 p-1 sm:p-1.5">
                         {/* Badge Overlays */}
                         {isOutOfStock ? (
-                          <span className="absolute top-2.5 left-2.5 z-10 bg-slate-900/90 text-white text-[9px] font-black px-2 py-0.5 rounded-lg shadow-xs backdrop-blur-md flex items-center gap-1">
+                          <span className="absolute top-1.5 left-1.5 z-10 bg-slate-900/90 text-white text-[8px] font-black px-1.5 py-0.5 rounded-md shadow-2xs backdrop-blur-md flex items-center gap-1">
                             <span className="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
                             Sold Out
                           </span>
                         ) : discountPercent > 0 ? (
-                          <span className="absolute top-2.5 left-2.5 z-10 bg-gradient-to-r from-rose-500 to-amber-500 text-white text-[9px] font-black px-2 py-0.5 rounded-lg shadow-xs">
+                          <span className="absolute top-1.5 left-1.5 z-10 bg-gradient-to-r from-rose-500 to-amber-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-md shadow-2xs">
                             {discountPercent}% OFF
                           </span>
                         ) : null}
 
                         {item.doctorRecommended && (
-                          <span className="absolute top-2.5 right-2.5 z-10 bg-emerald-600/95 backdrop-blur-md text-white text-[8px] font-black px-2 py-0.5 rounded-full shadow-xs flex items-center gap-1 border border-white/20">
-                            <Stethoscope className="h-2.5 w-2.5" /> Doctor Formulated
+                          <span className="absolute top-1.5 right-1.5 z-10 bg-emerald-600/95 text-white text-[7.5px] font-black px-1.5 py-0.5 rounded-md shadow-2xs flex items-center gap-0.5 border border-white/20">
+                            <Stethoscope className="h-2 w-2" /> Dr. Formulated
                           </span>
                         )}
 
@@ -1589,26 +1592,26 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                           title={item.name}
                           category={item.category}
                           className={`h-full w-full object-contain transition-transform duration-300 group-hover:scale-105 ${isOutOfStock ? 'opacity-50 grayscale' : ''}`}
-                          textClassName="text-5xl"
+                          textClassName="text-4xl"
                         />
                       </div>
 
                       {/* Brand & Category Label */}
-                      <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest truncate block mb-1">
+                      <span className="text-[9px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest truncate block mb-0.5">
                         {item.brand || item.category}
                       </span>
 
                       {/* Product Name */}
-                      <h3 className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-sm leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-2 min-h-[2rem] sm:min-h-[2.4rem] tracking-tight">
+                      <h3 className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-sm leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-2 min-h-[2.1rem] tracking-tight">
                         {item.name}
                       </h3>
                     </div>
 
                     {/* Pricing & ADD Action */}
-                    <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800/80 mt-2.5 flex items-center justify-between gap-1.5">
+                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 mt-2 flex items-center justify-between gap-1.5">
                       <div className="min-w-0">
-                        <div className="flex items-baseline gap-1.5 flex-wrap">
-                          <span className="font-black text-slate-900 dark:text-white text-base sm:text-lg leading-none tracking-tight">
+                        <div className="flex items-baseline gap-1 flex-wrap">
+                          <span className="font-black text-slate-900 dark:text-white text-sm sm:text-base leading-none tracking-tight">
                             {curr}{finalPrice.toFixed(0)}
                           </span>
                           {discountPercent > 0 && (
@@ -1618,11 +1621,11 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                           )}
                         </div>
                         {hasVariants ? (
-                          <span className="text-[10px] text-slate-400 font-bold block mt-0.5">
-                            {item.variants?.length} pack sizes
+                          <span className="text-[9px] text-slate-400 font-bold block mt-0.5 truncate">
+                            {item.variants?.length} option{item.variants && item.variants.length > 1 ? 's' : ''}
                           </span>
                         ) : discountPercent > 0 ? (
-                          <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 block mt-0.5">
+                          <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 block mt-0.5 truncate">
                             Save {curr}{(regularPrice - finalPrice).toFixed(0)}
                           </span>
                         ) : null}
@@ -1653,9 +1656,9 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                               e.stopPropagation();
                               openProductDetails(item);
                             }}
-                            className="text-xs font-black text-slate-800 dark:text-slate-100 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 dark:hover:text-white px-3 py-1.5 rounded-xl transition-all duration-200 flex items-center gap-1 shadow-2xs group-hover:bg-indigo-600 group-hover:text-white"
+                            className="text-[11px] font-black text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 dark:hover:text-white px-2.5 py-1 rounded-xl border border-indigo-200/80 dark:border-indigo-800/60 transition-all duration-200 flex items-center gap-0.5 shadow-2xs active:scale-95 cursor-pointer"
                           >
-                            <span>Select</span>
+                            <span>Options</span>
                             <ChevronRight className="h-3 w-3 stroke-[2.5]" />
                           </button>
                         ) : itemQty > 0 ? (
