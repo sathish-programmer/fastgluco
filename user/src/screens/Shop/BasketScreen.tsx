@@ -864,11 +864,15 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
                     <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block">Postal Pincode</label>
-                    {resolvingPincode && (
+                    {resolvingPincode ? (
                       <span className="text-[9px] text-indigo-600 dark:text-indigo-400 font-bold flex items-center gap-1">
                         <RefreshCw className="h-2.5 w-2.5 animate-spin" /> Verifying...
                       </span>
-                    )}
+                    ) : (postalCode.length === 6 && isPincodeServiceable) ? (
+                      <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                        <CheckCircle className="h-2.5 w-2.5" /> Serviceable
+                      </span>
+                    ) : null}
                   </div>
                   <div className="relative">
                     <Landmark className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
@@ -925,39 +929,16 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
                 </div>
               </div>
 
-              {/* Real-time Dynamic Postal Resolution Indicator */}
-              {postalCode.length === 6 && (
-                <div className={`p-3 rounded-2xl border text-xs transition-all ${
-                  isPincodeServiceable
-                    ? 'bg-emerald-50/80 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/40 text-emerald-900 dark:text-emerald-300'
-                    : 'bg-rose-50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/40 text-rose-800 dark:text-rose-300'
-                }`}>
-                  <div className="flex items-center gap-2 font-bold">
-                    {isPincodeServiceable ? (
-                      <CheckCircle className="h-4 w-4 text-emerald-600 shrink-0" />
-                    ) : (
-                      <AlertCircle className="h-4 w-4 text-rose-600 shrink-0" />
-                    )}
-                    <span>
-                      {isPincodeServiceable
-                        ? (pincodeLocality && pincodeLocality !== 'India' 
-                            ? `${pincodeLocality}${state && state !== 'India' ? `, ${state}` : ''}` 
-                            : city && city !== 'India' 
-                              ? `${city}${state && state !== 'India' ? `, ${state}` : ''}` 
-                              : `Pincode ${postalCode}`)
-                        : 'Invalid or Unserviceable Pincode'}
-                    </span>
-                    {isPincodeServiceable && (
-                      <span className="ml-auto text-[10px] bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 px-2 py-0.5 rounded-full font-black uppercase">
-                        Free Shipping
-                      </span>
-                    )}
-                  </div>
-                  {pincodeStatusMessage && (
-                    <p className="text-[11px] opacity-80 mt-1 pl-6">
-                      {pincodeStatusMessage}
+              {/* Show warning alert only if 6-digit pincode is entered and unserviceable */}
+              {postalCode.length === 6 && !isPincodeServiceable && (
+                <div className="p-3 rounded-2xl border border-rose-200 dark:border-rose-900/40 bg-rose-50 dark:bg-rose-950/20 text-xs text-rose-800 dark:text-rose-300 flex items-start gap-2.5">
+                  <AlertCircle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold block">Delivery Unavailable</span>
+                    <p className="text-[11px] opacity-80 mt-0.5">
+                      {pincodeStatusMessage || 'We currently do not deliver to this pincode. Please try another address.'}
                     </p>
-                  )}
+                  </div>
                 </div>
               )}
             </div>
@@ -1036,33 +1017,87 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
                 </span>
               </div>
 
-              {/* Delivery Assurance Tile */}
-              <div className="bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/70 dark:border-emerald-800/40 rounded-2xl p-3 space-y-1.5 text-xs text-emerald-900 dark:text-emerald-300">
-                <div className="flex items-center justify-between font-bold">
-                  <span className="flex items-center gap-1.5">
-                    <Truck className="h-4 w-4 text-emerald-600" />
-                    <span>
-                      {(pincodeLocality && pincodeLocality !== 'India')
-                        ? `${pincodeLocality}${state && state !== 'India' ? `, ${state}` : ''}`
-                        : (city && city !== 'India')
-                          ? `${city}${state && state !== 'India' ? `, ${state}` : ''}`
-                          : (postalCode ? `Delivery Area (${postalCode})` : 'Pan-India Express')}
-                    </span>
-                  </span>
-                  <span className="font-black uppercase text-[10px] text-emerald-600 dark:text-emerald-400">
-                    {shippingFee === 0 ? 'FREE Shipping' : `₹${shippingFee.toFixed(0)} (FREE above ₹${vendorFreeThreshold})`}
-                  </span>
-                </div>
-                <p className="text-[10px] text-emerald-800/80 dark:text-emerald-400/80 leading-relaxed font-medium">
-                  {subtotal < vendorFreeThreshold && (
-                    <span className="font-bold text-emerald-700 dark:text-emerald-300 block mb-0.5">
-                      💡 Add {curr}{(vendorFreeThreshold - subtotal).toFixed(0)} more to get FREE delivery!
-                    </span>
-                  )}
-                  {deliveryEstimate ? `Estimated Timeline: ${deliveryEstimate}${deliveryCourier ? ` via ${deliveryCourier}` : ''}. ` : ''}
-                  {vendorShippingNote ? vendorShippingNote : `Dispatched directly from fresh certified stock${vendorDisplayName ? ` by ${vendorDisplayName}` : ''}. Tracking ID is issued upon dispatch.`}
-                </p>
-              </div>
+              {/* Delivery Assurance & Logistics Tile */}
+              {(() => {
+                const deliveryLocality = (city && city !== 'India')
+                  ? `${city}${state && state !== 'India' ? `, ${state}` : ''}`
+                  : (pincodeLocality && pincodeLocality !== 'India' && !pincodeLocality.toLowerCase().includes('delivery area'))
+                    ? `${pincodeLocality}${state && state !== 'India' ? `, ${state}` : ''}`
+                    : postalCode
+                      ? `Pincode ${postalCode}${state && state !== 'India' ? `, ${state}` : ''}`
+                      : 'Pan-India Express';
+
+                const cleanTimeline = (deliveryEstimate || '3-5 Business Days')
+                  .replace(/\(Pan-India Express\)/gi, '')
+                  .trim();
+
+                const freeDeliveryRemaining = Math.max(0, vendorFreeThreshold - subtotal);
+                const progressPct = vendorFreeThreshold > 0 
+                  ? Math.min(100, Math.round((subtotal / vendorFreeThreshold) * 100)) 
+                  : 100;
+
+                return (
+                  <div className="bg-emerald-50/70 dark:bg-emerald-950/25 border border-emerald-200/70 dark:border-emerald-800/40 rounded-2xl p-3.5 space-y-2.5 text-xs text-emerald-950 dark:text-emerald-200">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+                          <Truck className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <span className="font-bold text-xs text-slate-900 dark:text-slate-100 block truncate">
+                            Delivering to {deliveryLocality}
+                          </span>
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium block">
+                            Estimated {cleanTimeline}
+                            {deliveryCourier && !cleanTimeline.toLowerCase().includes(deliveryCourier.toLowerCase()) ? ` via ${deliveryCourier}` : ''}
+                          </span>
+                        </div>
+                      </div>
+                      <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full shrink-0 tracking-wide ${
+                        shippingFee === 0
+                          ? 'bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                      }`}>
+                        {shippingFee === 0 ? 'FREE Shipping' : `₹${shippingFee.toFixed(0)} Shipping`}
+                      </span>
+                    </div>
+
+                    {/* Free Shipping Milestone Meter */}
+                    {vendorFreeThreshold > 0 && (
+                      freeDeliveryRemaining > 0 ? (
+                        <div className="bg-white/80 dark:bg-slate-900/60 rounded-xl p-2.5 border border-emerald-100 dark:border-emerald-900/30">
+                          <div className="flex justify-between items-center text-[10px] font-bold">
+                            <span className="text-emerald-800 dark:text-emerald-300">
+                              Add {curr}{freeDeliveryRemaining.toFixed(0)} more for FREE Delivery
+                            </span>
+                            <span className="text-slate-400 dark:text-slate-500 font-black">
+                              {progressPct}%
+                            </span>
+                          </div>
+                          <div className="w-full h-1.5 bg-emerald-100 dark:bg-emerald-950 rounded-full mt-1.5 overflow-hidden">
+                            <div 
+                              className="h-full bg-emerald-500 rounded-full transition-all duration-500" 
+                              style={{ width: `${progressPct}%` }} 
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100/60 dark:bg-emerald-900/30 px-2.5 py-1 rounded-xl">
+                          <CheckCircle className="h-3 w-3 text-emerald-600 shrink-0" />
+                          <span>Free delivery unlocked on this order!</span>
+                        </div>
+                      )
+                    )}
+
+                    {/* Clean Dispatch Note */}
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
+                      {vendorShippingNote
+                        ? vendorShippingNote
+                        : `Dispatched directly from fresh certified stock${vendorDisplayName ? ` by ${vendorDisplayName}` : ''}. Tracking ID is issued upon dispatch.`}
+                    </p>
+                  </div>
+                );
+              })()}
 
               {/* Itemized Numbers */}
               <div className="space-y-3 text-xs">
@@ -1097,11 +1132,11 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
                   )
                 )}
 
-                <div className="flex justify-between items-baseline text-slate-500 dark:text-slate-400 font-medium pb-3 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex justify-between items-center text-slate-500 dark:text-slate-400 font-medium pb-3 border-b border-slate-100 dark:border-slate-800">
                   <div>
                     <span>Standard Shipping</span>
                     <span className="text-[10px] text-slate-400 block font-normal">
-                      {subtotal >= vendorFreeThreshold ? `Free on orders above ₹${vendorFreeThreshold} (Pan-India)` : `Free above ₹${vendorFreeThreshold} (₹${vendorShippingBelowThreshold} below ₹${vendorFreeThreshold})`}
+                      {shippingFee === 0 ? `Free delivery threshold reached (≥ ₹${vendorFreeThreshold})` : `Free on orders above ₹${vendorFreeThreshold} (₹${vendorShippingBelowThreshold} below)`}
                     </span>
                   </div>
                   {shippingFee > 0 ? (
@@ -1115,7 +1150,7 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
                   <div>
                     <span className="font-black text-slate-900 dark:text-slate-100 uppercase tracking-wider block">Total Payable</span>
                     <span className="text-[10px] text-slate-400 font-medium block">
-                      Inclusive of all taxes & delivery ({curr}{subtotal.toFixed(2)} {discountAmount > 0 ? `- ${curr}${discountAmount.toFixed(2)} ` : ''}{(!vendorGstInclusive && gstAmount > 0) ? `+ ${curr}${gstAmount.toFixed(2)} GST ` : ''}+ {shippingFee === 0 ? 'FREE shipping' : `${curr}${shippingFee.toFixed(2)} shipping`})
+                      All taxes & delivery included
                     </span>
                   </div>
                   <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight">
