@@ -970,11 +970,11 @@ export const getAvailableCoupons = async (req: Request, res: Response) => {
     let filter: any = { isActive: true, isDeleted: false };
     if (targetVendorId) {
       filter.$or = [{ vendorId: targetVendorId }, { isGlobal: true }];
-    } else {
-      filter.isGlobal = true;
     }
 
-    const coupons = await Coupon.find(filter).select('code discountType discountValue vendorId isGlobal');
+    const coupons = await Coupon.find(filter)
+      .populate('vendorId', 'name slug')
+      .select('code discountType discountValue vendorId isGlobal');
     res.json(coupons);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching coupons' });

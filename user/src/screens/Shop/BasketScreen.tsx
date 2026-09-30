@@ -232,21 +232,22 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
     if (activeVendorSlug) params.append('vendorSlug', activeVendorSlug);
     const qs = params.toString() ? `?${params.toString()}` : '';
 
-    fetch(`${apiUrl}/shop/coupons${qs}`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
-    .then(r => r.json())
-    .then(data => {
-      if (Array.isArray(data)) {
-        setAvailableCoupons(data);
-      } else {
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    fetch(`${apiUrl}/shop/coupons${qs}`, { headers })
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setAvailableCoupons(data);
+        } else {
+          setAvailableCoupons([]);
+        }
+      })
+      .catch(err => {
+        console.error('Error fetching coupons:', err);
         setAvailableCoupons([]);
-      }
-    })
-    .catch(err => {
-      console.error(err);
-      setAvailableCoupons([]);
-    });
+      });
   }, [apiUrl, token, activeVendorId, activeVendorSlug]);
 
   useEffect(() => {
@@ -948,8 +949,8 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
           {/* Right Column: Order Summary & Payment */}
           <div className="lg:col-span-5 space-y-6">
             
-            {/* Promo Coupon Card - Only shown when active vendor has available coupons or a coupon is applied */}
-            {branding?.enableSaferFoodCoupons !== false && (availableCoupons.length > 0 || !!appliedCoupon) && (
+            {/* Promo Coupon Card */}
+            {(availableCoupons.length > 0 || !!appliedCoupon || branding?.enableSaferFoodCoupons !== false) && (
               <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-5 shadow-sm space-y-3">
                 <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block flex items-center gap-1.5">
                   <Tag className="h-3.5 w-3.5 text-indigo-600" /> Apply Promo Coupon
@@ -993,10 +994,15 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
                       {availableCoupons.map(c => (
                         <button 
                           key={c.code}
-                          onClick={() => setCouponCode(c.code)}
-                          className="text-[10px] px-2.5 py-1 border border-indigo-200 dark:border-indigo-800/60 bg-indigo-50/60 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 rounded-lg font-extrabold hover:bg-indigo-100 transition-all cursor-pointer"
+                          onClick={() => {
+                            setCouponCode(c.code);
+                            calculateBreakdown(c.code);
+                          }}
+                          className="text-[10px] px-2.5 py-1 border border-indigo-200 dark:border-indigo-800/60 bg-indigo-50/60 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 rounded-lg font-extrabold hover:bg-indigo-100 transition-all cursor-pointer flex items-center gap-1"
                         >
-                          {c.code} ({c.discountType === 'percentage' ? `${c.discountValue}% OFF` : `₹${c.discountValue} OFF`})
+                          <Tag className="h-2.5 w-2.5" />
+                          <span>{c.code}</span>
+                          <span className="opacity-80">({c.discountType === 'percentage' ? `${c.discountValue}% OFF` : `₹${c.discountValue} OFF`})</span>
                         </button>
                       ))}
                     </div>

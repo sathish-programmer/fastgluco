@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, Search, SlidersHorizontal, Sparkles, AlertCircle, ShoppingCart, 
   Package, MapPin, Plus, Minus, ChevronRight, ExternalLink,
-  Check, X, Share2, ShieldCheck, Stethoscope, Leaf, Zap, CheckCircle2, Truck
+  Check, X, Share2, ShieldCheck, Stethoscope, Leaf, Zap, CheckCircle2, Truck, Tag
 } from 'lucide-react';
 import { BasketScreen } from './BasketScreen';
 import { PincodeDeliveryChecker } from '../../components/PincodeDeliveryChecker';
@@ -178,6 +178,17 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
   const [isEditingPincode, setIsEditingPincode] = useState<boolean>(false);
   const [tempPincodeInput, setTempPincodeInput] = useState<string>('');
   const [checkingPincode, setCheckingPincode] = useState<boolean>(false);
+  const [availableStoreCoupons, setAvailableStoreCoupons] = useState<any[]>([]);
+
+  // Fetch active store coupons for promo highlights
+  useEffect(() => {
+    fetch(`${apiUrl}/shop/coupons`)
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) setAvailableStoreCoupons(data);
+      })
+      .catch(err => console.error('Error fetching store coupons:', err));
+  }, [apiUrl]);
 
   // Selected Product Detail View state
   const [selectedProduct, setSelectedProduct] = useState<ShopItem | null>(null);
@@ -793,6 +804,26 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                               : `GST Exempt (0%)${selectedProduct.vendorId?.name ? ` • Dispatched by ${selectedProduct.vendorId.name}` : ' • Doorstep delivery available'}`)
                           : 'Inclusive of all taxes • Doorstep delivery available'}
                       </span>
+
+                      {/* Applicable Coupon Offer Pill */}
+                      {(() => {
+                        const matchingCoupon = availableStoreCoupons.find(c => 
+                          c.isGlobal || 
+                          c.vendorId?._id === selectedProduct.vendorId || 
+                          c.vendorId === selectedProduct.vendorId ||
+                          (typeof selectedProduct.vendorId === 'object' && c.vendorId?._id === selectedProduct.vendorId?._id) ||
+                          (selectedProduct.brand === 'Arivu Foods' && (c.vendorId?.slug === 'arivu-foods' || !c.vendorId))
+                        );
+                        if (!matchingCoupon) return null;
+                        return (
+                          <div className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50/90 dark:bg-indigo-950/50 border border-indigo-200/80 dark:border-indigo-800/60 rounded-xl text-xs font-bold text-indigo-700 dark:text-indigo-300">
+                            <Tag className="h-3 w-3 text-indigo-600" />
+                            <span>Extra Savings: Use code</span>
+                            <span className="font-mono font-black text-indigo-900 dark:text-indigo-200 bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-indigo-200 dark:border-indigo-800">{matchingCoupon.code}</span>
+                            <span className="text-emerald-600 dark:text-emerald-400 font-black">({matchingCoupon.discountType === 'percentage' ? `${matchingCoupon.discountValue}% OFF` : `₹${matchingCoupon.discountValue} OFF`})</span>
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     {discountPercent > 0 && (
@@ -1340,6 +1371,35 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                 <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200">Lab Tested & Pure</span>
               </div>
             </div>
+
+            {/* Active Store Promo Coupons Strip */}
+            {availableStoreCoupons.length > 0 && (
+              <div className="mt-3 bg-gradient-to-r from-indigo-50/90 via-purple-50/90 to-emerald-50/90 dark:from-indigo-950/40 dark:via-purple-950/30 dark:to-emerald-950/30 border border-indigo-200/80 dark:border-indigo-800/60 rounded-2xl p-2.5 sm:p-3 flex flex-wrap items-center justify-between gap-2.5 shadow-2xs">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="h-7 w-7 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <Tag className="h-3.5 w-3.5" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="font-extrabold text-xs text-slate-900 dark:text-slate-100 block">
+                      Active Promo Offers Available!
+                    </span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium block truncate">
+                      Tap or apply coupon code at checkout to unlock instant discounts
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {availableStoreCoupons.map(c => (
+                    <div key={c.code} className="inline-flex items-center gap-1.5 px-3 py-1 bg-white dark:bg-slate-900 border border-indigo-300 dark:border-indigo-700 rounded-xl shadow-2xs">
+                      <span className="font-mono font-black text-xs text-indigo-700 dark:text-indigo-300 tracking-wider">{c.code}</span>
+                      <span className="text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400">
+                        {c.discountType === 'percentage' ? `${c.discountValue}% OFF` : `₹${c.discountValue} OFF`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
