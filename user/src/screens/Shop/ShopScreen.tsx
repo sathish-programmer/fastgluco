@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  ArrowLeft, Search, SlidersHorizontal, Sparkles, AlertCircle, ShoppingCart, 
+import {
+  ArrowLeft, Search, SlidersHorizontal, Sparkles, AlertCircle, ShoppingCart,
   Package, MapPin, Plus, Minus, ChevronRight, ExternalLink,
   Check, X, Share2, ShieldCheck, Stethoscope, Leaf, Zap, CheckCircle2, Truck, Tag
 } from 'lucide-react';
@@ -691,7 +691,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
 
         <div className="px-4 max-w-5xl mx-auto pt-6">
           <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200/90 dark:border-slate-800 shadow-sm p-6 sm:p-10 flex flex-col md:flex-row gap-8 lg:gap-12 relative">
-            
+
             {/* Left Column: Image Showcase with Flipkart / Amazon Zooming */}
             <div className="md:w-5/12 flex flex-col items-center">
               <ProductImageZoomShowcase
@@ -800,16 +800,16 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                       <span className="text-xs text-slate-400 font-medium block mt-1">
                         {typeof selectedProduct.vendorId === 'object' && selectedProduct.vendorId?.gstPercentage !== undefined
                           ? (selectedProduct.vendorId.gstPercentage > 0
-                              ? `Inclusive of ${selectedProduct.vendorId.gstPercentage}% GST${selectedProduct.vendorId?.name ? ` • Dispatched by ${selectedProduct.vendorId.name}` : ' • Doorstep delivery available'}`
-                              : `GST Exempt (0%)${selectedProduct.vendorId?.name ? ` • Dispatched by ${selectedProduct.vendorId.name}` : ' • Doorstep delivery available'}`)
+                            ? `Inclusive of ${selectedProduct.vendorId.gstPercentage}% GST${selectedProduct.vendorId?.name ? ` • Dispatched by ${selectedProduct.vendorId.name}` : ' • Doorstep delivery available'}`
+                            : `GST Exempt (0%)${selectedProduct.vendorId?.name ? ` • Dispatched by ${selectedProduct.vendorId.name}` : ' • Doorstep delivery available'}`)
                           : 'Inclusive of all taxes • Doorstep delivery available'}
                       </span>
 
                       {/* Applicable Coupon Offer Pill */}
                       {(() => {
-                        const matchingCoupon = availableStoreCoupons.find(c => 
-                          c.isGlobal || 
-                          c.vendorId?._id === selectedProduct.vendorId || 
+                        const matchingCoupon = availableStoreCoupons.find(c =>
+                          c.isGlobal ||
+                          c.vendorId?._id === selectedProduct.vendorId ||
                           c.vendorId === selectedProduct.vendorId ||
                           (typeof selectedProduct.vendorId === 'object' && c.vendorId?._id === selectedProduct.vendorId?._id) ||
                           (selectedProduct.brand === 'Arivu Foods' && (c.vendorId?.slug === 'arivu-foods' || !c.vendorId))
@@ -854,11 +854,10 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                               key={idx}
                               type="button"
                               onClick={() => setSelectedVariant(v)}
-                              className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold border transition-all duration-200 flex items-center gap-2 cursor-pointer ${
-                                isSelected
+                              className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold border transition-all duration-200 flex items-center gap-2 cursor-pointer ${isSelected
                                   ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-600/25 ring-2 ring-indigo-500/20 scale-[1.02]'
                                   : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-indigo-400'
-                              }`}
+                                }`}
                             >
                               {isSelected && <Check className="h-3.5 w-3.5 stroke-[3]" />}
                               <span>{v.name}</span>
@@ -876,11 +875,10 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                       <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                       <span>100% Genuine • Direct Dispatch</span>
                     </span>
-                    <span className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-black ${
-                      isOutOfStock 
-                        ? 'bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-950/40 dark:border-rose-900/40' 
+                    <span className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-black ${isOutOfStock
+                        ? 'bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-950/40 dark:border-rose-900/40'
                         : 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800/40'
-                    }`}>
+                      }`}>
                       <span className={`h-2 w-2 rounded-full ${isOutOfStock ? 'bg-rose-500' : 'bg-emerald-500 animate-pulse'}`} />
                       <span>{isOutOfStock ? 'Sold Out - Unavailable' : 'In Stock • Dispatches in 24-48 hrs'}</span>
                     </span>
@@ -908,22 +906,20 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                   <div className="flex p-1 bg-slate-100/90 dark:bg-slate-800/80 rounded-2xl gap-1 overflow-x-auto scrollbar-none">
                     <button
                       onClick={() => setActiveDetailTab('overview')}
-                      className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
-                        activeDetailTab === 'overview'
+                      className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${activeDetailTab === 'overview'
                           ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
                           : 'text-slate-500 dark:text-slate-400 hover:text-slate-900'
-                      }`}
+                        }`}
                     >
                       Overview
                     </button>
                     {selectedProduct.keyBenefits && selectedProduct.keyBenefits.length > 0 && (
                       <button
                         onClick={() => setActiveDetailTab('benefits')}
-                        className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
-                          activeDetailTab === 'benefits'
+                        className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${activeDetailTab === 'benefits'
                             ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
                             : 'text-slate-500 dark:text-slate-400 hover:text-slate-900'
-                        }`}
+                          }`}
                       >
                         Key Benefits
                       </button>
@@ -931,11 +927,10 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                     {selectedProduct.ingredients && selectedProduct.ingredients.length > 0 && (
                       <button
                         onClick={() => setActiveDetailTab('ingredients')}
-                        className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
-                          activeDetailTab === 'ingredients'
+                        className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${activeDetailTab === 'ingredients'
                             ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
                             : 'text-slate-500 dark:text-slate-400 hover:text-slate-900'
-                        }`}
+                          }`}
                       >
                         Ingredients
                       </button>
@@ -943,11 +938,10 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                     {selectedProduct.usageInstructions && (
                       <button
                         onClick={() => setActiveDetailTab('usage')}
-                        className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
-                          activeDetailTab === 'usage'
+                        className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${activeDetailTab === 'usage'
                             ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
                             : 'text-slate-500 dark:text-slate-400 hover:text-slate-900'
-                        }`}
+                          }`}
                       >
                         Usage & Directions
                       </button>
@@ -955,11 +949,10 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                     {selectedProduct.nutritionFacts && Object.keys(selectedProduct.nutritionFacts).length > 0 && (
                       <button
                         onClick={() => setActiveDetailTab('nutrition')}
-                        className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
-                          activeDetailTab === 'nutrition'
+                        className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${activeDetailTab === 'nutrition'
                             ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
                             : 'text-slate-500 dark:text-slate-400 hover:text-slate-900'
-                        }`}
+                          }`}
                       >
                         Nutrition Facts
                       </button>
@@ -1373,7 +1366,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
             </div>
 
             {/* Active Store Promo Coupons Strip */}
-            {availableStoreCoupons.length > 0 && (
+            {/* {availableStoreCoupons.length > 0 && (
               <div className="mt-3 bg-gradient-to-r from-indigo-50/90 via-purple-50/90 to-emerald-50/90 dark:from-indigo-950/40 dark:via-purple-950/30 dark:to-emerald-950/30 border border-indigo-200/80 dark:border-indigo-800/60 rounded-2xl p-2.5 sm:p-3 flex flex-wrap items-center justify-between gap-2.5 shadow-2xs">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div className="h-7 w-7 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs">
@@ -1399,7 +1392,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                   ))}
                 </div>
               </div>
-            )}
+            )} */}
           </div>
         </div>
 
@@ -1432,11 +1425,10 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
             <button
               type="button"
               onClick={() => setOnlyDoctorRecommended(!onlyDoctorRecommended)}
-              className={`px-3.5 py-2 rounded-2xl text-xs font-extrabold border transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap cursor-pointer shadow-2xs ${
-                onlyDoctorRecommended
+              className={`px-3.5 py-2 rounded-2xl text-xs font-extrabold border transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap cursor-pointer shadow-2xs ${onlyDoctorRecommended
                   ? 'bg-emerald-600 border-emerald-600 text-white shadow-emerald-600/20'
                   : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-emerald-300'
-              }`}
+                }`}
             >
               <Stethoscope className="h-3.5 w-3.5" />
               <span>Doctor Formulated</span>
@@ -1445,11 +1437,10 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
             <button
               type="button"
               onClick={() => setOnlyAvailable(!onlyAvailable)}
-              className={`px-3.5 py-2 rounded-2xl text-xs font-extrabold border transition-all duration-200 whitespace-nowrap cursor-pointer shadow-2xs ${
-                onlyAvailable
+              className={`px-3.5 py-2 rounded-2xl text-xs font-extrabold border transition-all duration-200 whitespace-nowrap cursor-pointer shadow-2xs ${onlyAvailable
                   ? 'bg-indigo-600 border-indigo-600 text-white shadow-indigo-600/20'
                   : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-indigo-300'
-              }`}
+                }`}
             >
               <span>In Stock</span>
             </button>
@@ -1457,11 +1448,10 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
             <button
               type="button"
               onClick={() => setShowFiltersPanel(!showFiltersPanel)}
-              className={`px-3.5 py-2 border rounded-2xl text-xs font-extrabold flex items-center gap-1.5 transition-all duration-200 whitespace-nowrap cursor-pointer shadow-2xs ${
-                showFiltersPanel || minPrice || maxPrice || selectedBrand !== 'All'
+              className={`px-3.5 py-2 border rounded-2xl text-xs font-extrabold flex items-center gap-1.5 transition-all duration-200 whitespace-nowrap cursor-pointer shadow-2xs ${showFiltersPanel || minPrice || maxPrice || selectedBrand !== 'All'
                   ? 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-300 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400'
                   : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300'
-              }`}
+                }`}
             >
               <SlidersHorizontal className="h-3.5 w-3.5" />
               <span>Filters</span>
@@ -1550,11 +1540,10 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
               <button
                 key={idx}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-2 rounded-2xl text-xs font-black border transition-all duration-200 whitespace-nowrap cursor-pointer ${
-                  isSelected
+                className={`px-4 py-2 rounded-2xl text-xs font-black border transition-all duration-200 whitespace-nowrap cursor-pointer ${isSelected
                     ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-600/25 scale-[1.02]'
                     : 'bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-indigo-300 hover:bg-slate-50/50'
-                }`}
+                  }`}
               >
                 {cat === 'All' ? 'All Products' : cat}
               </button>
@@ -1698,72 +1687,72 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                             Sold Out
                           </span>
                         ) : item.buyOnAmazonUrl ? (
-                        <a
-                          href={item.buyOnAmazonUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-[10px] font-black text-amber-950 bg-amber-400 hover:bg-amber-300 px-3 py-1.5 rounded-xl shadow-xs transition-all flex items-center gap-1 active:scale-95"
-                        >
-                          <span>Amazon</span>
-                          <ExternalLink className="h-3 w-3" />
-                        </a>
-                      ) : branding.enableExternalPayments !== false ? (
-                        hasVariants ? (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openProductDetails(item);
-                            }}
-                            className="text-[11px] font-black text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 dark:hover:text-white px-2.5 py-1 rounded-xl border border-indigo-200/80 dark:border-indigo-800/60 transition-all duration-200 flex items-center gap-0.5 shadow-2xs active:scale-95 cursor-pointer"
-                          >
-                            <span>Options</span>
-                            <ChevronRight className="h-3 w-3 stroke-[2.5]" />
-                          </button>
-                        ) : itemQty > 0 ? (
-                          <div
+                          <a
+                            href={item.buyOnAmazonUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className="flex items-center bg-indigo-600 text-white rounded-xl p-0.5 gap-0.5 shadow-xs"
+                            className="text-[10px] font-black text-amber-950 bg-amber-400 hover:bg-amber-300 px-3 py-1.5 rounded-xl shadow-xs transition-all flex items-center gap-1 active:scale-95"
                           >
+                            <span>Amazon</span>
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        ) : branding.enableExternalPayments !== false ? (
+                          hasVariants ? (
                             <button
                               type="button"
-                              onClick={() => updateItemQty(item.id, -1)}
-                              className="h-6 w-6 flex items-center justify-center hover:bg-indigo-700 rounded-lg text-xs font-bold"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openProductDetails(item);
+                              }}
+                              className="text-[11px] font-black text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 dark:hover:text-white px-2.5 py-1 rounded-xl border border-indigo-200/80 dark:border-indigo-800/60 transition-all duration-200 flex items-center gap-0.5 shadow-2xs active:scale-95 cursor-pointer"
                             >
-                              <Minus className="h-3 w-3" />
+                              <span>Options</span>
+                              <ChevronRight className="h-3 w-3 stroke-[2.5]" />
                             </button>
-                            <span className="text-xs font-black px-1.5">{itemQty}</span>
+                          ) : itemQty > 0 ? (
+                            <div
+                              onClick={(e) => e.stopPropagation()}
+                              className="flex items-center bg-indigo-600 text-white rounded-xl p-0.5 gap-0.5 shadow-xs"
+                            >
+                              <button
+                                type="button"
+                                onClick={() => updateItemQty(item.id, -1)}
+                                className="h-6 w-6 flex items-center justify-center hover:bg-indigo-700 rounded-lg text-xs font-bold"
+                              >
+                                <Minus className="h-3 w-3" />
+                              </button>
+                              <span className="text-xs font-black px-1.5">{itemQty}</span>
+                              <button
+                                type="button"
+                                onClick={() => updateItemQty(item.id, 1)}
+                                className="h-6 w-6 flex items-center justify-center hover:bg-indigo-700 rounded-lg text-xs font-bold"
+                              >
+                                <Plus className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ) : (
                             <button
                               type="button"
-                              onClick={() => updateItemQty(item.id, 1)}
-                              className="h-6 w-6 flex items-center justify-center hover:bg-indigo-700 rounded-lg text-xs font-bold"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                addToBasket(item);
+                              }}
+                              className="text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 px-3.5 py-1.5 rounded-xl transition-all duration-150 flex items-center gap-1 shadow-sm shadow-indigo-600/20 active:scale-95 cursor-pointer"
                             >
-                              <Plus className="h-3 w-3" />
+                              <Plus className="h-3.5 w-3.5 stroke-[3]" />
+                              <span>ADD</span>
                             </button>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              addToBasket(item);
-                            }}
-                            className="text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 px-3.5 py-1.5 rounded-xl transition-all duration-150 flex items-center gap-1 shadow-sm shadow-indigo-600/20 active:scale-95 cursor-pointer"
-                          >
-                            <Plus className="h-3.5 w-3.5 stroke-[3]" />
-                            <span>ADD</span>
-                          </button>
-                        )
-                      ) : null}
+                          )
+                        ) : null}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       </div>
 
