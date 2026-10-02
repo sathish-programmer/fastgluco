@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, Navigation, CheckCircle, XCircle, Clock, Truck, RefreshCw } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { getDeviceLocation, reverseGeocodeCoordsToPincode } from '../utils/geolocationHelper';
 
 interface PincodeCheckResult {
   serviceable: boolean;
@@ -42,6 +43,7 @@ export const PincodeDeliveryChecker: React.FC<PincodeDeliveryCheckerProps> = ({
   const [pincode, setPincode] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [detectingGps, setDetectingGps] = useState<boolean>(false);
+  const [gpsStatus, setGpsStatus] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
   const [result, setResult] = useState<PincodeCheckResult | null>(null);
 
   // Auto check default saved pincode if available
@@ -99,48 +101,55 @@ export const PincodeDeliveryChecker: React.FC<PincodeDeliveryCheckerProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (pincode.trim().length >= 6) {
+      setGpsStatus(null);
       checkPincode(pincode.trim());
     }
   };
 
-  const handleUseGpsLocation = () => {
-    if (!('geolocation' in navigator)) {
-      alert(t('geolocationNotSupported'));
-      return;
-    }
-
+  const handleUseGpsLocation = async () => {
     setDetectingGps(true);
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const lat = pos.coords.latitude;
-        const lon = pos.coords.longitude;
-        
-        // Reverse geocode to find pincode if possible
-        try {
-          const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);
-          if (res.ok) {
-            const data = await res.json();
-            const detectedCode = data.postcode || pincode || '560001';
-            setPincode(detectedCode);
-            await checkPincode(detectedCode, lat, lon);
-          } else {
-            await checkPincode(pincode || '560001', lat, lon);
-          }
-        } catch {
-          await checkPincode(pincode || '560001', lat, lon);
+    setGpsStatus(null);
+    try {
+      const coords = await getDeviceLocation();
+      if (!coords) {
+        setGpsStatus({
+          type: 'error',
+          message: 'Unable to detect GPS coordinates. Please ensure device location is enabled, or type your 6-digit PIN code.'
+        });
+        return;
+      }
+
+      const geo = await reverseGeocodeCoordsToPincode(coords.lat, coords.lon);
+      if (geo?.pincode && /^\d{6}$/.test(geo.pincode)) {
+        setPincode(geo.pincode);
+        setGpsStatus({
+          type: 'success',
+          message: `GPS detected: ${geo.locality ? `${geo.locality}, ` : ''}${geo.pincode}`
+        });
+        await checkPincode(geo.pincode, coords.lat, coords.lon);
+      } else {
+        if (pincode && pincode.length === 6) {
+          await checkPincode(pincode, coords.lat, coords.lon);
+        } else {
+          setGpsStatus({
+            type: 'error',
+            message: 'Coordinates acquired, but postal PIN code could not be mapped. Please enter your 6-digit PIN code.'
+          });
         }
-      },
-      (err) => {
-        console.warn('GPS location error:', err);
-        setDetectingGps(false);
-        alert(t('unableToDetectGps'));
-      },
-      { timeout: 8000 }
-    );
+      }
+    } catch (err: any) {
+      console.warn('GPS location error:', err);
+      setGpsStatus({
+        type: 'error',
+        message: 'Error detecting GPS location. Please enter your 6-digit pincode.'
+      });
+    } finally {
+      setDetectingGps(false);
+    }
   };
 
   return (
-    <div className={`bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-4 sm:p-5 space-y-3.5 font-sans text-slate-800 dark:text-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] ${className}`}>
+    <div className={`bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-4 sm:p-5 space-y-3 font-sans text-slate-800 dark:text-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] ${className}`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
           <div className="h-6 w-6 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
@@ -167,7 +176,10 @@ export const PincodeDeliveryChecker: React.FC<PincodeDeliveryCheckerProps> = ({
             maxLength={6}
             placeholder={t('enterPincodePlaceholder', 'Enter 6-digit Delivery Pincode')}
             value={pincode}
-            onChange={(e) => setPincode(e.target.value.replace(/\D/g, ''))}
+            onChange={(e) => {
+              setPincode(e.target.value.replace(/\D/g, ''));
+              if (gpsStatus) setGpsStatus(null);
+            }}
             className="w-full bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/90 dark:border-slate-800 rounded-2xl pl-10 pr-3 py-2.5 text-xs font-bold text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all font-mono"
           />
         </div>
@@ -179,6 +191,24 @@ export const PincodeDeliveryChecker: React.FC<PincodeDeliveryCheckerProps> = ({
           {loading ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : t('checkButton', 'Check Now')}
         </button>
       </form>
+
+      {/* Inline GPS Status Message */}
+      {gpsStatus && (
+        <div className={`text-[11px] font-semibold px-3 py-2 rounded-xl border flex items-center justify-between ${
+          gpsStatus.type === 'success'
+            ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200/80 dark:border-emerald-800/50 text-emerald-800 dark:text-emerald-300'
+            : 'bg-amber-50 dark:bg-amber-950/40 border-amber-200/80 dark:border-amber-800/50 text-amber-800 dark:text-amber-300'
+        }`}>
+          <span>{gpsStatus.message}</span>
+          <button 
+            type="button" 
+            onClick={() => setGpsStatus(null)} 
+            className="opacity-60 hover:opacity-100 text-xs font-bold ml-2 cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Results Box */}
       {result && (
