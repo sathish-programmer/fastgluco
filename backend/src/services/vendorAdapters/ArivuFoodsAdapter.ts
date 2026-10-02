@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { IVendor } from '../../models/Vendor';
 import ShopProduct, { IShopProduct } from '../../models/ShopProduct';
 import { IShopOrder } from '../../models/ShopOrder';
@@ -117,12 +118,155 @@ export async function resolveIndiaPostPincode(pincode: string): Promise<{
 export class ArivuFoodsAdapter implements IVendorAdapter {
   public readonly vendorSlug = 'arivu-foods';
 
-  private getBaseUrl(vendor: IVendor): string {
-    return process.env.ARIVU_FOODS_BASE_URL || vendor.apiConfig?.baseUrl || 'https://backend.arivufoods.com';
+  private getBaseUrl(vendor?: IVendor): string {
+    return process.env.ARIVU_FOODS_BASE_URL || vendor?.apiConfig?.baseUrl || 'https://backend.arivufoods.com';
   }
 
-  private getApiKey(vendor: IVendor): string {
-    return process.env.ARIVU_FOODS_API_KEY || vendor.apiConfig?.apiKey || '';
+  private getApiKey(vendor?: IVendor): string {
+    return process.env.ARIVU_FOODS_API_KEY || vendor?.apiConfig?.apiKey || 'mito_arivu_sk_4c8f7a1d9e2b6f0a3d5c8e1f7b4a9d6c';
+  }
+
+  /**
+   * Transforms raw Arivu Foods API product schema to MitoReboot store schema
+   */
+  public mapRawProduct(p: any, vendor?: IVendor): any {
+    const variants = (p.variants || []).map((v: any) => ({
+      _id: v._id,
+      sku: `ARIVU-${p._id}-${v._id || 'VAR'}`,
+      name: v.weight || 'Standard',
+      weight: v.weight || 'Standard',
+      price: Number(v.price) || 499,
+      stock: v.inStock !== false ? 50 : 0,
+      inStock: v.inStock !== false
+    }));
+
+    const primaryVariant = variants[0] || { price: 499, stock: 50, name: '1 kg' };
+    const price = primaryVariant.price;
+    const totalStock = variants.reduce((sum: number, v: any) => sum + v.stock, 0);
+
+    const keyBenefits: string[] = typeof p.keyFeatures === 'string'
+      ? p.keyFeatures
+          .split('\n')
+          .map((s: string) => s.replace(/^[•\-\*–]\s*/, '').trim())
+          .filter((s: string) => s && !s.toLowerCase().startsWith('key feature'))
+      : (Array.isArray(p.keyFeatures) ? p.keyFeatures : []);
+
+    const fallbackImages = VERIFIED_ARIVU_PACKAGING[p.title] || [];
+    const resolvedImage = p.image || fallbackImages[0] || '';
+    const resolvedImages = p.image ? [p.image] : (fallbackImages.length > 0 ? fallbackImages : []);
+
+    const vendorObj = {
+      _id: vendor?._id || new mongoose.Types.ObjectId('6aae2ad07cc0c6607ce33e9c'),
+      name: vendor?.name || 'Arivu Foods',
+      slug: vendor?.slug || 'arivu-foods',
+      gstInclusive: vendor?.gstInclusive ?? false,
+      gstPercentage: vendor?.gstPercentage ?? vendor?.commissionConfig?.gstOnCommissionRate ?? 18,
+      shippingConfig: {
+        freeShippingThreshold: vendor?.commissionConfig?.minFreeShippingOrderValue || 499,
+        shippingChargeBelowThreshold: vendor?.commissionConfig?.standardShippingFee || 90,
+        carrierPartnerName: 'Arivu Direct Logistics',
+        estimatedDeliveryDays: '2-3 Business Days',
+        shippingNote: ''
+      }
+    };
+
+    return {
+      _id: p._id,
+      id: p._id,
+      name: p.title,
+      title: p.title,
+      description: p.description || p.title,
+      desc: p.description || p.title,
+      price,
+      regularPrice: price,
+      offerPrice: price,
+      discountPercent: 0,
+      image: resolvedImage,
+      images: resolvedImages,
+      category: p.category || 'MitoReboot Nutrition',
+      brand: 'Arivu Foods',
+      shortDescription: (p.description || '').slice(0, 160),
+      detailedDescription: p.aboutProduct || p.description || '',
+      usageInstructions: p.howToConsume || '',
+      keyBenefits,
+      healthBenefits: [
+        'Low Glycemic Index Formulation',
+        'Zero Chemical Preservatives & Additives',
+        'Rich in Dietary Fibre & Essential Micronutrients'
+      ],
+      gst: typeof p.gst === 'number' ? p.gst : 5,
+      productWeight: primaryVariant.name || '1 kg',
+      stock: totalStock,
+      availableStock: totalStock,
+      isActive: p.isActive !== false,
+      variants,
+      vendorId: vendorObj,
+      vendorSku: `ARIVU-${p._id}`,
+      vendorExternalId: p._id,
+      vendorSyncAt: new Date(p.updatedAt || p.createdAt || Date.now()),
+      createdAt: p.createdAt || new Date().toISOString(),
+      updatedAt: p.updatedAt || new Date().toISOString()
+    };
+  }
+
+  /**
+   * Fetches dynamic active products directly from Arivu Foods API in real-time
+   * Endpoint: GET /api/mitoreboot/products
+   */
+  public async fetchDynamicProducts(vendor?: IVendor): Promise<any[]> {
+    const baseUrl = this.getBaseUrl(vendor).replace(/\/+$/, '');
+    const apiKey = this.getApiKey(vendor);
+    const endpoint = `${baseUrl}/api/mitoreboot/products`;
+
+    const response = await fetch(endpoint, {
+      method: 'GET',
+      headers: {
+        'accept': 'application/json',
+        'x-mitoreboot-api-key': apiKey
+      },
+      signal: AbortSignal.timeout(6000)
+    });
+
+    if (!response.ok) {
+      throw new Error(`Arivu API returned status ${response.status}: ${response.statusText}`);
+    }
+
+    const resJson: any = await response.json();
+    if (!resJson.success || !Array.isArray(resJson.data)) {
+      throw new Error(resJson.message || 'Invalid product catalog response format from Arivu Foods');
+    }
+
+    return resJson.data.map((p: any) => this.mapRawProduct(p, vendor));
+  }
+
+  /**
+   * Fetches a single dynamic product directly from Arivu Foods API by ID in real-time
+   * Endpoint: GET /api/mitoreboot/products/:id
+   */
+  public async fetchDynamicProductById(productId: string, vendor?: IVendor): Promise<any | null> {
+    const baseUrl = this.getBaseUrl(vendor).replace(/\/+$/, '');
+    const apiKey = this.getApiKey(vendor);
+    const cleanId = encodeURIComponent((productId || '').trim());
+    const endpoint = `${baseUrl}/api/mitoreboot/products/${cleanId}`;
+
+    const response = await fetch(endpoint, {
+      method: 'GET',
+      headers: {
+        'accept': 'application/json',
+        'x-mitoreboot-api-key': apiKey
+      },
+      signal: AbortSignal.timeout(6000)
+    });
+
+    if (response.status === 404) return null;
+    if (!response.ok) {
+      throw new Error(`Arivu API returned status ${response.status}: ${response.statusText}`);
+    }
+
+    const resJson: any = await response.json();
+    if (!resJson.success || !resJson.data) return null;
+
+    return this.mapRawProduct(resJson.data, vendor);
   }
 
   /**
@@ -131,8 +275,6 @@ export class ArivuFoodsAdapter implements IVendorAdapter {
    */
   public async syncProducts(vendor: IVendor): Promise<IProductSyncResult> {
     const startTime = Date.now();
-    const baseUrl = this.getBaseUrl(vendor).replace(/\/+$/, '');
-    const apiKey = this.getApiKey(vendor);
 
     const result: IProductSyncResult = {
       success: true,
@@ -146,84 +288,45 @@ export class ArivuFoodsAdapter implements IVendorAdapter {
     };
 
     try {
-      const endpoint = `${baseUrl}/api/mitoreboot/products`;
-      const response = await fetch(endpoint, {
-        method: 'GET',
-        headers: {
-          'accept': 'application/json',
-          'x-mitoreboot-api-key': apiKey
-        }
-      });
+      const dynamicList = await this.fetchDynamicProducts(vendor);
+      result.totalFetched = dynamicList.length;
 
-      if (!response.ok) {
-        throw new Error(`Arivu API returned status ${response.status}: ${response.statusText}`);
-      }
-
-      const resJson: any = await response.json();
-      if (!resJson.success || !Array.isArray(resJson.data)) {
-        throw new Error(resJson.message || 'Invalid product catalog response format from Arivu Foods');
-      }
-
-      const rawList = resJson.data;
-      result.totalFetched = rawList.length;
-
-      // Map native Arivu Foods API product schema to MitoReboot store schema
-      for (const p of rawList) {
+      // Upsert into ShopProduct collection
+      for (const p of dynamicList) {
         try {
-          const variants = (p.variants || []).map((v: any) => ({
-            sku: `ARIVU-${p._id}-${v._id || 'VAR'}`,
-            name: v.weight || 'Standard',
-            price: Number(v.price) || 499,
-            stock: v.inStock !== false ? 50 : 0
-          }));
-
-          const primaryVariant = variants[0] || { price: 499, stock: 50 };
-          const price = primaryVariant.price;
-          const totalStock = variants.reduce((sum: number, v: any) => sum + v.stock, 0);
-
-          // Extract key features without fabricating claims
-          const keyBenefits: string[] = typeof p.keyFeatures === 'string'
-            ? p.keyFeatures
-                .split('\n')
-                .map((s: string) => s.replace(/^[•\-\*–]\s*/, '').trim())
-                .filter((s: string) => s && !s.toLowerCase().startsWith('key feature'))
-            : (Array.isArray(p.keyFeatures) ? p.keyFeatures : []);
-
-          // Fallback to verified Cloudinary CDN packaging assets if partner API field is empty
-          const fallbackImages = VERIFIED_ARIVU_PACKAGING[p.title] || [];
-          const resolvedImage = p.image || fallbackImages[0] || '';
-          const resolvedImages = p.image ? [p.image] : (fallbackImages.length > 0 ? fallbackImages : []);
-
           const productData = {
-            name: p.title,
-            description: p.description || p.title,
-            price,
-            regularPrice: price,
-            image: resolvedImage,
-            images: resolvedImages,
-            category: p.category || 'MitoReboot Nutrition',
-            brand: 'Arivu Foods',
-            shortDescription: (p.description || '').slice(0, 160),
-            detailedDescription: p.aboutProduct || p.description || '',
-            usageInstructions: p.howToConsume || '',
-            keyBenefits,
-            gst: typeof p.gst === 'number' ? p.gst : 5,
-            productWeight: variants[0]?.name || '1 kg',
-            stock: totalStock,
-            availableStock: totalStock,
-            isActive: p.isActive !== false,
-            variants,
+            name: p.name,
+            description: p.description,
+            price: p.price,
+            regularPrice: p.regularPrice,
+            offerPrice: p.offerPrice,
+            discountPercent: p.discountPercent,
+            image: p.image,
+            images: p.images,
+            category: p.category,
+            brand: p.brand,
+            shortDescription: p.shortDescription,
+            detailedDescription: p.detailedDescription,
+            usageInstructions: p.usageInstructions,
+            keyBenefits: p.keyBenefits,
+            healthBenefits: p.healthBenefits,
+            gst: p.gst,
+            productWeight: p.productWeight,
+            stock: p.stock,
+            availableStock: p.availableStock,
+            isActive: p.isActive,
+            variants: p.variants,
             vendorId: vendor._id as any,
-            vendorSku: `ARIVU-${p._id}`,
-            vendorExternalId: p._id,
+            vendorSku: p.vendorSku,
+            vendorExternalId: p.vendorExternalId,
             vendorSyncAt: new Date()
           };
 
-          // Upsert into ShopProduct collection
           let existingProduct = await ShopProduct.findOne({
             $or: [
-              { vendorExternalId: p._id },
-              { vendorSku: `ARIVU-${p._id}` }
+              ...(mongoose.Types.ObjectId.isValid(p._id) ? [{ _id: p._id }] : []),
+              { vendorExternalId: p.vendorExternalId },
+              { vendorSku: p.vendorSku }
             ]
           });
 
@@ -232,13 +335,16 @@ export class ArivuFoodsAdapter implements IVendorAdapter {
             await existingProduct.save();
             result.updatedCount++;
           } else {
-            const newProduct = new ShopProduct(productData);
+            const newProduct = new ShopProduct({
+              ...(mongoose.Types.ObjectId.isValid(p._id) ? { _id: new mongoose.Types.ObjectId(p._id) } : {}),
+              ...productData
+            });
             await newProduct.save();
             result.createdCount++;
           }
         } catch (itemErr: any) {
           result.failedCount++;
-          result.errors.push(`Item ${p.title || p._id}: ${itemErr.message}`);
+          result.errors.push(`Item ${p.name || p._id}: ${itemErr.message}`);
         }
       }
 

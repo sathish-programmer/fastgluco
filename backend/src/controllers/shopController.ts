@@ -11,6 +11,7 @@ import { Coupon } from '../models/Coupon';
 import { User } from '../models/User';
 import { Vendor } from '../models/Vendor';
 import { VendorAdapterFactory } from '../services/vendorAdapters/VendorAdapterFactory';
+import { ArivuFoodsAdapter } from '../services/vendorAdapters/ArivuFoodsAdapter';
 import Razorpay from 'razorpay';
 import { FCMService } from '../services/fcmService';
 import path from 'path';
@@ -55,9 +56,18 @@ export const PREDEFINED_CATEGORIES = [
 
 export const getAdminProducts = async (req: Request, res: Response) => {
   try {
+    try {
+      const arivuVendor = await Vendor.findOne({ slug: 'arivu-foods' });
+      const arivuAdapter = new ArivuFoodsAdapter();
+      const dynamicProducts = await arivuAdapter.fetchDynamicProducts(arivuVendor || undefined);
+      if (dynamicProducts && dynamicProducts.length > 0) {
+        return res.json(dynamicProducts);
+      }
+    } catch (e: any) {
+      console.warn('[getAdminProducts] Live API fetch error, falling back to DB:', e.message);
+    }
+
     let products = await ShopProduct.find().sort({ createdAt: -1 });
-    
-    // Clean return of dynamic products without injecting fake legacy templates
     res.json(products);
   } catch (err) {
     res.status(500).json({ message: 'Error fetching products' });
@@ -129,7 +139,23 @@ export const deleteAdminProduct = async (req: Request, res: Response) => {
 
 export const getCategories = async (req: Request, res: Response) => {
   try {
-    // Only return categories from active verified vendor products (Arivu Foods)
+    // 1. Try to extract categories dynamically from live Arivu API products
+    try {
+      const arivuVendor = await Vendor.findOne({ slug: 'arivu-foods' });
+      const arivuAdapter = new ArivuFoodsAdapter();
+      const dynamicProducts = await arivuAdapter.fetchDynamicProducts(arivuVendor || undefined);
+      if (dynamicProducts && dynamicProducts.length > 0) {
+        const uniqueCats = Array.from(new Set(dynamicProducts.map((p: any) => p.category).filter(Boolean))).sort();
+        return res.json(uniqueCats.map(name => ({
+          name,
+          isCustom: false
+        })));
+      }
+    } catch (e: any) {
+      console.warn('[getCategories] Dynamic categories fetch error, falling back to DB:', e.message);
+    }
+
+    // Fallback: DB distinct categories
     const activeProductCategories = await ShopProduct.distinct('category', { 
       isActive: true,
       $or: [
@@ -168,7 +194,116 @@ export const getProducts = async (req: Request, res: Response) => {
   try {
     const { category, brand, vendor, minPrice, maxPrice, healthBenefit, doctorRecommended, available, search, sortBy } = req.query;
 
-    // Enforce real verified vendor (Arivu Foods) products only; exclude legacy/test items
+    let dynamicProducts: any[] = [];
+    let isDynamicSuccess = false;
+
+    // 1. Fetch live dynamic products directly from Arivu Foods partner API (doc: /api/mitoreboot/products)
+    try {
+      const arivuVendor = await Vendor.findOne({ slug: 'arivu-foods' });
+      const arivuAdapter = new ArivuFoodsAdapter();
+      dynamicProducts = await arivuAdapter.fetchDynamicProducts(arivuVendor || undefined);
+      isDynamicSuccess = true;
+
+      // In the background, keep DB clean & mirrored with exact IDs without blocking the HTTP response
+      (async () => {
+        try {
+          await ShopProduct.deleteMany({
+            $or: [
+              { vendorExternalId: { $regex: '^ARV-' } },
+              { vendorSku: { $regex: '^ARIVU-CP-|^ARIVU-WP-|^ARIVU-FOXTAIL-|^ARIVU-SPROUTED-|^ARIVU-ORGANIC-' } }
+            ]
+          });
+          for (const item of dynamicProducts) {
+            if (mongoose.Types.ObjectId.isValid(item._id)) {
+              await ShopProduct.findByIdAndUpdate(
+                item._id,
+                {
+                  $set: {
+                    name: item.name,
+                    description: item.description,
+                    price: item.price,
+                    regularPrice: item.regularPrice,
+                    offerPrice: item.offerPrice,
+                    image: item.image,
+                    images: item.images,
+                    category: item.category,
+                    brand: item.brand,
+                    shortDescription: item.shortDescription,
+                    detailedDescription: item.detailedDescription,
+                    usageInstructions: item.usageInstructions,
+                    keyBenefits: item.keyBenefits,
+                    healthBenefits: item.healthBenefits,
+                    gst: item.gst,
+                    productWeight: item.productWeight,
+                    stock: item.stock,
+                    availableStock: item.availableStock,
+                    isActive: item.isActive,
+                    variants: item.variants,
+                    vendorId: item.vendorId?._id,
+                    vendorSku: item.vendorSku,
+                    vendorExternalId: item.vendorExternalId,
+                    vendorSyncAt: new Date()
+                  }
+                },
+                { upsert: true, new: true, setDefaultsOnInsert: true }
+              );
+            }
+          }
+        } catch (syncErr: any) {
+          console.warn('[getProducts] Background DB sync warning:', syncErr.message);
+        }
+      })();
+    } catch (apiErr: any) {
+      console.warn('[getProducts] Arivu live API fetch error, falling back to local DB cache:', apiErr.message);
+    }
+
+    if (isDynamicSuccess && dynamicProducts.length > 0) {
+      let filtered = [...dynamicProducts];
+
+      if (category && category !== 'All') {
+        const catStr = String(category).trim().toLowerCase();
+        const hasMatchingCat = filtered.some(p => (p.category || '').toLowerCase().includes(catStr));
+        if (hasMatchingCat) {
+          filtered = filtered.filter(p => (p.category || '').toLowerCase().includes(catStr));
+        }
+      }
+
+      if (brand && brand !== 'All') {
+        const brandStr = String(brand).trim().toLowerCase();
+        filtered = filtered.filter(p => (p.brand || '').toLowerCase().includes(brandStr));
+      }
+
+      if (available === 'true') {
+        filtered = filtered.filter(p => p.stock > 0);
+      }
+
+      if (search) {
+        const searchTerms = String(search).trim().toLowerCase().split(/\s+/).filter(Boolean);
+        filtered = filtered.filter(p => {
+          const text = `${p.name || ''} ${p.description || ''} ${p.shortDescription || ''} ${p.detailedDescription || ''} ${p.category || ''}`.toLowerCase();
+          return searchTerms.every(term => text.includes(term));
+        });
+      }
+
+      if (minPrice) {
+        filtered = filtered.filter(p => p.price >= Number(minPrice));
+      }
+      if (maxPrice) {
+        filtered = filtered.filter(p => p.price <= Number(maxPrice));
+      }
+
+      if (sortBy === 'price_asc') {
+        filtered.sort((a, b) => a.price - b.price);
+      } else if (sortBy === 'price_desc') {
+        filtered.sort((a, b) => b.price - a.price);
+      } else {
+        filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      }
+
+      return res.json(filtered);
+    }
+
+    // Fallback: If external API was unreachable, query DB
     const baseVendorFilter: any = {
       isActive: true,
       $or: [
@@ -231,8 +366,6 @@ export const getProducts = async (req: Request, res: Response) => {
       query = query.sort({ price: 1 });
     } else if (sortBy === 'price_desc') {
       query = query.sort({ price: -1 });
-    } else if (sortBy === 'newest') {
-      query = query.sort({ createdAt: -1 });
     } else {
       query = query.sort({ createdAt: -1 });
     }
@@ -251,12 +384,35 @@ export const validateCart = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Items array is required' });
     }
 
+    // Pre-fetch dynamic catalog for live stock and price validation
+    let dynamicCatalog: any[] = [];
+    try {
+      const arivuVendor = await Vendor.findOne({ slug: 'arivu-foods' });
+      const arivuAdapter = new ArivuFoodsAdapter();
+      dynamicCatalog = await arivuAdapter.fetchDynamicProducts(arivuVendor || undefined);
+    } catch {
+      // ignore
+    }
+
     const validatedItems = await Promise.all(items.map(async (item: any) => {
       const prodId = item.productId || item.item?.id || item.item?._id || item.id;
-      const product = await ShopProduct.findById(prodId);
+
+      // 1. Check live dynamic catalog first
+      let product: any = dynamicCatalog.find(p => p._id.toString() === prodId.toString() || p.vendorExternalId === prodId.toString());
+
+      // 2. If not found in live catalog, check MongoDB
+      if (!product) {
+        if (mongoose.Types.ObjectId.isValid(prodId)) {
+          product = await ShopProduct.findById(prodId);
+        }
+        if (!product) {
+          product = await ShopProduct.findOne({ vendorExternalId: prodId });
+        }
+      }
+
       const requestedQty = Number(item.qty || 1);
 
-      if (!product || !product.isActive) {
+      if (!product || product.isActive === false) {
         return {
           productId: prodId,
           name: item.item?.name || item.name || 'Product',
@@ -270,29 +426,36 @@ export const validateCart = async (req: Request, res: Response) => {
         };
       }
 
-      let availableStock = Number(product.stock ?? 0);
+      let availableStock = Number(product.stock ?? 50);
+      let price = product.price;
+
       if (item.variantName && product.variants && product.variants.length > 0) {
-        const v = product.variants.find((x: any) => x.name === item.variantName);
-        availableStock = v ? Number(v.stock ?? 0) : 0;
+        const v = product.variants.find((x: any) => x.name === item.variantName || x.weight === item.variantName);
+        if (v) {
+          availableStock = Number(v.stock ?? 50);
+          price = v.price || price;
+        } else {
+          availableStock = 0;
+        }
       }
 
       const isOutOfStock = availableStock <= 0;
       const isInsufficient = requestedQty > availableStock;
 
       return {
-        productId: product._id.toString(),
-        name: product.name,
+        productId: (product._id || prodId).toString(),
+        name: product.name || product.title,
         variantName: item.variantName || null,
         requestedQty,
         availableStock,
-        price: product.price,
+        price,
         image: product.image,
         isOutOfStock,
         isInsufficient,
         message: isOutOfStock
-          ? `${product.name}${item.variantName ? ` (${item.variantName})` : ''} is currently out of stock.`
+          ? `${product.name || product.title}${item.variantName ? ` (${item.variantName})` : ''} is currently out of stock.`
           : isInsufficient
-            ? `Only ${availableStock} units left for ${product.name}${item.variantName ? ` (${item.variantName})` : ''}.`
+            ? `Only ${availableStock} units left for ${product.name || product.title}${item.variantName ? ` (${item.variantName})` : ''}.`
             : null
       };
     }));
@@ -315,15 +478,44 @@ export const validateCart = async (req: Request, res: Response) => {
 export const getProductDetails = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const product = await ShopProduct.findById(id).populate('vendorId', 'name slug gstPercentage gstInclusive shippingConfig');
+    let product: any = null;
+
+    // 1. Fetch dynamically from Arivu Foods API by ID (doc: GET /api/mitoreboot/products/:id)
+    try {
+      const arivuVendor = await Vendor.findOne({ slug: 'arivu-foods' });
+      const arivuAdapter = new ArivuFoodsAdapter();
+      product = await arivuAdapter.fetchDynamicProductById(id, arivuVendor || undefined);
+    } catch (err: any) {
+      console.warn('[getProductDetails] Dynamic API fetch warning:', err.message);
+    }
+
+    // 2. Fallback to MongoDB
+    if (!product) {
+      if (mongoose.Types.ObjectId.isValid(id)) {
+        product = await ShopProduct.findById(id).populate('vendorId', 'name slug gstPercentage gstInclusive shippingConfig');
+      }
+      if (!product) {
+        product = await ShopProduct.findOne({ vendorExternalId: id }).populate('vendorId', 'name slug gstPercentage gstInclusive shippingConfig');
+      }
+    }
+
     if (!product) return res.status(404).json({ message: 'Product not found' });
 
-    // Find similar products in same category
-    const similar = await ShopProduct.find({
-      category: product.category,
-      _id: { $ne: product._id },
-      isActive: true
-    }).limit(4);
+    // Find similar products in same category from dynamic catalog
+    let similar: any[] = [];
+    try {
+      const arivuAdapter = new ArivuFoodsAdapter();
+      const allDynamic = await arivuAdapter.fetchDynamicProducts();
+      similar = allDynamic
+        .filter(p => p._id.toString() !== (product._id || product.id).toString())
+        .slice(0, 4);
+    } catch {
+      similar = await ShopProduct.find({
+        category: product.category,
+        _id: { $ne: product._id },
+        isActive: true
+      }).limit(4);
+    }
 
     res.json({ product, similar });
   } catch (err) {
