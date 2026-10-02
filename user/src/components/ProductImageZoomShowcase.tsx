@@ -255,31 +255,31 @@ export const ProductImageZoomShowcase: React.FC<ProductImageZoomShowcaseProps> =
         </div>
       </div>
 
-      {/* FULLSCREEN LIGHTBOX MODAL */}
+      {/* FULLSCREEN LIGHTBOX MODAL (Supports both Light and Dark Themes) */}
       {isLightboxOpen && resolvedUrl && (
         <div 
-          className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col select-none animate-in fade-in duration-150"
+          className="fixed inset-0 z-50 bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl flex flex-col select-none animate-in fade-in duration-150"
           onClick={() => setIsLightboxOpen(false)}
         >
           {/* Header */}
           <div 
-            className="p-4 flex items-center justify-between border-b border-white/10 shrink-0 bg-black/40"
+            className="p-4 flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800 shrink-0 bg-white/90 dark:bg-slate-900/90"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={() => setIsLightboxOpen(false)}
-                className="h-9 px-3 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center gap-1.5 text-xs font-bold transition-all cursor-pointer"
+                className="h-9 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-white flex items-center gap-1.5 text-xs font-bold transition-all cursor-pointer"
               >
                 <X className="h-4 w-4" />
                 <span>Close (Esc)</span>
               </button>
               <div>
-                <h4 className="text-white text-sm font-bold truncate max-w-xs sm:max-w-md">
+                <h4 className="text-slate-900 dark:text-white text-sm font-bold truncate max-w-xs sm:max-w-md">
                   {productName}
                 </h4>
-                <p className="text-slate-400 text-[11px]">
+                <p className="text-slate-500 dark:text-slate-400 text-[11px]">
                   Image {activeImageIndex + 1} of {allGalleryImages.length || 1} • High-Resolution View
                 </p>
               </div>
@@ -290,18 +290,18 @@ export const ProductImageZoomShowcase: React.FC<ProductImageZoomShowcaseProps> =
               <button
                 type="button"
                 onClick={() => setLightboxScale(s => Math.max(1, +(s - 0.5).toFixed(1)))}
-                className="h-8 w-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all cursor-pointer"
+                className="h-8 w-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 flex items-center justify-center transition-all cursor-pointer"
                 title="Zoom Out (-)"
               >
                 <ZoomOut className="h-4 w-4" />
               </button>
-              <span className="text-xs font-mono font-bold text-white px-2 min-w-[50px] text-center">
+              <span className="text-xs font-mono font-bold text-slate-800 dark:text-white px-2 min-w-[50px] text-center">
                 {Math.round(lightboxScale * 100)}%
               </span>
               <button
                 type="button"
                 onClick={() => setLightboxScale(s => Math.min(5, +(s + 0.5).toFixed(1)))}
-                className="h-8 w-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all cursor-pointer"
+                className="h-8 w-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 flex items-center justify-center transition-all cursor-pointer"
                 title="Zoom In (+)"
               >
                 <ZoomIn className="h-4 w-4" />
@@ -312,7 +312,7 @@ export const ProductImageZoomShowcase: React.FC<ProductImageZoomShowcaseProps> =
                   setLightboxScale(1);
                   setLightboxOffset({ x: 0, y: 0 });
                 }}
-                className="h-8 px-2.5 rounded-lg bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+                className="h-8 px-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
                 title="Reset Zoom"
               >
                 <RotateCcw className="h-3.5 w-3.5" />
@@ -323,7 +323,7 @@ export const ProductImageZoomShowcase: React.FC<ProductImageZoomShowcaseProps> =
 
           {/* Interactive Drag & Pan Viewport */}
           <div 
-            className="flex-1 w-full overflow-hidden flex items-center justify-center relative p-4 cursor-grab active:cursor-grabbing"
+            className="flex-1 w-full overflow-hidden flex items-center justify-center relative p-4 bg-slate-100/50 dark:bg-slate-950/50 cursor-grab active:cursor-grabbing"
             onClick={(e) => e.stopPropagation()}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMoveLightbox}
@@ -340,7 +340,7 @@ export const ProductImageZoomShowcase: React.FC<ProductImageZoomShowcaseProps> =
               }}
             />
 
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 backdrop-blur-md text-slate-300 text-[11px] font-medium px-4 py-1.5 rounded-full pointer-events-none border border-white/10 flex items-center gap-2">
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/90 dark:bg-slate-900/90 text-slate-700 dark:text-slate-300 text-[11px] font-medium px-4 py-1.5 rounded-full pointer-events-none border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-2">
               <span>Scroll wheel to zoom</span>
               <span>•</span>
               <span>Click & drag to pan</span>
@@ -350,7 +350,7 @@ export const ProductImageZoomShowcase: React.FC<ProductImageZoomShowcaseProps> =
           {/* Bottom Thumbnails in Lightbox */}
           {allGalleryImages.length > 1 && (
             <div 
-              className="p-3 bg-black/80 border-t border-white/10 flex justify-center gap-2.5 overflow-x-auto shrink-0"
+              className="p-3 bg-white/90 dark:bg-slate-900/90 border-t border-slate-200/80 dark:border-slate-800 flex justify-center gap-2.5 overflow-x-auto shrink-0"
               onClick={(e) => e.stopPropagation()}
             >
               {allGalleryImages.map((img, idx) => {
@@ -364,10 +364,10 @@ export const ProductImageZoomShowcase: React.FC<ProductImageZoomShowcaseProps> =
                       setLightboxScale(1.6);
                       setLightboxOffset({ x: 0, y: 0 });
                     }}
-                    className={`h-14 w-14 rounded-xl border-2 overflow-hidden bg-white/5 p-1 transition-all cursor-pointer ${
+                    className={`h-14 w-14 rounded-xl border-2 overflow-hidden bg-white dark:bg-slate-800 p-1 transition-all cursor-pointer ${
                       activeImageIndex === idx 
-                        ? 'border-indigo-400 ring-2 ring-indigo-400/40 scale-105' 
-                        : 'border-white/20 opacity-60 hover:opacity-100'
+                        ? 'border-indigo-600 ring-2 ring-indigo-500/30 scale-105' 
+                        : 'border-slate-200 dark:border-slate-700 opacity-60 hover:opacity-100'
                     }`}
                   >
                     {thumbUrl ? (

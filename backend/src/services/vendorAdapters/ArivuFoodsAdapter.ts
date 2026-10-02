@@ -159,8 +159,8 @@ export class ArivuFoodsAdapter implements IVendorAdapter {
       _id: vendor?._id || new mongoose.Types.ObjectId('6aae2ad07cc0c6607ce33e9c'),
       name: vendor?.name || 'Arivu Foods',
       slug: vendor?.slug || 'arivu-foods',
-      gstInclusive: vendor?.gstInclusive ?? false,
-      gstPercentage: vendor?.gstPercentage ?? vendor?.commissionConfig?.gstOnCommissionRate ?? 18,
+      gstInclusive: vendor?.gstInclusive ?? true,
+      gstPercentage: typeof p.gst === 'number' ? p.gst : (vendor?.gstPercentage ?? 5),
       shippingConfig: {
         freeShippingThreshold: vendor?.commissionConfig?.minFreeShippingOrderValue || 499,
         shippingChargeBelowThreshold: vendor?.commissionConfig?.standardShippingFee || 90,

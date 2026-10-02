@@ -735,37 +735,41 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                   {selectedProduct.name}
                 </h1>
 
-                {/* Reviews & Verification Snippet */}
-                <div className="flex items-center flex-wrap gap-2 mt-2">
-                  <div className="flex items-center text-amber-400 text-xs">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <span key={i} className={i < Math.round(Number(avgRating || 5)) ? 'opacity-100' : 'opacity-20'}>★</span>
+                {/* Reviews & Verification Snippet (Only show if real reviews exist from API) */}
+                {productReviews.length > 0 ? (
+                  <div className="flex items-center flex-wrap gap-2 mt-2">
+                    <div className="flex items-center text-amber-400 text-xs">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <span key={i} className={i < Math.round(Number(avgRating)) ? 'opacity-100' : 'opacity-20'}>★</span>
+                      ))}
+                    </div>
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                      {avgRating} <span className="text-slate-400 font-normal">({productReviews.length} {productReviews.length === 1 ? 'review' : 'reviews'})</span>
+                    </span>
+                    <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">•</span>
+                    <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                      <Check className="h-3 w-3 stroke-[3]" /> Verified Clinical Grade
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800/40">
+                      <Check className="h-3 w-3 stroke-[3]" /> Verified Clinical Grade
+                    </span>
+                    <span className="text-xs text-slate-400 font-medium">• 100% Genuine Partner Batch</span>
+                  </div>
+                )}
+
+                {/* Real Dynamic Key Feature Chips from Partner API */}
+                {selectedProduct.keyBenefits && selectedProduct.keyBenefits.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-3">
+                    {selectedProduct.keyBenefits.map((feature: string, idx: number) => (
+                      <span key={idx} className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg">
+                        ✓ {feature}
+                      </span>
                     ))}
                   </div>
-                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    {avgRating || '4.9'} <span className="text-slate-400 font-normal">({productReviews.length || 24} reviews)</span>
-                  </span>
-                  <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">•</span>
-                  <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                    <Check className="h-3 w-3 stroke-[3]" /> Verified Clinical Grade
-                  </span>
-                </div>
-
-                {/* Quick Benefit Tags */}
-                <div className="flex flex-wrap gap-1.5 mt-3">
-                  <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 rounded-lg">
-                    🌱 100% Whole Food
-                  </span>
-                  <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 rounded-lg">
-                    ⚡ Low Glycemic Index
-                  </span>
-                  <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 rounded-lg">
-                    🛡️ Zero Preservatives
-                  </span>
-                  <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 rounded-lg">
-                    💪 High Fiber & Protein
-                  </span>
-                </div>
+                )}
 
                 {/* Concise 1-2 sentence lead (full description in Overview tab) */}
                 {selectedProduct.shortDescription && (
@@ -881,7 +885,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                         <button
                           type="button"
                           onClick={() => addToBasket(selectedProduct, selectedVariant?.name)}
-                          className="flex-1 py-3.5 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 rounded-xl text-xs font-black transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+                          className="flex-1 py-3.5 bg-white dark:bg-slate-800 hover:bg-indigo-50/50 dark:hover:bg-slate-750 text-indigo-600 dark:text-indigo-400 border-2 border-indigo-600 dark:border-indigo-500 rounded-xl text-xs font-black transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer active:scale-98"
                         >
                           <ShoppingCart className="h-4 w-4" />
                           <span>{t('shop.addToOrderBasket', 'Add to Cart')}</span>
@@ -893,7 +897,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                             addToBasket(selectedProduct, selectedVariant?.name);
                             setShowBasket(true);
                           }}
-                          className="flex-1 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+                          className="flex-1 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black transition-all shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2 cursor-pointer active:scale-98"
                         >
                           <span>Buy Now</span>
                         </button>
