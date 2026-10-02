@@ -185,7 +185,7 @@ export class ArivuFoodsAdapter implements IVendorAdapter {
       images: resolvedImages,
       category: p.category || 'MitoReboot Nutrition',
       brand: 'Arivu Foods',
-      shortDescription: (p.description || '').slice(0, 160),
+      shortDescription: p.description || p.aboutProduct || '',
       detailedDescription: p.aboutProduct || p.description || '',
       usageInstructions: p.howToConsume || '',
       keyBenefits,
