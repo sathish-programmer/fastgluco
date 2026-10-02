@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { 
   ZoomIn, ZoomOut, Maximize2, RotateCcw, X, 
-  Sparkles, Leaf, ShieldCheck, HeartPulse, Truck, Layers
+  Sparkles, Leaf, ShieldCheck, HeartPulse, Truck
 } from 'lucide-react';
 
 interface ProductImageZoomShowcaseProps {
@@ -27,18 +27,9 @@ export const ProductImageZoomShowcase: React.FC<ProductImageZoomShowcaseProps> =
   discountPercent = 0,
   verifiedImagesMap = {}
 }) => {
-  // Magnifier & Hover State
+  // Smooth Inner Zoom & Hover State
   const [isHovered, setIsHovered] = useState(false);
-  const [mousePos, setMousePos] = useState({
-    x: 0,
-    y: 0,
-    xPercent: 50,
-    yPercent: 50,
-    width: 400,
-    height: 400
-  });
-  const [zoomLevel, setZoomLevel] = useState<number>(2.8); // 2.8x default
-  const [zoomMode, setZoomMode] = useState<'side' | 'inner'>('side'); // Flipkart/Amazon side zoom vs inner loupe
+  const [mousePos, setMousePos] = useState({ xPercent: 50, yPercent: 50 });
   const [imageError, setImageError] = useState(false);
 
   // Fullscreen Lightbox Modal State
@@ -49,13 +40,6 @@ export const ProductImageZoomShowcase: React.FC<ProductImageZoomShowcaseProps> =
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
   const containerRef = useRef<HTMLDivElement>(null);
-
-  // Default to inner zoom on small mobile screens
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.innerWidth < 768) {
-      setZoomMode('inner');
-    }
-  }, []);
 
   // Reset error when switching images
   useEffect(() => {
@@ -74,44 +58,16 @@ export const ProductImageZoomShowcase: React.FC<ProductImageZoomShowcaseProps> =
   const resolvedUrl = resolveUrl(activeImageSrc);
   const isEmoji = activeImageSrc && !activeImageSrc.startsWith('/') && !activeImageSrc.startsWith('http') && activeImageSrc.length <= 4;
 
-  // Handle Mouse Movement over Image
+  // Handle Mouse Movement over Image for smooth inner focal zoom
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
     const y = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
-    const xPercent = Math.max(0, Math.min(100, (x / rect.width) * 100));
-    const yPercent = Math.max(0, Math.min(100, (y / rect.height) * 100));
-
     setMousePos({
-      x,
-      y,
-      xPercent,
-      yPercent,
-      width: rect.width,
-      height: rect.height
+      xPercent: Math.max(0, Math.min(100, (x / rect.width) * 100)),
+      yPercent: Math.max(0, Math.min(100, (y / rect.height) * 100))
     });
-  };
-
-  // Handle Mobile Touch Movement
-  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (!containerRef.current || e.touches.length === 0) return;
-    const touch = e.touches[0];
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = Math.max(0, Math.min(rect.width, touch.clientX - rect.left));
-    const y = Math.max(0, Math.min(rect.height, touch.clientY - rect.top));
-    const xPercent = Math.max(0, Math.min(100, (x / rect.width) * 100));
-    const yPercent = Math.max(0, Math.min(100, (y / rect.height) * 100));
-
-    setMousePos({
-      x,
-      y,
-      xPercent,
-      yPercent,
-      width: rect.width,
-      height: rect.height
-    });
-    setIsHovered(true);
   };
 
   // Keyboard navigation for lightbox
@@ -159,85 +115,14 @@ export const ProductImageZoomShowcase: React.FC<ProductImageZoomShowcaseProps> =
     setLightboxScale(s => Math.max(1, Math.min(5, +(s + delta).toFixed(2))));
   };
 
-  // Lens math for Flipkart / Amazon cursor indicator
-  const lensWidth = Math.round(mousePos.width / zoomLevel);
-  const lensHeight = Math.round(mousePos.height / zoomLevel);
-  const lensLeft = Math.max(0, Math.min(mousePos.width - lensWidth, mousePos.x - lensWidth / 2));
-  const lensTop = Math.max(0, Math.min(mousePos.height - lensHeight, mousePos.y - lensHeight / 2));
-
   return (
     <div className="w-full flex flex-col items-center">
-      {/* Sleek Desktop Zoom & View Toolbar */}
-      {resolvedUrl && !imageError && (
-        <div className="w-full hidden md:flex items-center justify-between gap-2 pb-2.5 text-xs text-slate-500 dark:text-slate-400">
-          <div className="inline-flex items-center p-1 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur-md rounded-xl border border-slate-200/60 dark:border-slate-800 text-[11px] font-bold">
-            <span className="flex items-center gap-1 px-2 text-slate-700 dark:text-slate-300 font-extrabold">
-              <ZoomIn className="h-3 w-3 text-indigo-500" />
-              <span>Zoom</span>
-            </span>
-            <div className="flex items-center gap-0.5 bg-white dark:bg-slate-800 p-0.5 rounded-lg shadow-2xs border border-slate-200/50 dark:border-slate-700/50">
-              <button
-                type="button"
-                onClick={() => setZoomLevel(2.5)}
-                className={`px-2.5 py-0.5 rounded-md font-extrabold transition-all cursor-pointer ${
-                  zoomLevel === 2.5 
-                    ? 'bg-indigo-600 text-white shadow-2xs' 
-                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
-                }`}
-              >
-                2.5x
-              </button>
-              <button
-                type="button"
-                onClick={() => setZoomLevel(3.5)}
-                className={`px-2.5 py-0.5 rounded-md font-extrabold transition-all cursor-pointer ${
-                  zoomLevel === 3.5 
-                    ? 'bg-indigo-600 text-white shadow-2xs' 
-                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
-                }`}
-              >
-                3.5x HD
-              </button>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => setZoomMode(zoomMode === 'side' ? 'inner' : 'side')}
-              className="flex items-center gap-1.5 text-[11px] font-bold text-slate-700 dark:text-slate-300 hover:text-indigo-600 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-800 hover:border-indigo-300 shadow-2xs transition-all cursor-pointer"
-              title="Toggle between side zoom and inner container zoom"
-            >
-              <Layers className="h-3.5 w-3.5 text-indigo-500" />
-              <span>{zoomMode === 'side' ? 'Side Magnifier' : 'Inner Loupe'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setLightboxScale(1.6);
-                setLightboxOffset({ x: 0, y: 0 });
-                setIsLightboxOpen(true);
-              }}
-              className="flex items-center gap-1 text-[11px] font-extrabold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 bg-indigo-50/80 dark:bg-indigo-950/40 px-3 py-1.5 rounded-xl border border-indigo-100 dark:border-indigo-900/40 shadow-2xs transition-all cursor-pointer"
-              title="Open full-screen inspection"
-            >
-              <Maximize2 className="h-3 w-3" />
-              <span>Fullscreen</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Main Image Showcase Container with Sleek Proportions */}
+      {/* Clean Studio Product Canvas */}
       <div 
         ref={containerRef}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         onMouseMove={handleMouseMove}
-        onTouchStart={() => setIsHovered(true)}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={() => setIsHovered(false)}
         onClick={() => {
           if (resolvedUrl && !imageError) {
             setLightboxScale(1.6);
@@ -245,53 +130,48 @@ export const ProductImageZoomShowcase: React.FC<ProductImageZoomShowcaseProps> =
             setIsLightboxOpen(true);
           }
         }}
-        className={`w-full aspect-[4/4.5] sm:aspect-square max-h-[350px] sm:max-h-[420px] bg-gradient-to-b from-slate-50/70 via-white to-slate-50/30 dark:from-slate-900/70 dark:via-slate-900/90 dark:to-slate-950 border border-slate-200/80 dark:border-slate-800 rounded-3xl flex items-center justify-center overflow-hidden mb-3 relative shadow-xs select-none transition-all duration-200 group ${
-          resolvedUrl && !imageError ? 'cursor-crosshair' : ''
+        className={`w-full aspect-square max-h-[380px] sm:max-h-[440px] bg-slate-50/70 dark:bg-slate-900/40 border border-slate-200/80 dark:border-slate-800/80 rounded-3xl flex items-center justify-center overflow-hidden mb-3.5 relative select-none transition-all duration-300 group shadow-xs hover:shadow-md ${
+          resolvedUrl && !imageError ? 'cursor-zoom-in' : ''
         }`}
       >
-        {/* Render Base Image or Fallback */}
+        {/* Render Product Image with Fluid Smooth Hover Zoom */}
         {resolvedUrl && !imageError ? (
           <img
             src={resolvedUrl}
             alt={productName}
             onError={() => setImageError(true)}
-            className={`h-full w-full object-contain p-2 sm:p-3 select-none ${
-              zoomMode === 'inner' && isHovered 
-                ? 'transition-none pointer-events-none' 
-                : 'transition-transform duration-300 group-hover:scale-[1.03]'
-            }`}
+            className="h-full w-full object-contain p-4 sm:p-6 select-none transition-transform duration-300 ease-out will-change-transform"
             style={
-              zoomMode === 'inner' && isHovered ? {
-                transform: `scale(${zoomLevel})`,
-                transformOrigin: `${mousePos.xPercent}% ${mousePos.yPercent}%`,
-                willChange: 'transform, transform-origin'
-              } : undefined
+              isHovered ? {
+                transform: 'scale(1.35)',
+                transformOrigin: `${mousePos.xPercent}% ${mousePos.yPercent}%`
+              } : {
+                transform: 'scale(1)',
+                transformOrigin: '50% 50%'
+              }
             }
           />
         ) : isEmoji ? (
           <span className="text-8xl select-none">{activeImageSrc}</span>
         ) : (
-          <div className="h-full w-full bg-gradient-to-br from-slate-100 via-indigo-50/40 to-slate-200/50 dark:from-slate-900 dark:via-indigo-950/20 dark:to-slate-950 flex flex-col items-center justify-center p-6 text-center">
-            <div className="h-16 w-16 rounded-3xl bg-indigo-500/10 dark:bg-indigo-400/15 border border-indigo-200/60 dark:border-indigo-500/30 flex items-center justify-center shadow-xs mb-3">
-              <Sparkles className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
+          <div className="h-full w-full flex flex-col items-center justify-center p-6 text-center">
+            <div className="h-16 w-16 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/40 flex items-center justify-center mb-3">
+              <Sparkles className="h-7 w-7 text-indigo-600 dark:text-indigo-400" />
             </div>
-            <span className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 max-w-[160px] truncate">
-              {category || 'Clinical Formulation'}
-            </span>
-            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1">
-              MitoReboot Certified Lab
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              {category || 'Clinical Nutrition'}
             </span>
           </div>
         )}
 
         {/* Discount Badge */}
         {discountPercent > 0 && (
-          <span className="absolute top-4 left-4 bg-gradient-to-r from-rose-500 to-amber-500 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-md tracking-wider pointer-events-none z-20">
+          <span className="absolute top-3.5 left-3.5 bg-rose-600 text-white text-[10px] font-extrabold px-2.5 py-1 rounded-full shadow-sm tracking-wider pointer-events-none z-10">
             {discountPercent}% OFF
           </span>
         )}
 
-        {/* Expand Lightbox Button */}
+        {/* Clean Discreet Fullscreen Button */}
         {resolvedUrl && !imageError && (
           <button
             type="button"
@@ -301,84 +181,17 @@ export const ProductImageZoomShowcase: React.FC<ProductImageZoomShowcaseProps> =
               setLightboxOffset({ x: 0, y: 0 });
               setIsLightboxOpen(true);
             }}
-            className="absolute top-4 right-4 h-9 w-9 rounded-2xl bg-white/90 dark:bg-slate-900/90 hover:bg-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/70 dark:border-slate-700 flex items-center justify-center shadow-md backdrop-blur-md transition-all z-20 cursor-pointer hover:scale-105 active:scale-95"
-            title="Open Fullscreen Lightbox"
+            className="absolute top-3.5 right-3.5 h-8 w-8 rounded-xl bg-white/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-center shadow-xs backdrop-blur-md transition-all z-10 cursor-pointer hover:scale-105 active:scale-95"
+            title="Inspect in Fullscreen"
           >
-            <Maximize2 className="h-4 w-4" />
+            <Maximize2 className="h-3.5 w-3.5" />
           </button>
-        )}
-
-        {/* Flipkart / Amazon Lens Reticle Overlay (Active when side zoom is enabled) */}
-        {isHovered && resolvedUrl && !imageError && zoomMode === 'side' && (
-          <div
-            className="hidden md:block absolute pointer-events-none border-2 border-indigo-500 bg-indigo-500/15 backdrop-blur-[0.5px] rounded-2xl shadow-xl z-20 transition-all duration-75"
-            style={{
-              width: `${lensWidth}px`,
-              height: `${lensHeight}px`,
-              left: `${lensLeft}px`,
-              top: `${lensTop}px`,
-            }}
-          >
-            <div className="absolute top-1 right-1 bg-indigo-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-md shadow-xs">
-              {zoomLevel}x
-            </div>
-          </div>
-        )}
-
-        {/* Floating Ambient Hover Pill (Desktop Only) */}
-        {resolvedUrl && !imageError && !isHovered && (
-          <div className="hidden md:flex absolute bottom-3 left-1/2 -translate-x-1/2 bg-white/90 dark:bg-slate-900/90 border border-slate-200/70 dark:border-slate-700/80 backdrop-blur-md text-slate-700 dark:text-slate-200 text-[10px] font-extrabold px-3.5 py-1.5 rounded-full shadow-sm pointer-events-none items-center gap-1.5 whitespace-nowrap z-20 transition-all duration-300 opacity-95 group-hover:opacity-0">
-            <ZoomIn className="h-3 w-3 text-indigo-500" />
-            <span>Hover to zoom • Click for Fullscreen</span>
-          </div>
         )}
       </div>
 
-      {/* FLIPKART / AMAZON FLOATING SIDE ZOOM WINDOW (Appears over right column on desktop hover) */}
-      {isHovered && resolvedUrl && !imageError && zoomMode === 'side' && (
-        <div 
-          className="hidden md:flex flex-col absolute left-[44%] top-6 bottom-6 right-6 z-40 bg-white dark:bg-slate-950 rounded-[2.5rem] border-2 border-indigo-500/70 shadow-2xl overflow-hidden pointer-events-none animate-in fade-in duration-100"
-          style={{ minHeight: '440px' }}
-        >
-          {/* Header */}
-          <div className="bg-slate-900/95 text-white px-5 py-3 flex items-center justify-between border-b border-slate-800 shrink-0">
-            <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-xs font-black tracking-wide flex items-center gap-1.5">
-                <ZoomIn className="h-3.5 w-3.5 text-indigo-400" />
-                <span>HD Magnifier ({zoomLevel}x)</span>
-              </span>
-            </div>
-            <span className="text-[11px] text-slate-300 font-medium">
-              Inspect Nutrition Values, Ingredients & Directions
-            </span>
-          </div>
-
-          {/* Viewport with high-res transform */}
-          <div className="flex-1 w-full relative overflow-hidden bg-white dark:bg-slate-950 flex items-center justify-center p-8">
-            <img
-              src={resolvedUrl}
-              alt="Magnified View"
-              className="w-full h-full object-contain pointer-events-none select-none transition-none"
-              style={{
-                transform: `scale(${zoomLevel})`,
-                transformOrigin: `${mousePos.xPercent}% ${mousePos.yPercent}%`,
-                willChange: 'transform, transform-origin'
-              }}
-            />
-          </div>
-
-          {/* Footer note */}
-          <div className="bg-slate-50 dark:bg-slate-900 px-5 py-2.5 border-t border-slate-200/80 dark:border-slate-800 text-[10px] text-slate-500 dark:text-slate-400 flex justify-between items-center shrink-0">
-            <span className="font-semibold">Official Clinical Batch Packaging</span>
-            <span className="font-bold text-indigo-600 dark:text-indigo-400">Click image anytime for Fullscreen Pan & Zoom</span>
-          </div>
-        </div>
-      )}
-
-      {/* Thumbnails Gallery */}
+      {/* Modern Thumbnails Row */}
       {allGalleryImages.length > 1 && (
-        <div className="flex gap-2.5 overflow-x-auto w-full pb-2 mb-4 scrollbar-none">
+        <div className="flex gap-2 overflow-x-auto w-full pb-2 mb-3.5 scrollbar-none justify-center">
           {allGalleryImages.map((img, idx) => {
             const thumbUrl = resolveUrl(img);
             return (
@@ -389,17 +202,17 @@ export const ProductImageZoomShowcase: React.FC<ProductImageZoomShowcaseProps> =
                   setImageError(false);
                   onSelectImageIndex(idx);
                 }}
-                className={`h-16 w-16 shrink-0 rounded-2xl border-2 overflow-hidden bg-white dark:bg-slate-900 p-1.5 transition-all cursor-pointer ${
+                className={`h-14 w-14 shrink-0 rounded-xl border-2 overflow-hidden bg-white dark:bg-slate-900 p-1 transition-all cursor-pointer ${
                   activeImageIndex === idx
-                    ? 'border-indigo-600 ring-2 ring-indigo-500/25 scale-105 shadow-md'
-                    : 'border-slate-200 dark:border-slate-800 opacity-60 hover:opacity-100 hover:border-slate-300'
+                    ? 'border-indigo-600 ring-2 ring-indigo-500/20 shadow-xs'
+                    : 'border-slate-200/80 dark:border-slate-800 opacity-60 hover:opacity-100 hover:border-slate-300'
                 }`}
                 title={`View image ${idx + 1}`}
               >
                 {thumbUrl ? (
                   <img src={thumbUrl} alt="" className="h-full w-full object-contain" />
                 ) : (
-                  <span className="text-xl flex items-center justify-center h-full">📦</span>
+                  <span className="text-base flex items-center justify-center h-full">📦</span>
                 )}
               </button>
             );
@@ -407,37 +220,37 @@ export const ProductImageZoomShowcase: React.FC<ProductImageZoomShowcaseProps> =
         </div>
       )}
 
-      {/* Modern Compact Clinical Trust Badges */}
+      {/* Sleek Trust Highlights Row */}
       <div className="w-full grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-        <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800/80 shadow-2xs">
+        <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800/80">
           <Leaf className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
           <div className="min-w-0">
-            <span className="text-[10px] font-black text-slate-800 dark:text-slate-200 block truncate leading-tight">100% Organic</span>
-            <span className="text-[8px] text-slate-400 block truncate">Unprocessed</span>
+            <span className="text-[10px] font-bold text-slate-800 dark:text-slate-200 block truncate leading-tight">100% Whole Food</span>
+            <span className="text-[9px] text-slate-400 block truncate">Unadulterated</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800/80 shadow-2xs">
+        <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800/80">
           <ShieldCheck className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
           <div className="min-w-0">
-            <span className="text-[10px] font-black text-slate-800 dark:text-slate-200 block truncate leading-tight">Lab Verified</span>
-            <span className="text-[8px] text-slate-400 block truncate">Heavy Metal Free</span>
+            <span className="text-[10px] font-bold text-slate-800 dark:text-slate-200 block truncate leading-tight">Lab Certified</span>
+            <span className="text-[9px] text-slate-400 block truncate">Zero Chemicals</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800/80 shadow-2xs">
+        <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800/80">
           <HeartPulse className="h-3.5 w-3.5 text-rose-500 dark:text-rose-400 shrink-0" />
           <div className="min-w-0">
-            <span className="text-[10px] font-black text-slate-800 dark:text-slate-200 block truncate leading-tight">Therapeutic</span>
-            <span className="text-[8px] text-slate-400 block truncate">Metabolic Care</span>
+            <span className="text-[10px] font-bold text-slate-800 dark:text-slate-200 block truncate leading-tight">Metabolic Grade</span>
+            <span className="text-[9px] text-slate-400 block truncate">Dietitian Pick</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800/80 shadow-2xs">
+        <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800/80">
           <Truck className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400 shrink-0" />
           <div className="min-w-0">
-            <span className="text-[10px] font-black text-slate-800 dark:text-slate-200 block truncate leading-tight">Direct Dispatch</span>
-            <span className="text-[8px] text-slate-400 block truncate">Fresh Mill Batch</span>
+            <span className="text-[10px] font-bold text-slate-800 dark:text-slate-200 block truncate leading-tight">Direct Dispatch</span>
+            <span className="text-[9px] text-slate-400 block truncate">Fresh Mill Batch</span>
           </div>
         </div>
       </div>
@@ -463,11 +276,11 @@ export const ProductImageZoomShowcase: React.FC<ProductImageZoomShowcaseProps> =
                 <span>Close (Esc)</span>
               </button>
               <div>
-                <h4 className="text-white text-sm font-extrabold truncate max-w-xs sm:max-w-md">
+                <h4 className="text-white text-sm font-bold truncate max-w-xs sm:max-w-md">
                   {productName}
                 </h4>
                 <p className="text-slate-400 text-[11px]">
-                  Image {activeImageIndex + 1} of {allGalleryImages.length || 1} • High-Resolution Packaging Inspection
+                  Image {activeImageIndex + 1} of {allGalleryImages.length || 1} • High-Resolution View
                 </p>
               </div>
             </div>
@@ -527,15 +340,14 @@ export const ProductImageZoomShowcase: React.FC<ProductImageZoomShowcaseProps> =
               }}
             />
 
-            {/* Instruction badge */}
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 backdrop-blur-md text-slate-300 text-[11px] font-medium px-4 py-1.5 rounded-full pointer-events-none border border-white/10 flex items-center gap-2">
               <span>Scroll wheel to zoom</span>
               <span>•</span>
-              <span>Click & drag to pan packaging</span>
+              <span>Click & drag to pan</span>
             </div>
           </div>
 
-          {/* Bottom Thumbnails */}
+          {/* Bottom Thumbnails in Lightbox */}
           {allGalleryImages.length > 1 && (
             <div 
               className="p-3 bg-black/80 border-t border-white/10 flex justify-center gap-2.5 overflow-x-auto shrink-0"

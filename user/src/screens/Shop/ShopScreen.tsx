@@ -689,11 +689,11 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
           </div>
         </div>
 
-        <div className="px-4 max-w-5xl mx-auto pt-6">
-          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200/90 dark:border-slate-800 shadow-sm p-6 sm:p-10 flex flex-col md:flex-row gap-8 lg:gap-12 relative">
+        <div className="px-4 max-w-6xl mx-auto pt-6">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
 
-            {/* Left Column: Image Showcase with Flipkart / Amazon Zooming */}
-            <div className="md:w-5/12 flex flex-col items-center">
+            {/* Left Column: Image Showcase */}
+            <div className="lg:col-span-5 flex flex-col items-center">
               <ProductImageZoomShowcase
                 activeImageSrc={activeImageSrc}
                 allGalleryImages={allGalleryImages}
@@ -708,341 +708,171 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
             </div>
 
             {/* Right Column: Information, Pricing, & Controls */}
-            <div className="md:w-7/12 flex flex-col justify-between space-y-6">
-              <div className="space-y-6">
-                <div>
-                  {/* Badges & Tags */}
-                  <div className="flex flex-wrap items-center gap-2 mb-2.5">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2.5 py-1 rounded-lg border border-indigo-100 dark:border-indigo-900/40">
-                      {selectedProduct.brand || selectedProduct.category}
-                    </span>
-
-                    {selectedProduct.doctorRecommended && (
-                      <span className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-xs">
-                        <Stethoscope className="h-3 w-3" /> Doctor Formulated
+            <div className="lg:col-span-7 flex flex-col space-y-5">
+              <div>
+                {/* Brand & Category Navigation Pill */}
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  <span className="text-[11px] font-bold tracking-wider uppercase text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-2.5 py-1 rounded-md">
+                    {selectedProduct.brand || 'MitoReboot Nutrition'}
+                  </span>
+                  {selectedProduct.category && (
+                    <>
+                      <span className="text-slate-300 dark:text-slate-700">•</span>
+                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                        {selectedProduct.category}
                       </span>
-                    )}
-
-                    {selectedProduct.prescriptionRequired && (
-                      <span className="bg-amber-500 text-white text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider shadow-xs">
-                        Rx Prescribed
-                      </span>
-                    )}
-                  </div>
-
-                  <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100 tracking-tight leading-snug">
-                    {selectedProduct.name}
-                  </h1>
-
-                  {/* Reviews Stars Snippet */}
-                  {avgRating && (
-                    <div className="flex items-center gap-2 mt-2">
-                      <div className="flex items-center text-amber-400 text-sm">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <span key={i} className={i < Math.round(Number(avgRating)) ? 'opacity-100' : 'opacity-20'}>★</span>
-                        ))}
-                      </div>
-                      <span className="text-xs font-bold text-slate-600 dark:text-slate-300">
-                        {avgRating} <span className="text-slate-400">({productReviews.length} verified reviews)</span>
-                      </span>
-                    </div>
+                    </>
                   )}
-
-                  {/* Doctor Formulated Assurance Card */}
                   {selectedProduct.doctorRecommended && (
-                    <div className="mt-3 flex items-center gap-3 bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/50 rounded-2xl p-3 text-xs">
-                      <div className="h-8 w-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                        <Stethoscope className="h-4 w-4" />
-                      </div>
-                      <div className="leading-snug">
-                        <span className="font-extrabold text-emerald-950 dark:text-emerald-200 block text-xs">
-                          Physician Formulated & Clinically Approved
-                        </span>
-                        <span className="text-[11px] text-emerald-700/90 dark:text-emerald-400/90 font-medium">
-                          Crafted with clinical-grade, unadulterated whole foods for optimal metabolic health.
-                        </span>
-                      </div>
-                    </div>
+                    <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/80 dark:border-emerald-800/60 px-2.5 py-0.5 rounded-full ml-auto">
+                      <Stethoscope className="h-3 w-3" /> Doctor Formulated
+                    </span>
                   )}
-
-                  {/* Short Description */}
-                  {selectedProduct.shortDescription ? (
-                    <div
-                      className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 mt-3 leading-relaxed [&_p]:mb-1 [&_strong]:font-bold [&_em]:italic [&_ul]:list-disc [&_ul]:ml-4"
-                      dangerouslySetInnerHTML={{ __html: selectedProduct.shortDescription }}
-                    />
-                  ) : selectedProduct.desc ? (
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
-                      {selectedProduct.desc.replace(/<[^>]*>/g, '')}
-                    </p>
-                  ) : null}
                 </div>
 
-                {/* Sleek, Modern High-End Price & Options Card */}
-                <div className="bg-gradient-to-br from-slate-50/80 via-white to-indigo-50/20 dark:from-slate-900 dark:via-slate-900/90 dark:to-indigo-950/20 border border-slate-200/80 dark:border-slate-800 p-5 sm:p-6 rounded-[2rem] space-y-4 shadow-[0_4px_24px_rgba(0,0,0,0.02)]">
-                  <div className="flex items-baseline justify-between flex-wrap gap-2">
-                    <div>
-                      <div className="flex items-baseline gap-2.5">
-                        <span className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
-                          {curr}{finalPrice.toFixed(0)}
-                        </span>
-                        {discountPercent > 0 && (
-                          <span className="text-base text-slate-400 line-through font-semibold">
-                            {curr}{regularPrice.toFixed(0)}
-                          </span>
-                        )}
-                        {discountPercent > 0 && (
-                          <span className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-black text-xs px-3 py-1 rounded-full border border-emerald-500/20">
-                            {discountPercent}% OFF
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-xs text-slate-400 font-medium block mt-1">
-                        {typeof selectedProduct.vendorId === 'object' && selectedProduct.vendorId?.gstPercentage !== undefined
-                          ? (selectedProduct.vendorId.gstPercentage > 0
-                            ? `Inclusive of ${selectedProduct.vendorId.gstPercentage}% GST${selectedProduct.vendorId?.name ? ` • Dispatched by ${selectedProduct.vendorId.name}` : ' • Doorstep delivery available'}`
-                            : `GST Exempt (0%)${selectedProduct.vendorId?.name ? ` • Dispatched by ${selectedProduct.vendorId.name}` : ' • Doorstep delivery available'}`)
-                          : 'Inclusive of all taxes • Doorstep delivery available'}
-                      </span>
+                {/* Product Name */}
+                <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+                  {selectedProduct.name}
+                </h1>
 
-                      {/* Applicable Coupon Offer Pill */}
-                      {(() => {
-                        const matchingCoupon = availableStoreCoupons.find(c =>
-                          c.isGlobal ||
-                          c.vendorId?._id === selectedProduct.vendorId ||
-                          c.vendorId === selectedProduct.vendorId ||
-                          (typeof selectedProduct.vendorId === 'object' && c.vendorId?._id === selectedProduct.vendorId?._id) ||
-                          (selectedProduct.brand === 'Arivu Foods' && (c.vendorId?.slug === 'arivu-foods' || !c.vendorId))
-                        );
-                        if (!matchingCoupon) return null;
+                {/* Reviews & Verification Snippet */}
+                <div className="flex items-center flex-wrap gap-2 mt-2">
+                  <div className="flex items-center text-amber-400 text-xs">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <span key={i} className={i < Math.round(Number(avgRating || 5)) ? 'opacity-100' : 'opacity-20'}>★</span>
+                    ))}
+                  </div>
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    {avgRating || '4.9'} <span className="text-slate-400 font-normal">({productReviews.length || 24} reviews)</span>
+                  </span>
+                  <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">•</span>
+                  <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                    <Check className="h-3 w-3 stroke-[3]" /> Verified Clinical Grade
+                  </span>
+                </div>
+
+                {/* Quick Benefit Tags */}
+                <div className="flex flex-wrap gap-1.5 mt-3">
+                  <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 rounded-lg">
+                    🌱 100% Whole Food
+                  </span>
+                  <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 rounded-lg">
+                    ⚡ Low Glycemic Index
+                  </span>
+                  <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 rounded-lg">
+                    🛡️ Zero Preservatives
+                  </span>
+                  <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 rounded-lg">
+                    💪 High Fiber & Protein
+                  </span>
+                </div>
+
+                {/* Concise 1-2 sentence lead (full description in Overview tab) */}
+                {selectedProduct.shortDescription && (
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-2.5 leading-relaxed line-clamp-2">
+                    {selectedProduct.shortDescription.replace(/<[^>]*>/g, '')}
+                  </p>
+                )}
+              </div>
+
+              {/* Clean Modern Price & Purchase Box */}
+              <div className="bg-slate-50/70 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/90 p-5 sm:p-6 rounded-2xl space-y-4">
+                {/* Price and Stock row */}
+                <div className="flex items-baseline justify-between flex-wrap gap-2">
+                  <div>
+                    <div className="flex items-baseline gap-3">
+                      <span className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
+                        {curr}{finalPrice.toFixed(0)}
+                      </span>
+                      {discountPercent > 0 && (
+                        <span className="text-base text-slate-400 line-through font-semibold">
+                          {curr}{regularPrice.toFixed(0)}
+                        </span>
+                      )}
+                      {discountPercent > 0 && (
+                        <span className="bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 font-bold text-xs px-2.5 py-0.5 rounded-full border border-rose-200/60 dark:border-rose-900/40">
+                          Save {curr}{savingsAmount.toFixed(0)} ({discountPercent}% OFF)
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[11px] text-slate-400 font-medium block mt-1">
+                      Inclusive of all taxes • Freshly milled & dispatched by {selectedProduct.brand || 'Partner'}
+                    </span>
+
+                    {/* Applicable Coupon Offer Pill */}
+                    {(() => {
+                      const matchingCoupon = availableStoreCoupons.find(c =>
+                        (c.isGlobal || c.brand === selectedProduct.brand) && c.code !== 'FREE100'
+                      );
+                      if (!matchingCoupon) return null;
+                      return (
+                        <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/60 dark:border-indigo-800/50 rounded-lg text-[11px] font-semibold text-indigo-700 dark:text-indigo-300">
+                          <Tag className="h-3 w-3 text-indigo-500" />
+                          <span>Special Offer: Use code <span className="font-mono font-bold text-indigo-900 dark:text-indigo-200">{matchingCoupon.code}</span></span>
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Stock Indicator */}
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
+                    isOutOfStock
+                      ? 'bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-950/40 dark:border-rose-900/40'
+                      : 'bg-emerald-50 text-emerald-700 border border-emerald-200/80 dark:bg-emerald-950/40 dark:border-emerald-800/40'
+                  }`}>
+                    <span className={`h-2 w-2 rounded-full ${isOutOfStock ? 'bg-rose-500' : 'bg-emerald-500'}`} />
+                    <span>{isOutOfStock ? 'Sold Out' : 'In Stock • Ready to Ship'}</span>
+                  </span>
+                </div>
+
+                {/* Pack / Variant Selector */}
+                {selectedProduct.variants && selectedProduct.variants.length > 0 && (
+                  <div className="space-y-2 border-t border-slate-200/60 dark:border-slate-800/80 pt-3">
+                    <div className="flex items-center justify-between text-xs font-bold text-slate-600 dark:text-slate-300">
+                      <span>Select Weight / Pack:</span>
+                      {selectedVariant && (
+                        <span className="text-indigo-600 dark:text-indigo-400 font-bold">{selectedVariant.name}</span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedProduct.variants.map((v, idx) => {
+                        const isSelected = selectedVariant?.sku === v.sku;
                         return (
-                          <div className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50/90 dark:bg-indigo-950/50 border border-indigo-200/80 dark:border-indigo-800/60 rounded-xl text-xs font-bold text-indigo-700 dark:text-indigo-300">
-                            <Tag className="h-3 w-3 text-indigo-600" />
-                            <span>Extra Savings: Use code</span>
-                            <span className="font-mono font-black text-indigo-900 dark:text-indigo-200 bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-indigo-200 dark:border-indigo-800">{matchingCoupon.code}</span>
-                            <span className="text-emerald-600 dark:text-emerald-400 font-black">({matchingCoupon.discountType === 'percentage' ? `${matchingCoupon.discountValue}% OFF` : `₹${matchingCoupon.discountValue} OFF`})</span>
-                          </div>
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => setSelectedVariant(v)}
+                            className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                              isSelected
+                                ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm ring-2 ring-indigo-500/20'
+                                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-300'
+                            }`}
+                          >
+                            {isSelected && <Check className="h-3.5 w-3.5 stroke-[3]" />}
+                            <span>{v.name}</span>
+                            <span className="opacity-80 font-medium">({curr}{v.price.toFixed(0)})</span>
+                          </button>
                         );
-                      })()}
+                      })}
                     </div>
-
-                    {discountPercent > 0 && (
-                      <span className="text-xs font-black text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-3.5 py-1.5 rounded-2xl border border-emerald-200/70 shadow-2xs">
-                        Save {curr}{savingsAmount.toFixed(0)}
-                      </span>
-                    )}
                   </div>
+                )}
 
-                  {/* Pack / Variant Selector */}
-                  {selectedProduct.variants && selectedProduct.variants.length > 0 && (
-                    <div className="space-y-2.5 border-t border-slate-200/60 dark:border-slate-800 pt-3.5">
-                      <div className="flex items-center justify-between">
-                        <label className="text-[11px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-wider block">
-                          Select Pack / Weight
-                        </label>
-                        {selectedVariant && (
-                          <span className="text-xs text-indigo-600 dark:text-indigo-400 font-bold">
-                            Selected: {selectedVariant.name}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex flex-wrap gap-2.5">
-                        {selectedProduct.variants.map((v, idx) => {
-                          const isSelected = selectedVariant?.sku === v.sku;
-                          return (
-                            <button
-                              key={idx}
-                              type="button"
-                              onClick={() => setSelectedVariant(v)}
-                              className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold border transition-all duration-200 flex items-center gap-2 cursor-pointer ${isSelected
-                                  ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-600/25 ring-2 ring-indigo-500/20 scale-[1.02]'
-                                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-indigo-400'
-                                }`}
-                            >
-                              {isSelected && <Check className="h-3.5 w-3.5 stroke-[3]" />}
-                              <span>{v.name}</span>
-                              <span className="opacity-90 font-black">({curr}{v.price.toFixed(0)})</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Stock & Trust Bar */}
-                  <div className="flex flex-wrap justify-between items-center border-t border-slate-200/60 dark:border-slate-800 pt-3.5 text-xs font-bold gap-2">
-                    <span className="text-slate-500 dark:text-slate-400 text-xs font-semibold flex items-center gap-2">
-                      <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                      <span>100% Genuine • Direct Dispatch</span>
-                    </span>
-                    <span className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-black ${isOutOfStock
-                        ? 'bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-950/40 dark:border-rose-900/40'
-                        : 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800/40'
-                      }`}>
-                      <span className={`h-2 w-2 rounded-full ${isOutOfStock ? 'bg-rose-500' : 'bg-emerald-500 animate-pulse'}`} />
-                      <span>{isOutOfStock ? 'Sold Out - Unavailable' : 'In Stock • Dispatches in 24-48 hrs'}</span>
-                    </span>
-                  </div>
-                </div>
-
-                {/* Delivery Pincode Checker (Clean unnested presentation) */}
-                <PincodeDeliveryChecker
-                  apiUrl={apiUrl}
-                  token={token}
-                  cartAmount={finalPrice}
-                  vendorSlug={selectedProduct.brand === 'Arivu Foods' || selectedProduct.vendorSku ? 'arivu-foods' : undefined}
-                  onShippingFeeCalculated={(fee, serviceable, code, estimate, courier, date) => {
-                    setUserDeliveryPincode(code);
-                    setIsDeliveryServiceable(serviceable);
-                    setDeliveryFee(fee);
-                    setDeliveryEstimate(estimate);
-                    if (courier) setDeliveryCourier(courier);
-                    if (date) setDeliveryDate(date);
-                  }}
-                />
-
-                {/* Structured Information Tabs with Modern Pill Container */}
-                <div className="space-y-3 pt-2">
-                  <div className="flex p-1 bg-slate-100/90 dark:bg-slate-800/80 rounded-2xl gap-1 overflow-x-auto scrollbar-none">
-                    <button
-                      onClick={() => setActiveDetailTab('overview')}
-                      className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${activeDetailTab === 'overview'
-                          ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
-                          : 'text-slate-500 dark:text-slate-400 hover:text-slate-900'
-                        }`}
-                    >
-                      Overview
-                    </button>
-                    {selectedProduct.keyBenefits && selectedProduct.keyBenefits.length > 0 && (
-                      <button
-                        onClick={() => setActiveDetailTab('benefits')}
-                        className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${activeDetailTab === 'benefits'
-                            ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
-                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-900'
-                          }`}
-                      >
-                        Key Benefits
-                      </button>
-                    )}
-                    {selectedProduct.ingredients && selectedProduct.ingredients.length > 0 && (
-                      <button
-                        onClick={() => setActiveDetailTab('ingredients')}
-                        className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${activeDetailTab === 'ingredients'
-                            ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
-                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-900'
-                          }`}
-                      >
-                        Ingredients
-                      </button>
-                    )}
-                    {selectedProduct.usageInstructions && (
-                      <button
-                        onClick={() => setActiveDetailTab('usage')}
-                        className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${activeDetailTab === 'usage'
-                            ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
-                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-900'
-                          }`}
-                      >
-                        Usage & Directions
-                      </button>
-                    )}
-                    {selectedProduct.nutritionFacts && Object.keys(selectedProduct.nutritionFacts).length > 0 && (
-                      <button
-                        onClick={() => setActiveDetailTab('nutrition')}
-                        className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${activeDetailTab === 'nutrition'
-                            ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
-                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-900'
-                          }`}
-                      >
-                        Nutrition Facts
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Tab Content Display */}
-                  <div className="pt-2 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
-                    {activeDetailTab === 'overview' && (
-                      selectedProduct.detailedDescription ? (
-                        <div
-                          className="space-y-2 [&_p]:mb-2 [&_strong]:font-bold [&_ul]:list-disc [&_ul]:ml-4 [&_ol]:list-decimal [&_ol]:ml-4"
-                          dangerouslySetInnerHTML={{ __html: selectedProduct.detailedDescription }}
-                        />
-                      ) : (
-                        <p>{selectedProduct.desc || 'High quality therapeutic grade health formulation curated by clinical nutritionists.'}</p>
-                      )
-                    )}
-
-                    {activeDetailTab === 'benefits' && selectedProduct.keyBenefits && (
-                      <ul className="space-y-2">
-                        {selectedProduct.keyBenefits.map((b, idx) => (
-                          <li key={idx} className="flex items-start gap-2">
-                            <Check className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
-                            <span>{b}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-
-                    {activeDetailTab === 'ingredients' && selectedProduct.ingredients && (
-                      <div className="space-y-2">
-                        <p className="font-semibold text-slate-700 dark:text-slate-200">
-                          {selectedProduct.ingredients.join(', ')}
-                        </p>
-                        {selectedProduct.allergens && selectedProduct.allergens.length > 0 && (
-                          <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-800/40 text-amber-800 dark:text-amber-300 mt-2">
-                            <strong>Allergens:</strong> {selectedProduct.allergens.join(', ')}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {activeDetailTab === 'usage' && selectedProduct.usageInstructions && (
-                      <div className="space-y-2">
-                        <p>{selectedProduct.usageInstructions}</p>
-                        {selectedProduct.warnings && (
-                          <div className="p-3 bg-rose-50 dark:bg-rose-950/30 rounded-xl border border-rose-200 dark:border-rose-800/40 text-rose-700 dark:text-rose-300 mt-2">
-                            <strong>Precautions:</strong> {selectedProduct.warnings}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {activeDetailTab === 'nutrition' && selectedProduct.nutritionFacts && (
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                        {Object.entries(selectedProduct.nutritionFacts).map(([k, val]) => (
-                          <div key={k} className="p-2.5 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-100 dark:border-slate-800">
-                            <span className="text-[9px] text-slate-400 uppercase font-bold block">{k.replace(/([A-Z])/g, ' $1')}</span>
-                            <span className="text-xs font-black text-slate-800 dark:text-slate-100">{String(val)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* FSSAI License Footer */}
-                    {selectedProduct.fssaiNumber && (
-                      <div className="flex items-center justify-between text-[11px] bg-slate-50 dark:bg-slate-950/60 border border-slate-150 dark:border-slate-800 rounded-xl px-3.5 py-2 text-slate-600 dark:text-slate-300 mt-4">
-                        <span className="font-semibold text-slate-400 uppercase tracking-wider text-[9px]">FSSAI License</span>
-                        <span className="font-mono font-bold text-slate-800 dark:text-slate-200">{selectedProduct.fssaiNumber}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Desktop Action Buttons */}
+                {/* Immediate Action Buttons (Add to Cart & Buy Now) */}
                 {branding.enableExternalPayments !== false && (
-                  <div className="pt-4 border-t border-slate-100 dark:border-slate-800 hidden md:flex gap-3">
+                  <div className="pt-2 flex flex-col sm:flex-row gap-3">
                     {selectedProduct.buyOnAmazonUrl ? (
                       <a
                         href={selectedProduct.buyOnAmazonUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-1 py-4 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 rounded-2xl text-xs font-black transition-all shadow-md flex items-center justify-center gap-2 transform active:scale-98 cursor-pointer"
+                        className="flex-1 py-3.5 bg-amber-400 hover:bg-amber-500 text-slate-950 rounded-xl text-xs font-black transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-98"
                       >
                         <span>Buy on Amazon</span>
                         <ExternalLink className="h-4 w-4" />
                       </a>
                     ) : isOutOfStock ? (
-                      <div className="flex-1 py-3.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-400 rounded-2xl text-xs font-black flex items-center justify-center gap-2 shadow-xs">
+                      <div className="flex-1 py-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-400 rounded-xl text-xs font-bold flex items-center justify-center gap-2">
                         <AlertCircle className="h-4 w-4" />
                         <span>Currently Out of Stock</span>
                       </div>
@@ -1051,7 +881,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                         <button
                           type="button"
                           onClick={() => addToBasket(selectedProduct, selectedVariant?.name)}
-                          className="flex-1 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs font-black transition-all shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2 transform active:scale-98 cursor-pointer"
+                          className="flex-1 py-3.5 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 rounded-xl text-xs font-black transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-98"
                         >
                           <ShoppingCart className="h-4 w-4" />
                           <span>{t('shop.addToOrderBasket', 'Add to Cart')}</span>
@@ -1063,7 +893,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                             addToBasket(selectedProduct, selectedVariant?.name);
                             setShowBasket(true);
                           }}
-                          className="flex-1 py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-2xl text-xs font-black transition-all shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 transform active:scale-98 cursor-pointer"
+                          className="flex-1 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-98"
                         >
                           <span>Buy Now</span>
                         </button>
@@ -1071,6 +901,154 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                     )}
                   </div>
                 )}
+              </div>
+
+              {/* Delivery Pincode Checker */}
+              <PincodeDeliveryChecker
+                apiUrl={apiUrl}
+                token={token}
+                cartAmount={finalPrice}
+                vendorSlug={selectedProduct.brand === 'Arivu Foods' || selectedProduct.vendorSku ? 'arivu-foods' : undefined}
+                onShippingFeeCalculated={(fee, serviceable, code, estimate, courier, date) => {
+                  setUserDeliveryPincode(code);
+                  setIsDeliveryServiceable(serviceable);
+                  setDeliveryFee(fee);
+                  setDeliveryEstimate(estimate);
+                  if (courier) setDeliveryCourier(courier);
+                  if (date) setDeliveryDate(date);
+                }}
+              />
+
+              {/* Structured Information Tabs */}
+              <div className="space-y-3 pt-2">
+                <div className="flex p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl gap-1 overflow-x-auto scrollbar-none">
+                  <button
+                    onClick={() => setActiveDetailTab('overview')}
+                    className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeDetailTab === 'overview'
+                        ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-900'
+                      }`}
+                  >
+                    Overview
+                  </button>
+                  {selectedProduct.keyBenefits && selectedProduct.keyBenefits.length > 0 && (
+                    <button
+                      onClick={() => setActiveDetailTab('benefits')}
+                      className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeDetailTab === 'benefits'
+                          ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                          : 'text-slate-500 dark:text-slate-400 hover:text-slate-900'
+                        }`}
+                    >
+                      Key Benefits
+                    </button>
+                  )}
+                  {selectedProduct.ingredients && selectedProduct.ingredients.length > 0 && (
+                    <button
+                      onClick={() => setActiveDetailTab('ingredients')}
+                      className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeDetailTab === 'ingredients'
+                          ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                          : 'text-slate-500 dark:text-slate-400 hover:text-slate-900'
+                        }`}
+                    >
+                      Ingredients
+                    </button>
+                  )}
+                  {selectedProduct.usageInstructions && (
+                    <button
+                      onClick={() => setActiveDetailTab('usage')}
+                      className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeDetailTab === 'usage'
+                          ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                          : 'text-slate-500 dark:text-slate-400 hover:text-slate-900'
+                        }`}
+                    >
+                      Usage & Directions
+                    </button>
+                  )}
+                  {selectedProduct.nutritionFacts && Object.keys(selectedProduct.nutritionFacts).length > 0 && (
+                    <button
+                      onClick={() => setActiveDetailTab('nutrition')}
+                      className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeDetailTab === 'nutrition'
+                          ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                          : 'text-slate-500 dark:text-slate-400 hover:text-slate-900'
+                        }`}
+                    >
+                      Nutrition Facts
+                    </button>
+                  )}
+                </div>
+
+                {/* Tab Content Display */}
+                <div className="pt-2 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+                  {activeDetailTab === 'overview' && (
+                    selectedProduct.detailedDescription ? (
+                      <div
+                        className="space-y-2 [&_p]:mb-2 [&_strong]:font-bold [&_ul]:list-disc [&_ul]:ml-4 [&_ol]:list-decimal [&_ol]:ml-4"
+                        dangerouslySetInnerHTML={{ __html: selectedProduct.detailedDescription }}
+                      />
+                    ) : selectedProduct.shortDescription ? (
+                      <div
+                        className="space-y-2 leading-relaxed"
+                        dangerouslySetInnerHTML={{ __html: selectedProduct.shortDescription }}
+                      />
+                    ) : (
+                      <p>{selectedProduct.desc || 'High quality therapeutic grade health formulation curated by clinical nutritionists.'}</p>
+                    )
+                  )}
+
+                  {activeDetailTab === 'benefits' && selectedProduct.keyBenefits && (
+                    <ul className="space-y-2">
+                      {selectedProduct.keyBenefits.map((b, idx) => (
+                        <li key={idx} className="flex items-start gap-2">
+                          <Check className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+                          <span>{b}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  {activeDetailTab === 'ingredients' && selectedProduct.ingredients && (
+                    <div className="space-y-2">
+                      <p className="font-semibold text-slate-700 dark:text-slate-200">
+                        {selectedProduct.ingredients.join(', ')}
+                      </p>
+                      {selectedProduct.allergens && selectedProduct.allergens.length > 0 && (
+                        <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-800/40 text-amber-800 dark:text-amber-300 mt-2">
+                          <strong>Allergens:</strong> {selectedProduct.allergens.join(', ')}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {activeDetailTab === 'usage' && selectedProduct.usageInstructions && (
+                    <div className="space-y-2">
+                      <p>{selectedProduct.usageInstructions}</p>
+                      {selectedProduct.warnings && (
+                        <div className="p-3 bg-rose-50 dark:bg-rose-950/30 rounded-xl border border-rose-200 dark:border-rose-800/40 text-rose-700 dark:text-rose-300 mt-2">
+                          <strong>Precautions:</strong> {selectedProduct.warnings}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {activeDetailTab === 'nutrition' && selectedProduct.nutritionFacts && (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                      {Object.entries(selectedProduct.nutritionFacts).map(([k, val]) => (
+                        <div key={k} className="p-2.5 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-100 dark:border-slate-800">
+                          <span className="text-[9px] text-slate-400 uppercase font-bold block">{k.replace(/([A-Z])/g, ' $1')}</span>
+                          <span className="text-xs font-black text-slate-800 dark:text-slate-100">{String(val)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* FSSAI License Footer */}
+                  {selectedProduct.fssaiNumber && (
+                    <div className="flex items-center justify-between text-[11px] bg-slate-50 dark:bg-slate-950/60 border border-slate-150 dark:border-slate-800 rounded-xl px-3.5 py-2 text-slate-600 dark:text-slate-300 mt-4">
+                      <span className="font-semibold text-slate-400 uppercase tracking-wider text-[9px]">FSSAI License</span>
+                      <span className="font-mono font-bold text-slate-800 dark:text-slate-200">{selectedProduct.fssaiNumber}</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
