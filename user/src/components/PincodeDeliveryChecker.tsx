@@ -5,6 +5,7 @@ import { getDeviceLocation, reverseGeocodeCoordsToPincode } from '../utils/geolo
 
 interface PincodeCheckResult {
   serviceable: boolean;
+  pincode?: string;
   localityName?: string;
   city?: string;
   state?: string;
@@ -39,11 +40,12 @@ export const PincodeDeliveryChecker: React.FC<PincodeDeliveryCheckerProps> = ({
   vendorSlug,
   address
 }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [pincode, setPincode] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [detectingGps, setDetectingGps] = useState<boolean>(false);
   const [gpsStatus, setGpsStatus] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
+  const [detectedLocality, setDetectedLocality] = useState<string>('');
   const [result, setResult] = useState<PincodeCheckResult | null>(null);
 
   // Auto check default saved pincode if available
@@ -55,7 +57,7 @@ export const PincodeDeliveryChecker: React.FC<PincodeDeliveryCheckerProps> = ({
     }
   }, [cartAmount, vendorSlug, address?.line1, address?.city, address?.state]);
 
-  const checkPincode = async (codeToCheck: string, userLat?: number, userLon?: number) => {
+  const checkPincode = async (codeToCheck: string, userLat?: number, userLon?: number, customCity?: string, customState?: string) => {
     const cleanCode = codeToCheck.trim();
     if (!cleanCode) return;
 
@@ -73,7 +75,7 @@ export const PincodeDeliveryChecker: React.FC<PincodeDeliveryCheckerProps> = ({
           userLon,
           cartAmount,
           vendorSlug: vendorSlug || 'arivu-foods',
-          address
+          address: address || (customCity ? { city: customCity, state: customState } : undefined)
         })
       });
 
@@ -119,14 +121,17 @@ export const PincodeDeliveryChecker: React.FC<PincodeDeliveryCheckerProps> = ({
         return;
       }
 
-      const geo = await reverseGeocodeCoordsToPincode(coords.lat, coords.lon);
+      // Always pass the user's selected language (e.g. 'en') so locality names match the app language
+      const geo = await reverseGeocodeCoordsToPincode(coords.lat, coords.lon, language || 'en');
       if (geo?.pincode && /^\d{6}$/.test(geo.pincode)) {
         setPincode(geo.pincode);
+        const locName = geo.locality || geo.city || '';
+        setDetectedLocality(locName);
         setGpsStatus({
           type: 'success',
-          message: `GPS detected: ${geo.locality ? `${geo.locality}, ` : ''}${geo.pincode}`
+          message: `GPS detected: ${locName ? `${locName}, ` : ''}${geo.pincode}`
         });
-        await checkPincode(geo.pincode, coords.lat, coords.lon);
+        await checkPincode(geo.pincode, coords.lat, coords.lon, geo.city || geo.locality, geo.state);
       } else {
         if (pincode && pincode.length === 6) {
           await checkPincode(pincode, coords.lat, coords.lon);
@@ -232,9 +237,14 @@ export const PincodeDeliveryChecker: React.FC<PincodeDeliveryCheckerProps> = ({
               )}
               <span className="leading-snug font-extrabold text-xs">
                 {result.serviceable
-                  ? (result.localityName 
-                      ? `${result.localityName}${result.state && !result.localityName.includes(result.state) ? `, ${result.state}` : ''}`
-                      : (result.isFallback ? t('shop.standardNationalDelivery', 'Standard National Delivery') : t('shop.serviceableZone', 'Serviceable Zone')))
+                  ? (() => {
+                      const displayLocality = (result.localityName && !result.localityName.startsWith('Delivery Area'))
+                        ? result.localityName
+                        : (detectedLocality || result.city || '');
+                      const statePart = result.state && result.state !== 'India' && !displayLocality.includes(result.state) ? `, ${result.state}` : '';
+                      const pinPart = (result.pincode || pincode) ? ` (${result.pincode || pincode})` : '';
+                      return displayLocality ? `${displayLocality}${statePart}${pinPart}` : `Serviceable Zone${pinPart}`;
+                    })()
                   : (result.message || t('shop.deliveryUnavailable', 'Delivery Unavailable'))}
               </span>
             </div>

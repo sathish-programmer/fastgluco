@@ -69,16 +69,28 @@ export const getDeviceLocation = async (): Promise<LocationCoords | null> => {
  * Prioritizes OpenStreetMap Nominatim for high precision in India,
  * then falls back to BigDataCloud.
  */
-export const reverseGeocodeCoordsToPincode = async (lat: number, lon: number): Promise<GeocodeResult | null> => {
-  // 1. Try OpenStreetMap Nominatim first (high precision for Indian PIN codes)
+export const reverseGeocodeCoordsToPincode = async (
+  lat: number, 
+  lon: number, 
+  lang: string = 'en'
+): Promise<GeocodeResult | null> => {
+  const languageCode = lang || 'en';
+
+  // 1. Try OpenStreetMap Nominatim first (high precision for Indian PIN codes) with explicit language
   try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`, {
-      headers: { 'User-Agent': 'MitoRebootHealthApp/1.0' }
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=${encodeURIComponent(languageCode)}`, {
+      headers: { 
+        'User-Agent': 'MitoRebootHealthApp/1.0',
+        'Accept-Language': languageCode
+      }
     });
     if (res.ok) {
       const data = await res.json();
       const rawCode = data.address?.postcode?.replace(/\D/g, '');
-      const locality = data.address?.suburb || data.address?.neighbourhood || data.address?.residential || data.address?.city_district;
+      let locality = data.address?.suburb || data.address?.neighbourhood || data.address?.residential || data.address?.city_district;
+      if (locality) {
+        locality = locality.replace(/^Zone\s+\d+\s*/i, '').trim();
+      }
       const city = data.address?.city || data.address?.town || data.address?.state_district;
       const state = data.address?.state;
 
@@ -97,7 +109,7 @@ export const reverseGeocodeCoordsToPincode = async (lat: number, lon: number): P
 
   // 2. Fallback to BigDataCloud
   try {
-    const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);
+    const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=${encodeURIComponent(languageCode)}`);
     if (res.ok) {
       const data = await res.json();
       const rawCode = (data.postcode || '').replace(/\D/g, '');

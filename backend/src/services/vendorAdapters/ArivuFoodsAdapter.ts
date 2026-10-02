@@ -783,9 +783,27 @@ export class ArivuFoodsAdapter implements IVendorAdapter {
       ? `FREE Shipping unlocked for orders >= ₹${freeThreshold} (Pan-India).`
       : `₹${effectiveFee} shipping for orders below ₹${freeThreshold}. Add ₹${Math.max(0, freeThreshold - cartAmount).toFixed(0)} more for FREE delivery.`;
 
-    const localityDisplay = address?.city 
-      ? `${address.city}${address.state ? `, ${address.state}` : ''}`
-      : (cleanPincode ? `Delivery Area (${cleanPincode})` : 'Pan-India');
+    // Resolve location name dynamically from official Indian postal registry
+    let localityDisplay = '';
+    let cityName = address?.city || '';
+    let stateName = address?.state || '';
+
+    if (cleanPincode.length === 6) {
+      const postalInfo = await resolveIndiaPostPincode(cleanPincode);
+      if (postalInfo && postalInfo.valid) {
+        localityDisplay = postalInfo.localityName
+          ? `${postalInfo.localityName}${postalInfo.city && !postalInfo.localityName.includes(postalInfo.city) ? `, ${postalInfo.city}` : ''}`
+          : (postalInfo.city || `PIN ${cleanPincode}`);
+        cityName = postalInfo.city || cityName;
+        stateName = postalInfo.state || stateName;
+      }
+    }
+
+    if (!localityDisplay) {
+      localityDisplay = address?.city 
+        ? `${address.city}${address.state ? `, ${address.state}` : ''}`
+        : (cleanPincode ? `PIN ${cleanPincode}` : 'Pan-India');
+    }
 
     const carrierName = vendor?.shippingConfig?.carrierPartnerName || 'Arivu Partner Logistics';
     const deliveryTimeline = vendor?.shippingConfig?.estimatedDeliveryDays 
@@ -797,8 +815,8 @@ export class ArivuFoodsAdapter implements IVendorAdapter {
       serviceable: true, // Arivu provides Pan-India delivery. No pincode rejection.
       pincode: cleanPincode,
       localityName: localityDisplay,
-      city: address?.city || 'India',
-      state: address?.state || 'India',
+      city: cityName || 'India',
+      state: stateName || 'India',
       zone: 'Pan-India Express',
       vendorName: vendor?.name || 'Arivu Foods',
       vendorOrigin: vendor?.businessAddress || 'Arivu Bangalore Central Hub',
