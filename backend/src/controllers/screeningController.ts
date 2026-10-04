@@ -8,16 +8,17 @@ export const getAdminScreeningTests = async (req: Request, res: Response) => {
   try {
     let tests = await CancerScreeningTest.find().sort({ createdAt: -1 });
     
+    const HCG_URL = 'https://www.hcgoncology.com/hcg-in-news/cancer-patients-find-virtual-consultation-a-boon-in-these-times-of-crisis/';
     // Seed default template if empty
     if (tests.length === 0) {
       const defaults = [
-        { name: 'Serum PSA', description: 'Prostate marker. Above 4 ng/mL warrants follow-up.', frequency: 'Yearly from 50', category: 'Male', isActive: true },
-        { name: 'CA-125', description: 'Ovarian cancer marker. Used with transvaginal ultrasound.', frequency: 'Yearly for high-risk', category: 'Female', isActive: true },
-        { name: 'Mammogram', description: 'Breast cancer screening imaging.', frequency: 'Yearly from 40', category: 'Female', isActive: true },
-        { name: 'Pap Smear', description: 'Cervical cancer screening.', frequency: 'Every 3 years from 21', category: 'Female', isActive: true },
-        { name: 'Serum CEA', description: 'Marker for colorectal, lung, breast and GI cancers.', frequency: 'Yearly, or as advised', category: 'Universal', isActive: true },
-        { name: 'Whole-Body MRI', description: 'Comprehensive imaging to detect solid tumors early.', frequency: 'Optional baseline', category: 'Universal', isActive: true },
-        { name: 'Liquid Biopsy', description: 'Blood test to detect circulating tumor DNA.', frequency: 'Consult your doctor', category: 'Universal', isActive: true }
+        { name: 'Serum PSA', description: 'Prostate marker. Above 4 ng/mL warrants follow-up.', frequency: 'Yearly from 50', category: 'Male', hospitalUrl: HCG_URL, isActive: true },
+        { name: 'CA-125', description: 'Ovarian cancer marker. Used with transvaginal ultrasound.', frequency: 'Yearly for high-risk', category: 'Female', hospitalUrl: HCG_URL, isActive: true },
+        { name: 'Mammogram', description: 'Breast cancer screening imaging.', frequency: 'Yearly from 40', category: 'Female', hospitalUrl: HCG_URL, isActive: true },
+        { name: 'Pap Smear', description: 'Cervical cancer screening.', frequency: 'Every 3 years from 21', category: 'Female', hospitalUrl: HCG_URL, isActive: true },
+        { name: 'Serum CEA', description: 'Marker for colorectal, lung, breast and GI cancers.', frequency: 'Yearly, or as advised', category: 'Universal', hospitalUrl: HCG_URL, isActive: true },
+        { name: 'Whole-Body MRI', description: 'Comprehensive imaging to detect solid tumors early.', frequency: 'Optional baseline', category: 'Universal', hospitalUrl: HCG_URL, isActive: true },
+        { name: 'Liquid Biopsy', description: 'Blood test to detect circulating tumor DNA.', frequency: 'Consult your doctor', category: 'Universal', hospitalUrl: HCG_URL, isActive: true }
       ];
       await CancerScreeningTest.insertMany(defaults);
       tests = await CancerScreeningTest.find().sort({ createdAt: -1 });
