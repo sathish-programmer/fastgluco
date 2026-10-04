@@ -123,7 +123,7 @@ public class MainActivity extends BridgeActivity {
                             int barHeight = (int) (48 * getResources().getDisplayMetrics().density);
                             android.widget.RelativeLayout topBar = new android.widget.RelativeLayout(MainActivity.this);
                             topBar.setLayoutParams(new android.widget.LinearLayout.LayoutParams(
-                                android.widget.ViewGroup.LayoutParams.MATCH_PARENT, 
+                                ViewGroup.LayoutParams.MATCH_PARENT, 
                                 barHeight
                             ));
                             topBar.setBackgroundColor(0xFF1E293B);
@@ -134,8 +134,8 @@ public class MainActivity extends BridgeActivity {
                             titleView.setTextSize(14);
                             titleView.setTypeface(null, android.graphics.Typeface.BOLD);
                             android.widget.RelativeLayout.LayoutParams titleParams = new android.widget.RelativeLayout.LayoutParams(
-                                android.widget.ViewGroup.LayoutParams.WRAP_CONTENT,
-                                android.widget.ViewGroup.LayoutParams.WRAP_CONTENT
+                                ViewGroup.LayoutParams.WRAP_CONTENT,
+                                ViewGroup.LayoutParams.WRAP_CONTENT
                             );
                             titleParams.addRule(android.widget.RelativeLayout.CENTER_IN_PARENT);
                             topBar.addView(titleView, titleParams);
@@ -146,8 +146,8 @@ public class MainActivity extends BridgeActivity {
                             closeButton.setTextSize(12);
                             closeButton.setBackgroundColor(0x00000000);
                             android.widget.RelativeLayout.LayoutParams btnParams = new android.widget.RelativeLayout.LayoutParams(
-                                android.widget.ViewGroup.LayoutParams.WRAP_CONTENT,
-                                android.widget.ViewGroup.LayoutParams.MATCH_PARENT
+                                ViewGroup.LayoutParams.WRAP_CONTENT,
+                                ViewGroup.LayoutParams.MATCH_PARENT
                             );
                             btnParams.addRule(android.widget.RelativeLayout.ALIGN_PARENT_RIGHT);
                             topBar.addView(closeButton, btnParams);
@@ -164,7 +164,7 @@ public class MainActivity extends BridgeActivity {
                             container.addView(topBar);
 
                             android.widget.LinearLayout.LayoutParams webParams = new android.widget.LinearLayout.LayoutParams(
-                                android.widget.ViewGroup.LayoutParams.MATCH_PARENT,
+                                ViewGroup.LayoutParams.MATCH_PARENT,
                                 0,
                                 1.0f
                             );
