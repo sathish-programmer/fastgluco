@@ -73,6 +73,8 @@ app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // 6. Bind Master Router
 import labRoutes from './routes/labRoutes';
+import orderBridgeRoutes from './routes/orderBridgeRoutes';
+app.use('/', orderBridgeRoutes);
 app.use('/api/labs', labRoutes);
 app.use('/api', apiRouter);
 

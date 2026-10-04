@@ -8,6 +8,18 @@
 	<key>CFBundleDisplayName</key>
 	<string>Mito_Reboot</string>
 
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.mitoreboot.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>mitoreboot</string>
+			</array>
+		</dict>
+	</array>
+
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 

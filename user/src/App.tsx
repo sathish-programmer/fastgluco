@@ -158,23 +158,45 @@ const MainAppContent: React.FC = () => {
   useEffect(() => {
     let isMounted = true;
     import('@capacitor/app').then(({ App: CapApp }) => {
-      CapApp.addListener('appUrlOpen', (event) => {
-        if (!isMounted || !event?.url) return;
+      const handleDeepLinkUrl = (rawUrl: string) => {
+        if (!isMounted || !rawUrl) return;
         try {
-          const parsed = new URL(event.url);
+          const parsed = new URL(rawUrl);
           const path = parsed.pathname || '';
           const orderMatch = path.match(/\/orders?(?:\/([a-zA-Z0-9_-]+))?/i);
-          if (orderMatch) {
-            const id = orderMatch[1] || parsed.searchParams.get('orderId') || parsed.searchParams.get('id');
-            if (id) setTargetOrderId(id);
-            setActiveTab('Shop Orders', id);
+          let id: string | null = null;
+
+          if (orderMatch && orderMatch[1]) {
+            id = orderMatch[1];
           } else if (parsed.host === 'orders') {
-            const id = path.replace(/^\/+/, '') || parsed.searchParams.get('id');
-            if (id) setTargetOrderId(id);
+            const cleanPath = path.replace(/^\/+/, '');
+            id = cleanPath || parsed.searchParams.get('orderId') || parsed.searchParams.get('id');
+          } else {
+            id = parsed.searchParams.get('orderId') || parsed.searchParams.get('id');
+          }
+
+          if (id) {
+            setTargetOrderId(id);
             setActiveTab('Shop Orders', id);
+          } else if (rawUrl.includes('orders')) {
+            setActiveTab('Shop Orders');
           }
         } catch (err) {
           console.error('Error handling native deep link:', err);
+        }
+      };
+
+      // 1. Handle app opened from closed/cold state
+      CapApp.getLaunchUrl().then((launchUrl) => {
+        if (launchUrl?.url) {
+          handleDeepLinkUrl(launchUrl.url);
+        }
+      }).catch(() => {});
+
+      // 2. Handle app opened from background
+      CapApp.addListener('appUrlOpen', (event) => {
+        if (event?.url) {
+          handleDeepLinkUrl(event.url);
         }
       });
     }).catch(() => {});

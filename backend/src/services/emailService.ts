@@ -888,7 +888,7 @@ export class EmailService {
     const customerName = order.patientName || order.userId?.name || 'Valued Patient';
     const currencySymbol = order.currency === 'USD' ? '$' : '₹';
     const totalFormatted = `${currencySymbol}${Number(order.totalAmount || 0).toFixed(2)}`;
-    const orderViewUrl = `https://app.mitoreboot.in/orders/${order._id}`;
+    const orderViewUrl = `https://api.mitoreboot.in/orders/${order._id}`;
 
     // Resolve Vendor Logo & App Logo URLs directly via HTTPS CDN (prevents email clients from treating logos as attachment files)
     let vendorLogoUrl: string | undefined;
