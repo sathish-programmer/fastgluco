@@ -24,6 +24,14 @@ interface Message {
   showActions?: boolean;
 }
 
+const formatMessageText = (raw: string): string => {
+  if (!raw) return '';
+  return raw
+    .replace(/\*\*(.*?)\*\*/g, '<strong class="font-extrabold text-slate-900 dark:text-white">$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
+    .replace(/\n/g, '<br />');
+};
+
 export const SymptomCheckAIChatModal: React.FC<SymptomCheckAIChatModalProps> = ({
   isOpen,
   onClose,
@@ -68,7 +76,7 @@ export const SymptomCheckAIChatModal: React.FC<SymptomCheckAIChatModalProps> = (
     stopSpeaking();
     setSpeakingMsgId(msgId);
     speakText({
-      text: textToSpeak,
+      text: textToSpeak.replace(/\*\*/g, '').replace(/•/g, '').trim(),
       language,
       onEnd: () => setSpeakingMsgId(null),
       onError: () => setSpeakingMsgId(null)
@@ -355,9 +363,12 @@ export const SymptomCheckAIChatModal: React.FC<SymptomCheckAIChatModalProps> = (
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-bl-none border border-slate-200/60 dark:border-slate-700/60'
                 }`}
               >
-                <div className="whitespace-pre-line">
-                  {msg.text}
-                </div>
+                <div
+                  className="space-y-1.5 leading-relaxed text-xs sm:text-sm"
+                  dangerouslySetInnerHTML={{
+                    __html: formatMessageText(msg.text)
+                  }}
+                />
 
                 {/* AI Voice Readout */}
                 {msg.role === 'ai' && (
