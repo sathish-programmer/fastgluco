@@ -7,12 +7,14 @@ interface AiBannerQuickNudgeProps {
   onOpenAiCheckin?: () => void;
   title?: string;
   subtitle?: string;
+  buttonText?: string;
 }
 
 export const AiBannerQuickNudge: React.FC<AiBannerQuickNudgeProps> = ({
   onOpenAiCheckin,
   title,
-  subtitle
+  subtitle,
+  buttonText
 }) => {
   const { t } = useLanguage();
   if (!onOpenAiCheckin) return null;
@@ -51,7 +53,7 @@ export const AiBannerQuickNudge: React.FC<AiBannerQuickNudgeProps> = ({
           onClick={onOpenAiCheckin}
           className="px-4 py-2 bg-white hover:bg-blue-50 text-blue-700 hover:text-blue-800 font-extrabold text-xs rounded-xl sm:rounded-2xl shadow-sm hover:shadow transition-all shrink-0 cursor-pointer flex items-center gap-1.5 active:scale-95 group-hover:translate-x-0.5"
         >
-          <span>{t('habits.tryAi', 'Try AI')}</span>
+          <span>{buttonText || t('habits.tryAi', 'Try AI')}</span>
           <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
         </button>
       </div>

@@ -43,6 +43,7 @@ import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { DailyLoggingChatbotModal } from '../components/DailyLoggingChatbotModal';
+import { SymptomCheckAIChatModal } from '../components/SymptomCheckAIChatModal';
 import { AiDailyCheckinFloatingNudge } from '../components/AiDailyCheckinFloatingNudge';
 import { AiBannerQuickNudge } from '../components/AiBannerQuickNudge';
 import { useConsultation } from '../context/ConsultationContext';
@@ -147,12 +148,19 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
   const [isApptDismissed, setIsApptDismissed] = useState<boolean>(false);
   const [showAskMito, setShowAskMito] = useState<boolean>(false);
   const [showChatbotModal, setShowChatbotModal] = useState<boolean>(false);
+  const [showSymptomAiModal, setShowSymptomAiModal] = useState<boolean>(false);
   const [pendingHabitsCount, setPendingHabitsCount] = useState<number>(0);
 
   useEffect(() => {
     const handleOpen = () => setShowChatbotModal(true);
     window.addEventListener('openDailyCheckinChatbot', handleOpen);
     return () => window.removeEventListener('openDailyCheckinChatbot', handleOpen);
+  }, []);
+
+  useEffect(() => {
+    const handleOpenSymptomAi = () => setShowSymptomAiModal(true);
+    window.addEventListener('openSymptomAIChat', handleOpenSymptomAi);
+    return () => window.removeEventListener('openSymptomAIChat', handleOpenSymptomAi);
   }, []);
 
   useEffect(() => {
@@ -1167,7 +1175,13 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     if (activeScreen === 'Antioxidants') return <AntioxidantLogScreen onBack={handleCloseActiveScreen} onViewShop={() => setActiveScreen('AntioxidantsShop')} onNavigateToDiagnostics={() => setActiveScreen('CancerScreening')} />;
     if (activeScreen === 'AntioxidantsShop') return <ShopScreen type="All" onBack={() => setActiveScreen('Antioxidants')} />;
     if (activeScreen === 'SaferProducts') return <ShopScreen type="All" onBack={handleCloseActiveScreen} />;
-    if (activeScreen === 'SymptomCheckin') return <SymptomCheckinScreen onBack={handleCloseActiveScreen} onBookAppointment={() => handleBookAppt('symptom_checkin')} />;
+    if (activeScreen === 'SymptomCheckin') return (
+      <SymptomCheckinScreen
+        onBack={handleCloseActiveScreen}
+        onBookAppointment={() => handleBookAppt('symptom_checkin')}
+        onOpenAiAssistant={() => setShowSymptomAiModal(true)}
+      />
+    );
     if (activeScreen === 'CancerScreening') return <CancerScreeningScreen onBack={handleCloseActiveScreen} />;
     if (activeScreen === 'IndianCancers') return <IndianCancersScreen onBack={handleCloseActiveScreen} />;
     if (activeScreen === 'Obesity') return <ObesityLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} />;
@@ -1233,7 +1247,16 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
         )}
         {!isShopScreen && (
           <div className="px-4 pt-2 max-w-5xl w-full mx-auto">
-            <AiBannerQuickNudge onOpenAiCheckin={() => setShowChatbotModal(true)} />
+            {activeScreen === 'SymptomCheckin' ? (
+              <AiBannerQuickNudge
+                title={t('symptomCheck.aiBannerTitle', 'AI Symptom Screening Assistant')}
+                subtitle={t('symptomCheck.aiBannerSubtitle', 'Ask about the 11 warning symptoms, red flags & specialist recommendations')}
+                buttonText={t('symptomCheck.askAi', 'Ask AI')}
+                onOpenAiCheckin={() => setShowSymptomAiModal(true)}
+              />
+            ) : (
+              <AiBannerQuickNudge onOpenAiCheckin={() => setShowChatbotModal(true)} />
+            )}
           </div>
         )}
 
@@ -1249,6 +1272,13 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
           token={token}
           userMode={activeMode as any}
           onRefreshDashboard={() => fetchHabitsAndAppointments()}
+        />
+
+        {/* Symptom Screening AI Assistant Modal */}
+        <SymptomCheckAIChatModal
+          isOpen={showSymptomAiModal}
+          onClose={() => setShowSymptomAiModal(false)}
+          onBookAppointment={(reason) => handleBookAppt(reason || 'symptom_checkin')}
         />
       </div>
     );
@@ -2023,6 +2053,13 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
         token={token}
         userMode={activeMode as any}
         onRefreshDashboard={() => fetchHabitsAndAppointments()}
+      />
+
+      {/* Symptom Screening AI Assistant Modal */}
+      <SymptomCheckAIChatModal
+        isOpen={showSymptomAiModal}
+        onClose={() => setShowSymptomAiModal(false)}
+        onBookAppointment={(reason) => handleBookAppt(reason || 'symptom_checkin')}
       />
 
       {/* AI Feature Discovery Nudge Modal */}

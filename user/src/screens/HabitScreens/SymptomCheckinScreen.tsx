@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Award, Clock, Calendar, ExternalLink, RotateCcw, Stethoscope, ChevronRight, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, Award, Clock, Calendar, ExternalLink, RotateCcw, Stethoscope, ChevronRight, ChevronDown, ShieldAlert, Sparkles, CheckCircle2 } from 'lucide-react';
 import { Browser } from '@capacitor/browser';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -47,7 +47,21 @@ export interface CheckinHistoryItem {
   date: string;
   score: number;
   yes: string[];
+  yesIds?: string[];
+  answers?: Record<string, 'yes' | 'no' | 'na'>;
 }
+
+export const reconstructAnswers = (item: CheckinHistoryItem): Record<string, 'yes' | 'no' | 'na'> => {
+  if (item.answers && Object.keys(item.answers).length > 0) {
+    return { ...item.answers };
+  }
+  const rec: Record<string, 'yes' | 'no' | 'na'> = {};
+  SYMPTOM_QUESTIONS.forEach(q => {
+    const isYes = (item.yes && item.yes.includes(q.t)) || (item.yesIds && item.yesIds.includes(q.id));
+    rec[q.id] = isYes ? 'yes' : 'no';
+  });
+  return rec;
+};
 
 const STORAGE_KEY = "symptomCheckins";
 const INTERVAL_DAYS = 21; // 3 weeks
@@ -73,14 +87,21 @@ export const getNextCheckinDueDate = (): { nextDue: Date | null; isDue: boolean 
 interface SymptomCheckinScreenProps {
   onBack: () => void;
   onBookAppointment?: (recommendationId?: string) => void;
+  onOpenAiAssistant?: () => void;
 }
 
-export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({ onBack, onBookAppointment }) => {
+export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({ 
+  onBack, 
+  onBookAppointment,
+  onOpenAiAssistant 
+}) => {
   const { apiUrl, token } = useAuth();
   const { t } = useLanguage();
 
   const [answers, setAnswers] = useState<Record<string, 'yes' | 'no' | 'na'>>({});
   const [history, setHistory] = useState<CheckinHistoryItem[]>([]);
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [expandedHistoryDate, setExpandedHistoryDate] = useState<string | null>(null);
   const [result, setResult] = useState<{
     score: number;
     red: boolean;
@@ -91,6 +112,27 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({ onBa
   useEffect(() => {
     const loaded = getStoredSymptomCheckins();
     setHistory(loaded);
+    if (loaded.length > 0) {
+      const last = loaded[loaded.length - 1];
+      const initialAnswers = reconstructAnswers(last);
+      setAnswers(initialAnswers);
+
+      const yesQuestions = SYMPTOM_QUESTIONS.filter(q => initialAnswers[q.id] === 'yes');
+      const hasRedFlag = yesQuestions.some(q => q.red === 1);
+      const specs: string[] = [];
+      yesQuestions.forEach(q => {
+        const sp = SPECIALIST_MAP[q.id];
+        if (sp && !specs.includes(sp)) specs.push(sp);
+      });
+
+      // Default to showing user's completed assessment
+      setResult({
+        score: last.score,
+        red: hasRedFlag,
+        yesItems: yesQuestions,
+        specialties: specs
+      });
+    }
   }, []);
 
   const formatDate = (isoString: string) => {
@@ -129,7 +171,9 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({ onBa
     const newRecord: CheckinHistoryItem = {
       date: new Date().toISOString(),
       score,
-      yes: yesQuestions.map(q => q.t)
+      yes: yesQuestions.map(q => q.t),
+      yesIds: yesQuestions.map(q => q.id),
+      answers: { ...answers }
     };
 
     const updated = [...history, newRecord];
@@ -139,6 +183,7 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({ onBa
       console.warn('Failed to save to localStorage', e);
     }
     setHistory(updated);
+    setIsEditing(false);
 
     setResult({
       score,
@@ -175,7 +220,7 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({ onBa
 
   const handleReset = () => {
     setAnswers({});
-    setResult(null);
+    setIsEditing(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -211,14 +256,27 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({ onBa
           </div>
         </div>
 
-        {/* Status Badge */}
-        <span className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-lg border shrink-0 ${
-          isDue 
-            ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border-amber-200/60 dark:border-amber-800/50' 
-            : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border-emerald-200/60 dark:border-emerald-800/50'
-        }`}>
-          {isDue ? t('dashboard.dueNow', 'Due Now') : t('dashboard.activeCheck', 'Active')}
-        </span>
+        <div className="flex items-center gap-2 shrink-0">
+          {onOpenAiAssistant && (
+            <button
+              type="button"
+              onClick={onOpenAiAssistant}
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-extrabold text-[11px] shadow-xs cursor-pointer active:scale-95 transition-all"
+            >
+              <Sparkles className="w-3 h-3 text-amber-300" />
+              <span>{t('symptomCheck.askAi', 'Ask AI')}</span>
+            </button>
+          )}
+
+          {/* Status Badge */}
+          <span className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-lg border shrink-0 ${
+            isDue 
+              ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border-amber-200/60 dark:border-amber-800/50' 
+              : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border-emerald-200/60 dark:border-emerald-800/50'
+          }`}>
+            {isDue ? t('dashboard.dueNow', 'Due Now') : t('dashboard.activeCheck', 'Active')}
+          </span>
+        </div>
       </div>
 
       {/* Due / Interval Banner */}
@@ -240,7 +298,7 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({ onBa
       </div>
 
       {/* RESULT VIEW */}
-      {result ? (
+      {result && !isEditing ? (
         <div className="space-y-6 animate-in fade-in duration-300">
           <div className={`p-6 sm:p-8 rounded-3xl border shadow-sm ${
             result.score === 0 
@@ -351,21 +409,57 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({ onBa
               </div>
             )}
 
-            {/* Restart Button */}
-            <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-center">
+            {/* Review & Edit Answers / Ask AI Assistant */}
+            <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row gap-2.5 justify-center">
               <button
-                onClick={handleReset}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 bg-slate-100 dark:bg-slate-800 transition-all cursor-pointer"
+                type="button"
+                onClick={() => {
+                  setIsEditing(true);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 hover:bg-emerald-100 transition-all cursor-pointer shadow-xs"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-                <span>{t('symptomCheck.startNew', 'Start a new check-in')}</span>
+                <span>{t('symptomCheck.reviewEditAnswers', 'Review & Edit Answers')}</span>
               </button>
+              {onOpenAiAssistant && (
+                <button
+                  type="button"
+                  onClick={onOpenAiAssistant}
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 transition-all cursor-pointer shadow-xs"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                  <span>{t('symptomCheck.askAi', 'Ask AI Assistant')}</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
       ) : (
         /* MAIN QUESTIONNAIRE CARD - MATCHES KITCHEN SAFETY QUESTIONS LAYOUT */
         <div className="space-y-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 sm:p-8 shadow-sm">
+          {/* Active Review / Edit Mode Banner */}
+          {isEditing && result && (
+            <div className="flex items-center justify-between bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 p-3 rounded-2xl">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span className="text-xs font-bold text-emerald-900 dark:text-emerald-100">
+                  {t('symptomCheck.loggedOptions', 'Your Logged Answers')}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsEditing(false);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="text-xs font-bold text-emerald-700 dark:text-emerald-300 hover:underline cursor-pointer"
+              >
+                {t('symptomCheck.backToResults', 'Back to Results')} ↑
+              </button>
+            </div>
+          )}
+
           {/* Card Header */}
           <div className="border-b border-slate-100 dark:border-slate-800 pb-4">
             <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
@@ -449,18 +543,39 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({ onBa
           </div>
 
           {/* Submit Button */}
-          <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+          <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-3">
+            {isEditing && result && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEditing(false);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="py-4 px-4 rounded-2xl font-bold text-xs sm:text-sm border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer"
+                >
+                  {t('common.cancel', 'Cancel')}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  className="py-4 px-3 rounded-2xl font-bold text-xs sm:text-sm border border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all cursor-pointer"
+                >
+                  {t('common.reset', 'Reset')}
+                </button>
+              </>
+            )}
             <button
               type="button"
               onClick={handleSubmit}
               disabled={!isComplete}
-              className={`w-full py-4 px-5 rounded-2xl font-bold text-sm sm:text-base transition-all flex items-center justify-center gap-2 shadow-sm ${
+              className={`flex-1 py-4 px-5 rounded-2xl font-bold text-sm sm:text-base transition-all flex items-center justify-center gap-2 shadow-sm ${
                 isComplete
                   ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer active:scale-[0.99]'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 cursor-not-allowed'
               }`}
             >
-              <span>{t('symptomCheck.seeScore', 'See my score')}</span>
+              <span>{isEditing ? t('symptomCheck.updateCheckin', 'Update My Check-in') : t('symptomCheck.seeScore', 'See my score')}</span>
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
@@ -481,20 +596,100 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({ onBa
               .slice()
               .reverse()
               .slice(0, 6)
-              .map((item, idx) => (
-                <div key={idx} className="py-2.5 flex items-center justify-between text-xs sm:text-sm">
-                  <span className="text-slate-600 dark:text-slate-300 font-medium">
-                    {formatDate(item.date)}
-                  </span>
-                  <span className={`font-bold px-2.5 py-0.5 rounded-full text-xs ${
-                    item.score === 0 
-                      ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-800/50'
-                      : 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200/50 dark:border-rose-800/50'
-                  }`}>
-                    {item.score} / 11
-                  </span>
-                </div>
-              ))}
+              .map((item) => {
+                const isExpanded = expandedHistoryDate === item.date;
+                const itemAnswers = reconstructAnswers(item);
+
+                return (
+                  <div key={item.date} className="py-3">
+                    <button
+                      type="button"
+                      onClick={() => setExpandedHistoryDate(isExpanded ? null : item.date)}
+                      className="w-full flex items-center justify-between text-xs sm:text-sm cursor-pointer hover:opacity-85 transition-opacity"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-700 dark:text-slate-200 font-semibold">
+                          {formatDate(item.date)}
+                        </span>
+                        <span className="text-[10px] text-teal-600 dark:text-teal-400 font-bold underline">
+                          {isExpanded ? t('symptomCheck.hideLoggedDetails', 'Hide details') : t('symptomCheck.viewLoggedDetails', 'View logged details')}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`font-bold px-2.5 py-0.5 rounded-full text-xs ${
+                          item.score === 0 
+                            ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-800/50'
+                            : 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200/50 dark:border-rose-800/50'
+                        }`}>
+                          {item.score} / 11
+                        </span>
+                        <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180 text-emerald-600' : ''}`} />
+                      </div>
+                    </button>
+
+                    {/* EXPANDED ACCORDION VIEW OF LOGGED OPTIONS */}
+                    {isExpanded && (
+                      <div className="mt-3 p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/60 rounded-2xl space-y-2.5 animate-in fade-in duration-200">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                          {item.score === 0 
+                            ? t('symptomCheck.allClearNoSymptoms', "All 11 questions answered 'No' (All Clear)")
+                            : t('symptomCheck.reportedCount', { count: item.score }, `${item.score} symptoms reported lasting 3+ weeks`)}
+                        </p>
+
+                        <div className="space-y-1.5 divide-y divide-slate-100 dark:divide-slate-700/40">
+                          {SYMPTOM_QUESTIONS.map((q, qIdx) => {
+                            const ans = itemAnswers[q.id];
+                            return (
+                              <div key={q.id} className="pt-2 first:pt-0 flex items-center justify-between gap-2 text-xs">
+                                <span className="text-slate-750 dark:text-slate-200 font-medium truncate">
+                                  {qIdx + 1}. {t(`symptomCheck.q_${q.id}_title`, q.t)}
+                                </span>
+                                <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded shrink-0 ${
+                                  ans === 'yes'
+                                    ? 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300'
+                                    : ans === 'no'
+                                      ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
+                                      : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                                }`}>
+                                  {ans === 'yes' ? t('yes', 'Yes') : ans === 'no' ? t('no', 'No') : t('symptomCheck.notApplicable', 'N/A')}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Button to load in main view */}
+                        <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60 flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAnswers(itemAnswers);
+                              const yesItems = SYMPTOM_QUESTIONS.filter(q => itemAnswers[q.id] === 'yes');
+                              const red = yesItems.some(q => q.red === 1);
+                              const specs: string[] = [];
+                              yesItems.forEach(q => {
+                                const sp = SPECIALIST_MAP[q.id];
+                                if (sp && !specs.includes(sp)) specs.push(sp);
+                              });
+                              setResult({
+                                score: item.score,
+                                red,
+                                yesItems,
+                                specialties: specs
+                              });
+                              setIsEditing(false);
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                          >
+                            {t('symptomCheck.loadThisCheckin', 'Load in Main View')} ↑
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
           </div>
         </div>
       )}
