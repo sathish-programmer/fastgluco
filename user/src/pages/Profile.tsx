@@ -28,6 +28,7 @@ import {
   Volume2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { CURRENT_APP_VERSION } from '../components/WhatsNewModal';
 import { Educational } from './Educational'; // import the sub-view
 import { Subscription } from './Subscription';
 import { Capacitor } from '@capacitor/core';
@@ -1255,11 +1256,11 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
           >
             <div className="flex items-center space-x-2.5">
               <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
-              <span>{t('whatsNew.openWhatsNew', "What's New in v5.13.0")}</span>
+              <span>{t('whatsNew.openWhatsNew', `What's New in ${CURRENT_APP_VERSION}`)}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="text-[10px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-white/80 dark:bg-slate-800 px-2 py-0.5 rounded-full border border-blue-200/80 dark:border-blue-700">
-                v5.13.0
+                {CURRENT_APP_VERSION}
               </span>
               <ChevronRight className="h-4 w-4 text-slate-400 shrink-0" />
             </div>
