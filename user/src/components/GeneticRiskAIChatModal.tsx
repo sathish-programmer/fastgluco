@@ -77,7 +77,10 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
   const handleCycleSpeed = (msgId?: string, msgText?: string) => {
     const nextSpeed = cycleTtsSpeed();
     if (speakingMsgId && msgId && msgText && speakingMsgId === msgId) {
-      handleSpeak(msgId, msgText, nextSpeed);
+      stopSpeaking();
+      setTimeout(() => {
+        handleSpeak(msgId, msgText, nextSpeed);
+      }, 60);
     }
   };
 

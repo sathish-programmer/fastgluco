@@ -93,6 +93,8 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
   const [isVoiceMuted, setIsVoiceMuted] = useState<boolean>(() => localStorage.getItem('mito_ai_voice_muted') === 'true');
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
   const { speed: ttsSpeed, cycleSpeed: cycleTtsSpeed } = useTtsSpeed();
+  const ttsSpeedRef = useRef(ttsSpeed);
+  useEffect(() => { ttsSpeedRef.current = ttsSpeed; }, [ttsSpeed]);
   const [showQuickShortcuts, setShowQuickShortcuts] = useState<boolean>(false);
 
   // Edit state
@@ -559,7 +561,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
   }, [editingMessageId]);
 
   // Text-To-Speech (Native Android/iOS + Web Speech Synthesis fallback)
-  const speakQuestion = async (text: string, onDone?: () => void) => {
+  const speakQuestion = async (text: string, onDone?: () => void, customRate?: number) => {
     // Immediately stop mic so it doesn't record speaker audio
     stopListening();
 
@@ -581,6 +583,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
     }
 
     const ttsLocale = currentLanguageOption?.localeTag || (language === 'ta' ? 'ta-IN' : language === 'kn' ? 'kn-IN' : language === 'hi' ? 'hi-IN' : language === 'te' ? 'te-IN' : 'en-US');
+    const effectiveRate = typeof customRate === 'number' ? customRate : (ttsSpeedRef.current || ttsSpeed || 1.0);
 
     // ── NATIVE CAPACITOR (Android & iOS) ──
     if (Capacitor.isNativePlatform()) {
@@ -590,7 +593,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
         await TextToSpeech.speak({
           text: clean,
           lang: ttsLocale,
-          rate: ttsSpeed,
+          rate: effectiveRate,
           pitch: 1.0,
           volume: 1.0,
           category: 'ambient'
@@ -618,7 +621,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       }
 
       const utterance = new SpeechSynthesisUtterance(clean);
-      utterance.rate = ttsSpeed;
+      utterance.rate = effectiveRate;
       utterance.pitch = 1.0;
       utterance.lang = ttsLocale;
 
@@ -702,6 +705,30 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       const lastBotMsg = [...(messagesRef.current || [])].reverse().find(m => m.sender === 'bot');
       const textToSpeak = (currentStep ? formatQuestionPromptWithAQI(currentStep.stepId, localizeStepQuestion(currentStep.stepId, currentStep.questionPrompt)) : null) || lastBotMsg?.text || (language === 'ta' ? 'அனைத்து தினசரி சரிபார்ப்புகளும் முடிவடைந்தன.' : language === 'hi' ? 'सभी दैनिक चेक-इन पूरे हो गए।' : language === 'kn' ? 'ಎಲ್ಲಾ ದೈನಂದಿನ ಚೆಕ್-ಇನ್‌ಗಳು ಪೂರ್ಣಗೊಂಡಿವೆ.' : 'All daily check-ins completed. Your data is synced.');
       speakQuestion(textToSpeak);
+    }
+  };
+
+  const handleCycleSpeed = async () => {
+    const nextSpeed = cycleTtsSpeed();
+    ttsSpeedRef.current = nextSpeed;
+
+    // If speech is enabled, immediately stop current audio and re-speak at the newly chosen speed!
+    if (!isVoiceMutedRef.current) {
+      if (Capacitor.isNativePlatform()) {
+        try { await TextToSpeech.stop(); } catch {}
+      } else if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+
+      const currentStep = workflowRef.current?.steps[activeStepIndexRef.current];
+      const lastBotMsg = [...(messagesRef.current || [])].reverse().find(m => m.sender === 'bot');
+      const textToSpeak = (currentStep ? formatQuestionPromptWithAQI(currentStep.stepId, localizeStepQuestion(currentStep.stepId, currentStep.questionPrompt)) : null) || lastBotMsg?.text;
+      
+      if (textToSpeak) {
+        setTimeout(() => {
+          speakQuestion(textToSpeak, undefined, nextSpeed);
+        }, 80);
+      }
     }
   };
 
@@ -2127,15 +2154,15 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
           {/* ── HEADER ── */}
           <div className="bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 px-3.5 sm:px-4 pt-[max(env(safe-area-inset-top),12px)] pb-3 text-white flex-shrink-0">
             <div className="flex items-center justify-between gap-2 mb-2.5">
-              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
                 <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center shadow-inner overflow-hidden p-0.5 shrink-0">
                   <RoboAvatar isSpeaking={isSpeaking} size={32} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="font-black text-xs sm:text-sm text-white tracking-tight">{t('chatbot.aiAssistant', 'AI Assistant')}</span>
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="font-black text-xs sm:text-sm text-white tracking-tight truncate shrink-0 max-w-[120px] sm:max-w-none">{t('chatbot.aiAssistant', 'AI Assistant')}</span>
                     {isSpeaking ? (
-                      <span className="inline-flex items-center gap-1 text-[8.5px] font-black bg-amber-400/30 text-amber-200 px-1.5 py-0.5 rounded-full border border-amber-300/40">
+                      <span className="inline-flex items-center gap-1 text-[8.5px] font-black bg-amber-400/30 text-amber-200 px-1.5 py-0.5 rounded-full border border-amber-300/40 shrink-0">
                         <span className="flex items-center gap-0.5">
                           <span className="h-2 w-0.5 bg-amber-300 rounded-full animate-bounce" />
                           <span className="h-2.5 w-0.5 bg-amber-300 rounded-full animate-bounce [animation-delay:150ms]" />
@@ -2143,7 +2170,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                         {t('chatbot.speaking', 'SPEAKING')}
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-[8.5px] font-black bg-emerald-400/25 text-emerald-200 px-1.5 py-0.5 rounded-full border border-emerald-400/30">
+                      <span className="inline-flex items-center gap-1 text-[8.5px] font-black bg-emerald-400/25 text-emerald-200 px-1.5 py-0.5 rounded-full border border-emerald-400/30 shrink-0">
                         <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                         {t('chatbot.online', 'ONLINE')}
                       </span>
@@ -2156,7 +2183,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
               </div>
 
               {/* Header Action Buttons */}
-              <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+              <div className="flex items-center gap-1.5 shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowReminderSettings(prev => !prev)}
@@ -2184,44 +2211,49 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                   )}
                 </button>
 
-                <button
-                  type="button"
-                  onClick={toggleVoiceMute}
-                  className={`h-8 px-2 sm:px-2.5 rounded-full border flex items-center gap-1 transition-all cursor-pointer ${
-                    isSpeaking
-                      ? 'bg-amber-400 text-slate-900 border-amber-300 shadow-md shadow-amber-400/30 font-black animate-pulse'
-                      : isVoiceMuted
-                        ? 'bg-white/10 hover:bg-white/20 border-white/20 text-rose-300'
-                        : 'bg-white/15 hover:bg-white/25 border-white/20 text-white'
-                  }`}
-                  title={isSpeaking ? t('common.stopSpeaking', 'Stop Speaking') : isVoiceMuted ? t('common.tapToListen', 'Muted (Tap to Listen)') : t('common.tapToMute', 'AI Voice Active (Tap to Mute)')}
-                >
-                  {isSpeaking ? (
-                    <>
-                      <Volume2 className="h-3.5 w-3.5 shrink-0" />
-                      <span className="text-[8.5px] sm:text-[9px] font-black uppercase tracking-wider">{t('common.stop', 'Stop')}</span>
-                    </>
-                  ) : isVoiceMuted ? (
-                    <>
-                      <VolumeX className="h-3.5 w-3.5 shrink-0 text-rose-300" />
-                      <span className="text-[8.5px] sm:text-[9px] font-bold uppercase tracking-wider opacity-90 hidden min-[360px]:inline">{t('chatbot.muted', 'Muted')}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Volume2 className="h-3.5 w-3.5 shrink-0" />
-                      <span className="text-[8.5px] sm:text-[9px] font-bold uppercase tracking-wider opacity-90 hidden min-[360px]:inline">{t('chatbot.unmuted', 'Voice')}</span>
-                    </>
-                  )}
-                </button>
+                {/* Combined Media Voice & Speed Pill */}
+                <div className="flex items-center h-8 rounded-full border border-white/25 bg-white/15 overflow-hidden shrink-0 shadow-2xs">
+                  <button
+                    type="button"
+                    onClick={toggleVoiceMute}
+                    className={`h-full px-2 sm:px-2.5 flex items-center gap-1 transition-all cursor-pointer ${
+                      isSpeaking
+                        ? 'bg-amber-400 text-slate-900 font-bold animate-pulse'
+                        : isVoiceMuted
+                          ? 'text-rose-300 hover:bg-white/10'
+                          : 'text-white hover:bg-white/10'
+                    }`}
+                    title={isSpeaking ? t('common.stopSpeaking', 'Stop Speaking') : isVoiceMuted ? t('common.tapToListen', 'Muted (Tap to Listen)') : t('common.tapToMute', 'AI Voice Active (Tap to Mute)')}
+                  >
+                    {isSpeaking ? (
+                      <>
+                        <Volume2 className="h-3.5 w-3.5 shrink-0" />
+                        <span className="text-[8.5px] sm:text-[9px] font-black uppercase tracking-wider">{t('common.stop', 'Stop')}</span>
+                      </>
+                    ) : isVoiceMuted ? (
+                      <>
+                        <VolumeX className="h-3.5 w-3.5 shrink-0 text-rose-300" />
+                        <span className="text-[8.5px] sm:text-[9px] font-bold uppercase tracking-wider opacity-90 hidden md:inline">{t('chatbot.muted', 'Muted')}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Volume2 className="h-3.5 w-3.5 shrink-0" />
+                        <span className="text-[8.5px] sm:text-[9px] font-bold uppercase tracking-wider opacity-90 hidden md:inline">{t('chatbot.unmuted', 'Voice')}</span>
+                      </>
+                    )}
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={cycleTtsSpeed}
-                  className="h-8 px-2 rounded-full border border-white/20 bg-white/10 hover:bg-white/20 text-white text-[9px] font-black transition-all cursor-pointer flex items-center justify-center active:scale-95 shrink-0"
-                  title={t('common.playbackSpeed', 'Hearing Speed (Tap to cycle)')}
-                >
-                  {ttsSpeed}x
-                </button>
+                  <div className="w-[1px] h-3.5 bg-white/25 shrink-0" />
+
+                  <button
+                    type="button"
+                    onClick={handleCycleSpeed}
+                    className="h-full px-2 text-[9.5px] sm:text-[10px] font-black text-white hover:bg-white/20 transition-all cursor-pointer flex items-center justify-center shrink-0 active:scale-95"
+                    title={t('common.playbackSpeed', 'Hearing Speed (Tap to cycle)')}
+                  >
+                    {ttsSpeed}x
+                  </button>
+                </div>
 
                 <button onClick={handleModalClose} className="h-8 w-8 rounded-full bg-white/15 hover:bg-white/25 border border-white/20 flex items-center justify-center transition-all cursor-pointer shrink-0" aria-label={t('common.close')}>
                   <X className="h-4 w-4 text-white" />

@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { TextToSpeech } from '@capacitor-community/text-to-speech';
 
 /**
  * Centralized Text-to-Speech (TTS) helper for 5-Language Support
@@ -109,13 +111,16 @@ export interface SpeakOptions {
 }
 
 export const stopSpeaking = (): void => {
+  if (Capacitor.isNativePlatform()) {
+    try { TextToSpeech.stop(); } catch {}
+  }
   if (typeof window !== 'undefined' && window.speechSynthesis) {
-    window.speechSynthesis.cancel();
+    try { window.speechSynthesis.cancel(); } catch {}
   }
 };
 
 export const isTtsSupported = (): boolean => {
-  return typeof window !== 'undefined' && 'speechSynthesis' in window;
+  return Capacitor.isNativePlatform() || (typeof window !== 'undefined' && 'speechSynthesis' in window);
 };
 
 export const speakText = ({
@@ -128,12 +133,45 @@ export const speakText = ({
   onError
 }: SpeakOptions): boolean => {
   if (!isTtsSupported()) {
-    if (onError) onError(new Error('TTS not supported in this browser'));
+    if (onError) onError(new Error('TTS not supported in this environment'));
     return false;
   }
 
   const clean = cleanTextForSpeech(text);
   if (!clean) {
+    if (onEnd) onEnd();
+    return false;
+  }
+
+  const activeRate = typeof rate === 'number' ? rate : getStoredTtsSpeed();
+  const ttsLocale = getTtsLocale(language);
+
+  // ── Native Mobile TTS (Android & iOS) ──
+  if (Capacitor.isNativePlatform()) {
+    try {
+      TextToSpeech.stop().catch(() => {});
+      if (onStart) onStart();
+      TextToSpeech.speak({
+        text: clean,
+        lang: ttsLocale,
+        rate: activeRate,
+        pitch: pitch,
+        volume: 1.0,
+        category: 'ambient'
+      }).then(() => {
+        if (onEnd) onEnd();
+      }).catch((err) => {
+        console.warn('Native TTS playback error:', err);
+        if (onError) onError(err);
+      });
+      return true;
+    } catch (err) {
+      console.warn('Native TTS invocation failed, falling back to Web Speech:', err);
+    }
+  }
+
+  // ── Web Speech API Fallback ──
+  if (typeof window === 'undefined' || !window.speechSynthesis) {
     if (onEnd) onEnd();
     return false;
   }
@@ -144,8 +182,6 @@ export const speakText = ({
       window.speechSynthesis.resume();
     }
 
-    const activeRate = typeof rate === 'number' ? rate : getStoredTtsSpeed();
-    const ttsLocale = getTtsLocale(language);
     const utterance = new SpeechSynthesisUtterance(clean);
     utterance.rate = activeRate;
     utterance.pitch = pitch;
