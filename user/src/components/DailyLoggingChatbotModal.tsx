@@ -708,28 +708,9 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
     }
   };
 
-  const handleCycleSpeed = async () => {
+  const handleCycleSpeed = () => {
     const nextSpeed = cycleTtsSpeed();
     ttsSpeedRef.current = nextSpeed;
-
-    // If speech is enabled, immediately stop current audio and re-speak at the newly chosen speed!
-    if (!isVoiceMutedRef.current) {
-      if (Capacitor.isNativePlatform()) {
-        try { await TextToSpeech.stop(); } catch {}
-      } else if (typeof window !== 'undefined' && window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-      }
-
-      const currentStep = workflowRef.current?.steps[activeStepIndexRef.current];
-      const lastBotMsg = [...(messagesRef.current || [])].reverse().find(m => m.sender === 'bot');
-      const textToSpeak = (currentStep ? formatQuestionPromptWithAQI(currentStep.stepId, localizeStepQuestion(currentStep.stepId, currentStep.questionPrompt)) : null) || lastBotMsg?.text;
-      
-      if (textToSpeak) {
-        setTimeout(() => {
-          speakQuestion(textToSpeak, undefined, nextSpeed);
-        }, 80);
-      }
-    }
   };
 
 
@@ -2155,27 +2136,18 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
           <div className="bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 px-3.5 sm:px-4 pt-[max(env(safe-area-inset-top),12px)] pb-3 text-white flex-shrink-0">
             <div className="flex items-center justify-between gap-2 mb-2.5">
               <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
-                <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center shadow-inner overflow-hidden p-0.5 shrink-0">
-                  <RoboAvatar isSpeaking={isSpeaking} size={32} />
+                <div className="relative shrink-0">
+                  <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center shadow-inner overflow-hidden p-0.5">
+                    <RoboAvatar isSpeaking={isSpeaking} size={32} />
+                  </div>
+                  <span className="absolute -bottom-0.5 -right-0.5 flex h-2.5 w-2.5">
+                    <span className={`relative inline-flex rounded-full h-2.5 w-2.5 border-2 border-indigo-600 ${isSpeaking ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'}`} />
+                  </span>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="font-black text-xs sm:text-sm text-white tracking-tight truncate shrink-0 max-w-[120px] sm:max-w-none">{t('chatbot.aiAssistant', 'AI Assistant')}</span>
-                    {isSpeaking ? (
-                      <span className="inline-flex items-center gap-1 text-[8.5px] font-black bg-amber-400/30 text-amber-200 px-1.5 py-0.5 rounded-full border border-amber-300/40 shrink-0">
-                        <span className="flex items-center gap-0.5">
-                          <span className="h-2 w-0.5 bg-amber-300 rounded-full animate-bounce" />
-                          <span className="h-2.5 w-0.5 bg-amber-300 rounded-full animate-bounce [animation-delay:150ms]" />
-                        </span>
-                        {t('chatbot.speaking', 'SPEAKING')}
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-[8.5px] font-black bg-emerald-400/25 text-emerald-200 px-1.5 py-0.5 rounded-full border border-emerald-400/30 shrink-0">
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                        {t('chatbot.online', 'ONLINE')}
-                      </span>
-                    )}
-                  </div>
+                  <h3 className="font-black text-xs sm:text-sm text-white tracking-tight truncate">
+                    {t('chatbot.aiAssistant', 'AI Assistant')}
+                  </h3>
                   <p className="text-[9.5px] sm:text-[10px] font-medium text-blue-100/80 truncate mt-0.5">
                     {userMode === 'TREATMENT' ? t('chatbot.cancerTreatmentCheckin', 'Cancer Treatment Daily Check-in') : userMode === 'SECONDARY_PREVENTION' ? t('chatbot.cancerPreventionCheckin', 'Survivor Recovery Daily Check-in') : t('chatbot.cancerPreventionCheckin', 'Cancer Prevention Daily Check-in')}
                   </p>
@@ -2187,7 +2159,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                 <button
                   type="button"
                   onClick={() => setShowReminderSettings(prev => !prev)}
-                  className={`h-8 px-2 sm:px-2.5 rounded-full border flex items-center gap-1 transition-all cursor-pointer ${
+                  className={`h-8 w-8 sm:w-auto px-0 sm:px-2.5 rounded-full border flex items-center justify-center sm:justify-start gap-1 transition-all cursor-pointer ${
                     showReminderSettings
                       ? 'bg-white text-blue-600 border-white shadow-xs font-black'
                       : reminderEnabled && reminderTime
@@ -2196,18 +2168,11 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                   }`}
                   title={t('checkinReminderTime')}
                 >
-                  {reminderEnabled && reminderTime ? (
-                    <>
-                      <Bell className="h-3.5 w-3.5 text-amber-300 shrink-0" />
-                      <span className="text-[8.5px] sm:text-[9px] uppercase tracking-wider font-black whitespace-nowrap">
-                        {formatDisplayTime(reminderTime)}
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <BellOff className="h-3.5 w-3.5 opacity-80 shrink-0" />
-                      <span className="text-[8.5px] sm:text-[9px] uppercase tracking-wider font-bold opacity-80">{t('common.off', 'Off')}</span>
-                    </>
+                  <Bell className="h-3.5 w-3.5 text-amber-300 shrink-0" />
+                  {reminderEnabled && reminderTime && (
+                    <span className="text-[8.5px] sm:text-[9px] uppercase tracking-wider font-black whitespace-nowrap hidden sm:inline">
+                      {formatDisplayTime(reminderTime)}
+                    </span>
                   )}
                 </button>
 
@@ -2226,21 +2191,15 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                     title={isSpeaking ? t('common.stopSpeaking', 'Stop Speaking') : isVoiceMuted ? t('common.tapToListen', 'Muted (Tap to Listen)') : t('common.tapToMute', 'AI Voice Active (Tap to Mute)')}
                   >
                     {isSpeaking ? (
-                      <>
-                        <Volume2 className="h-3.5 w-3.5 shrink-0" />
-                        <span className="text-[8.5px] sm:text-[9px] font-black uppercase tracking-wider">{t('common.stop', 'Stop')}</span>
-                      </>
+                      <Volume2 className="h-3.5 w-3.5 shrink-0" />
                     ) : isVoiceMuted ? (
-                      <>
-                        <VolumeX className="h-3.5 w-3.5 shrink-0 text-rose-300" />
-                        <span className="text-[8.5px] sm:text-[9px] font-bold uppercase tracking-wider opacity-90 hidden md:inline">{t('chatbot.muted', 'Muted')}</span>
-                      </>
+                      <VolumeX className="h-3.5 w-3.5 shrink-0 text-rose-300" />
                     ) : (
-                      <>
-                        <Volume2 className="h-3.5 w-3.5 shrink-0" />
-                        <span className="text-[8.5px] sm:text-[9px] font-bold uppercase tracking-wider opacity-90 hidden md:inline">{t('chatbot.unmuted', 'Voice')}</span>
-                      </>
+                      <Volume2 className="h-3.5 w-3.5 shrink-0" />
                     )}
+                    <span className="text-[8.5px] sm:text-[9px] font-bold uppercase tracking-wider hidden sm:inline">
+                      {isSpeaking ? t('common.stop', 'Stop') : isVoiceMuted ? t('chatbot.muted', 'Muted') : t('chatbot.unmuted', 'Voice')}
+                    </span>
                   </button>
 
                   <div className="w-[1px] h-3.5 bg-white/25 shrink-0" />
