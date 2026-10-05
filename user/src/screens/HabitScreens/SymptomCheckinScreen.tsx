@@ -66,10 +66,62 @@ export const reconstructAnswers = (item: CheckinHistoryItem): Record<string, 'ye
 const STORAGE_KEY = "symptomCheckins";
 const INTERVAL_DAYS = 21; // 3 weeks
 
+export const isSameCalendarDay = (d1: string, d2: string): boolean => {
+  try {
+    return new Date(d1).toDateString() === new Date(d2).toDateString();
+  } catch {
+    return d1.slice(0, 10) === d2.slice(0, 10);
+  }
+};
+
+export const areAnswersEqual = (
+  a?: Record<string, 'yes' | 'no' | 'na'> | null,
+  b?: Record<string, 'yes' | 'no' | 'na'> | null
+): boolean => {
+  if (!a && !b) return true;
+  if (!a || !b) return false;
+  const allKeys = Array.from(new Set([...Object.keys(a), ...Object.keys(b)]));
+  for (const k of allKeys) {
+    if ((a[k] || 'no') !== (b[k] || 'no')) {
+      return false;
+    }
+  }
+  return true;
+};
+
+export const deduplicateHistory = (items: CheckinHistoryItem[]): CheckinHistoryItem[] => {
+  if (!items || items.length <= 1) return items || [];
+  const result: CheckinHistoryItem[] = [];
+  for (let i = 0; i < items.length; i++) {
+    const curr = items[i];
+    const prev = result[result.length - 1];
+    if (!prev) {
+      result.push(curr);
+      continue;
+    }
+    // If on the exact same calendar day, merge/keep the latest one
+    if (isSameCalendarDay(prev.date, curr.date)) {
+      result[result.length - 1] = curr;
+    } else {
+      result.push(curr);
+    }
+  }
+  return result;
+};
+
 export const getStoredSymptomCheckins = (): CheckinHistoryItem[] => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    const deduped = deduplicateHistory(parsed);
+    // If deduplicated count differs, clean up localStorage immediately
+    if (deduped.length !== parsed.length) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(deduped));
+      } catch {}
+    }
+    return deduped;
   } catch {
     return [];
   }
@@ -168,6 +220,19 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({
       }
     });
 
+    // Check if answers actually changed compared to the last check-in
+    const hasExisting = history.length > 0;
+    const lastRecord = hasExisting ? history[history.length - 1] : null;
+    const lastAnswers = lastRecord ? reconstructAnswers(lastRecord) : null;
+    const hasAnswersChanged = !lastAnswers || !areAnswersEqual(answers, lastAnswers);
+
+    // If user clicked update but made NO changes, simply return to results view
+    if (isEditing && !hasAnswersChanged) {
+      setIsEditing(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     const newRecord: CheckinHistoryItem = {
       date: new Date().toISOString(),
       score,
@@ -176,7 +241,17 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({
       answers: { ...answers }
     };
 
-    const updated = [...history, newRecord];
+    let updated: CheckinHistoryItem[];
+    if (lastRecord && isSameCalendarDay(lastRecord.date, newRecord.date)) {
+      // Update today's existing check-in in-place instead of creating a second row
+      updated = [...history];
+      updated[updated.length - 1] = newRecord;
+    } else {
+      // New check-in on a different date
+      updated = [...history, newRecord];
+    }
+    updated = deduplicateHistory(updated);
+
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     } catch (e) {

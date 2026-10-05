@@ -4,7 +4,7 @@ import { Browser } from '@capacitor/browser';
 import { RoboAvatar } from './RoboAvatar';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { SYMPTOM_QUESTIONS, SPECIALIST_MAP } from '../screens/HabitScreens/SymptomCheckinScreen';
+import { SYMPTOM_QUESTIONS, SPECIALIST_MAP, getStoredSymptomCheckins, reconstructAnswers } from '../screens/HabitScreens/SymptomCheckinScreen';
 import { HCG_HOSPITALS_URL } from '../screens/HabitScreens/CancerScreeningScreen';
 import { speakText, stopSpeaking } from '../utils/ttsHelper';
 
@@ -27,7 +27,7 @@ interface Message {
 export const SymptomCheckAIChatModal: React.FC<SymptomCheckAIChatModalProps> = ({
   isOpen,
   onClose,
-  answers = {},
+  answers,
   latestScore,
   onBookAppointment
 }) => {
@@ -41,9 +41,23 @@ export const SymptomCheckAIChatModal: React.FC<SymptomCheckAIChatModalProps> = (
 
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
-  // Identify reported symptoms
-  const reportedYesQuestions = SYMPTOM_QUESTIONS.filter(q => answers[q.id] === 'yes');
-  const score = latestScore !== undefined ? latestScore : reportedYesQuestions.length;
+  // Helper to get freshest answers and score
+  const getFreshestData = () => {
+    const storedCheckins = getStoredSymptomCheckins();
+    const latestCheckin = storedCheckins.length > 0 ? storedCheckins[storedCheckins.length - 1] : null;
+    const resolvedAnswers = (answers && Object.keys(answers).length > 0)
+      ? answers
+      : (latestCheckin ? reconstructAnswers(latestCheckin) : {});
+
+    const yesQuestions = SYMPTOM_QUESTIONS.filter(q => resolvedAnswers[q.id] === 'yes');
+    const effectiveScore = latestScore !== undefined
+      ? latestScore
+      : (latestCheckin ? latestCheckin.score : yesQuestions.length);
+
+    return { resolvedAnswers, yesQuestions, effectiveScore, hasStored: !!latestCheckin || Object.keys(resolvedAnswers).length > 0 };
+  };
+
+  const { effectiveScore: score } = getFreshestData();
 
   const handleSpeak = (msgId: string, textToSpeak: string) => {
     if (speakingMsgId === msgId) {
@@ -77,6 +91,8 @@ export const SymptomCheckAIChatModal: React.FC<SymptomCheckAIChatModalProps> = (
       return;
     }
 
+    const { resolvedAnswers, yesQuestions, effectiveScore, hasStored } = getFreshestData();
+
     let initialText = '';
     const initialOptions = [
       t('symptomCheck.aiQWhy3Weeks', 'Why is 3 weeks the critical timeline?'),
@@ -85,22 +101,23 @@ export const SymptomCheckAIChatModal: React.FC<SymptomCheckAIChatModalProps> = (
       t('symptomCheck.aiQReviewMine', 'Review my logged symptoms with me')
     ];
 
-    if (score > 0) {
-      const symptomNames = reportedYesQuestions.slice(0, 3).map(q => t(`symptomCheck.q_${q.id}_title`, q.t)).join(', ');
+    const userName = user?.name ? user.name : '';
+
+    if (effectiveScore > 0) {
+      const symptomNames = yesQuestions.slice(0, 3).map(q => t(`symptomCheck.q_${q.id}_title`, q.t)).join(', ');
       initialText = t(
         'symptomCheck.aiGreetingYes',
-        { score, symptoms: symptomNames },
-        `Hello ${user?.name ? user.name : ''}! 👋 I'm your **Mito Symptom Screening AI Specialist**.\n\nI see you reported **${score} symptoms** lasting over 3 weeks (including ${symptomNames}${reportedYesQuestions.length > 3 ? ' and more' : ''}). In clinical medicine, any symptom that persists beyond 3 weeks requires thorough specialist evaluation to rule out underlying conditions early.\n\nHow can I help you today? You can choose a topic below or type your question.`
+        { name: userName, score: effectiveScore, symptoms: symptomNames }
       );
-    } else if (Object.keys(answers).length > 0) {
+    } else if (hasStored && Object.keys(resolvedAnswers).length > 0) {
       initialText = t(
         'symptomCheck.aiGreetingClear',
-        `Hello ${user?.name ? user.name : ''}! 👋 I'm your **Mito Symptom Screening AI Specialist**.\n\nGreat news! Your 3-weekly symptom check-in shows **0 symptoms reported (All Clear)**. Regular 3-weekly check-ins ensure that any subtle changes in your body are caught early.\n\nDo you have any questions about any of the 11 warning signs or cancer screening guidelines?`
+        { name: userName }
       );
     } else {
       initialText = t(
         'symptomCheck.aiGreetingFresh',
-        `Hello ${user?.name ? user.name : ''}! 👋 I'm your **Mito Symptom Screening AI Specialist**.\n\nThis check-in screens for **11 key early warning symptoms** (such as unexplained weight loss, voice change, swallowing difficulty, mouth ulcers, or bowel changes) lasting over 3 weeks.\n\nI'm here to explain any symptom, guide you through questions, or recommend specialists. What would you like to know?`
+        { name: userName }
       );
     }
 
@@ -110,26 +127,41 @@ export const SymptomCheckAIChatModal: React.FC<SymptomCheckAIChatModalProps> = (
         role: 'ai',
         text: initialText,
         options: initialOptions,
-        showActions: score > 0
+        showActions: effectiveScore > 0
       }
     ]);
-  }, [isOpen, score, language]);
+  }, [isOpen, language, answers, latestScore]);
 
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
   const generateAIResponse = (userQuestion: string): { reply: string; showActions: boolean; options?: string[] } => {
-    const qLower = userQuestion.toLowerCase();
+    const { yesQuestions: currentYesQuestions, effectiveScore } = getFreshestData();
+    const qLower = userQuestion.toLowerCase().trim();
 
     // 1. Why 3 weeks?
-    if (qLower.includes('3 week') || qLower.includes('why') || qLower.includes('timeline') || qLower.includes('காலம்') || qLower.includes('3 வாரம்') || qLower.includes('3 सप्ताह')) {
+    const optWhy = t('symptomCheck.aiQWhy3Weeks', 'Why is 3 weeks the critical timeline?').toLowerCase();
+    if (
+      userQuestion.trim() === t('symptomCheck.aiQWhy3Weeks') ||
+      qLower === optWhy ||
+      qLower.includes('3 week') ||
+      qLower.includes('why') ||
+      qLower.includes('timeline') ||
+      qLower.includes('காலம்') ||
+      qLower.includes('3 வாரம்') ||
+      qLower.includes('3 வாரங்கள்') ||
+      qLower.includes('3 सप्ताह') ||
+      qLower.includes('3 ವಾರ') ||
+      qLower.includes('3 వారాలు') ||
+      qLower.includes('ஏன்') ||
+      qLower.includes('क्यों') ||
+      qLower.includes('ಏಕೆ') ||
+      qLower.includes('ఎందుకు')
+    ) {
       return {
-        reply: t(
-          'symptomCheck.aiAnsWhy3Weeks',
-          "**Why 3 weeks is the critical medical rule of thumb:**\n\n• Most everyday acute conditions (like common viral infections, mouth aphthous ulcers, minor throat irritation, or brief acid reflux) resolve spontaneously within **1 to 2 weeks** as tissues heal.\n• If a symptom persists **longer than 3 weeks**, it is no longer considered a temporary irritation. It requires clinical examination, blood tests, or diagnostic imaging to catch conditions like early cancers or chronic inflammatory disorders at their most treatable stage."
-        ),
-        showActions: score > 0,
+        reply: t('symptomCheck.aiAnsWhy3Weeks'),
+        showActions: effectiveScore > 0,
         options: [
           t('symptomCheck.aiQWhichSpec', 'Which specialist should I consult?'),
           t('symptomCheck.aiQWhatToTell', 'What should I tell my doctor?')
@@ -138,17 +170,27 @@ export const SymptomCheckAIChatModal: React.FC<SymptomCheckAIChatModalProps> = (
     }
 
     // 2. Which specialist?
-    if (qLower.includes('specialist') || qLower.includes('doctor') || qLower.includes('who') || qLower.includes('மருத்துவர்') || qLower.includes('நிபுணர்') || qLower.includes('डॉक्टर')) {
-      if (reportedYesQuestions.length > 0) {
-        const specs = reportedYesQuestions
+    const optSpec = t('symptomCheck.aiQWhichSpec', 'Which specialist should I consult?').toLowerCase();
+    if (
+      userQuestion.trim() === t('symptomCheck.aiQWhichSpec') ||
+      qLower === optSpec ||
+      qLower.includes('specialist') ||
+      qLower.includes('doctor') ||
+      qLower.includes('மருத்துவர்') ||
+      qLower.includes('நிபுணர்') ||
+      qLower.includes('डॉक्टर') ||
+      qLower.includes('विशेषज्ञ') ||
+      qLower.includes('ತಜ್ಞ') ||
+      qLower.includes('ವೈದ್ಯ') ||
+      qLower.includes('నిపుణు') ||
+      qLower.includes('వైద్యు')
+    ) {
+      if (currentYesQuestions.length > 0) {
+        const specs = currentYesQuestions
           .map(q => `• **${t(`symptomCheck.q_${q.id}_title`, q.t)}** → ${t(`symptomCheck.spec_${q.id}`, SPECIALIST_MAP[q.id] || 'Specialist')}`)
           .join('\n');
         return {
-          reply: t(
-            'symptomCheck.aiAnsSpecList',
-            { list: specs },
-            `Based on the symptoms you reported lasting >3 weeks, here are the suggested specialists:\n\n${specs}\n\nYou can consult virtual oncology specialists through HCG Virtual Consultation or book a clinic appointment directly in the app.`
-          ),
+          reply: t('symptomCheck.aiAnsSpecList', { list: specs }),
           showActions: true,
           options: [
             t('symptomCheck.aiQWhatToTell', 'What should I tell my doctor?'),
@@ -157,34 +199,38 @@ export const SymptomCheckAIChatModal: React.FC<SymptomCheckAIChatModalProps> = (
         };
       }
       return {
-        reply: t(
-          'symptomCheck.aiAnsSpecGeneral',
-          "For persistent symptoms lasting >3 weeks:\n• **Mouth sores / throat / hoarseness:** ENT or Head & Neck Specialist\n• **Difficulty swallowing / stomach acidity / bowel changes / blood in stool:** Gastroenterologist\n• **Unexplained weight loss / appetite loss:** General Physician or Medical Oncologist\n• **Breast lump / thickening:** Breast Specialist or Surgical Oncologist\n• **Abnormal bleeding / vaginal discharge:** Gynaecologist"
-        ),
+        reply: t('symptomCheck.aiAnsSpecGeneral'),
         showActions: true
       };
     }
 
     // 3. Review my logged symptoms
-    if (qLower.includes('review') || qLower.includes('logged') || qLower.includes('my symptom') || qLower.includes('என்') || qLower.includes('அறிகுறி')) {
-      if (reportedYesQuestions.length === 0) {
+    const optReview = t('symptomCheck.aiQReviewMine', 'Review my logged symptoms with me').toLowerCase();
+    if (
+      userQuestion.trim() === t('symptomCheck.aiQReviewMine') ||
+      qLower === optReview ||
+      qLower.includes('review') ||
+      qLower.includes('logged') ||
+      qLower.includes('my symptom') ||
+      qLower.includes('என்') ||
+      qLower.includes('மதிப்பாய்வு') ||
+      qLower.includes('பதிவு') ||
+      qLower.includes('समीक्षा') ||
+      qLower.includes('ದಾಖಲಾದ') ||
+      qLower.includes('ಸಮೀಕ್ಷೆ') ||
+      qLower.includes('సమీక్ష')
+    ) {
+      if (currentYesQuestions.length === 0) {
         return {
-          reply: t(
-            'symptomCheck.aiAnsNoSymptomsLogged',
-            "You haven't reported any symptoms lasting >3 weeks in this check-in! All 11 questions were answered 'No'. Continue monitoring and repeat this check-in every 3 weeks."
-          ),
+          reply: t('symptomCheck.aiAnsNoSymptomsLogged'),
           showActions: false
         };
       }
-      const list = reportedYesQuestions
+      const list = currentYesQuestions
         .map((q, i) => `${i + 1}. **${t(`symptomCheck.q_${q.id}_title`, q.t)}**\n   ${t(`symptomCheck.q_${q.id}_desc`, q.h)}${q.red === 1 ? ` — *(⚠️ ${t('symptomCheck.priorityReview', 'Priority Review')})*` : ''}`)
         .join('\n\n');
       return {
-        reply: t(
-          'symptomCheck.aiAnsReviewList',
-          { list },
-          `Here is the summary of your **${reportedYesQuestions.length} reported symptoms**:\n\n${list}\n\n**Next Step:** Because you marked 'Yes' for symptoms lasting 3+ weeks, please do not delay consulting a specialist for an accurate diagnosis.`
-        ),
+        reply: t('symptomCheck.aiAnsReviewList', { score: effectiveScore, list }),
         showActions: true,
         options: [
           t('symptomCheck.aiQWhatToTell', 'What should I tell my doctor?'),
@@ -194,12 +240,21 @@ export const SymptomCheckAIChatModal: React.FC<SymptomCheckAIChatModalProps> = (
     }
 
     // 4. What to tell doctor?
-    if (qLower.includes('tell') || qLower.includes('prepare') || qLower.includes('visit') || qLower.includes('கேட்க')) {
+    const optTell = t('symptomCheck.aiQWhatToTell', 'What should I tell my doctor?').toLowerCase();
+    if (
+      userQuestion.trim() === t('symptomCheck.aiQWhatToTell') ||
+      qLower === optTell ||
+      qLower.includes('tell') ||
+      qLower.includes('prepare') ||
+      qLower.includes('visit') ||
+      qLower.includes('சொல்ல') ||
+      qLower.includes('கேட்க') ||
+      qLower.includes('बताएं') ||
+      qLower.includes('ಹೇಳಬೇಕು') ||
+      qLower.includes('చెప్పాలి')
+    ) {
       return {
-        reply: t(
-          'symptomCheck.aiAnsWhatToTell',
-          "**When you visit the specialist, make sure to share:**\n\n1. **Exact Duration:** State clearly how many weeks or months the symptom has been present.\n2. **Progression:** Has it been getting progressively worse, constant, or fluctuating?\n3. **Associated Signs:** Any unintentional weight loss, loss of appetite, fatigue, or localized pain.\n4. **Family History:** Mention if any blood relatives had cancer or gastrointestinal disorders.\n5. **Medications Tried:** Mention antacids, painkillers, or antibiotics you may have taken without relief."
-        ),
+        reply: t('symptomCheck.aiAnsWhatToTell'),
         showActions: true,
         options: [
           t('symptomCheck.aiQWhichSpec', 'Which specialist should I consult?'),
@@ -210,11 +265,8 @@ export const SymptomCheckAIChatModal: React.FC<SymptomCheckAIChatModalProps> = (
 
     // Default medical AI screening response
     return {
-      reply: t(
-        'symptomCheck.aiAnsDefault',
-        "Thank you for sharing. In early warning screening, the most critical factor is **duration and progression**. Any symptom among the 11 warning signs that persists beyond **3 weeks** should never be ignored or self-treated with over-the-counter medicine alone. A specialist clinical evaluation (such as an endoscopy, ultrasound, or targeted biopsy) provides clear answers and peace of mind."
-      ),
-      showActions: score > 0,
+      reply: t('symptomCheck.aiAnsDefault'),
+      showActions: effectiveScore > 0,
       options: [
         t('symptomCheck.aiQWhy3Weeks', 'Why is 3 weeks the critical timeline?'),
         t('symptomCheck.aiQWhichSpec', 'Which specialist should I consult?'),
@@ -271,13 +323,13 @@ export const SymptomCheckAIChatModal: React.FC<SymptomCheckAIChatModalProps> = (
                   {t('symptomCheck.aiModalTitle', 'Symptom Screening AI Specialist')}
                 </h3>
                 <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase bg-emerald-400 text-emerald-950 px-2 py-0.5 rounded-full">
-                  <Sparkles className="h-2.5 w-2.5 fill-emerald-950" /> Early Warning
+                  <Sparkles className="h-2.5 w-2.5 fill-emerald-950" /> {t('symptomCheck.tagline', 'Early Warning')}
                 </span>
               </div>
               <p className="text-[11px] text-teal-100 font-medium mt-0.5">
                 {score > 0 
-                  ? t('symptomCheck.aiHeaderReported', { count: score }, `${score} reported symptoms under clinical review`) 
-                  : t('symptomCheck.aiHeaderClear', '11 Early warning symptoms screening guide')}
+                  ? t('symptomCheck.reportedCount', { count: score }) 
+                  : t('symptomCheck.aiSubtitle', '11 Early warning symptoms screening guide')}
               </p>
             </div>
           </div>
