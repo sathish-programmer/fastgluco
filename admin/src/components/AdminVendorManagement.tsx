@@ -858,59 +858,65 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
           </div>
 
           {/* KPI STATS BANNER */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm hover:shadow-md transition duration-200 flex items-center gap-3.5">
-              <div className="p-3 bg-blue-50 text-blue-600 border border-blue-100 rounded-xl">
+          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4 w-full">
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-3.5 sm:p-4 shadow-sm hover:shadow-md transition duration-200 flex items-center gap-3 min-w-0">
+              <div className="p-2.5 sm:p-3 bg-blue-50 text-blue-600 border border-blue-100 rounded-xl shrink-0">
                 <Store className="h-5 w-5" />
               </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Vendors</p>
-                <p className="text-2xl font-black text-slate-900 leading-none mt-1">{overallStats.totalVendors}</p>
-                <p className="text-[11px] text-emerald-600 font-bold mt-0.5">{overallStats.activeVendors} Active (Live)</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider truncate">Total Vendors</p>
+                <p className="text-xl sm:text-2xl font-black text-slate-900 leading-none mt-1 truncate">{overallStats.totalVendors}</p>
+                <p className="text-[10.5px] sm:text-[11px] text-emerald-600 font-bold mt-0.5 truncate">{overallStats.activeVendors} Active (Live)</p>
               </div>
             </div>
 
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm hover:shadow-md transition duration-200 flex items-center gap-3.5">
-              <div className="p-3 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl">
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-3.5 sm:p-4 shadow-sm hover:shadow-md transition duration-200 flex items-center gap-3 min-w-0">
+              <div className="p-2.5 sm:p-3 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl shrink-0">
                 <Package className="h-5 w-5" />
               </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Vendor Products</p>
-                <p className="text-2xl font-black text-slate-900 leading-none mt-1">{overallStats.totalProducts}</p>
-                <p className="text-[11px] text-emerald-600 font-semibold mt-0.5">Catalog Synced</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider truncate">Vendor Products</p>
+                <p className="text-xl sm:text-2xl font-black text-slate-900 leading-none mt-1 truncate">{overallStats.totalProducts}</p>
+                <p className="text-[10.5px] sm:text-[11px] text-emerald-600 font-semibold mt-0.5 truncate">Catalog Synced</p>
               </div>
             </div>
 
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm hover:shadow-md transition duration-200 flex items-center gap-3.5">
-              <div className="p-3 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl">
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-3.5 sm:p-4 shadow-sm hover:shadow-md transition duration-200 flex items-center gap-3 min-w-0">
+              <div className="p-2.5 sm:p-3 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl shrink-0">
                 <TrendingUp className="h-5 w-5" />
               </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total GMV</p>
-                <p className="text-2xl font-black text-slate-900 leading-none mt-1">₹{overallStats.totalGmv.toLocaleString('en-IN')}</p>
-                <p className="text-[11px] text-slate-500 mt-0.5">Gross vendor orders</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider truncate">Total GMV</p>
+                <p className="text-xl sm:text-2xl font-black text-slate-900 leading-none mt-1 truncate">
+                  ₹{Math.round(overallStats.totalGmv).toLocaleString('en-IN')}
+                </p>
+                <p className="text-[10.5px] sm:text-[11px] text-slate-500 mt-0.5 truncate">Gross vendor orders</p>
               </div>
             </div>
 
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm hover:shadow-md transition duration-200 flex items-center gap-3.5">
-              <div className="p-3 bg-purple-50 text-purple-600 border border-purple-100 rounded-xl">
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-3.5 sm:p-4 shadow-sm hover:shadow-md transition duration-200 flex items-center gap-3 min-w-0">
+              <div className="p-2.5 sm:p-3 bg-purple-50 text-purple-600 border border-purple-100 rounded-xl shrink-0">
                 <Percent className="h-5 w-5" />
               </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Arivu Agreement</p>
-                <p className="text-2xl font-black text-purple-700 leading-none mt-1">{vendors.find(v => v.slug === 'arivu-foods')?.commissionConfig?.rate ?? 30}% Comm</p>
-                <p className="text-[10px] text-purple-600/80 font-medium mt-0.5">+18% GST retention</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider truncate">Arivu Agreement</p>
+                <p className="text-xl sm:text-2xl font-black text-purple-700 leading-none mt-1 truncate">
+                  {vendors.find(v => v.slug === 'arivu-foods')?.commissionConfig?.rate ?? 30}% Comm
+                </p>
+                <p className="text-[10px] text-purple-600/80 font-medium mt-0.5 truncate">+18% GST retention</p>
               </div>
             </div>
 
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm hover:shadow-md transition duration-200 flex items-center gap-3.5">
-              <div className="p-3 bg-amber-50 text-amber-600 border border-amber-100 rounded-xl">
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-3.5 sm:p-4 shadow-sm hover:shadow-md transition duration-200 flex items-center gap-3 min-w-0">
+              <div className="p-2.5 sm:p-3 bg-amber-50 text-amber-600 border border-amber-100 rounded-xl shrink-0">
                 <IndianRupee className="h-5 w-5" />
               </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pending Settlement</p>
-                <p className="text-2xl font-black text-amber-600 leading-none mt-1">₹{overallStats.totalPendingSettlement.toLocaleString('en-IN')}</p>
-                <p className="text-[11px] text-slate-500 mt-0.5">Unsettled orders</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider truncate">Pending Settlement</p>
+                <p className="text-xl sm:text-2xl font-black text-amber-600 leading-none mt-1 truncate">
+                  ₹{Math.round(overallStats.totalPendingSettlement).toLocaleString('en-IN')}
+                </p>
+                <p className="text-[10.5px] sm:text-[11px] text-slate-500 mt-0.5 truncate">Unsettled orders</p>
               </div>
             </div>
           </div>
@@ -2201,31 +2207,31 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
               </div>
 
               {/* BREAKDOWN TILES */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                <div className="bg-white border border-slate-200/80 rounded-xl p-3.5 shadow-sm">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Delivered GMV</p>
-                  <p className="text-xl font-black text-slate-900 mt-1">₹{deliveredListedGmv.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</p>
-                  <p className="text-[10px] text-emerald-600 mt-0.5 font-semibold">{deliveredOrders.length} delivered orders</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3 w-full">
+                <div className="bg-white border border-slate-200/80 rounded-xl p-3.5 shadow-sm min-w-0">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider truncate">Delivered GMV</p>
+                  <p className="text-xl font-black text-slate-900 mt-1 truncate">₹{deliveredListedGmv.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</p>
+                  <p className="text-[10px] text-emerald-600 mt-0.5 font-semibold truncate">{deliveredOrders.length} delivered orders</p>
                 </div>
-                <div className="bg-purple-50/40 border border-purple-100 rounded-xl p-3.5 shadow-sm">
-                  <p className="text-[10px] font-bold text-purple-700 uppercase tracking-wider">Platform Comm (30%)</p>
-                  <p className="text-xl font-black text-purple-800 mt-1">₹{commEarned.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</p>
-                  <p className="text-[10px] text-purple-600 mt-0.5 font-medium">Mito Platform Profit</p>
+                <div className="bg-purple-50/40 border border-purple-100 rounded-xl p-3.5 shadow-sm min-w-0">
+                  <p className="text-[10px] font-bold text-purple-700 uppercase tracking-wider truncate">Platform Comm (30%)</p>
+                  <p className="text-xl font-black text-purple-800 mt-1 truncate">₹{commEarned.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</p>
+                  <p className="text-[10px] text-purple-600 mt-0.5 font-medium truncate">Mito Platform Profit</p>
                 </div>
-                <div className="bg-purple-50/40 border border-purple-100 rounded-xl p-3.5 shadow-sm">
-                  <p className="text-[10px] font-bold text-purple-700 uppercase tracking-wider">GST on Comm (18%)</p>
-                  <p className="text-xl font-black text-purple-800 mt-1">₹{gstRetained.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</p>
-                  <p className="text-[10px] text-slate-500 mt-0.5 font-medium">SAC 9983 Retention</p>
+                <div className="bg-purple-50/40 border border-purple-100 rounded-xl p-3.5 shadow-sm min-w-0">
+                  <p className="text-[10px] font-bold text-purple-700 uppercase tracking-wider truncate">GST on Comm (18%)</p>
+                  <p className="text-xl font-black text-purple-800 mt-1 truncate">₹{gstRetained.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</p>
+                  <p className="text-[10px] text-slate-500 mt-0.5 font-medium truncate">SAC 9983 Retention</p>
                 </div>
-                <div className="bg-emerald-50/40 border border-emerald-100 rounded-xl p-3.5 shadow-sm">
-                  <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Shipping Pass-Through</p>
-                  <p className="text-xl font-black text-emerald-800 mt-1">₹{shippingTransferred.toLocaleString('en-IN')}</p>
-                  <p className="text-[10px] text-emerald-600 mt-0.5 font-medium">100% to Vendor</p>
+                <div className="bg-emerald-50/40 border border-emerald-100 rounded-xl p-3.5 shadow-sm min-w-0">
+                  <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider truncate">Shipping Pass-Through</p>
+                  <p className="text-xl font-black text-emerald-800 mt-1 truncate">₹{shippingTransferred.toLocaleString('en-IN')}</p>
+                  <p className="text-[10px] text-emerald-600 mt-0.5 font-medium truncate">100% to Vendor</p>
                 </div>
-                <div className="bg-emerald-50/70 border border-emerald-200 rounded-xl p-3.5 shadow-sm">
-                  <p className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">Net Vendor Payable</p>
-                  <p className="text-xl font-black text-emerald-900 mt-1">₹{totalNetVendorEarned.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</p>
-                  <p className="text-[10px] text-amber-700 mt-0.5 font-bold">₹{currentOutstandingDue.toLocaleString('en-IN', { maximumFractionDigits: 0 })} Outstanding</p>
+                <div className="bg-emerald-50/70 border border-emerald-200 rounded-xl p-3.5 shadow-sm min-w-0">
+                  <p className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider truncate">Net Vendor Payable</p>
+                  <p className="text-xl font-black text-emerald-900 mt-1 truncate">₹{totalNetVendorEarned.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</p>
+                  <p className="text-[10px] text-amber-700 mt-0.5 font-bold truncate">₹{currentOutstandingDue.toLocaleString('en-IN', { maximumFractionDigits: 0 })} Outstanding</p>
                 </div>
               </div>
 
