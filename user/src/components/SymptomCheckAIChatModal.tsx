@@ -314,39 +314,74 @@ export const SymptomCheckAIChatModal: React.FC<SymptomCheckAIChatModalProps> = (
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/75 backdrop-blur-md animate-in fade-in duration-200">
       <div 
-        className="w-full max-w-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden max-h-[92vh] h-[680px]"
+        className="w-full max-w-xl bg-white dark:bg-slate-900 border-t sm:border border-slate-200/80 dark:border-slate-800 rounded-t-[28px] sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden h-[92vh] sm:h-[680px] max-h-[100dvh]"
         onClick={e => e.stopPropagation()}
       >
-        {/* HEADER */}
-        <div className="p-4 sm:p-5 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-700 text-white flex items-center justify-between shadow-sm shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center shrink-0 p-0.5 shadow-inner">
-              <RoboAvatar size={34} isSpeaking={!!speakingMsgId} />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-extrabold text-sm sm:text-base leading-tight">
-                  {t('symptomCheck.aiModalTitle', 'Symptom Screening AI Specialist')}
-                </h3>
-                <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase bg-emerald-400 text-emerald-950 px-2 py-0.5 rounded-full">
-                  <Sparkles className="h-2.5 w-2.5 fill-emerald-950" /> {t('symptomCheck.tagline', 'Early Warning')}
+        {/* MOBILE DRAG HANDLE */}
+        <div className="pt-2 pb-0.5 bg-gradient-to-r from-emerald-800 via-teal-800 to-cyan-900 dark:from-emerald-950 dark:via-teal-950 dark:to-slate-950 flex justify-center sm:hidden shrink-0">
+          <div className="w-10 h-1 bg-white/30 rounded-full" />
+        </div>
+
+        {/* MODERN HEADER */}
+        <div className="relative overflow-hidden bg-gradient-to-r from-emerald-800 via-teal-800 to-cyan-900 dark:from-emerald-950 dark:via-teal-950 dark:to-slate-950 text-white px-4 py-3 sm:px-5 sm:py-3.5 border-b border-white/10 shrink-0">
+          {/* Subtle Ambient Glows */}
+          <div className="absolute -right-6 -top-6 w-24 h-24 bg-emerald-400/20 rounded-full blur-xl pointer-events-none" />
+          <div className="absolute left-1/4 -bottom-4 w-32 h-12 bg-teal-400/15 rounded-full blur-lg pointer-events-none" />
+
+          <div className="relative z-10 flex items-center justify-between gap-3">
+            {/* Left: Avatar + Title & Badges */}
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="relative shrink-0">
+                <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center p-1 shadow-inner backdrop-blur-sm">
+                  <RoboAvatar size={34} isSpeaking={!!speakingMsgId} />
+                </div>
+                {/* Live beacon indicator */}
+                <span className="absolute -bottom-0.5 -right-0.5 flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400 border border-teal-900" />
                 </span>
               </div>
-              <p className="text-[11px] text-teal-100 font-medium mt-0.5">
-                {score > 0 
-                  ? t('symptomCheck.reportedCount', { count: score }) 
-                  : t('symptomCheck.aiSubtitle', '11 Early warning symptoms screening guide')}
-              </p>
+
+              <div className="min-w-0 flex-1">
+                {/* Title */}
+                <h3 className="font-black text-sm sm:text-base text-white tracking-tight truncate leading-tight">
+                  {t('symptomCheck.aiModalTitle', 'Symptom Screening AI Specialist')}
+                </h3>
+
+                {/* Badges row: Wrap gracefully, compact font */}
+                <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                  <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider bg-emerald-400/25 border border-emerald-400/35 text-emerald-200 px-2 py-0.5 rounded-full shrink-0">
+                    <Sparkles className="h-2.5 w-2.5 text-emerald-300" />
+                    {t('symptomCheck.tagline', 'Early Warning')}
+                  </span>
+
+                  {score > 0 ? (
+                    <span className="inline-flex items-center gap-1 text-[9px] font-bold bg-rose-500/25 border border-rose-400/35 text-rose-200 px-2 py-0.5 rounded-full shrink-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" />
+                      {t('symptomCheck.reportedCount', { count: score })}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[9px] font-bold bg-emerald-500/20 border border-emerald-400/30 text-emerald-200 px-2 py-0.5 rounded-full shrink-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      {t('symptomCheck.allClearNoSymptoms', 'All Clear (0 Symptoms)')}
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
+
+            {/* Right: Sleek Circular Close Button */}
+            <button
+              type="button"
+              onClick={onClose}
+              className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 border border-white/20 flex items-center justify-center text-white/90 hover:text-white transition-all cursor-pointer shrink-0 shadow-xs"
+              aria-label={t('common.close', 'Close')}
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="h-8 w-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors cursor-pointer"
-          >
-            <X className="h-4 w-4" />
-          </button>
         </div>
 
         {/* CHAT MESSAGES BODY */}
@@ -455,7 +490,7 @@ export const SymptomCheckAIChatModal: React.FC<SymptomCheckAIChatModalProps> = (
         </div>
 
         {/* INPUT BAR */}
-        <div className="p-3 sm:p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
+        <div className="p-3 sm:p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0 pb-[calc(env(safe-area-inset-bottom,8px)+12px)]">
           <form
             onSubmit={(e) => {
               e.preventDefault();
