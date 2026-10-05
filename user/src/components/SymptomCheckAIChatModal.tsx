@@ -319,44 +319,44 @@ export const SymptomCheckAIChatModal: React.FC<SymptomCheckAIChatModalProps> = (
         className="w-full max-w-xl bg-white dark:bg-slate-900 border-t sm:border border-slate-200/80 dark:border-slate-800 rounded-t-[28px] sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden h-[92vh] sm:h-[680px] max-h-[100dvh]"
         onClick={e => e.stopPropagation()}
       >
-        {/* UNIFIED MODERN HEADER */}
-        <div className="relative bg-slate-900 dark:bg-slate-950 text-white px-4 pt-3 pb-3.5 sm:px-5 sm:py-4 border-b border-slate-800 shrink-0">
+        {/* THEME-ADAPTIVE MODERN HEADER */}
+        <div className="relative bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 pt-3 pb-3 sm:px-5 sm:py-3.5 border-b border-slate-200/90 dark:border-slate-800 shrink-0 transition-colors">
           {/* Mobile top pull indicator (inside header, seamless) */}
-          <div className="w-10 h-1 bg-white/25 rounded-full mx-auto mb-2.5 sm:hidden" />
+          <div className="w-10 h-1 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto mb-2.5 sm:hidden" />
 
           <div className="flex items-center justify-between gap-3">
             {/* Left: Avatar + Title & Status */}
             <div className="flex items-center gap-3 min-w-0 flex-1">
               <div className="relative shrink-0">
-                <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-2xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center p-1">
+                <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/90 dark:border-emerald-800/60 flex items-center justify-center p-1 shadow-2xs">
                   <RoboAvatar size={34} isSpeaking={!!speakingMsgId} />
                 </div>
                 {/* Active live indicator */}
                 <span className="absolute -bottom-0.5 -right-0.5 flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 border border-slate-900" />
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 border-2 border-white dark:border-slate-900" />
                 </span>
               </div>
 
               <div className="min-w-0 flex-1">
-                <h3 className="font-extrabold text-sm sm:text-base text-white tracking-tight truncate leading-tight">
+                <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white tracking-tight truncate leading-tight">
                   {t('symptomCheck.aiModalTitle', 'Symptom Screening AI Specialist')}
                 </h3>
 
-                <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-300">
+                <div className="flex items-center gap-2 mt-1 text-[11px]">
                   {score > 0 ? (
-                    <span className="inline-flex items-center gap-1.5 font-bold text-rose-300">
-                      <span className="w-1.5 h-1.5 rounded-full bg-rose-400 shrink-0 animate-pulse" />
+                    <span className="inline-flex items-center gap-1.5 font-bold px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200/90 dark:border-rose-800/60">
+                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0 animate-pulse" />
                       <span>{t('symptomCheck.reportedCount', { count: score })}</span>
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 font-bold text-emerald-400">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                    <span className="inline-flex items-center gap-1.5 font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200/90 dark:border-emerald-800/60">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
                       <span>{t('symptomCheck.allClearNoSymptoms', 'All Clear · 0 Symptoms')}</span>
                     </span>
                   )}
-                  <span className="text-slate-600 text-[10px]">•</span>
-                  <span className="text-slate-400 text-[10.5px] font-medium truncate">
+                  <span className="text-slate-300 dark:text-slate-600 text-[10px]">•</span>
+                  <span className="text-slate-500 dark:text-slate-400 font-medium text-[10.5px] truncate">
                     {t('symptomCheck.tagline', 'Early Warning')}
                   </span>
                 </div>
@@ -367,7 +367,7 @@ export const SymptomCheckAIChatModal: React.FC<SymptomCheckAIChatModalProps> = (
             <button
               type="button"
               onClick={onClose}
-              className="h-8 w-8 rounded-full bg-slate-800 hover:bg-slate-700 active:scale-95 border border-slate-700/80 flex items-center justify-center text-slate-300 hover:text-white transition-all cursor-pointer shrink-0 shadow-xs"
+              className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 active:scale-95 border border-slate-200/80 dark:border-slate-700 flex items-center justify-center text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-all cursor-pointer shrink-0 shadow-2xs"
               aria-label={t('common.close', 'Close')}
             >
               <X className="h-4 w-4" />
