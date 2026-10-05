@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, Stethoscope, Calendar, ExternalLink, Volume2, VolumeX, ShieldAlert } from 'lucide-react';
+import { X, Send, Stethoscope, Calendar, ExternalLink, Volume2, VolumeX, ShieldAlert, RotateCcw, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { Browser } from '@capacitor/browser';
 import { RoboAvatar } from './RoboAvatar';
 import { useAuth } from '../context/AuthContext';
@@ -91,14 +91,7 @@ export const SymptomCheckAIChatModal: React.FC<SymptomCheckAIChatModalProps> = (
     }
   };
 
-  // Build initial greeting
-  useEffect(() => {
-    if (!isOpen) {
-      stopSpeaking();
-      setSpeakingMsgId(null);
-      return;
-    }
-
+  const initGreeting = () => {
     const { resolvedAnswers, yesQuestions, effectiveScore, hasStored } = getFreshestData();
 
     let initialText = '';
@@ -131,13 +124,29 @@ export const SymptomCheckAIChatModal: React.FC<SymptomCheckAIChatModalProps> = (
 
     setMessages([
       {
-        id: 'msg-init-1',
+        id: `msg-init-${Date.now()}`,
         role: 'ai',
         text: initialText,
         options: initialOptions,
         showActions: effectiveScore > 0
       }
     ]);
+  };
+
+  const handleRestartChat = () => {
+    stopSpeaking();
+    setSpeakingMsgId(null);
+    initGreeting();
+  };
+
+  // Build initial greeting
+  useEffect(() => {
+    if (!isOpen) {
+      stopSpeaking();
+      setSpeakingMsgId(null);
+      return;
+    }
+    initGreeting();
   }, [isOpen, language, answers, latestScore]);
 
   useEffect(() => {
@@ -316,64 +325,88 @@ export const SymptomCheckAIChatModal: React.FC<SymptomCheckAIChatModalProps> = (
   return (
     <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/75 backdrop-blur-md animate-in fade-in duration-200">
       <div 
-        className="w-full max-w-xl bg-white dark:bg-slate-900 border-t sm:border border-slate-200/80 dark:border-slate-800 rounded-t-[28px] sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden h-[92vh] sm:h-[680px] max-h-[100dvh]"
+        className="w-full max-w-xl bg-white dark:bg-slate-900 border-t sm:border border-slate-200/80 dark:border-slate-800 rounded-t-[32px] sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden h-[92vh] sm:h-[680px] max-h-[100dvh]"
         onClick={e => e.stopPropagation()}
       >
-        {/* THEME-ADAPTIVE MODERN HEADER */}
-        <div className="relative bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 pt-3 pb-3 sm:px-5 sm:py-3.5 border-b border-slate-200/90 dark:border-slate-800 shrink-0 transition-colors">
-          {/* Mobile top pull indicator (inside header, seamless) */}
-          <div className="w-10 h-1 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto mb-2.5 sm:hidden" />
+        {/* Mobile top pull indicator (inside header, seamless) */}
+        <div className="pt-2.5 pb-1 flex justify-center sm:hidden shrink-0 bg-white dark:bg-slate-900">
+          <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700/80 rounded-full" />
+        </div>
 
-          <div className="flex items-center justify-between gap-3">
-            {/* Left: Avatar + Title & Status */}
-            <div className="flex items-center gap-3 min-w-0 flex-1">
-              <div className="relative shrink-0">
-                <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/90 dark:border-emerald-800/60 flex items-center justify-center p-1 shadow-2xs">
-                  <RoboAvatar size={34} isSpeaking={!!speakingMsgId} />
-                </div>
-                {/* Active live indicator */}
-                <span className="absolute -bottom-0.5 -right-0.5 flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 border-2 border-white dark:border-slate-900" />
-                </span>
+        {/* PRIMARY MODERN HEADER */}
+        <div className="bg-white dark:bg-slate-900 px-4 py-3 sm:px-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0 shadow-2xs">
+          <div className="flex items-center gap-3 min-w-0">
+            {/* Robot Avatar with Premium Glow Frame */}
+            <div className="relative shrink-0">
+              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-emerald-500/15 via-teal-500/10 to-indigo-500/10 border border-emerald-500/25 dark:border-emerald-400/25 flex items-center justify-center p-1 shadow-xs">
+                <RoboAvatar size={34} isSpeaking={!!speakingMsgId} />
               </div>
-
-              <div className="min-w-0 flex-1">
-                <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white tracking-tight truncate leading-tight">
-                  {t('symptomCheck.aiModalTitle', 'Symptom Screening AI Specialist')}
-                </h3>
-
-                <div className="flex items-center gap-2 mt-1 text-[11px]">
-                  {score > 0 ? (
-                    <span className="inline-flex items-center gap-1.5 font-bold px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200/90 dark:border-rose-800/60">
-                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0 animate-pulse" />
-                      <span>{t('symptomCheck.reportedCount', { count: score })}</span>
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5 font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200/90 dark:border-emerald-800/60">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                      <span>{t('symptomCheck.allClearNoSymptoms', 'All Clear · 0 Symptoms')}</span>
-                    </span>
-                  )}
-                  <span className="text-slate-300 dark:text-slate-600 text-[10px]">•</span>
-                  <span className="text-slate-500 dark:text-slate-400 font-medium text-[10.5px] truncate">
-                    {t('symptomCheck.tagline', 'Early Warning')}
-                  </span>
-                </div>
-              </div>
+              <span className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 border-2 border-white dark:border-slate-900" />
+              </span>
             </div>
 
-            {/* Right: Sleek Minimal Close Button */}
+            {/* Name + Specialty & Status */}
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="font-extrabold text-base text-slate-900 dark:text-white leading-tight">
+                  {t('symptomCheck.aiAssistantName', 'Mito')}
+                </h3>
+                <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/90 dark:border-emerald-800/60 uppercase tracking-wider">
+                  {t('symptomCheck.aiBadge', 'Clinical AI')}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold flex items-center gap-1.5 mt-0.5 truncate">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                <span className="truncate">{t('symptomCheck.aiModalTitle', 'Symptom Screening AI Specialist')}</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Action Buttons: Restart & Close */}
+          <div className="flex items-center gap-2 shrink-0 ml-2">
             <button
-              type="button"
+              onClick={handleRestartChat}
+              className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all cursor-pointer shadow-2xs"
+              title={t('common.reset', 'Restart Chat')}
+              aria-label={t('common.reset', 'Restart Chat')}
+            >
+              <RotateCcw className="h-4 w-4" />
+            </button>
+
+            <button
               onClick={onClose}
-              className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 active:scale-95 border border-slate-200/80 dark:border-slate-700 flex items-center justify-center text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-all cursor-pointer shrink-0 shadow-2xs"
+              className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all cursor-pointer shadow-2xs"
               aria-label={t('common.close', 'Close')}
             >
-              <X className="h-4 w-4" />
+              <X className="h-5 w-5" />
             </button>
           </div>
         </div>
+
+        {/* CLINICAL STATUS STRIP (Full-width clean context banner) */}
+        {score > 0 ? (
+          <div className="bg-rose-50/90 dark:bg-rose-950/40 border-b border-rose-200/70 dark:border-rose-900/40 px-4 py-2 sm:px-6 flex items-center justify-between gap-2 text-xs font-bold text-rose-900 dark:text-rose-200 shrink-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <AlertTriangle className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400 shrink-0" />
+              <span className="truncate">{t('symptomCheck.reportedCount', { count: score })}</span>
+            </div>
+            <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 uppercase tracking-wider shrink-0">
+              {score} {t('symptomCheck.flagged', 'Flagged')}
+            </span>
+          </div>
+        ) : (
+          <div className="bg-emerald-50/80 dark:bg-emerald-950/30 border-b border-emerald-100 dark:border-emerald-900/40 px-4 py-2 sm:px-6 flex items-center justify-between gap-2 text-xs font-bold text-emerald-900 dark:text-emerald-200 shrink-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span className="truncate">{t('symptomCheck.allClearNoSymptoms', 'All Clear · 0 Symptoms Reported')}</span>
+            </div>
+            <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 uppercase tracking-wider shrink-0">
+              {t('symptomCheck.verified', 'Verified')}
+            </span>
+          </div>
+        )}
 
         {/* CHAT MESSAGES BODY */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
