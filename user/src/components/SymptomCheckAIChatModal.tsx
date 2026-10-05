@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, Sparkles, Stethoscope, Calendar, ExternalLink, Volume2, VolumeX, ShieldAlert } from 'lucide-react';
+import { X, Send, Stethoscope, Calendar, ExternalLink, Volume2, VolumeX, ShieldAlert } from 'lucide-react';
 import { Browser } from '@capacitor/browser';
 import { RoboAvatar } from './RoboAvatar';
 import { useAuth } from '../context/AuthContext';
@@ -319,64 +319,55 @@ export const SymptomCheckAIChatModal: React.FC<SymptomCheckAIChatModalProps> = (
         className="w-full max-w-xl bg-white dark:bg-slate-900 border-t sm:border border-slate-200/80 dark:border-slate-800 rounded-t-[28px] sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden h-[92vh] sm:h-[680px] max-h-[100dvh]"
         onClick={e => e.stopPropagation()}
       >
-        {/* MOBILE DRAG HANDLE */}
-        <div className="pt-2 pb-0.5 bg-gradient-to-r from-emerald-800 via-teal-800 to-cyan-900 dark:from-emerald-950 dark:via-teal-950 dark:to-slate-950 flex justify-center sm:hidden shrink-0">
-          <div className="w-10 h-1 bg-white/30 rounded-full" />
-        </div>
+        {/* UNIFIED MODERN HEADER */}
+        <div className="relative bg-slate-900 dark:bg-slate-950 text-white px-4 pt-3 pb-3.5 sm:px-5 sm:py-4 border-b border-slate-800 shrink-0">
+          {/* Mobile top pull indicator (inside header, seamless) */}
+          <div className="w-10 h-1 bg-white/25 rounded-full mx-auto mb-2.5 sm:hidden" />
 
-        {/* MODERN HEADER */}
-        <div className="relative overflow-hidden bg-gradient-to-r from-emerald-800 via-teal-800 to-cyan-900 dark:from-emerald-950 dark:via-teal-950 dark:to-slate-950 text-white px-4 py-3 sm:px-5 sm:py-3.5 border-b border-white/10 shrink-0">
-          {/* Subtle Ambient Glows */}
-          <div className="absolute -right-6 -top-6 w-24 h-24 bg-emerald-400/20 rounded-full blur-xl pointer-events-none" />
-          <div className="absolute left-1/4 -bottom-4 w-32 h-12 bg-teal-400/15 rounded-full blur-lg pointer-events-none" />
-
-          <div className="relative z-10 flex items-center justify-between gap-3">
-            {/* Left: Avatar + Title & Badges */}
+          <div className="flex items-center justify-between gap-3">
+            {/* Left: Avatar + Title & Status */}
             <div className="flex items-center gap-3 min-w-0 flex-1">
               <div className="relative shrink-0">
-                <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center p-1 shadow-inner backdrop-blur-sm">
+                <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-2xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center p-1">
                   <RoboAvatar size={34} isSpeaking={!!speakingMsgId} />
                 </div>
-                {/* Live beacon indicator */}
+                {/* Active live indicator */}
                 <span className="absolute -bottom-0.5 -right-0.5 flex h-2.5 w-2.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400 border border-teal-900" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 border border-slate-900" />
                 </span>
               </div>
 
               <div className="min-w-0 flex-1">
-                {/* Title */}
-                <h3 className="font-black text-sm sm:text-base text-white tracking-tight truncate leading-tight">
+                <h3 className="font-extrabold text-sm sm:text-base text-white tracking-tight truncate leading-tight">
                   {t('symptomCheck.aiModalTitle', 'Symptom Screening AI Specialist')}
                 </h3>
 
-                {/* Badges row: Wrap gracefully, compact font */}
-                <div className="flex items-center gap-1.5 flex-wrap mt-1">
-                  <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider bg-emerald-400/25 border border-emerald-400/35 text-emerald-200 px-2 py-0.5 rounded-full shrink-0">
-                    <Sparkles className="h-2.5 w-2.5 text-emerald-300" />
-                    {t('symptomCheck.tagline', 'Early Warning')}
-                  </span>
-
+                <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-300">
                   {score > 0 ? (
-                    <span className="inline-flex items-center gap-1 text-[9px] font-bold bg-rose-500/25 border border-rose-400/35 text-rose-200 px-2 py-0.5 rounded-full shrink-0">
-                      <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" />
-                      {t('symptomCheck.reportedCount', { count: score })}
+                    <span className="inline-flex items-center gap-1.5 font-bold text-rose-300">
+                      <span className="w-1.5 h-1.5 rounded-full bg-rose-400 shrink-0 animate-pulse" />
+                      <span>{t('symptomCheck.reportedCount', { count: score })}</span>
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 text-[9px] font-bold bg-emerald-500/20 border border-emerald-400/30 text-emerald-200 px-2 py-0.5 rounded-full shrink-0">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                      {t('symptomCheck.allClearNoSymptoms', 'All Clear (0 Symptoms)')}
+                    <span className="inline-flex items-center gap-1.5 font-bold text-emerald-400">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                      <span>{t('symptomCheck.allClearNoSymptoms', 'All Clear · 0 Symptoms')}</span>
                     </span>
                   )}
+                  <span className="text-slate-600 text-[10px]">•</span>
+                  <span className="text-slate-400 text-[10.5px] font-medium truncate">
+                    {t('symptomCheck.tagline', 'Early Warning')}
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Right: Sleek Circular Close Button */}
+            {/* Right: Sleek Minimal Close Button */}
             <button
               type="button"
               onClick={onClose}
-              className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 border border-white/20 flex items-center justify-center text-white/90 hover:text-white transition-all cursor-pointer shrink-0 shadow-xs"
+              className="h-8 w-8 rounded-full bg-slate-800 hover:bg-slate-700 active:scale-95 border border-slate-700/80 flex items-center justify-center text-slate-300 hover:text-white transition-all cursor-pointer shrink-0 shadow-xs"
               aria-label={t('common.close', 'Close')}
             >
               <X className="h-4 w-4" />
