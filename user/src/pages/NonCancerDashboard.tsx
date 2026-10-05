@@ -57,6 +57,7 @@ import { SleepLogScreen } from '../screens/HabitScreens/SleepLogScreen';
 import { MovementLogScreen } from '../screens/HabitScreens/MovementLogScreen';
 import { AlcoholLogScreen } from '../screens/HabitScreens/AlcoholLogScreen';
 import { ShopScreen } from '../screens/Shop/ShopScreen';
+import { SymptomCheckinScreen, getNextCheckinDueDate } from '../screens/HabitScreens/SymptomCheckinScreen';
 import { CancerScreeningScreen } from '../screens/HabitScreens/CancerScreeningScreen';
 import { IndianCancersScreen } from '../screens/HabitScreens/IndianCancersScreen';
 import { ObesityLogScreen } from '../screens/HabitScreens/ObesityLogScreen';
@@ -1160,6 +1161,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     if (activeScreen === 'Antioxidants') return <AntioxidantLogScreen onBack={handleCloseActiveScreen} onViewShop={() => setActiveScreen('AntioxidantsShop')} onNavigateToDiagnostics={() => setActiveScreen('CancerScreening')} />;
     if (activeScreen === 'AntioxidantsShop') return <ShopScreen type="All" onBack={() => setActiveScreen('Antioxidants')} />;
     if (activeScreen === 'SaferProducts') return <ShopScreen type="All" onBack={handleCloseActiveScreen} />;
+    if (activeScreen === 'SymptomCheckin') return <SymptomCheckinScreen onBack={handleCloseActiveScreen} onBookAppointment={() => handleBookAppt('symptom_checkin')} />;
     if (activeScreen === 'CancerScreening') return <CancerScreeningScreen onBack={handleCloseActiveScreen} />;
     if (activeScreen === 'IndianCancers') return <IndianCancersScreen onBack={handleCloseActiveScreen} />;
     if (activeScreen === 'Obesity') return <ObesityLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} />;
@@ -1285,6 +1287,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     if (lowerKey === 'stress') return setActiveScreen('Stress');
     if (lowerKey === 'sleep') return setActiveScreen('Sleep');
     if (lowerKey === 'movement' || lowerKey === 'exercise') return setActiveScreen('Movement');
+    if (lowerKey === 'symptom_checkin' || lowerKey === 'symptomcheckin' || lowerKey === 'symptoms') return setActiveScreen('SymptomCheckin');
     if (lowerKey === 'cancer_screening' || lowerKey === 'cancerscreening') return setActiveScreen('CancerScreening');
     if (key === 'Book Appointment' || lowerKey === 'book appointment') return onNavigateToTab('Book Appointment');
     if (key === 'Reports' || lowerKey === 'reports') return onNavigateToTab('Reports');
@@ -1825,6 +1828,42 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
             <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">{t('dashboard.catchItEarly', 'Catch it early')}</span>
             <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800"></div>
           </div>
+
+          {/* 3-Weekly Symptom Check Card (Above Cancer Screening) */}
+          <button
+            onClick={() => handleOpenHabit('SymptomCheckin')}
+            className="w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-teal-100 dark:border-teal-950/20 shadow-[0_8px_30px_rgba(20,184,166,0.04)] rounded-2xl p-4 flex items-center gap-4 text-left transition-all active:scale-95 hover:shadow-md cursor-pointer mb-4"
+          >
+            <div className="h-10 w-10 rounded-xl bg-teal-50 dark:bg-teal-500/10 flex items-center justify-center shrink-0">
+              <Stethoscope className="h-5 w-5 text-teal-600 dark:text-teal-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <h4 className="text-teal-700 dark:text-teal-300 font-sans font-bold text-lg leading-tight truncate">
+                  {t('dashboard.symptomCheckTitle', '3-Weekly Symptom Check-in')}
+                </h4>
+                {(() => {
+                  const checkStatus = getNextCheckinDueDate();
+                  if (checkStatus.isDue) {
+                    return (
+                      <span className="text-[9px] font-extrabold uppercase tracking-wider bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded shrink-0">
+                        {t('dashboard.dueNow', 'Due Now')}
+                      </span>
+                    );
+                  }
+                  return (
+                    <span className="text-[9px] font-extrabold uppercase tracking-wider bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded shrink-0">
+                      {t('dashboard.activeCheck', 'Active')}
+                    </span>
+                  );
+                })()}
+              </div>
+              <p className="text-[9px] text-slate-500 dark:text-slate-400 leading-snug mt-1">
+                {t('dashboard.symptomCheckDesc', 'Early warning check across 11 key symptoms · If Yes to any, consult specialist')}
+              </p>
+            </div>
+            <ArrowRight className="h-4 w-4 text-slate-300 shrink-0" />
+          </button>
 
           {/* Cancer Screening Card */}
           <button
