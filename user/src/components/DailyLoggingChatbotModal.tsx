@@ -26,6 +26,7 @@ import {
   localizeReminderMsg
 } from '../utils/dailyLoggingLocalization';
 import { RoboAvatar } from './RoboAvatar';
+import { useTtsSpeed } from '../utils/ttsHelper';
 
 interface WorkflowStep {
   stepId: string;
@@ -91,6 +92,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
   const [todayReports, setTodayReports] = useState<any[]>([]);
   const [isVoiceMuted, setIsVoiceMuted] = useState<boolean>(() => localStorage.getItem('mito_ai_voice_muted') === 'true');
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
+  const { speed: ttsSpeed, cycleSpeed: cycleTtsSpeed } = useTtsSpeed();
   const [showQuickShortcuts, setShowQuickShortcuts] = useState<boolean>(false);
 
   // Edit state
@@ -588,7 +590,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
         await TextToSpeech.speak({
           text: clean,
           lang: ttsLocale,
-          rate: 1.0,
+          rate: ttsSpeed,
           pitch: 1.0,
           volume: 1.0,
           category: 'ambient'
@@ -616,7 +618,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       }
 
       const utterance = new SpeechSynthesisUtterance(clean);
-      utterance.rate = 0.95;
+      utterance.rate = ttsSpeed;
       utterance.pitch = 1.0;
       utterance.lang = ttsLocale;
 
@@ -2210,6 +2212,15 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
                       <span className="text-[8.5px] sm:text-[9px] font-bold uppercase tracking-wider opacity-90 hidden min-[360px]:inline">{t('chatbot.unmuted', 'Voice')}</span>
                     </>
                   )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={cycleTtsSpeed}
+                  className="h-8 px-2 rounded-full border border-white/20 bg-white/10 hover:bg-white/20 text-white text-[9px] font-black transition-all cursor-pointer flex items-center justify-center active:scale-95 shrink-0"
+                  title={t('common.playbackSpeed', 'Hearing Speed (Tap to cycle)')}
+                >
+                  {ttsSpeed}x
                 </button>
 
                 <button onClick={handleModalClose} className="h-8 w-8 rounded-full bg-white/15 hover:bg-white/25 border border-white/20 flex items-center justify-center transition-all cursor-pointer shrink-0" aria-label={t('common.close')}>

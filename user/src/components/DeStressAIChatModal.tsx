@@ -12,7 +12,7 @@ import {
   getShortcutExerciseDataLocalized,
   detectIssueKeyMultilingual
 } from '../data/miaData';
-import { speakText, stopSpeaking } from '../utils/ttsHelper';
+import { speakText, stopSpeaking, useTtsSpeed } from '../utils/ttsHelper';
 
 interface DeStressAIChatModalProps {
   isOpen: boolean;
@@ -104,19 +104,30 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  const handleSpeak = (msgId: string, textToSpeak: string) => {
-    if (speakingMsgId === msgId) {
+  const { speed: ttsSpeed, cycleSpeed: cycleTtsSpeed } = useTtsSpeed();
+
+  const handleSpeak = (msgId: string, textToSpeak: string, customRate?: number) => {
+    if (speakingMsgId === msgId && !customRate) {
       stopSpeaking();
       setSpeakingMsgId(null);
       return;
     }
+    stopSpeaking();
     setSpeakingMsgId(msgId);
     speakText({
       text: textToSpeak,
       language: curLang,
+      rate: customRate ?? ttsSpeed,
       onEnd: () => setSpeakingMsgId(null),
       onError: () => setSpeakingMsgId(null)
     });
+  };
+
+  const handleCycleSpeed = (msgId?: string, msgText?: string) => {
+    const nextSpeed = cycleTtsSpeed();
+    if (speakingMsgId && msgId && msgText && speakingMsgId === msgId) {
+      handleSpeak(msgId, msgText, nextSpeed);
+    }
   };
 
   const showReturningUserFlow = (savedData: any) => {
@@ -599,17 +610,30 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
                   />
                 )}
                 {msg.role === 'ai' && (msg.text || msg.lifestyleData?.intro) && (
-                  <button
-                    onClick={() => handleSpeak(msg.id, msg.text || msg.lifestyleData?.intro || '')}
-                    className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer shrink-0 mt-0.5"
-                    title={speakingMsgId === msg.id ? t('common.stopAudio', 'Stop Audio') : t('common.listenAudio', 'Listen')}
-                  >
-                    {speakingMsgId === msg.id ? (
-                      <VolumeX className="h-3.5 w-3.5 text-rose-500 animate-pulse" />
-                    ) : (
-                      <Volume2 className="h-3.5 w-3.5" />
-                    )}
-                  </button>
+                  <div className="flex items-center gap-1 shrink-0 mt-0.5">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCycleSpeed(msg.id, msg.text || msg.lifestyleData?.intro || '');
+                      }}
+                      className="px-1.5 py-0.5 rounded-md bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-[10px] font-extrabold text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/60 transition-all cursor-pointer active:scale-95 shadow-2xs"
+                      title={t('common.playbackSpeed', 'Hearing Speed (Tap to cycle)')}
+                    >
+                      {ttsSpeed}x
+                    </button>
+                    <button
+                      onClick={() => handleSpeak(msg.id, msg.text || msg.lifestyleData?.intro || '')}
+                      className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer"
+                      title={speakingMsgId === msg.id ? t('common.stopAudio', 'Stop Audio') : t('common.listenAudio', 'Listen')}
+                    >
+                      {speakingMsgId === msg.id ? (
+                        <VolumeX className="h-3.5 w-3.5 text-rose-500 animate-pulse" />
+                      ) : (
+                        <Volume2 className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                  </div>
                 )}
               </div>
 

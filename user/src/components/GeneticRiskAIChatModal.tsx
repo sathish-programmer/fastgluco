@@ -9,7 +9,7 @@ import {
   getGuidedQuickRepliesFallback,
   getGuidedOncogeneticReplyFallback
 } from '../data/giaData';
-import { speakText, stopSpeaking } from '../utils/ttsHelper';
+import { speakText, stopSpeaking, useTtsSpeed } from '../utils/ttsHelper';
 
 interface GeneticRiskAIChatModalProps {
   isOpen: boolean;
@@ -55,19 +55,30 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
 
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
-  const handleSpeak = (msgId: string, textToSpeak: string) => {
-    if (speakingMsgId === msgId) {
+  const { speed: ttsSpeed, cycleSpeed: cycleTtsSpeed } = useTtsSpeed();
+
+  const handleSpeak = (msgId: string, textToSpeak: string, customRate?: number) => {
+    if (speakingMsgId === msgId && !customRate) {
       stopSpeaking();
       setSpeakingMsgId(null);
       return;
     }
+    stopSpeaking();
     setSpeakingMsgId(msgId);
     speakText({
       text: textToSpeak,
       language: curLang,
+      rate: customRate ?? ttsSpeed,
       onEnd: () => setSpeakingMsgId(null),
       onError: () => setSpeakingMsgId(null)
     });
+  };
+
+  const handleCycleSpeed = (msgId?: string, msgText?: string) => {
+    const nextSpeed = cycleTtsSpeed();
+    if (speakingMsgId && msgId && msgText && speakingMsgId === msgId) {
+      handleSpeak(msgId, msgText, nextSpeed);
+    }
   };
 
   const triggerShortcutGuide = (guideType: 'brca' | 'lynch' | 'family_tree') => {
@@ -349,17 +360,30 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
                   />
                 )}
                 {msg.role === 'ai' && msg.text && (
-                  <button
-                    onClick={() => handleSpeak(msg.id, msg.text)}
-                    className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-purple-600 transition-colors cursor-pointer shrink-0 mt-0.5"
-                    title={speakingMsgId === msg.id ? t('common.stopAudio', 'Stop Audio') : t('common.listenAudio', 'Listen')}
-                  >
-                    {speakingMsgId === msg.id ? (
-                      <VolumeX className="h-3.5 w-3.5 text-rose-500 animate-pulse" />
-                    ) : (
-                      <Volume2 className="h-3.5 w-3.5" />
-                    )}
-                  </button>
+                  <div className="flex items-center gap-1 shrink-0 mt-0.5">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCycleSpeed(msg.id, msg.text);
+                      }}
+                      className="px-1.5 py-0.5 rounded-md bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/60 dark:hover:bg-purple-900/60 text-[10px] font-extrabold text-purple-700 dark:text-purple-300 border border-purple-200/60 dark:border-purple-800/60 transition-all cursor-pointer active:scale-95 shadow-2xs"
+                      title={t('common.playbackSpeed', 'Hearing Speed (Tap to cycle)')}
+                    >
+                      {ttsSpeed}x
+                    </button>
+                    <button
+                      onClick={() => handleSpeak(msg.id, msg.text)}
+                      className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-purple-600 transition-colors cursor-pointer"
+                      title={speakingMsgId === msg.id ? t('common.stopAudio', 'Stop Audio') : t('common.listenAudio', 'Listen')}
+                    >
+                      {speakingMsgId === msg.id ? (
+                        <VolumeX className="h-3.5 w-3.5 text-rose-500 animate-pulse" />
+                      ) : (
+                        <Volume2 className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                  </div>
                 )}
               </div>
 

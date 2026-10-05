@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { SYMPTOM_QUESTIONS, SPECIALIST_MAP, getStoredSymptomCheckins, reconstructAnswers } from '../screens/HabitScreens/SymptomCheckinScreen';
 import { HCG_HOSPITALS_URL } from '../screens/HabitScreens/CancerScreeningScreen';
-import { speakText, stopSpeaking } from '../utils/ttsHelper';
+import { speakText, stopSpeaking, useTtsSpeed } from '../utils/ttsHelper';
 
 interface SymptomCheckAIChatModalProps {
   isOpen: boolean;
@@ -66,9 +66,10 @@ export const SymptomCheckAIChatModal: React.FC<SymptomCheckAIChatModalProps> = (
   };
 
   const { effectiveScore: score } = getFreshestData();
+  const { speed: ttsSpeed, cycleSpeed: cycleTtsSpeed } = useTtsSpeed();
 
-  const handleSpeak = (msgId: string, textToSpeak: string) => {
-    if (speakingMsgId === msgId) {
+  const handleSpeak = (msgId: string, textToSpeak: string, customRate?: number) => {
+    if (speakingMsgId === msgId && !customRate) {
       stopSpeaking();
       setSpeakingMsgId(null);
       return;
@@ -78,9 +79,17 @@ export const SymptomCheckAIChatModal: React.FC<SymptomCheckAIChatModalProps> = (
     speakText({
       text: textToSpeak.replace(/\*\*/g, '').replace(/•/g, '').trim(),
       language,
+      rate: customRate ?? ttsSpeed,
       onEnd: () => setSpeakingMsgId(null),
       onError: () => setSpeakingMsgId(null)
     });
+  };
+
+  const handleCycleSpeed = (msgId?: string, msgText?: string) => {
+    const nextSpeed = cycleTtsSpeed();
+    if (speakingMsgId && msgId && msgText && speakingMsgId === msgId) {
+      handleSpeak(msgId, msgText, nextSpeed);
+    }
   };
 
   const handleConsultSpecialist = async () => {
@@ -357,9 +366,8 @@ export const SymptomCheckAIChatModal: React.FC<SymptomCheckAIChatModalProps> = (
                   {t('symptomCheck.aiBadge', 'Clinical AI')}
                 </span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold flex items-center gap-1.5 mt-0.5 truncate">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-                <span className="truncate">{t('symptomCheck.aiModalTitle', 'Symptom Screening AI Specialist')}</span>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5 truncate">
+                {t('symptomCheck.aiModalTitle', 'Symptom Screening AI Specialist')}
               </p>
             </div>
           </div>
@@ -433,23 +441,38 @@ export const SymptomCheckAIChatModal: React.FC<SymptomCheckAIChatModalProps> = (
                 {msg.role === 'ai' && (
                   <div className="mt-2 pt-2 border-t border-slate-200/50 dark:border-slate-700/50 flex items-center justify-between text-[11px]">
                     <span className="text-slate-400 text-[10px] font-medium">Mito Clinical Assistant</span>
-                    <button
-                      type="button"
-                      onClick={() => handleSpeak(msg.id, msg.text)}
-                      className="inline-flex items-center gap-1 text-teal-600 dark:text-teal-400 hover:text-teal-700 font-semibold cursor-pointer"
-                    >
-                      {speakingMsgId === msg.id ? (
-                        <>
-                          <VolumeX className="w-3.5 h-3.5" />
-                          <span>Stop</span>
-                        </>
-                      ) : (
-                        <>
-                          <Volume2 className="w-3.5 h-3.5" />
-                          <span>Listen</span>
-                        </>
-                      )}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      {/* Hearing speed selector */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCycleSpeed(msg.id, msg.text);
+                        }}
+                        className="px-1.5 py-0.5 rounded-md bg-slate-200/80 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-650 text-[10px] font-extrabold text-slate-700 dark:text-slate-200 border border-slate-300/60 dark:border-slate-600 transition-all cursor-pointer active:scale-95 shadow-2xs"
+                        title={t('common.playbackSpeed', 'Hearing Speed (Tap to cycle)')}
+                      >
+                        {ttsSpeed}x
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleSpeak(msg.id, msg.text)}
+                        className="inline-flex items-center gap-1 text-teal-600 dark:text-teal-400 hover:text-teal-700 font-semibold cursor-pointer active:scale-95 transition-all"
+                      >
+                        {speakingMsgId === msg.id ? (
+                          <>
+                            <VolumeX className="w-3.5 h-3.5 text-rose-500 animate-pulse" />
+                            <span className="text-rose-600 dark:text-rose-400 font-bold">{t('common.stop', 'Stop')}</span>
+                          </>
+                        ) : (
+                          <>
+                            <Volume2 className="w-3.5 h-3.5" />
+                            <span>{t('common.listen', 'Listen')}</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

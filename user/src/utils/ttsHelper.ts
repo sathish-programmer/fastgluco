@@ -1,3 +1,5 @@
+import { useState, useEffect } from 'react';
+
 /**
  * Centralized Text-to-Speech (TTS) helper for 5-Language Support
  * Languages supported:
@@ -36,6 +38,66 @@ export const cleanTextForSpeech = (rawText: string): string => {
     .trim();
 };
 
+export const TTS_SPEED_PRESETS = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
+export type TtsSpeed = typeof TTS_SPEED_PRESETS[number];
+
+export const TTS_SPEED_STORAGE_KEY = 'app_tts_speech_rate';
+
+export const getStoredTtsSpeed = (): number => {
+  if (typeof window === 'undefined') return 1.0;
+  try {
+    const val = parseFloat(localStorage.getItem(TTS_SPEED_STORAGE_KEY) || '1.0');
+    return !isNaN(val) && val >= 0.5 && val <= 2 ? val : 1.0;
+  } catch {
+    return 1.0;
+  }
+};
+
+export const setStoredTtsSpeed = (speed: number): void => {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(TTS_SPEED_STORAGE_KEY, speed.toString());
+    window.dispatchEvent(new CustomEvent('app_tts_speed_change', { detail: { speed } }));
+  } catch (err) {
+    console.warn('Failed to store TTS speed:', err);
+  }
+};
+
+export const getNextTtsSpeed = (currentSpeed: number): number => {
+  const index = TTS_SPEED_PRESETS.indexOf(currentSpeed as any);
+  if (index === -1 || index === TTS_SPEED_PRESETS.length - 1) {
+    return TTS_SPEED_PRESETS[0];
+  }
+  return TTS_SPEED_PRESETS[index + 1];
+};
+
+export const useTtsSpeed = () => {
+  const [speed, setSpeedState] = useState<number>(() => getStoredTtsSpeed());
+
+  useEffect(() => {
+    const handleSpeedChange = (e: any) => {
+      if (typeof e?.detail?.speed === 'number') {
+        setSpeedState(e.detail.speed);
+      }
+    };
+    window.addEventListener('app_tts_speed_change', handleSpeedChange);
+    return () => window.removeEventListener('app_tts_speed_change', handleSpeedChange);
+  }, []);
+
+  const changeSpeed = (newSpeed: number) => {
+    setSpeedState(newSpeed);
+    setStoredTtsSpeed(newSpeed);
+  };
+
+  const cycleSpeed = (): number => {
+    const next = getNextTtsSpeed(speed);
+    changeSpeed(next);
+    return next;
+  };
+
+  return { speed, changeSpeed, cycleSpeed };
+};
+
 export interface SpeakOptions {
   text: string;
   language: string;
@@ -59,7 +121,7 @@ export const isTtsSupported = (): boolean => {
 export const speakText = ({
   text,
   language,
-  rate = 0.95,
+  rate,
   pitch = 1.0,
   onStart,
   onEnd,
@@ -82,9 +144,10 @@ export const speakText = ({
       window.speechSynthesis.resume();
     }
 
+    const activeRate = typeof rate === 'number' ? rate : getStoredTtsSpeed();
     const ttsLocale = getTtsLocale(language);
     const utterance = new SpeechSynthesisUtterance(clean);
-    utterance.rate = rate;
+    utterance.rate = activeRate;
     utterance.pitch = pitch;
     utterance.lang = ttsLocale;
 
