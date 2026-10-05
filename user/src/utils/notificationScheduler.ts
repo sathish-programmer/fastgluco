@@ -1,5 +1,7 @@
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
+import { getTranslation } from '../i18n/locales';
+import type { SupportedLanguage } from '../i18n/types';
 
 export const CHECKIN_NOTIFICATION_ID = 1001;
 export const STILLNESS_NOTIFICATION_ID = 1002;
@@ -10,10 +12,12 @@ export const MIDDAY_STRESS_RESET_NOTIFICATION_ID = 1006;
 export const EVENING_SLEEP_WINDDOWN_NOTIFICATION_ID = 1007;
 export const INACTIVE_DAY_NOTIFICATION_ID = 1008;
 export const BREATHWORK_NOTIFICATION_ID = 1009;
+export const SYMPTOM_CHECKIN_NOTIFICATION_ID = 1010;
 
 export const CHECKIN_CHANNEL_ID = 'mito_daily_checkin_channel';
 export const REPORTS_CHANNEL_ID = 'mito_reports_channel';
 export const HEALTH_HABITS_CHANNEL_ID = 'mito_health_habits_channel';
+export const SYMPTOM_CHECKIN_CHANNEL_ID = 'mito_symptom_checkin_channel';
 
 // Web timer references
 let webCheckinTimer: any = null;
@@ -97,6 +101,17 @@ export const ensureNotificationChannel = async () => {
         vibration: true,
         lights: true,
         lightColor: '#8B5CF6'
+      });
+
+      await LocalNotifications.createChannel({
+        id: SYMPTOM_CHECKIN_CHANNEL_ID,
+        name: '3-Weekly Symptom Screening',
+        description: 'Reminders for your 3-weekly early warning symptom check-in',
+        importance: 4,
+        visibility: 1,
+        vibration: true,
+        lights: true,
+        lightColor: '#059669'
       });
     } catch (channelErr) {
       console.warn('[NotificationScheduler] Channel creation notice:', channelErr);
@@ -497,6 +512,67 @@ export const scheduleDailyCheckinReminder = async (timeStr: string): Promise<boo
 };
 
 /**
+ * Schedule 3-weekly symptom check-in reminder
+ * @param targetDate Optional specific date to trigger. Defaults to 21 days from now at 10:00 AM.
+ */
+export const scheduleSymptomCheckinReminder = async (targetDate?: Date): Promise<boolean> => {
+  const granted = await requestNotificationPermission();
+  if (!granted) {
+    console.warn('[NotificationScheduler] Notification permission not granted for symptom checkin');
+  }
+
+  // Calculate reminder date (defaults to 21 days from now at 10:00 AM)
+  let fireDate = targetDate ? new Date(targetDate) : new Date();
+  if (!targetDate) {
+    fireDate.setDate(fireDate.getDate() + 21);
+    fireDate.setHours(10, 0, 0, 0);
+  }
+
+  // If fireDate is in the past or within 1 minute, schedule for 1 minute from now
+  if (fireDate.getTime() <= Date.now()) {
+    fireDate = new Date(Date.now() + 60 * 1000);
+  }
+
+  const savedLang = (localStorage.getItem('mito_app_language') || 'en') as SupportedLanguage;
+  const title = getTranslation(savedLang, 'symptomCheck.reminderTitle', '3-Weekly Symptom Check-in Due');
+  const body = getTranslation(savedLang, 'symptomCheck.reminderBody', "It's time for your 3-weekly early warning symptom check-in. It takes about a minute.");
+
+  if (Capacitor.isNativePlatform()) {
+    try {
+      await ensureNotificationChannel();
+      await LocalNotifications.cancel({ notifications: [{ id: SYMPTOM_CHECKIN_NOTIFICATION_ID }] }).catch(() => {});
+
+      await LocalNotifications.schedule({
+        notifications: [
+          {
+            id: SYMPTOM_CHECKIN_NOTIFICATION_ID,
+            title,
+            body,
+            schedule: {
+              at: fireDate,
+              allowWhileIdle: true
+            },
+            channelId: SYMPTOM_CHECKIN_CHANNEL_ID,
+            extra: {
+              type: 'SYMPTOM_CHECKIN'
+            }
+          }
+        ]
+      });
+      console.log('[NotificationScheduler] Scheduled 3-weekly symptom checkin for:', fireDate.toISOString());
+      return true;
+    } catch (err) {
+      console.warn('[NotificationScheduler] Error scheduling symptom checkin reminder:', err);
+      return false;
+    }
+  } else {
+    // Web environment: record next due time in localStorage
+    localStorage.setItem('mito_symptom_checkin_next_due', fireDate.toISOString());
+    return true;
+  }
+};
+
+/**
  * Schedule recurring Lab / Health Report Upload reminders
  * ONLY active if explicitly opted in by user (prevents unsolicited spam)
  */
@@ -657,6 +733,8 @@ export const initNotificationScheduler = async () => {
         const extra = notificationAction.notification.extra;
         if (extra?.type === 'DAILY_CHECKIN') {
           window.dispatchEvent(new CustomEvent('openDailyCheckinChatbot'));
+        } else if (extra?.type === 'SYMPTOM_CHECKIN') {
+          window.dispatchEvent(new CustomEvent('openSymptomCheckin'));
         } else if (extra?.type === 'REPORT_UPLOAD') {
           window.dispatchEvent(new CustomEvent('navigateToTab', { detail: 'Reports' }));
         } else if (extra?.type === 'FASTING') {
@@ -697,12 +775,33 @@ export const initNotificationScheduler = async () => {
         ]
       }).catch(() => {});
 
+      const pending = await LocalNotifications.getPending();
+
+      // Ensure 3-weekly symptom check-in reminder is registered
+      const hasSymptomCheck = pending.notifications.some(n => n.id === SYMPTOM_CHECKIN_NOTIFICATION_ID);
+      if (!hasSymptomCheck) {
+        const raw = localStorage.getItem('symptomCheckins');
+        let nextDue: Date | null = null;
+        if (raw) {
+          try {
+            const history = JSON.parse(raw);
+            if (history.length) {
+              const last = history[history.length - 1];
+              const d = new Date(last.date);
+              d.setDate(d.getDate() + 21);
+              d.setHours(10, 0, 0, 0);
+              nextDue = d;
+            }
+          } catch {}
+        }
+        await scheduleSymptomCheckinReminder(nextDue || undefined);
+      }
+
       if (!isEnabled || !savedCheckinTime) {
         await LocalNotifications.cancel({ notifications: [{ id: CHECKIN_NOTIFICATION_ID }] }).catch(() => {});
         return;
       }
 
-      const pending = await LocalNotifications.getPending();
       const hasCheckin = pending.notifications.some(n => n.id === CHECKIN_NOTIFICATION_ID);
       if (!hasCheckin) {
         await scheduleDailyCheckinReminder(savedCheckinTime);
@@ -719,6 +818,24 @@ export const initNotificationScheduler = async () => {
       }
     } else {
       scheduleDailyCheckinReminder(savedCheckinTime);
+    }
+
+    // Ensure 3-weekly symptom check-in reminder target is initialized on web
+    if (!localStorage.getItem('mito_symptom_checkin_next_due')) {
+      const raw = localStorage.getItem('symptomCheckins');
+      let nextDueDate = new Date();
+      if (raw) {
+        try {
+          const history = JSON.parse(raw);
+          if (history.length) {
+            const last = history[history.length - 1];
+            nextDueDate = new Date(last.date);
+          }
+        } catch {}
+      }
+      nextDueDate.setDate(nextDueDate.getDate() + 21);
+      nextDueDate.setHours(10, 0, 0, 0);
+      localStorage.setItem('mito_symptom_checkin_next_due', nextDueDate.toISOString());
     }
 
     // Web periodic ticker: checks once per minute with strict spacing and daily cap
@@ -744,6 +861,26 @@ export const initNotificationScheduler = async () => {
             'Time for your daily metabolic check-in! Log your habits to keep your cellular defense active.',
             'DAILY_CHECKIN'
           );
+        }
+      }
+
+      // Check 3-weekly symptom check-in due date in web
+      const symptomDueRaw = localStorage.getItem('mito_symptom_checkin_next_due');
+      if (symptomDueRaw) {
+        const symptomDueDate = new Date(symptomDueRaw);
+        if (symptomDueDate.getTime() <= Date.now()) {
+          if (canFireNotification('SYMPTOM_CHECKIN')) {
+            markNotificationFired('SYMPTOM_CHECKIN');
+            const savedLang = (localStorage.getItem('mito_app_language') || 'en') as SupportedLanguage;
+            fireWebNotification(
+              getTranslation(savedLang, 'symptomCheck.reminderTitle', '3-Weekly Symptom Check-in Due'),
+              getTranslation(savedLang, 'symptomCheck.reminderBody', "It's time for your 3-weekly early warning symptom check-in. It takes about a minute."),
+              'SYMPTOM_CHECKIN'
+            );
+            const nextWeek3 = new Date();
+            nextWeek3.setDate(nextWeek3.getDate() + 21);
+            localStorage.setItem('mito_symptom_checkin_next_due', nextWeek3.toISOString());
+          }
         }
       }
     }, 60000); // Check once per 60 seconds

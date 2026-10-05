@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { HabitsService } from '../../services/habitsService';
 import { HCG_HOSPITALS_URL } from './CancerScreeningScreen';
+import { scheduleSymptomCheckinReminder } from '../../utils/notificationScheduler';
 
 export interface SymptomQuestion {
   id: string;
@@ -159,6 +160,16 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({ onBa
       }
     }
 
+    // Schedule 3-weekly reminder for 21 days from now at 10:00 AM
+    try {
+      const nextDueDate = new Date();
+      nextDueDate.setDate(nextDueDate.getDate() + INTERVAL_DAYS);
+      nextDueDate.setHours(10, 0, 0, 0);
+      await scheduleSymptomCheckinReminder(nextDueDate);
+    } catch (schedErr) {
+      console.warn('Failed to schedule 3-weekly reminder:', schedErr);
+    }
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -280,11 +291,13 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({ onBa
                       <div key={q.id} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
                           <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
-                          <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100">{q.t}</span>
+                          <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100">
+                            {t(`symptomCheck.q_${q.id}_title`, q.t)}
+                          </span>
                         </div>
                         {q.red === 1 && (
                           <span className="text-[9px] font-black uppercase tracking-wider bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 px-2 py-0.5 rounded shrink-0">
-                            Priority Review
+                            {t('symptomCheck.priorityReview', 'Priority Review')}
                           </span>
                         )}
                       </div>
@@ -293,13 +306,17 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({ onBa
                 </div>
 
                 {/* Suggested Specialists */}
-                {result.specialties.length > 0 && (
+                {result.yesItems.length > 0 && (
                   <div className="p-3.5 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/30">
                     <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-300 block mb-1">
                       {t('symptomCheck.suggestedSpecialists', 'Suggested Specialist(s)')}
                     </span>
                     <p className="text-xs font-bold text-slate-900 dark:text-slate-100">
-                      {result.specialties.join(' · ')}
+                      {result.yesItems
+                        .map(q => t(`symptomCheck.spec_${q.id}`, SPECIALIST_MAP[q.id] || ''))
+                        .filter(Boolean)
+                        .filter((val, i, arr) => arr.indexOf(val) === i)
+                        .join(' · ')}
                     </p>
                   </div>
                 )}
@@ -370,20 +387,20 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({ onBa
                 <div key={q.id} className={idx > 0 ? "pt-5 border-t border-slate-100 dark:border-slate-800" : ""}>
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">
-                      Question {idx + 1}
+                      {t('symptomCheck.questionNum', { num: idx + 1 }, `Question ${idx + 1}`)}
                     </p>
                     {q.red === 1 && (
                       <span className="text-[9px] font-black uppercase tracking-wider bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200/50 dark:border-rose-900/40 px-2 py-0.5 rounded">
-                        Key Sign
+                        {t('symptomCheck.keySign', 'Key Sign')}
                       </span>
                     )}
                   </div>
 
                   <p className="text-sm font-semibold text-slate-850 dark:text-slate-100 leading-relaxed mb-1">
-                    {idx + 1}. {q.t}
+                    {idx + 1}. {t(`symptomCheck.q_${q.id}_title`, q.t)}
                   </p>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mb-3.5 leading-relaxed">
-                    {q.h}
+                    {t(`symptomCheck.q_${q.id}_desc`, q.h)}
                   </p>
 
                   {/* Option Buttons */}
@@ -397,7 +414,7 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({ onBa
                           : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-750'
                       }`}
                     >
-                      No
+                      {t('no', 'No')}
                     </button>
 
                     <button
@@ -409,7 +426,7 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({ onBa
                           : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-750'
                       }`}
                     >
-                      Yes
+                      {t('yes', 'Yes')}
                     </button>
 
                     {q.na && (
@@ -422,7 +439,7 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({ onBa
                             : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-750'
                         }`}
                       >
-                        Not applicable
+                        {t('symptomCheck.notApplicable', 'Not applicable')}
                       </button>
                     )}
                   </div>
@@ -474,7 +491,7 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({ onBa
                       ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-800/50'
                       : 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200/50 dark:border-rose-800/50'
                   }`}>
-                    {item.score} of 11
+                    {item.score} / 11
                   </span>
                 </div>
               ))}

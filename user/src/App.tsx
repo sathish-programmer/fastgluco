@@ -850,13 +850,22 @@ const MainAppContent: React.FC = () => {
                 setActiveTab('Reports');
               } else if (type === 'FASTING') {
                 setActiveTab('Home');
+              } else if (type === 'SYMPTOM_CHECKIN') {
+                setActiveTab('Home');
+                setTimeout(() => window.dispatchEvent(new CustomEvent('openSymptomCheckin')), 100);
               } else {
                 window.dispatchEvent(new CustomEvent('openDailyCheckinChatbot'));
               }
             }}
             className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black rounded-xl shrink-0 cursor-pointer shadow-xs hover:shadow-md transition-all"
           >
-            {inAppReminder.type === 'REPORT_UPLOAD' ? 'Upload' : inAppReminder.type === 'FASTING' ? 'Fasting' : 'Check in'}
+            {inAppReminder.type === 'REPORT_UPLOAD'
+              ? 'Upload'
+              : inAppReminder.type === 'FASTING'
+                ? 'Fasting'
+                : inAppReminder.type === 'SYMPTOM_CHECKIN'
+                  ? t('symptomCheck.screenNow', 'Screen Now')
+                  : 'Check in'}
           </button>
           <button
             onClick={() => setInAppReminder(null)}
