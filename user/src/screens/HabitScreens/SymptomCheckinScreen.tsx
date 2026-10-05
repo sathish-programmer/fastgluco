@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, AlertTriangle, CheckCircle2, Clock, Calendar, ExternalLink, RefreshCw, Stethoscope, ChevronRight, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, Award, Clock, Calendar, ExternalLink, RotateCcw, Stethoscope, ChevronRight, ShieldAlert } from 'lucide-react';
 import { Browser } from '@capacitor/browser';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -60,18 +60,18 @@ export const getStoredSymptomCheckins = (): CheckinHistoryItem[] => {
   }
 };
 
-export const getNextCheckinDueDate = (): { nextDue: Date | null; isDue: boolean; lastItem: CheckinHistoryItem | null } => {
+export const getNextCheckinDueDate = (): { nextDue: Date | null; isDue: boolean } => {
   const history = getStoredSymptomCheckins();
-  if (!history.length) return { nextDue: null, isDue: true, lastItem: null };
+  if (!history.length) return { nextDue: null, isDue: true };
   const last = history[history.length - 1];
   const due = new Date(last.date);
   due.setDate(due.getDate() + INTERVAL_DAYS);
-  return { nextDue: due, isDue: due <= new Date(), lastItem: last };
+  return { nextDue: due, isDue: due <= new Date() };
 };
 
 interface SymptomCheckinScreenProps {
   onBack: () => void;
-  onBookAppointment?: () => void;
+  onBookAppointment?: (recommendationId?: string) => void;
 }
 
 export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({ onBack, onBookAppointment }) => {
@@ -146,7 +146,6 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({ onBa
       specialties: specs
     });
 
-    // Optionally sync with backend habits
     if (apiUrl && token) {
       try {
         await HabitsService.logHabit(apiUrl, token, 'SymptomCheckin', {
@@ -160,7 +159,6 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({ onBa
       }
     }
 
-    // Scroll smoothly to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -180,39 +178,46 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({ onBa
 
   return (
     <div 
-      className="pb-28 pt-6 px-4 max-w-2xl mx-auto min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 transition-colors duration-300"
-      style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
+      className="p-4 sm:p-6 max-w-2xl mx-auto space-y-6 animate-in fade-in duration-300 pb-24 font-sans text-slate-800 dark:text-slate-100"
+      style={{ paddingTop: 'max(2rem, env(safe-area-inset-top))' }}
     >
-      {/* Top Header */}
-      <div className="flex items-center gap-3 mb-5">
-        <button 
-          onClick={onBack}
-          className="h-10 w-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
-        <div>
-          <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 tracking-[0.14em] uppercase">
-            {t('symptomCheck.tagline', 'Early Warning · Prevention')}
-          </span>
-          <h1 className="text-xl sm:text-2xl font-bold font-serif text-slate-900 dark:text-slate-100 leading-tight">
-            {t('symptomCheck.title', 'Your 3-weekly symptom check-in')}
-          </h1>
+      {/* HEADER - MATCHES APP HABIT SCREENS */}
+      <div className="flex items-center justify-between gap-4 mb-2 sub-page-internal-header px-1">
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={onBack}
+            className="h-10 w-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all cursor-pointer"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <div>
+            <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 tracking-[0.2em] uppercase flex items-center gap-1">
+              <Stethoscope className="h-3 w-3 text-emerald-500" /> {t('symptomCheck.tagline', 'Early Warning · Prevention')}
+            </span>
+            <h2 className="text-2xl font-sans font-bold text-slate-800 dark:text-slate-50 leading-none mt-1">
+              {t('symptomCheck.title', '3-Weekly Symptom Check-in')}
+            </h2>
+          </div>
         </div>
+
+        {/* Status Badge */}
+        <span className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-lg border shrink-0 ${
+          isDue 
+            ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border-amber-200/60 dark:border-amber-800/50' 
+            : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border-emerald-200/60 dark:border-emerald-800/50'
+        }`}>
+          {isDue ? t('dashboard.dueNow', 'Due Now') : t('dashboard.activeCheck', 'Active')}
+        </span>
       </div>
 
-      <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mb-4">
-        {t('symptomCheck.subtitle', 'Answer Yes or No for the last 3 weeks. It takes about a minute.')}
-      </p>
-
-      {/* Due / Interval Status Box */}
-      <div className="bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-900/40 rounded-xl p-3.5 mb-5 flex items-start gap-3">
-        <Clock className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-        <div className="text-xs sm:text-sm text-emerald-900 dark:text-emerald-200">
+      {/* Due / Interval Banner */}
+      <div className="bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/40 text-emerald-800 dark:text-emerald-200 text-xs p-4 rounded-2xl font-semibold flex items-center gap-2.5">
+        <Clock className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+        <div>
           {!history.length ? (
             <span>{t('symptomCheck.dueFirst', 'First check-in. Your next reminder will be set 3 weeks after you finish.')}</span>
           ) : isDue ? (
-            <span className="font-semibold text-amber-700 dark:text-amber-300">
+            <span className="font-bold text-amber-700 dark:text-amber-300">
               {t('symptomCheck.dueLate', { date: nextDue ? formatDate(nextDue.toISOString()) : '' }, 'Your check-in was due on {{date}}. Please complete it now.')}
             </span>
           ) : (
@@ -225,86 +230,91 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({ onBa
 
       {/* RESULT VIEW */}
       {result ? (
-        <div className="space-y-5 animate-in fade-in duration-300">
-          <div className={`rounded-2xl p-5 sm:p-6 border transition-all ${
+        <div className="space-y-6 animate-in fade-in duration-300">
+          <div className={`p-6 sm:p-8 rounded-3xl border shadow-sm ${
             result.score === 0 
-              ? 'bg-emerald-50/90 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800' 
-              : 'bg-amber-50/90 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800'
+              ? 'bg-white dark:bg-slate-900 border-emerald-200/80 dark:border-emerald-900/40' 
+              : 'bg-white dark:bg-slate-900 border-rose-200/80 dark:border-rose-900/40'
           }`}>
-            <div className="flex items-start gap-3.5">
-              {result.score === 0 ? (
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                  <CheckCircle2 className="w-6 h-6" />
+            {result.score === 0 ? (
+              <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/40 text-emerald-800 dark:text-emerald-200 text-xs p-4 rounded-2xl font-bold flex items-center gap-3">
+                <Award className="h-6 w-6 shrink-0 text-emerald-500" />
+                <div>
+                  <h3 className="text-sm font-extrabold text-emerald-900 dark:text-emerald-100">
+                    {t('symptomCheck.scoreZero', 'Score 0 of 11: All Clear')}
+                  </h3>
+                  <p className="text-xs text-emerald-700 dark:text-emerald-300 font-normal mt-0.5">
+                    {t('symptomCheck.msgZero', "No symptoms reported. We'll remind you again in 3 weeks.")}
+                  </p>
                 </div>
-              ) : (
-                <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-                  <AlertTriangle className="w-6 h-6" />
-                </div>
-              )}
-              <div className="flex-1">
-                <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">
-                  {result.score === 0 
-                    ? t('symptomCheck.scoreZero', 'Score 0 of 11')
-                    : result.red || result.score >= 2 
-                      ? t('symptomCheck.scoreDoctorSoon', { score: result.score }, 'Score {{score}} of 11: please see a doctor soon')
-                      : t('symptomCheck.scoreWatching', 'Score 1 of 11: keep watching')
-                  }
-                </h2>
-                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
-                  {result.score === 0 
-                    ? t('symptomCheck.msgZero', "No symptoms reported. We'll remind you again in 3 weeks.")
-                    : result.red || result.score >= 2
+              </div>
+            ) : (
+              <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-100 dark:border-rose-900/40 text-rose-800 dark:text-rose-200 text-xs p-4 rounded-2xl font-bold flex items-start gap-3">
+                <ShieldAlert className="h-6 w-6 shrink-0 text-rose-500 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="text-sm font-extrabold text-rose-900 dark:text-rose-100">
+                    {result.red || result.score >= 2 
+                      ? t('symptomCheck.scoreDoctorSoon', { score: result.score }, 'Score {{score}} of 11: Please see a doctor soon')
+                      : t('symptomCheck.scoreWatching', 'Score 1 of 11: Keep watching')
+                    }
+                  </h3>
+                  <p className="text-xs text-rose-700 dark:text-rose-300 font-normal mt-0.5 leading-relaxed">
+                    {result.red || result.score >= 2 
                       ? t('symptomCheck.msgDoctorSoon', "Book a clinic visit within the next week or two, and tell the doctor how long each symptom has been present.")
                       : t('symptomCheck.msgWatching', "If this symptom is still there at your next check-in, or gets worse, see a doctor.")
-                  }
-                </p>
-              </div>
-            </div>
-
-            {/* List of reported symptoms */}
-            {result.score > 0 && (
-              <div className="mt-4 pt-4 border-t border-amber-200/60 dark:border-amber-900/40">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-amber-800 dark:text-amber-300 mb-2">
-                  <ShieldAlert className="w-3.5 h-3.5" />
-                  <span>{t('symptomCheck.reportedSymptoms', 'Reported symptoms lasting over 3 weeks:')}</span>
+                    }
+                  </p>
                 </div>
-                <ul className="space-y-1.5 pl-2">
-                  {result.yesItems.map((q) => (
-                    <li key={q.id} className="text-xs sm:text-sm text-slate-700 dark:text-slate-200 flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
-                      <span className="font-medium">{q.t}</span>
-                      {q.red === 1 && (
-                        <span className="text-[9px] font-bold uppercase tracking-wider bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 px-1.5 py-0.5 rounded ml-1">
-                          Priority Review
-                        </span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
+              </div>
+            )}
+
+            {/* Reported Symptoms Breakdown */}
+            {result.score > 0 && (
+              <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800 space-y-4">
+                <div>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-2.5">
+                    {t('symptomCheck.reportedSymptoms', 'Reported symptoms lasting over 3 weeks')}
+                  </p>
+                  <div className="space-y-2">
+                    {result.yesItems.map((q) => (
+                      <div key={q.id} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+                          <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100">{q.t}</span>
+                        </div>
+                        {q.red === 1 && (
+                          <span className="text-[9px] font-black uppercase tracking-wider bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 px-2 py-0.5 rounded shrink-0">
+                            Priority Review
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
                 {/* Suggested Specialists */}
                 {result.specialties.length > 0 && (
-                  <div className="mt-3.5 p-2.5 rounded-xl bg-white/70 dark:bg-slate-900/70 border border-amber-100 dark:border-amber-900/30">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                  <div className="p-3.5 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/30">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-300 block mb-1">
                       {t('symptomCheck.suggestedSpecialists', 'Suggested Specialist(s)')}
                     </span>
-                    <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                    <p className="text-xs font-bold text-slate-900 dark:text-slate-100">
                       {result.specialties.join(' · ')}
                     </p>
                   </div>
                 )}
 
-                {/* Call to action: Consult Specialist */}
-                <div className="mt-5 space-y-2.5">
-                  <div className="p-3 bg-rose-600/10 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 rounded-xl text-center">
-                    <p className="text-xs font-bold text-rose-700 dark:text-rose-300">
+                {/* Primary Consultation Action Callout */}
+                <div className="pt-2 space-y-3">
+                  <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-900/40 rounded-xl text-center">
+                    <p className="text-xs font-bold text-amber-800 dark:text-amber-200">
                       {t('symptomCheck.yesWarning', 'If Yes to any symptom, consult a specialist for thorough clinical evaluation.')}
                     </p>
                   </div>
 
                   <button
                     onClick={handleConsultSpecialist}
-                    className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.98] cursor-pointer"
+                    className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.98] cursor-pointer"
                   >
                     <Stethoscope className="w-4 h-4" />
                     <span>{t('symptomCheck.consultSpecialist', 'Consult Specialist (HCG Virtual / Hospital)')}</span>
@@ -313,8 +323,8 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({ onBa
 
                   {onBookAppointment && (
                     <button
-                      onClick={onBookAppointment}
-                      className="w-full py-2.5 px-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 font-semibold text-xs flex items-center justify-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer"
+                      onClick={() => onBookAppointment('symptom_checkin')}
+                      className="w-full py-3 px-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-750 transition-all cursor-pointer"
                     >
                       <Calendar className="w-3.5 h-3.5 text-slate-400" />
                       <span>{t('symptomCheck.bookApptInApp', 'Book Doctor Consultation in App')}</span>
@@ -324,97 +334,113 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({ onBa
               </div>
             )}
 
-            {/* Restart button */}
-            <div className="mt-5 pt-3 flex justify-center">
+            {/* Restart Button */}
+            <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-center">
               <button
                 onClick={handleReset}
-                className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1.5 cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 bg-slate-100 dark:bg-slate-800 transition-all cursor-pointer"
               >
-                <RefreshCw className="w-3 h-3" />
+                <RotateCcw className="w-3.5 h-3.5" />
                 <span>{t('symptomCheck.startNew', 'Start a new check-in')}</span>
               </button>
             </div>
           </div>
         </div>
       ) : (
-        /* QUESTION FORM */
-        <div className="space-y-3">
-          {SYMPTOM_QUESTIONS.map((q, idx) => {
-            const currentAnswer = answers[q.id];
-            return (
-              <div 
-                key={q.id}
-                className="bg-white/95 dark:bg-slate-900/90 border border-slate-200/90 dark:border-slate-800 rounded-xl p-3.5 sm:p-4 shadow-xs transition-colors"
-              >
-                <div className="flex items-baseline justify-between mb-1">
-                  <h3 className="text-sm sm:text-base font-bold font-serif text-slate-900 dark:text-slate-100">
-                    <span className="text-slate-400 font-sans text-xs mr-1.5 font-normal">{idx + 1}.</span>
-                    {q.t}
-                  </h3>
-                  {q.red === 1 && (
-                    <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-200/40 dark:border-amber-900/40 shrink-0">
-                      Key Sign
-                    </span>
-                  )}
-                </div>
+        /* MAIN QUESTIONNAIRE CARD - MATCHES KITCHEN SAFETY QUESTIONS LAYOUT */
+        <div className="space-y-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 sm:p-8 shadow-sm">
+          {/* Card Header */}
+          <div className="border-b border-slate-100 dark:border-slate-800 pb-4">
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+              {t('symptomCheck.cardHeaderTag', 'Clinical Red Flag & Early Detection')}
+            </span>
+            <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100 mt-0.5">
+              {t('symptomCheck.cardHeaderTitle', '11 Early Warning Symptom Questions')}
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+              {t('symptomCheck.subtitle', 'Answer Yes or No for the last 3 weeks. It takes about a minute.')}
+            </p>
+          </div>
 
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 leading-relaxed">
-                  {q.h}
-                </p>
+          {/* Question List */}
+          <div className="space-y-6">
+            {SYMPTOM_QUESTIONS.map((q, idx) => {
+              const currentAnswer = answers[q.id];
+              return (
+                <div key={q.id} className={idx > 0 ? "pt-5 border-t border-slate-100 dark:border-slate-800" : ""}>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">
+                      Question {idx + 1}
+                    </p>
+                    {q.red === 1 && (
+                      <span className="text-[9px] font-black uppercase tracking-wider bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200/50 dark:border-rose-900/40 px-2 py-0.5 rounded">
+                        Key Sign
+                      </span>
+                    )}
+                  </div>
 
-                {/* Option Buttons */}
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleSelectOption(q.id, 'no')}
-                    className={`flex-1 py-2.5 px-3 rounded-xl border text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer min-h-[44px] flex items-center justify-center ${
-                      currentAnswer === 'no'
-                        ? 'bg-emerald-600 border-emerald-600 text-white shadow-xs'
-                        : 'bg-transparent border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700'
-                    }`}
-                  >
-                    No
-                  </button>
+                  <p className="text-sm font-semibold text-slate-850 dark:text-slate-100 leading-relaxed mb-1">
+                    {idx + 1}. {q.t}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-3.5 leading-relaxed">
+                    {q.h}
+                  </p>
 
-                  <button
-                    type="button"
-                    onClick={() => handleSelectOption(q.id, 'yes')}
-                    className={`flex-1 py-2.5 px-3 rounded-xl border text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer min-h-[44px] flex items-center justify-center ${
-                      currentAnswer === 'yes'
-                        ? 'bg-[#b4531a] border-[#b4531a] text-white shadow-xs'
-                        : 'bg-transparent border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700'
-                    }`}
-                  >
-                    Yes
-                  </button>
-
-                  {q.na && (
+                  {/* Option Buttons */}
+                  <div className="flex gap-2.5 sm:gap-3">
                     <button
                       type="button"
-                      onClick={() => handleSelectOption(q.id, 'na')}
-                      className={`flex-1 py-2.5 px-2 rounded-xl border text-xs sm:text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer min-h-[44px] flex items-center justify-center ${
-                        currentAnswer === 'na'
-                          ? 'bg-slate-700 border-slate-700 text-white shadow-xs'
-                          : 'bg-transparent border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
+                      onClick={() => handleSelectOption(q.id, 'no')}
+                      className={`flex-1 py-3 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all border cursor-pointer min-h-[44px] flex items-center justify-center ${
+                        currentAnswer === 'no'
+                          ? 'bg-emerald-500 border-emerald-500 text-white shadow-xs'
+                          : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-750'
                       }`}
                     >
-                      Not applicable
+                      No
                     </button>
-                  )}
+
+                    <button
+                      type="button"
+                      onClick={() => handleSelectOption(q.id, 'yes')}
+                      className={`flex-1 py-3 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all border cursor-pointer min-h-[44px] flex items-center justify-center ${
+                        currentAnswer === 'yes'
+                          ? 'bg-rose-500 border-rose-500 text-white shadow-xs'
+                          : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-750'
+                      }`}
+                    >
+                      Yes
+                    </button>
+
+                    {q.na && (
+                      <button
+                        type="button"
+                        onClick={() => handleSelectOption(q.id, 'na')}
+                        className={`flex-1 py-3 px-2 rounded-xl font-bold text-xs transition-all border cursor-pointer min-h-[44px] flex items-center justify-center ${
+                          currentAnswer === 'na'
+                            ? 'bg-slate-600 border-slate-600 text-white shadow-xs'
+                            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-750'
+                        }`}
+                      >
+                        Not applicable
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
 
           {/* Submit Button */}
-          <div className="pt-2">
+          <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
             <button
+              type="button"
               onClick={handleSubmit}
               disabled={!isComplete}
-              className={`w-full py-4 px-5 rounded-xl font-bold text-sm sm:text-base transition-all flex items-center justify-center gap-2 shadow-md ${
+              className={`w-full py-4 px-5 rounded-2xl font-bold text-sm sm:text-base transition-all flex items-center justify-center gap-2 shadow-sm ${
                 isComplete
-                  ? 'bg-emerald-700 hover:bg-emerald-800 text-white cursor-pointer active:scale-[0.99]'
-                  : 'bg-emerald-800/40 text-emerald-200/50 cursor-not-allowed border border-emerald-900/20'
+                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer active:scale-[0.99]'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 cursor-not-allowed'
               }`}
             >
               <span>{t('symptomCheck.seeScore', 'See my score')}</span>
@@ -426,12 +452,14 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({ onBa
 
       {/* Past Check-ins History */}
       {history.length > 0 && (
-        <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
-            <Calendar className="w-3.5 h-3.5" />
-            <span>{t('symptomCheck.pastCheckins', 'Past check-ins')}</span>
-          </h3>
-          <div className="divide-y divide-slate-100 dark:divide-slate-800/80 bg-white/70 dark:bg-slate-900/60 rounded-xl border border-slate-200/80 dark:border-slate-800 px-3.5">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <Calendar className="w-4 h-4 text-slate-400" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              {t('symptomCheck.pastCheckins', 'Past check-ins')}
+            </h3>
+          </div>
+          <div className="divide-y divide-slate-100 dark:divide-slate-800">
             {history
               .slice()
               .reverse()
@@ -441,12 +469,12 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({ onBa
                   <span className="text-slate-600 dark:text-slate-300 font-medium">
                     {formatDate(item.date)}
                   </span>
-                  <span className={`font-semibold px-2 py-0.5 rounded-full text-xs ${
+                  <span className={`font-bold px-2.5 py-0.5 rounded-full text-xs ${
                     item.score === 0 
-                      ? 'bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-800/50'
-                      : 'bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border border-amber-200/50 dark:border-amber-800/50'
+                      ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-800/50'
+                      : 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200/50 dark:border-rose-800/50'
                   }`}>
-                    {item.score} of 11 {item.score > 0 ? 'symptoms' : 'symptoms'}
+                    {item.score} of 11
                   </span>
                 </div>
               ))}
@@ -454,8 +482,8 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({ onBa
         </div>
       )}
 
-      {/* Disclaimer Note */}
-      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-6 leading-relaxed bg-slate-100/60 dark:bg-slate-900/40 p-3.5 rounded-xl border border-slate-200/40 dark:border-slate-800/60">
+      {/* Clinical Disclaimer Note */}
+      <p className="text-[11px] text-slate-400 leading-relaxed px-2 text-center">
         {t('symptomCheck.disclaimer', "This check-in is a screening reminder, not a diagnosis. Many of these symptoms have common, harmless causes, but any that last more than 3 weeks deserve a doctor's review.")}
       </p>
     </div>
