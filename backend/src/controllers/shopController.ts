@@ -1783,3 +1783,66 @@ export const refreshAdminAmazonProduct = async (req: Request, res: Response) => 
   }
 };
 
+export const updateAdminAmazonProduct = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const {
+      name,
+      category,
+      brand,
+      image,
+      images,
+      buyOnAmazonUrl,
+      price,
+      offerPrice,
+      regularPrice,
+      isActive,
+      description,
+      shortDescription
+    } = req.body;
+
+    const product = await ShopProduct.findById(id);
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found.' });
+    }
+
+    if (name !== undefined) product.name = String(name).trim();
+    if (category !== undefined) product.category = String(category).trim();
+    if (brand !== undefined) product.brand = String(brand).trim();
+    if (image !== undefined) {
+      product.image = String(image).trim();
+      product.images = [product.image];
+    }
+    if (images && Array.isArray(images) && images.length > 0) {
+      product.images = images;
+    }
+    if (buyOnAmazonUrl !== undefined) {
+      let finalUrl = String(buyOnAmazonUrl).trim();
+      if (finalUrl && !finalUrl.includes('tag=')) {
+        finalUrl += (finalUrl.includes('?') ? '&' : '?') + 'tag=mitoreboot-21&linkCode=ll2';
+      }
+      product.buyOnAmazonUrl = finalUrl;
+    }
+    if (price !== undefined) product.price = Number(price) || 0;
+    if (offerPrice !== undefined) product.offerPrice = Number(offerPrice) || product.price;
+    if (regularPrice !== undefined) product.regularPrice = Number(regularPrice) || product.price;
+    if (isActive !== undefined) product.isActive = Boolean(isActive);
+    if (description !== undefined) product.description = String(description);
+    if (shortDescription !== undefined) product.shortDescription = String(shortDescription);
+
+    // Ensure doctorRecommended is false for affiliate products
+    product.doctorRecommended = false;
+
+    await product.save();
+
+    res.json({
+      success: true,
+      message: 'Product updated successfully.',
+      product
+    });
+  } catch (error: any) {
+    console.error('[updateAdminAmazonProduct] Error:', error);
+    res.status(500).json({ message: error.message || 'Error updating product.' });
+  }
+};
+

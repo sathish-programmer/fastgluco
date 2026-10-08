@@ -118,12 +118,19 @@ export async function resolveAmazonProductMetadata(urlOrAsin: string): Promise<A
             }
 
             // Brand
-            let brand =
-              data.match(/id="bylineInfo"[^>]*>([\s\S]*?)<\/a>/i)?.[1]?.replace(/Brand:|Visit the | Store/gi, '').trim() ||
-              data.match(/class="po-brand"[^>]*[\s\S]*?class="a-span9"[^>]*>([\s\S]*?)<\/span>/i)?.[1]?.trim() ||
+            let rawBrand =
+              data.match(/id="bylineInfo"[^>]*>([\s\S]*?)<\/a>/i)?.[1] ||
+              data.match(/class="po-brand"[^>]*[\s\S]*?class="a-span9"[^>]*>([\s\S]*?)<\/span>/i)?.[1] ||
               'Amazon';
 
-            brand = brand.replace(/&amp;/g, '&').replace(/&#39;/g, "'").trim();
+            let brand = rawBrand
+              .replace(/<!--[\s\S]*?-->/g, '')
+              .replace(/<[^>]*>/g, '')
+              .replace(/Brand:|Visit the | Store/gi, '')
+              .replace(/&amp;/g, '&')
+              .replace(/&#39;/g, "'")
+              .replace(/\s+/g, ' ')
+              .trim();
 
             resolve({
               asin,

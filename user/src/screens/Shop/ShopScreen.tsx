@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   ArrowLeft, Search, SlidersHorizontal, Sparkles, AlertCircle, ShoppingCart,
   Package, MapPin, Plus, Minus, ChevronRight, ExternalLink,
@@ -510,13 +510,28 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
     showToast(`${item.name}${variantName ? ` (${variantName})` : ''} added to basket`, 'success');
   };
 
-  // Instant real-time multi-word client-side filter alongside debounced backend search
-  const displayedProducts = products.filter(item => {
-    if (!search.trim()) return true;
+  // Instant real-time multi-word client-side filter with smart fallback
+  const displayedProducts = useMemo(() => {
+    if (!search.trim()) return products;
     const terms = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
-    const searchable = `${item.name} ${item.desc || ''} ${item.shortDescription || ''} ${item.brand || ''} ${item.category || ''} ${item.variants?.map(v => v.name).join(' ') || ''}`.toLowerCase();
-    return terms.every(term => searchable.includes(term));
-  });
+
+    // 1. Strict multi-word matching (all terms match)
+    const strict = products.filter((item) => {
+      const searchable = `${item.name} ${item.desc || ''} ${item.shortDescription || ''} ${item.brand || ''} ${item.category || ''} ${item.variants?.map((v) => v.name).join(' ') || ''}`.toLowerCase();
+      return terms.every((term) => searchable.includes(term));
+    });
+
+    if (strict.length > 0) return strict;
+
+    // 2. Intelligent semantic fallback: if strict returns 0, match any significant search term (>= 3 chars)
+    const significantTerms = terms.filter((t) => t.length >= 3);
+    if (significantTerms.length === 0) return [];
+
+    return products.filter((item) => {
+      const searchable = `${item.name} ${item.desc || ''} ${item.shortDescription || ''} ${item.brand || ''} ${item.category || ''} ${item.variants?.map((v) => v.name).join(' ') || ''}`.toLowerCase();
+      return significantTerms.some((term) => searchable.includes(term));
+    });
+  }, [products, search]);
 
   const updateItemQty = (itemId: string, delta: number, variantName?: string) => {
     setBasket(prev => {
@@ -732,7 +747,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                       </span>
                     </>
                   )}
-                  {selectedProduct.doctorRecommended && (
+                  {selectedProduct.doctorRecommended && !selectedProduct.buyOnAmazonUrl && (
                     <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/80 dark:border-emerald-800/60 px-2.5 py-0.5 rounded-full ml-auto">
                       <Stethoscope className="h-3 w-3" /> Doctor Formulated
                     </span>
@@ -1757,6 +1772,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                   ? item.variants.reduce((acc, v) => acc + (Number(v.stock) || 0), 0)
                   : (Number(item.stock) || 0);
                 const isOutOfStock = itemTotalStock <= 0;
+                const isAmazon = Boolean(item.buyOnAmazonUrl);
                 const hasVariants = item.variants && item.variants.length > 0;
                 const itemQty = getItemQtyInCart(item.id);
 
@@ -1764,39 +1780,40 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                   <div
                     key={item.id}
                     onClick={() => {
-                      if (item.buyOnAmazonUrl) {
+                      if (isAmazon) {
                         window.open(item.buyOnAmazonUrl, '_blank', 'noopener,noreferrer');
                       } else {
                         openProductDetails(item);
                       }
                     }}
-                    className={`bg-white dark:bg-slate-900 border rounded-2xl p-2.5 sm:p-3 flex flex-col justify-between transition-all duration-200 hover:-translate-y-1 hover:shadow-md group relative cursor-pointer ${
-                      item.buyOnAmazonUrl
-                        ? 'border-amber-200/70 dark:border-amber-900/40 hover:border-amber-400 dark:hover:border-amber-500'
-                        : 'border-slate-200/80 dark:border-slate-800/90 hover:border-indigo-400 dark:hover:border-indigo-600'
+                    className={`bg-white dark:bg-slate-900 border rounded-2xl p-2.5 sm:p-3 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group relative cursor-pointer ${
+                      isAmazon
+                        ? 'border-amber-200/60 dark:border-amber-900/30 hover:border-amber-400/80 dark:hover:border-amber-500/60 shadow-xs hover:shadow-amber-500/10'
+                        : 'border-slate-200/80 dark:border-slate-800/90 hover:border-indigo-400 dark:hover:border-indigo-600 shadow-xs hover:shadow-indigo-500/10'
                     }`}
                   >
                     <div>
-                      {/* Clean Packaging Showcase Pedestal (Tighter Fit, Zero Trapped Whitespace) */}
-                      <div className="w-full aspect-[4/4.5] sm:aspect-square bg-slate-50/70 dark:bg-slate-950/50 rounded-xl mb-2 flex items-center justify-center overflow-hidden relative border border-slate-100 dark:border-slate-800/60 p-1 sm:p-1.5">
+                      {/* Clean Packaging Showcase Pedestal */}
+                      <div className="w-full aspect-[4/4.5] sm:aspect-square bg-slate-50/80 dark:bg-slate-950/60 rounded-xl mb-2 flex items-center justify-center overflow-hidden relative border border-slate-100 dark:border-slate-800/60 p-1.5">
                         {/* Badge Overlays */}
-                        {item.buyOnAmazonUrl ? (
-                          <span className="absolute top-1.5 left-1.5 z-10 bg-amber-500 text-slate-950 text-[7.5px] font-black px-1.5 py-0.5 rounded-md shadow-2xs backdrop-blur-xs flex items-center gap-0.5 border border-amber-300/40">
+                        {isAmazon ? (
+                          <span className="absolute top-2 left-2 z-10 bg-slate-950/85 backdrop-blur-md text-amber-400 text-[8px] font-black px-2 py-0.5 rounded-full shadow-xs flex items-center gap-1 border border-amber-400/30">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
                             Amazon
                           </span>
                         ) : isOutOfStock ? (
-                          <span className="absolute top-1.5 left-1.5 z-10 bg-slate-900/90 text-white text-[8px] font-black px-1.5 py-0.5 rounded-md shadow-2xs backdrop-blur-md flex items-center gap-1">
+                          <span className="absolute top-2 left-2 z-10 bg-slate-900/90 text-white text-[8px] font-black px-2 py-0.5 rounded-full shadow-2xs backdrop-blur-md flex items-center gap-1">
                             <span className="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
                             Sold Out
                           </span>
                         ) : discountPercent > 0 ? (
-                          <span className="absolute top-1.5 left-1.5 z-10 bg-gradient-to-r from-rose-500 to-amber-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-md shadow-2xs">
+                          <span className="absolute top-2 left-2 z-10 bg-gradient-to-r from-rose-500 to-amber-500 text-white text-[8px] font-black px-2 py-0.5 rounded-full shadow-2xs">
                             {discountPercent}% OFF
                           </span>
                         ) : null}
 
-                        {item.doctorRecommended && (
-                          <span className="absolute top-1.5 right-1.5 z-10 bg-emerald-600/95 text-white text-[7.5px] font-black px-1.5 py-0.5 rounded-md shadow-2xs flex items-center gap-0.5 border border-white/20">
+                        {item.doctorRecommended && !isAmazon && (
+                          <span className="absolute top-2 right-2 z-10 bg-emerald-600/90 backdrop-blur-md text-white text-[7.5px] font-black px-2 py-0.5 rounded-full shadow-xs flex items-center gap-0.5 border border-emerald-400/30">
                             <Stethoscope className="h-2 w-2" /> Dr. Formulated
                           </span>
                         )}
@@ -1806,126 +1823,114 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                           apiUrl={apiUrl}
                           title={item.name}
                           category={item.category}
-                          className={`h-full w-full object-contain transition-transform duration-300 group-hover:scale-105 ${isOutOfStock && !item.buyOnAmazonUrl ? 'opacity-50 grayscale' : ''}`}
+                          className={`h-full w-full object-contain transition-transform duration-300 group-hover:scale-105 ${isOutOfStock && !isAmazon ? 'opacity-50 grayscale' : ''}`}
                           textClassName="text-4xl"
                         />
                       </div>
 
                       {/* Brand & Category Label */}
-                      <span className="text-[9px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest truncate block mb-0.5">
+                      <span className="text-[9.5px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest truncate block mb-1">
                         {item.brand || item.category}
                       </span>
 
                       {/* Product Name */}
-                      <h3 className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-sm leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-2 min-h-[2.1rem] tracking-tight">
+                      <h3 className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-[13px] leading-snug group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors line-clamp-2 min-h-[2.2rem] tracking-tight">
                         {item.name ? item.name.replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&quot;/g, '"') : ''}
                       </h3>
                     </div>
 
                     {/* Pricing & ADD Action */}
-                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 mt-2 flex items-center justify-between gap-1.5">
-                      <div className="min-w-0">
-                        {item.buyOnAmazonUrl ? (
-                          <div className="flex flex-col">
-                            <span className="text-[11px] font-black text-slate-900 dark:text-white leading-tight">
-                              See on Amazon
+                    {isAmazon ? (
+                      <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800/80 mt-2 flex flex-col gap-1.5">
+                        <div className="w-full py-2 px-3 bg-gradient-to-r from-amber-400 via-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 group-hover:shadow-md group-hover:scale-[1.01] active:scale-95 border border-amber-300/40">
+                          <span>Check on Amazon</span>
+                          <ExternalLink className="h-3.5 w-3.5 stroke-[2.5]" />
+                        </div>
+                        <span className="text-[9px] text-center font-bold text-slate-400 dark:text-slate-500 tracking-tight block">
+                          Live Price & Details on Amazon ↗
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 mt-2 flex items-center justify-between gap-1.5">
+                        <div className="min-w-0">
+                          <div className="flex items-baseline gap-1 flex-wrap">
+                            <span className="font-black text-slate-900 dark:text-white text-sm sm:text-base leading-none tracking-tight">
+                              {curr}{finalPrice.toFixed(0)}
                             </span>
-                            <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 block mt-0.5 truncate">
-                              Live Price & Details ↗
-                            </span>
+                            {discountPercent > 0 && (
+                              <span className="text-[10px] text-slate-400 line-through font-bold">
+                                {curr}{regularPrice.toFixed(0)}
+                              </span>
+                            )}
                           </div>
-                        ) : (
-                          <>
-                            <div className="flex items-baseline gap-1 flex-wrap">
-                              <span className="font-black text-slate-900 dark:text-white text-sm sm:text-base leading-none tracking-tight">
-                                {curr}{finalPrice.toFixed(0)}
-                              </span>
-                              {discountPercent > 0 && (
-                                <span className="text-[10px] text-slate-400 line-through font-bold">
-                                  {curr}{regularPrice.toFixed(0)}
-                                </span>
-                              )}
-                            </div>
-                            {hasVariants ? (
-                              <span className="text-[9px] text-slate-400 font-bold block mt-0.5 truncate">
-                                {item.variants?.length} option{item.variants && item.variants.length > 1 ? 's' : ''}
-                              </span>
-                            ) : discountPercent > 0 ? (
-                              <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 block mt-0.5 truncate">
-                                Save {curr}{(regularPrice - finalPrice).toFixed(0)}
-                              </span>
-                            ) : null}
-                          </>
-                        )}
-                      </div>
+                          {hasVariants ? (
+                            <span className="text-[9px] text-slate-400 font-bold block mt-0.5 truncate">
+                              {item.variants?.length} option{item.variants && item.variants.length > 1 ? 's' : ''}
+                            </span>
+                          ) : discountPercent > 0 ? (
+                            <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 block mt-0.5 truncate">
+                              Save {curr}{(regularPrice - finalPrice).toFixed(0)}
+                            </span>
+                          ) : null}
+                        </div>
 
-                      {/* Action Button */}
-                      <div className="shrink-0">
-                        {isOutOfStock && !item.buyOnAmazonUrl ? (
-                          <span className="text-[10px] font-black text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900/50 px-2.5 py-1.5 rounded-xl block text-center shadow-2xs">
-                            Sold Out
-                          </span>
-                        ) : item.buyOnAmazonUrl ? (
-                          <a
-                            href={item.buyOnAmazonUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="text-[10.5px] font-black text-slate-950 bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 hover:from-amber-300 hover:to-amber-400 px-3 py-1.5 rounded-xl shadow-xs transition-all flex items-center gap-1 active:scale-95 border border-amber-300/60"
-                          >
-                            <span>Amazon</span>
-                            <ExternalLink className="h-3 w-3 stroke-[2.5]" />
-                          </a>
-                        ) : branding.enableExternalPayments !== false ? (
-                          hasVariants ? (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openProductDetails(item);
-                              }}
-                              className="text-[11px] font-black text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 dark:hover:text-white px-2.5 py-1 rounded-xl border border-indigo-200/80 dark:border-indigo-800/60 transition-all duration-200 flex items-center gap-0.5 shadow-2xs active:scale-95 cursor-pointer"
-                            >
-                              <span>Options</span>
-                              <ChevronRight className="h-3 w-3 stroke-[2.5]" />
-                            </button>
-                          ) : itemQty > 0 ? (
-                            <div
-                              onClick={(e) => e.stopPropagation()}
-                              className="flex items-center bg-indigo-600 text-white rounded-xl p-0.5 gap-0.5 shadow-xs"
-                            >
+                        {/* Action Button */}
+                        <div className="shrink-0">
+                          {isOutOfStock ? (
+                            <span className="text-[10px] font-black text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900/50 px-2.5 py-1.5 rounded-xl block text-center shadow-2xs">
+                              Sold Out
+                            </span>
+                          ) : branding.enableExternalPayments !== false ? (
+                            hasVariants ? (
                               <button
                                 type="button"
-                                onClick={() => updateItemQty(item.id, -1)}
-                                className="h-6 w-6 flex items-center justify-center hover:bg-indigo-700 rounded-lg text-xs font-bold"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openProductDetails(item);
+                                }}
+                                className="text-[11px] font-black text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 dark:hover:text-white px-2.5 py-1 rounded-xl border border-indigo-200/80 dark:border-indigo-800/60 transition-all duration-200 flex items-center gap-0.5 shadow-2xs active:scale-95 cursor-pointer"
                               >
-                                <Minus className="h-3 w-3" />
+                                <span>Options</span>
+                                <ChevronRight className="h-3 w-3 stroke-[2.5]" />
                               </button>
-                              <span className="text-xs font-black px-1.5">{itemQty}</span>
+                            ) : itemQty > 0 ? (
+                              <div
+                                onClick={(e) => e.stopPropagation()}
+                                className="flex items-center bg-indigo-600 text-white rounded-xl p-0.5 gap-0.5 shadow-xs"
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => updateItemQty(item.id, -1)}
+                                  className="h-6 w-6 flex items-center justify-center hover:bg-indigo-700 rounded-lg text-xs font-bold"
+                                >
+                                  <Minus className="h-3 w-3" />
+                                </button>
+                                <span className="text-xs font-black px-1.5">{itemQty}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => updateItemQty(item.id, 1)}
+                                  className="h-6 w-6 flex items-center justify-center hover:bg-indigo-700 rounded-lg text-xs font-bold"
+                                >
+                                  <Plus className="h-3 w-3" />
+                                </button>
+                              </div>
+                            ) : (
                               <button
                                 type="button"
-                                onClick={() => updateItemQty(item.id, 1)}
-                                className="h-6 w-6 flex items-center justify-center hover:bg-indigo-700 rounded-lg text-xs font-bold"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  addToBasket(item);
+                                }}
+                                className="text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 px-3.5 py-1.5 rounded-xl transition-all duration-150 flex items-center gap-1 shadow-sm shadow-indigo-600/20 active:scale-95 cursor-pointer"
                               >
-                                <Plus className="h-3 w-3" />
+                                <Plus className="h-3.5 w-3.5 stroke-[3]" />
+                                <span>ADD</span>
                               </button>
-                            </div>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                addToBasket(item);
-                              }}
-                              className="text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 px-3.5 py-1.5 rounded-xl transition-all duration-150 flex items-center gap-1 shadow-sm shadow-indigo-600/20 active:scale-95 cursor-pointer"
-                            >
-                              <Plus className="h-3.5 w-3.5 stroke-[3]" />
-                              <span>ADD</span>
-                            </button>
-                          )
-                        ) : null}
+                            )
+                          ) : null}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 );
               })}

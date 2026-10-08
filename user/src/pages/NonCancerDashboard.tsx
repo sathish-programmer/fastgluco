@@ -138,6 +138,24 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     };
   }, [activeScreen]);
 
+  useEffect(() => {
+    const handleGoHome = () => {
+      _setActiveScreen(null);
+      (window as any).activeSubScreen = null;
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('shop');
+        url.searchParams.delete('product');
+        url.searchParams.delete('category');
+        window.history.replaceState({}, document.title, url.pathname + url.search);
+      } catch (e) {}
+    };
+    window.addEventListener('navigateToHomeDashboard', handleGoHome);
+    return () => {
+      window.removeEventListener('navigateToHomeDashboard', handleGoHome);
+    };
+  }, []);
+
   const [habits, setHabits] = useState<HabitLog[]>([]);
   const [shopQuery, setShopQuery] = useState<string>('');
   const [shopCategory, setShopCategory] = useState<string>('All');
@@ -1169,6 +1187,15 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
           } else if (query === 'Safe kitchen' || query === 'SaferProducts') {
             setShopCategory('Safe kitchen');
             setShopQuery('');
+          } else if (query.includes('Mask') || query.includes('Respirator') || query.includes('N95') || query.includes('N99')) {
+            setShopCategory('Environment safe products');
+            setShopQuery('Mask');
+          } else if (query.includes('Air Purifier') || query === 'Air' || query.includes('AQI') || query.includes('Tracker')) {
+            setShopCategory('Environment safe products');
+            setShopQuery('Air');
+          } else if (query.includes('Water Purifier') || query.includes('RO') || query.includes('Filtration')) {
+            setShopCategory('Environment safe products');
+            setShopQuery('Water Purifier');
           } else {
             setShopCategory('Environment safe products');
             setShopQuery(query && query !== 'Environment safe products' ? query : '');
@@ -1221,10 +1248,10 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     if (activeScreen === 'IndianCancers') return <IndianCancersScreen onBack={handleCloseActiveScreen} />;
     if (activeScreen === 'Obesity') return <ObesityLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} />;
     if (activeScreen === 'Dental') return <DentalLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} />;
-    if (activeScreen === 'Gastritis') return <GastritisLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} onNavigateToShop={(query) => { setShopCategory('Arivu in nutrition'); setShopQuery(query); setActiveScreen('Shop'); }} />;
-    if (activeScreen === 'GastritisShop') return <ShopScreen type="Arivu in nutrition" defaultSearch={shopQuery} onBack={() => setActiveScreen('Gastritis')} />;
-    if (activeScreen === 'Genetic') return <GeneticLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} onNavigateToShop={(query) => { setShopCategory('All'); setShopQuery(query); setActiveScreen('Shop'); }} />;
-    if (activeScreen === 'GeneticShop') return <ShopScreen type="All" defaultSearch={shopQuery} onBack={() => setActiveScreen('Genetic')} />;
+    if (activeScreen === 'Gastritis') return <GastritisLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} onNavigateToShop={() => { setShopCategory('Arivu in nutrition'); setShopQuery(''); setActiveScreen('Shop'); }} />;
+    if (activeScreen === 'GastritisShop') return <ShopScreen type="Arivu in nutrition" defaultSearch="" onBack={() => setActiveScreen('Gastritis')} />;
+    if (activeScreen === 'Genetic') return <GeneticLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} onNavigateToShop={() => { setShopCategory('Antioxidants'); setShopQuery(''); setActiveScreen('Shop'); }} />;
+    if (activeScreen === 'GeneticShop') return <ShopScreen type="Antioxidants" defaultSearch="" onBack={() => setActiveScreen('Genetic')} />;
     if (activeScreen === 'WigShop') return <ShopScreen type="Cancer support wig" onBack={handleCloseActiveScreen} />;
     if (activeScreen === 'Shop') return <ShopScreen type={shopCategory} defaultSearch={shopQuery} onBack={handleCloseActiveScreen} onOpenOrders={() => onNavigateToTab?.('Shop Orders')} />;
     return null;

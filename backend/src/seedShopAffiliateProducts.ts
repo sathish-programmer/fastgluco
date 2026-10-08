@@ -33,7 +33,7 @@ export const AFFILIATE_PRODUCTS = [
     buyOnAmazonUrl: 'https://www.amazon.in/Vinnie-Premium-Walnut-Inshell-Natural/dp/B09R4DGRH9?tag=mitoreboot-21&linkCode=ll2',
     stock: 100,
     isActive: true,
-    doctorRecommended: true,
+    doctorRecommended: false,
     keyBenefits: ['Cold-shelled for maximum nutrient density', 'High plant-based Omega-3 ALA content', 'Free of pesticides and chemical preservatives']
   },
   {
@@ -51,7 +51,7 @@ export const AFFILIATE_PRODUCTS = [
     buyOnAmazonUrl: 'https://www.amazon.in/Fresh-Amla-250g/dp/B07BG7D7SC?tag=mitoreboot-21&linkCode=ll2',
     stock: 100,
     isActive: true,
-    doctorRecommended: true,
+    doctorRecommended: false,
     keyBenefits: ['Raw whole food Vitamin C', 'Assists in insulin sensitivity and digestion', 'Direct farm harvest with zero post-harvest chemicals']
   },
   {
@@ -69,15 +69,15 @@ export const AFFILIATE_PRODUCTS = [
     buyOnAmazonUrl: 'https://www.amazon.in/Fresh-Organic-Carrot-Ooty-500g/dp/B0B53W9WJX?tag=mitoreboot-21&linkCode=ll2',
     stock: 100,
     isActive: true,
-    doctorRecommended: true,
+    doctorRecommended: false,
     keyBenefits: ['Rich in Provitamin A & Lutein', 'Supports eye, skin, and mucosal membrane health', 'Zero pesticide residues from pristine hill cultivation']
   },
 
   // ── CATEGORY 3: Environment safe products ──
   {
     name: 'Prana Air Pocket Real-Time PM2.5 Air Quality Monitor',
-    description: 'Compact portable laser particle sensor for immediate PM2.5 monitoring. Measures indoor and outdoor airborne particulate levels with high-precision optical sensors and app sync.',
-    shortDescription: 'Portable real-time PM2.5 laser air quality monitor.',
+    description: 'Compact portable laser particle sensor for immediate PM2.5 monitoring and air purifier efficiency testing. Measures indoor and outdoor airborne particulate levels with high-precision optical sensors and app sync.',
+    shortDescription: 'Portable real-time PM2.5 laser air purifier companion & AQI monitor.',
     category: 'Environment safe products',
     brand: 'Prana Air',
     price: 4990,
@@ -89,8 +89,8 @@ export const AFFILIATE_PRODUCTS = [
     buyOnAmazonUrl: 'https://www.amazon.in/Prana-Air-Portable-Real-Time-Connectivity/dp/B0GVK35WXS?tag=mitoreboot-21&linkCode=ll2',
     stock: 50,
     isActive: true,
-    doctorRecommended: true,
-    keyBenefits: ['Laser PM2.5 optical particulate counter', 'Real-time air pollution alerts', 'Rechargeable pocket form factor']
+    doctorRecommended: false,
+    keyBenefits: ['Laser PM2.5 optical particulate counter', 'Air purifier filtration efficiency testing', 'Real-time air pollution alerts']
   },
   {
     name: 'Eureka Forbes 360° Particulate Air Purifier with True HEPA',
@@ -107,7 +107,7 @@ export const AFFILIATE_PRODUCTS = [
     buyOnAmazonUrl: 'https://www.amazon.in/Eureka-Forbes-Technology-Particulate-Purification/dp/B0CMJ6T9JB?tag=mitoreboot-21&linkCode=ll2',
     stock: 35,
     isActive: true,
-    doctorRecommended: true,
+    doctorRecommended: false,
     keyBenefits: ['True HEPA particulate capture', '360-degree air intake flow', 'Whisper-quiet night mode for deep sleep']
   },
   {
@@ -125,13 +125,13 @@ export const AFFILIATE_PRODUCTS = [
     buyOnAmazonUrl: 'https://www.amazon.in/Philips-3601-Car-Air-Purifier/dp/B0CRRWXQC4?tag=mitoreboot-21&linkCode=ll2',
     stock: 40,
     isActive: true,
-    doctorRecommended: true,
+    doctorRecommended: false,
     keyBenefits: ['Removes traffic exhaust & volatile compounds', 'Rapid cabin air exchange rate', 'Auto-power with car ignition']
   },
   {
     name: 'KENT Supreme Alkaline RO Water Purifier',
-    description: 'State-of-the-art RO + UV + UF + Alkaline water purification. Removes heavy metals, microplastics, and pesticide runoff while maintaining optimal alkaline pH (8.0-8.5).',
-    shortDescription: 'Multi-stage RO + UV water purifier with alkaline pH balance.',
+    description: 'State-of-the-art dual filtration RO + UV + UF + Alkaline water purifier with activated carbon defense. Removes heavy metals, microplastics, and pesticide runoff while maintaining optimal alkaline pH (8.0-8.5).',
+    shortDescription: 'Multi-stage RO + UV water purifier with dual filtration and alkaline pH balance.',
     category: 'Environment safe products',
     brand: 'KENT',
     price: 15499,
@@ -143,13 +143,13 @@ export const AFFILIATE_PRODUCTS = [
     buyOnAmazonUrl: 'https://www.amazon.in/KENT-Supreme-Alkaline-Purification-Black/dp/B0CB8KG44H?tag=mitoreboot-21&linkCode=ll2',
     stock: 25,
     isActive: true,
-    doctorRecommended: true,
-    keyBenefits: ['Retains essential minerals with TDS controller', 'Alkaline pH enhancement for reduced body acidity', 'Zero water wastage technology']
+    doctorRecommended: false,
+    keyBenefits: ['Dual filtration activated carbon defense', 'Retains essential minerals with TDS controller', 'Alkaline pH enhancement for reduced body acidity']
   },
   {
-    name: 'Atovio Anti-Pollution N99 Respirator Mask with Replaceable Filters',
-    description: 'Certified particulate respirator with dual exhale valves and replaceable N99 carbon filter inserts. Blocks fine particulate matter, pollen, dust, and airborne pathogens.',
-    shortDescription: 'Ergonomic reusable N99 respirator with active filtration.',
+    name: 'Atovio Anti-Pollution N95 & N99 Respirator Mask with Replaceable Filters',
+    description: 'Certified N95 and N99 particulate respirator face mask with dual exhale valves and replaceable active carbon filter inserts. Blocks fine particulate matter (PM2.5), dust, smog, and airborne pathogens.',
+    shortDescription: 'Certified N95 / N99 reusable anti-pollution face mask with carbon filters.',
     category: 'Environment safe products',
     brand: 'Atovio',
     price: 799,
@@ -161,8 +161,8 @@ export const AFFILIATE_PRODUCTS = [
     buyOnAmazonUrl: 'https://www.amazon.in/atovio-Anti-Pollution-Filtration-Respirator-Replaceable/dp/B0G2YNB443?tag=mitoreboot-21&linkCode=ll2',
     stock: 80,
     isActive: true,
-    doctorRecommended: true,
-    keyBenefits: ['99% particulate barrier protection', 'Comfortable skin-friendly breathable fabric', 'Replaceable multi-layer filtration cartridges']
+    doctorRecommended: false,
+    keyBenefits: ['Certified N95 and N99 particulate barrier protection', '6-layer activated carbon PM2.5 filters', 'Comfortable skin-friendly washable fabric with breathable air valve']
   },
   {
     name: 'Oral-B CrossAction Battery-Powered Electric Toothbrush',
@@ -179,7 +179,7 @@ export const AFFILIATE_PRODUCTS = [
     buyOnAmazonUrl: 'https://www.amazon.in/Oral-Crossaction-Battery-Powered-Toothbrush/dp/B018IE1XSM?tag=mitoreboot-21&linkCode=ll2',
     stock: 90,
     isActive: true,
-    doctorRecommended: true,
+    doctorRecommended: false,
     keyBenefits: ['Rotational micro-pulse plaque breakdown', 'Gentle on gums and enamel', 'Battery operated convenience']
   },
   {
@@ -197,7 +197,7 @@ export const AFFILIATE_PRODUCTS = [
     buyOnAmazonUrl: 'https://www.amazon.in/Oral-Crossaction-Battery-Powered-Toothbrush/dp/B018IE1XSM?tag=mitoreboot-21&linkCode=ll2',
     stock: 120,
     isActive: true,
-    doctorRecommended: true,
+    doctorRecommended: false,
     keyBenefits: ['100% plastic-free compostable handle', 'Natural antibacterial neem properties', 'BPA-free bristles']
   },
   {
@@ -215,7 +215,7 @@ export const AFFILIATE_PRODUCTS = [
     buyOnAmazonUrl: 'https://www.amazon.in/Sensodyne-Expert-White-Toothpaste-140GM/dp/B0GYZ7WH1F?tag=mitoreboot-21&linkCode=ll2',
     stock: 100,
     isActive: true,
-    doctorRecommended: true,
+    doctorRecommended: false,
     keyBenefits: ['Potassium nitrate sensitivity shield', 'Low RDA abrasive score', 'Long-lasting oral freshness']
   },
   {
@@ -233,7 +233,7 @@ export const AFFILIATE_PRODUCTS = [
     buyOnAmazonUrl: 'https://www.amazon.in/Cureveda-Sparkle-Immunity-essential-Whitening/dp/B08C5HKS1R?tag=mitoreboot-21&linkCode=ll2',
     stock: 75,
     isActive: true,
-    doctorRecommended: true,
+    doctorRecommended: false,
     keyBenefits: ['Cold pressed virgin coconut base', 'Enriched with clove and peppermint oils', 'Reduces oral microbial burden naturally']
   },
 
@@ -253,7 +253,7 @@ export const AFFILIATE_PRODUCTS = [
     buyOnAmazonUrl: 'https://www.amazon.in/CUMIN-CO-Induction-Accessories-Seasoning/dp/B0FZX1FGFS?tag=mitoreboot-21&linkCode=ll2',
     stock: 60,
     isActive: true,
-    doctorRecommended: true,
+    doctorRecommended: false,
     keyBenefits: ['Zero toxic Teflon, PFAS, or lead coatings', 'Naturally adds dietary iron to foods', 'Induction and gas stove compatible']
   },
   {
@@ -271,7 +271,7 @@ export const AFFILIATE_PRODUCTS = [
     buyOnAmazonUrl: 'https://www.amazon.in/Indus-Valley-Cast-Iron-Tawa/dp/B0BZJFWFN8?tag=mitoreboot-21&linkCode=ll2',
     stock: 45,
     isActive: true,
-    doctorRecommended: true,
+    doctorRecommended: false,
     keyBenefits: ['Even heat distribution prevents hot spots', 'Traditional pre-seasoning with edible oils', 'Lifelong durability with zero microplastics']
   },
   {
@@ -289,7 +289,7 @@ export const AFFILIATE_PRODUCTS = [
     buyOnAmazonUrl: 'https://www.amazon.in/Pre-Seasoned-Cookware-Kitchen-Naturally-Nonstick/dp/B0DN1SXXRK?tag=mitoreboot-21&linkCode=ll2',
     stock: 30,
     isActive: true,
-    doctorRecommended: true,
+    doctorRecommended: false,
     keyBenefits: ['100% cast iron with natural flaxseed oil coat', 'Zero plastic or resin handles', 'Superior high-temperature searing capacity']
   },
   {
@@ -307,7 +307,7 @@ export const AFFILIATE_PRODUCTS = [
     buyOnAmazonUrl: 'https://www.amazon.in/OLMARTT-KITCHENWARE-Chopping-Board-Multi-Purpose/dp/B0FF4YS9K2?tag=mitoreboot-21&linkCode=ll2',
     stock: 70,
     isActive: true,
-    doctorRecommended: true,
+    doctorRecommended: false,
     keyBenefits: ['Zero plastic shavings in food preparation', 'Naturally antibacterial hardwood surface', 'Heavy-duty non-slip thickness']
   },
   {
@@ -325,7 +325,7 @@ export const AFFILIATE_PRODUCTS = [
     buyOnAmazonUrl: 'https://www.amazon.in/MEEROK-Oil-dispenser-Pourer-Pack/dp/B0HC329FYK?tag=mitoreboot-21&linkCode=ll2',
     stock: 85,
     isActive: true,
-    doctorRecommended: true,
+    doctorRecommended: false,
     keyBenefits: ['Food-grade 304 stainless steel nozzles', 'Prevents oil oxidation and plastic chemical leaching', 'Precision measured pouring']
   },
   {
@@ -343,7 +343,7 @@ export const AFFILIATE_PRODUCTS = [
     buyOnAmazonUrl: 'https://www.amazon.in/NATULIX-Kg-Stainless-Containers-kitchen/dp/B0CDL5G2R8?tag=mitoreboot-21&linkCode=ll2',
     stock: 55,
     isActive: true,
-    doctorRecommended: true,
+    doctorRecommended: false,
     keyBenefits: ['Zero plastic contact with dry food supplies', 'Airtight seal preserves food freshness', 'Rust-resistant heavy gauge steel']
   },
 
@@ -363,7 +363,7 @@ export const AFFILIATE_PRODUCTS = [
     buyOnAmazonUrl: 'https://www.amazon.in/FreeStyle-Libre-Sensor-Glucose-Monitoring/dp/B0849WHJQN?tag=mitoreboot-21&linkCode=ll2',
     stock: 50,
     isActive: true,
-    doctorRecommended: true,
+    doctorRecommended: false,
     keyBenefits: ['14-day continuous automatic glucose tracking', 'Water-resistant sensor for bathing and exercise', 'Identifies nocturnal hypoglycemia and meal spikes']
   },
   {
@@ -381,7 +381,7 @@ export const AFFILIATE_PRODUCTS = [
     buyOnAmazonUrl: 'https://www.amazon.in/Abbott-FreeStyle-Optimum-Ketone-Strips/dp/B08KXS4TGC?tag=mitoreboot-21&linkCode=ll2',
     stock: 65,
     isActive: true,
-    doctorRecommended: true,
+    doctorRecommended: false,
     keyBenefits: ['Accurate blood ketone measurement in 10 seconds', 'Monitors therapeutic ketosis and metabolic shift', 'Individually foil-sealed for long shelf life']
   },
   {
@@ -399,28 +399,46 @@ export const AFFILIATE_PRODUCTS = [
     buyOnAmazonUrl: 'https://www.amazon.in/FreeStyle-Libre-2-Reader-Glucose-Monitoring/dp/B0H267WC5H?tag=mitoreboot-21&linkCode=ll2',
     stock: 30,
     isActive: true,
-    doctorRecommended: true,
+    doctorRecommended: false,
     keyBenefits: ['Dual testing for glucose and blood ketone levels', 'Visual ambulatory glucose profile (AGP) reports', 'Stores 90 days of glycemic history']
   },
 
   // ── CATEGORY 6: Cancer support wig ──
   {
-    name: 'Medical-Grade Soft Breathable Cancer Support Wig',
-    description: 'Specially constructed lightweight, hypoallergenic cranial prosthesis designed for oncology chemotherapy and alopecia. Features ultra-soft bamboo lining to prevent scalp irritation.',
-    shortDescription: 'Hypoallergenic soft bamboo-lined medical hair loss wig.',
+    name: 'PALAY Soft Elastic Cotton Chemo Caps Turban Headwear for Cancer Hair Loss',
+    description: 'Specially designed soft, breathable cotton elastic chemo headwear and cancer cap turban for sensitive scalps during oncology treatments, alopecia, and hair loss.',
+    shortDescription: 'Soft elastic cotton chemo turban & cap for sensitive scalp hair loss.',
     category: 'Cancer support wig',
-    brand: 'ComfortCare',
-    price: 2499,
-    regularPrice: 3999,
-    offerPrice: 2499,
-    discountPercent: 38,
-    image: 'https://m.media-amazon.com/images/I/51YuQGAWwWL.jpg',
-    images: ['https://m.media-amazon.com/images/I/51YuQGAWwWL.jpg'],
-    buyOnAmazonUrl: 'https://www.amazon.in/Cureveda-Sparkle-Immunity-essential-Whitening/dp/B08C5HKS1R?tag=mitoreboot-21&linkCode=ll2',
-    stock: 40,
+    brand: 'PALAY',
+    price: 599,
+    regularPrice: 999,
+    offerPrice: 599,
+    discountPercent: 40,
+    image: 'https://m.media-amazon.com/images/I/41k5AtmKFnL.jpg',
+    images: ['https://m.media-amazon.com/images/I/41k5AtmKFnL.jpg'],
+    buyOnAmazonUrl: 'https://www.amazon.in/dp/B0BXSBH2BQ?tag=mitoreboot-21&linkCode=ll2',
+    stock: 50,
     isActive: true,
-    doctorRecommended: true,
-    keyBenefits: ['Hypoallergenic ultra-soft scalp cap', 'Natural hair volume and adjustable tension bands', 'Thermal regulation for maximum comfort']
+    doctorRecommended: false,
+    keyBenefits: ['Hypoallergenic soft breathable cotton blend', 'Pre-tied elastic design for gentle, secure fit', 'Non-irritating seam construction for sensitive scalp comfort']
+  },
+  {
+    name: 'The Headscarves Women Silky Soft Bamboo Viscose Sleep Cap for Hair Loss Chemo Headwear',
+    description: 'Ultra-soft bamboo viscose cranial sleep cap engineered specifically for medical hair loss, sensitive scalp protection, and chemo comfort.',
+    shortDescription: 'Silky soft bamboo viscose chemo sleep skull cap.',
+    category: 'Cancer support wig',
+    brand: 'The Headscarves',
+    price: 499,
+    regularPrice: 799,
+    offerPrice: 499,
+    discountPercent: 38,
+    image: 'https://m.media-amazon.com/images/I/31o8ZP686xL.jpg',
+    images: ['https://m.media-amazon.com/images/I/31o8ZP686xL.jpg'],
+    buyOnAmazonUrl: 'https://www.amazon.in/dp/B07MYZHL82?tag=mitoreboot-21&linkCode=ll2',
+    stock: 45,
+    isActive: true,
+    doctorRecommended: false,
+    keyBenefits: ['Natural moisture-wicking bamboo viscose', 'Seam-free inner design preventing irritation', 'Thermal regulating all-season wear']
   },
 
   // ── CATEGORY 7: Antioxidants ──
@@ -439,7 +457,7 @@ export const AFFILIATE_PRODUCTS = [
     buyOnAmazonUrl: 'https://www.amazon.in/TATA-Product-Organic-India-Powder/dp/B0FG72Q5XM?tag=mitoreboot-21&linkCode=ll2',
     stock: 90,
     isActive: true,
-    doctorRecommended: true,
+    doctorRecommended: false,
     keyBenefits: ['High epigallocatechin gallate (EGCG) concentration', 'Fosters mitochondrial biogenesis', '100% certified organic cultivation']
   },
   {
@@ -456,7 +474,7 @@ export const AFFILIATE_PRODUCTS = [
     images: ['https://m.media-amazon.com/images/I/61b3pxcp73L.jpg'],
     stock: 120,
     isActive: true,
-    doctorRecommended: true,
+    doctorRecommended: false,
     keyBenefits: ['Lab-tested high curcuminoid content (>7%)', 'Unadulterated single-origin cultivation', 'Enhances cellular antioxidant enzyme systems']
   },
   {
@@ -473,7 +491,7 @@ export const AFFILIATE_PRODUCTS = [
     images: ['https://m.media-amazon.com/images/I/61b3pxcp73L.jpg'],
     stock: 80,
     isActive: true,
-    doctorRecommended: true,
+    doctorRecommended: false,
     keyBenefits: ['Standardized 95% pure curcuminoid complex', 'Piperine-enhanced systemic absorption', 'Supports cellular integrity and immune resilience']
   },
   {
@@ -527,7 +545,7 @@ export const AFFILIATE_PRODUCTS = [
     buyOnAmazonUrl: 'https://www.amazon.in/gp/product/9350578883?tag=mitoreboot-21&linkCode=ll2',
     stock: 30,
     isActive: true,
-    doctorRecommended: true,
+    doctorRecommended: false,
     keyBenefits: ['Cellular pharmacology of master antioxidants', 'Dosage strategies for clinical care', 'Physician and clinician oriented insights']
   },
   {
@@ -583,7 +601,7 @@ export const AFFILIATE_PRODUCTS = [
     buyOnAmazonUrl: 'https://www.amazon.in/Inside-Menopause-Brain-Understanding-Happens/dp/B0DKT5B8S1?tag=mitoreboot-21&linkCode=ll2',
     stock: 40,
     isActive: true,
-    doctorRecommended: true,
+    doctorRecommended: false,
     keyBenefits: ['Written by leading neuroscientist Lisa Mosconi, PhD', 'Actionable dietary and sleep protocols for hot flashes & fog', 'Optimizes cognitive reserve and metabolic transition']
   },
   {
@@ -601,7 +619,7 @@ export const AFFILIATE_PRODUCTS = [
     buyOnAmazonUrl: 'https://www.amazon.in/Menopause-Gut-Balance-Microbiome-Reclaim/dp/0593855191?tag=mitoreboot-21&linkCode=ll2',
     stock: 30,
     isActive: true,
-    doctorRecommended: true,
+    doctorRecommended: false,
     keyBenefits: ['Unlocks the estrobolome microbiome connection', 'High-fiber and prebiotic meal templates', 'Alleviates hormonal weight gain and digestive issues']
   },
   {
@@ -619,7 +637,7 @@ export const AFFILIATE_PRODUCTS = [
     buyOnAmazonUrl: 'https://www.amazon.in/Self-Help-Premenstrual-Syndrome-Michelle-Harrison/dp/0679778004?tag=mitoreboot-21&linkCode=ll2',
     stock: 35,
     isActive: true,
-    doctorRecommended: true,
+    doctorRecommended: false,
     keyBenefits: ['Proven nutritional supplementation guidelines', 'Stress and progesterone balancing techniques', 'Empowering self-advocacy tools for women']
   },
   {
@@ -655,7 +673,7 @@ export const AFFILIATE_PRODUCTS = [
     buyOnAmazonUrl: 'https://www.amazon.in/AYURVEDIC-MODERN-OVERVIEW-PREMENSTRUAL-SYNDROME/dp/9355154461?tag=mitoreboot-21&linkCode=ll2',
     stock: 30,
     isActive: true,
-    doctorRecommended: true,
+    doctorRecommended: false,
     keyBenefits: ['Doshic analysis of PMS presentations', 'Traditional herbal rasayanas and formulation insights', 'Comparative modern hormone diagnostic charts']
   },
 
@@ -675,7 +693,7 @@ export const AFFILIATE_PRODUCTS = [
     buyOnAmazonUrl: 'https://www.amazon.in/gp/product/1648450954?tag=mitoreboot-21&linkCode=ll2',
     stock: 50,
     isActive: true,
-    doctorRecommended: true,
+    doctorRecommended: false,
     keyBenefits: ['Large print format for easy senior readability', 'Targeted neuroplasticity activation exercises', 'Builds daily cognitive stimulation habits']
   },
   {
@@ -693,7 +711,7 @@ export const AFFILIATE_PRODUCTS = [
     buyOnAmazonUrl: 'https://www.amazon.in/gp/product/B0DM1BM3PS?tag=mitoreboot-21&linkCode=ll2',
     stock: 45,
     isActive: true,
-    doctorRecommended: true,
+    doctorRecommended: false,
     keyBenefits: ['Graduated difficulty levels for continuous progress', 'Supports memory, processing speed, and focus', 'Fun, frustration-free layout']
   },
   {
@@ -711,7 +729,7 @@ export const AFFILIATE_PRODUCTS = [
     buyOnAmazonUrl: 'https://www.amazon.in/gp/product/1837995346?tag=mitoreboot-21&linkCode=ll2',
     stock: 35,
     isActive: true,
-    doctorRecommended: true,
+    doctorRecommended: false,
     keyBenefits: ['Brain-derived neurotrophic factor (BDNF) optimization', 'Mitochondrial nutrients for synaptic health', 'Practical daily routine recommendations']
   }
 ];

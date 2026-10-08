@@ -11,7 +11,10 @@ import {
   Link2,
   Eye,
   Check,
-  ShoppingBag
+  ShoppingBag,
+  Pencil,
+  X,
+  Save
 } from 'lucide-react';
 
 interface AdminAmazonVendorProps {
@@ -69,6 +72,19 @@ export const AdminAmazonVendor: React.FC<AdminAmazonVendorProps> = ({ apiUrl, to
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [refreshingId, setRefreshingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Edit Product Modal State
+  const [editingProduct, setEditingProduct] = useState<AmazonProduct | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editCategory, setEditCategory] = useState(PREDEFINED_CATEGORIES[0]);
+  const [editIsCustomCategory, setEditIsCustomCategory] = useState(false);
+  const [editCustomCategory, setEditCustomCategory] = useState('');
+  const [editBrand, setEditBrand] = useState('');
+  const [editImage, setEditImage] = useState('');
+  const [editAffiliateUrl, setEditAffiliateUrl] = useState('');
+  const [editIsActive, setEditIsActive] = useState(true);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [rescrapeLoading, setRescrapeLoading] = useState(false);
 
   const authHeaders = useMemo(() => ({
     'Content-Type': 'application/json',
@@ -222,6 +238,115 @@ export const AdminAmazonVendor: React.FC<AdminAmazonVendorProps> = ({ apiUrl, to
       setError(err.message || 'Error deleting product');
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  // Open Edit Modal
+  const handleOpenEdit = (product: AmazonProduct) => {
+    setEditingProduct(product);
+    setEditName(product.name || '');
+    setEditBrand(product.brand || '');
+    setEditImage(product.image || '');
+    setEditAffiliateUrl(product.buyOnAmazonUrl || '');
+    setEditIsActive(product.isActive !== false);
+
+    if (PREDEFINED_CATEGORIES.includes(product.category)) {
+      setEditCategory(product.category);
+      setEditIsCustomCategory(false);
+      setEditCustomCategory('');
+    } else {
+      setEditCategory(product.category);
+      setEditIsCustomCategory(true);
+      setEditCustomCategory(product.category);
+    }
+  };
+
+  // Close Edit Modal
+  const handleCloseEdit = () => {
+    setEditingProduct(null);
+  };
+
+  // Live re-scrape from Amazon link in edit modal
+  const handleRescrapeInModal = async () => {
+    if (!editAffiliateUrl.trim()) {
+      setError('Please provide an Amazon URL to re-fetch.');
+      return;
+    }
+    try {
+      setRescrapeLoading(true);
+      setError(null);
+      const res = await fetch(`${apiUrl}/admin/amazon/preview`, {
+        method: 'POST',
+        headers: authHeaders,
+        body: JSON.stringify({ urlOrAsin: editAffiliateUrl.trim() })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to fetch metadata');
+      setEditName(data.title);
+      setEditImage(data.image);
+      if (data.brand && data.brand !== 'Amazon') {
+        setEditBrand(data.brand);
+      }
+      setEditAffiliateUrl(data.affiliateUrl);
+      setSuccessMessage('Fetched latest details from Amazon!');
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err: any) {
+      setError(err.message || 'Error fetching Amazon details');
+    } finally {
+      setRescrapeLoading(false);
+    }
+  };
+
+  // Save changes to edited product
+  const handleSaveEdit = async () => {
+    if (!editingProduct) return;
+    const finalCategory = editIsCustomCategory ? editCustomCategory.trim() : editCategory;
+    if (!editName.trim()) {
+      setError('Product title is required.');
+      return;
+    }
+    if (!finalCategory) {
+      setError('Category is required.');
+      return;
+    }
+    if (!editImage.trim()) {
+      setError('Image URL is required.');
+      return;
+    }
+    if (!editAffiliateUrl.trim()) {
+      setError('Affiliate URL is required.');
+      return;
+    }
+
+    try {
+      setSavingEdit(true);
+      setError(null);
+      const res = await fetch(`${apiUrl}/admin/amazon/products/${editingProduct._id}`, {
+        method: 'PUT',
+        headers: authHeaders,
+        body: JSON.stringify({
+          name: editName.trim(),
+          category: finalCategory,
+          brand: editBrand.trim() || 'Amazon',
+          image: editImage.trim(),
+          buyOnAmazonUrl: editAffiliateUrl.trim(),
+          isActive: editIsActive
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to update product');
+
+      // Update in local state
+      setProducts((prev) => prev.map((p) => (p._id === editingProduct._id ? data.product : p)));
+      setSuccessMessage(`Updated "${editName.trim()}" successfully.`);
+      setTimeout(() => setSuccessMessage(null), 4000);
+      setEditingProduct(null);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Error updating product');
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -613,6 +738,15 @@ export const AdminAmazonVendor: React.FC<AdminAmazonVendorProps> = ({ apiUrl, to
                       <div className="flex items-center justify-end gap-1.5">
                         <button
                           type="button"
+                          onClick={() => handleOpenEdit(p)}
+                          title="Edit product details, category, or image"
+                          className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition cursor-pointer"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+
+                        <button
+                          type="button"
                           onClick={() => handleRefreshProduct(p._id)}
                           disabled={refreshingId === p._id}
                           title="Re-scrape and update image & title from live Amazon"
@@ -640,6 +774,199 @@ export const AdminAmazonVendor: React.FC<AdminAmazonVendorProps> = ({ apiUrl, to
             </tbody>
           </table>
         </div>
+
+        {/* EDIT PRODUCT MODAL */}
+        {editingProduct && (
+          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+            <div className="bg-white rounded-3xl shadow-2xl max-w-xl w-full border border-slate-200 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-150">
+              <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/60">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 bg-indigo-50 rounded-xl text-indigo-600">
+                    <Pencil className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-slate-900 text-sm">Edit Listed Product</h3>
+                    <p className="text-[11px] text-slate-500 font-medium">Update title, category, image, or affiliate link</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCloseEdit}
+                  className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition cursor-pointer"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+                {/* Title */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Product Title</label>
+                  <textarea
+                    rows={2}
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition"
+                    placeholder="Enter accurate product title..."
+                  />
+                </div>
+
+                {/* Category Selection */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">App Category</label>
+                  <div className="grid grid-cols-2 gap-2 mb-2">
+                    {PREDEFINED_CATEGORIES.map((cat) => (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => {
+                          setEditCategory(cat);
+                          setEditIsCustomCategory(false);
+                        }}
+                        className={`text-left px-3 py-2 rounded-xl text-xs font-bold border transition cursor-pointer ${
+                          !editIsCustomCategory && editCategory === cat
+                            ? 'bg-amber-500 text-white border-amber-500 shadow-xs'
+                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-amber-300'
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setEditIsCustomCategory(true)}
+                      className={`text-left px-3 py-2 rounded-xl text-xs font-bold border transition cursor-pointer ${
+                        editIsCustomCategory
+                          ? 'bg-amber-500 text-white border-amber-500 shadow-xs'
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-amber-300'
+                      }`}
+                    >
+                      + Custom Category
+                    </button>
+                  </div>
+                  {editIsCustomCategory && (
+                    <input
+                      type="text"
+                      value={editCustomCategory}
+                      onChange={(e) => setEditCustomCategory(e.target.value)}
+                      placeholder="e.g. Brain Health, Mobility, Sleep Aids..."
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
+                    />
+                  )}
+                </div>
+
+                {/* Brand */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Brand / Publisher</label>
+                  <input
+                    type="text"
+                    value={editBrand}
+                    onChange={(e) => setEditBrand(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
+                    placeholder="Brand name (e.g. PALAY, Abbott, etc.)"
+                  />
+                </div>
+
+                {/* Image URL with live preview */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Image URL</label>
+                  <div className="flex gap-3 items-start">
+                    <div className="h-16 w-16 rounded-xl bg-slate-50 border border-slate-200 p-1 shrink-0 flex items-center justify-center overflow-hidden">
+                      <img
+                        src={editImage}
+                        alt="Preview"
+                        className="h-full w-full object-contain"
+                        onError={(e: any) => {
+                          e.target.src = 'https://m.media-amazon.com/images/I/41rcAhHKpcL.jpg';
+                        }}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <input
+                        type="text"
+                        value={editImage}
+                        onChange={(e) => setEditImage(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
+                        placeholder="https://m.media-amazon.com/images/I/..."
+                      />
+                      <p className="text-[10px] text-slate-400 mt-1">Live preview updates automatically on valid image URL.</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Amazon Affiliate URL */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-700">Amazon Affiliate Link</label>
+                    <button
+                      type="button"
+                      onClick={handleRescrapeInModal}
+                      disabled={rescrapeLoading}
+                      className="text-[10.5px] font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1 cursor-pointer"
+                    >
+                      <RefreshCw className={`h-3 w-3 ${rescrapeLoading ? 'animate-spin' : ''}`} />
+                      <span>{rescrapeLoading ? 'Fetching...' : 'Re-fetch live from Amazon'}</span>
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    value={editAffiliateUrl}
+                    onChange={(e) => setEditAffiliateUrl(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
+                    placeholder="https://www.amazon.in/dp/..."
+                  />
+                </div>
+
+                {/* Active Toggle */}
+                <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                  <div>
+                    <p className="text-xs font-bold text-slate-800">Product Status</p>
+                    <p className="text-[11px] text-slate-500">Enable or disable visibility in the user app</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={editIsActive}
+                      onChange={(e) => setEditIsActive(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="px-6 py-4 bg-slate-50/80 border-t border-slate-100 flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={handleCloseEdit}
+                  disabled={savingEdit}
+                  className="px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveEdit}
+                  disabled={savingEdit}
+                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+                >
+                  {savingEdit ? (
+                    <>
+                      <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-3.5 w-3.5" />
+                      <span>Save Changes</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

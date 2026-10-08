@@ -549,6 +549,7 @@ router.get('/admin/vendors/:id/performance', authenticateToken, requireRole(['Su
 router.post('/admin/amazon/preview', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.previewAmazonProduct);
 router.post('/admin/amazon/add-product', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.createAmazonAffiliateProduct);
 router.get('/admin/amazon/products', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.getAdminAmazonProducts);
+router.put('/admin/amazon/products/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.updateAdminAmazonProduct);
 router.delete('/admin/amazon/products/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.deleteAdminProduct);
 router.post('/admin/amazon/products/:id/refresh', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.refreshAdminAmazonProduct);
 

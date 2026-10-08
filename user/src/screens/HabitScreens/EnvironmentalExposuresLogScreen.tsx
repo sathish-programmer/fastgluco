@@ -656,7 +656,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
               </div>
               <div className="pt-2">
                 <button 
-                  onClick={() => onNavigateToShop?.('Dual Filtration Activated Carbon RO Water Purifier')}
+                  onClick={() => onNavigateToShop?.('Water Purifier')}
                   className="w-full py-4 px-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center gap-2.5 shadow-md hover:shadow-lg cursor-pointer active:scale-95"
                 >
                   <ShoppingBag className="h-4.5 w-4.5" />

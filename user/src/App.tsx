@@ -119,6 +119,8 @@ const MainAppContent: React.FC = () => {
         url.pathname = '/';
         url.searchParams.delete('tab');
         url.searchParams.delete('shop');
+        url.searchParams.delete('product');
+        url.searchParams.delete('category');
       } else {
         if (url.pathname.startsWith('/orders')) url.pathname = '/';
         url.searchParams.set('tab', nextTab.toLowerCase().replace(/\s+/g, '-'));
@@ -132,6 +134,9 @@ const MainAppContent: React.FC = () => {
   const setActiveTab = (tab: string | ((prev: string) => string), specificOrderId?: string | null) => {
     const nextTab = typeof tab === 'function' ? tab(activeTab) : tab;
     _setActiveTab(nextTab);
+    if (nextTab === 'Home') {
+      window.dispatchEvent(new CustomEvent('navigateToHomeDashboard'));
+    }
     if (specificOrderId !== undefined) {
       setTargetOrderId(specificOrderId);
     }
@@ -748,7 +753,10 @@ const MainAppContent: React.FC = () => {
 
           {/* Home Tab */}
           <button
-            onClick={() => setActiveTab('Home')}
+            onClick={() => {
+              setActiveTab('Home');
+              window.dispatchEvent(new CustomEvent('navigateToHomeDashboard'));
+            }}
             className={`flex-1 flex flex-col items-center space-y-0.5 text-center ${activeTab === 'Home' ? 'text-primary' : 'text-slate-400'}`}
           >
             <Home className="h-5.5 w-5.5" />
