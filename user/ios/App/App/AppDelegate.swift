@@ -40,6 +40,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         Auth.auth().setAPNSToken(deviceToken, type: .unknown)
+        Messaging.messaging().apnsToken = deviceToken
         NotificationCenter.default.post(name: .capacitorDidRegisterForRemoteNotifications, object: deviceToken)
     }
 

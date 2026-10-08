@@ -22,10 +22,17 @@ class PushNotificationService {
     }
 
     try {
-      // 1. Request notification permissions
-      const permStatus = await FirebaseMessaging.requestPermissions();
-      if (permStatus.receive !== 'granted') {
-        console.warn('[FCM] Notification permissions were not granted:', permStatus.receive);
+      // 1. Request notification permissions safely
+      let permGranted = false;
+      try {
+        const permStatus = await FirebaseMessaging.requestPermissions();
+        permGranted = permStatus?.receive === 'granted';
+      } catch (permErr) {
+        console.warn('[FCM] Notification permission request error (safe bypass):', permErr);
+      }
+
+      if (!permGranted) {
+        console.warn('[FCM] Notification permissions were not granted.');
         return;
       }
 
@@ -47,12 +54,16 @@ class PushNotificationService {
         }
       }
 
-      // 3. Obtain FCM device token
-      const tokenResult = await FirebaseMessaging.getToken();
-      if (tokenResult && tokenResult.token) {
-        this.currentFcmToken = tokenResult.token;
-        console.log(`[FCM] Device FCM token obtained: ${this.currentFcmToken.substring(0, 12)}...`);
-        await this.syncTokenWithBackend(apiUrl, authToken, this.currentFcmToken);
+      // 3. Obtain FCM device token safely
+      try {
+        const tokenResult = await FirebaseMessaging.getToken();
+        if (tokenResult && tokenResult.token) {
+          this.currentFcmToken = tokenResult.token;
+          console.log(`[FCM] Device FCM token obtained: ${this.currentFcmToken.substring(0, 12)}...`);
+          await this.syncTokenWithBackend(apiUrl, authToken, this.currentFcmToken);
+        }
+      } catch (tokenErr) {
+        console.warn('[FCM] Note on obtaining device token (safe bypass):', tokenErr);
       }
 
       // 4. Listen for token refresh events

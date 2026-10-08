@@ -16,8 +16,14 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>mitoreboot</string>
+				<string>com.googleusercontent.apps.1063510630357-4o0uc036j3i1tu127atfb9h1pfqh0lq3</string>
 			</array>
 		</dict>
+	</array>
+
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
 	</array>
 
 	<key>CFBundleExecutable</key>
