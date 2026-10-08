@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import {
   ArrowLeft, Search, SlidersHorizontal, Sparkles, AlertCircle, ShoppingCart,
   Package, MapPin, Plus, Minus, ChevronRight, ExternalLink,
-  Check, X, Share2, ShieldCheck, Stethoscope, Leaf, Zap, CheckCircle2, Truck, Tag
+  Check, X, Share2, ShieldCheck, Stethoscope, Leaf, Zap, CheckCircle2, Truck, Tag,
+  Activity, Wind, Flame, Heart
 } from 'lucide-react';
 import { BasketScreen } from './BasketScreen';
 import { PincodeDeliveryChecker } from '../../components/PincodeDeliveryChecker';
@@ -63,6 +64,7 @@ export const ProductImage: React.FC<{
         className={className}
         onError={() => setError(true)}
         loading="lazy"
+        referrerPolicy="no-referrer"
       />
     );
   }
@@ -154,8 +156,9 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
   // Filters state
   const [search, setSearch] = useState(defaultSearch || '');
   const [selectedCategory, setSelectedCategory] = useState<string>(() => {
-    if (!type || type === 'All' || type.toLowerCase() === 'antioxidants' || type.toLowerCase() === 'saferproducts') {
-      return 'All';
+    if (!type || type === 'All') return 'All';
+    if (type.toLowerCase() === 'saferproducts' || type.toLowerCase() === 'safer products') {
+      return 'Environment safe products';
     }
     return type;
   });
@@ -377,8 +380,10 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
   }, [apiUrl, token]);
 
   useEffect(() => {
-    if (!type || type === 'All' || type.toLowerCase() === 'antioxidants' || type.toLowerCase() === 'saferproducts') {
+    if (!type || type === 'All') {
       setSelectedCategory('All');
+    } else if (type.toLowerCase() === 'saferproducts' || type.toLowerCase() === 'safer products') {
+      setSelectedCategory('Environment safe products');
     } else {
       setSelectedCategory(type);
     }
@@ -556,6 +561,10 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
   const distinctBrands = Array.from(new Set(products.map(p => p.brand).filter(Boolean))) as string[];
 
   const openProductDetails = (item: ShopItem) => {
+    if (item.buyOnAmazonUrl) {
+      window.open(item.buyOnAmazonUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
     setSelectedProduct(item);
     setActiveImageIndex(0);
     setActiveDetailTab('overview');
@@ -606,9 +615,9 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
   }
 
   // ==========================================
-  // PRODUCT DETAILS PAGE VIEW
+  // PRODUCT DETAILS PAGE VIEW (Only for internal vendor products like Arivu Foods)
   // ==========================================
-  if (selectedProduct) {
+  if (selectedProduct && !selectedProduct.buyOnAmazonUrl) {
     const currentStock = selectedVariant
       ? Number(selectedVariant.stock ?? 0)
       : (selectedProduct.variants && selectedProduct.variants.length > 0)
@@ -1516,7 +1525,15 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
 
         {/* Quick Horizontal Category Pills */}
         <div className="flex gap-2 overflow-x-auto pb-1.5 scrollbar-none">
-          {['All', ...categories.map(c => c.name)].map((cat, idx) => {
+          {['All', ...(categories.length > 0 ? categories.map(c => c.name) : [
+            'Pesticide free food',
+            'Arivu in nutrition',
+            'Environment safe products',
+            'Safe kitchen',
+            'Glucose monitoring',
+            'Cancer support wig',
+            'Antioxidants'
+          ])].map((cat, idx) => {
             const isSelected = selectedCategory === cat;
             return (
               <button
@@ -1532,6 +1549,159 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
             );
           })}
         </div>
+
+        {/* Category Spotlight & Partner Banners */}
+        {selectedCategory === 'Pesticide free food' && (
+          <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white rounded-3xl p-5 sm:p-6 shadow-md my-3 relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="space-y-1.5 max-w-xl">
+              <div className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider text-emerald-100">
+                <Leaf className="h-3 w-3 text-emerald-200" />
+                <span>Certified Farm Partner</span>
+              </div>
+              <h3 className="text-base sm:text-lg font-black tracking-tight">
+                Bhoomi Farm – 100% Pesticide-Free & Regenerative Harvest
+              </h3>
+              <p className="text-xs text-emerald-100 leading-relaxed font-medium">
+                Order farm-fresh organic vegetables, greens, and chemical-free whole foods delivered directly from Bhoomi Farm orchards to your doorstep.
+              </p>
+            </div>
+            <a
+              href="https://bhoomifarms.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 bg-white hover:bg-emerald-50 text-emerald-800 font-extrabold text-xs px-5 py-3 rounded-2xl shadow-sm transition-all flex items-center gap-2 active:scale-95"
+            >
+              <span>Visit Bhoomi Farm</span>
+              <ExternalLink className="h-3.5 w-3.5 text-emerald-700" />
+            </a>
+          </div>
+        )}
+
+        {selectedCategory === 'Glucose monitoring' && (
+          <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-700 text-white rounded-3xl p-5 sm:p-6 shadow-md my-3 relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="space-y-1.5 max-w-xl">
+              <div className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider text-blue-100">
+                <Activity className="h-3 w-3 text-blue-200" />
+                <span>Continuous Metabolic Tracking Protocol</span>
+              </div>
+              <h3 className="text-base sm:text-lg font-black tracking-tight">
+                Abbott Continuous Glucose & Blood Ketone Ecosystem
+              </h3>
+              <p className="text-xs text-blue-100 leading-relaxed font-medium">
+                Complete 3-Step Setup: <strong>1. FreeStyle Libre Sensor (CGM)</strong> for 24/7 interstitial glucose curves • <strong>2. Optium Blood Ketone Strips</strong> to monitor nutritional ketosis • <strong>3. FreeStyle 2 Reader / Meter</strong> for clinical accuracy.
+              </p>
+            </div>
+            <div className="shrink-0 bg-white/15 backdrop-blur-md border border-white/20 px-4 py-2.5 rounded-2xl text-[11px] font-bold text-white flex items-center gap-1.5">
+              <ShieldCheck className="h-4 w-4 text-emerald-300" />
+              <span>Doctor Recommended</span>
+            </div>
+          </div>
+        )}
+
+        {selectedCategory === 'Safe kitchen' && (
+          <div className="bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white rounded-3xl p-5 sm:p-6 shadow-md my-3 relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="space-y-1.5 max-w-xl">
+              <div className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider text-amber-100">
+                <Flame className="h-3 w-3 text-amber-200" />
+                <span>Non-Toxic Kitchen Essentials</span>
+              </div>
+              <h3 className="text-base sm:text-lg font-black tracking-tight">
+                PTFE & PFOA Free Cast Iron Cookware & Stainless Storage
+              </h3>
+              <p className="text-xs text-amber-100 leading-relaxed font-medium">
+                Eliminate forever-chemicals (PFAS) and microplastics. Naturally add bioavailable dietary iron with pre-seasoned cast iron tawas, wood chopping boards, and borosilicate oil pourers.
+              </p>
+            </div>
+            <div className="shrink-0 bg-white/15 backdrop-blur-md border border-white/20 px-4 py-2.5 rounded-2xl text-[11px] font-bold text-white flex items-center gap-1.5">
+              <ShieldCheck className="h-4 w-4 text-amber-200" />
+              <span>100% Plastic-Free</span>
+            </div>
+          </div>
+        )}
+
+        {selectedCategory === 'Environment safe products' && (
+          <div className="bg-gradient-to-r from-sky-600 via-cyan-600 to-teal-700 text-white rounded-3xl p-5 sm:p-6 shadow-md my-3 relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="space-y-1.5 max-w-xl">
+              <div className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider text-sky-100">
+                <Wind className="h-3 w-3 text-sky-200" />
+                <span>Clean Air & Water Filtration</span>
+              </div>
+              <h3 className="text-base sm:text-lg font-black tracking-tight">
+                Defend Your Biology from PM2.5, Heavy Metals & VOCs
+              </h3>
+              <p className="text-xs text-sky-100 leading-relaxed font-medium">
+                Protect lung alveoli and metabolic organs with portable laser particulate monitors, True-HEPA 360° air purifiers, alkaline RO water filters, and certified N99 respirators.
+              </p>
+            </div>
+            <div className="shrink-0 bg-white/15 backdrop-blur-md border border-white/20 px-4 py-2.5 rounded-2xl text-[11px] font-bold text-white flex items-center gap-1.5">
+              <ShieldCheck className="h-4 w-4 text-sky-200" />
+              <span>Tested & Verified</span>
+            </div>
+          </div>
+        )}
+
+        {selectedCategory === 'Arivu in nutrition' && (
+          <div className="bg-gradient-to-r from-indigo-700 via-violet-700 to-purple-800 text-white rounded-3xl p-5 sm:p-6 shadow-md my-3 relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="space-y-1.5 max-w-xl">
+              <div className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider text-violet-100">
+                <Sparkles className="h-3 w-3 text-violet-200" />
+                <span>Partner Brand • Arivu Foods</span>
+              </div>
+              <h3 className="text-base sm:text-lg font-black tracking-tight">
+                Clinical Low-GI Nutrition & Sprouted Superfood Staples
+              </h3>
+              <p className="text-xs text-violet-100 leading-relaxed font-medium">
+                Doctor-formulated sprouted millets, low-glycemic diabetic flours, and zero-preservative nutrition delivered direct from Arivu Foods with custom weight variants.
+              </p>
+            </div>
+            <div className="shrink-0 bg-white/15 backdrop-blur-md border border-white/20 px-4 py-2.5 rounded-2xl text-[11px] font-bold text-white flex items-center gap-1.5">
+              <CheckCircle2 className="h-4 w-4 text-emerald-300" />
+              <span>Direct Vendor Delivery</span>
+            </div>
+          </div>
+        )}
+
+        {selectedCategory === 'Cancer support wig' && (
+          <div className="bg-gradient-to-r from-rose-600 via-pink-600 to-rose-700 text-white rounded-3xl p-5 sm:p-6 shadow-md my-3 relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="space-y-1.5 max-w-xl">
+              <div className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider text-rose-100">
+                <Heart className="h-3 w-3 text-rose-200" />
+                <span>Oncology Care & Scalp Comfort</span>
+              </div>
+              <h3 className="text-base sm:text-lg font-black tracking-tight">
+                Medical-Grade Soft Cranial Head Coverings
+              </h3>
+              <p className="text-xs text-rose-100 leading-relaxed font-medium">
+                Designed specifically for individuals navigating chemotherapy or medical hair loss. Features ultra-soft bamboo lining, hypoallergenic breathable caps, and natural movement.
+              </p>
+            </div>
+            <div className="shrink-0 bg-white/15 backdrop-blur-md border border-white/20 px-4 py-2.5 rounded-2xl text-[11px] font-bold text-white flex items-center gap-1.5">
+              <Heart className="h-4 w-4 text-rose-200" />
+              <span>Compassionate Care</span>
+            </div>
+          </div>
+        )}
+
+        {selectedCategory === 'Antioxidants' && (
+          <div className="bg-gradient-to-r from-emerald-700 via-teal-700 to-slate-800 text-white rounded-3xl p-5 sm:p-6 shadow-md my-3 relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="space-y-1.5 max-w-xl">
+              <div className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider text-emerald-100">
+                <Zap className="h-3 w-3 text-emerald-200" />
+                <span>Mitochondrial Protection & Longevity</span>
+              </div>
+              <h3 className="text-base sm:text-lg font-black tracking-tight">
+                High-Potency Polyphenols, Pure Curcumin & Clinical Literature
+              </h3>
+              <p className="text-xs text-emerald-100 leading-relaxed font-medium">
+                Neutralize reactive oxygen species (ROS) with certified high-curcumin Lakadong turmeric, organic green tea catechins, and evidence-based longevity & hormonal balance guides.
+              </p>
+            </div>
+            <div className="shrink-0 bg-white/15 backdrop-blur-md border border-white/20 px-4 py-2.5 rounded-2xl text-[11px] font-bold text-white flex items-center gap-1.5">
+              <ShieldCheck className="h-4 w-4 text-emerald-300" />
+              <span>ORAC Verified</span>
+            </div>
+          </div>
+        )}
 
         {/* Modern, Clean & Neat Product Cards Grid (2 cols mobile, 3 tablet, 4 desktop) */}
         {loading ? (
@@ -1593,14 +1763,28 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                 return (
                   <div
                     key={item.id}
-                    onClick={() => openProductDetails(item)}
-                    className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/90 hover:border-indigo-400 dark:hover:border-indigo-600 rounded-2xl p-2.5 sm:p-3 flex flex-col justify-between transition-all duration-200 hover:-translate-y-1 hover:shadow-md group relative cursor-pointer"
+                    onClick={() => {
+                      if (item.buyOnAmazonUrl) {
+                        window.open(item.buyOnAmazonUrl, '_blank', 'noopener,noreferrer');
+                      } else {
+                        openProductDetails(item);
+                      }
+                    }}
+                    className={`bg-white dark:bg-slate-900 border rounded-2xl p-2.5 sm:p-3 flex flex-col justify-between transition-all duration-200 hover:-translate-y-1 hover:shadow-md group relative cursor-pointer ${
+                      item.buyOnAmazonUrl
+                        ? 'border-amber-200/70 dark:border-amber-900/40 hover:border-amber-400 dark:hover:border-amber-500'
+                        : 'border-slate-200/80 dark:border-slate-800/90 hover:border-indigo-400 dark:hover:border-indigo-600'
+                    }`}
                   >
                     <div>
                       {/* Clean Packaging Showcase Pedestal (Tighter Fit, Zero Trapped Whitespace) */}
                       <div className="w-full aspect-[4/4.5] sm:aspect-square bg-slate-50/70 dark:bg-slate-950/50 rounded-xl mb-2 flex items-center justify-center overflow-hidden relative border border-slate-100 dark:border-slate-800/60 p-1 sm:p-1.5">
                         {/* Badge Overlays */}
-                        {isOutOfStock ? (
+                        {item.buyOnAmazonUrl ? (
+                          <span className="absolute top-1.5 left-1.5 z-10 bg-amber-500 text-slate-950 text-[7.5px] font-black px-1.5 py-0.5 rounded-md shadow-2xs backdrop-blur-xs flex items-center gap-0.5 border border-amber-300/40">
+                            Amazon
+                          </span>
+                        ) : isOutOfStock ? (
                           <span className="absolute top-1.5 left-1.5 z-10 bg-slate-900/90 text-white text-[8px] font-black px-1.5 py-0.5 rounded-md shadow-2xs backdrop-blur-md flex items-center gap-1">
                             <span className="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
                             Sold Out
@@ -1622,7 +1806,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                           apiUrl={apiUrl}
                           title={item.name}
                           category={item.category}
-                          className={`h-full w-full object-contain transition-transform duration-300 group-hover:scale-105 ${isOutOfStock ? 'opacity-50 grayscale' : ''}`}
+                          className={`h-full w-full object-contain transition-transform duration-300 group-hover:scale-105 ${isOutOfStock && !item.buyOnAmazonUrl ? 'opacity-50 grayscale' : ''}`}
                           textClassName="text-4xl"
                         />
                       </div>
@@ -1634,37 +1818,50 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
 
                       {/* Product Name */}
                       <h3 className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-sm leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-2 min-h-[2.1rem] tracking-tight">
-                        {item.name}
+                        {item.name ? item.name.replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&quot;/g, '"') : ''}
                       </h3>
                     </div>
 
                     {/* Pricing & ADD Action */}
                     <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 mt-2 flex items-center justify-between gap-1.5">
                       <div className="min-w-0">
-                        <div className="flex items-baseline gap-1 flex-wrap">
-                          <span className="font-black text-slate-900 dark:text-white text-sm sm:text-base leading-none tracking-tight">
-                            {curr}{finalPrice.toFixed(0)}
-                          </span>
-                          {discountPercent > 0 && (
-                            <span className="text-[10px] text-slate-400 line-through font-bold">
-                              {curr}{regularPrice.toFixed(0)}
+                        {item.buyOnAmazonUrl ? (
+                          <div className="flex flex-col">
+                            <span className="text-[11px] font-black text-slate-900 dark:text-white leading-tight">
+                              See on Amazon
                             </span>
-                          )}
-                        </div>
-                        {hasVariants ? (
-                          <span className="text-[9px] text-slate-400 font-bold block mt-0.5 truncate">
-                            {item.variants?.length} option{item.variants && item.variants.length > 1 ? 's' : ''}
-                          </span>
-                        ) : discountPercent > 0 ? (
-                          <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 block mt-0.5 truncate">
-                            Save {curr}{(regularPrice - finalPrice).toFixed(0)}
-                          </span>
-                        ) : null}
+                            <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 block mt-0.5 truncate">
+                              Live Price & Details ↗
+                            </span>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex items-baseline gap-1 flex-wrap">
+                              <span className="font-black text-slate-900 dark:text-white text-sm sm:text-base leading-none tracking-tight">
+                                {curr}{finalPrice.toFixed(0)}
+                              </span>
+                              {discountPercent > 0 && (
+                                <span className="text-[10px] text-slate-400 line-through font-bold">
+                                  {curr}{regularPrice.toFixed(0)}
+                                </span>
+                              )}
+                            </div>
+                            {hasVariants ? (
+                              <span className="text-[9px] text-slate-400 font-bold block mt-0.5 truncate">
+                                {item.variants?.length} option{item.variants && item.variants.length > 1 ? 's' : ''}
+                              </span>
+                            ) : discountPercent > 0 ? (
+                              <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 block mt-0.5 truncate">
+                                Save {curr}{(regularPrice - finalPrice).toFixed(0)}
+                              </span>
+                            ) : null}
+                          </>
+                        )}
                       </div>
 
                       {/* Action Button */}
                       <div className="shrink-0">
-                        {isOutOfStock ? (
+                        {isOutOfStock && !item.buyOnAmazonUrl ? (
                           <span className="text-[10px] font-black text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900/50 px-2.5 py-1.5 rounded-xl block text-center shadow-2xs">
                             Sold Out
                           </span>
@@ -1674,10 +1871,10 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className="text-[10px] font-black text-amber-950 bg-amber-400 hover:bg-amber-300 px-3 py-1.5 rounded-xl shadow-xs transition-all flex items-center gap-1 active:scale-95"
+                            className="text-[10.5px] font-black text-slate-950 bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 hover:from-amber-300 hover:to-amber-400 px-3 py-1.5 rounded-xl shadow-xs transition-all flex items-center gap-1 active:scale-95 border border-amber-300/60"
                           >
                             <span>Amazon</span>
-                            <ExternalLink className="h-3 w-3" />
+                            <ExternalLink className="h-3 w-3 stroke-[2.5]" />
                           </a>
                         ) : branding.enableExternalPayments !== false ? (
                           hasVariants ? (

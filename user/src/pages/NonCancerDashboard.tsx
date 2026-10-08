@@ -140,6 +140,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
 
   const [habits, setHabits] = useState<HabitLog[]>([]);
   const [shopQuery, setShopQuery] = useState<string>('');
+  const [shopCategory, setShopCategory] = useState<string>('All');
   const [showStressedModal, setShowStressedModal] = useState<boolean>(false);
   const [showCaregiverModal, setShowCaregiverModal] = useState<boolean>(false);
   const [showRecommendation, setShowRecommendation] = useState<boolean>(false);
@@ -959,7 +960,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
   let streak = 0;
   const uniqueDates = [...new Set(habits.map(h => new Date(h.timestamp).toDateString()))];
   const sortedDates = uniqueDates
-    .map(d => new Date(d))
+    .map((d: any) => new Date(d))
     .sort((a, b) => b.getTime() - a.getTime());
 
   const today = new Date();
@@ -1157,13 +1158,37 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     if (activeScreen === 'Smoking') return <SmokingLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} />;
     if (activeScreen === 'Substances') return <SubstancesLogScreen onBack={handleCloseActiveScreen} />;
     if (activeScreen === 'Intimacy') return <IntimacyCheckScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} />;
-    if (activeScreen === 'Environmental') return <EnvironmentalExposuresLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} onNavigateToShop={(query) => { setShopQuery(query); setActiveScreen('EnvironmentalShop'); }} />;
-    if (activeScreen === 'Kitchen') return <KitchenLogScreen onBack={handleCloseActiveScreen} onNavigateToShop={(query) => { setShopQuery(query); setActiveScreen('EnvironmentalShop'); }} />;
+    if (activeScreen === 'Environmental') return (
+      <EnvironmentalExposuresLogScreen 
+        onBack={handleCloseActiveScreen} 
+        onBookAppointment={handleBookAppt} 
+        onNavigateToShop={(query) => { 
+          if (query === 'Pesticide free food' || query === 'Organic') {
+            setShopCategory('Pesticide free food');
+            setShopQuery('');
+          } else if (query === 'Safe kitchen' || query === 'SaferProducts') {
+            setShopCategory('Safe kitchen');
+            setShopQuery('');
+          } else {
+            setShopCategory('Environment safe products');
+            setShopQuery(query && query !== 'Environment safe products' ? query : '');
+          }
+          setActiveScreen('Shop'); 
+        }} 
+      />
+    );
+    if (activeScreen === 'Kitchen') return (
+      <KitchenLogScreen 
+        onBack={handleCloseActiveScreen} 
+        onNavigateToShop={(query) => { 
+          setShopCategory('Safe kitchen'); 
+          setShopQuery(query && query !== 'Safe kitchen' ? query : ''); 
+          setActiveScreen('Shop'); 
+        }} 
+      />
+    );
     if (activeScreen === 'EnvironmentalShop') {
-      if (shopQuery === 'SaferProducts') {
-        return <ShopScreen type="All" onBack={() => setActiveScreen('Environmental')} />;
-      }
-      return <ShopScreen type="All" defaultSearch={shopQuery} onBack={() => setActiveScreen('Environmental')} />;
+      return <ShopScreen type={shopCategory !== 'All' ? shopCategory : 'Environment safe products'} defaultSearch={shopQuery} onBack={() => setActiveScreen('Environmental')} />;
     }
     if (activeScreen === 'Sleep') return <SleepLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} />;
     if (activeScreen === 'Movement') return <MovementLogScreen onBack={handleCloseActiveScreen} />;
@@ -1172,9 +1197,19 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     if (activeScreen === 'Stillness') return <StillnessLogScreen onBack={handleCloseActiveScreen} />;
     if (activeScreen === 'Breath') return <BreathLogScreen onBack={handleCloseActiveScreen} />;
     if (activeScreen === 'Joy') return <JoyLogScreen onBack={handleCloseActiveScreen} />;
-    if (activeScreen === 'Antioxidants') return <AntioxidantLogScreen onBack={handleCloseActiveScreen} onViewShop={() => setActiveScreen('AntioxidantsShop')} onNavigateToDiagnostics={() => setActiveScreen('CancerScreening')} />;
-    if (activeScreen === 'AntioxidantsShop') return <ShopScreen type="All" onBack={() => setActiveScreen('Antioxidants')} />;
-    if (activeScreen === 'SaferProducts') return <ShopScreen type="All" onBack={handleCloseActiveScreen} />;
+    if (activeScreen === 'Antioxidants') return (
+      <AntioxidantLogScreen 
+        onBack={handleCloseActiveScreen} 
+        onViewShop={() => {
+          setShopCategory('Antioxidants');
+          setShopQuery('');
+          setActiveScreen('Shop');
+        }} 
+        onNavigateToDiagnostics={() => setActiveScreen('CancerScreening')} 
+      />
+    );
+    if (activeScreen === 'AntioxidantsShop') return <ShopScreen type="Antioxidants" onBack={() => setActiveScreen('Antioxidants')} />;
+    if (activeScreen === 'SaferProducts') return <ShopScreen type="Safe kitchen" onBack={handleCloseActiveScreen} />;
     if (activeScreen === 'SymptomCheckin') return (
       <SymptomCheckinScreen
         onBack={handleCloseActiveScreen}
@@ -1186,12 +1221,12 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     if (activeScreen === 'IndianCancers') return <IndianCancersScreen onBack={handleCloseActiveScreen} />;
     if (activeScreen === 'Obesity') return <ObesityLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} />;
     if (activeScreen === 'Dental') return <DentalLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} />;
-    if (activeScreen === 'Gastritis') return <GastritisLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} onNavigateToShop={(query) => { setShopQuery(query); setActiveScreen('GastritisShop'); }} />;
-    if (activeScreen === 'GastritisShop') return <ShopScreen type="All" defaultSearch={shopQuery} onBack={() => setActiveScreen('Gastritis')} />;
-    if (activeScreen === 'Genetic') return <GeneticLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} onNavigateToShop={(query) => { setShopQuery(query); setActiveScreen('GeneticShop'); }} />;
+    if (activeScreen === 'Gastritis') return <GastritisLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} onNavigateToShop={(query) => { setShopCategory('Arivu in nutrition'); setShopQuery(query); setActiveScreen('Shop'); }} />;
+    if (activeScreen === 'GastritisShop') return <ShopScreen type="Arivu in nutrition" defaultSearch={shopQuery} onBack={() => setActiveScreen('Gastritis')} />;
+    if (activeScreen === 'Genetic') return <GeneticLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} onNavigateToShop={(query) => { setShopCategory('All'); setShopQuery(query); setActiveScreen('Shop'); }} />;
     if (activeScreen === 'GeneticShop') return <ShopScreen type="All" defaultSearch={shopQuery} onBack={() => setActiveScreen('Genetic')} />;
-    if (activeScreen === 'WigShop') return <ShopScreen type="All" defaultSearch="wig" onBack={handleCloseActiveScreen} />;
-    if (activeScreen === 'Shop') return <ShopScreen type="All" onBack={handleCloseActiveScreen} onOpenOrders={() => onNavigateToTab?.('Shop Orders')} />;
+    if (activeScreen === 'WigShop') return <ShopScreen type="Cancer support wig" onBack={handleCloseActiveScreen} />;
+    if (activeScreen === 'Shop') return <ShopScreen type={shopCategory} defaultSearch={shopQuery} onBack={handleCloseActiveScreen} onOpenOrders={() => onNavigateToTab?.('Shop Orders')} />;
     return null;
   };
 
@@ -1329,11 +1364,20 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     if (key === 'Reports' || lowerKey === 'reports') return onNavigateToTab('Reports');
     if (key === 'Food Log' || lowerKey === 'food log') return onNavigateToTab('Food Log');
     if (key === 'Educational' || lowerKey === 'educational') return onNavigateToTab('Educational');
-    if (lowerKey === 'shop_all' || lowerKey === 'recommended_products') return setActiveScreen('SaferProducts');
-    if (lowerKey === 'shop_wigs' || lowerKey === 'wigs') return setActiveScreen('WigShop');
+    if (lowerKey === 'shop_all' || lowerKey === 'recommended_products') {
+      setShopCategory('All');
+      setShopQuery('');
+      return setActiveScreen('Shop');
+    }
+    if (lowerKey === 'shop_wigs' || lowerKey === 'wigs') {
+      setShopCategory('Cancer support wig');
+      setShopQuery('');
+      return setActiveScreen('Shop');
+    }
     if (lowerKey === 'water') {
+      setShopCategory('Environment safe products');
       setShopQuery('Water filter');
-      return setActiveScreen('EnvironmentalShop');
+      return setActiveScreen('Shop');
     }
   };
 
@@ -1996,6 +2040,20 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
               <p className="text-[11.5px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                 {t('dashboard.continuousGlucoseDesc', 'Upload your CGM report, view metabolic stability graphs, log meals, and coordinate doctor consults.')}
               </p>
+              <div className="mt-2.5 flex items-center gap-3">
+                <span 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShopCategory('Glucose monitoring');
+                    setShopQuery('');
+                    setActiveScreen('Shop');
+                  }}
+                  className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                >
+                  <ShoppingBag className="h-3 w-3" />
+                  <span>{t('dashboard.orderCGMDevices', 'Order CGM Sensors & Ketone Meters')}</span>
+                </span>
+              </div>
             </div>
             <div className="h-10 w-10 bg-slate-100 group-hover:bg-slate-200 dark:bg-slate-800 dark:group-hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-2xl flex items-center justify-center shrink-0 transition-transform">
               <ArrowRight className="h-4 w-4" />
@@ -2012,13 +2070,10 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
 
       <ContextualShopCard
         activeMode={activeMode as any}
-        onOpenShop={(query) => {
-          setShopQuery(query);
-          if (query.toLowerCase() === 'wig') {
-            setActiveScreen('WigShop');
-          } else {
-            setActiveScreen('EnvironmentalShop');
-          }
+        onOpenShop={(category, query) => {
+          setShopCategory(category);
+          setShopQuery(query || '');
+          setActiveScreen('Shop');
         }}
       />
       </>

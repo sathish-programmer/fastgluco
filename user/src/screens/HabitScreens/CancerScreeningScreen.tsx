@@ -71,29 +71,29 @@ const GROUPS = [
     tabKey: "cancerScreen.tabWomenOver40",
     accent: "#A13E2B",
     tests: [
-      { 
-        nameKey: "testName.breastSelfExam", 
-        name: "Breast self-exam / breast awareness", 
-        freqKey: "testFreq.monthly", 
-        freq: "Monthly", 
-        noteKey: "testNote.breastSelfExamOver40", 
-        note: "As above — continue alongside clinical exam and mammogram." 
+      {
+        nameKey: "testName.breastSelfExam",
+        name: "Breast self-exam / breast awareness",
+        freqKey: "testFreq.monthly",
+        freq: "Monthly",
+        noteKey: "testNote.breastSelfExamOver40",
+        note: "As above — continue alongside clinical exam and mammogram."
       },
-      { 
-        nameKey: "testName.mammogram", 
-        name: "Mammogram", 
-        freqKey: "testFreq.yearly", 
-        freq: "Yearly", 
-        noteKey: "testNote.mammogram", 
-        note: "Digital mammography for early detection; add breast ultrasound/MRI if dense breast tissue or high risk." 
+      {
+        nameKey: "testName.mammogram",
+        name: "Mammogram",
+        freqKey: "testFreq.yearly",
+        freq: "Yearly",
+        noteKey: "testNote.mammogram",
+        note: "Digital mammography for early detection; add breast ultrasound/MRI if dense breast tissue or high risk."
       },
-      { 
-        nameKey: "testName.papSmear", 
-        name: "Pap smear", 
-        freqKey: "testFreq.papSmearOver40", 
-        freq: "Every 3 years (or HPV co-testing every 5 years, per gynaecologist)", 
-        noteKey: "testNote.papSmearOver40", 
-        note: "Continue until roughly age 65 or as advised." 
+      {
+        nameKey: "testName.papSmear",
+        name: "Pap smear",
+        freqKey: "testFreq.papSmearOver40",
+        freq: "Every 3 years (or HPV co-testing every 5 years, per gynaecologist)",
+        noteKey: "testNote.papSmearOver40",
+        note: "Continue until roughly age 65 or as advised."
       },
       {
         nameKey: "testName.ca125",
@@ -124,13 +124,13 @@ const GROUPS = [
         evidenceKey: "testEvidence.ldct",
         evidence: "Most guidelines (USPSTF, NCCN) reserve annual LDCT for heavier, longer-term smokers — typically ages 50–80 with a substantial pack-year history, current smokers or those who quit within 15 years. Worth risk-stratifying by pack-years rather than applying to every smoker regardless of age.",
       },
-      { 
-        nameKey: "testName.oralCancer", 
-        name: "Oral cancer screening", 
-        freqKey: "testFreq.oralCancer", 
-        freq: "Yearly, or sooner if lesions noticed", 
-        noteKey: "testNote.oralCancer", 
-        note: "Visual and physical exam of the mouth/throat — especially important with any tobacco use (smoked or chewed), given India's high oral cancer burden." 
+      {
+        nameKey: "testName.oralCancer",
+        name: "Oral cancer screening",
+        freqKey: "testFreq.oralCancer",
+        freq: "Yearly, or sooner if lesions noticed",
+        noteKey: "testNote.oralCancer",
+        note: "Visual and physical exam of the mouth/throat — especially important with any tobacco use (smoked or chewed), given India's high oral cancer burden."
       },
       {
         nameKey: "testName.cea",
@@ -200,10 +200,10 @@ export const CancerScreeningScreen: React.FC<CancerScreeningScreenProps> = ({ on
     hi: 'hi-IN'
   };
   const activeLocale = LOCALE_MAP[language] || 'en-US';
-  
+
   // Navigation State
   const [activeView, setActiveView] = useState<'TEST_LIST' | 'LABS' | 'SLOTS' | 'PAYMENT' | 'TRACKING' | 'REPORT'>('TEST_LIST');
-  
+
   // Flow Data
   const [selectedTest, setSelectedTest] = useState<TestItem | null>(null);
   const [selectedLab, setSelectedLab] = useState<any>(null);
@@ -214,7 +214,7 @@ export const CancerScreeningScreen: React.FC<CancerScreeningScreenProps> = ({ on
   const [activeTab, setActiveTab] = useState(GROUPS[0].id);
   const [tests, setTests] = useState<TestItem[]>([]);
   const [testsLoading, setTestsLoading] = useState(true);
-  
+
   // Form state
   const [testName, setTestName] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -318,203 +318,203 @@ export const CancerScreeningScreen: React.FC<CancerScreeningScreenProps> = ({ on
   const activeGroup = GROUPS.find((g) => g.id === activeTab) || GROUPS[0];
 
   return (
-    <div 
+    <div
       className="pb-24 pt-6 px-4 max-w-3xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 space-y-6 transition-colors duration-300"
       style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
     >
-        <div className="flex items-center gap-4 sub-page-internal-header">
-          <button 
-            onClick={onBack}
-            className="h-10 w-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
+      <div className="flex items-center gap-4 sub-page-internal-header">
+        <button
+          onClick={onBack}
+          className="h-10 w-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </button>
+        <div>
+          <span className="text-[10px] font-bold text-slate-400 tracking-[0.14em] uppercase">{t('cancerScreen.tagline', 'Mito Reboot · Cancer Screening')}</span>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 leading-none mt-1">{t('cancerScreen.title', 'Screening Guide by Age & Risk Group')}</h2>
+        </div>
+      </div>
+
+      <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed bg-white/65 dark:bg-slate-900/65 p-3.5 rounded-2xl border border-slate-200/50 dark:border-slate-800">
+        {t('cancerScreen.bannerNotice', "General guidance for adults in India. This isn't personalised medical advice — actual intervals should be set with a treating doctor based on individual and family history.")}
+      </p>
+
+      <div className="bg-gradient-to-r from-rose-50 via-pink-50 to-amber-50 dark:from-rose-950/40 dark:via-pink-950/30 dark:to-amber-950/20 border border-rose-200/80 dark:border-rose-900/50 rounded-2xl p-4 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <div className="w-9 h-9 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 mt-0.5">
+            <Building2 className="w-5 h-5" />
+          </div>
           <div>
-            <span className="text-[10px] font-bold text-slate-400 tracking-[0.14em] uppercase">{t('cancerScreen.tagline', 'Mito Reboot · Cancer Screening')}</span>
-            <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 leading-none mt-1">{t('cancerScreen.title', 'Screening Guide by Age & Risk Group')}</h2>
+            <div className="flex items-center gap-2">
+              <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100">
+                {t('cancerScreen.hcgBannerTitle', 'Virtual Cancer Consultation & Screening — HCG Hospitals')}
+              </h4>
+              {/* <span className="text-[9px] font-black uppercase tracking-wider bg-rose-100 dark:bg-rose-900/60 text-rose-700 dark:text-rose-300 px-1.5 py-0.5 rounded">
+                  HCG Partner
+                </span> */}
+            </div>
+            <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
+              {t('cancerScreen.hcgBannerDesc', 'Connect directly with leading oncology specialists at HCG Cancer Centres for virtual consultations, test evaluations, and expert opinions.')}
+            </p>
           </div>
         </div>
+        <a
+          href={HCG_HOSPITALS_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-xs transition-all"
+        >
+          <span>{t('cancerScreen.hcgBannerBtn', 'Consult HCG')}</span>
+          <ExternalLink className="w-3.5 h-3.5" />
+        </a>
+      </div>
 
-        <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed bg-white/65 dark:bg-slate-900/65 p-3.5 rounded-2xl border border-slate-200/50 dark:border-slate-800">
-          {t('cancerScreen.bannerNotice', "General guidance for adults in India. This isn't personalised medical advice — actual intervals should be set with a treating doctor based on individual and family history.")}
-        </p>
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm flex sticky top-0 z-10">
+        {GROUPS.map((g) => {
+          const isActive = g.id === activeTab;
+          return (
+            <button
+              key={g.id}
+              onClick={() => setActiveTab(g.id)}
+              className="flex-1 text-center py-3.5 px-2 text-xs font-bold transition-all border-b-3"
+              style={{
+                borderBottom: `3px solid ${isActive ? g.accent : "transparent"}`,
+                color: isActive ? g.accent : "#8A7B5E",
+              }}
+            >
+              {t(g.tabKey, TAB_LABELS[g.id])}
+            </button>
+          );
+        })}
+      </div>
 
-        <div className="bg-gradient-to-r from-rose-50 via-pink-50 to-amber-50 dark:from-rose-950/40 dark:via-pink-950/30 dark:to-amber-950/20 border border-rose-200/80 dark:border-rose-900/50 rounded-2xl p-4 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 mt-0.5">
-              <Building2 className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100">
-                  {t('cancerScreen.hcgBannerTitle', 'Virtual Cancer Consultation & Screening — HCG Hospitals')}
-                </h4>
-                <span className="text-[9px] font-black uppercase tracking-wider bg-rose-100 dark:bg-rose-900/60 text-rose-700 dark:text-rose-300 px-1.5 py-0.5 rounded">
-                  HCG Partner
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
-                {t('cancerScreen.hcgBannerDesc', 'Connect directly with leading oncology specialists at HCG Cancer Centres for virtual consultations, test evaluations, and expert opinions.')}
-              </p>
-            </div>
+      <section
+        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm"
+        style={{ borderLeftWidth: 4, borderLeftColor: activeGroup.accent }}
+      >
+        <h3 className="text-base font-bold mb-4" style={{ color: activeGroup.accent }}>{t(activeGroup.titleKey, activeGroup.title)}</h3>
+
+        {testsLoading ? (
+          <div className="text-center py-6 text-xs font-bold text-slate-405 animate-pulse">{t('cancerScreen.loading', 'Loading tests information...')}</div>
+        ) : (
+          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+            {activeGroup.tests.map((test, idx) => {
+              const matchedDbTest = findMatchingDbTest(test.name);
+              return (
+                <TestRowItem
+                  key={idx}
+                  test={test}
+                  matchedDbTest={matchedDbTest}
+                  onBook={() => {
+                    if (matchedDbTest) {
+                      setSelectedTest(matchedDbTest);
+                      setActiveView('LABS');
+                    }
+                  }}
+                />
+              );
+            })}
           </div>
+        )}
+      </section>
+
+      <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm">
+        <h3 className="text-sm font-extrabold text-[#5B4A8A] dark:text-indigo-400 uppercase tracking-wider mb-2">{t('cancerScreen.highRiskFamily', 'High genetic risk / strong family history')}</h3>
+        <p className="text-xs text-[#4A3E63] dark:text-indigo-350 bg-[#EFE9F5] dark:bg-indigo-950/20 border border-[#DCD0EA] dark:border-indigo-900/30 rounded-2xl p-3.5 leading-relaxed">
+          <strong>{t('wholeBodyMri', 'Whole-Body MRI')}</strong> {t('cancerScreen.highRiskNoteDesc', '— yearly, from age 60 — is suggested in addition to the standard screening above for individuals with a known genetic predisposition (e.g. BRCA1/2, Lynch syndrome) or a strong family history of cancer, or anyone otherwise assessed as high-risk. This should be discussed with a genetic counsellor or oncologist rather than done as a routine test for the general population.')}
+        </p>
+        <div className="mt-3">
           <a
             href={HCG_HOSPITALS_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-xs transition-all"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#5B4A8A] hover:bg-[#4A3C70] text-white text-xs font-bold rounded-xl shadow-xs transition-all"
           >
-            <span>{t('cancerScreen.hcgBannerBtn', 'Consult HCG')}</span>
-            <ExternalLink className="w-3.5 h-3.5" />
+            <ExternalLink className="h-3.5 w-3.5" />
+            {t('cancerScreen.hcgConsultRisk', 'Consult HCG Hospitals Specialists')}
           </a>
         </div>
+      </section>
 
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm flex sticky top-0 z-10">
-          {GROUPS.map((g) => {
-            const isActive = g.id === activeTab;
-            return (
-              <button
-                key={g.id}
-                onClick={() => setActiveTab(g.id)}
-                className="flex-1 text-center py-3.5 px-2 text-xs font-bold transition-all border-b-3"
-                style={{
-                  borderBottom: `3px solid ${isActive ? g.accent : "transparent"}`,
-                  color: isActive ? g.accent : "#8A7B5E",
-                }}
-              >
-                {t(g.tabKey, TAB_LABELS[g.id])}
-              </button>
-            );
-          })}
+      <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm">
+        <h3 className="text-sm font-extrabold text-[#A13E2B] dark:text-rose-400 uppercase tracking-wider mb-2">{t('cancerScreen.watchSymptoms', 'Watch for these symptoms')}</h3>
+        <div className="text-xs text-[#6B5B3E] dark:text-amber-400 bg-[#F3EAD8] dark:bg-amber-950/20 border border-[#E0D3B8] dark:border-amber-900/30 rounded-2xl p-3.5 font-bold mb-3">
+          {t('cancerScreen.ruleOfThumb', "Rule of thumb: if any symptom below lasts more than 3 weeks, consult a doctor — don't wait it out.")}
+        </div>
+        <ul className="list-disc pl-5 text-xs text-slate-700 dark:text-slate-300 space-y-2">
+          {SYMPTOMS.map((s, i) => (
+            <li key={i} className="leading-relaxed">{t(s.key, s.text)}</li>
+          ))}
+        </ul>
+      </section>
+
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-3xl p-5">
+        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-4">{t('cancerScreen.alreadyCompleted', 'Already completed this test elsewhere?')}</span>
+
+        <div className="flex flex-col gap-3 mb-4">
+          <input
+            type="text"
+            placeholder={t('testNamePlaceholder', 'Test Name (e.g. PSA, Mammogram)')}
+            value={testName}
+            onChange={(e) => setTestName(e.target.value)}
+            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-sm text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-950/30"
+          />
+          <div className="flex gap-3">
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-950/30"
+            />
+            <input
+              type="text"
+              placeholder={t('resultValuePlaceholder', 'Result / Value')}
+              value={result}
+              onChange={(e) => setResult(e.target.value)}
+              className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-950/30"
+            />
+          </div>
+          <input
+            type="text"
+            placeholder={t('noteFollowUpPlaceholder', 'Note / Follow up')}
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-950/30"
+          />
         </div>
 
-        <section
-          className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm"
-          style={{ borderLeftWidth: 4, borderLeftColor: activeGroup.accent }}
+        <button
+          onClick={handleSave}
+          disabled={loading || !testName || !result}
+          className="w-full py-3.5 rounded-xl font-bold text-white bg-indigo-500 hover:bg-indigo-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm"
         >
-          <h3 className="text-base font-bold mb-4" style={{ color: activeGroup.accent }}>{t(activeGroup.titleKey, activeGroup.title)}</h3>
-          
-          {testsLoading ? (
-            <div className="text-center py-6 text-xs font-bold text-slate-405 animate-pulse">{t('cancerScreen.loading', 'Loading tests information...')}</div>
-          ) : (
-            <div className="divide-y divide-slate-100 dark:divide-slate-800">
-              {activeGroup.tests.map((test, idx) => {
-                const matchedDbTest = findMatchingDbTest(test.name);
-                return (
-                  <TestRowItem
-                    key={idx}
-                    test={test}
-                    matchedDbTest={matchedDbTest}
-                    onBook={() => {
-                      if (matchedDbTest) {
-                        setSelectedTest(matchedDbTest);
-                        setActiveView('LABS');
-                      }
-                    }}
-                  />
-                );
-              })}
-            </div>
-          )}
-        </section>
+          {loading ? t('cancerScreen.saving', 'Saving...') : <><Save className="h-4 w-4" /> {t('cancerScreen.saveResult', 'Save result')}</>}
+        </button>
+      </div>
 
-        <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm">
-          <h3 className="text-sm font-extrabold text-[#5B4A8A] dark:text-indigo-400 uppercase tracking-wider mb-2">{t('cancerScreen.highRiskFamily', 'High genetic risk / strong family history')}</h3>
-          <p className="text-xs text-[#4A3E63] dark:text-indigo-350 bg-[#EFE9F5] dark:bg-indigo-950/20 border border-[#DCD0EA] dark:border-indigo-900/30 rounded-2xl p-3.5 leading-relaxed">
-            <strong>{t('wholeBodyMri', 'Whole-Body MRI')}</strong> {t('cancerScreen.highRiskNoteDesc', '— yearly, from age 60 — is suggested in addition to the standard screening above for individuals with a known genetic predisposition (e.g. BRCA1/2, Lynch syndrome) or a strong family history of cancer, or anyone otherwise assessed as high-risk. This should be discussed with a genetic counsellor or oncologist rather than done as a routine test for the general population.')}
-          </p>
-          <div className="mt-3">
-            <a
-              href={HCG_HOSPITALS_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#5B4A8A] hover:bg-[#4A3C70] text-white text-xs font-bold rounded-xl shadow-xs transition-all"
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-              {t('cancerScreen.hcgConsultRisk', 'Consult HCG Hospitals Specialists')}
-            </a>
-          </div>
-        </section>
-
-        <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm">
-          <h3 className="text-sm font-extrabold text-[#A13E2B] dark:text-rose-400 uppercase tracking-wider mb-2">{t('cancerScreen.watchSymptoms', 'Watch for these symptoms')}</h3>
-          <div className="text-xs text-[#6B5B3E] dark:text-amber-400 bg-[#F3EAD8] dark:bg-amber-950/20 border border-[#E0D3B8] dark:border-amber-900/30 rounded-2xl p-3.5 font-bold mb-3">
-            {t('cancerScreen.ruleOfThumb', "Rule of thumb: if any symptom below lasts more than 3 weeks, consult a doctor — don't wait it out.")}
-          </div>
-          <ul className="list-disc pl-5 text-xs text-slate-700 dark:text-slate-300 space-y-2">
-            {SYMPTOMS.map((s, i) => (
-              <li key={i} className="leading-relaxed">{t(s.key, s.text)}</li>
-            ))}
-          </ul>
-        </section>
-
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-3xl p-5">
-          <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-4">{t('cancerScreen.alreadyCompleted', 'Already completed this test elsewhere?')}</span>
-          
-          <div className="flex flex-col gap-3 mb-4">
-            <input 
-              type="text" 
-              placeholder={t('testNamePlaceholder', 'Test Name (e.g. PSA, Mammogram)')} 
-              value={testName}
-              onChange={(e) => setTestName(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-sm text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-950/30"
-            />
-            <div className="flex gap-3">
-              <input 
-                type="date" 
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-950/30"
-              />
-              <input 
-                type="text" 
-                placeholder={t('resultValuePlaceholder', 'Result / Value')} 
-                value={result}
-                onChange={(e) => setResult(e.target.value)}
-                className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-950/30"
-              />
-            </div>
-            <input 
-              type="text" 
-              placeholder={t('noteFollowUpPlaceholder', 'Note / Follow up')} 
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-950/30"
-            />
-          </div>
-
-          <button 
-            onClick={handleSave}
-            disabled={loading || !testName || !result}
-            className="w-full py-3.5 rounded-xl font-bold text-white bg-indigo-500 hover:bg-indigo-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm"
-          >
-            {loading ? t('cancerScreen.saving', 'Saving...') : <><Save className="h-4 w-4" /> {t('cancerScreen.saveResult', 'Save result')}</>}
-          </button>
-        </div>
-
-        {history.length > 0 && (
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-3">{t('cancerScreen.previousResults', 'Previous Results')}</span>
-            <div className="flex flex-col gap-2">
-              {history.map((h) => (
-                <div key={h.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 shadow-sm flex justify-between items-center">
-                  <div>
-                    <span className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                      <Beaker className="h-4 w-4 text-slate-450" /> {h.value.testName}
-                    </span>
-                    <span className="text-[10px] text-slate-500 dark:text-slate-450 mt-1 flex items-center gap-1">
-                      <Calendar className="h-3 w-3" /> {h.value.date ? new Date(h.value.date).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric', year: 'numeric' }) : ''}
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400 block">{h.value.result}</span>
-                    {h.value.note && <span className="text-[9px] text-slate-400 dark:text-slate-500 block max-w-[120px] truncate">{h.value.note}</span>}
-                  </div>
+      {history.length > 0 && (
+        <div>
+          <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-3">{t('cancerScreen.previousResults', 'Previous Results')}</span>
+          <div className="flex flex-col gap-2">
+            {history.map((h) => (
+              <div key={h.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 shadow-sm flex justify-between items-center">
+                <div>
+                  <span className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                    <Beaker className="h-4 w-4 text-slate-450" /> {h.value.testName}
+                  </span>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-450 mt-1 flex items-center gap-1">
+                    <Calendar className="h-3 w-3" /> {h.value.date ? new Date(h.value.date).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric', year: 'numeric' }) : ''}
+                  </span>
                 </div>
-              ))}
-            </div>
+                <div className="text-right">
+                  <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400 block">{h.value.result}</span>
+                  {h.value.note && <span className="text-[9px] text-slate-400 dark:text-slate-500 block max-w-[120px] truncate">{h.value.note}</span>}
+                </div>
+              </div>
+            ))}
           </div>
-        )}
+        </div>
+      )}
     </div>
   );
 };

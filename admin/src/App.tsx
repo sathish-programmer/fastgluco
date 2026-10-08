@@ -62,6 +62,7 @@ import { AdminExtDashboard } from './components/AdminExtDashboard';
 import { DoctorPortal } from './components/DoctorPortal';
 import { VendorPortal } from './components/VendorPortal';
 import { AdminVendorManagement } from './components/AdminVendorManagement';
+import { AdminAmazonVendor } from './components/AdminAmazonVendor';
 import { AdminShopReports } from './components/AdminShopReports';
 import { ConsultationAnalytics } from './components/ConsultationAnalytics';
 import { AdminLabs } from './components/AdminLabs';
@@ -2114,6 +2115,17 @@ const AdminPanelContent: React.FC = () => {
                       Vendors
                     </button>
                     <button 
+                      onClick={() => { setActiveView('amazon-vendor'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold flex items-center justify-between ${
+                        activeView === 'amazon-vendor' ? 'text-amber-300 bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <span>Amazon Vendor</span>
+                      <span className="bg-amber-500/20 text-amber-300 text-[9px] font-extrabold px-1.5 py-0.5 rounded border border-amber-500/30">
+                        Affiliate
+                      </span>
+                    </button>
+                    <button 
                       onClick={() => { setActiveView('partner-labs'); setSearchQuery(''); }}
                       className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
                         activeView === 'partner-labs' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
@@ -2292,6 +2304,17 @@ const AdminPanelContent: React.FC = () => {
                       <span>Vendors</span>
                       <span className="bg-emerald-500/20 text-emerald-400 text-[9px] font-extrabold px-1.5 py-0.5 rounded border border-emerald-500/30">
                         Multi-Vendor
+                      </span>
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('amazon-vendor'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold flex items-center justify-between ${
+                        activeView === 'amazon-vendor' ? 'text-amber-300 bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <span>Amazon Vendor</span>
+                      <span className="bg-amber-500/20 text-amber-300 text-[9px] font-extrabold px-1.5 py-0.5 rounded border border-amber-500/30">
+                        Affiliate
                       </span>
                     </button>
                     <button 
@@ -3649,6 +3672,11 @@ const AdminPanelContent: React.FC = () => {
         {/* VENDORS MANAGEMENT VIEW */}
         {activeView === 'vendors-management' && (
           <AdminVendorManagement apiUrl={apiUrl} token={token || ''} />
+        )}
+
+        {/* AMAZON VENDOR & AFFILIATE MANAGEMENT VIEW */}
+        {activeView === 'amazon-vendor' && (
+          <AdminAmazonVendor apiUrl={apiUrl} token={token || ''} />
         )}
 
         {/* HEALTH STORE PRODUCTS VIEW */}

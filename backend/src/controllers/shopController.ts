@@ -18,38 +18,18 @@ import path from 'path';
 import fs from 'fs';
 import { InvoiceService } from '../services/invoiceService';
 import { AuthRequest } from '../middlewares/authMiddleware';
+import { resolveAmazonProductMetadata, extractAsin } from '../services/amazonScraperService';
 
 
 // Predefined categories
 export const PREDEFINED_CATEGORIES = [
-  'Antioxidants',
-  'SaferProducts',
-  'Safer Products',
-  'Diabetes Care',
-  'Nutrition',
-  'Vitamins & Supplements',
-  'Protein Supplements',
-  'Women\'s Health',
-  'Men\'s Health',
-  'Heart Health',
-  'Weight Management',
-  'Digestive Health',
-  'Immunity',
-  'Sleep Support',
-  'Stress Management',
-  'Mental Wellness',
-  'Bone & Joint Care',
-  'Skin Care',
-  'Hair Care',
-  'Ayurvedic Products',
-  'Herbal Supplements',
-  'Medical Devices',
-  'CGM Accessories',
-  'Blood Glucose Monitoring',
-  'Foot Care',
-  'Healthy Snacks',
-  'Organic Foods',
-  'General Wellness'
+  'Pesticide free food',
+  'Arivu in nutrition',
+  'Environment safe products',
+  'Safe kitchen',
+  'Glucose monitoring',
+  'Cancer support wig',
+  'Antioxidants'
 ];
 
 // --- ADMIN ROUTES ---
@@ -139,32 +119,17 @@ export const deleteAdminProduct = async (req: Request, res: Response) => {
 
 export const getCategories = async (req: Request, res: Response) => {
   try {
-    // 1. Try to extract categories dynamically from live Arivu API products
-    try {
-      const arivuVendor = await Vendor.findOne({ slug: 'arivu-foods' });
-      const arivuAdapter = new ArivuFoodsAdapter();
-      const dynamicProducts = await arivuAdapter.fetchDynamicProducts(arivuVendor || undefined);
-      if (dynamicProducts && dynamicProducts.length > 0) {
-        const uniqueCats = Array.from(new Set(dynamicProducts.map((p: any) => p.category).filter(Boolean))).sort();
-        return res.json(uniqueCats.map(name => ({
-          name,
-          isCustom: false
-        })));
-      }
-    } catch (e: any) {
-      console.warn('[getCategories] Dynamic categories fetch error, falling back to DB:', e.message);
-    }
+    const coreCategories = [
+      'Pesticide free food',
+      'Arivu in nutrition',
+      'Environment safe products',
+      'Safe kitchen',
+      'Glucose monitoring',
+      'Cancer support wig',
+      'Antioxidants'
+    ];
 
-    // Fallback: DB distinct categories
-    const activeProductCategories = await ShopProduct.distinct('category', { 
-      isActive: true,
-      $or: [
-        { brand: 'Arivu Foods' },
-        { vendorSku: { $regex: '^ARIVU' } }
-      ]
-    });
-    const validCategories = activeProductCategories.filter(Boolean).sort();
-    res.json(validCategories.map(name => ({
+    res.json(coreCategories.map(name => ({
       name,
       isCustom: false
     })));
@@ -201,178 +166,107 @@ export const getProducts = async (req: Request, res: Response) => {
     try {
       const arivuVendor = await Vendor.findOne({ slug: 'arivu-foods' });
       const arivuAdapter = new ArivuFoodsAdapter();
-      dynamicProducts = await arivuAdapter.fetchDynamicProducts(arivuVendor || undefined);
-      isDynamicSuccess = true;
-
-      // In the background, keep DB clean & mirrored with exact IDs without blocking the HTTP response
-      (async () => {
-        try {
-          await ShopProduct.deleteMany({
-            $or: [
-              { vendorExternalId: { $regex: '^ARV-' } },
-              { vendorSku: { $regex: '^ARIVU-CP-|^ARIVU-WP-|^ARIVU-FOXTAIL-|^ARIVU-SPROUTED-|^ARIVU-ORGANIC-' } }
-            ]
-          });
-          for (const item of dynamicProducts) {
-            if (mongoose.Types.ObjectId.isValid(item._id)) {
-              await ShopProduct.findByIdAndUpdate(
-                item._id,
-                {
-                  $set: {
-                    name: item.name,
-                    description: item.description,
-                    price: item.price,
-                    regularPrice: item.regularPrice,
-                    offerPrice: item.offerPrice,
-                    image: item.image,
-                    images: item.images,
-                    category: item.category,
-                    brand: item.brand,
-                    shortDescription: item.shortDescription,
-                    detailedDescription: item.detailedDescription,
-                    usageInstructions: item.usageInstructions,
-                    keyBenefits: item.keyBenefits,
-                    healthBenefits: item.healthBenefits,
-                    gst: item.gst,
-                    productWeight: item.productWeight,
-                    stock: item.stock,
-                    availableStock: item.availableStock,
-                    isActive: item.isActive,
-                    variants: item.variants,
-                    vendorId: item.vendorId?._id,
-                    vendorSku: item.vendorSku,
-                    vendorExternalId: item.vendorExternalId,
-                    vendorSyncAt: new Date()
-                  }
-                },
-                { upsert: true, new: true, setDefaultsOnInsert: true }
-              );
-            }
-          }
-        } catch (syncErr: any) {
-          console.warn('[getProducts] Background DB sync warning:', syncErr.message);
-        }
-      })();
+      const rawProducts = await arivuAdapter.fetchDynamicProducts(arivuVendor || undefined);
+      if (rawProducts && rawProducts.length > 0) {
+        dynamicProducts = rawProducts.map(p => ({
+          ...p,
+          category: (p.category === 'MitoReboot Nutrition' || !p.category) ? 'Arivu in nutrition' : p.category
+        }));
+        isDynamicSuccess = true;
+      }
     } catch (apiErr: any) {
       console.warn('[getProducts] Arivu live API fetch error, falling back to local DB cache:', apiErr.message);
     }
 
-    if (isDynamicSuccess && dynamicProducts.length > 0) {
-      let filtered = [...dynamicProducts];
-
-      if (category && category !== 'All') {
-        const catStr = String(category).trim().toLowerCase();
-        const hasMatchingCat = filtered.some(p => (p.category || '').toLowerCase().includes(catStr));
-        if (hasMatchingCat) {
-          filtered = filtered.filter(p => (p.category || '').toLowerCase().includes(catStr));
-        }
-      }
-
-      if (brand && brand !== 'All') {
-        const brandStr = String(brand).trim().toLowerCase();
-        filtered = filtered.filter(p => (p.brand || '').toLowerCase().includes(brandStr));
-      }
-
-      if (available === 'true') {
-        filtered = filtered.filter(p => p.stock > 0);
-      }
-
-      if (search) {
-        const searchTerms = String(search).trim().toLowerCase().split(/\s+/).filter(Boolean);
-        filtered = filtered.filter(p => {
-          const text = `${p.name || ''} ${p.description || ''} ${p.shortDescription || ''} ${p.detailedDescription || ''} ${p.category || ''}`.toLowerCase();
-          return searchTerms.every(term => text.includes(term));
-        });
-      }
-
-      if (minPrice) {
-        filtered = filtered.filter(p => p.price >= Number(minPrice));
-      }
-      if (maxPrice) {
-        filtered = filtered.filter(p => p.price <= Number(maxPrice));
-      }
-
-      if (sortBy === 'price_asc') {
-        filtered.sort((a, b) => a.price - b.price);
-      } else if (sortBy === 'price_desc') {
-        filtered.sort((a, b) => b.price - a.price);
-      } else {
-        filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      }
-
-      return res.json(filtered);
+    // 2. Fetch products from MongoDB
+    const dbFilter: any = { isActive: true };
+    if (isDynamicSuccess) {
+      // Exclude Arivu products to avoid duplicates since we already have dynamic products
+      dbFilter.brand = { $ne: 'Arivu Foods' };
+      dbFilter.vendorSku = { $not: /^ARIVU/ };
     }
 
-    // Fallback: If external API was unreachable, query DB
-    const baseVendorFilter: any = {
-      isActive: true,
-      $or: [
-        { brand: 'Arivu Foods' },
-        { vendorSku: { $regex: '^ARIVU' } }
-      ]
-    };
+    const dbProducts = await ShopProduct.find(dbFilter).populate('vendorId', 'name slug gstPercentage gstInclusive shippingConfig');
+    const plainDbProducts = dbProducts.map(p => (p.toObject ? p.toObject() : p));
 
-    const andConditions: any[] = [baseVendorFilter];
+    // 3. Merge products
+    let allProducts = [...dynamicProducts, ...plainDbProducts];
 
+    // 4. Apply category filter
     if (category && category !== 'All') {
-      const catStr = String(category).trim();
-      if (catStr.toLowerCase() === 'antioxidants' || catStr.toLowerCase() === 'antioxidant' || catStr.toLowerCase() === 'saferproducts') {
-        const hasExplicitCat = await ShopProduct.exists({ ...baseVendorFilter, category: catStr });
-        if (hasExplicitCat) {
-          andConditions.push({ category: catStr });
+      const catStr = String(category).trim().toLowerCase();
+      allProducts = allProducts.filter(p => {
+        const pCat = (p.category || '').toLowerCase();
+        if (catStr === 'pesticide free food') {
+          return pCat === 'pesticide free food' || pCat.includes('pesticide') || pCat.includes('organic food');
         }
-      } else {
-        andConditions.push({ category: catStr });
-      }
-    }
-    if (doctorRecommended === 'true') {
-      andConditions.push({ doctorRecommended: true });
-    }
-    if (healthBenefit) {
-      andConditions.push({ healthBenefits: { $in: [healthBenefit] } });
-    }
-    if (available === 'true') {
-      andConditions.push({ stock: { $gt: 0 } });
-    }
-    if (search) {
-      const searchTerms = String(search).trim().split(/\s+/).filter(Boolean);
-      searchTerms.forEach(term => {
-        const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        andConditions.push({
-          $or: [
-            { name: { $regex: escaped, $options: 'i' } },
-            { description: { $regex: escaped, $options: 'i' } },
-            { shortDescription: { $regex: escaped, $options: 'i' } },
-            { brand: { $regex: escaped, $options: 'i' } },
-            { category: { $regex: escaped, $options: 'i' } },
-            { 'variants.name': { $regex: escaped, $options: 'i' } }
-          ]
-        });
+        if (catStr === 'arivu in nutrition') {
+          return pCat === 'arivu in nutrition' || (p.brand || '').toLowerCase().includes('arivu') || pCat.includes('nutrition');
+        }
+        if (catStr === 'environment safe products' || catStr === 'saferproducts' || catStr === 'safer products') {
+          return pCat === 'environment safe products' || pCat.includes('environment') || pCat.includes('safer');
+        }
+        if (catStr === 'safe kitchen') {
+          return pCat === 'safe kitchen' || pCat.includes('kitchen');
+        }
+        if (catStr === 'glucose monitoring') {
+          return pCat === 'glucose monitoring' || pCat.includes('glucose') || pCat.includes('cgm') || pCat.includes('monitor');
+        }
+        if (catStr === 'cancer support wig') {
+          return pCat === 'cancer support wig' || pCat.includes('wig');
+        }
+        if (catStr === 'antioxidants' || catStr === 'antioxidant') {
+          return pCat.includes('antioxidant');
+        }
+        return pCat.includes(catStr);
       });
     }
 
-    if (minPrice || maxPrice) {
-      const priceFilter: any = {};
-      if (minPrice) priceFilter.$gte = Number(minPrice);
-      if (maxPrice) priceFilter.$lte = Number(maxPrice);
-      andConditions.push({ price: priceFilter });
+    // 5. Apply brand filter
+    if (brand && brand !== 'All') {
+      const brandStr = String(brand).trim().toLowerCase();
+      allProducts = allProducts.filter(p => (p.brand || '').toLowerCase().includes(brandStr));
     }
 
-    const filterQuery = andConditions.length > 1 ? { $and: andConditions } : baseVendorFilter;
+    // 6. Apply doctorRecommended filter
+    if (doctorRecommended === 'true') {
+      allProducts = allProducts.filter(p => p.doctorRecommended === true);
+    }
 
-    let query = ShopProduct.find(filterQuery).populate('vendorId', 'name slug gstPercentage gstInclusive shippingConfig');
+    // 7. Apply stock availability filter
+    if (available === 'true') {
+      allProducts = allProducts.filter(p => ((p.stock || p.availableStock || 0) > 0));
+    }
 
+    // 8. Apply search filter
+    if (search) {
+      const searchTerms = String(search).trim().toLowerCase().split(/\s+/).filter(Boolean);
+      allProducts = allProducts.filter(p => {
+        const text = `${p.name || ''} ${p.description || ''} ${p.shortDescription || ''} ${p.detailedDescription || ''} ${p.category || ''} ${p.brand || ''} ${(p.keyBenefits || []).join(' ')}`.toLowerCase();
+        return searchTerms.every(term => text.includes(term));
+      });
+    }
+
+    // 9. Apply minPrice / maxPrice
+    if (minPrice) {
+      allProducts = allProducts.filter(p => p.price >= Number(minPrice));
+    }
+    if (maxPrice) {
+      allProducts = allProducts.filter(p => p.price <= Number(maxPrice));
+    }
+
+    // 10. Sort
     if (sortBy === 'price_asc') {
-      query = query.sort({ price: 1 });
+      allProducts.sort((a, b) => a.price - b.price);
     } else if (sortBy === 'price_desc') {
-      query = query.sort({ price: -1 });
+      allProducts.sort((a, b) => b.price - a.price);
     } else {
-      query = query.sort({ createdAt: -1 });
+      allProducts.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
     }
 
-    const products = await query;
-    res.json(products);
-  } catch (err) {
+    res.json(allProducts);
+  } catch (err: any) {
+    console.error('[getProducts] Error:', err);
     res.status(500).json({ message: 'Error fetching products' });
   }
 };
@@ -1759,6 +1653,133 @@ export const requestOrderCancellation = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('Error processing customer cancellation request:', error);
     return res.status(500).json({ message: error.message || 'Error submitting cancellation request.' });
+  }
+};
+
+// --- AMAZON AFFILIATE VENDOR ENDPOINTS ---
+
+export const previewAmazonProduct = async (req: Request, res: Response) => {
+  try {
+    const { url } = req.body;
+    if (!url) {
+      return res.status(400).json({ message: 'Amazon product URL or ASIN is required.' });
+    }
+    const meta = await resolveAmazonProductMetadata(url);
+    res.json({ success: true, data: meta });
+  } catch (error: any) {
+    console.error('[previewAmazonProduct] Error:', error);
+    res.status(400).json({ message: error.message || 'Failed to resolve Amazon product details.' });
+  }
+};
+
+export const createAmazonAffiliateProduct = async (req: Request, res: Response) => {
+  try {
+    const { url, category, name, brand, image, description } = req.body;
+    if (!url) {
+      return res.status(400).json({ message: 'Amazon product URL or ASIN is required.' });
+    }
+    if (!category) {
+      return res.status(400).json({ message: 'Shop category is required.' });
+    }
+
+    const meta = await resolveAmazonProductMetadata(url);
+
+    // Ensure category exists
+    await ShopCategory.findOneAndUpdate(
+      { name: category.trim() },
+      { $set: { name: category.trim(), isActive: true } },
+      { upsert: true, new: true }
+    );
+
+    const productName = (name && name.trim()) || meta.title;
+    const productImage = (image && image.trim()) || meta.image;
+    const productBrand = (brand && brand.trim()) || meta.brand;
+
+    // Check if product already exists with this ASIN
+    const asinRegex = new RegExp(meta.asin, 'i');
+    let product = await ShopProduct.findOne({ buyOnAmazonUrl: asinRegex });
+
+    if (product) {
+      product.name = productName;
+      product.category = category.trim();
+      product.brand = productBrand;
+      product.image = productImage;
+      product.images = [productImage];
+      product.buyOnAmazonUrl = meta.affiliateUrl;
+      product.isActive = true;
+      product.productStatus = 'active';
+      if (description) product.description = description;
+      await product.save();
+    } else {
+      product = new ShopProduct({
+        name: productName,
+        category: category.trim(),
+        brand: productBrand,
+        image: productImage,
+        images: [productImage],
+        buyOnAmazonUrl: meta.affiliateUrl,
+        price: 0,
+        regularPrice: 0,
+        offerPrice: 0,
+        discountPercent: 0,
+        stock: 100,
+        availableStock: 100,
+        isActive: true,
+        productStatus: 'active',
+        description: description || `Recommended healthy product available via Amazon: ${productName}`,
+        shortDescription: `Available via Amazon: ${productName}`
+      });
+      await product.save();
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Amazon affiliate product created successfully',
+      product
+    });
+  } catch (error: any) {
+    console.error('[createAmazonAffiliateProduct] Error:', error);
+    res.status(500).json({ message: error.message || 'Failed to add Amazon product.' });
+  }
+};
+
+export const getAdminAmazonProducts = async (req: Request, res: Response) => {
+  try {
+    const products = await ShopProduct.find({
+      buyOnAmazonUrl: { $exists: true, $ne: '' }
+    }).sort({ updatedAt: -1, createdAt: -1 });
+    res.json(products);
+  } catch (error: any) {
+    res.status(500).json({ message: 'Error fetching Amazon affiliate products' });
+  }
+};
+
+export const refreshAdminAmazonProduct = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const product = await ShopProduct.findById(id);
+    if (!product || !product.buyOnAmazonUrl) {
+      return res.status(404).json({ message: 'Amazon affiliate product not found.' });
+    }
+
+    const meta = await resolveAmazonProductMetadata(product.buyOnAmazonUrl);
+    product.name = meta.title;
+    product.image = meta.image;
+    product.images = [meta.image];
+    if (meta.brand && meta.brand !== 'Amazon') {
+      product.brand = meta.brand;
+    }
+    product.buyOnAmazonUrl = meta.affiliateUrl;
+    await product.save();
+
+    res.json({
+      success: true,
+      message: 'Amazon product refreshed with live details.',
+      product
+    });
+  } catch (error: any) {
+    console.error('[refreshAdminAmazonProduct] Error:', error);
+    res.status(500).json({ message: error.message || 'Error refreshing product.' });
   }
 };
 

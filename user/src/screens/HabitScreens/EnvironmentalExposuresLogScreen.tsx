@@ -718,7 +718,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
                   {t('habits.organicReducesPesticides', 'Choosing organic produce drastically reduces chemical pesticide residue levels in your diet.')}
                 </p>
                 <button 
-                  onClick={() => onNavigateToShop?.('Organic')}
+                  onClick={() => onNavigateToShop?.('Pesticide free food')}
                   className="inline-flex items-center gap-1.5 text-xs text-emerald-650 hover:underline font-bold text-left"
                 >
                   🥬 {t('habits.orderOrganicFood', 'Click here to Order Organic Food')}
@@ -783,7 +783,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
                   {t('habits.swapPlasticStorage', 'Swap plastic storage for premium borosilicate glass or stainless steel containers.')}
                 </p>
                 <button 
-                  onClick={() => onNavigateToShop?.('SaferProducts')}
+                  onClick={() => onNavigateToShop?.('Safe kitchen')}
                   className="inline-flex items-center gap-1.5 text-xs text-indigo-650 hover:underline font-bold text-left"
                 >
                   🥛 {t('habits.orderPlasticFreeProducts', 'Click here to Order Plastic-Free Products')}
@@ -897,7 +897,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
                 {t('env.lookingForPlasticFree', 'Looking for plastic-free stainless steel or glass kitchen storage containers?')}
               </p>
               <button 
-                onClick={() => onNavigateToShop?.('SaferProducts')}
+                onClick={() => onNavigateToShop?.('Safe kitchen')}
                 className="inline-flex items-center gap-1.5 text-xs text-indigo-650 hover:underline font-bold text-left cursor-pointer"
               >
                 🥛 {t('orderPlasticFreeKitchen')}

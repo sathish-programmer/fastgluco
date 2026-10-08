@@ -328,7 +328,7 @@ export const KitchenLogScreen: React.FC<KitchenLogScreenProps> = ({ onBack, onNa
             </p>
             <button 
               type="button"
-              onClick={() => onNavigateToShop?.('SaferProducts')}
+              onClick={() => onNavigateToShop?.('Safe kitchen')}
               className="inline-flex items-center gap-1.5 text-xs text-indigo-650 hover:underline font-bold text-left cursor-pointer"
             >
               <ShoppingBag className="h-3.5 w-3.5 text-indigo-500" />

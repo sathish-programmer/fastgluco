@@ -543,8 +543,14 @@ router.put('/admin/shop-reviews/:id/status', authenticateToken, requireRole(['Su
 router.get('/admin/shop-pincodes', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.getAdminPincodeRules);
 router.post('/admin/shop-pincodes', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.createAdminPincodeRule);
 router.put('/admin/shop-pincodes/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.updateAdminPincodeRule);
-router.delete('/admin/shop-pincodes/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.deleteAdminPincodeRule);
 router.get('/admin/vendors/:id/performance', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminGetVendorPerformance);
+
+// Amazon Affiliate Vendor Management (Admin)
+router.post('/admin/amazon/preview', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.previewAmazonProduct);
+router.post('/admin/amazon/add-product', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.createAmazonAffiliateProduct);
+router.get('/admin/amazon/products', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.getAdminAmazonProducts);
+router.delete('/admin/amazon/products/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.deleteAdminProduct);
+router.post('/admin/amazon/products/:id/refresh', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.refreshAdminAmazonProduct);
 
 
 

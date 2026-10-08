@@ -36,6 +36,7 @@ import {
   Truck,
   Tag
 } from 'lucide-react';
+import { AdminAmazonVendor } from './AdminAmazonVendor';
 
 interface AdminVendorManagementProps {
   apiUrl: string;
@@ -43,6 +44,7 @@ interface AdminVendorManagementProps {
 }
 
 export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ apiUrl, token }) => {
+  const [vendorHubMode, setVendorHubMode] = useState<'PARTNERS' | 'AMAZON'>('PARTNERS');
   const [vendors, setVendors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -821,8 +823,48 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
         </div>
       )}
 
+      {/* VENDOR HUB MODE SWITCHER */}
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-white border border-slate-200/90 rounded-2xl p-2.5 shadow-xs">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => { setVendorHubMode('PARTNERS'); setSelectedVendorId(null); }}
+            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold flex items-center gap-2 transition cursor-pointer ${
+              vendorHubMode === 'PARTNERS'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+            }`}
+          >
+            <Store className="h-4 w-4" />
+            <span>Internal Partner Vendors (Arivu Foods)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => { setVendorHubMode('AMAZON'); setSelectedVendorId(null); }}
+            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold flex items-center gap-2 transition cursor-pointer ${
+              vendorHubMode === 'AMAZON'
+                ? 'bg-amber-500 text-slate-950 shadow-xs'
+                : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+            }`}
+          >
+            <Sparkles className="h-4 w-4 text-amber-500" />
+            <span>Amazon Vendor (Affiliate Catalog)</span>
+          </button>
+        </div>
+
+        <div className="hidden sm:flex items-center gap-2 text-[11px] font-bold text-slate-400 pr-2">
+          <span>Affiliate Tag:</span>
+          <code className="bg-slate-100 px-2 py-0.5 rounded text-slate-700 font-mono font-bold">mitoreboot-21</code>
+        </div>
+      </div>
+
+      {vendorHubMode === 'AMAZON' && (
+        <AdminAmazonVendor apiUrl={apiUrl} token={token} />
+      )}
+
       {/* VIEW: VENDOR LISTING */}
-      {!selectedVendorId && (
+      {vendorHubMode === 'PARTNERS' && !selectedVendorId && (
         <div className="space-y-6">
           {/* HEADER & ACTIONS */}
           <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -1378,7 +1420,7 @@ export const AdminVendorManagement: React.FC<AdminVendorManagementProps> = ({ ap
       )}
 
       {/* VIEW: VENDOR DETAILS VIEW (6 TABS) */}
-      {selectedVendorId && selectedVendorData && (
+      {vendorHubMode === 'PARTNERS' && selectedVendorId && selectedVendorData && (
         <div className="space-y-6">
           {/* TOP BACK BAR */}
           <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm flex items-center justify-between">

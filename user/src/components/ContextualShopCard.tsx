@@ -1,10 +1,10 @@
 import React from 'react';
-import { ShoppingBag, ChevronRight, Wind, Droplets, Heart, Sparkles } from 'lucide-react';
+import { ShoppingBag, ChevronRight, Wind, Droplets, Heart, Sparkles, Flame, Activity } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
 interface ContextualShopCardProps {
   activeMode: 'PREVENTION' | 'TREATMENT' | 'SECONDARY_PREVENTION';
-  onOpenShop: (searchQuery: string) => void;
+  onOpenShop: (category: string, searchQuery?: string) => void;
 }
 
 export const ContextualShopCard: React.FC<ContextualShopCardProps> = ({
@@ -15,10 +15,18 @@ export const ContextualShopCard: React.FC<ContextualShopCardProps> = ({
 
   const shopItems = [
     {
+      id: 'organic',
+      title: t('explore.organicFoods', 'Pesticide-Free Organic Foods'),
+      subtitle: t('explore.organicFoodsDesc', 'Bhoomi Farm & clean bio-fortified nutrition'),
+      category: 'Pesticide free food',
+      icon: <Sparkles className="h-4 w-4 text-emerald-500" />,
+      modes: ['PREVENTION', 'TREATMENT', 'SECONDARY_PREVENTION']
+    },
+    {
       id: 'air_purifier',
       title: t('explore.airPurifiers', 'Air Purifiers & N95 Masks'),
-      subtitle: t('explore.airPurifiersDesc', 'PM2.5 particulate defense'),
-      query: 'Air purifier',
+      subtitle: t('explore.airPurifiersDesc', 'PM2.5 particulate & VOC defense'),
+      category: 'Environment safe products',
       icon: <Wind className="h-4 w-4 text-sky-500" />,
       modes: ['PREVENTION', 'SECONDARY_PREVENTION']
     },
@@ -26,25 +34,33 @@ export const ContextualShopCard: React.FC<ContextualShopCardProps> = ({
       id: 'water_filter',
       title: t('explore.waterFilters', 'Water Filtration Systems'),
       subtitle: t('explore.waterFiltersDesc', 'Remove heavy metals & microplastics'),
-      query: 'Water filter',
+      category: 'Environment safe products',
       icon: <Droplets className="h-4 w-4 text-blue-500" />,
       modes: ['PREVENTION', 'SECONDARY_PREVENTION']
     },
     {
-      id: 'wigs',
-      title: t('explore.hairlossWigs', 'Treatment Hair Loss Wigs'),
-      subtitle: t('explore.hairlossWigsDesc', 'Soft medical-grade head coverings'),
-      query: 'Wig',
-      icon: <Heart className="h-4 w-4 text-rose-500" />,
-      modes: ['TREATMENT']
+      id: 'safe_kitchen',
+      title: t('explore.safeKitchen', 'Non-Toxic Safe Kitchen'),
+      subtitle: t('explore.safeKitchenDesc', 'Cast iron tawas & glass/steel storage'),
+      category: 'Safe kitchen',
+      icon: <Flame className="h-4 w-4 text-amber-500" />,
+      modes: ['PREVENTION', 'TREATMENT', 'SECONDARY_PREVENTION']
     },
     {
-      id: 'organic',
-      title: t('explore.organicFoods', 'Pesticide-Free Organic Foods'),
-      subtitle: t('explore.organicFoodsDesc', 'Clean bio-fortified nutrition'),
-      query: 'Organic',
-      icon: <Sparkles className="h-4 w-4 text-emerald-500" />,
-      modes: ['PREVENTION', 'TREATMENT', 'SECONDARY_PREVENTION']
+      id: 'glucose_monitoring',
+      title: t('explore.glucoseMonitoring', 'Glucose & Ketone Monitoring'),
+      subtitle: t('explore.glucoseMonitoringDesc', 'Continuous CGM sensors & ketone meters'),
+      category: 'Glucose monitoring',
+      icon: <Activity className="h-4 w-4 text-indigo-500" />,
+      modes: ['PREVENTION', 'SECONDARY_PREVENTION']
+    },
+    {
+      id: 'wigs',
+      title: t('explore.hairlossWigs', 'Cancer Support Wigs'),
+      subtitle: t('explore.hairlossWigsDesc', 'Soft medical-grade head coverings'),
+      category: 'Cancer support wig',
+      icon: <Heart className="h-4 w-4 text-rose-500" />,
+      modes: ['TREATMENT']
     }
   ];
 
@@ -65,8 +81,8 @@ export const ContextualShopCard: React.FC<ContextualShopCardProps> = ({
         {filteredItems.map(item => (
           <button
             key={item.id}
-            onClick={() => onOpenShop(item.query)}
-            className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center justify-between text-left hover:border-slate-300 dark:hover:border-slate-700 transition-all group"
+            onClick={() => onOpenShop(item.category)}
+            className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center justify-between text-left hover:border-slate-300 dark:hover:border-slate-700 transition-all group cursor-pointer"
           >
             <div className="flex items-center space-x-3 min-w-0">
               <div className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shrink-0">

@@ -139,6 +139,7 @@ export const ProductImageZoomShowcase: React.FC<ProductImageZoomShowcaseProps> =
           <img
             src={resolvedUrl}
             alt={productName}
+            referrerPolicy="no-referrer"
             onError={() => setImageError(true)}
             className="h-full w-full object-contain p-4 sm:p-6 select-none transition-transform duration-300 ease-out will-change-transform"
             style={
@@ -334,6 +335,7 @@ export const ProductImageZoomShowcase: React.FC<ProductImageZoomShowcaseProps> =
               src={resolvedUrl}
               alt={productName}
               draggable={false}
+              referrerPolicy="no-referrer"
               className="max-h-full max-w-full object-contain select-none transition-transform duration-75"
               style={{
                 transform: `translate(${lightboxOffset.x}px, ${lightboxOffset.y}px) scale(${lightboxScale})`,
