@@ -148,7 +148,7 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
 
   // Native Android Firebase Phone Auth event listeners
   useEffect(() => {
-    if (Capacitor.getPlatform() !== 'android') return;
+    if (!Capacitor.isNativePlatform()) return;
 
     let isMounted = true;
 
@@ -339,37 +339,12 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
       }
     };
 
-    // 1. iOS: Use Backend Direct OTP (Direct SMS & Email delivery, supports Apple Reviewer bypass, avoids reCAPTCHA crash)
-    if (Capacitor.getPlatform() === 'ios') {
+    // 1. Native Mobile (iOS & Android): Native Firebase Phone Auth (Primary)
+    if (isNativePlatform) {
       try {
-        console.log('[Auth] iOS platform detected: Dispatching direct backend OTP service for:', e164);
-        otpProviderRef.current = 'FAST2SMS';
-        setOtpProvider('FAST2SMS');
-        const res = await sendOtp(e164, email, true);
-        if (res.success) {
-          codeSentRef.current = true;
-          setDeliveryMethod('sms_and_email');
-          setScreen('otp');
-          setTimer(60);
-          showToast(t('auth.codeSentToMobile', { mobileNumber: e164 }, `Verification code sent to ${e164}`), 'success');
-          setTimeout(() => otpInputRef.current?.focus(), 100);
-        } else {
-          setPhoneError(res.message || 'Unable to send verification code. Please check your details and try again.');
-        }
-      } catch (err: any) {
-        console.error('[Auth] iOS sendOtp error:', err);
-        setPhoneError(err.message || 'Failed to send OTP.');
-      } finally {
-        setLoading(false);
-      }
-      return;
-    }
-
-    // 2. Android: Native Firebase Phone Auth with SafetyNet/Play Integrity
-    if (Capacitor.getPlatform() === 'android') {
-      try {
-        console.log('[OTP Priority] Attempting Primary: Android Native Firebase Phone Auth for:', e164);
+        console.log('[OTP Priority] Attempting Primary: Native Firebase Phone Auth for:', e164);
         otpProviderRef.current = 'FIREBASE';
+        setOtpProvider('FIREBASE');
         await FirebaseAuthentication.signInWithPhoneNumber({ phoneNumber: e164 });
         // phoneCodeSent listener will transition screen to 'otp' and set codeSentRef.current = true
       } catch (nativeErr: any) {
@@ -420,9 +395,7 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
       const e164 = buildE164(mobileNumber);
       if (!e164) throw new Error("Invalid mobile number.");
 
-      const currentProvider = Capacitor.getPlatform() === 'ios'
-        ? 'FAST2SMS'
-        : (otpProviderRef.current || (window.verificationId || confirmationResult ? 'FIREBASE' : 'FAST2SMS'));
+      const currentProvider = otpProviderRef.current || (window.verificationId || confirmationResult ? 'FIREBASE' : 'FAST2SMS');
 
       if (currentProvider === 'FIREBASE') {
         // --- 1. FIREBASE AUTHENTICATION FLOW (PRIMARY) ---
