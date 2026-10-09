@@ -637,60 +637,6 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
 
               {selectedDoctor && (
                 <>
-                  {/* Selected Doctor Summary Card */}
-                  <div className="p-4 rounded-2xl bg-gradient-to-r from-indigo-50/90 via-white to-purple-50/90 dark:from-indigo-950/40 dark:via-slate-900 dark:to-purple-950/30 border-2 border-indigo-500/40 shadow-sm my-3 transition-all space-y-3">
-                    <div className="flex items-start gap-3">
-                      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 text-white font-bold flex items-center justify-center text-lg shadow-md shrink-0 overflow-hidden border-2 border-white dark:border-slate-800">
-                        {getAvatarUrl(selectedDoctor.avatar, apiUrl) ? (
-                          <img 
-                            src={getAvatarUrl(selectedDoctor.avatar, apiUrl) || ''} 
-                            alt={selectedDoctor.name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
-                          />
-                        ) : (
-                          selectedDoctor.name.replace(/^(Dr\.?|Ms\.?|Mr\.?)\s+/i, '').charAt(0) || 'D'
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="font-extrabold text-slate-800 dark:text-slate-100 text-base">{selectedDoctor.name}</h4>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300">
-                            Selected
-                          </span>
-                        </div>
-                        {selectedDoctor.qualification && (
-                          <p className="text-xs text-slate-600 dark:text-slate-350 font-medium mt-0.5 leading-snug">
-                            {selectedDoctor.qualification}
-                          </p>
-                        )}
-                        <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">
-                          {selectedDoctor.specialty} {selectedDoctor.experience ? `• ${selectedDoctor.experience} yrs exp` : ''}
-                        </p>
-                      </div>
-                    </div>
-
-                    {selectedDoctor.sleepEvaluationNote && (
-                      <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-900 dark:text-amber-200 text-xs">
-                        <p className="font-bold text-[10px] uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center gap-1 mb-1">
-                          <span>🌙</span> Why Sleep Evaluation?
-                        </p>
-                        <p className="italic text-[11px] leading-relaxed">
-                          "{selectedDoctor.sleepEvaluationNote}"
-                        </p>
-                      </div>
-                    )}
-
-                    {Boolean(selectedDoctor.feePolicy || (selectedDoctor.extraFeePer15Min && selectedDoctor.extraFeePer15Min > 0)) && (
-                      <div className="px-3 py-2 rounded-xl bg-slate-100/90 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 text-[11px] text-slate-600 dark:text-slate-300 flex items-center gap-2">
-                        <span className="text-sm">⏱️</span>
-                        <span>
-                          {selectedDoctor.feePolicy || `Extra ₹${selectedDoctor.extraFeePer15Min} every 15 mins if consultation exceeds ${selectedDoctor.slotDuration || 30} mins`}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
                   <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl p-4 my-2">
                     <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">{t('appointment.consultationType', 'Consultation Type')}</label>
                     <div className="grid grid-cols-2 gap-3">
