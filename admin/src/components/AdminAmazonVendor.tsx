@@ -34,6 +34,22 @@ interface AmazonProduct {
   updatedAt?: string;
 }
 
+interface AmazonStorefront {
+  _id: string;
+  brandName: string;
+  category: string;
+  badge: string;
+  title: string;
+  description: string;
+  storeUrl: string;
+  shortlink?: string;
+  highlights: string[];
+  isActive: boolean;
+  displayOrder?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 const PREDEFINED_CATEGORIES = [
   'Pesticide free food',
   'Arivu in nutrition',
@@ -87,6 +103,25 @@ export const AdminAmazonVendor: React.FC<AdminAmazonVendorProps> = ({ apiUrl, to
   const [savingEdit, setSavingEdit] = useState(false);
   const [rescrapeLoading, setRescrapeLoading] = useState(false);
 
+  // Storefronts State
+  const [storefronts, setStorefronts] = useState<AmazonStorefront[]>([]);
+  const [loadingStorefronts, setLoadingStorefronts] = useState(false);
+
+  // Add / Edit Storefront Modal State
+  const [showStorefrontModal, setShowStorefrontModal] = useState(false);
+  const [editingStorefront, setEditingStorefront] = useState<AmazonStorefront | null>(null);
+  const [sfBrandName, setSfBrandName] = useState('');
+  const [sfCategory, setSfCategory] = useState(PREDEFINED_CATEGORIES[0]);
+  const [sfBadge, setSfBadge] = useState('100% Certified Organic Partner');
+  const [sfTitle, setSfTitle] = useState('');
+  const [sfDescription, setSfDescription] = useState('');
+  const [sfStoreUrl, setSfStoreUrl] = useState('');
+  const [sfShortlink, setSfShortlink] = useState('');
+  const [sfHighlights, setSfHighlights] = useState('');
+  const [sfIsActive, setSfIsActive] = useState(true);
+  const [savingStorefront, setSavingStorefront] = useState(false);
+  const [deletingSfId, setDeletingSfId] = useState<string | null>(null);
+
   const authHeaders = useMemo(() => ({
     'Content-Type': 'application/json',
     Authorization: `Bearer ${token}`
@@ -111,9 +146,121 @@ export const AdminAmazonVendor: React.FC<AdminAmazonVendorProps> = ({ apiUrl, to
     }
   };
 
+  // Fetch all Partner Storefronts
+  const fetchStorefronts = async () => {
+    try {
+      setLoadingStorefronts(true);
+      const res = await fetch(`${apiUrl}/admin/amazon/storefronts`, {
+        headers: authHeaders
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setStorefronts(data);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingStorefronts(false);
+    }
+  };
+
   useEffect(() => {
     fetchAmazonProducts();
+    fetchStorefronts();
   }, [apiUrl, token]);
+
+  const handleOpenAddStorefront = () => {
+    setEditingStorefront(null);
+    setSfBrandName('');
+    setSfCategory(PREDEFINED_CATEGORIES[0]);
+    setSfBadge('100% Certified Organic Partner');
+    setSfTitle('');
+    setSfDescription('');
+    setSfStoreUrl('');
+    setSfShortlink('');
+    setSfHighlights('🌿 USDA Organic, 🫒 Cold-Pressed Oils, 🌾 Low-GI Millets');
+    setSfIsActive(true);
+    setShowStorefrontModal(true);
+  };
+
+  const handleOpenEditStorefront = (sf: AmazonStorefront) => {
+    setEditingStorefront(sf);
+    setSfBrandName(sf.brandName || '');
+    setSfCategory(sf.category || PREDEFINED_CATEGORIES[0]);
+    setSfBadge(sf.badge || '');
+    setSfTitle(sf.title || '');
+    setSfDescription(sf.description || '');
+    setSfStoreUrl(sf.storeUrl || '');
+    setSfShortlink(sf.shortlink || '');
+    setSfHighlights(Array.isArray(sf.highlights) ? sf.highlights.join(', ') : '');
+    setSfIsActive(sf.isActive !== false);
+    setShowStorefrontModal(true);
+  };
+
+  const handleSaveStorefront = async () => {
+    if (!sfBrandName.trim() || !sfTitle.trim() || !sfStoreUrl.trim()) {
+      setError('Brand name, title, and store URL are required.');
+      return;
+    }
+    try {
+      setSavingStorefront(true);
+      setError(null);
+      const payload = {
+        brandName: sfBrandName.trim(),
+        category: sfCategory.trim(),
+        badge: sfBadge.trim(),
+        title: sfTitle.trim(),
+        description: sfDescription.trim(),
+        storeUrl: sfStoreUrl.trim(),
+        shortlink: sfShortlink.trim(),
+        highlights: sfHighlights ? sfHighlights.split(',').map((s) => s.trim()).filter(Boolean) : [],
+        isActive: sfIsActive
+      };
+
+      const url = editingStorefront
+        ? `${apiUrl}/admin/amazon/storefronts/${editingStorefront._id}`
+        : `${apiUrl}/admin/amazon/storefronts`;
+      const method = editingStorefront ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: authHeaders,
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to save storefront');
+
+      setSuccessMessage(editingStorefront ? 'Storefront updated successfully!' : 'New partner storefront added successfully!');
+      setShowStorefrontModal(false);
+      fetchStorefronts();
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err: any) {
+      setError(err.message || 'Error saving storefront');
+    } finally {
+      setSavingStorefront(false);
+    }
+  };
+
+  const handleDeleteStorefront = async (id: string, name: string) => {
+    if (!window.confirm(`Are you sure you want to delete partner storefront "${name}"?`)) return;
+    try {
+      setDeletingSfId(id);
+      setError(null);
+      const res = await fetch(`${apiUrl}/admin/amazon/storefronts/${id}`, {
+        method: 'DELETE',
+        headers: authHeaders
+      });
+      if (!res.ok) throw new Error('Failed to delete storefront');
+
+      setSuccessMessage(`Storefront "${name}" deleted.`);
+      fetchStorefronts();
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err: any) {
+      setError(err.message || 'Error deleting storefront');
+    } finally {
+      setDeletingSfId(null);
+    }
+  };
 
   // Preview details from Amazon link
   const handlePreview = async () => {
@@ -431,7 +578,7 @@ export const AdminAmazonVendor: React.FC<AdminAmazonVendorProps> = ({ apiUrl, to
 
       {/* CONNECTED AMAZON STOREFRONTS & BRAND HUBS */}
       <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-sm space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 font-bold">
               🌿
@@ -440,48 +587,121 @@ export const AdminAmazonVendor: React.FC<AdminAmazonVendorProps> = ({ apiUrl, to
               <h2 className="text-sm sm:text-base font-black text-slate-900 flex items-center gap-2">
                 <span>Featured Partner Storefronts</span>
                 <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
-                  Live
+                  {storefronts.filter((s) => s.isActive).length} Live
                 </span>
               </h2>
               <p className="text-[11px] text-slate-400 font-medium">
-                Curated affiliate storefront collections mapped to shop categories
+                Curated affiliate storefront collections mapped to shop categories and brands
               </p>
             </div>
           </div>
-          <span className="text-xs font-bold text-slate-400">1 Storefront Active</span>
+          <button
+            onClick={handleOpenAddStorefront}
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer active:scale-95 shrink-0"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            <span>Add Partner Storefront</span>
+          </button>
         </div>
 
-        {/* Phalada Pure & Sure Card */}
-        <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950 rounded-2xl p-5 text-white border border-emerald-500/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1.5 max-w-xl">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-black text-emerald-400 uppercase tracking-wider">Phalada Pure & Sure</span>
-              <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded text-slate-300 font-mono">Pesticide free food</span>
-              <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-bold">100% Certified Organic</span>
-            </div>
-            <h3 className="text-sm sm:text-base font-bold text-white">
-              Phalada Pure & Sure Organic Superstore Collection
-            </h3>
-            <p className="text-xs text-slate-300 font-medium leading-relaxed">
-              100% Certified Organic Food, Cold-Pressed Oils, Ghee, Spices & Millets. Users can explore and buy directly through your affiliate storefront.
-            </p>
-            <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400 font-mono pt-1">
-              <span>Shortlink: <a href="https://link.amazon/B061d6Vu9" target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:underline">https://link.amazon/B061d6Vu9</a></span>
-              <span>• Tag: <code className="text-emerald-400 font-mono">mitoreboot-21</code></span>
-            </div>
+        {/* Storefronts List */}
+        {loadingStorefronts ? (
+          <div className="py-8 text-center text-xs text-slate-400 font-bold flex items-center justify-center gap-2">
+            <RefreshCw className="h-4 w-4 animate-spin" /> Loading partner storefronts...
           </div>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
-            <a
-              href="https://www.amazon.in/s?k=phalada+pure+and+sure&crid=25GK89M1EQDPP&sprefix=phalada+pure+and+sur%2Caps%2C269&linkCode=ll2&tag=mitoreboot-21&linkId=b892246ba32b385014dffd9c2ea460b4&ref_=as_li_ss_tl"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5"
+        ) : storefronts.length === 0 ? (
+          <div className="text-center py-8 border border-dashed border-slate-200 rounded-2xl space-y-2">
+            <p className="text-xs font-bold text-slate-500">No partner storefronts added yet.</p>
+            <button
+              onClick={handleOpenAddStorefront}
+              className="text-xs font-extrabold text-amber-600 hover:underline inline-flex items-center gap-1 cursor-pointer"
             >
-              <span>Test Storefront Link</span>
-              <ExternalLink className="h-3.5 w-3.5 stroke-[2.5]" />
-            </a>
+              <Plus className="h-3 w-3" /> Add your first partner storefront
+            </button>
           </div>
-        </div>
+        ) : (
+          <div className="space-y-3">
+            {storefronts.map((sf) => (
+              <div
+                key={sf._id}
+                className={`bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950 rounded-2xl p-5 text-white border transition-all ${
+                  sf.isActive ? 'border-emerald-500/20' : 'border-slate-800 opacity-60'
+                } flex flex-col md:flex-row md:items-center justify-between gap-4`}
+              >
+                <div className="space-y-1.5 max-w-xl">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-black text-emerald-400 uppercase tracking-wider">
+                      {sf.brandName}
+                    </span>
+                    <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded text-slate-300 font-mono">
+                      {sf.category}
+                    </span>
+                    {sf.badge && (
+                      <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-bold">
+                        {sf.badge}
+                      </span>
+                    )}
+                    {!sf.isActive && (
+                      <span className="text-[10px] bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded-full font-bold">
+                        Inactive
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="text-sm sm:text-base font-bold text-white">
+                    {sf.title}
+                  </h3>
+                  {sf.description && (
+                    <p className="text-xs text-slate-300 font-medium leading-relaxed">
+                      {sf.description}
+                    </p>
+                  )}
+                  {sf.highlights && sf.highlights.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-[9.5px] font-bold text-emerald-200">
+                      {sf.highlights.map((h, i) => (
+                        <span key={i} className="bg-white/10 px-2 py-0.5 rounded-md border border-white/10">
+                          {h}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400 font-mono pt-1">
+                    {sf.shortlink && (
+                      <span>Shortlink: <a href={sf.shortlink} target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:underline">{sf.shortlink}</a></span>
+                    )}
+                    <span>• Tag: <code className="text-emerald-400 font-mono">mitoreboot-21</code></span>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                  <a
+                    href={sf.storeUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+                  >
+                    <span>Test Storefront Link</span>
+                    <ExternalLink className="h-3.5 w-3.5 stroke-[2.5]" />
+                  </a>
+                  <button
+                    onClick={() => handleOpenEditStorefront(sf)}
+                    className="p-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all cursor-pointer border border-white/10"
+                    title="Edit Storefront"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteStorefront(sf._id, sf.title)}
+                    disabled={deletingSfId === sf._id}
+                    className="p-2.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 rounded-xl transition-all cursor-pointer border border-rose-500/20"
+                    title="Delete Storefront"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ADD AMAZON PRODUCT CONSOLE */}
@@ -1016,6 +1236,169 @@ export const AdminAmazonVendor: React.FC<AdminAmazonVendorProps> = ({ apiUrl, to
                     <>
                       <Save className="h-3.5 w-3.5" />
                       <span>Save Changes</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ADD / EDIT STOREFRONT MODAL */}
+        {showStorefrontModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+            <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-lg w-full border border-slate-100 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto animate-in zoom-in-95">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div>
+                  <h3 className="text-base font-black text-slate-900">
+                    {editingStorefront ? 'Edit Partner Storefront' : 'Add New Partner Storefront'}
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Configure dynamic affiliate storefront showcase shown in user shop
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowStorefrontModal(false)}
+                  className="p-1.5 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="space-y-3.5 text-xs">
+                <div>
+                  <label className="font-extrabold text-slate-700 block mb-1">Brand Name *</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Phalada Pure & Sure"
+                    value={sfBrandName}
+                    onChange={(e) => setSfBrandName(e.target.value)}
+                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="font-extrabold text-slate-700 block mb-1">Target Category *</label>
+                    <select
+                      value={sfCategory}
+                      onChange={(e) => setSfCategory(e.target.value)}
+                      className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="All">All Categories</option>
+                      {PREDEFINED_CATEGORIES.map((cat, i) => (
+                        <option key={i} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="font-extrabold text-slate-700 block mb-1">Badge Tagline</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 100% Certified Organic Partner"
+                      value={sfBadge}
+                      onChange={(e) => setSfBadge(e.target.value)}
+                      className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="font-extrabold text-slate-700 block mb-1">Storefront Title *</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Phalada Pure & Sure Organic Superstore Collection"
+                    value={sfTitle}
+                    onChange={(e) => setSfTitle(e.target.value)}
+                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-extrabold text-slate-700 block mb-1">Description</label>
+                  <textarea
+                    rows={2}
+                    placeholder="e.g. 100% Certified Organic Food, Cold-Pressed Oils, Ghee, Spices & Millets..."
+                    value={sfDescription}
+                    onChange={(e) => setSfDescription(e.target.value)}
+                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-extrabold text-slate-700 block mb-1">Amazon Affiliate Storefront URL *</label>
+                  <input
+                    type="text"
+                    placeholder="https://www.amazon.in/s?k=phalada+pure+and+sure..."
+                    value={sfStoreUrl}
+                    onChange={(e) => setSfStoreUrl(e.target.value)}
+                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <span className="text-[10px] text-slate-400 mt-1 block">
+                    Tag <code>mitoreboot-21</code> will be automatically attached if omitted.
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="font-extrabold text-slate-700 block mb-1">Shortlink (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="https://link.amazon/B061d6Vu9"
+                      value={sfShortlink}
+                      onChange={(e) => setSfShortlink(e.target.value)}
+                      className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-extrabold text-slate-700 block mb-1">Feature Tags (comma separated)</label>
+                    <input
+                      type="text"
+                      placeholder="🌿 USDA Organic, 🫒 Cold-Pressed Oils"
+                      value={sfHighlights}
+                      onChange={(e) => setSfHighlights(e.target.value)}
+                      className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 pt-1">
+                  <input
+                    type="checkbox"
+                    id="sfIsActive"
+                    checked={sfIsActive}
+                    onChange={(e) => setSfIsActive(e.target.checked)}
+                    className="h-4 w-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                  />
+                  <label htmlFor="sfIsActive" className="text-xs font-bold text-slate-700 cursor-pointer">
+                    Active (show in user shop)
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowStorefrontModal(false)}
+                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold text-xs transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveStorefront}
+                  disabled={savingStorefront}
+                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs transition-all shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  {savingStorefront ? (
+                    <>
+                      <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-3.5 w-3.5" />
+                      <span>{editingStorefront ? 'Save Changes' : 'Create Storefront'}</span>
                     </>
                   )}
                 </button>

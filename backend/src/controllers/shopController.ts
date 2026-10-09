@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import ShopProduct from '../models/ShopProduct';
 import ProductReview from '../models/ProductReview';
 import ShopOrder from '../models/ShopOrder';
+import { AmazonStorefront } from '../models/AmazonStorefront';
 import { ShopCategory } from '../models/ShopCategory';
 import { PaymentGatewayConfig } from '../models/PaymentGatewayConfig';
 import { PincodeShippingRule } from '../models/PincodeShippingRule';
@@ -1871,4 +1872,101 @@ export const updateAdminAmazonProduct = async (req: Request, res: Response) => {
     res.status(500).json({ message: error.message || 'Error updating product.' });
   }
 };
+
+// --- AMAZON STOREFRONT CONTROLLERS ---
+
+export const getStorefronts = async (req: Request, res: Response) => {
+  try {
+    const storefronts = await AmazonStorefront.find({ isActive: true }).sort({ displayOrder: 1, createdAt: -1 });
+    res.json(storefronts);
+  } catch (err: any) {
+    res.status(500).json({ message: 'Error fetching storefronts', error: err.message });
+  }
+};
+
+export const getAdminStorefronts = async (req: Request, res: Response) => {
+  try {
+    const storefronts = await AmazonStorefront.find().sort({ displayOrder: 1, createdAt: -1 });
+    res.json(storefronts);
+  } catch (err: any) {
+    res.status(500).json({ message: 'Error fetching admin storefronts', error: err.message });
+  }
+};
+
+export const createAdminStorefront = async (req: Request, res: Response) => {
+  try {
+    const { brandName, category, badge, title, description, storeUrl, shortlink, highlights, isActive, displayOrder } = req.body;
+    if (!brandName || !title || !storeUrl) {
+      return res.status(400).json({ message: 'Brand name, title, and store URL are required.' });
+    }
+
+    let finalStoreUrl = String(storeUrl).trim();
+    if (finalStoreUrl.includes('amazon.') && !finalStoreUrl.includes('tag=')) {
+      finalStoreUrl += (finalStoreUrl.includes('?') ? '&' : '?') + 'tag=mitoreboot-21&linkCode=ll2';
+    }
+
+    const newStorefront = await AmazonStorefront.create({
+      brandName: String(brandName).trim(),
+      category: category ? String(category).trim() : 'All',
+      badge: badge ? String(badge).trim() : '100% Certified Partner',
+      title: String(title).trim(),
+      description: description ? String(description).trim() : '',
+      storeUrl: finalStoreUrl,
+      shortlink: shortlink ? String(shortlink).trim() : '',
+      highlights: Array.isArray(highlights) ? highlights : (highlights ? String(highlights).split(',').map(s => s.trim()).filter(Boolean) : []),
+      isActive: isActive !== undefined ? Boolean(isActive) : true,
+      displayOrder: displayOrder ? Number(displayOrder) : 0
+    });
+
+    res.status(201).json({ message: 'Storefront created successfully', storefront: newStorefront });
+  } catch (err: any) {
+    res.status(500).json({ message: 'Error creating storefront', error: err.message });
+  }
+};
+
+export const updateAdminStorefront = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { brandName, category, badge, title, description, storeUrl, shortlink, highlights, isActive, displayOrder } = req.body;
+
+    const storefront = await AmazonStorefront.findById(id);
+    if (!storefront) return res.status(404).json({ message: 'Storefront not found' });
+
+    if (brandName) storefront.brandName = String(brandName).trim();
+    if (category) storefront.category = String(category).trim();
+    if (badge !== undefined) storefront.badge = String(badge).trim();
+    if (title) storefront.title = String(title).trim();
+    if (description !== undefined) storefront.description = String(description).trim();
+    if (storeUrl) {
+      let finalStoreUrl = String(storeUrl).trim();
+      if (finalStoreUrl.includes('amazon.') && !finalStoreUrl.includes('tag=')) {
+        finalStoreUrl += (finalStoreUrl.includes('?') ? '&' : '?') + 'tag=mitoreboot-21&linkCode=ll2';
+      }
+      storefront.storeUrl = finalStoreUrl;
+    }
+    if (shortlink !== undefined) storefront.shortlink = String(shortlink).trim();
+    if (highlights !== undefined) {
+      storefront.highlights = Array.isArray(highlights) ? highlights : String(highlights).split(',').map(s => s.trim()).filter(Boolean);
+    }
+    if (isActive !== undefined) storefront.isActive = Boolean(isActive);
+    if (displayOrder !== undefined) storefront.displayOrder = Number(displayOrder);
+
+    await storefront.save();
+    res.json({ message: 'Storefront updated successfully', storefront });
+  } catch (err: any) {
+    res.status(500).json({ message: 'Error updating storefront', error: err.message });
+  }
+};
+
+export const deleteAdminStorefront = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const storefront = await AmazonStorefront.findByIdAndDelete(id);
+    if (!storefront) return res.status(404).json({ message: 'Storefront not found' });
+    res.json({ message: 'Storefront deleted successfully' });
+  } catch (err: any) {
+    res.status(500).json({ message: 'Error deleting storefront', error: err.message });
+  }
+};
+
 

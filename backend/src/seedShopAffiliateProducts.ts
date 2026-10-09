@@ -4,6 +4,7 @@ import path from 'path';
 import ShopProduct from './models/ShopProduct';
 import { ShopCategory } from './models/ShopCategory';
 import { Vendor } from './models/Vendor';
+import { AmazonStorefront } from './models/AmazonStorefront';
 
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
@@ -813,6 +814,26 @@ export async function seedShopAffiliateProducts() {
       },
       $setOnInsert: {
         passwordHash: '$2b$10$wE47pZ0716D21X8K7c2j8e.j9uH3Q6919hJ21s9iXlP7w910j3a5e'
+      }
+    },
+    { upsert: true, new: true }
+  );
+
+  console.log('[Seed] Ensuring Phalada Pure & Sure AmazonStorefront...');
+  await AmazonStorefront.findOneAndUpdate(
+    { brandName: 'Phalada Pure & Sure' },
+    {
+      $set: {
+        brandName: 'Phalada Pure & Sure',
+        category: 'Pesticide free food',
+        badge: '100% Certified Organic Partner',
+        title: 'Phalada Pure & Sure Organic Superstore Collection',
+        description: '100% Certified Organic Food, Cold-Pressed Oils, Ghee, Spices & Millets. Users can explore and buy directly through your affiliate storefront.',
+        storeUrl: 'https://www.amazon.in/s?k=phalada+pure+and+sure&crid=25GK89M1EQDPP&sprefix=phalada+pure+and+sur%2Caps%2C269&linkCode=ll2&tag=mitoreboot-21&linkId=b892246ba32b385014dffd9c2ea460b4&ref_=as_li_ss_tl',
+        shortlink: 'https://link.amazon/B061d6Vu9',
+        highlights: ['🌿 USDA Organic', '🫒 Cold-Pressed Oils', '🌾 Low-GI Millets', '🍯 100% Raw Honey'],
+        isActive: true,
+        displayOrder: 1
       }
     },
     { upsert: true, new: true }

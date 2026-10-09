@@ -169,6 +169,20 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
   const [sortBy, setSortBy] = useState('newest');
   const [showFiltersPanel, setShowFiltersPanel] = useState(false);
 
+  // Dynamic Partner Storefronts State
+  const [storefronts, setStorefronts] = useState<Array<{
+    _id: string;
+    brandName: string;
+    category: string;
+    badge: string;
+    title: string;
+    description: string;
+    storeUrl: string;
+    shortlink?: string;
+    highlights: string[];
+    isActive: boolean;
+  }>>([]);
+
   // Delivery Pincode Bar state
   const [userDeliveryPincode, setUserDeliveryPincode] = useState<string>(() => localStorage.getItem('user_delivery_pincode') || user?.addressPinCode || '560001');
   const [deliveryLocality, setDeliveryLocality] = useState<string>('');
@@ -303,6 +317,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
 
   useEffect(() => {
     fetchCategories();
+    fetchStorefronts();
     fetchProducts();
   }, [selectedCategory, selectedBrand, onlyDoctorRecommended, onlyAvailable, sortBy]);
 
@@ -399,6 +414,20 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
       }
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const fetchStorefronts = async () => {
+    try {
+      const res = await fetch(`${apiUrl}/shop/storefronts`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setStorefronts(data);
+      }
+    } catch (e) {
+      console.error('Error fetching storefronts:', e);
     }
   };
 
@@ -1567,46 +1596,73 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
           })}
         </div>
 
-        {/* Phalada Pure & Sure Organic Superstore Partner Showcase */}
-        {(selectedCategory === 'Pesticide free food' || selectedBrand.toLowerCase().includes('phalada') || selectedBrand.toLowerCase().includes('pure') || (!search.trim() && selectedCategory === 'All')) && (
-          <div className="bg-gradient-to-br from-emerald-950 via-slate-900 to-teal-950 border border-emerald-500/25 rounded-3xl p-4 sm:p-5 shadow-md mb-4 text-white relative overflow-hidden group">
-            <div className="absolute top-0 right-0 -mt-12 -mr-12 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <div className="space-y-1.5 max-w-xl">
-                <div className="inline-flex items-center gap-1.5 bg-emerald-500/20 border border-emerald-400/30 px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider text-emerald-300">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>Verified Organic Partner • Amazon Storefront</span>
+        {/* Dynamic Partner Storefront Showcase (Loaded from Admin / Database) */}
+        {(() => {
+          const activeList = storefronts.filter(s => s.isActive);
+          if (activeList.length === 0) return null;
+
+          let matched = null;
+          if (search.trim()) {
+            const q = search.toLowerCase();
+            matched = activeList.find(sf =>
+              sf.brandName.toLowerCase().includes(q) || sf.title.toLowerCase().includes(q)
+            );
+          } else if (selectedBrand !== 'All') {
+            const b = selectedBrand.toLowerCase();
+            matched = activeList.find(sf => sf.brandName.toLowerCase().includes(b));
+          } else if (selectedCategory !== 'All') {
+            matched = activeList.find(sf => sf.category === selectedCategory || sf.category === 'All');
+          } else {
+            matched = activeList[0];
+          }
+
+          if (!matched) return null;
+
+          return (
+            <div className="bg-gradient-to-br from-emerald-950 via-slate-900 to-teal-950 border border-emerald-500/25 rounded-3xl p-4 sm:p-5 shadow-md mb-4 text-white relative overflow-hidden group">
+              <div className="absolute top-0 right-0 -mt-12 -mr-12 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div className="space-y-1.5 max-w-xl">
+                  <div className="inline-flex items-center gap-1.5 bg-emerald-500/20 border border-emerald-400/30 px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider text-emerald-300">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>{matched.badge || 'Verified Partner • Amazon Storefront'}</span>
+                  </div>
+                  <h3 className="text-sm sm:text-base font-black tracking-tight text-white">
+                    {matched.title}
+                  </h3>
+                  {matched.description && (
+                    <p className="text-xs text-slate-300 leading-relaxed font-medium">
+                      {matched.description}
+                    </p>
+                  )}
+                  {matched.highlights && matched.highlights.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[10px] font-bold text-emerald-200">
+                      {matched.highlights.map((h, i) => (
+                        <span key={i} className="bg-white/10 px-2 py-0.5 rounded-lg border border-white/10">
+                          {h}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <h3 className="text-sm sm:text-base font-black tracking-tight text-white">
-                  Phalada Pure & Sure Organic Superstore
-                </h3>
-                <p className="text-xs text-slate-300 leading-relaxed font-medium">
-                  Shop 100+ certified pesticide-free groceries, cold-pressed oils, unpolished millets, raw honey & organic pulses directly on Amazon.
-                </p>
-                <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[10px] font-bold text-emerald-200">
-                  <span className="bg-white/10 px-2 py-0.5 rounded-lg border border-white/10">🌿 USDA Organic</span>
-                  <span className="bg-white/10 px-2 py-0.5 rounded-lg border border-white/10">🫒 Cold-Pressed Oils</span>
-                  <span className="bg-white/10 px-2 py-0.5 rounded-lg border border-white/10">🌾 Low-GI Millets</span>
-                  <span className="bg-white/10 px-2 py-0.5 rounded-lg border border-white/10">🍯 100% Raw Honey</span>
+                <div className="shrink-0 w-full md:w-auto flex flex-col items-center gap-1">
+                  <a
+                    href={matched.storeUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full md:w-auto px-5 py-2.5 bg-gradient-to-r from-amber-400 via-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs rounded-2xl shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95 border border-amber-300/40 cursor-pointer"
+                  >
+                    <span>Explore {matched.brandName} on Amazon</span>
+                    <ExternalLink className="h-3.5 w-3.5 stroke-[2.5]" />
+                  </a>
+                  <span className="text-[9px] text-slate-400 font-semibold tracking-tight">
+                    Full Catalog • Free Prime Delivery
+                  </span>
                 </div>
-              </div>
-              <div className="shrink-0 w-full md:w-auto flex flex-col items-center gap-1">
-                <a
-                  href="https://www.amazon.in/s?k=phalada+pure+and+sure&crid=25GK89M1EQDPP&sprefix=phalada+pure+and+sur%2Caps%2C269&linkCode=ll2&tag=mitoreboot-21&linkId=b892246ba32b385014dffd9c2ea460b4&ref_=as_li_ss_tl"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full md:w-auto px-5 py-2.5 bg-gradient-to-r from-amber-400 via-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs rounded-2xl shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95 border border-amber-300/40"
-                >
-                  <span>Explore Pure & Sure on Amazon</span>
-                  <ExternalLink className="h-3.5 w-3.5 stroke-[2.5]" />
-                </a>
-                <span className="text-[9px] text-slate-400 font-semibold tracking-tight">
-                  100+ Products • Free Prime Delivery
-                </span>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Modern, Clean & Neat Product Cards Grid (2 cols mobile, 3 tablet, 4 desktop) */}
         {loading ? (

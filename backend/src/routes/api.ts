@@ -366,6 +366,7 @@ router.get('/founders', FounderController.getAll);
 router.get('/shop/products', authenticateToken, requireRole(['User']), ShopController.getProducts);
 router.get('/shop/products/:id', authenticateToken, requireRole(['User']), ShopController.getProductDetails);
 router.get('/shop/categories', authenticateToken, requireRole(['User', 'SuperAdmin', 'Admin', 'Editor']), ShopController.getCategories);
+router.get('/shop/storefronts', authenticateToken, requireRole(['User', 'SuperAdmin', 'Admin', 'Editor']), ShopController.getStorefronts);
 router.post('/shop/validate-coupon', authenticateToken, requireRole(['User', 'SuperAdmin', 'Admin', 'Editor']), ShopController.validateShopCoupon);
 router.post('/shop/check-pincode', authenticateToken, requireRole(['User', 'SuperAdmin', 'Admin', 'Editor']), ShopController.checkPincodeServiceability);
 router.get('/shop/coupons', ShopController.getAvailableCoupons);
@@ -552,6 +553,12 @@ router.get('/admin/amazon/products', authenticateToken, requireRole(['SuperAdmin
 router.put('/admin/amazon/products/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.updateAdminAmazonProduct);
 router.delete('/admin/amazon/products/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.deleteAdminProduct);
 router.post('/admin/amazon/products/:id/refresh', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.refreshAdminAmazonProduct);
+
+// Amazon Partner Storefronts (Admin CRUD)
+router.get('/admin/amazon/storefronts', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.getAdminStorefronts);
+router.post('/admin/amazon/storefronts', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.createAdminStorefront);
+router.put('/admin/amazon/storefronts/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.updateAdminStorefront);
+router.delete('/admin/amazon/storefronts/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), ShopController.deleteAdminStorefront);
 
 
 
