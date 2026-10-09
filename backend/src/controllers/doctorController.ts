@@ -13,9 +13,29 @@ export class DoctorController {
 
   public static async adminAddDoctor(req: Request, res: Response) {
     try {
-      const { name, email, password, specialty, description, avatar, languagesKnown, consultationFee, onlineConsultationFee, offlineConsultationFee, commissionType, commissionValue } = req.body;
-      if (!name || !email || !password || !specialty || !description) {
-        return res.status(400).json({ message: 'Missing required doctor fields.' });
+      const {
+        name,
+        email,
+        password,
+        specialty,
+        qualification,
+        experience,
+        description,
+        avatar,
+        languagesKnown,
+        consultationFee,
+        onlineConsultationFee,
+        offlineConsultationFee,
+        slotDuration,
+        extraFeePer15Min,
+        feePolicy,
+        sleepEvaluationNote,
+        commissionType,
+        commissionValue
+      } = req.body;
+
+      if (!name || !email || !password || !specialty) {
+        return res.status(400).json({ message: 'Missing required doctor fields (name, email, password, specialty).' });
       }
 
       const existing = await Doctor.findOne({ email });
@@ -23,18 +43,25 @@ export class DoctorController {
         return res.status(400).json({ message: 'Doctor with this email already exists.' });
       }
 
+      const fee = Number(onlineConsultationFee || consultationFee || 500);
       const passwordHash = await bcrypt.hash(password, 10);
       const doc = new Doctor({
         name,
         email,
         passwordHash,
         specialty,
-        description,
-        avatar,
+        qualification: qualification || '',
+        experience: experience !== undefined ? Number(experience) : 0,
+        description: description || '',
+        avatar: avatar || '',
         languagesKnown: Array.isArray(languagesKnown) ? languagesKnown : [],
-        consultationFee: consultationFee || 500,
-        onlineConsultationFee: onlineConsultationFee || 500,
-        offlineConsultationFee: offlineConsultationFee || 500,
+        consultationFee: fee,
+        onlineConsultationFee: fee,
+        offlineConsultationFee: offlineConsultationFee !== undefined ? Number(offlineConsultationFee) : fee,
+        slotDuration: slotDuration !== undefined ? Number(slotDuration) : 30,
+        extraFeePer15Min: extraFeePer15Min !== undefined ? Number(extraFeePer15Min) : 0,
+        feePolicy: feePolicy || '',
+        sleepEvaluationNote: sleepEvaluationNote || '',
         commissionType: commissionType || 'PERCENTAGE',
         commissionValue: commissionValue !== undefined ? Number(commissionValue) : 10
       });
@@ -48,7 +75,7 @@ export class DoctorController {
           { start: '09:00', end: '13:00' },
           { start: '14:00', end: '17:00' }
         ],
-        slotDuration: 30
+        slotDuration: slotDuration !== undefined ? Number(slotDuration) : 30
       });
       await availability.save();
 
@@ -60,13 +87,7 @@ export class DoctorController {
 
       res.status(201).json({
         token,
-        doctor: {
-          id: doc._id,
-          name: doc.name,
-          email: doc.email,
-          specialty: doc.specialty,
-          languagesKnown: doc.languagesKnown
-        }
+        doctor: doc
       });
     } catch (err: any) {
       res.status(500).json({ message: err.message || 'Error adding doctor' });
@@ -76,18 +97,42 @@ export class DoctorController {
   public static async adminEditDoctor(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const { name, specialty, description, isActive, avatar, languagesKnown, consultationFee, onlineConsultationFee, offlineConsultationFee, commissionType, commissionValue } = req.body;
+      const {
+        name,
+        specialty,
+        qualification,
+        experience,
+        description,
+        isActive,
+        avatar,
+        languagesKnown,
+        consultationFee,
+        onlineConsultationFee,
+        offlineConsultationFee,
+        slotDuration,
+        extraFeePer15Min,
+        feePolicy,
+        sleepEvaluationNote,
+        commissionType,
+        commissionValue
+      } = req.body;
       const doc = await Doctor.findById(id);
       if (!doc) return res.status(404).json({ message: 'Doctor not found.' });
 
       if (name) doc.name = name;
       if (specialty) doc.specialty = specialty;
-      if (description) doc.description = description;
+      if (qualification !== undefined) doc.qualification = qualification;
+      if (experience !== undefined) doc.experience = Number(experience);
+      if (description !== undefined) doc.description = description;
       if (isActive !== undefined) doc.isActive = isActive;
       if (avatar !== undefined) doc.avatar = avatar;
-      if (consultationFee !== undefined) doc.consultationFee = consultationFee;
-      if (onlineConsultationFee !== undefined) doc.onlineConsultationFee = onlineConsultationFee;
-      if (offlineConsultationFee !== undefined) doc.offlineConsultationFee = offlineConsultationFee;
+      if (consultationFee !== undefined) doc.consultationFee = Number(consultationFee);
+      if (onlineConsultationFee !== undefined) doc.onlineConsultationFee = Number(onlineConsultationFee);
+      if (offlineConsultationFee !== undefined) doc.offlineConsultationFee = Number(offlineConsultationFee);
+      if (slotDuration !== undefined) doc.slotDuration = Number(slotDuration);
+      if (extraFeePer15Min !== undefined) doc.extraFeePer15Min = Number(extraFeePer15Min);
+      if (feePolicy !== undefined) doc.feePolicy = feePolicy;
+      if (sleepEvaluationNote !== undefined) doc.sleepEvaluationNote = sleepEvaluationNote;
       if (commissionType !== undefined) doc.commissionType = commissionType;
       if (commissionValue !== undefined) doc.commissionValue = Number(commissionValue);
       if (languagesKnown !== undefined) {

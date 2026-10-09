@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit, UserCheck, UserX } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, Trash2, Edit, UserCheck, UserX, Upload, Image as ImageIcon } from 'lucide-react';
 
 const formatDate = (dateStr: string | undefined | null, withTime = false): string => {
   if (!dateStr) return '--';
@@ -26,7 +26,30 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
   // Doctors Management
   const [doctors, setDoctors] = useState<any[]>([]);
   const [showDocModal, setShowDocModal] = useState(false);
-  const [docForm, setDocForm] = useState({ _id: '', name: '', email: '', password: '', specialty: '', description: '', avatar: '', isActive: true, languagesKnown: [] as string[], commissionType: 'PERCENTAGE' as 'PERCENTAGE' | 'FIXED', commissionValue: 10 });
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const avatarFileRef = useRef<HTMLInputElement>(null);
+  const [docForm, setDocForm] = useState({
+    _id: '',
+    name: '',
+    email: '',
+    password: '',
+    specialty: '',
+    qualification: '',
+    experience: 0,
+    description: '',
+    sleepEvaluationNote: '',
+    consultationFee: 750,
+    onlineConsultationFee: 750,
+    offlineConsultationFee: 750,
+    slotDuration: 30,
+    extraFeePer15Min: 100,
+    feePolicy: 'extra 100/- every 15 mins, if consultation exceeds 30mins',
+    avatar: '',
+    isActive: true,
+    languagesKnown: [] as string[],
+    commissionType: 'PERCENTAGE' as 'PERCENTAGE' | 'FIXED',
+    commissionValue: 10
+  });
   const [editingDocId, setEditingDocId] = useState<string | null>(null);
 
   // Vendor Management
@@ -113,6 +136,32 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
       }
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${apiUrl}/admin/upload-media`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setDocForm(prev => ({ ...prev, avatar: data.url }));
+      } else {
+        alert('Failed to upload doctor photo');
+      }
+    } catch (err) {
+      console.error('Error uploading avatar:', err);
+      alert('Error uploading doctor photo');
+    } finally {
+      setUploadingAvatar(false);
     }
   };
 
@@ -248,15 +297,36 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
           <div className="flex justify-between items-center">
             <div>
               <h2 className="text-xl font-bold text-slate-800 font-sans">Doctors Management</h2>
-              <p className="text-xs text-slate-500 mt-1">Register, edit and deactivate consultant doctors</p>
+              <p className="text-xs text-slate-500 mt-1">Register, edit and configure consultant doctors, fees, and sleep evaluation details</p>
             </div>
             <button
               onClick={() => {
-                setDocForm({ _id: '', name: '', email: '', password: '', specialty: '', description: '', avatar: '', isActive: true, languagesKnown: [], commissionType: 'PERCENTAGE', commissionValue: 10 });
+                setDocForm({
+                  _id: '',
+                  name: '',
+                  email: '',
+                  password: '',
+                  specialty: '',
+                  qualification: '',
+                  experience: 0,
+                  description: '',
+                  sleepEvaluationNote: '',
+                  consultationFee: 750,
+                  onlineConsultationFee: 750,
+                  offlineConsultationFee: 750,
+                  slotDuration: 30,
+                  extraFeePer15Min: 100,
+                  feePolicy: 'extra 100/- every 15 mins, if consultation exceeds 30mins',
+                  avatar: '',
+                  isActive: true,
+                  languagesKnown: ['English'],
+                  commissionType: 'PERCENTAGE',
+                  commissionValue: 10
+                });
                 setEditingDocId(null);
                 setShowDocModal(true);
               }}
-              className="bg-primary text-white font-bold text-sm px-4 py-2 rounded-xl flex items-center gap-2 shadow-soft"
+              className="bg-primary hover:bg-primary-dark text-white font-bold text-sm px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-soft transition-all cursor-pointer"
             >
               <Plus className="h-4 w-4" /> Add Doctor
             </button>
@@ -266,80 +336,141 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
             <table className="w-full text-left text-sm text-slate-600">
               <thead className="bg-slate-50 text-xs uppercase font-bold text-slate-500">
                 <tr>
-                  <th className="px-6 py-4">Specialist</th>
-                  <th className="px-6 py-4">Specialty</th>
-                  <th className="px-6 py-4">Commission</th>
-                  <th className="px-6 py-4">Rating</th>
-                  <th className="px-6 py-4">Status</th>
-                  <th className="px-6 py-4 text-right">Actions</th>
+                  <th className="px-5 py-4">Specialist</th>
+                  <th className="px-5 py-4">Specialty & Experience</th>
+                  <th className="px-5 py-4">Fee & Policy</th>
+                  <th className="px-5 py-4">Commission</th>
+                  <th className="px-5 py-4">Rating</th>
+                  <th className="px-5 py-4">Status</th>
+                  <th className="px-5 py-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
-                {doctors.map(doc => (
-                  <tr key={doc._id}>
-                    <td className="px-6 py-4 flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 border border-slate-200">
-                        {doc.avatar ? <img src={doc.avatar} className="w-full h-full rounded-full object-cover" /> : doc.name[0]}
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-slate-800 text-sm">Dr. {doc.name}</h4>
-                        <p className="text-xs text-slate-400 font-normal">{doc.email}</p>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-xs font-bold text-indigo-600">{doc.specialty}</td>
-                    <td className="px-6 py-4 text-xs font-semibold text-slate-700">
-                      <span className="bg-indigo-50 text-indigo-700 text-xs px-2.5 py-1 rounded-lg font-bold border border-indigo-100">
-                        {doc.commissionType === 'FIXED' ? `₹${doc.commissionValue ?? 10}` : `${doc.commissionValue ?? 10}%`}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      {doc.avgRating != null ? (
-                        <div className="flex flex-col gap-0.5">
-                          <div className="flex items-center gap-0.5">
-                            {[1,2,3,4,5].map(star => (
-                              <svg key={star} className={`w-3.5 h-3.5 ${star <= Math.round(doc.avgRating) ? 'text-amber-400' : 'text-slate-200'}`} fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.168c.969 0 1.371 1.24.588 1.81l-3.374 2.452a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118L10 14.347l-3.952 2.701c-.784.57-1.838-.196-1.539-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.058 9.394c-.783-.57-.38-1.81.588-1.81h4.168a1 1 0 00.95-.69l1.285-3.967z"/>
-                              </svg>
-                            ))}
-                            <span className="text-xs font-bold text-slate-700 ml-1">{doc.avgRating}</span>
+                {doctors.map(doc => {
+                  const avatarSrc = doc.avatar
+                    ? (doc.avatar.startsWith('/uploads/') ? `${apiUrl.replace('/api', '')}${doc.avatar}` : doc.avatar)
+                    : '';
+                  return (
+                    <tr key={doc._id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center font-bold text-indigo-600 shrink-0 overflow-hidden shadow-2xs">
+                            {avatarSrc ? (
+                              <img src={avatarSrc} alt={doc.name} className="w-full h-full object-cover" />
+                            ) : (
+                              doc.name.replace(/^(Dr\.?|Ms\.?|Mr\.?)\s*/i, '').charAt(0) || 'D'
+                            )}
                           </div>
-                          <span className="text-[10px] text-slate-400">{doc.ratingCount} review{doc.ratingCount !== 1 ? 's' : ''}</span>
+                          <div className="min-w-0 max-w-xs">
+                            <h4 className="font-bold text-slate-800 text-sm truncate">{doc.name}</h4>
+                            {doc.qualification && (
+                              <p className="text-[11px] font-semibold text-slate-500 line-clamp-1" title={doc.qualification}>
+                                {doc.qualification}
+                              </p>
+                            )}
+                            <p className="text-[10px] text-slate-400 font-normal">{doc.email}</p>
+                          </div>
                         </div>
-                      ) : (
-                        <span className="text-[10px] text-slate-350 italic">No ratings yet</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      {doc.isActive ? (
-                        <span className="bg-green-50 text-success text-[10px] font-bold px-2 py-0.5 rounded-full border border-green-100 flex items-center gap-1 w-max">
-                          <UserCheck className="w-3.5 h-3.5" /> Active
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="space-y-0.5">
+                          <span className="text-xs font-bold text-indigo-600 block">{doc.specialty}</span>
+                          {doc.experience ? (
+                            <span className="inline-block text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">
+                              {doc.experience} yrs exp
+                            </span>
+                          ) : null}
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="space-y-0.5">
+                          <span className="text-xs font-extrabold text-slate-900 block">
+                            ₹{doc.onlineConsultationFee || doc.consultationFee || 750} <span className="text-[10px] text-slate-400 font-normal">/ {doc.slotDuration || 30}m</span>
+                          </span>
+                          {(doc.feePolicy || doc.extraFeePer15Min) && (
+                            <span className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200/60 px-1.5 py-0.5 rounded block max-w-[180px] truncate" title={doc.feePolicy || `+₹${doc.extraFeePer15Min}/15m`}>
+                              ⏱️ {doc.feePolicy || `+₹${doc.extraFeePer15Min}/15m`}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-5 py-4 text-xs font-semibold text-slate-700">
+                        <span className="bg-indigo-50 text-indigo-700 text-xs px-2.5 py-1 rounded-lg font-bold border border-indigo-100">
+                          {doc.commissionType === 'FIXED' ? `₹${doc.commissionValue ?? 10}` : `${doc.commissionValue ?? 10}%`}
                         </span>
-                      ) : (
-                        <span className="bg-red-50 text-danger text-[10px] font-bold px-2 py-0.5 rounded-full border border-red-100 flex items-center gap-1 w-max">
-                          <UserX className="w-3.5 h-3.5" /> Suspended
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-right flex justify-end gap-2 mt-1">
-                      <button
-                        onClick={() => {
-                          setDocForm({ ...doc, password: '', languagesKnown: doc.languagesKnown || [], commissionType: doc.commissionType || 'PERCENTAGE', commissionValue: doc.commissionValue ?? 10 });
-                          setEditingDocId(doc._id);
-                          setShowDocModal(true);
-                        }}
-                        className="p-2 text-blue-500 bg-blue-50 hover:bg-blue-100 rounded-xl"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDocDelete(doc._id)}
-                        className="p-2 text-red-500 bg-red-50 hover:bg-red-100 rounded-xl"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="px-5 py-4">
+                        {doc.avgRating != null ? (
+                          <div className="flex flex-col gap-0.5">
+                            <div className="flex items-center gap-0.5">
+                              {[1,2,3,4,5].map(star => (
+                                <svg key={star} className={`w-3.5 h-3.5 ${star <= Math.round(doc.avgRating) ? 'text-amber-400' : 'text-slate-200'}`} fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.168c.969 0 1.371 1.24.588 1.81l-3.374 2.452a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118L10 14.347l-3.952 2.701c-.784.57-1.838-.196-1.539-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.058 9.394c-.783-.57-.38-1.81.588-1.81h4.168a1 1 0 00.95-.69l1.285-3.967z"/>
+                                </svg>
+                              ))}
+                              <span className="text-xs font-bold text-slate-700 ml-1">{doc.avgRating}</span>
+                            </div>
+                            <span className="text-[10px] text-slate-400">{doc.ratingCount} review{doc.ratingCount !== 1 ? 's' : ''}</span>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-slate-350 italic">No ratings yet</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-4">
+                        {doc.isActive ? (
+                          <span className="bg-green-50 text-success text-[10px] font-bold px-2 py-0.5 rounded-full border border-green-100 flex items-center gap-1 w-max">
+                            <UserCheck className="w-3.5 h-3.5" /> Active
+                          </span>
+                        ) : (
+                          <span className="bg-red-50 text-danger text-[10px] font-bold px-2 py-0.5 rounded-full border border-red-100 flex items-center gap-1 w-max">
+                            <UserX className="w-3.5 h-3.5" /> Suspended
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-5 py-4 text-right flex justify-end gap-2 mt-2">
+                        <button
+                          onClick={() => {
+                            setDocForm({
+                              _id: doc._id || '',
+                              name: doc.name || '',
+                              email: doc.email || '',
+                              password: '',
+                              specialty: doc.specialty || '',
+                              qualification: doc.qualification || '',
+                              experience: doc.experience ?? 0,
+                              description: doc.description || '',
+                              sleepEvaluationNote: doc.sleepEvaluationNote || '',
+                              consultationFee: doc.consultationFee ?? doc.onlineConsultationFee ?? 750,
+                              onlineConsultationFee: doc.onlineConsultationFee ?? doc.consultationFee ?? 750,
+                              offlineConsultationFee: doc.offlineConsultationFee ?? doc.consultationFee ?? 750,
+                              slotDuration: doc.slotDuration ?? 30,
+                              extraFeePer15Min: doc.extraFeePer15Min ?? 0,
+                              feePolicy: doc.feePolicy || '',
+                              avatar: doc.avatar || '',
+                              isActive: doc.isActive !== false,
+                              languagesKnown: doc.languagesKnown || [],
+                              commissionType: doc.commissionType || 'PERCENTAGE',
+                              commissionValue: doc.commissionValue ?? 10
+                            });
+                            setEditingDocId(doc._id);
+                            setShowDocModal(true);
+                          }}
+                          className="p-2 text-blue-500 bg-blue-50 hover:bg-blue-100 rounded-xl cursor-pointer"
+                          title="Edit Doctor Profile"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDocDelete(doc._id)}
+                          className="p-2 text-red-500 bg-red-50 hover:bg-red-100 rounded-xl cursor-pointer"
+                          title="Delete Doctor"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -583,63 +714,263 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
         </div>
       )}
 
-      {/* DOCTOR CREATE MODAL */}
+      {/* DOCTOR CREATE / EDIT MODAL */}
       {showDocModal && (
-        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md p-6 border border-slate-100 shadow-xl">
-            <h3 className="text-base font-bold text-slate-800 mb-4">{editingDocId ? 'Edit Doctor Profile' : 'Add Doctor'}</h3>
-            <form onSubmit={handleDocSubmit} className="space-y-4">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[92vh] overflow-y-auto p-6 sm:p-7 border border-slate-100 shadow-2xl space-y-5 animate-in fade-in duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">Name</label>
-                <input required value={docForm.name} onChange={e => setDocForm({ ...docForm, name: e.target.value })} className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-400 font-semibold" />
+                <h3 className="text-lg font-black text-slate-800">
+                  {editingDocId ? 'Edit Doctor Profile' : 'Add Consultant / Doctor'}
+                </h3>
+                <p className="text-xs text-slate-400 font-medium">Configure credentials, sleep evaluation focus, and fees</p>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">Email</label>
-                <input required type="email" value={docForm.email} onChange={e => setDocForm({ ...docForm, email: e.target.value })} className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-400 font-semibold" />
+              <button
+                type="button"
+                onClick={() => setShowDocModal(false)}
+                className="text-slate-400 hover:text-slate-600 text-sm font-bold p-1 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleDocSubmit} className="space-y-4 text-xs">
+              {/* Photo Upload Section */}
+              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-4">
+                <input
+                  type="file"
+                  ref={avatarFileRef}
+                  onChange={handleAvatarFileChange}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <div className="w-16 h-16 rounded-2xl bg-white border border-slate-200 flex items-center justify-center font-bold text-slate-400 overflow-hidden shrink-0 shadow-2xs">
+                  {docForm.avatar ? (
+                    <img
+                      src={docForm.avatar.startsWith('/uploads/') ? `${apiUrl.replace('/api', '')}${docForm.avatar}` : docForm.avatar}
+                      alt="Doctor Profile"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <ImageIcon className="h-6 w-6 text-slate-300" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0 space-y-1.5">
+                  <span className="font-bold text-slate-700 block">Doctor Profile Photo</span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => avatarFileRef.current?.click()}
+                      disabled={uploadingAvatar}
+                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+                    >
+                      <Upload className="h-3.5 w-3.5" />
+                      <span>{uploadingAvatar ? 'Uploading...' : 'Upload Photo'}</span>
+                    </button>
+                    {docForm.avatar && (
+                      <button
+                        type="button"
+                        onClick={() => setDocForm({ ...docForm, avatar: '' })}
+                        className="text-slate-400 hover:text-rose-500 font-bold"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    value={docForm.avatar}
+                    onChange={e => setDocForm({ ...docForm, avatar: e.target.value })}
+                    placeholder="Or enter direct image URL"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-2.5 py-1 text-[11px] font-mono text-slate-600 focus:outline-none focus:border-indigo-400"
+                  />
+                </div>
               </div>
+
+              {/* Basic Credentials */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div>
+                  <label className="block font-black text-slate-600 uppercase tracking-wider text-[10px] mb-1">Doctor Name *</label>
+                  <input
+                    required
+                    value={docForm.name}
+                    onChange={e => setDocForm({ ...docForm, name: e.target.value })}
+                    placeholder="e.g. Dr. Krishnaveni Renganathan"
+                    className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none focus:border-indigo-400 font-bold text-slate-800"
+                  />
+                </div>
+                <div>
+                  <label className="block font-black text-slate-600 uppercase tracking-wider text-[10px] mb-1">Email Address *</label>
+                  <input
+                    required
+                    type="email"
+                    value={docForm.email}
+                    onChange={e => setDocForm({ ...docForm, email: e.target.value })}
+                    placeholder="doctor@example.com"
+                    className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none focus:border-indigo-400 font-semibold text-slate-800"
+                  />
+                </div>
+              </div>
+
               {!editingDocId && (
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">Password</label>
-                  <input required type="password" value={docForm.password} onChange={e => setDocForm({ ...docForm, password: e.target.value })} className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-400 font-semibold" />
+                  <label className="block font-black text-slate-600 uppercase tracking-wider text-[10px] mb-1">Doctor Portal Password *</label>
+                  <input
+                    required
+                    type="password"
+                    value={docForm.password}
+                    onChange={e => setDocForm({ ...docForm, password: e.target.value })}
+                    placeholder="Create login password"
+                    className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none focus:border-indigo-400 font-semibold text-slate-800"
+                  />
                 </div>
               )}
-              <div className="grid grid-cols-2 gap-4">
+
+              {/* Specialty & Qualifications */}
+              <div className="space-y-3.5">
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">Specialty</label>
-                  <input required value={docForm.specialty} onChange={e => setDocForm({ ...docForm, specialty: e.target.value })} className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-400 font-semibold" />
+                  <label className="block font-black text-slate-600 uppercase tracking-wider text-[10px] mb-1">Specialty / Title *</label>
+                  <input
+                    required
+                    value={docForm.specialty}
+                    onChange={e => setDocForm({ ...docForm, specialty: e.target.value })}
+                    placeholder="e.g. Consultant Pulmonologist, Allergy and Sleep Specialist"
+                    className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none focus:border-indigo-400 font-bold text-slate-800"
+                  />
                 </div>
+
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">Avatar (URL)</label>
-                  <input value={docForm.avatar} onChange={e => setDocForm({ ...docForm, avatar: e.target.value })} className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-400 font-semibold" />
+                  <label className="block font-black text-slate-600 uppercase tracking-wider text-[10px] mb-1">Qualifications / Degrees</label>
+                  <input
+                    value={docForm.qualification}
+                    onChange={e => setDocForm({ ...docForm, qualification: e.target.value })}
+                    placeholder="e.g. MBBS, MD, DNB(Respiratory Medicine), DAA (CMC Vellore), Fellowship in sleep medicine (St John's)"
+                    className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none focus:border-indigo-400 font-medium text-slate-800"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div>
+                    <label className="block font-black text-slate-600 uppercase tracking-wider text-[10px] mb-1">Total Experience (Years)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={docForm.experience}
+                      onChange={e => setDocForm({ ...docForm, experience: Number(e.target.value) })}
+                      placeholder="e.g. 13"
+                      className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none focus:border-indigo-400 font-bold text-slate-800 font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-black text-slate-600 uppercase tracking-wider text-[10px] mb-1">Languages Spoken</label>
+                    <input
+                      value={Array.isArray(docForm.languagesKnown) ? docForm.languagesKnown.join(', ') : docForm.languagesKnown || ''}
+                      onChange={e => setDocForm({ ...docForm, languagesKnown: e.target.value as any })}
+                      placeholder="e.g. English, Hindi, Tamil"
+                      className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none focus:border-indigo-400 font-semibold text-slate-800"
+                    />
+                  </div>
                 </div>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">Languages Spoken (comma separated)</label>
-                <input 
-                  value={Array.isArray(docForm.languagesKnown) ? docForm.languagesKnown.join(', ') : docForm.languagesKnown || ''} 
-                  onChange={e => setDocForm({ ...docForm, languagesKnown: e.target.value as any })} 
-                  placeholder="e.g. English, Hindi, Tamil" 
-                  className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-400 font-semibold" 
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">Profile Description</label>
-                <textarea required value={docForm.description} onChange={e => setDocForm({ ...docForm, description: e.target.value })} className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-400 font-semibold" rows={3}></textarea>
-              </div>
-              <div className="grid grid-cols-2 gap-4 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+
+              {/* Consultation Pricing & Overtime Policy */}
+              <div className="p-3.5 bg-indigo-50/50 rounded-2xl border border-indigo-100/80 space-y-3">
+                <span className="font-black text-indigo-950 uppercase tracking-wider text-[10px] block">
+                  Consultation Pricing & Overtime Policy
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block font-bold text-slate-600 text-[10px] mb-1">Consultation Fee (₹)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={docForm.onlineConsultationFee}
+                      onChange={e => {
+                        const val = Number(e.target.value);
+                        setDocForm({ ...docForm, onlineConsultationFee: val, consultationFee: val });
+                      }}
+                      placeholder="750"
+                      className="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-600 text-[10px] mb-1">Slot Duration (Mins)</label>
+                    <input
+                      type="number"
+                      min="5"
+                      step="5"
+                      value={docForm.slotDuration}
+                      onChange={e => setDocForm({ ...docForm, slotDuration: Number(e.target.value) })}
+                      placeholder="30"
+                      className="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-600 text-[10px] mb-1">Extra Fee / 15m (₹)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={docForm.extraFeePer15Min}
+                      onChange={e => setDocForm({ ...docForm, extraFeePer15Min: Number(e.target.value) })}
+                      placeholder="100"
+                      className="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold font-mono"
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Commission Type</label>
+                  <label className="block font-bold text-slate-600 text-[10px] mb-1">Overtime Policy Note (Shown to Patient)</label>
+                  <input
+                    value={docForm.feePolicy}
+                    onChange={e => setDocForm({ ...docForm, feePolicy: e.target.value })}
+                    placeholder="e.g. extra 100/- every 15 mins , if consultation exceeds 30mins"
+                    className="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-medium text-slate-800"
+                  />
+                </div>
+              </div>
+
+              {/* Sleep Evaluation Focus & Clinical Description */}
+              <div className="space-y-3">
+                <div>
+                  <label className="block font-black text-amber-900 uppercase tracking-wider text-[10px] mb-1">
+                    🌙 Why Sleep Evaluation / Clinical Focus Note (1-2 lines)
+                  </label>
+                  <textarea
+                    value={docForm.sleepEvaluationNote}
+                    onChange={e => setDocForm({ ...docForm, sleepEvaluationNote: e.target.value })}
+                    placeholder="e.g. Sleep evaluation helps detect treatable sleep disorders, improving recovery, immunity, energy, and overall quality of life"
+                    rows={2}
+                    className="w-full border border-amber-200 bg-amber-50/40 rounded-xl p-2.5 text-xs font-medium text-slate-800 focus:outline-none focus:border-amber-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-black text-slate-600 uppercase tracking-wider text-[10px] mb-1">Full Profile Description / Bio</label>
+                  <textarea
+                    value={docForm.description}
+                    onChange={e => setDocForm({ ...docForm, description: e.target.value })}
+                    placeholder="Detailed bio, clinical interests, background..."
+                    rows={2}
+                    className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-medium text-slate-800 focus:outline-none focus:border-indigo-400"
+                  />
+                </div>
+              </div>
+
+              {/* Commission Settings */}
+              <div className="grid grid-cols-2 gap-3.5 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                <div>
+                  <label className="block font-black text-slate-600 text-[10px] mb-1">Commission Type</label>
                   <select
                     value={docForm.commissionType}
                     onChange={e => setDocForm({ ...docForm, commissionType: e.target.value as any })}
-                    className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-bold bg-white focus:outline-none focus:border-indigo-400"
+                    className="w-full border border-slate-200 rounded-xl p-2 text-xs font-bold bg-white focus:outline-none focus:border-indigo-400 cursor-pointer"
                   >
                     <option value="PERCENTAGE">Percentage (%)</option>
-                    <option value="FIXED font-bold">Fixed Amount (₹)</option>
+                    <option value="FIXED">Fixed Amount (₹)</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Commission Rate/Amt</label>
+                  <label className="block font-black text-slate-600 text-[10px] mb-1">Commission Rate / Amount</label>
                   <input
                     type="number"
                     min="0"
@@ -647,13 +978,39 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
                     required
                     value={docForm.commissionValue}
                     onChange={e => setDocForm({ ...docForm, commissionValue: Number(e.target.value) })}
-                    className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-bold bg-white focus:outline-none focus:border-indigo-400"
+                    className="w-full border border-slate-200 rounded-xl p-2 text-xs font-bold bg-white focus:outline-none focus:border-indigo-400 font-mono"
                   />
                 </div>
               </div>
-              <div className="flex justify-end gap-2 mt-6">
-                <button type="button" onClick={() => setShowDocModal(false)} className="px-4 py-2 bg-slate-100 rounded-xl text-sm font-bold text-slate-600">Cancel</button>
-                <button type="submit" className="px-4 py-2 bg-primary rounded-xl text-sm font-bold text-white shadow-sm">Save Profile</button>
+
+              {/* Active Toggle */}
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="docActiveToggle"
+                  checked={docForm.isActive}
+                  onChange={e => setDocForm({ ...docForm, isActive: e.target.checked })}
+                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                />
+                <label htmlFor="docActiveToggle" className="font-bold text-slate-700 cursor-pointer">
+                  Doctor is Active and Visible for Booking
+                </label>
+              </div>
+
+              <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowDocModal(false)}
+                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-bold text-slate-600 cursor-pointer transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 rounded-xl text-xs font-black text-white shadow-sm transition-all cursor-pointer"
+                >
+                  Save Doctor Profile
+                </button>
               </div>
             </form>
           </div>

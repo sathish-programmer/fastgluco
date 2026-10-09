@@ -36,6 +36,13 @@ const LOCALE_MAP: Record<string, string> = {
   hi: 'hi-IN'
 };
 
+const getAvatarUrl = (avatarPath?: string, apiUrl?: string) => {
+  if (!avatarPath) return null;
+  if (avatarPath.startsWith('http://') || avatarPath.startsWith('https://')) return avatarPath;
+  const baseUrl = (apiUrl || '').replace(/\/api\/?$/, '');
+  return `${baseUrl}${avatarPath.startsWith('/') ? '' : '/'}${avatarPath}`;
+};
+
 export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ onBack }) => {
   const { t, language } = useLanguage();
   const activeLocale = LOCALE_MAP[language] || 'en-US';
@@ -490,70 +497,200 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {doctors.map(doc => {
                     const isRec = isMatchingSpecialty(doc);
+                    const isSelected = selectedDoctor?._id === doc._id;
+                    const avatarSrc = getAvatarUrl(doc.avatar, apiUrl);
+                    const effectiveDuration = doc.slotDuration || 30;
+
                     return (
                       <button
                         key={doc._id}
                         onClick={() => setSelectedDoctor(doc)}
-                        className={`p-4 rounded-2xl border text-left transition-all ${
-                          selectedDoctor?._id === doc._id 
-                            ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/20 shadow-sm text-slate-800 dark:text-slate-100' 
-                            : 'border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 hover:border-slate-200 dark:hover:border-slate-700'
+                        className={`p-4 rounded-2xl border text-left transition-all flex flex-col justify-between ${
+                          isSelected 
+                            ? 'border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/30 shadow-md ring-1 ring-indigo-500/50 text-slate-800 dark:text-slate-100' 
+                            : 'border-slate-150 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/60 hover:border-slate-300 dark:hover:border-slate-700'
                         }`}
                       >
-                        <div className="flex justify-between items-start gap-2">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-                              <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">{doc.name}</h4>
-                              {isRec && (
-                                <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/80 flex items-center gap-1">
-                                  <Sparkles className="h-2.5 w-2.5 text-blue-600 dark:text-blue-400" /> {t('appointment.recommended', 'Recommended')}
+                        <div>
+                          {/* Header: Avatar + Name + Rating */}
+                          <div className="flex items-start gap-3">
+                            <div className="relative shrink-0">
+                              {avatarSrc ? (
+                                <img
+                                  src={avatarSrc}
+                                  alt={doc.name}
+                                  className="w-13 h-13 rounded-2xl object-cover border border-slate-200 dark:border-slate-700 shadow-sm"
+                                  onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                                />
+                              ) : (
+                                <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold flex items-center justify-center text-sm shadow-sm">
+                                  {doc.name.replace(/^(Dr\.?|Ms\.?|Mr\.?)\s+/i, '').charAt(0) || 'D'}
+                                </div>
+                              )}
+                              {isSelected && (
+                                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-indigo-600 text-white rounded-full flex items-center justify-center text-[10px] font-black ring-2 ring-white dark:ring-slate-900">
+                                  ✓
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm leading-tight">{doc.name}</h4>
+                                {isRec && (
+                                  <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/80 flex items-center gap-0.5">
+                                    <Sparkles className="h-2.5 w-2.5 text-blue-600 dark:text-blue-400" /> {t('appointment.recommended', 'Recommended')}
+                                  </span>
+                                )}
+                              </div>
+
+                              {doc.qualification && (
+                                <p className="text-[11px] font-medium text-slate-600 dark:text-slate-350 line-clamp-2 mt-0.5 leading-snug">
+                                  {doc.qualification}
+                                </p>
+                              )}
+
+                              <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 mt-0.5">{doc.specialty}</p>
+                            </div>
+
+                            {doc.avgRating != null && (
+                              <div className="flex flex-col items-end shrink-0">
+                                <div className="flex items-center gap-0.5">
+                                  {[1,2,3,4,5].map((star: number) => (
+                                    <svg key={star} className={`w-3 h-3 ${star <= Math.round(doc.avgRating) ? 'text-amber-400' : 'text-slate-200'}`} fill="currentColor" viewBox="0 0 20 20">
+                                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.168c.969 0 1.371 1.24.588 1.81l-3.374 2.452a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118L10 14.347l-3.952 2.701c-.784.57-1.838-.196-1.539-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.058 9.394c-.783-.57-.38-1.81.588-1.81h4.168a1 1 0 00.95-.69l1.285-3.967z"/>
+                                    </svg>
+                                  ))}
+                                </div>
+                                <span className="text-[9px] text-slate-400 mt-0.5">{doc.avgRating} ({doc.ratingCount})</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Credentials Badges */}
+                          <div className="flex items-center gap-1.5 mt-2 flex-wrap text-[10px]">
+                            {doc.experience != null && (
+                              <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold border border-slate-200/60 dark:border-slate-700">
+                                🎓 {doc.experience} {t('appointment.yrsExpLabel', 'yrs exp')}
+                              </span>
+                            )}
+                            <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold border border-slate-200/60 dark:border-slate-700">
+                              ⏱️ {effectiveDuration} mins
+                            </span>
+                            {doc.languagesKnown && doc.languagesKnown.length > 0 && (
+                              <span className="text-slate-400 font-semibold flex items-center gap-1">
+                                <Globe className="h-3 w-3 inline text-slate-400" /> {doc.languagesKnown.join(', ')}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Sleep Evaluation Focus Callout */}
+                          {doc.sleepEvaluationNote && (
+                            <div className="mt-2.5 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-900 dark:text-amber-200 text-xs">
+                              <span className="font-bold text-[10px] uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center gap-1 mb-0.5">
+                                <span>🌙</span> Sleep Evaluation Focus
+                              </span>
+                              <p className="text-[11px] leading-relaxed italic">
+                                "{doc.sleepEvaluationNote}"
+                              </p>
+                            </div>
+                          )}
+
+                          {doc.description && !doc.sleepEvaluationNote && (
+                            <p className="text-[10px] text-slate-400 mt-1.5 line-clamp-2">{doc.description}</p>
+                          )}
+                        </div>
+
+                        {/* Pricing & Policy Footer */}
+                        <div className="mt-3 pt-2.5 border-t border-slate-200/70 dark:border-slate-800/80 space-y-1.5">
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <div className="flex gap-2">
+                              {doc.onlineConsultationFee !== undefined && (
+                                <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-lg border border-emerald-200/60 dark:border-emerald-800/60">
+                                  <Video className="h-3 w-3 inline" /> ₹{doc.onlineConsultationFee} / {effectiveDuration}m
+                                </span>
+                              )}
+                              {doc.offlineConsultationFee !== undefined && (
+                                <span className="text-[11px] font-bold text-purple-700 dark:text-purple-400 flex items-center gap-1 bg-purple-50 dark:bg-purple-950/40 px-2 py-0.5 rounded-lg border border-purple-200/60 dark:border-purple-800/60">
+                                  <Building2 className="h-3 w-3 inline" /> ₹{doc.offlineConsultationFee} / {effectiveDuration}m
                                 </span>
                               )}
                             </div>
-                            <p className="text-xs text-slate-500 mt-0.5">{doc.specialty}</p>
-                            {doc.languagesKnown && doc.languagesKnown.length > 0 && (
-                              <p className="text-[10px] text-slate-400 font-semibold mt-0.5 flex items-center gap-1">
-                                <Globe className="h-3 w-3 inline text-slate-400" /> {doc.languagesKnown.join(', ')}
-                              </p>
-                            )}
+                            {doc.extraFeePer15Min ? (
+                              <span className="text-[10px] font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 px-2 py-0.5 rounded-md border border-rose-200/60 dark:border-rose-900/40">
+                                +₹{doc.extraFeePer15Min}/15m OT
+                              </span>
+                            ) : null}
                           </div>
-                        {doc.avgRating != null && (
-                          <div className="flex flex-col items-end shrink-0">
-                            <div className="flex items-center gap-0.5">
-                              {[1,2,3,4,5].map((star: number) => (
-                                <svg key={star} className={`w-3 h-3 ${star <= Math.round(doc.avgRating) ? 'text-amber-400' : 'text-slate-200'}`} fill="currentColor" viewBox="0 0 20 20">
-                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.168c.969 0 1.371 1.24.588 1.81l-3.374 2.452a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118L10 14.347l-3.952 2.701c-.784.57-1.838-.196-1.539-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.058 9.394c-.783-.57-.38-1.81.588-1.81h4.168a1 1 0 00.95-.69l1.285-3.967z"/>
-                                </svg>
-                              ))}
-                            </div>
-                            <span className="text-[9px] text-slate-400 mt-0.5">{doc.avgRating} ({doc.ratingCount})</span>
-                          </div>
-                        )}
-                      </div>
-                      {doc.experience != null && (
-                        <p className="text-[10px] text-indigo-500 font-semibold mt-1.5">{t('appointment.yrsExp', { count: doc.experience }, '{{count}} yrs exp')}</p>
-                      )}
-                      <p className="text-[10px] text-slate-400 mt-1 line-clamp-2">{doc.description}</p>
-                      <div className="flex gap-3 mt-2">
-                        {doc.onlineConsultationFee !== undefined && (
-                          <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-1">
-                            <Video className="h-3 w-3 inline text-emerald-600" /> {t('appointment.onlineRs', { amount: doc.onlineConsultationFee }, 'Online: Rs. {{amount}}')}
-                          </span>
-                        )}
-                        {doc.offlineConsultationFee !== undefined && (
-                          <span className="text-[10px] font-bold text-purple-600 flex items-center gap-1">
-                            <Building2 className="h-3 w-3 inline text-purple-600" /> {t('appointment.inClinicRs', { amount: doc.offlineConsultationFee }, 'In-Clinic: Rs. {{amount}}')}
-                          </span>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
+
+                          {(doc.feePolicy || doc.extraFeePer15Min) && (
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400 italic leading-snug">
+                              ℹ️ {doc.feePolicy || `Extra ₹${doc.extraFeePer15Min} every 15 mins if consultation exceeds ${effectiveDuration} mins`}
+                            </p>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
               {selectedDoctor && (
                 <>
+                  {/* Selected Doctor Summary Card */}
+                  <div className="p-4 rounded-2xl bg-gradient-to-r from-indigo-50/90 via-white to-purple-50/90 dark:from-indigo-950/40 dark:via-slate-900 dark:to-purple-950/30 border-2 border-indigo-500/40 shadow-sm my-3 transition-all space-y-3">
+                    <div className="flex items-start gap-3">
+                      {getAvatarUrl(selectedDoctor.avatar, apiUrl) ? (
+                        <img 
+                          src={getAvatarUrl(selectedDoctor.avatar, apiUrl) || ''} 
+                          alt={selectedDoctor.name}
+                          className="w-14 h-14 rounded-2xl object-cover border-2 border-white dark:border-slate-800 shadow-md shrink-0"
+                          onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                        />
+                      ) : (
+                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 text-white font-bold flex items-center justify-center text-lg shadow-md shrink-0">
+                          {selectedDoctor.name.replace(/^(Dr\.?|Ms\.?|Mr\.?)\s+/i, '').charAt(0) || 'D'}
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="font-extrabold text-slate-800 dark:text-slate-100 text-base">{selectedDoctor.name}</h4>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300">
+                            Selected
+                          </span>
+                        </div>
+                        {selectedDoctor.qualification && (
+                          <p className="text-xs text-slate-600 dark:text-slate-350 font-medium mt-0.5 leading-snug">
+                            {selectedDoctor.qualification}
+                          </p>
+                        )}
+                        <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">
+                          {selectedDoctor.specialty} {selectedDoctor.experience ? `• ${selectedDoctor.experience} yrs exp` : ''}
+                        </p>
+                      </div>
+                    </div>
+
+                    {selectedDoctor.sleepEvaluationNote && (
+                      <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-900 dark:text-amber-200 text-xs">
+                        <p className="font-bold text-[10px] uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center gap-1 mb-1">
+                          <span>🌙</span> Why Sleep Evaluation?
+                        </p>
+                        <p className="italic text-[11px] leading-relaxed">
+                          "{selectedDoctor.sleepEvaluationNote}"
+                        </p>
+                      </div>
+                    )}
+
+                    {(selectedDoctor.feePolicy || selectedDoctor.extraFeePer15Min) && (
+                      <div className="px-3 py-2 rounded-xl bg-slate-100/90 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 text-[11px] text-slate-600 dark:text-slate-300 flex items-center gap-2">
+                        <span className="text-sm">⏱️</span>
+                        <span>
+                          {selectedDoctor.feePolicy || `Extra ₹${selectedDoctor.extraFeePer15Min} every 15 mins if consultation exceeds ${selectedDoctor.slotDuration || 30} mins`}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl p-4 my-2">
                     <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">{t('appointment.consultationType', 'Consultation Type')}</label>
                     <div className="grid grid-cols-2 gap-3">
@@ -563,7 +700,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                         className={`p-3 rounded-xl border text-sm font-bold text-center transition-all flex flex-col items-center justify-center gap-0.5 ${consultationType === 'online' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'}`}
                       >
                         <span className="flex items-center gap-1.5"><Video className="h-4 w-4" /> {t('appointment.onlineConsultation', 'Online Consultation')}</span>
-                        <span className="block text-[10px] opacity-80 font-normal mt-0.5">{t('appointment.feeRs', { amount: selectedDoctor.onlineConsultationFee || 0 }, 'Fee: Rs. {{amount}}')}</span>
+                        <span className="block text-[10px] opacity-80 font-normal mt-0.5">{t('appointment.feeRs', { amount: selectedDoctor.onlineConsultationFee || selectedDoctor.consultationFee || 0 }, 'Fee: Rs. {{amount}}')} ({selectedDoctor.slotDuration || 30}m)</span>
                       </button>
                       <button
                         type="button"
@@ -571,7 +708,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                         className={`p-3 rounded-xl border text-sm font-bold text-center transition-all flex flex-col items-center justify-center gap-0.5 ${consultationType === 'offline' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'}`}
                       >
                         <span className="flex items-center gap-1.5"><Building2 className="h-4 w-4" /> {t('appointment.inClinicVisit', 'In-Clinic Visit')}</span>
-                        <span className="block text-[10px] opacity-80 font-normal mt-0.5">{t('appointment.feeRs', { amount: selectedDoctor.offlineConsultationFee || 0 }, 'Fee: Rs. {{amount}}')}</span>
+                        <span className="block text-[10px] opacity-80 font-normal mt-0.5">{t('appointment.feeRs', { amount: selectedDoctor.offlineConsultationFee || selectedDoctor.consultationFee || 0 }, 'Fee: Rs. {{amount}}')} ({selectedDoctor.slotDuration || 30}m)</span>
                       </button>
                     </div>
                   </div>

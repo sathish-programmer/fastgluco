@@ -26,6 +26,9 @@ export interface IDoctor extends Document {
   visibility?: boolean;
   notificationPreferences?: string;
   deaddictionHelpline?: string;
+  extraFeePer15Min?: number;
+  feePolicy?: string;
+  sleepEvaluationNote?: string;
   commissionType?: 'PERCENTAGE' | 'FIXED';
   commissionValue?: number;
   createdAt: Date;
@@ -49,6 +52,9 @@ const DoctorSchema: Schema = new Schema(
     consultationFee: { type: Number },
     onlineConsultationFee: { type: Number, default: 0 },
     offlineConsultationFee: { type: Number, default: 0 },
+    extraFeePer15Min: { type: Number, default: 0 },
+    feePolicy: { type: String, default: "" },
+    sleepEvaluationNote: { type: String, default: "" },
     phone: { type: String },
     address: { type: String },
     languagesKnown: { type: [String], default: [] },
