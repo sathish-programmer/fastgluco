@@ -73,6 +73,7 @@ async function seedDoctors() {
         name: 'Dr Krishnaveni Renganathan',
         email: 'dr.krishnaveni@fastgluco.com',
         passwordHash: defaultPasswordHash,
+        avatar: '/uploads/dr_krishnaveni_renganathan.jpg',
         specialty: 'Consultant pulmonologist , allergy and sleep specialist',
         qualification: 'MBBS, MD,DNB(Respiratory Medicine ) , DAA (CMC vellore ), Fellowship in sleep medicine (St John’s medical college , blore )',
         experience: 13,
@@ -95,6 +96,7 @@ async function seedDoctors() {
         name: 'Ms. Sailee Dayanand Rao',
         email: 'sailee.rao@fastgluco.com',
         passwordHash: defaultPasswordHash,
+        avatar: '/uploads/ms_sailee_dayanand_rao.jpg',
         specialty: 'Psycho-oncology, de- addiction counselling',
         qualification: 'M.Sc Psycho-oncology, Certified Addiction Counselor',
         experience: 5,
@@ -115,6 +117,26 @@ async function seedDoctors() {
       }
     ];
 
+    const keepEmails = doctorsData.map(d => d.email.toLowerCase());
+    const keepNames = doctorsData.map(d => d.name);
+
+    // 1. Remove old/hardcoded doctors not matching the two real doctors
+    const oldDoctors = await Doctor.find({
+      email: { $nin: keepEmails },
+      name: { $nin: keepNames }
+    });
+
+    if (oldDoctors.length > 0) {
+      const oldDocIds = oldDoctors.map(d => d._id);
+      console.log(`Found ${oldDoctors.length} old/test doctor(s) to remove:`, oldDoctors.map(d => d.name));
+      await DoctorAvailability.deleteMany({ doctorId: { $in: oldDocIds } });
+      await Doctor.deleteMany({ _id: { $in: oldDocIds } });
+      console.log('Old/test doctors and their availability schedules successfully deleted.');
+    } else {
+      console.log('No outdated/test doctors found to remove.');
+    }
+
+    // 2. Upsert the two real doctors with full details and photos
     for (const docInfo of doctorsData) {
       let doctor = await Doctor.findOne({ 
         $or: [
@@ -126,7 +148,7 @@ async function seedDoctors() {
       if (doctor) {
         Object.assign(doctor, docInfo);
         await doctor.save();
-        console.log(`Updated existing doctor: ${doctor.name} (${doctor._id})`);
+        console.log(`Updated existing doctor with photo & details: ${doctor.name} (${doctor._id})`);
       } else {
         doctor = await Doctor.create(docInfo);
         console.log(`Created new doctor: ${doctor.name} (${doctor._id})`);
@@ -153,7 +175,13 @@ async function seedDoctors() {
       }
     }
 
-    console.log('Doctor seeding completed successfully!');
+    const currentDoctors = await Doctor.find();
+    console.log(`\nCurrently active doctors in database (${currentDoctors.length}):`);
+    currentDoctors.forEach(d => {
+      console.log(`- ${d.name} | ${d.specialty} | Fee: ₹${d.consultationFee}/${d.slotDuration}m | Avatar: ${d.avatar}`);
+    });
+
+    console.log('\nDoctor seeding & old doctor cleanup completed successfully!');
     process.exit(0);
   } catch (err) {
     console.error('Error seeding doctors:', err);
