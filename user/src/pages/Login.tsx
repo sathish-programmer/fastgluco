@@ -146,9 +146,9 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
   const otpInputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Native Android Firebase Phone Auth event listeners
+  // Native Mobile (iOS & Android) Firebase Phone Auth event listeners
   useEffect(() => {
-    if (Capacitor.getPlatform() !== 'android') return;
+    if (!Capacitor.isNativePlatform()) return;
 
     let isMounted = true;
 
@@ -339,39 +339,10 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
       }
     };
 
-    // 1. iOS Mobile: Directly use backend OTP (Fast2SMS & Email)
-    // CRITICAL: iOS Firebase Auth SDK 11.x crashes with fatal _assertionFailure in PhoneAuthProvider.verifyPhoneNumber
-    // (Firebase iOS SDK issues #16416 / #16549). Calling native Firebase Phone Auth on iOS forces the app to close.
-    // Routing through high-reliability backend OTP avoids the crash entirely and delivers OTP reliably to phone & email.
-    if (Capacitor.getPlatform() === 'ios') {
+    // 1. Native Mobile (iOS & Android): Native Firebase Phone Auth (Primary)
+    if (isNativePlatform) {
       try {
-        console.log('[OTP Priority] iOS platform detected. Using backend OTP (Fast2SMS & Email) to prevent native crash for:', e164);
-        otpProviderRef.current = 'FAST2SMS';
-        setOtpProvider('FAST2SMS');
-        const res = await sendOtp(e164, email, true);
-        setLoading(false);
-        if (res.success) {
-          codeSentRef.current = true;
-          setDeliveryMethod('sms_and_email');
-          setScreen('otp');
-          setTimer(60);
-          showToast(t('auth.codeSentToMobile', { mobileNumber: e164 }, `Verification code sent to ${e164} and ${email}`), 'success');
-          setTimeout(() => otpInputRef.current?.focus(), 100);
-        } else {
-          setPhoneError(res.message || 'Failed to send verification code. Please check your number.');
-        }
-      } catch (iosErr: any) {
-        console.error('[OTP Priority] iOS OTP dispatch error:', iosErr);
-        setLoading(false);
-        setPhoneError(iosErr?.message || 'Failed to send OTP.');
-      }
-      return;
-    }
-
-    // 2. Android Native: Native Firebase Phone Auth with Google Play Services (SMS Retriever)
-    if (Capacitor.getPlatform() === 'android') {
-      try {
-        console.log('[OTP Priority] Attempting Android Native Firebase Phone Auth for:', e164);
+        console.log('[OTP Priority] Attempting Primary: Native Firebase Phone Auth for:', e164);
         otpProviderRef.current = 'FIREBASE';
         setOtpProvider('FIREBASE');
         await FirebaseAuthentication.signInWithPhoneNumber({ phoneNumber: e164 });
