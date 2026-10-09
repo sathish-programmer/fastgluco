@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   ArrowLeft, Search, SlidersHorizontal, Sparkles, AlertCircle, ShoppingCart,
   Package, MapPin, Plus, Minus, ChevronRight, ExternalLink,
-  Check, X, Share2, ShieldCheck, Stethoscope, Truck, Tag, Leaf, Zap, CheckCircle2
+  Check, X, Share2, ShieldCheck, Stethoscope, Truck, Tag, Leaf, Zap
 } from 'lucide-react';
 import { BasketScreen } from './BasketScreen';
 import { PincodeDeliveryChecker } from '../../components/PincodeDeliveryChecker';
@@ -170,6 +170,8 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
   const [sortBy, setSortBy] = useState('newest');
   const [showFiltersPanel, setShowFiltersPanel] = useState(false);
   const [bookSubcategory, setBookSubcategory] = useState<string>('All');
+  const [showClinicalInfo, setShowClinicalInfo] = useState<boolean>(false);
+  const [dismissedStorefront, setDismissedStorefront] = useState<boolean>(false);
 
   // Dynamic Partner Storefronts State
   const [storefronts, setStorefronts] = useState<Array<{
@@ -546,6 +548,27 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
 
     showToast(`${item.name}${variantName ? ` (${variantName})` : ''} added to basket`, 'success');
   };
+
+  // Dynamic + Curated category chips with clean visual icons
+  const categoryList = useMemo(() => {
+    const defaultChips = [
+      { id: 'All', label: 'All Products', icon: '✨' },
+      { id: 'Books', label: 'Books', icon: '📚' },
+      { id: 'Antioxidants', label: 'Antioxidants', icon: '🫐' },
+      { id: 'Pesticide free food', label: 'Clean Food', icon: '🥗' },
+      { id: 'Arivu in nutrition', label: 'Nutrition', icon: '🌿' },
+      { id: 'Glucose monitoring', label: 'Glucose Monitors', icon: '⚡' },
+      { id: 'Cancer support wig', label: 'Cancer Care & Wigs', icon: '🌸' },
+      { id: 'Dental health', label: 'Dental Care', icon: '🦷' },
+      { id: 'Safe kitchen', label: 'Safe Kitchen', icon: '🍳' },
+      { id: 'Environment safe products', label: 'Safe Living', icon: '🌱' },
+    ];
+    const extra = categories
+      .map(c => typeof c === 'string' ? c : c?.name)
+      .filter((name): name is string => Boolean(name && !defaultChips.some(d => d.id === name)))
+      .map(name => ({ id: name, label: name, icon: '🏷️' }));
+    return [...defaultChips, ...extra];
+  }, [categories]);
 
   // Instant real-time multi-word client-side filter with smart fallback
   const displayedProducts = useMemo(() => {
@@ -1371,93 +1394,64 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
 
       <div className="px-4 max-w-6xl mx-auto pt-4 space-y-4">
 
-        {/* Modern Doctor Formulated Clinical Showcase */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500/[0.08] via-white to-teal-500/[0.04] dark:from-slate-900 dark:via-slate-900 dark:to-emerald-950/20 border border-emerald-500/20 dark:border-emerald-800/40 p-4 sm:p-5 shadow-xs">
-          {/* Subtle medical ambient accent in background */}
-          <div className="absolute -right-8 -top-8 w-40 h-40 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
-          <div className="absolute right-6 top-1/2 -translate-y-1/2 hidden md:flex opacity-10 dark:opacity-15 pointer-events-none text-emerald-800 dark:text-emerald-300">
-            <Stethoscope className="w-32 h-32 stroke-[1.2]" />
+        {/* Sleek Medical Quality Trust Strip (Modern & Compact, Zero Clutter) */}
+        <div className="bg-gradient-to-r from-emerald-500/[0.08] via-teal-500/[0.04] to-transparent dark:from-emerald-950/40 dark:via-slate-900 dark:to-transparent border border-emerald-500/20 dark:border-emerald-800/40 rounded-2xl px-3.5 py-2 flex items-center justify-between gap-3 shadow-2xs">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="h-6 w-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+              <Stethoscope className="h-3.5 w-3.5" />
+            </span>
+            <div className="min-w-0">
+              <span className="text-xs font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-1.5 truncate">
+                <span>Doctor Formulated & Approved</span>
+                <span className="hidden sm:inline-block text-[10px] text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-100 dark:bg-emerald-900/40 px-2 py-0.5 rounded-full">
+                  Clinical Standards
+                </span>
+              </span>
+            </div>
           </div>
+          <button
+            type="button"
+            onClick={() => setShowClinicalInfo(!showClinicalInfo)}
+            className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 hover:underline shrink-0 cursor-pointer"
+          >
+            {showClinicalInfo ? 'Less info' : 'Quality standards ▾'}
+          </button>
+        </div>
 
-          <div className="relative z-10 space-y-3 max-w-2xl">
-            {/* Top Badge & Verified Mark */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 bg-emerald-600 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider shadow-xs">
-                <Stethoscope className="h-3 w-3" /> Doctor Formulated & Approved
-              </span>
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
-                <CheckCircle2 className="h-3.5 w-3.5" /> Clinical Quality Standard
-              </span>
-            </div>
-
-            {/* Title & Description */}
-            <div className="space-y-1">
-              <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight leading-snug">
-                Prescription-Grade Functional Nutrition & Clean Foods
-              </h2>
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
-                Low-glycemic staples, cold-pressed botanicals, and targeted functional mixes curated by lifestyle medicine physicians to support metabolic health and cellular recovery.
-              </p>
-            </div>
-
-            {/* 4 Clinical Pillars */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-              <div className="flex items-center gap-2 bg-white/80 dark:bg-slate-950/60 border border-emerald-200/60 dark:border-slate-800 px-2.5 py-1.5 rounded-xl shadow-2xs">
+        {/* Collapsible Clinical Info Panel */}
+        {showClinicalInfo && (
+          <div className="bg-white dark:bg-slate-900 border border-emerald-200/60 dark:border-slate-800 rounded-2xl p-3.5 space-y-2.5 animate-in fade-in duration-150">
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+              Low-glycemic staples, cold-pressed botanicals, and targeted functional mixes curated by lifestyle medicine physicians to support metabolic health and cellular recovery.
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-0.5">
+              <div className="flex items-center gap-1.5 bg-emerald-50/50 dark:bg-slate-950/60 border border-emerald-200/50 dark:border-slate-800 px-2.5 py-1.5 rounded-xl">
                 <Stethoscope className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
                 <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200">Doctor Formulated</span>
               </div>
-              <div className="flex items-center gap-2 bg-white/80 dark:bg-slate-950/60 border border-emerald-200/60 dark:border-slate-800 px-2.5 py-1.5 rounded-xl shadow-2xs">
+              <div className="flex items-center gap-1.5 bg-emerald-50/50 dark:bg-slate-950/60 border border-emerald-200/50 dark:border-slate-800 px-2.5 py-1.5 rounded-xl">
                 <Leaf className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
                 <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200">100% Whole Food</span>
               </div>
-              <div className="flex items-center gap-2 bg-white/80 dark:bg-slate-950/60 border border-emerald-200/60 dark:border-slate-800 px-2.5 py-1.5 rounded-xl shadow-2xs">
+              <div className="flex items-center gap-1.5 bg-emerald-50/50 dark:bg-slate-950/60 border border-emerald-200/50 dark:border-slate-800 px-2.5 py-1.5 rounded-xl">
                 <Zap className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
                 <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200">Low Glycemic</span>
               </div>
-              <div className="flex items-center gap-2 bg-white/80 dark:bg-slate-950/60 border border-emerald-200/60 dark:border-slate-800 px-2.5 py-1.5 rounded-xl shadow-2xs">
+              <div className="flex items-center gap-1.5 bg-emerald-50/50 dark:bg-slate-950/60 border border-emerald-200/50 dark:border-slate-800 px-2.5 py-1.5 rounded-xl">
                 <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
                 <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200">Lab Tested & Pure</span>
               </div>
             </div>
-
-            {/* Active Store Promo Coupons Strip */}
-            {/* {availableStoreCoupons.length > 0 && (
-              <div className="mt-3 bg-gradient-to-r from-indigo-50/90 via-purple-50/90 to-emerald-50/90 dark:from-indigo-950/40 dark:via-purple-950/30 dark:to-emerald-950/30 border border-indigo-200/80 dark:border-indigo-800/60 rounded-2xl p-2.5 sm:p-3 flex flex-wrap items-center justify-between gap-2.5 shadow-2xs">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="h-7 w-7 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                    <Tag className="h-3.5 w-3.5" />
-                  </div>
-                  <div className="min-w-0">
-                    <span className="font-extrabold text-xs text-slate-900 dark:text-slate-100 block">
-                      Active Promo Offers Available!
-                    </span>
-                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium block truncate">
-                      Tap or apply coupon code at checkout to unlock instant discounts
-                    </span>
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {availableStoreCoupons.map(c => (
-                    <div key={c.code} className="inline-flex items-center gap-1.5 px-3 py-1 bg-white dark:bg-slate-900 border border-indigo-300 dark:border-indigo-700 rounded-xl shadow-2xs">
-                      <span className="font-mono font-black text-xs text-indigo-700 dark:text-indigo-300 tracking-wider">{c.code}</span>
-                      <span className="text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400">
-                        {c.discountType === 'percentage' ? `${c.discountValue}% OFF` : `₹${c.discountValue} OFF`}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )} */}
           </div>
-        </div>
+        )}
 
-        {/* Search, Filter Toggles & Sort Row */}
-        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
-          <form onSubmit={handleSearchSubmit} className="relative flex-1 max-w-md">
+        {/* Modern Search & Filter Controls Bar */}
+        <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center justify-between">
+          <form onSubmit={handleSearchSubmit} className="relative flex-1">
             <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
             <input
               type="text"
-              placeholder="Search low-carb, atta, oils, mixes..."
+              placeholder="Search products, books, supplements..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-10 pr-9 py-2.5 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl text-xs font-semibold text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-2xs transition-all"
@@ -1469,33 +1463,35 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                   setSearch('');
                   fetchProducts();
                 }}
-                className="absolute right-3 top-3 text-slate-400 hover:text-slate-600"
+                className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 cursor-pointer"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
             )}
           </form>
 
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={() => setOnlyDoctorRecommended(!onlyDoctorRecommended)}
-              className={`px-3.5 py-2 rounded-2xl text-xs font-extrabold border transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap cursor-pointer shadow-2xs ${onlyDoctorRecommended
+              className={`px-3 py-2 rounded-xl text-xs font-extrabold border transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap cursor-pointer shadow-2xs ${
+                onlyDoctorRecommended
                   ? 'bg-emerald-600 border-emerald-600 text-white shadow-emerald-600/20'
                   : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-emerald-300'
-                }`}
+              }`}
             >
               <Stethoscope className="h-3.5 w-3.5" />
-              <span>Doctor Formulated</span>
+              <span className="hidden xs:inline">Dr. Formulated</span>
             </button>
 
             <button
               type="button"
               onClick={() => setOnlyAvailable(!onlyAvailable)}
-              className={`px-3.5 py-2 rounded-2xl text-xs font-extrabold border transition-all duration-200 whitespace-nowrap cursor-pointer shadow-2xs ${onlyAvailable
+              className={`px-3 py-2 rounded-xl text-xs font-extrabold border transition-all duration-200 whitespace-nowrap cursor-pointer shadow-2xs ${
+                onlyAvailable
                   ? 'bg-indigo-600 border-indigo-600 text-white shadow-indigo-600/20'
                   : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-indigo-300'
-                }`}
+              }`}
             >
               <span>In Stock</span>
             </button>
@@ -1503,31 +1499,35 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
             <button
               type="button"
               onClick={() => setShowFiltersPanel(!showFiltersPanel)}
-              className={`px-3.5 py-2 border rounded-2xl text-xs font-extrabold flex items-center gap-1.5 transition-all duration-200 whitespace-nowrap cursor-pointer shadow-2xs ${showFiltersPanel || minPrice || maxPrice || selectedBrand !== 'All'
+              className={`px-3 py-2 border rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all duration-200 whitespace-nowrap cursor-pointer shadow-2xs ${
+                showFiltersPanel || minPrice || maxPrice || selectedBrand !== 'All'
                   ? 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-300 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400'
                   : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300'
-                }`}
+              }`}
             >
               <SlidersHorizontal className="h-3.5 w-3.5" />
               <span>Filters</span>
+              {(minPrice || maxPrice || selectedBrand !== 'All') && (
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse"></span>
+              )}
             </button>
 
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-3 py-2 text-xs font-extrabold text-slate-700 dark:text-slate-300 focus:outline-none focus:border-indigo-500 cursor-pointer shadow-2xs"
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 text-xs font-extrabold text-slate-700 dark:text-slate-300 focus:outline-none focus:border-indigo-500 cursor-pointer shadow-2xs"
             >
               <option value="newest">Featured</option>
-              <option value="price_asc">Price: Low to High</option>
-              <option value="price_desc">Price: High to Low</option>
+              <option value="price_asc">Price: Low-High</option>
+              <option value="price_desc">Price: High-Low</option>
             </select>
           </div>
         </div>
 
         {/* Expandable Advanced Filter Drawer */}
         {showFiltersPanel && (
-          <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 p-5 rounded-3xl shadow-sm space-y-3.5 animate-in fade-in duration-200">
-            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 p-4 rounded-2xl shadow-sm space-y-3 animate-in fade-in duration-200">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
               <span className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">
                 Filter by Price & Brand
               </span>
@@ -1540,7 +1540,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                   setOnlyDoctorRecommended(false);
                   setOnlyAvailable(false);
                 }}
-                className="text-xs text-indigo-600 hover:underline font-bold"
+                className="text-xs text-indigo-600 hover:underline font-bold cursor-pointer"
               >
                 Reset Filters
               </button>
@@ -1548,12 +1548,12 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               {distinctBrands.length > 0 && (
-                <div className="space-y-1.5">
+                <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Brand</label>
                   <select
                     value={selectedBrand}
                     onChange={(e) => setSelectedBrand(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-2.5 font-bold"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2 font-bold"
                   >
                     <option value="All">All Brands</option>
                     {distinctBrands.map((b, idx) => (
@@ -1563,7 +1563,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                 </div>
               )}
 
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Price Range ({curr})</label>
                 <div className="flex items-center gap-2">
                   <input
@@ -1571,7 +1571,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                     placeholder="Min"
                     value={minPrice}
                     onChange={(e) => setMinPrice(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-2.5 font-bold font-mono"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2 font-bold font-mono"
                   />
                   <span className="text-slate-400 font-bold">-</span>
                   <input
@@ -1579,7 +1579,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                     placeholder="Max"
                     value={maxPrice}
                     onChange={(e) => setMaxPrice(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-2.5 font-bold font-mono"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2 font-bold font-mono"
                   />
                 </div>
               </div>
@@ -1587,33 +1587,25 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
           </div>
         )}
 
-        {/* Quick Horizontal Category Pills */}
-        <div className="flex gap-2 overflow-x-auto pb-1.5 scrollbar-none">
-          {['All', ...(categories.length > 0 ? categories.map(c => c.name) : [
-            'Pesticide free food',
-            'Arivu in nutrition',
-            'Environment safe products',
-            'Safe kitchen',
-            'Glucose monitoring',
-            'Cancer support wig',
-            'Antioxidants',
-            'Dental health',
-            'Books'
-          ])].map((cat, idx) => {
-            const isSelected = selectedCategory === cat;
+        {/* Modern Horizontal Category Pills with Icons */}
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+          {categoryList.map((cat) => {
+            const isSelected = selectedCategory === cat.id;
             return (
               <button
-                key={idx}
+                key={cat.id}
                 onClick={() => {
-                  setSelectedCategory(cat);
-                  if (cat !== 'Books') setBookSubcategory('All');
+                  setSelectedCategory(cat.id);
+                  if (cat.id !== 'Books') setBookSubcategory('All');
                 }}
-                className={`px-4 py-2 rounded-2xl text-xs font-black border transition-all duration-200 whitespace-nowrap cursor-pointer ${isSelected
-                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-600/25 scale-[1.02]'
-                    : 'bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-indigo-300 hover:bg-slate-50/50'
-                  }`}
+                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-black border transition-all duration-200 whitespace-nowrap cursor-pointer shadow-2xs ${
+                  isSelected
+                    ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white shadow-sm scale-[1.02]'
+                    : 'bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-400 hover:bg-slate-50/50'
+                }`}
               >
-                {cat === 'All' ? 'All Products' : cat === 'Books' ? '📚 Books' : cat}
+                <span>{cat.icon}</span>
+                <span>{cat.label}</span>
               </button>
             );
           })}
@@ -1621,10 +1613,10 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
 
         {/* Books Sub-Columns Selector (When Books category is selected) */}
         {selectedCategory === 'Books' && (
-          <div className="bg-gradient-to-r from-indigo-50/90 via-amber-50/50 to-rose-50/80 dark:from-slate-900 dark:via-indigo-950/40 dark:to-slate-900 border border-indigo-200/80 dark:border-indigo-800/60 rounded-2xl p-3 shadow-xs transition-all">
-            <div className="flex items-center justify-between mb-2 px-1">
-              <span className="text-[11px] font-black uppercase tracking-wider text-indigo-700 dark:text-indigo-400 flex items-center gap-1.5">
-                <span>📚</span> Books Columns & Collections
+          <div className="bg-gradient-to-r from-indigo-50/90 via-purple-50/40 to-pink-50/50 dark:from-slate-900 dark:via-indigo-950/40 dark:to-slate-900 border border-indigo-200/70 dark:border-indigo-800/50 rounded-2xl p-2.5 shadow-2xs transition-all">
+            <div className="flex items-center justify-between mb-1.5 px-1">
+              <span className="text-[11px] font-black uppercase tracking-wider text-indigo-700 dark:text-indigo-300 flex items-center gap-1.5">
+                <span>📚</span> Curated Book Collections
               </span>
               <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
                 {displayedProducts.length} {displayedProducts.length === 1 ? 'book' : 'books'}
@@ -1633,19 +1625,19 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
             <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
               {[
                 { id: 'All', label: 'All Books', icon: '📚' },
-                { id: 'Books for elderly memory', label: '1. Books for elderly memory', icon: '🧠' },
-                { id: 'Books for women health', label: '2. Books for women health', icon: '🌸' },
-                { id: 'Books on natural antioxidant food', label: '3. Books on natural antioxidant food', icon: '🥗' },
+                { id: 'Books for elderly memory', label: 'Elderly Memory', icon: '🧠' },
+                { id: 'Books for women health', label: 'Women\'s Health', icon: '🌸' },
+                { id: 'Books on natural antioxidant food', label: 'Antioxidant Foods', icon: '🥗' },
               ].map((sub) => {
                 const isSubSelected = bookSubcategory === sub.id;
                 return (
                   <button
                     key={sub.id}
                     onClick={() => setBookSubcategory(sub.id)}
-                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black border transition-all duration-200 whitespace-nowrap cursor-pointer ${
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black border transition-all duration-150 whitespace-nowrap cursor-pointer ${
                       isSubSelected
-                        ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 border-indigo-600 text-white shadow-sm shadow-indigo-600/25 scale-[1.02]'
-                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-indigo-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                        ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs'
+                        : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-indigo-200'
                     }`}
                   >
                     <span>{sub.icon}</span>
@@ -1657,8 +1649,8 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
           </div>
         )}
 
-        {/* Dynamic Partner Storefront Showcase (Loaded from Admin / Database) */}
-        {(() => {
+        {/* Sleek Partner Storefront Spotlight (Compact & Dismissible) */}
+        {!dismissedStorefront && (() => {
           const activeList = storefronts.filter(s => s.isActive);
           if (activeList.length === 0) return null;
 
@@ -1672,92 +1664,50 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
             const b = selectedBrand.toLowerCase();
             matched = activeList.find(sf => sf.brandName.toLowerCase().includes(b));
           } else if (selectedCategory !== 'All') {
-            matched = activeList.find(sf => sf.category === selectedCategory || sf.category === 'All');
-          } else {
-            matched = activeList[0];
+            matched = activeList.find(sf => sf.category === selectedCategory);
           }
 
           if (!matched) return null;
 
           return (
-            <div className="bg-gradient-to-br from-emerald-50/90 via-white to-amber-50/30 dark:from-slate-900 dark:via-slate-900/95 dark:to-emerald-950/40 border border-emerald-200/90 dark:border-emerald-500/25 rounded-3xl p-5 sm:p-6 shadow-[0_4px_24px_-6px_rgba(16,185,129,0.09)] dark:shadow-md mb-5 text-slate-900 dark:text-white relative overflow-hidden group transition-all duration-300 hover:border-emerald-300 dark:hover:border-emerald-500/40">
-              {/* Subtle ambient lighting */}
-              <div className="absolute top-0 right-0 -mt-10 -mr-10 w-56 h-56 bg-emerald-500/[0.08] dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-              <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-44 h-44 bg-amber-500/[0.05] dark:bg-amber-500/5 rounded-full blur-2xl pointer-events-none" />
-
-              <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5">
-                <div className="flex items-start gap-4 max-w-2xl">
-                  {/* Brand Squircle Avatar */}
-                  <div className="hidden sm:flex w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white items-center justify-center font-black text-2xl shadow-md shadow-emerald-600/20 shrink-0">
-                    🌿
-                  </div>
-
-                  <div className="space-y-2">
-                    {/* Top Badges Row */}
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="inline-flex items-center gap-1.5 bg-emerald-100 text-emerald-900 dark:bg-emerald-500/20 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-500/30 px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-2xs">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
-                        <span>{matched.badge || 'Verified Partner • Amazon Storefront'}</span>
-                      </span>
-                      <span className="inline-flex items-center gap-1 bg-amber-100/90 text-amber-950 dark:bg-amber-500/15 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider">
-                        <Sparkles className="h-2.5 w-2.5 text-amber-600 dark:text-amber-400" />
-                        Amazon Official
-                      </span>
-                      {matched.category && (
-                        <span className="inline-flex items-center bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2.5 py-0.5 rounded-full text-[10px] font-bold">
-                          {matched.category}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Storefront Title */}
-                    <h3 className="text-base sm:text-lg font-black tracking-tight text-slate-900 dark:text-white leading-snug">
-                      {matched.title}
-                    </h3>
-
-                    {/* Description */}
-                    {matched.description && (
-                      <p className="text-xs sm:text-[13px] text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
-                        {matched.description}
-                      </p>
-                    )}
-
-                    {/* Highlights chips */}
-                    {matched.highlights && matched.highlights.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[11px] font-bold">
-                        {matched.highlights.map((h, i) => (
-                          <span
-                            key={i}
-                            className="inline-flex items-center gap-1 bg-white/95 dark:bg-slate-800/80 text-slate-800 dark:text-emerald-200 px-3 py-1 rounded-xl border border-emerald-100 dark:border-slate-700/80 shadow-2xs"
-                          >
-                            <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                            <span>{h}</span>
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+            <div className="bg-gradient-to-r from-emerald-50 via-white to-amber-50/50 dark:from-slate-900 dark:via-slate-900 dark:to-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/40 rounded-2xl p-3 shadow-2xs flex items-center justify-between gap-3 relative transition-all">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white flex items-center justify-center font-bold text-lg shrink-0 shadow-2xs">
+                  🌿
                 </div>
-
-                {/* Amazon Action CTA */}
-                <div className="shrink-0 w-full lg:w-auto flex flex-col items-stretch lg:items-end gap-2 pt-2 lg:pt-0">
-                  <a
-                    href={matched.storeUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full lg:w-auto px-6 py-3.5 bg-gradient-to-r from-amber-400 via-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs sm:text-sm rounded-2xl shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2.5 active:scale-95 border border-amber-300/80 cursor-pointer group/cta"
-                  >
-                    <span>Explore {matched.brandName} on Amazon</span>
-                    <ExternalLink className="h-4 w-4 stroke-[2.5] transition-transform group-hover/cta:translate-x-0.5 group-hover/cta:-translate-y-0.5" />
-                  </a>
-                  <div className="flex items-center justify-center lg:justify-end gap-2 text-[10px] text-slate-500 dark:text-slate-400 font-semibold tracking-tight">
-                    <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-bold">
-                      <ShieldCheck className="h-3 w-3" /> 100% Certified Organic
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/40 px-2 py-0.5 rounded-full">
+                      {matched.badge || 'Official Partner'}
                     </span>
-                    <span>•</span>
-                    <span>⚡ Prime Fast Delivery</span>
+                    <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 hidden xs:inline">
+                      Amazon Official
+                    </span>
                   </div>
+                  <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white truncate">
+                    {matched.title}
+                  </h4>
                 </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <a
+                  href={matched.storeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3.5 py-1.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-2xs transition-all flex items-center gap-1 active:scale-95 cursor-pointer"
+                >
+                  <span>Storefront</span>
+                  <ExternalLink className="h-3 w-3 stroke-[2.5]" />
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setDismissedStorefront(true)}
+                  className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg cursor-pointer"
+                  title="Dismiss banner"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
               </div>
             </div>
           );
@@ -1893,14 +1843,11 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
 
                     {/* Pricing & ADD Action */}
                     {isAmazon ? (
-                      <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800/80 mt-2 flex flex-col gap-1.5">
-                        <div className="w-full py-2 px-3 bg-gradient-to-r from-amber-400 via-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 group-hover:shadow-md group-hover:scale-[1.01] active:scale-95 border border-amber-300/40">
+                      <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 mt-2">
+                        <div className="w-full py-2 px-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-2xs transition-all flex items-center justify-center gap-1.5 group-hover:shadow-md active:scale-95 border border-amber-300/40">
                           <span>Check on Amazon</span>
                           <ExternalLink className="h-3.5 w-3.5 stroke-[2.5]" />
                         </div>
-                        <span className="text-[9px] text-center font-bold text-slate-400 dark:text-slate-500 tracking-tight block">
-                          Live Price & Details on Amazon ↗
-                        </span>
                       </div>
                     ) : (
                       <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 mt-2 flex items-center justify-between gap-1.5">
