@@ -75,11 +75,11 @@ const antioxidantColors: Record<string, string> = {
   'Omega-3': 'bg-sky-50 text-sky-700 border-sky-100',
 };
 
-export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({ 
-  onBack, 
-  onViewShop, 
+export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({
+  onBack,
+  onViewShop,
   onNavigateToDiagnostics,
-  onNavigateToShopCategory 
+  onNavigateToShopCategory
 }) => {
   const { user, token, apiUrl } = useAuth();
   const { t, language } = useLanguage();
@@ -140,7 +140,7 @@ export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({
   };
 
   return (
-    <div 
+    <div
       className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100"
       style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
     >
@@ -263,22 +263,20 @@ export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => setAnswer('yes')}
-            className={`py-4 rounded-2xl font-bold text-sm transition-all border-2 flex items-center justify-center gap-2 ${
-              answer === 'yes'
+            className={`py-4 rounded-2xl font-bold text-sm transition-all border-2 flex items-center justify-center gap-2 ${answer === 'yes'
                 ? 'bg-emerald-500 border-emerald-500 text-white shadow-md scale-[1.02]'
                 : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-emerald-300 hover:text-emerald-600'
-            }`}
+              }`}
           >
             <Check className="h-4 w-4" />
             {t('yesIDid', 'Yes, I did')}
           </button>
           <button
             onClick={() => setAnswer('no')}
-            className={`py-4 rounded-2xl font-bold text-sm transition-all border-2 flex items-center justify-center gap-2 ${
-              answer === 'no'
+            className={`py-4 rounded-2xl font-bold text-sm transition-all border-2 flex items-center justify-center gap-2 ${answer === 'no'
                 ? 'bg-rose-500 border-rose-500 text-white shadow-md scale-[1.02]'
                 : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-rose-300 hover:text-rose-500'
-            }`}
+              }`}
           >
             <X className="h-4 w-4" />
             {t('notToday', 'Not today')}
@@ -373,7 +371,7 @@ export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({
         <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-widest uppercase block mb-3">
           {t('recommendedBooksTitle', 'Evidence-Based Literature · Books Column')}
         </span>
-        <BooksShowcaseSection 
+        <BooksShowcaseSection
           onNavigateToShop={(cat, sub) => {
             if (onNavigateToShopCategory) {
               onNavigateToShopCategory(cat, sub);
@@ -381,7 +379,7 @@ export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({
               onViewShop();
             }
           }}
-          title="Books Column & Collections"
+          title="Books & Collections"
           subtitle="1. Books for elderly memory · 2. Books for women health · 3. Books on natural antioxidant food"
         />
       </div>

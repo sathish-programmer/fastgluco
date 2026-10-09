@@ -322,7 +322,7 @@ const UPDATED_AMAZON_ITEMS = [
     price: 250,
     regularPrice: 300,
     discountPercent: 17,
-    image: 'https://images-na.ssl-images-amazon.com/images/P/9355154461.01._SCLZZZZZZZ_SX500_.jpg',
+    image: 'https://m.media-amazon.com/images/I/41SAS8UeP1L.jpg',
     category: 'Books',
     subcategory: 'Books for women health'
   },
@@ -344,7 +344,7 @@ const UPDATED_AMAZON_ITEMS = [
     price: 3819,
     regularPrice: 15748,
     discountPercent: 76,
-    image: 'https://images-na.ssl-images-amazon.com/images/P/B0DM1BM3PS.01._SCLZZZZZZZ_SX500_.jpg',
+    image: 'https://m.media-amazon.com/images/I/61InrePRt5L.jpg',
     category: 'Books',
     subcategory: 'Books for elderly memory'
   },
