@@ -624,16 +624,20 @@ export const AdminAmazonVendor: React.FC<AdminAmazonVendorProps> = ({ apiUrl, to
             {storefronts.map((sf) => (
               <div
                 key={sf._id}
-                className={`bg-gradient-to-br from-emerald-50/60 via-white to-slate-50 border transition-all rounded-2xl p-5 ${
-                  sf.isActive ? 'border-emerald-200/90 shadow-2xs hover:shadow-xs' : 'border-slate-200 opacity-60'
-                } flex flex-col md:flex-row md:items-center justify-between gap-4`}
+                className={`bg-white border transition-all rounded-2xl p-5 ${
+                  sf.isActive ? 'border-emerald-200/90 shadow-2xs hover:shadow-xs hover:border-emerald-300' : 'border-slate-200 opacity-60'
+                } flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative overflow-hidden group`}
               >
-                <div className="space-y-2 max-w-xl">
+                {/* Visual accent bar */}
+                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-emerald-500 to-teal-500 rounded-l-2xl" />
+
+                <div className="space-y-2 max-w-xl pl-1 sm:pl-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-[11px] font-black text-emerald-800 bg-emerald-100/90 px-2.5 py-0.5 rounded-full border border-emerald-200/80 uppercase tracking-wider">
-                      {sf.brandName}
+                    <span className="text-[11px] font-black text-emerald-800 bg-emerald-100/90 px-2.5 py-0.5 rounded-full border border-emerald-200/80 uppercase tracking-wider flex items-center gap-1">
+                      <span>🌿</span>
+                      <span>{sf.brandName}</span>
                     </span>
-                    <span className="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md font-bold">
+                    <span className="text-[10px] bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-md font-bold">
                       {sf.category}
                     </span>
                     {sf.badge && (
@@ -642,34 +646,43 @@ export const AdminAmazonVendor: React.FC<AdminAmazonVendorProps> = ({ apiUrl, to
                         {sf.badge}
                       </span>
                     )}
-                    {!sf.isActive && (
-                      <span className="text-[10px] bg-rose-50 text-rose-700 px-2 py-0.5 rounded-full font-bold border border-rose-200">
+                    {sf.isActive ? (
+                      <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded-full font-bold border border-emerald-200 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        Active & Live
+                      </span>
+                    ) : (
+                      <span className="text-[10px] bg-rose-50 text-rose-700 px-2.5 py-0.5 rounded-full font-bold border border-rose-200">
                         Inactive
                       </span>
                     )}
                   </div>
+
                   <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight">
                     {sf.title}
                   </h3>
+
                   {sf.description && (
                     <p className="text-xs text-slate-600 font-medium leading-relaxed">
                       {sf.description}
                     </p>
                   )}
+
                   {sf.highlights && sf.highlights.length > 0 && (
                     <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-[10px] font-bold text-slate-700">
                       {sf.highlights.map((h, i) => (
-                        <span key={i} className="bg-white px-2.5 py-0.5 rounded-lg border border-slate-200 shadow-2xs">
+                        <span key={i} className="bg-slate-50 px-2.5 py-0.5 rounded-lg border border-slate-200 shadow-2xs">
                           {h}
                         </span>
                       ))}
                     </div>
                   )}
+
                   <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-500 font-mono pt-1">
                     {sf.shortlink && (
                       <span>Shortlink: <a href={sf.shortlink} target="_blank" rel="noopener noreferrer" className="text-amber-700 font-bold hover:underline">{sf.shortlink}</a></span>
                     )}
-                    <span>• Tag: <code className="text-emerald-700 font-bold font-mono">mitoreboot-21</code></span>
+                    <span>• Tag: <code className="text-emerald-700 font-bold font-mono bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">mitoreboot-21</code></span>
                   </div>
                 </div>
 

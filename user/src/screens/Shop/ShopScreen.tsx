@@ -1619,45 +1619,83 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
           if (!matched) return null;
 
           return (
-            <div className="bg-gradient-to-br from-emerald-50/70 via-white to-teal-50/40 dark:from-slate-900 dark:via-slate-900 dark:to-emerald-950/70 border border-emerald-200/80 dark:border-emerald-500/25 rounded-3xl p-4 sm:p-5 shadow-xs dark:shadow-md mb-4 text-slate-900 dark:text-white relative overflow-hidden group">
-              <div className="absolute top-0 right-0 -mt-12 -mr-12 w-48 h-48 bg-emerald-500/10 dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-              <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                <div className="space-y-1.5 max-w-xl">
-                  <div className="inline-flex items-center gap-1.5 bg-emerald-100/90 dark:bg-emerald-500/20 border border-emerald-200 dark:border-emerald-400/30 px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
-                    <span>{matched.badge || 'Verified Partner • Amazon Storefront'}</span>
+            <div className="bg-gradient-to-br from-emerald-50/90 via-white to-amber-50/30 dark:from-slate-900 dark:via-slate-900/95 dark:to-emerald-950/40 border border-emerald-200/90 dark:border-emerald-500/25 rounded-3xl p-5 sm:p-6 shadow-[0_4px_24px_-6px_rgba(16,185,129,0.09)] dark:shadow-md mb-5 text-slate-900 dark:text-white relative overflow-hidden group transition-all duration-300 hover:border-emerald-300 dark:hover:border-emerald-500/40">
+              {/* Subtle ambient lighting */}
+              <div className="absolute top-0 right-0 -mt-10 -mr-10 w-56 h-56 bg-emerald-500/[0.08] dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-44 h-44 bg-amber-500/[0.05] dark:bg-amber-500/5 rounded-full blur-2xl pointer-events-none" />
+
+              <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5">
+                <div className="flex items-start gap-4 max-w-2xl">
+                  {/* Brand Squircle Avatar */}
+                  <div className="hidden sm:flex w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white items-center justify-center font-black text-2xl shadow-md shadow-emerald-600/20 shrink-0">
+                    🌿
                   </div>
-                  <h3 className="text-sm sm:text-base font-black tracking-tight text-slate-900 dark:text-white">
-                    {matched.title}
-                  </h3>
-                  {matched.description && (
-                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
-                      {matched.description}
-                    </p>
-                  )}
-                  {matched.highlights && matched.highlights.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[10px] font-bold text-slate-700 dark:text-emerald-200">
-                      {matched.highlights.map((h, i) => (
-                        <span key={i} className="bg-white/90 dark:bg-white/10 px-2.5 py-0.5 rounded-lg border border-slate-200/80 dark:border-white/10 shadow-2xs">
-                          {h}
+
+                  <div className="space-y-2">
+                    {/* Top Badges Row */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 bg-emerald-100 text-emerald-900 dark:bg-emerald-500/20 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-500/30 px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-2xs">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
+                        <span>{matched.badge || 'Verified Partner • Amazon Storefront'}</span>
+                      </span>
+                      <span className="inline-flex items-center gap-1 bg-amber-100/90 text-amber-950 dark:bg-amber-500/15 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider">
+                        <Sparkles className="h-2.5 w-2.5 text-amber-600 dark:text-amber-400" />
+                        Amazon Official
+                      </span>
+                      {matched.category && (
+                        <span className="inline-flex items-center bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2.5 py-0.5 rounded-full text-[10px] font-bold">
+                          {matched.category}
                         </span>
-                      ))}
+                      )}
                     </div>
-                  )}
+
+                    {/* Storefront Title */}
+                    <h3 className="text-base sm:text-lg font-black tracking-tight text-slate-900 dark:text-white leading-snug">
+                      {matched.title}
+                    </h3>
+
+                    {/* Description */}
+                    {matched.description && (
+                      <p className="text-xs sm:text-[13px] text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                        {matched.description}
+                      </p>
+                    )}
+
+                    {/* Highlights chips */}
+                    {matched.highlights && matched.highlights.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[11px] font-bold">
+                        {matched.highlights.map((h, i) => (
+                          <span
+                            key={i}
+                            className="inline-flex items-center gap-1 bg-white/95 dark:bg-slate-800/80 text-slate-800 dark:text-emerald-200 px-3 py-1 rounded-xl border border-emerald-100 dark:border-slate-700/80 shadow-2xs"
+                          >
+                            <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                            <span>{h}</span>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="shrink-0 w-full md:w-auto flex flex-col items-center gap-1">
+
+                {/* Amazon Action CTA */}
+                <div className="shrink-0 w-full lg:w-auto flex flex-col items-stretch lg:items-end gap-2 pt-2 lg:pt-0">
                   <a
                     href={matched.storeUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full md:w-auto px-5 py-2.5 bg-gradient-to-r from-amber-400 via-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs rounded-2xl shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 border border-amber-300/60 cursor-pointer"
+                    className="w-full lg:w-auto px-6 py-3.5 bg-gradient-to-r from-amber-400 via-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs sm:text-sm rounded-2xl shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2.5 active:scale-95 border border-amber-300/80 cursor-pointer group/cta"
                   >
                     <span>Explore {matched.brandName} on Amazon</span>
-                    <ExternalLink className="h-3.5 w-3.5 stroke-[2.5]" />
+                    <ExternalLink className="h-4 w-4 stroke-[2.5] transition-transform group-hover/cta:translate-x-0.5 group-hover/cta:-translate-y-0.5" />
                   </a>
-                  <span className="text-[9px] text-slate-400 dark:text-slate-400 font-semibold tracking-tight">
-                    Full Catalog • Free Prime Delivery
-                  </span>
+                  <div className="flex items-center justify-center lg:justify-end gap-2 text-[10px] text-slate-500 dark:text-slate-400 font-semibold tracking-tight">
+                    <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-bold">
+                      <ShieldCheck className="h-3 w-3" /> 100% Certified Organic
+                    </span>
+                    <span>•</span>
+                    <span>⚡ Prime Fast Delivery</span>
+                  </div>
                 </div>
               </div>
             </div>
