@@ -171,7 +171,6 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
   const [showFiltersPanel, setShowFiltersPanel] = useState(false);
   const [bookSubcategory, setBookSubcategory] = useState<string>('All');
   const [showClinicalInfo, setShowClinicalInfo] = useState<boolean>(false);
-  const [dismissedStorefront, setDismissedStorefront] = useState<boolean>(false);
 
   // Dynamic Partner Storefronts State
   const [storefronts, setStorefronts] = useState<Array<{
@@ -1600,8 +1599,8 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                 }}
                 className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-black border transition-all duration-200 whitespace-nowrap cursor-pointer shadow-2xs ${
                   isSelected
-                    ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white shadow-sm scale-[1.02]'
-                    : 'bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-400 hover:bg-slate-50/50'
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-600/25 scale-[1.02]'
+                    : 'bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50/20'
                 }`}
               >
                 <span>{cat.icon}</span>
@@ -1649,65 +1648,84 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
           </div>
         )}
 
-        {/* Sleek Partner Storefront Spotlight (Compact & Dismissible) */}
-        {!dismissedStorefront && (() => {
-          const activeList = storefronts.filter(s => s.isActive);
-          if (activeList.length === 0) return null;
+        {/* Phalada Pure & Sure Organic Superstore Showcase */}
+        {(selectedCategory === 'All' || selectedCategory === 'Pesticide free food') && (() => {
+          const defaultPhalada = {
+            _id: 'default-phalada',
+            brandName: 'Phalada Pure & Sure',
+            category: 'Pesticide free food',
+            badge: '100% Certified Organic Partner',
+            title: 'Phalada Pure & Sure Organic Superstore Collection',
+            description: '100% Certified Organic Food, Cold-Pressed Oils, Ghee, Spices & Millets. Users can explore and buy directly through your affiliate storefront.',
+            storeUrl: 'https://www.amazon.in/s?k=phalada+pure+and+sure&crid=25GK89M1EQDPP&sprefix=phalada+pure+and+sur%2Caps%2C269&linkCode=ll2&tag=mitoreboot-21&linkId=b892246ba32b385014dffd9c2ea460b4&ref_=as_li_ss_tl',
+            highlights: ['USDA Organic', 'Cold-Pressed Oils', 'Low-GI Millets', '100% Raw Honey'],
+            isActive: true
+          };
 
-          let matched = null;
-          if (search.trim()) {
-            const q = search.toLowerCase();
-            matched = activeList.find(sf =>
-              sf.brandName.toLowerCase().includes(q) || sf.title.toLowerCase().includes(q)
-            );
-          } else if (selectedBrand !== 'All') {
-            const b = selectedBrand.toLowerCase();
-            matched = activeList.find(sf => sf.brandName.toLowerCase().includes(b));
-          } else if (selectedCategory !== 'All') {
-            matched = activeList.find(sf => sf.category === selectedCategory);
-          }
-
-          if (!matched) return null;
+          const matched = storefronts.find(s => s.isActive && (s.brandName?.toLowerCase().includes('phalada') || s.category === 'Pesticide free food')) || defaultPhalada;
 
           return (
-            <div className="bg-gradient-to-r from-emerald-50 via-white to-amber-50/50 dark:from-slate-900 dark:via-slate-900 dark:to-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/40 rounded-2xl p-3 shadow-2xs flex items-center justify-between gap-3 relative transition-all">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white flex items-center justify-center font-bold text-lg shrink-0 shadow-2xs">
-                  🌿
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5 mb-0.5">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/40 px-2 py-0.5 rounded-full">
-                      {matched.badge || 'Official Partner'}
+            <div className="bg-gradient-to-br from-emerald-50/90 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900 dark:to-emerald-950/30 border border-emerald-200/90 dark:border-emerald-800/40 rounded-3xl p-4 sm:p-5 shadow-xs text-slate-900 dark:text-white relative overflow-hidden group transition-all duration-300">
+              <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div className="space-y-2 max-w-2xl">
+                  {/* Badges Row */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 bg-emerald-100 text-emerald-900 dark:bg-emerald-500/20 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-500/30 px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-2xs">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <span>{matched.badge || '100% Certified Organic Partner'}</span>
                     </span>
-                    <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 hidden xs:inline">
+                    <span className="inline-flex items-center gap-1 bg-amber-100/90 text-amber-950 dark:bg-amber-500/15 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider">
+                      <Sparkles className="h-2.5 w-2.5 text-amber-600 dark:text-amber-400" />
                       Amazon Official
                     </span>
+                    <span className="inline-flex items-center bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2.5 py-0.5 rounded-full text-[10px] font-bold">
+                      Pesticide free food
+                    </span>
                   </div>
-                  <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white truncate">
-                    {matched.title}
-                  </h4>
-                </div>
-              </div>
 
-              <div className="flex items-center gap-2 shrink-0">
-                <a
-                  href={matched.storeUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-3.5 py-1.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-2xs transition-all flex items-center gap-1 active:scale-95 cursor-pointer"
-                >
-                  <span>Storefront</span>
-                  <ExternalLink className="h-3 w-3 stroke-[2.5]" />
-                </a>
-                <button
-                  type="button"
-                  onClick={() => setDismissedStorefront(true)}
-                  className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg cursor-pointer"
-                  title="Dismiss banner"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
+                  {/* Title & Description */}
+                  <h3 className="text-base sm:text-lg font-black tracking-tight text-slate-900 dark:text-white leading-snug">
+                    {matched.title}
+                  </h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                    {matched.description}
+                  </p>
+
+                  {/* Highlights chips */}
+                  {matched.highlights && matched.highlights.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-[11px] font-bold">
+                      {matched.highlights.map((h, i) => (
+                        <span
+                          key={i}
+                          className="inline-flex items-center gap-1 bg-white/95 dark:bg-slate-800/80 text-slate-800 dark:text-emerald-200 px-2.5 py-1 rounded-xl border border-emerald-100 dark:border-slate-700/80 shadow-2xs"
+                        >
+                          <Check className="h-3 w-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          <span>{h}</span>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Amazon Action CTA */}
+                <div className="shrink-0 w-full md:w-auto flex flex-col items-stretch md:items-end gap-2 pt-1 md:pt-0">
+                  <a
+                    href={matched.storeUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full md:w-auto px-5 py-3 bg-gradient-to-r from-amber-400 via-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs sm:text-sm rounded-2xl shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 border border-amber-300/80 cursor-pointer"
+                  >
+                    <span>Explore Phalada Pure & Sure on Amazon</span>
+                    <ExternalLink className="h-4 w-4 stroke-[2.5]" />
+                  </a>
+                  <div className="flex items-center justify-center md:justify-end gap-2 text-[10px] text-slate-500 dark:text-slate-400 font-semibold tracking-tight">
+                    <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-bold">
+                      <ShieldCheck className="h-3 w-3" /> 100% Certified Organic
+                    </span>
+                    <span>•</span>
+                    <span>⚡ Prime Fast Delivery</span>
+                  </div>
+                </div>
               </div>
             </div>
           );
