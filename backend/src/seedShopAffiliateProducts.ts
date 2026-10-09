@@ -13,7 +13,8 @@ export const SHOP_CATEGORIES = [
   { name: 'Safe kitchen', description: 'Non-toxic, chemical-free cookware: pre-seasoned cast iron tawas, skillets, and glass/steel storage.' },
   { name: 'Glucose monitoring', description: 'Continuous glucose monitoring sensors, ketone meters, and blood analyte tracking kits.' },
   { name: 'Cancer support wig', description: 'Ultra-soft, breathable medical head coverings designed for oncology and hair loss support.' },
-  { name: 'Antioxidants', description: 'High-potency cellular antioxidants, pure turmeric curcumin, and evidence-based longevity literature.' }
+  { name: 'Antioxidants', description: 'High-potency cellular antioxidants, pure turmeric curcumin, and evidence-based longevity literature.' },
+  { name: 'Dental health', description: 'Clinically curated oral hygiene essentials, sensitivity toothpaste, electric toothbrushes, and Ayurvedic oil pulling.' }
 ];
 
 export const AFFILIATE_PRODUCTS = [
@@ -168,7 +169,7 @@ export const AFFILIATE_PRODUCTS = [
     name: 'Oral B Cross Action AA Battery Electric Toothbrush for Adults, 90 Day Battery, 2 Year Warranty by Oral-B, IPX7 Water Resistant, Soft Crisscross Bristles (Blue, 1)',
     description: 'Clinically proven rotating cross-action oscillating brush head. Removes significantly more plaque and oral biofilm than manual brushing without abrasive enamel erosion.',
     shortDescription: 'CrossAction oscillating electric brush for optimal oral microbiome.',
-    category: 'Environment safe products',
+    category: 'Dental health',
     brand: 'Oral-B',
     price: 480,
     regularPrice: 248,
@@ -186,7 +187,7 @@ export const AFFILIATE_PRODUCTS = [
     name: 'Sensodyne Expert White Toothpaste 70gm X 02, 140GM',
     description: 'Enamel-safe desensitizing formulation designed for gentle stain removal while soothing hyper-sensitive nerve endings. SLS-free, low-abrasion protection.',
     shortDescription: 'Dentist-recommended sensitive whitening and mineral defense.',
-    category: 'Environment safe products',
+    category: 'Dental health',
     brand: 'Sensodyne',
     price: 500,
     regularPrice: 250,
@@ -204,7 +205,7 @@ export const AFFILIATE_PRODUCTS = [
     name: 'Cureveda Sparkle Oil Pulling for Mouth, Healthy Teeth & Stronger Gums | Herbal Mouthwash with Virgin Coconut Oil | For Mouth Detox & Fresh Breath | Peppermint Flavour (270 gm) (30 Sachet)',
     description: 'Traditional Ayurvedic Gandusha formula with cold-pressed virgin coconut oil, eucalyptus, clove, and mint. Promotes oral detoxification, reduces harmful bacteria, and freshens breath naturally.',
     shortDescription: 'Ayurvedic virgin coconut oil pulling rinse for natural oral detox.',
-    category: 'Environment safe products',
+    category: 'Dental health',
     brand: 'Cureveda',
     price: 755,
     regularPrice: 339.4,

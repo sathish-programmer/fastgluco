@@ -29,7 +29,8 @@ export const PREDEFINED_CATEGORIES = [
   'Safe kitchen',
   'Glucose monitoring',
   'Cancer support wig',
-  'Antioxidants'
+  'Antioxidants',
+  'Dental health'
 ];
 
 // --- ADMIN ROUTES ---
@@ -126,7 +127,8 @@ export const getCategories = async (req: Request, res: Response) => {
       'Safe kitchen',
       'Glucose monitoring',
       'Cancer support wig',
-      'Antioxidants'
+      'Antioxidants',
+      'Dental health'
     ];
 
     res.json(coreCategories.map(name => ({
@@ -223,6 +225,17 @@ export const getProducts = async (req: Request, res: Response) => {
         }
         if (catStr === 'antioxidants' || catStr === 'antioxidant') {
           return pCat.includes('antioxidant');
+        }
+        if (catStr === 'dental health' || catStr === 'dental' || catStr === 'oral') {
+          return pCat === 'dental health' || pCat.includes('dental') || pCat.includes('oral') ||
+            (p.name || '').toLowerCase().includes('tooth') ||
+            (p.name || '').toLowerCase().includes('teeth') ||
+            (p.name || '').toLowerCase().includes('oral') ||
+            (p.name || '').toLowerCase().includes('mouth') ||
+            (p.name || '').toLowerCase().includes('oil pulling') ||
+            (p.name || '').toLowerCase().includes('sensodyne') ||
+            (p.name || '').toLowerCase().includes('oral b') ||
+            (p.name || '').toLowerCase().includes('cureveda');
         }
         return pCat.includes(catStr);
       });

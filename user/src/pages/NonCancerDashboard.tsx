@@ -1247,7 +1247,17 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     if (activeScreen === 'CancerScreening') return <CancerScreeningScreen onBack={handleCloseActiveScreen} />;
     if (activeScreen === 'IndianCancers') return <IndianCancersScreen onBack={handleCloseActiveScreen} />;
     if (activeScreen === 'Obesity') return <ObesityLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} />;
-    if (activeScreen === 'Dental') return <DentalLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} />;
+    if (activeScreen === 'Dental') return (
+      <DentalLogScreen
+        onBack={handleCloseActiveScreen}
+        onBookAppointment={handleBookAppt}
+        onNavigateToShop={(query) => {
+          setShopCategory('Dental health');
+          setShopQuery(query && query !== 'Dental health' ? query : '');
+          setActiveScreen('Shop');
+        }}
+      />
+    );
     if (activeScreen === 'Gastritis') return <GastritisLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} onNavigateToShop={() => { setShopCategory('Arivu in nutrition'); setShopQuery(''); setActiveScreen('Shop'); }} />;
     if (activeScreen === 'GastritisShop') return <ShopScreen type="Arivu in nutrition" defaultSearch="" onBack={() => setActiveScreen('Gastritis')} />;
     if (activeScreen === 'Genetic') return <GeneticLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} onNavigateToShop={() => { setShopCategory('Antioxidants'); setShopQuery(''); setActiveScreen('Shop'); }} />;

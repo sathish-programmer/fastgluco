@@ -1548,7 +1548,8 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
             'Safe kitchen',
             'Glucose monitoring',
             'Cancer support wig',
-            'Antioxidants'
+            'Antioxidants',
+            'Dental health'
           ])].map((cat, idx) => {
             const isSelected = selectedCategory === cat;
             return (

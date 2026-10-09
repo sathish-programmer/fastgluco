@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Stethoscope, Camera, Calendar, History, Info, Sparkles, AlertCircle, Eye, Trash2, Edit2, Check } from 'lucide-react';
+import { ArrowLeft, Stethoscope, Camera, Calendar, History, Info, Sparkles, AlertCircle, Eye, Trash2, Edit2, Check, ExternalLink, ShoppingBag, ChevronRight } from 'lucide-react';
 import { Camera as CapacitorCamera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from 'recharts';
 import { ConsultationBanner } from '../../components/ConsultationBanner';
@@ -11,6 +11,7 @@ import { HabitsService } from '../../services/habitsService';
 interface DentalLogScreenProps {
   onBack: () => void;
   onBookAppointment?: (reason: string) => void;
+  onNavigateToShop?: (query: string) => void;
 }
 
 const LOCALE_MAP: Record<string, string> = {
@@ -21,7 +22,7 @@ const LOCALE_MAP: Record<string, string> = {
   hi: 'hi-IN'
 };
 
-export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBookAppointment }) => {
+export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBookAppointment, onNavigateToShop }) => {
   const { user, token, apiUrl } = useAuth();
   const { showToast } = useToast();
   const { t, language } = useLanguage();
@@ -1062,6 +1063,151 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
               <p className="text-emerald-700 text-xs font-semibold">{t('dental.goodDentures', 'Good! Well-fitting dentures ensure chewing comfort and oral health.')}</p>
             </div>
           )}
+        </div>
+
+        {/* Recommended Oral & Dental Care Essentials */}
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100/60 text-indigo-600 flex items-center justify-center font-bold shadow-xs">
+                <ShoppingBag className="h-4.5 w-4.5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-black text-slate-800 leading-tight">
+                  {t('dental.recommendedProductsTitle', 'Recommended Dental & Oral Care')}
+                </h4>
+                <p className="text-[11px] text-slate-400 font-medium">
+                  {t('dental.recommendedProductsSubtitle', 'Clinically curated oral hygiene essentials for gum & enamel health')}
+                </p>
+              </div>
+            </div>
+            {onNavigateToShop && (
+              <button
+                type="button"
+                onClick={() => onNavigateToShop('Dental health')}
+                className="text-xs font-bold text-indigo-600 hover:text-indigo-700 hover:underline flex items-center gap-0.5 shrink-0 cursor-pointer"
+              >
+                <span>{t('dental.viewAll', 'View in Shop')}</span>
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+            {/* Item 1: Cureveda Sparkle Oil Pulling */}
+            <div className="group bg-slate-50/70 hover:bg-white border border-slate-200/80 hover:border-indigo-200 rounded-2xl p-3.5 transition-all flex flex-col justify-between shadow-2xs hover:shadow-sm">
+              <div className="space-y-2">
+                <div className="relative aspect-square w-full rounded-xl bg-white border border-slate-100 flex items-center justify-center p-2 overflow-hidden">
+                  <img
+                    src="https://m.media-amazon.com/images/I/516okkFJFrL.jpg"
+                    alt="Cureveda Sparkle Oil Pulling"
+                    className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
+                    loading="lazy"
+                  />
+                  <span className="absolute top-2 left-2 bg-slate-900/90 text-amber-400 text-[8.5px] font-black px-2 py-0.5 rounded-full backdrop-blur-xs flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                    Amazon
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[9px] font-black tracking-widest uppercase text-slate-400">
+                    Cureveda
+                  </span>
+                  <h5 className="text-xs font-extrabold text-slate-800 line-clamp-2 leading-snug h-[2.2rem]">
+                    Cureveda Sparkle Oil Pulling for Mouth, Healthy Teeth & Gums
+                  </h5>
+                </div>
+              </div>
+              <div className="pt-3 mt-2 border-t border-slate-200/60 flex items-center justify-between gap-2">
+                <span className="text-xs font-black text-slate-900">₹755</span>
+                <a
+                  href="https://www.amazon.in/Cureveda-Sparkle-Immunity-essential-Whitening/dp/B08C5HKS1R?tag=mitoreboot-21&linkCode=ll2"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-[11px] rounded-xl flex items-center gap-1 shadow-2xs active:scale-95 transition-all"
+                >
+                  <span>Amazon</span>
+                  <ExternalLink className="h-3 w-3 stroke-[2.5]" />
+                </a>
+              </div>
+            </div>
+
+            {/* Item 2: Sensodyne Expert White Toothpaste */}
+            <div className="group bg-slate-50/70 hover:bg-white border border-slate-200/80 hover:border-indigo-200 rounded-2xl p-3.5 transition-all flex flex-col justify-between shadow-2xs hover:shadow-sm">
+              <div className="space-y-2">
+                <div className="relative aspect-square w-full rounded-xl bg-white border border-slate-100 flex items-center justify-center p-2 overflow-hidden">
+                  <img
+                    src="https://m.media-amazon.com/images/I/41Opw6qZhdL.jpg"
+                    alt="Sensodyne Expert White Toothpaste"
+                    className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
+                    loading="lazy"
+                  />
+                  <span className="absolute top-2 left-2 bg-slate-900/90 text-amber-400 text-[8.5px] font-black px-2 py-0.5 rounded-full backdrop-blur-xs flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                    Amazon
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[9px] font-black tracking-widest uppercase text-slate-400">
+                    Sensodyne
+                  </span>
+                  <h5 className="text-xs font-extrabold text-slate-800 line-clamp-2 leading-snug h-[2.2rem]">
+                    Sensodyne Expert White Toothpaste 70gm X 02, 140GM
+                  </h5>
+                </div>
+              </div>
+              <div className="pt-3 mt-2 border-t border-slate-200/60 flex items-center justify-between gap-2">
+                <span className="text-xs font-black text-slate-900">₹500</span>
+                <a
+                  href="https://www.amazon.in/Sensodyne-Expert-White-Toothpaste-140GM/dp/B0GYZ7WH1F?tag=mitoreboot-21&linkCode=ll2"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-[11px] rounded-xl flex items-center gap-1 shadow-2xs active:scale-95 transition-all"
+                >
+                  <span>Amazon</span>
+                  <ExternalLink className="h-3 w-3 stroke-[2.5]" />
+                </a>
+              </div>
+            </div>
+
+            {/* Item 3: Oral B Cross Action Battery Toothbrush */}
+            <div className="group bg-slate-50/70 hover:bg-white border border-slate-200/80 hover:border-indigo-200 rounded-2xl p-3.5 transition-all flex flex-col justify-between shadow-2xs hover:shadow-sm">
+              <div className="space-y-2">
+                <div className="relative aspect-square w-full rounded-xl bg-white border border-slate-100 flex items-center justify-center p-2 overflow-hidden">
+                  <img
+                    src="https://m.media-amazon.com/images/I/413HAuxlHPL.jpg"
+                    alt="Oral B Cross Action Electric Toothbrush"
+                    className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
+                    loading="lazy"
+                  />
+                  <span className="absolute top-2 left-2 bg-slate-900/90 text-amber-400 text-[8.5px] font-black px-2 py-0.5 rounded-full backdrop-blur-xs flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                    Amazon
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[9px] font-black tracking-widest uppercase text-slate-400">
+                    Oral-B
+                  </span>
+                  <h5 className="text-xs font-extrabold text-slate-800 line-clamp-2 leading-snug h-[2.2rem]">
+                    Oral B Cross Action AA Battery Electric Toothbrush for Adults
+                  </h5>
+                </div>
+              </div>
+              <div className="pt-3 mt-2 border-t border-slate-200/60 flex items-center justify-between gap-2">
+                <span className="text-xs font-black text-slate-900">₹480</span>
+                <a
+                  href="https://www.amazon.in/Oral-Crossaction-Battery-Powered-Toothbrush/dp/B018IE1XSM?tag=mitoreboot-21&linkCode=ll2"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-[11px] rounded-xl flex items-center gap-1 shadow-2xs active:scale-95 transition-all"
+                >
+                  <span>Amazon</span>
+                  <ExternalLink className="h-3 w-3 stroke-[2.5]" />
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
