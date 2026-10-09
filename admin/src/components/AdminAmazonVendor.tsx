@@ -624,51 +624,52 @@ export const AdminAmazonVendor: React.FC<AdminAmazonVendorProps> = ({ apiUrl, to
             {storefronts.map((sf) => (
               <div
                 key={sf._id}
-                className={`bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950 rounded-2xl p-5 text-white border transition-all ${
-                  sf.isActive ? 'border-emerald-500/20' : 'border-slate-800 opacity-60'
+                className={`bg-gradient-to-br from-emerald-50/60 via-white to-slate-50 border transition-all rounded-2xl p-5 ${
+                  sf.isActive ? 'border-emerald-200/90 shadow-2xs hover:shadow-xs' : 'border-slate-200 opacity-60'
                 } flex flex-col md:flex-row md:items-center justify-between gap-4`}
               >
-                <div className="space-y-1.5 max-w-xl">
+                <div className="space-y-2 max-w-xl">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-black text-emerald-400 uppercase tracking-wider">
+                    <span className="text-[11px] font-black text-emerald-800 bg-emerald-100/90 px-2.5 py-0.5 rounded-full border border-emerald-200/80 uppercase tracking-wider">
                       {sf.brandName}
                     </span>
-                    <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded text-slate-300 font-mono">
+                    <span className="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md font-bold">
                       {sf.category}
                     </span>
                     {sf.badge && (
-                      <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-bold">
+                      <span className="text-[10px] bg-amber-50 text-amber-900 border border-amber-200/80 px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1">
+                        <Sparkles className="h-2.5 w-2.5 text-amber-600" />
                         {sf.badge}
                       </span>
                     )}
                     {!sf.isActive && (
-                      <span className="text-[10px] bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded-full font-bold">
+                      <span className="text-[10px] bg-rose-50 text-rose-700 px-2 py-0.5 rounded-full font-bold border border-rose-200">
                         Inactive
                       </span>
                     )}
                   </div>
-                  <h3 className="text-sm sm:text-base font-bold text-white">
+                  <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight">
                     {sf.title}
                   </h3>
                   {sf.description && (
-                    <p className="text-xs text-slate-300 font-medium leading-relaxed">
+                    <p className="text-xs text-slate-600 font-medium leading-relaxed">
                       {sf.description}
                     </p>
                   )}
                   {sf.highlights && sf.highlights.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-[9.5px] font-bold text-emerald-200">
+                    <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-[10px] font-bold text-slate-700">
                       {sf.highlights.map((h, i) => (
-                        <span key={i} className="bg-white/10 px-2 py-0.5 rounded-md border border-white/10">
+                        <span key={i} className="bg-white px-2.5 py-0.5 rounded-lg border border-slate-200 shadow-2xs">
                           {h}
                         </span>
                       ))}
                     </div>
                   )}
-                  <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400 font-mono pt-1">
+                  <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-500 font-mono pt-1">
                     {sf.shortlink && (
-                      <span>Shortlink: <a href={sf.shortlink} target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:underline">{sf.shortlink}</a></span>
+                      <span>Shortlink: <a href={sf.shortlink} target="_blank" rel="noopener noreferrer" className="text-amber-700 font-bold hover:underline">{sf.shortlink}</a></span>
                     )}
-                    <span>• Tag: <code className="text-emerald-400 font-mono">mitoreboot-21</code></span>
+                    <span>• Tag: <code className="text-emerald-700 font-bold font-mono">mitoreboot-21</code></span>
                   </div>
                 </div>
 
@@ -677,14 +678,14 @@ export const AdminAmazonVendor: React.FC<AdminAmazonVendorProps> = ({ apiUrl, to
                     href={sf.storeUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-4 py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+                    className="px-4 py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer border border-amber-300"
                   >
                     <span>Test Storefront Link</span>
                     <ExternalLink className="h-3.5 w-3.5 stroke-[2.5]" />
                   </a>
                   <button
                     onClick={() => handleOpenEditStorefront(sf)}
-                    className="p-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all cursor-pointer border border-white/10"
+                    className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all cursor-pointer border border-slate-200 shadow-2xs"
                     title="Edit Storefront"
                   >
                     <Pencil className="h-4 w-4" />
@@ -692,7 +693,7 @@ export const AdminAmazonVendor: React.FC<AdminAmazonVendorProps> = ({ apiUrl, to
                   <button
                     onClick={() => handleDeleteStorefront(sf._id, sf.title)}
                     disabled={deletingSfId === sf._id}
-                    className="p-2.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 rounded-xl transition-all cursor-pointer border border-rose-500/20"
+                    className="p-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl transition-all cursor-pointer border border-rose-200 shadow-2xs"
                     title="Delete Storefront"
                   >
                     <Trash2 className="h-4 w-4" />

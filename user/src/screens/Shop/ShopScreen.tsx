@@ -1619,26 +1619,26 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
           if (!matched) return null;
 
           return (
-            <div className="bg-gradient-to-br from-emerald-950 via-slate-900 to-teal-950 border border-emerald-500/25 rounded-3xl p-4 sm:p-5 shadow-md mb-4 text-white relative overflow-hidden group">
-              <div className="absolute top-0 right-0 -mt-12 -mr-12 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="bg-gradient-to-br from-emerald-50/70 via-white to-teal-50/40 dark:from-slate-900 dark:via-slate-900 dark:to-emerald-950/70 border border-emerald-200/80 dark:border-emerald-500/25 rounded-3xl p-4 sm:p-5 shadow-xs dark:shadow-md mb-4 text-slate-900 dark:text-white relative overflow-hidden group">
+              <div className="absolute top-0 right-0 -mt-12 -mr-12 w-48 h-48 bg-emerald-500/10 dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
               <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div className="space-y-1.5 max-w-xl">
-                  <div className="inline-flex items-center gap-1.5 bg-emerald-500/20 border border-emerald-400/30 px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider text-emerald-300">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <div className="inline-flex items-center gap-1.5 bg-emerald-100/90 dark:bg-emerald-500/20 border border-emerald-200 dark:border-emerald-400/30 px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
                     <span>{matched.badge || 'Verified Partner • Amazon Storefront'}</span>
                   </div>
-                  <h3 className="text-sm sm:text-base font-black tracking-tight text-white">
+                  <h3 className="text-sm sm:text-base font-black tracking-tight text-slate-900 dark:text-white">
                     {matched.title}
                   </h3>
                   {matched.description && (
-                    <p className="text-xs text-slate-300 leading-relaxed font-medium">
+                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
                       {matched.description}
                     </p>
                   )}
                   {matched.highlights && matched.highlights.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[10px] font-bold text-emerald-200">
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[10px] font-bold text-slate-700 dark:text-emerald-200">
                       {matched.highlights.map((h, i) => (
-                        <span key={i} className="bg-white/10 px-2 py-0.5 rounded-lg border border-white/10">
+                        <span key={i} className="bg-white/90 dark:bg-white/10 px-2.5 py-0.5 rounded-lg border border-slate-200/80 dark:border-white/10 shadow-2xs">
                           {h}
                         </span>
                       ))}
@@ -1650,12 +1650,12 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                     href={matched.storeUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full md:w-auto px-5 py-2.5 bg-gradient-to-r from-amber-400 via-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs rounded-2xl shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95 border border-amber-300/40 cursor-pointer"
+                    className="w-full md:w-auto px-5 py-2.5 bg-gradient-to-r from-amber-400 via-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs rounded-2xl shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 border border-amber-300/60 cursor-pointer"
                   >
                     <span>Explore {matched.brandName} on Amazon</span>
                     <ExternalLink className="h-3.5 w-3.5 stroke-[2.5]" />
                   </a>
-                  <span className="text-[9px] text-slate-400 font-semibold tracking-tight">
+                  <span className="text-[9px] text-slate-400 dark:text-slate-400 font-semibold tracking-tight">
                     Full Catalog • Free Prime Delivery
                   </span>
                 </div>
