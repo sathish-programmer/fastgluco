@@ -183,24 +183,6 @@ export const AFFILIATE_PRODUCTS = [
     keyBenefits: ['Rotational micro-pulse plaque breakdown', 'Gentle on gums and enamel', 'Battery operated convenience']
   },
   {
-    name: 'Oral B Cross Action AA Battery Electric Toothbrush for Adults, 90 Day Battery, 2 Year Warranty by Oral-B, IPX7 Water Resistant, Soft Crisscross Bristles (Blue, 1)',
-    description: 'Sustainably sourced bamboo handle with natural antimicrobial neem-infused bristles. Plastic-free, biodegradable, and gentle on sensitive oral tissues.',
-    shortDescription: 'Biodegradable bamboo toothbrush with antimicrobial neem bristles.',
-    category: 'Environment safe products',
-    brand: 'EcoHealth',
-    price: 480,
-    regularPrice: 248,
-    offerPrice: 480,
-    discountPercent: 20,
-    image: 'https://m.media-amazon.com/images/I/413HAuxlHPL.jpg',
-    images: ['https://m.media-amazon.com/images/I/413HAuxlHPL.jpg'],
-    buyOnAmazonUrl: 'https://www.amazon.in/Oral-Crossaction-Battery-Powered-Toothbrush/dp/B018IE1XSM?tag=mitoreboot-21&linkCode=ll2',
-    stock: 120,
-    isActive: true,
-    doctorRecommended: false,
-    keyBenefits: ['100% plastic-free compostable handle', 'Natural antibacterial neem properties', 'BPA-free bristles']
-  },
-  {
     name: 'Sensodyne Expert White Toothpaste 70gm X 02, 140GM',
     description: 'Enamel-safe desensitizing formulation designed for gentle stain removal while soothing hyper-sensitive nerve endings. SLS-free, low-abrasion protection.',
     shortDescription: 'Dentist-recommended sensitive whitening and mineral defense.',
@@ -279,7 +261,7 @@ export const AFFILIATE_PRODUCTS = [
     description: 'Complete multi-piece cast iron kitchen essentials including deep skillet, sauté pan, and tava. Eliminate hormone-disrupting PFAS from your household cooking completely.',
     shortDescription: 'Multi-piece pre-seasoned cast iron cookware bundle.',
     category: 'Safe kitchen',
-    brand: 'IronChef',
+    brand: 'KnobON',
     price: 4559,
     regularPrice: 10999,
     offerPrice: 4559,

@@ -264,6 +264,7 @@ export const getProducts = async (req: Request, res: Response) => {
       allProducts.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
     }
 
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.json(allProducts);
   } catch (err: any) {
     console.error('[getProducts] Error:', err);

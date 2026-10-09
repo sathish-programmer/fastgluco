@@ -428,9 +428,11 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
       if (search) {
         url += `&search=${encodeURIComponent(search)}`;
       }
+      url += `&_t=${Date.now()}`;
 
       const res = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${token}` },
+        cache: 'no-store'
       });
       if (res.ok) {
         const data = await res.json();
