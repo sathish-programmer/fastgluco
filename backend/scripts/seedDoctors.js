@@ -59,6 +59,12 @@ const DoctorAvailabilitySchema = new mongoose.Schema(
 const Doctor = mongoose.models.Doctor || mongoose.model('Doctor', DoctorSchema);
 const DoctorAvailability = mongoose.models.DoctorAvailability || mongoose.model('DoctorAvailability', DoctorAvailabilitySchema);
 
+const AppointmentSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  doctorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Doctor' }
+}, { strict: false });
+const Appointment = mongoose.models.Appointment || mongoose.model('Appointment', AppointmentSchema);
+
 async function seedDoctors() {
   try {
     const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://localhost:27017/fastgluco';
@@ -173,6 +179,13 @@ async function seedDoctors() {
         await avail.save();
         console.log(`Updated availability schedule slot duration for: ${doctor.name}`);
       }
+    }
+
+    // 3. Remove any old appointments referencing deleted doctors
+    const validDoctorIds = (await Doctor.find({}, '_id')).map(d => d._id);
+    const orphanAppts = await Appointment.deleteMany({ doctorId: { $nin: validDoctorIds } });
+    if (orphanAppts.deletedCount > 0) {
+      console.log(`Cleaned ${orphanAppts.deletedCount} old appointment(s) referencing deleted test doctors.`);
     }
 
     const currentDoctors = await Doctor.find();

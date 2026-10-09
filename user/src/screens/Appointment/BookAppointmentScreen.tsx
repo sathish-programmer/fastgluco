@@ -879,7 +879,11 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                 <div key={appt._id} className="border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/60 rounded-2xl p-4 space-y-2">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">Dr. {appt.doctorId.name}</h4>
+                      <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">
+                        {appt.doctorId?.name 
+                          ? (/^(Dr|Ms|Mr|Mrs)\.?/i.test(appt.doctorId.name) ? appt.doctorId.name : `Dr. ${appt.doctorId.name}`)
+                          : (appt.doctorName || 'Doctor')}
+                      </h4>
                       <p className="text-[10px] text-slate-400 uppercase font-mono tracking-wide">{formatDate(appt.date)} {t('common.at', 'at')} {appt.time}</p>
                     </div>
                     <div className="flex flex-col items-end gap-1">
