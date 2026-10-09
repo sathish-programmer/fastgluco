@@ -224,7 +224,8 @@ const UPDATED_AMAZON_ITEMS = [
     regularPrice: 1532,
     discountPercent: 20,
     image: 'https://images-na.ssl-images-amazon.com/images/P/1989682812.01._SCLZZZZZZZ_SX500_.jpg',
-    category: 'Antioxidants'
+    category: 'Books',
+    subcategory: 'Books on natural antioxidant food'
   },
   {
     asin: '1632872323',
@@ -234,7 +235,8 @@ const UPDATED_AMAZON_ITEMS = [
     regularPrice: 1056,
     discountPercent: 5,
     image: 'https://images-na.ssl-images-amazon.com/images/P/1632872323.01._SCLZZZZZZZ_SX500_.jpg',
-    category: 'Antioxidants'
+    category: 'Books',
+    subcategory: 'Books on natural antioxidant food'
   },
   {
     asin: '9350578883',
@@ -244,7 +246,8 @@ const UPDATED_AMAZON_ITEMS = [
     regularPrice: 195,
     discountPercent: 20,
     image: 'https://images-na.ssl-images-amazon.com/images/P/9350578883.01._SCLZZZZZZZ_SX500_.jpg',
-    category: 'Antioxidants'
+    category: 'Books',
+    subcategory: 'Books on natural antioxidant food'
   },
   {
     asin: '1557043019',
@@ -254,7 +257,8 @@ const UPDATED_AMAZON_ITEMS = [
     regularPrice: 699,
     discountPercent: 29,
     image: 'https://images-na.ssl-images-amazon.com/images/P/1557043019.01._SCLZZZZZZZ_SX500_.jpg',
-    category: 'Antioxidants'
+    category: 'Books',
+    subcategory: 'Books on natural antioxidant food'
   },
   {
     asin: '1578263239',
@@ -264,7 +268,8 @@ const UPDATED_AMAZON_ITEMS = [
     regularPrice: 1050,
     discountPercent: 32,
     image: 'https://images-na.ssl-images-amazon.com/images/P/1578263239.01._SCLZZZZZZZ_SX500_.jpg',
-    category: 'Antioxidants'
+    category: 'Books',
+    subcategory: 'Books on natural antioxidant food'
   },
   {
     asin: 'B0DKT5B8S1',
@@ -274,7 +279,8 @@ const UPDATED_AMAZON_ITEMS = [
     regularPrice: 2437,
     discountPercent: 15,
     image: 'https://images-na.ssl-images-amazon.com/images/P/B0DKT5B8S1.01._SCLZZZZZZZ_SX500_.jpg',
-    category: 'Antioxidants'
+    category: 'Books',
+    subcategory: 'Books for women health'
   },
   {
     asin: '0593855191',
@@ -284,7 +290,8 @@ const UPDATED_AMAZON_ITEMS = [
     regularPrice: 2999,
     discountPercent: 24,
     image: 'https://images-na.ssl-images-amazon.com/images/P/0593855191.01._SCLZZZZZZZ_SX500_.jpg',
-    category: 'Antioxidants'
+    category: 'Books',
+    subcategory: 'Books for women health'
   },
   {
     asin: '0679778004',
@@ -294,7 +301,8 @@ const UPDATED_AMAZON_ITEMS = [
     regularPrice: 1441,
     discountPercent: 17,
     image: 'https://images-na.ssl-images-amazon.com/images/P/0679778004.01._SCLZZZZZZZ_SX500_.jpg',
-    category: 'Antioxidants'
+    category: 'Books',
+    subcategory: 'Books for women health'
   },
   {
     asin: '0722531400',
@@ -304,7 +312,8 @@ const UPDATED_AMAZON_ITEMS = [
     regularPrice: 1199,
     discountPercent: 17,
     image: 'https://images-na.ssl-images-amazon.com/images/P/0722531400.01._SCLZZZZZZZ_SX500_.jpg',
-    category: 'Antioxidants'
+    category: 'Books',
+    subcategory: 'Books for women health'
   },
   {
     asin: '9355154461',
@@ -314,7 +323,8 @@ const UPDATED_AMAZON_ITEMS = [
     regularPrice: 300,
     discountPercent: 17,
     image: 'https://images-na.ssl-images-amazon.com/images/P/9355154461.01._SCLZZZZZZZ_SX500_.jpg',
-    category: 'Antioxidants'
+    category: 'Books',
+    subcategory: 'Books for women health'
   },
   {
     asin: '1648450954',
@@ -324,7 +334,8 @@ const UPDATED_AMAZON_ITEMS = [
     regularPrice: 2699,
     discountPercent: 22,
     image: 'https://images-na.ssl-images-amazon.com/images/P/1648450954.01._SCLZZZZZZZ_SX500_.jpg',
-    category: 'Antioxidants'
+    category: 'Books',
+    subcategory: 'Books for elderly memory'
   },
   {
     asin: 'B0DM1BM3PS',
@@ -334,7 +345,8 @@ const UPDATED_AMAZON_ITEMS = [
     regularPrice: 15748,
     discountPercent: 76,
     image: 'https://images-na.ssl-images-amazon.com/images/P/B0DM1BM3PS.01._SCLZZZZZZZ_SX500_.jpg',
-    category: 'Antioxidants'
+    category: 'Books',
+    subcategory: 'Books for elderly memory'
   },
   {
     asin: '1837995346',
@@ -344,7 +356,8 @@ const UPDATED_AMAZON_ITEMS = [
     regularPrice: 1599,
     discountPercent: 15,
     image: 'https://images-na.ssl-images-amazon.com/images/P/1837995346.01._SCLZZZZZZZ_SX500_.jpg',
-    category: 'Antioxidants'
+    category: 'Books',
+    subcategory: 'Books for elderly memory'
   }
 ];
 

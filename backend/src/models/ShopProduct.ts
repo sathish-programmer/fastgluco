@@ -13,6 +13,7 @@ export interface IShopProduct extends Document {
   price: number;
   image: string; // Emoji or URL
   category: string; // Changed to string to allow predefined or custom categories
+  subcategory?: string; // Subcategory e.g. 'Books for elderly memory', 'Books for women health', 'Books on natural antioxidant food'
   stock: number;
   isActive: boolean;
   
@@ -64,6 +65,7 @@ const ShopProductSchema: Schema = new Schema({
   price: { type: Number, required: true },
   image: { type: String, default: '' },
   category: { type: String, required: true },
+  subcategory: { type: String, default: '' },
   stock: { type: Number, default: 0 },
   isActive: { type: Boolean, default: true },
 

@@ -93,6 +93,7 @@ export interface ShopItem {
   price: number;
   image: string;
   category: string;
+  subcategory?: string;
   brand?: string;
   images?: string[];
   shortDescription?: string;
@@ -168,6 +169,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
   const [onlyAvailable, setOnlyAvailable] = useState(false);
   const [sortBy, setSortBy] = useState('newest');
   const [showFiltersPanel, setShowFiltersPanel] = useState(false);
+  const [bookSubcategory, setBookSubcategory] = useState<string>('All');
 
   // Dynamic Partner Storefronts State
   const [storefronts, setStorefronts] = useState<Array<{
@@ -319,7 +321,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
     fetchCategories();
     fetchStorefronts();
     fetchProducts();
-  }, [selectedCategory, selectedBrand, onlyDoctorRecommended, onlyAvailable, sortBy]);
+  }, [selectedCategory, selectedBrand, onlyDoctorRecommended, onlyAvailable, sortBy, bookSubcategory]);
 
   // Real-time debounced backend search when typing
   useEffect(() => {
@@ -350,6 +352,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                   price: p.price || 0,
                   image: p.image || '',
                   category: p.category || 'General',
+                  subcategory: p.subcategory,
                   brand: p.brand || '',
                   images: p.images || [],
                   shortDescription: p.shortDescription || '',
@@ -438,6 +441,9 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
       if (selectedCategory !== 'All') {
         url += `&category=${encodeURIComponent(selectedCategory)}`;
       }
+      if (selectedCategory === 'Books' && bookSubcategory !== 'All') {
+        url += `&subcategory=${encodeURIComponent(bookSubcategory)}`;
+      }
       if (selectedBrand !== 'All') {
         url += `&brand=${encodeURIComponent(selectedBrand)}`;
       }
@@ -471,6 +477,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
           price: d.price,
           image: d.image,
           category: d.category,
+          subcategory: d.subcategory,
           brand: d.brand,
           images: d.images,
           shortDescription: d.shortDescription,
@@ -542,12 +549,16 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
 
   // Instant real-time multi-word client-side filter with smart fallback
   const displayedProducts = useMemo(() => {
-    if (!search.trim()) return products;
+    let list = products;
+    if (selectedCategory === 'Books' && bookSubcategory !== 'All') {
+      list = list.filter((item) => item.subcategory === bookSubcategory);
+    }
+    if (!search.trim()) return list;
     const terms = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
 
     // 1. Strict multi-word matching (all terms match)
-    const strict = products.filter((item) => {
-      const searchable = `${item.name} ${item.desc || ''} ${item.shortDescription || ''} ${item.brand || ''} ${item.category || ''} ${item.variants?.map((v) => v.name).join(' ') || ''}`.toLowerCase();
+    const strict = list.filter((item) => {
+      const searchable = `${item.name} ${item.desc || ''} ${item.shortDescription || ''} ${item.brand || ''} ${item.category || ''} ${item.subcategory || ''} ${item.variants?.map((v) => v.name).join(' ') || ''}`.toLowerCase();
       return terms.every((term) => searchable.includes(term));
     });
 
@@ -557,11 +568,11 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
     const significantTerms = terms.filter((t) => t.length >= 3);
     if (significantTerms.length === 0) return [];
 
-    return products.filter((item) => {
-      const searchable = `${item.name} ${item.desc || ''} ${item.shortDescription || ''} ${item.brand || ''} ${item.category || ''} ${item.variants?.map((v) => v.name).join(' ') || ''}`.toLowerCase();
+    return list.filter((item) => {
+      const searchable = `${item.name} ${item.desc || ''} ${item.shortDescription || ''} ${item.brand || ''} ${item.category || ''} ${item.subcategory || ''} ${item.variants?.map((v) => v.name).join(' ') || ''}`.toLowerCase();
       return significantTerms.some((term) => searchable.includes(term));
     });
-  }, [products, search]);
+  }, [products, search, selectedCategory, bookSubcategory]);
 
   const updateItemQty = (itemId: string, delta: number, variantName?: string) => {
     setBasket(prev => {
@@ -774,6 +785,14 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                       <span className="text-slate-300 dark:text-slate-700">•</span>
                       <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                         {selectedProduct.category}
+                      </span>
+                    </>
+                  )}
+                  {selectedProduct.subcategory && (
+                    <>
+                      <span className="text-slate-300 dark:text-slate-700">•</span>
+                      <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+                        {selectedProduct.subcategory}
                       </span>
                     </>
                   )}
@@ -1578,23 +1597,65 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
             'Glucose monitoring',
             'Cancer support wig',
             'Antioxidants',
-            'Dental health'
+            'Dental health',
+            'Books'
           ])].map((cat, idx) => {
             const isSelected = selectedCategory === cat;
             return (
               <button
                 key={idx}
-                onClick={() => setSelectedCategory(cat)}
+                onClick={() => {
+                  setSelectedCategory(cat);
+                  if (cat !== 'Books') setBookSubcategory('All');
+                }}
                 className={`px-4 py-2 rounded-2xl text-xs font-black border transition-all duration-200 whitespace-nowrap cursor-pointer ${isSelected
                     ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-600/25 scale-[1.02]'
                     : 'bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-indigo-300 hover:bg-slate-50/50'
                   }`}
               >
-                {cat === 'All' ? 'All Products' : cat}
+                {cat === 'All' ? 'All Products' : cat === 'Books' ? '📚 Books' : cat}
               </button>
             );
           })}
         </div>
+
+        {/* Books Sub-Columns Selector (When Books category is selected) */}
+        {selectedCategory === 'Books' && (
+          <div className="bg-gradient-to-r from-indigo-50/90 via-amber-50/50 to-rose-50/80 dark:from-slate-900 dark:via-indigo-950/40 dark:to-slate-900 border border-indigo-200/80 dark:border-indigo-800/60 rounded-2xl p-3 shadow-xs transition-all">
+            <div className="flex items-center justify-between mb-2 px-1">
+              <span className="text-[11px] font-black uppercase tracking-wider text-indigo-700 dark:text-indigo-400 flex items-center gap-1.5">
+                <span>📚</span> Books Columns & Collections
+              </span>
+              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                {displayedProducts.length} {displayedProducts.length === 1 ? 'book' : 'books'}
+              </span>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+              {[
+                { id: 'All', label: 'All Books', icon: '📚' },
+                { id: 'Books for elderly memory', label: '1. Books for elderly memory', icon: '🧠' },
+                { id: 'Books for women health', label: '2. Books for women health', icon: '🌸' },
+                { id: 'Books on natural antioxidant food', label: '3. Books on natural antioxidant food', icon: '🥗' },
+              ].map((sub) => {
+                const isSubSelected = bookSubcategory === sub.id;
+                return (
+                  <button
+                    key={sub.id}
+                    onClick={() => setBookSubcategory(sub.id)}
+                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black border transition-all duration-200 whitespace-nowrap cursor-pointer ${
+                      isSubSelected
+                        ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 border-indigo-600 text-white shadow-sm shadow-indigo-600/25 scale-[1.02]'
+                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-indigo-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    <span>{sub.icon}</span>
+                    <span>{sub.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Dynamic Partner Storefront Showcase (Loaded from Admin / Database) */}
         {(() => {
@@ -1813,9 +1874,16 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
                       </div>
 
                       {/* Brand & Category Label */}
-                      <span className="text-[9.5px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest truncate block mb-1">
-                        {item.brand || item.category}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                        <span className="text-[9.5px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest truncate">
+                          {item.brand || item.category}
+                        </span>
+                        {item.subcategory && (
+                          <span className="text-[8.5px] font-black px-1.5 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/60 truncate max-w-[140px]">
+                            {item.subcategory.replace('Books for ', '').replace('Books on ', '')}
+                          </span>
+                        )}
+                      </div>
 
                       {/* Product Name */}
                       <h3 className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-[13px] leading-snug group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors line-clamp-2 min-h-[2.2rem] tracking-tight">

@@ -27,6 +27,7 @@ interface AmazonProduct {
   name: string;
   brand?: string;
   category: string;
+  subcategory?: string;
   image: string;
   buyOnAmazonUrl: string;
   isActive: boolean;
@@ -50,6 +51,12 @@ interface AmazonStorefront {
   updatedAt?: string;
 }
 
+export const BOOK_SUBCATEGORIES = [
+  'Books for elderly memory',
+  'Books for women health',
+  'Books on natural antioxidant food'
+];
+
 const PREDEFINED_CATEGORIES = [
   'Pesticide free food',
   'Arivu in nutrition',
@@ -58,7 +65,8 @@ const PREDEFINED_CATEGORIES = [
   'Glucose monitoring',
   'Cancer support wig',
   'Antioxidants',
-  'Dental health'
+  'Dental health',
+  'Books'
 ];
 
 export const AdminAmazonVendor: React.FC<AdminAmazonVendorProps> = ({ apiUrl, token }) => {
@@ -70,6 +78,7 @@ export const AdminAmazonVendor: React.FC<AdminAmazonVendorProps> = ({ apiUrl, to
   // Add Product Form State
   const [urlInput, setUrlInput] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(PREDEFINED_CATEGORIES[0]);
+  const [bookSubcategory, setBookSubcategory] = useState(BOOK_SUBCATEGORIES[0]);
   const [customCategory, setCustomCategory] = useState('');
   const [isCustomCategory, setIsCustomCategory] = useState(false);
 
@@ -94,6 +103,7 @@ export const AdminAmazonVendor: React.FC<AdminAmazonVendorProps> = ({ apiUrl, to
   const [editingProduct, setEditingProduct] = useState<AmazonProduct | null>(null);
   const [editName, setEditName] = useState('');
   const [editCategory, setEditCategory] = useState(PREDEFINED_CATEGORIES[0]);
+  const [editSubcategory, setEditSubcategory] = useState(BOOK_SUBCATEGORIES[0]);
   const [editIsCustomCategory, setEditIsCustomCategory] = useState(false);
   const [editCustomCategory, setEditCustomCategory] = useState('');
   const [editBrand, setEditBrand] = useState('');
@@ -312,6 +322,7 @@ export const AdminAmazonVendor: React.FC<AdminAmazonVendorProps> = ({ apiUrl, to
       const payload = {
         url: urlInput.trim(),
         category: finalCategory,
+        subcategory: finalCategory === 'Books' ? bookSubcategory : undefined,
         name: previewData?.title,
         brand: previewData?.brand,
         image: previewData?.image
@@ -398,6 +409,8 @@ export const AdminAmazonVendor: React.FC<AdminAmazonVendorProps> = ({ apiUrl, to
     setEditAffiliateUrl(product.buyOnAmazonUrl || '');
     setEditIsActive(product.isActive !== false);
 
+    setEditSubcategory(product.subcategory || BOOK_SUBCATEGORIES[0]);
+
     if (PREDEFINED_CATEGORIES.includes(product.category)) {
       setEditCategory(product.category);
       setEditIsCustomCategory(false);
@@ -475,6 +488,7 @@ export const AdminAmazonVendor: React.FC<AdminAmazonVendorProps> = ({ apiUrl, to
         body: JSON.stringify({
           name: editName.trim(),
           category: finalCategory,
+          subcategory: finalCategory === 'Books' ? editSubcategory : undefined,
           brand: editBrand.trim() || 'Amazon',
           image: editImage.trim(),
           buyOnAmazonUrl: editAffiliateUrl.trim(),
@@ -808,6 +822,31 @@ export const AdminAmazonVendor: React.FC<AdminAmazonVendorProps> = ({ apiUrl, to
                   ))}
                 </select>
               )}
+
+              {/* BOOK SUB-COLUMN / SUB-CATEGORY SELECTOR */}
+              {selectedCategory === 'Books' && !isCustomCategory && (
+                <div className="mt-3 bg-amber-50/70 border border-amber-200/90 rounded-2xl p-3.5 space-y-1.5 animate-in fade-in duration-200">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-black text-amber-950 uppercase tracking-wider block">
+                      Book Column / Category: <span className="text-rose-500">*</span>
+                    </label>
+                    <span className="text-[10px] font-bold text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded-full">
+                      Curated Group
+                    </span>
+                  </div>
+                  <select
+                    value={bookSubcategory}
+                    onChange={(e) => setBookSubcategory(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-white border border-amber-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-amber-500/30 cursor-pointer shadow-2xs"
+                  >
+                    {BOOK_SUBCATEGORIES.map((sub) => (
+                      <option key={sub} value={sub}>
+                        {sub}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
             <button
@@ -1006,6 +1045,11 @@ export const AdminAmazonVendor: React.FC<AdminAmazonVendorProps> = ({ apiUrl, to
                       <span className="bg-amber-50 text-amber-700 border border-amber-200/80 font-bold text-[10px] px-2.5 py-1 rounded-lg inline-block">
                         {p.category}
                       </span>
+                      {p.subcategory && (
+                        <span className="block text-[9.5px] font-semibold text-slate-500 mt-1">
+                          {p.subcategory}
+                        </span>
+                      )}
                     </td>
 
                     <td className="py-3 px-4 whitespace-nowrap font-bold text-slate-700">
@@ -1142,6 +1186,26 @@ export const AdminAmazonVendor: React.FC<AdminAmazonVendorProps> = ({ apiUrl, to
                       placeholder="e.g. Brain Health, Mobility, Sleep Aids..."
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
                     />
+                  )}
+
+                  {/* Book Subcategory Selector in Edit Modal */}
+                  {editCategory === 'Books' && !editIsCustomCategory && (
+                    <div className="mt-2 bg-amber-50/70 border border-amber-200/90 rounded-xl p-3 space-y-1">
+                      <label className="block text-[11px] font-black text-amber-950 uppercase tracking-wider">
+                        Book Column / Collection:
+                      </label>
+                      <select
+                        value={editSubcategory}
+                        onChange={(e) => setEditSubcategory(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-amber-300 rounded-lg text-xs font-bold text-slate-900"
+                      >
+                        {BOOK_SUBCATEGORIES.map((sub) => (
+                          <option key={sub} value={sub}>
+                            {sub}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   )}
                 </div>
 

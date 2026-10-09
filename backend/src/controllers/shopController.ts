@@ -31,7 +31,8 @@ export const PREDEFINED_CATEGORIES = [
   'Glucose monitoring',
   'Cancer support wig',
   'Antioxidants',
-  'Dental health'
+  'Dental health',
+  'Books'
 ];
 
 // --- ADMIN ROUTES ---
@@ -129,7 +130,8 @@ export const getCategories = async (req: Request, res: Response) => {
       'Glucose monitoring',
       'Cancer support wig',
       'Antioxidants',
-      'Dental health'
+      'Dental health',
+      'Books'
     ];
 
     res.json(coreCategories.map(name => ({
@@ -160,7 +162,7 @@ export const createAdminCategory = async (req: Request, res: Response) => {
 
 export const getProducts = async (req: Request, res: Response) => {
   try {
-    const { category, brand, vendor, minPrice, maxPrice, healthBenefit, doctorRecommended, available, search, sortBy } = req.query;
+    const { category, brand, vendor, minPrice, maxPrice, healthBenefit, doctorRecommended, available, search, sortBy, subcategory } = req.query;
 
     let dynamicProducts: any[] = [];
     let isDynamicSuccess = false;
@@ -201,11 +203,39 @@ export const getProducts = async (req: Request, res: Response) => {
     // 3. Merge products
     let allProducts = [...dynamicProducts, ...plainDbProducts];
 
+    // Helper to identify if a product is a book
+    const isBookProduct = (p: any) => {
+      const pCat = (p.category || '').toLowerCase();
+      const pSub = (p.subcategory || '').toLowerCase();
+      const pBrand = (p.brand || '').toLowerCase();
+      const pName = (p.name || '').toLowerCase();
+      return (
+        pCat === 'books' ||
+        pCat.includes('book') ||
+        pSub.includes('book') ||
+        pBrand.includes('books') ||
+        pBrand.includes('press') ||
+        pBrand.includes('publishing') ||
+        pBrand.includes('publishers') ||
+        pName.includes('recipes book') ||
+        pName.includes('activity book') ||
+        pName.includes('save-your-life cookbook') ||
+        pName.includes('beautiful skin: over 75') ||
+        pName.includes('nature cure through fruits') ||
+        pName.includes('menopause brain') ||
+        pName.includes('menopause gut') ||
+        pName.includes('puzzle')
+      );
+    };
+
     // 4. Apply category filter
     if (category && category !== 'All') {
       const catStr = String(category).trim().toLowerCase();
       allProducts = allProducts.filter(p => {
         const pCat = (p.category || '').toLowerCase();
+        const pSub = (p.subcategory || '').toLowerCase();
+        const pName = (p.name || '').toLowerCase();
+
         if (catStr === 'pesticide free food') {
           return pCat === 'pesticide free food' || pCat.includes('pesticide') || pCat.includes('organic food');
         }
@@ -224,7 +254,31 @@ export const getProducts = async (req: Request, res: Response) => {
         if (catStr === 'cancer support wig') {
           return pCat === 'cancer support wig' || pCat.includes('wig');
         }
+        if (catStr === 'books' || catStr === 'book') {
+          return isBookProduct(p);
+        }
+        if (catStr === 'books for elderly memory' || catStr.includes('elderly memory')) {
+          return isBookProduct(p) && (
+            pSub.includes('elderly') || pSub.includes('memory') ||
+            pName.includes('senior') || pName.includes('dementia') || pName.includes('memory') || pName.includes('puzzle')
+          );
+        }
+        if (catStr === 'books for women health' || catStr.includes('women health')) {
+          return isBookProduct(p) && (
+            pSub.includes('women') ||
+            pName.includes('menopause') || pName.includes('premenstrual') || pName.includes('pms') || pName.includes('women')
+          );
+        }
+        if (catStr === 'books on natural antioxidant food' || catStr.includes('antioxidant food')) {
+          return isBookProduct(p) && (
+            pSub.includes('antioxidant food') ||
+            pName.includes('superfood') || pName.includes('nature cure') || pName.includes('cooking well') ||
+            pName.includes('recipe') || pName.includes('antioxidant counter') || pName.includes('save-your-life') || pName.includes('vegan diet')
+          );
+        }
         if (catStr === 'antioxidants' || catStr === 'antioxidant') {
+          // Strictly EXCLUDE books from pure Antioxidants!
+          if (isBookProduct(p)) return false;
           return pCat.includes('antioxidant');
         }
         if (catStr === 'dental health' || catStr === 'dental' || catStr === 'oral') {
@@ -239,6 +293,25 @@ export const getProducts = async (req: Request, res: Response) => {
             (p.name || '').toLowerCase().includes('cureveda');
         }
         return pCat.includes(catStr);
+      });
+    }
+
+    // 4.1 Apply subcategory filter if specified
+    if (subcategory && subcategory !== 'All') {
+      const subStr = String(subcategory).trim().toLowerCase();
+      allProducts = allProducts.filter(p => {
+        const pSub = (p.subcategory || '').toLowerCase();
+        const pName = (p.name || '').toLowerCase();
+        if (subStr.includes('elderly') || subStr.includes('memory')) {
+          return pSub.includes('elderly') || pSub.includes('memory') || pName.includes('senior') || pName.includes('dementia') || pName.includes('memory') || pName.includes('puzzle');
+        }
+        if (subStr.includes('women')) {
+          return pSub.includes('women') || pName.includes('menopause') || pName.includes('premenstrual') || pName.includes('pms') || pName.includes('women');
+        }
+        if (subStr.includes('antioxidant food') || subStr.includes('natural antioxidant food')) {
+          return pSub.includes('antioxidant food') || pName.includes('superfood') || pName.includes('nature cure') || pName.includes('cooking well') || pName.includes('recipe') || pName.includes('diet') || pName.includes('antioxidant counter') || pName.includes('save-your-life') || pName.includes('vegan diet');
+        }
+        return pSub.includes(subStr);
       });
     }
 
@@ -1701,7 +1774,7 @@ export const previewAmazonProduct = async (req: Request, res: Response) => {
 
 export const createAmazonAffiliateProduct = async (req: Request, res: Response) => {
   try {
-    const { url, category, name, brand, image, description } = req.body;
+    const { url, category, name, brand, image, description, subcategory } = req.body;
     if (!url) {
       return res.status(400).json({ message: 'Amazon product URL or ASIN is required.' });
     }
@@ -1729,6 +1802,7 @@ export const createAmazonAffiliateProduct = async (req: Request, res: Response) 
     if (product) {
       product.name = productName;
       product.category = category.trim();
+      if (subcategory) product.subcategory = subcategory.trim();
       product.brand = productBrand;
       product.image = productImage;
       product.images = [productImage];
@@ -1741,6 +1815,7 @@ export const createAmazonAffiliateProduct = async (req: Request, res: Response) 
       product = new ShopProduct({
         name: productName,
         category: category.trim(),
+        subcategory: subcategory ? subcategory.trim() : '',
         brand: productBrand,
         image: productImage,
         images: [productImage],
