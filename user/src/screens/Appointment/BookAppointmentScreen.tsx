@@ -616,14 +616,14 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                                 </span>
                               )}
                             </div>
-                            {doc.extraFeePer15Min ? (
+                            {Boolean(doc.extraFeePer15Min && doc.extraFeePer15Min > 0) && (
                               <span className="text-[10px] font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 px-2 py-0.5 rounded-md border border-rose-200/60 dark:border-rose-900/40">
                                 +₹{doc.extraFeePer15Min}/15m OT
                               </span>
-                            ) : null}
+                            )}
                           </div>
 
-                          {(doc.feePolicy || doc.extraFeePer15Min) && (
+                          {Boolean(doc.feePolicy || (doc.extraFeePer15Min && doc.extraFeePer15Min > 0)) && (
                             <p className="text-[10px] text-slate-500 dark:text-slate-400 italic leading-snug">
                               ℹ️ {doc.feePolicy || `Extra ₹${doc.extraFeePer15Min} every 15 mins if consultation exceeds ${effectiveDuration} mins`}
                             </p>
@@ -681,7 +681,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                       </div>
                     )}
 
-                    {(selectedDoctor.feePolicy || selectedDoctor.extraFeePer15Min) && (
+                    {Boolean(selectedDoctor.feePolicy || (selectedDoctor.extraFeePer15Min && selectedDoctor.extraFeePer15Min > 0)) && (
                       <div className="px-3 py-2 rounded-xl bg-slate-100/90 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 text-[11px] text-slate-600 dark:text-slate-300 flex items-center gap-2">
                         <span className="text-sm">⏱️</span>
                         <span>
