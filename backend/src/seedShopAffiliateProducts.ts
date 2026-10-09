@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import ShopProduct from './models/ShopProduct';
 import { ShopCategory } from './models/ShopCategory';
+import { Vendor } from './models/Vendor';
 
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
@@ -72,6 +73,78 @@ export const AFFILIATE_PRODUCTS = [
     isActive: true,
     doctorRecommended: false,
     keyBenefits: ['Rich in Provitamin A & Lutein', 'Supports eye, skin, and mucosal membrane health', 'Zero pesticide residues from pristine hill cultivation']
+  },
+  {
+    name: 'Pure & Sure Organic Honey 250G | 100% Raw & Natural | Organic Certified | Unprocessed & Non-Pasteurized | Rich in Anti-Oxidents & Amino Acids | No Sugar, No Adulterated',
+    description: '100% raw, unpasteurized certified organic honey harvested from pesticide-free flora. Preserves active enzymes, amino acids, and natural bioflavonoids with zero synthetic sugar adulteration.',
+    shortDescription: '100% raw certified organic honey with active bio-enzymes.',
+    category: 'Pesticide free food',
+    brand: 'Phalada Pure & Sure',
+    price: 245,
+    regularPrice: 275,
+    offerPrice: 245,
+    discountPercent: 11,
+    image: 'https://m.media-amazon.com/images/I/31oyd9wjmyL.jpg',
+    images: ['https://m.media-amazon.com/images/I/31oyd9wjmyL.jpg'],
+    buyOnAmazonUrl: 'https://www.amazon.in/dp/B00M710ISE?tag=mitoreboot-21&linkCode=ll2',
+    stock: 80,
+    isActive: true,
+    doctorRecommended: false,
+    keyBenefits: ['100% raw & non-pasteurized organic honey', 'Rich in natural pollen & antimicrobial inhibines', 'Zero sugar syrup adulteration']
+  },
+  {
+    name: 'Phalada Pure & Sure Extra Virgin Olive Oil 1Ltr | 100% Natural and Cold Extracted | Perfectly Edible for Salads, Dressing & Much More | Healthy with Zero Cholesterol & Low Fat',
+    description: 'Cold-extracted first-press extra virgin olive oil with ultra-low acidity and high natural polyphenols. Ideal for Mediterranean anti-inflammatory dressings and raw culinary applications.',
+    shortDescription: '100% cold-extracted extra virgin olive oil rich in polyphenols.',
+    category: 'Pesticide free food',
+    brand: 'Phalada Pure & Sure',
+    price: 1399,
+    regularPrice: 1750,
+    offerPrice: 1399,
+    discountPercent: 20,
+    image: 'https://m.media-amazon.com/images/I/316aM-l7KuL.jpg',
+    images: ['https://m.media-amazon.com/images/I/316aM-l7KuL.jpg'],
+    buyOnAmazonUrl: 'https://www.amazon.in/dp/B00M710VI6?tag=mitoreboot-21&linkCode=ll2',
+    stock: 50,
+    isActive: true,
+    doctorRecommended: false,
+    keyBenefits: ['First cold-extracted unrefined oil', 'Zero cholesterol and rich in monounsaturated fats (MUFA)', 'Naturally high in oleic acid and antioxidants']
+  },
+  {
+    name: 'Phalada Pure & Sure Pure & Sure Organic Rice, Unpolished | Instant Boost of Energy | Rich in Fibre, Good for Diabetic People, Helps Lower Blood Pressure | Healthy & Wholesome Rice 5kg',
+    description: '100% certified organic unpolished whole grain rice. Retains intact bran and germ layers for high dietary fiber, low glycemic response, and natural vitamin B complex.',
+    shortDescription: 'Unpolished low-GI organic rice rich in natural prebiotic fiber.',
+    category: 'Pesticide free food',
+    brand: 'Phalada Pure & Sure',
+    price: 495,
+    regularPrice: 550,
+    offerPrice: 495,
+    discountPercent: 10,
+    image: 'https://m.media-amazon.com/images/I/51bjt0ubpVL.jpg',
+    images: ['https://m.media-amazon.com/images/I/51bjt0ubpVL.jpg'],
+    buyOnAmazonUrl: 'https://www.amazon.in/dp/B00M70ZAJC?tag=mitoreboot-21&linkCode=ll2',
+    stock: 60,
+    isActive: true,
+    doctorRecommended: false,
+    keyBenefits: ['100% unpolished grain with intact bran', 'Lower glycemic index than polished white rice', 'Grown without chemical fertilizers or synthetic pesticides']
+  },
+  {
+    name: 'Phalada Pure & Sure Organic Sunflower Oil | Sunflower Oil for Cooking | High in Antioxidants, Delicious & Healthy Sunflower Cooking Oil (1 Litre), Yellow',
+    description: 'Cold-pressed from certified organic sunflower seeds without chemical solvents (hexane) or high-heat deodorization. High Vitamin E and heart-healthy unsaturated fatty acids.',
+    shortDescription: 'Hexane-free organic cold-pressed sunflower oil rich in Vitamin E.',
+    category: 'Pesticide free food',
+    brand: 'Phalada Pure & Sure',
+    price: 295,
+    regularPrice: 340,
+    offerPrice: 295,
+    discountPercent: 13,
+    image: 'https://m.media-amazon.com/images/I/31Br0DRlYCL.jpg',
+    images: ['https://m.media-amazon.com/images/I/31Br0DRlYCL.jpg'],
+    buyOnAmazonUrl: 'https://www.amazon.in/dp/B00M7113TW?tag=mitoreboot-21&linkCode=ll2',
+    stock: 90,
+    isActive: true,
+    doctorRecommended: false,
+    keyBenefits: ['Chemical-free expeller pressed extraction', 'Rich in natural Vitamin E alpha-tocopherol', 'Clean smoke point for daily healthy cooking']
   },
 
   // ── CATEGORY 3: Environment safe products ──
@@ -716,6 +789,35 @@ export async function seedShopAffiliateProducts() {
   }
 
   console.log(`[Seed] Successfully seeded ${seededCount} affiliate products across the 7 categories!`);
+
+  console.log('[Seed] Ensuring Phalada Pure & Sure Vendor...');
+  await Vendor.findOneAndUpdate(
+    { slug: 'phalada-pure-and-sure' },
+    {
+      $set: {
+        name: 'Phalada Pure & Sure',
+        slug: 'phalada-pure-and-sure',
+        email: 'partner@pureandsure.in',
+        phone: '+91 80 2662 9000',
+        businessName: 'Phalada Agro Research Foundation Pvt Ltd',
+        website: 'https://pureandsure.com',
+        isActive: true,
+        isDeleted: false,
+        'capabilities.productType': 'MULTIPLE',
+        'capabilities.productSyncMethod': 'MANUAL',
+        'capabilities.checkoutType': 'EXTERNAL_AMAZON',
+        'capabilities.fulfillmentType': 'MANUAL',
+        'capabilities.deliveryManagedBy': 'PLATFORM',
+        externalStoreUrl: 'https://www.amazon.in/s?k=phalada+pure+and+sure&crid=25GK89M1EQDPP&sprefix=phalada+pure+and+sur%2Caps%2C269&linkCode=ll2&tag=mitoreboot-21&linkId=b892246ba32b385014dffd9c2ea460b4&ref_=as_li_ss_tl',
+        agreementNotes: 'Amazon Affiliate Storefront Partner. Shortlink: https://link.amazon/B061d6Vu9. 100% Certified Organic Food, Cold-Pressed Oils, Ghee, Spices & Millets.'
+      },
+      $setOnInsert: {
+        passwordHash: '$2b$10$wE47pZ0716D21X8K7c2j8e.j9uH3Q6919hJ21s9iXlP7w910j3a5e'
+      }
+    },
+    { upsert: true, new: true }
+  );
+
   await mongoose.disconnect();
 }
 

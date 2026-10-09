@@ -244,7 +244,13 @@ export const getProducts = async (req: Request, res: Response) => {
     // 5. Apply brand filter
     if (brand && brand !== 'All') {
       const brandStr = String(brand).trim().toLowerCase();
-      allProducts = allProducts.filter(p => (p.brand || '').toLowerCase().includes(brandStr));
+      allProducts = allProducts.filter(p => {
+        const pBrand = (p.brand || '').toLowerCase();
+        if (brandStr.includes('phalada') || brandStr.includes('pure & sure') || brandStr.includes('pure and sure')) {
+          return pBrand.includes('phalada') || pBrand.includes('pure');
+        }
+        return pBrand.includes(brandStr);
+      });
     }
 
     // 6. Apply doctorRecommended filter

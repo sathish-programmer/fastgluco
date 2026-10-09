@@ -41,7 +41,8 @@ const PREDEFINED_CATEGORIES = [
   'Safe kitchen',
   'Glucose monitoring',
   'Cancer support wig',
-  'Antioxidants'
+  'Antioxidants',
+  'Dental health'
 ];
 
 export const AdminAmazonVendor: React.FC<AdminAmazonVendorProps> = ({ apiUrl, token }) => {
@@ -427,6 +428,61 @@ export const AdminAmazonVendor: React.FC<AdminAmazonVendorProps> = ({ apiUrl, to
           </button>
         </div>
       )}
+
+      {/* CONNECTED AMAZON STOREFRONTS & BRAND HUBS */}
+      <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 font-bold">
+              🌿
+            </div>
+            <div>
+              <h2 className="text-sm sm:text-base font-black text-slate-900 flex items-center gap-2">
+                <span>Featured Partner Storefronts</span>
+                <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                  Live
+                </span>
+              </h2>
+              <p className="text-[11px] text-slate-400 font-medium">
+                Curated affiliate storefront collections mapped to shop categories
+              </p>
+            </div>
+          </div>
+          <span className="text-xs font-bold text-slate-400">1 Storefront Active</span>
+        </div>
+
+        {/* Phalada Pure & Sure Card */}
+        <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950 rounded-2xl p-5 text-white border border-emerald-500/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1.5 max-w-xl">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-black text-emerald-400 uppercase tracking-wider">Phalada Pure & Sure</span>
+              <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded text-slate-300 font-mono">Pesticide free food</span>
+              <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-bold">100% Certified Organic</span>
+            </div>
+            <h3 className="text-sm sm:text-base font-bold text-white">
+              Phalada Pure & Sure Organic Superstore Collection
+            </h3>
+            <p className="text-xs text-slate-300 font-medium leading-relaxed">
+              100% Certified Organic Food, Cold-Pressed Oils, Ghee, Spices & Millets. Users can explore and buy directly through your affiliate storefront.
+            </p>
+            <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400 font-mono pt-1">
+              <span>Shortlink: <a href="https://link.amazon/B061d6Vu9" target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:underline">https://link.amazon/B061d6Vu9</a></span>
+              <span>• Tag: <code className="text-emerald-400 font-mono">mitoreboot-21</code></span>
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
+            <a
+              href="https://www.amazon.in/s?k=phalada+pure+and+sure&crid=25GK89M1EQDPP&sprefix=phalada+pure+and+sur%2Caps%2C269&linkCode=ll2&tag=mitoreboot-21&linkId=b892246ba32b385014dffd9c2ea460b4&ref_=as_li_ss_tl"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5"
+            >
+              <span>Test Storefront Link</span>
+              <ExternalLink className="h-3.5 w-3.5 stroke-[2.5]" />
+            </a>
+          </div>
+        </div>
+      </div>
 
       {/* ADD AMAZON PRODUCT CONSOLE */}
       <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-sm space-y-6">
