@@ -3,11 +3,13 @@ import { ArrowLeft, Check, X, Info, ChevronDown, ChevronUp, Trash2, ChevronRight
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { HabitsService, type HabitLog } from '../../services/habitsService';
+import { BooksShowcaseSection } from '../../components/BooksShowcaseSection';
 
 interface AntioxidantLogScreenProps {
   onBack: () => void;
   onViewShop?: () => void;
   onNavigateToDiagnostics?: () => void;
+  onNavigateToShopCategory?: (category: string, subcategory?: string) => void;
 }
 
 const ANTIOXIDANT_FOODS = [
@@ -73,7 +75,12 @@ const antioxidantColors: Record<string, string> = {
   'Omega-3': 'bg-sky-50 text-sky-700 border-sky-100',
 };
 
-export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({ onBack, onViewShop, onNavigateToDiagnostics }) => {
+export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({ 
+  onBack, 
+  onViewShop, 
+  onNavigateToDiagnostics,
+  onNavigateToShopCategory 
+}) => {
   const { user, token, apiUrl } = useAuth();
   const { t, language } = useLanguage();
 
@@ -361,6 +368,24 @@ export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({ onBa
           </button>
         </div>
       )}
+      {/* Books Column: Elderly Memory, Women Health & Natural Antioxidant Food */}
+      <div className="mt-8">
+        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-widest uppercase block mb-3">
+          {t('recommendedBooksTitle', 'Evidence-Based Literature · Books Column')}
+        </span>
+        <BooksShowcaseSection 
+          onNavigateToShop={(cat, sub) => {
+            if (onNavigateToShopCategory) {
+              onNavigateToShopCategory(cat, sub);
+            } else if (onViewShop) {
+              onViewShop();
+            }
+          }}
+          title="Books Column & Collections"
+          subtitle="1. Books for elderly memory · 2. Books for women health · 3. Books on natural antioxidant food"
+        />
+      </div>
+
       {/* Shop for Supplements */}
       {onViewShop && (
         <div className="mt-6">

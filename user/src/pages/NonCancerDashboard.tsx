@@ -66,6 +66,7 @@ import { DentalLogScreen } from '../screens/HabitScreens/DentalLogScreen';
 import { GastritisLogScreen } from '../screens/HabitScreens/GastritisLogScreen';
 import { GeneticLogScreen } from '../screens/HabitScreens/GeneticLogScreen';
 import { AntioxidantLogScreen } from '../screens/HabitScreens/AntioxidantLogScreen';
+import { BooksShowcaseSection } from '../components/BooksShowcaseSection';
 import { EnvironmentalExposuresLogScreen } from '../screens/HabitScreens/EnvironmentalExposuresLogScreen';
 import { BreathLogScreen } from '../screens/HabitScreens/BreathLogScreen';
 import { KitchenLogScreen } from '../screens/HabitScreens/KitchenLogScreen';
@@ -1232,6 +1233,11 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
           setShopQuery('');
           setActiveScreen('Shop');
         }} 
+        onNavigateToShopCategory={(cat, sub) => {
+          setShopCategory(cat);
+          setShopQuery(sub || '');
+          setActiveScreen('Shop');
+        }}
         onNavigateToDiagnostics={() => setActiveScreen('CancerScreening')} 
       />
     );
@@ -1936,6 +1942,19 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
             </div>
           </div>
         )}
+      </div>
+
+      {/* Books Column Showcase (Under Antioxidants / Repair Habits) */}
+      <div className="mb-6">
+        <BooksShowcaseSection
+          onNavigateToShop={(cat, sub) => {
+            setShopCategory(cat);
+            setShopQuery(sub || '');
+            setActiveScreen('Shop');
+          }}
+          title="Books Column: Elderly Memory, Women Health & Antioxidants"
+          subtitle="Curated literature for cognitive retention, women’s wellness & natural antioxidant nutrition"
+        />
       </div>
 
       {!isCancerPatient && (
