@@ -178,12 +178,18 @@ export const getProducts = async (req: Request, res: Response) => {
       console.warn('[getProducts] Arivu live API fetch error, falling back to local DB cache:', apiErr.message);
     }
 
-    // 2. Fetch products from MongoDB
+    // 2. Fetch products from MongoDB: ONLY Amazon affiliate products or Arivu fallback products
     const dbFilter: any = { isActive: true };
     if (isDynamicSuccess) {
-      // Exclude Arivu products to avoid duplicates since we already have dynamic products
-      dbFilter.brand = { $ne: 'Arivu Foods' };
-      dbFilter.vendorSku = { $not: /^ARIVU/ };
+      // Dynamic Arivu products already loaded; strictly only include Amazon affiliate products
+      dbFilter.buyOnAmazonUrl = { $exists: true, $ne: '' };
+    } else {
+      // If dynamic partner API is down, allow Arivu fallback OR Amazon affiliate products only
+      dbFilter.$or = [
+        { buyOnAmazonUrl: { $exists: true, $ne: '' } },
+        { brand: 'Arivu Foods' },
+        { vendorSku: /^ARIVU/ }
+      ];
     }
 
     const dbProducts = await ShopProduct.find(dbFilter).populate('vendorId', 'name slug gstPercentage gstInclusive shippingConfig');
