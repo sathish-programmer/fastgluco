@@ -22,7 +22,7 @@ async function migrate() {
   const elderlyTitles = [
     'Memory Games for Seniors',
     'Large Piece Puzzle for Seniors',
-    'Brain Games for Seniors',
+    'Brain Games',
     'Memory Activity Book for Seniors',
     'The Complete Memory Sharpener for Healthy Aging'
   ];
