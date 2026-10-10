@@ -48,7 +48,8 @@ import {
   Settings,
   Bell,
   Sparkles,
-  History
+  History,
+  Smartphone
 } from 'lucide-react';
 import {
   BarChart, Bar, PieChart, Pie, Cell,
@@ -71,6 +72,7 @@ import { SupportPortal } from './components/SupportPortal';
 import { AdminDailyLoggingWorkflows } from './components/AdminDailyLoggingWorkflows';
 import { AdminAskMitoTopics } from './components/AdminAskMitoTopics';
 import { AdminUserFeedback } from './components/AdminUserFeedback';
+import { AdminAppHealth } from './components/AdminAppHealth';
 
 const getCategoryStyle = (score: number) => {
   if (score <= 15) return 'bg-emerald-50 text-emerald-700 border-emerald-250';
@@ -2362,6 +2364,18 @@ const AdminPanelContent: React.FC = () => {
                   {!sidebarCollapsed && <span>Consultation Funnel</span>}
                 </div>
               </button>
+
+              <button 
+                onClick={() => { setActiveView('app-health'); setSearchQuery(''); }}
+                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                  activeView === 'app-health' ? 'bg-primary text-white shadow-md shadow-primary/20' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Smartphone className="h-4.5 w-4.5 shrink-0" />
+                  {!sidebarCollapsed && <span>App Health & Usage</span>}
+                </div>
+              </button>
             </div>
 
             {/* CATEGORY: RESOURCES & CONTENT */}
@@ -3908,6 +3922,11 @@ const AdminPanelContent: React.FC = () => {
         {/* CONSULTATION ANALYTICS VIEW */}
         {activeView === 'consultation-analytics' && (
           <ConsultationAnalytics apiUrl={apiUrl} token={token || ''} />
+        )}
+
+        {/* APP HEALTH & USAGE VIEW */}
+        {activeView === 'app-health' && (
+          <AdminAppHealth apiUrl={apiUrl} token={token || ''} />
         )}
 
         {/* REPORTS & ANALYTICS VIEW */}

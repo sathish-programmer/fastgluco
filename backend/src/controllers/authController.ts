@@ -12,12 +12,62 @@ const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'fallback_refresh_s
 export const CURRENT_TERMS_VERSION = '1.0';
 
 import { PaymentGatewayConfig } from '../models/PaymentGatewayConfig';
+import { AppOtpTelemetry, OtpChannel, OtpEventStatus } from '../models/AppOtpTelemetry';
+
+const maskPhoneOrEmail = (identifier: string): string => {
+  if (!identifier) return '***';
+  if (identifier.includes('@')) {
+    const [local, domain] = identifier.split('@');
+    return `${local.charAt(0)}***@${domain}`;
+  }
+  return identifier.length > 4 ? `${identifier.slice(0, 3)}****${identifier.slice(-4)}` : '****';
+};
+
+const extractTelemetryMeta = (req: Request) => {
+  const platform = (req.headers['x-app-platform'] as string) || req.body?.platform || 'android';
+  const appVersion = (req.headers['x-app-version'] as string) || req.body?.appVersion || '5.26.0';
+  const buildNumber = (req.headers['x-app-build'] as string) || req.body?.buildNumber || '90';
+  const osVersion = (req.headers['x-os-version'] as string) || req.body?.osVersion || 'Unknown';
+  const deviceModel = (req.headers['x-device-model'] as string) || req.body?.deviceModel || 'Unknown';
+  return {
+    platform: (['android', 'ios', 'web'].includes(platform) ? platform : 'android') as 'android' | 'ios' | 'web',
+    appVersion,
+    buildNumber,
+    osVersion,
+    deviceModel
+  };
+};
+
+const recordSafeOtpTelemetry = (
+  req: Request,
+  eventType: 'REQUEST' | 'VERIFY',
+  channel: OtpChannel,
+  status: OtpEventStatus,
+  target: string,
+  errorCategory?: string
+) => {
+  try {
+    const meta = extractTelemetryMeta(req);
+    AppOtpTelemetry.create({
+      eventType,
+      channel,
+      status,
+      errorCategory: errorCategory || null,
+      maskedTarget: maskPhoneOrEmail(target),
+      timestamp: new Date(),
+      ...meta
+    }).catch(e => console.warn('[OTP Telemetry] Log failed:', e));
+  } catch (e) {
+    // Non-blocking telemetry
+  }
+};
 
 export class AuthController {
   public static async sendOtp(req: Request, res: Response) {
     try {
       const { mobileNumber, email } = req.body;
       if (!mobileNumber || !email) {
+        recordSafeOtpTelemetry(req, 'REQUEST', 'both', 'FAILED', 'unknown', 'MISSING_REQUIRED_FIELDS');
         return res.status(400).json({ message: 'Mobile number and email are required.' });
       }
 
@@ -35,10 +85,12 @@ export class AuthController {
           email?.toLowerCase().endsWith('@apple.com'));
 
       if (isReviewAccount) {
+        recordSafeOtpTelemetry(req, 'REQUEST', 'mock', 'SUCCESS', cleanPhone);
         return res.status(200).json({ success: true, message: 'OTP sent successfully (Apple Reviewer Account)' });
       }
 
       if (!/^\+[1-9]\d{1,14}$/.test(cleanPhone)) {
+        recordSafeOtpTelemetry(req, 'REQUEST', 'sms', 'FAILED', cleanPhone, 'INVALID_PHONE_FORMAT');
         return res.status(400).json({ message: 'Invalid phone number format (must be E.164).' });
       }
 
@@ -47,12 +99,14 @@ export class AuthController {
       // Check if user exists with this phone but different email
       const existingUserByPhone = await User.findOne({ mobileNumber: cleanPhone });
       if (existingUserByPhone && existingUserByPhone.email?.toLowerCase().trim() !== cleanEmail) {
+        recordSafeOtpTelemetry(req, 'REQUEST', 'both', 'FAILED', cleanPhone, 'PHONE_EMAIL_MISMATCH');
         return res.status(400).json({ message: 'This mobile number is already associated with a different email address.' });
       }
 
       // Check if user exists with this email but different phone
       const existingUserByEmail = await User.findOne({ email: cleanEmail });
       if (existingUserByEmail && existingUserByEmail.mobileNumber !== cleanPhone) {
+        recordSafeOtpTelemetry(req, 'REQUEST', 'both', 'FAILED', cleanPhone, 'PHONE_EMAIL_MISMATCH');
         return res.status(400).json({ message: 'This email address is already associated with a different mobile number.' });
       }
 
@@ -66,6 +120,7 @@ export class AuthController {
 
       if (otpRecord) {
         if (otpRecord.blockedUntil && otpRecord.blockedUntil > now) {
+          recordSafeOtpTelemetry(req, 'REQUEST', 'both', 'RATE_LIMITED', cleanPhone, 'ACCOUNT_COOLDOWN_BLOCKED');
           return res.status(429).json({ message: 'Too many attempts. Please try again later.' });
         }
 
@@ -76,6 +131,7 @@ export class AuthController {
 
         // Rate limit: 30 seconds cooldown
         if (now.getTime() - otpRecord.lastSentAt.getTime() < 30 * 1000) {
+          recordSafeOtpTelemetry(req, 'REQUEST', 'both', 'RATE_LIMITED', cleanPhone, 'RATE_LIMIT_30S_COOLDOWN');
           return res.status(429).json({ message: 'Please wait 30 seconds before requesting another OTP.' });
         }
 
@@ -83,6 +139,7 @@ export class AuthController {
         if (otpRecord.resendCount >= 5) {
           otpRecord.blockedUntil = new Date(now.getTime() + 60 * 60 * 1000); // block for 1 hour
           await otpRecord.save();
+          recordSafeOtpTelemetry(req, 'REQUEST', 'both', 'RATE_LIMITED', cleanPhone, 'HOURLY_LIMIT_EXCEEDED');
           return res.status(429).json({ message: 'Maximum OTP requests reached. Try again in an hour.' });
         }
       }
@@ -112,7 +169,7 @@ export class AuthController {
       }
       await otpRecord.save();
 
-      let methodUsed = 'sms_and_email';
+      let methodUsed: OtpChannel = 'both';
 
       // Check mock mode
       if (process.env.OTP_MOCK_MODE === 'true') {
@@ -126,7 +183,7 @@ export class AuthController {
             console.error('[SMS Service] Failed to send SMS via Fast2SMS:', err);
           });
         } else {
-          methodUsed = 'email_only';
+          methodUsed = 'email';
         }
 
         // 2. ALWAYS send Email via Brevo SMTP / configured email service
@@ -135,8 +192,10 @@ export class AuthController {
         });
       }
 
+      recordSafeOtpTelemetry(req, 'REQUEST', methodUsed, 'SUCCESS', cleanPhone);
       return res.status(200).json({ success: true, message: 'OTP sent successfully', method: methodUsed });
     } catch (error: any) {
+      recordSafeOtpTelemetry(req, 'REQUEST', 'both', 'FAILED', req.body?.mobileNumber || 'unknown', 'INTERNAL_SERVER_ERROR');
       if (error.code === 11000) {
         return res.status(400).json({ message: 'A verification request is already pending for this phone number or email. Please wait a moment.' });
       }
@@ -151,6 +210,7 @@ export class AuthController {
     try {
       const { mobileNumber, email, otp } = req.body;
       if (!mobileNumber || !email || !otp) {
+        recordSafeOtpTelemetry(req, 'VERIFY', 'both', 'FAILED', mobileNumber || 'unknown', 'MISSING_REQUIRED_FIELDS');
         return res.status(400).json({ message: 'Mobile number, email and OTP are required.' });
       }
 
@@ -175,6 +235,7 @@ export class AuthController {
         });
 
         if (!otpRecord) {
+          recordSafeOtpTelemetry(req, 'VERIFY', 'both', 'FAILED', cleanPhone, 'OTP_EXPIRED_OR_NOT_FOUND');
           return res.status(400).json({ message: 'OTP expired or not found. Please request a new one.' });
         }
 
@@ -182,10 +243,12 @@ export class AuthController {
 
         if (now.getTime() - otpRecord.createdAt.getTime() > 10 * 60 * 1000) {
           await Otp.deleteOne({ _id: otpRecord._id });
+          recordSafeOtpTelemetry(req, 'VERIFY', 'both', 'FAILED', cleanPhone, 'OTP_EXPIRED_TIMEOUT');
           return res.status(400).json({ message: 'OTP expired.' });
         }
 
         if (otpRecord.blockedUntil && otpRecord.blockedUntil > now) {
+          recordSafeOtpTelemetry(req, 'VERIFY', 'both', 'RATE_LIMITED', cleanPhone, 'TOO_MANY_FAILED_ATTEMPTS');
           return res.status(429).json({ message: 'Too many failed attempts. Please try again later.' });
         }
 
@@ -196,6 +259,7 @@ export class AuthController {
             otpRecord.blockedUntil = new Date(now.getTime() + 15 * 60 * 1000); // Block for 15 mins
           }
           await otpRecord.save();
+          recordSafeOtpTelemetry(req, 'VERIFY', 'both', 'FAILED', cleanPhone, 'INVALID_OTP_CODE');
           return res.status(400).json({ message: 'Invalid OTP.' });
         }
 
@@ -228,8 +292,12 @@ export class AuthController {
       }
 
       if (user.isBlocked) {
+        recordSafeOtpTelemetry(req, 'VERIFY', 'both', 'FAILED', cleanPhone, 'ACCOUNT_BLOCKED_BY_ADMIN');
         return res.status(403).json({ message: 'Your account has been suspended by an administrator.' });
       }
+
+      // Record successful verification telemetry
+      recordSafeOtpTelemetry(req, 'VERIFY', 'both', 'SUCCESS', cleanPhone);
 
       // Generate App JWT (valid for 365 days)
       const accessToken = jwt.sign({ id: user._id, email: user.email || '', role: 'User' }, JWT_SECRET, { expiresIn: '365d' });

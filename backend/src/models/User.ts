@@ -47,6 +47,12 @@ export interface IUser extends Document {
   addressPinCode?: string;
   notificationPreferences?: any;
   language?: 'en' | 'ta' | 'kn' | 'hi' | 'te';
+  lastActiveAt?: Date;
+  lastPlatform?: 'android' | 'ios' | 'web';
+  lastAppVersion?: string;
+  lastBuildNumber?: string;
+  lastOsVersion?: string;
+  lastDeviceModel?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -106,7 +112,13 @@ const userSchema = new Schema<IUser>(
     addressState: { type: String, default: '' },
     addressPinCode: { type: String, default: '' },
     notificationPreferences: { type: Object, default: {} },
-    language: { type: String, enum: ['en', 'ta', 'kn', 'hi', 'te'], default: 'en' }
+    language: { type: String, enum: ['en', 'ta', 'kn', 'hi', 'te'], default: 'en' },
+    lastActiveAt: { type: Date, index: true },
+    lastPlatform: { type: String, enum: ['android', 'ios', 'web'] },
+    lastAppVersion: { type: String },
+    lastBuildNumber: { type: String },
+    lastOsVersion: { type: String },
+    lastDeviceModel: { type: String }
   },
   {
     timestamps: true

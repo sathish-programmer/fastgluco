@@ -15,6 +15,7 @@ import { FoodSyncService } from './services/foodSyncService';
 import { VendorOrderStatusCron } from './cron/vendorOrderStatusCron';
 import { seedWorkflows } from './utils/seedWorkflows';
 import { seedAskMitoTopics } from './utils/seedAskMitoTopics';
+import { AppHealthSyncService } from './services/appHealthSyncService';
 
 const PORT = process.env.PORT || 5001;
 
@@ -80,6 +81,19 @@ const bootstrap = async () => {
       // Periodic evaluator (every 15 mins) to also respect any custom interval configured by Admin
       cron.schedule('*/15 * * * *', async () => {
         await VendorOrderStatusCron.checkAndRunPeriodicPoll();
+      });
+
+      // App Health Store & Telemetry sync (runs every 6 hours)
+      cron.schedule('0 */6 * * *', async () => {
+        console.log('[AppHealthSync] Running scheduled App Store & Play Store metrics sync...');
+        try {
+          const config = await AppHealthSyncService.getOrCreateConfig();
+          if (config.autoSyncEnabled) {
+            await AppHealthSyncService.syncAll();
+          }
+        } catch (err) {
+          console.error('[AppHealthSync] Scheduled sync failed:', err);
+        }
       });
 
       console.log('Cron jobs scheduled successfully.');

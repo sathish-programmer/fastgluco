@@ -39,6 +39,7 @@ import { IndianCancerController } from '../controllers/indianCancerController';
 import * as DailyLoggingWorkflowController from '../controllers/dailyLoggingWorkflowController';
 import * as AskMitoController from '../controllers/askMitoController';
 import { AiChatController } from '../controllers/aiChatController';
+import { AppHealthController } from '../controllers/appHealthController';
 
 const router = Router();
 
@@ -815,5 +816,21 @@ router.delete('/user/feedback/:id', authenticateToken, FeedbackController.delete
 router.get('/admin/feedback', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), FeedbackController.getAllFeedbackAdmin);
 router.put('/admin/feedback/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin']), FeedbackController.updateFeedbackAdmin);
 router.delete('/admin/feedback/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin']), FeedbackController.deleteFeedbackAdmin);
+
+// ─── APP HEALTH & USAGE MODULE ROUTES ────────────────────────────────────────
+router.get('/admin/app-health/overview', authenticateToken, requireRole(['SuperAdmin', 'Admin']), AppHealthController.getOverview);
+router.get('/admin/app-health/crashes', authenticateToken, requireRole(['SuperAdmin', 'Admin']), AppHealthController.getCrashes);
+router.get('/admin/app-health/crashes/:id/download', authenticateToken, requireRole(['SuperAdmin', 'Admin']), AppHealthController.downloadCrashLog);
+router.get('/admin/app-health/otp-telemetry', authenticateToken, requireRole(['SuperAdmin', 'Admin']), AppHealthController.getOtpTelemetry);
+router.get('/admin/app-health/version-monitoring', authenticateToken, requireRole(['SuperAdmin', 'Admin']), AppHealthController.getVersionMonitoring);
+router.post('/admin/app-health/version-config', authenticateToken, requireRole(['SuperAdmin', 'Admin']), AppHealthController.updateVersionConfig);
+router.get('/admin/app-health/store-config', authenticateToken, requireRole(['SuperAdmin', 'Admin']), AppHealthController.getStoreConfig);
+router.post('/admin/app-health/store-config', authenticateToken, requireRole(['SuperAdmin', 'Admin']), AppHealthController.updateStoreConfig);
+router.post('/admin/app-health/test-connection', authenticateToken, requireRole(['SuperAdmin', 'Admin']), AppHealthController.testConnection);
+router.post('/admin/app-health/sync-now', authenticateToken, requireRole(['SuperAdmin', 'Admin']), AppHealthController.syncNow);
+
+// Client-facing Telemetry & Version Checking
+router.post('/telemetry/heartbeat', AppHealthController.recordHeartbeat);
+router.get('/config/version-check', AppHealthController.checkVersion);
 
 export default router;

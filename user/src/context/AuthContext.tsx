@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { SupportedLanguage } from '../i18n/types';
 import { pushNotificationService } from '../services/pushNotificationService';
+import { telemetryService } from '../services/telemetryService';
 
 export type FocusModeType =
   | 'PREVENTION'
@@ -276,14 +277,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loadProfile();
     if (token) {
       pushNotificationService.init(apiUrl, token);
+      telemetryService.sendHeartbeat(apiUrl, token);
     }
   }, [token]);
 
   const sendOtp = async (mobileNumber: string, email: string, sendSms: boolean = true): Promise<{ success: boolean; message?: string }> => {
     try {
+      const telemetryHeaders = await telemetryService.getHeaders();
       const response = await fetch(`${apiUrl}/auth/send-otp`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...telemetryHeaders
+        },
         body: JSON.stringify({ mobileNumber, email, sendSms }),
       });
 
@@ -306,9 +312,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     setError(null);
     try {
+      const telemetryHeaders = await telemetryService.getHeaders();
       const response = await fetch(`${apiUrl}/auth/verify-otp`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...telemetryHeaders
+        },
         body: JSON.stringify({ mobileNumber, otp, email }),
       });
 

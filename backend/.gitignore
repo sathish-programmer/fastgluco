@@ -3,4 +3,10 @@ dist/
 .env
 .env.*
 config/firebase-service-account.json
+config/google-play-service-account.json
+config/*.json
+config/*.p8
+scripts/import*.ts
+*.p8
 *.log
+*.tsbuildinfo

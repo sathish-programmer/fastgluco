@@ -10,6 +10,12 @@ export interface AuthRequest extends Request {
   };
 }
 
+import { User } from '../models/User';
+import { AppTelemetrySession } from '../models/AppTelemetrySession';
+
+// Throttling map to update DB at most once every 5 minutes per user/device
+const userActivityThrottle = new Map<string, number>();
+
 export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers['authorization'];
   let token = authHeader && authHeader.split(' ')[1]; // Authorization: Bearer <token>
@@ -36,6 +42,55 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
       role: decoded.role || 'User',
       laboratoryId: decoded.laboratoryId
     };
+
+    // Safe, non-blocking telemetry update (throttled to once every 5 minutes)
+    if (req.user && req.user.role === 'User') {
+      const userId = req.user.id;
+      const now = Date.now();
+      const lastRecorded = userActivityThrottle.get(userId) || 0;
+
+      if (now - lastRecorded > 5 * 60 * 1000) {
+        userActivityThrottle.set(userId, now);
+
+        const platformHeader = (req.headers['x-app-platform'] as string) || 'android';
+        const platform = (['android', 'ios', 'web'].includes(platformHeader) ? platformHeader : 'android') as 'android' | 'ios' | 'web';
+        const appVersion = (req.headers['x-app-version'] as string) || '5.26.0';
+        const buildNumber = (req.headers['x-app-build'] as string) || '90';
+        const osVersion = (req.headers['x-os-version'] as string) || 'Unknown';
+        const deviceModel = (req.headers['x-device-model'] as string) || 'Unknown';
+        const deviceId = (req.headers['x-device-id'] as string) || `user_${userId}`;
+        const sessionDate = new Date().toISOString().split('T')[0];
+
+        // Fire and forget non-blocking updates
+        Promise.all([
+          User.findByIdAndUpdate(userId, {
+            lastActiveAt: new Date(),
+            lastPlatform: platform,
+            lastAppVersion: appVersion,
+            lastBuildNumber: buildNumber,
+            lastOsVersion: osVersion,
+            lastDeviceModel: deviceModel
+          }).catch(() => {}),
+          AppTelemetrySession.findOneAndUpdate(
+            { deviceId, sessionDate },
+            {
+              userId: userId as any,
+              deviceId,
+              platform,
+              appVersion,
+              buildNumber,
+              osVersion,
+              deviceModel,
+              sessionDate,
+              lastActiveAt: new Date(),
+              $inc: { requestCount: 1 }
+            },
+            { upsert: true, new: true }
+          ).catch(() => {})
+        ]).catch(() => {});
+      }
+    }
+
     next();
   });
 };
