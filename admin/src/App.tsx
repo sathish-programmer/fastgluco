@@ -164,8 +164,27 @@ const AdminPanelContent: React.FC = () => {
   const [showRegPassword, setShowRegPassword] = useState(false);
   const [showRegConfirmPassword, setShowRegConfirmPassword] = useState(false);
 
-  // Active view: 'dashboard' | 'users' | 'foods' | 'videos' | 'guides' | 'notifications'
-  const [activeView, setActiveView] = useState<string>('dashboard');
+  // Helper to extract initial route/view from URL (supports hash like #app-health or #app-health/crashes, or pathname)
+  const getInitialAdminView = (): string => {
+    try {
+      if (typeof window === 'undefined') return 'dashboard';
+      const hash = window.location.hash.replace(/^#\/?/, '').split('?')[0];
+      const baseView = hash.split('/')[0];
+      if (baseView && baseView.trim() !== '') {
+        return baseView.trim();
+      }
+      const path = window.location.pathname.replace(/^\//, '').split('/')[0];
+      if (path && path !== 'admin' && path !== 'index.html' && path !== '') {
+        return path;
+      }
+    } catch {
+      // fallback
+    }
+    return 'dashboard';
+  };
+
+  // Active view: 'dashboard' | 'users' | 'foods' | 'videos' | 'guides' | 'notifications' | 'app-health'
+  const [activeView, setActiveView] = useState<string>(() => getInitialAdminView());
   const [pendingEdits, setPendingEdits] = useState<any[]>([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [openGroups, setOpenGroups] = useState<{ [key: string]: boolean }>({
@@ -277,7 +296,7 @@ const AdminPanelContent: React.FC = () => {
   });
   const [recommendationSending, setRecommendationSending] = useState(false);
 
-  // Sync activeView with browser history back/forward
+  // Sync activeView with browser history back/forward and hash changes
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
       if (e.state && e.state.view) {
@@ -288,14 +307,56 @@ const AdminPanelContent: React.FC = () => {
         if (e.state.selectedStainReviewId === null) {
           setSelectedStainReview(null);
         }
+      } else {
+        const hash = window.location.hash.replace(/^#\/?/, '').split('?')[0];
+        const baseView = hash.split('/')[0];
+        if (baseView && baseView !== activeView) {
+          setActiveView(baseView);
+        }
       }
     };
+
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace(/^#\/?/, '').split('?')[0];
+      const baseView = hash.split('/')[0];
+      if (baseView && baseView !== activeView) {
+        setActiveView(baseView);
+      }
+    };
+
     window.addEventListener('popstate', handlePopState);
+    window.addEventListener('hashchange', handleHashChange);
     
-    // Initialize history state
-    window.history.replaceState({ view: activeView, selectedPatientId: selectedPatient?._id || null, selectedStainReviewId: selectedStainReview?._id || null }, '');
+    // Ensure current hash reflects activeView on initial load without blowing away subpaths
+    const currentHash = window.location.hash.replace(/^#\/?/, '').split('?')[0];
+    const currentBase = currentHash.split('/')[0];
+    if (!currentBase) {
+      window.history.replaceState(
+        { view: activeView, selectedPatientId: selectedPatient?._id || null, selectedStainReviewId: selectedStainReview?._id || null },
+        '',
+        `#${activeView}`
+      );
+    }
     
-    return () => window.removeEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, [activeView, selectedPatient, selectedStainReview]);
+
+  // Synchronize URL hash whenever activeView changes
+  useEffect(() => {
+    const currentHash = window.location.hash.replace(/^#\/?/, '').split('?')[0];
+    const currentBase = currentHash.split('/')[0];
+    if (currentBase !== activeView) {
+      const subPath = currentHash.includes('/') ? currentHash.slice(currentHash.indexOf('/')) : '';
+      const targetHash = subPath ? `#${activeView}${subPath}` : `#${activeView}`;
+      window.history.pushState(
+        { view: activeView, selectedPatientId: selectedPatient?._id || null, selectedStainReviewId: selectedStainReview?._id || null },
+        '',
+        targetHash
+      );
+    }
   }, [activeView, selectedPatient, selectedStainReview]);
 
   const navigateToView = (viewName: string) => {

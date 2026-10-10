@@ -270,67 +270,7 @@ java.lang.SecurityException: Need android.permission.BLUETOOTH_CONNECT permissio
         ]);
       }
 
-      // 3. Ensure Active User Telemetry Sessions for the 8 Registered Users
-      const existingSessions = await AppTelemetrySession.countDocuments();
-      if (existingSessions === 0) {
-        const users = await User.find({}).lean();
-        const userProfiles = [
-          { platform: 'android', os: 'Android 14', device: 'Samsung Galaxy S23', version: '5.26.0' },
-          { platform: 'ios', os: 'iOS 17.5.1', device: 'iPhone 14 Pro', version: '5.22.0' },
-          { platform: 'ios', os: 'iOS 17.6', device: 'iPhone 15 Pro', version: '5.26.0' },
-          { platform: 'android', os: 'Android 13', device: 'OnePlus 11', version: '5.25.0' },
-          { platform: 'android', os: 'Android 14', device: 'Google Pixel 8', version: '5.26.0' },
-          { platform: 'ios', os: 'iOS 17.4', device: 'iPhone 13', version: '5.20.0' },
-          { platform: 'android', os: 'Android 12', device: 'Xiaomi Redmi Note 11', version: '5.19.0' },
-          { platform: 'android', os: 'Android 14', device: 'Samsung Galaxy S24 Ultra', version: '5.26.0' }
-        ];
 
-        const sessionDocs: any[] = [];
-        const today = new Date();
-
-        for (let uIdx = 0; uIdx < users.length; uIdx++) {
-          const u = users[uIdx];
-          const prof = userProfiles[uIdx % userProfiles.length];
-          const devId = `dev_${prof.platform}_${String(u._id).substring(16, 24)}`;
-
-          // Create daily sessions across the last 14 days
-          for (let dayOffset = 13; dayOffset >= 0; dayOffset--) {
-            // Give varied activity patterns
-            if ((uIdx + dayOffset) % 2 === 0 || dayOffset === 0) {
-              const sDate = new Date(today);
-              sDate.setDate(sDate.getDate() - dayOffset);
-              const dateStr = sDate.toISOString().split('T')[0];
-
-              sessionDocs.push({
-                userId: u._id,
-                deviceId: devId,
-                platform: prof.platform,
-                appVersion: prof.version,
-                buildNumber: '90',
-                osVersion: prof.os,
-                deviceModel: prof.device,
-                sessionDate: dateStr,
-                lastActiveAt: sDate,
-                requestCount: 8 + (uIdx * 3) + dayOffset
-              });
-            }
-          }
-
-          // Update User model metadata
-          await User.findByIdAndUpdate(u._id, {
-            lastActiveAt: new Date(),
-            lastPlatform: prof.platform,
-            lastAppVersion: prof.version,
-            lastBuildNumber: '90',
-            lastOsVersion: prof.os,
-            lastDeviceModel: prof.device
-          });
-        }
-
-        if (sessionDocs.length > 0) {
-          await AppTelemetrySession.insertMany(sessionDocs);
-        }
-      }
     } catch (baselineErr) {
       console.warn('[AppHealthSyncService] ensureBaselineData warning:', baselineErr);
     }

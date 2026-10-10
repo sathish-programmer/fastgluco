@@ -263,10 +263,15 @@ export class AppHealthController {
           versionDistribution,
           osDistribution,
           deviceDistribution,
-          registeredUsers: await User.find({})
-            .select('name email phone lastActiveAt lastPlatform lastAppVersion lastOsVersion lastDeviceModel createdAt')
-            .sort({ lastActiveAt: -1 })
-            .lean()
+          registeredUsers: (
+            await User.find({})
+              .select('name email mobile mobileNumber phone lastActiveAt lastPlatform lastAppVersion lastOsVersion lastDeviceModel createdAt')
+              .sort({ lastActiveAt: -1, createdAt: -1 })
+              .lean()
+          ).map((u: any) => ({
+            ...u,
+            phone: u.mobileNumber || u.mobile || u.phone || null
+          }))
         },
         // Store-Reported Metrics (Full acquisition & funnel data)
         storeMetrics: {
