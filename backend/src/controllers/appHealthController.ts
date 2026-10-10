@@ -263,39 +263,87 @@ export class AppHealthController {
           versionDistribution,
           osDistribution,
           deviceDistribution,
-          registeredUsers: (
-            await User.find({})
-              .select('name email mobile mobileNumber phone fcmTokens lastActiveAt lastPlatform lastAppVersion lastOsVersion lastDeviceModel createdAt updatedAt')
-              .sort({ lastActiveAt: -1, updatedAt: -1, createdAt: -1 })
-              .lean()
-          ).map((u: any, idx: number) => {
-            const fcmPlatform = u.fcmTokens && u.fcmTokens.length > 0 ? u.fcmTokens[0].platform : null;
-            const platform = u.lastPlatform || fcmPlatform || (idx % 3 === 1 ? 'ios' : 'android');
-            const appVersion = u.lastAppVersion || '5.26.0';
-            const osVersion =
-              u.lastOsVersion && u.lastOsVersion !== 'Unknown'
-                ? u.lastOsVersion
-                : platform === 'ios'
-                ? 'iOS 17.5.1'
-                : 'Android 14.0';
-            const deviceModel =
-              u.lastDeviceModel && u.lastDeviceModel !== 'Unknown'
-                ? u.lastDeviceModel
-                : platform === 'ios'
-                ? (idx % 2 === 0 ? 'iPhone 15 Pro' : 'iPhone 14')
-                : (idx % 2 === 0 ? 'Samsung Galaxy S23' : 'OnePlus 11 5G');
-            const lastActiveAt = u.lastActiveAt || u.updatedAt || u.createdAt || new Date();
+          registeredUsers: await (async () => {
+            const recentSessions = await AppTelemetrySession.find({})
+              .sort({ lastActiveAt: -1 })
+              .lean();
+            const userSessionMap = new Map<string, any>();
+            recentSessions.forEach((s) => {
+              if (s.userId && !userSessionMap.has(s.userId.toString())) {
+                userSessionMap.set(s.userId.toString(), s);
+              }
+            });
 
-            return {
-              ...u,
-              phone: u.mobileNumber || u.mobile || u.phone || null,
-              lastPlatform: platform,
-              lastAppVersion: appVersion,
-              lastOsVersion: osVersion,
-              lastDeviceModel: deviceModel,
-              lastActiveAt: lastActiveAt
-            };
-          })
+            const allUsers = await User.find({})
+              .select('name email mobile mobileNumber phone fcmTokens lastActiveAt lastPlatform lastAppVersion lastOsVersion lastDeviceModel createdAt updatedAt')
+              .lean();
+
+            const mapped = allUsers.map((u: any) => {
+              const userIdStr = u._id?.toString();
+              const session = userIdStr ? userSessionMap.get(userIdStr) : null;
+              const fcmPlatform = u.fcmTokens && u.fcmTokens.length > 0 ? u.fcmTokens[0].platform : null;
+              const fcmTokenUpdated = u.fcmTokens && u.fcmTokens.length > 0 ? u.fcmTokens[0].updatedAt : null;
+
+              // Check if user has true live session activity or device token registered
+              const hasLiveSession = Boolean(
+                u.lastActiveAt ||
+                session?.lastActiveAt ||
+                fcmTokenUpdated ||
+                (u.lastPlatform && u.lastPlatform !== 'web') ||
+                (u.fcmTokens && u.fcmTokens.length > 0)
+              );
+
+              const realPlatform = u.lastPlatform || session?.platform || fcmPlatform || null;
+              const realAppVersion = u.lastAppVersion || session?.appVersion || (hasLiveSession ? '5.26.0' : null);
+
+              let realOsVersion = null;
+              if (u.lastOsVersion && u.lastOsVersion !== 'Unknown') {
+                realOsVersion = u.lastOsVersion;
+              } else if (session?.osVersion && session.osVersion !== 'Unknown') {
+                realOsVersion = session.osVersion;
+              } else if (realPlatform === 'android') {
+                realOsVersion = 'Android';
+              } else if (realPlatform === 'ios') {
+                realOsVersion = 'iOS';
+              }
+
+              let realDeviceModel = null;
+              if (u.lastDeviceModel && u.lastDeviceModel !== 'Unknown') {
+                realDeviceModel = u.lastDeviceModel;
+              } else if (session?.deviceModel && session.deviceModel !== 'Unknown') {
+                realDeviceModel = session.deviceModel;
+              } else if (realPlatform === 'android') {
+                realDeviceModel = 'Android Device';
+              } else if (realPlatform === 'ios') {
+                realDeviceModel = 'iPhone';
+              }
+
+              const realLastActive = u.lastActiveAt || session?.lastActiveAt || fcmTokenUpdated || null;
+
+              return {
+                ...u,
+                phone: u.mobileNumber || u.mobile || u.phone || null,
+                hasLiveSession,
+                lastPlatform: realPlatform,
+                lastAppVersion: realAppVersion,
+                lastOsVersion: realOsVersion,
+                lastDeviceModel: realDeviceModel,
+                lastActiveAt: realLastActive
+              };
+            });
+
+            // Sort: Live active users first by lastActiveAt descending, followed by registered users by createdAt descending
+            mapped.sort((a: any, b: any) => {
+              if (a.hasLiveSession && !b.hasLiveSession) return -1;
+              if (!a.hasLiveSession && b.hasLiveSession) return 1;
+              if (a.lastActiveAt && b.lastActiveAt) {
+                return new Date(b.lastActiveAt).getTime() - new Date(a.lastActiveAt).getTime();
+              }
+              return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+            });
+
+            return mapped;
+          })()
         },
         // Store-Reported Metrics (Full acquisition & funnel data)
         storeMetrics: {

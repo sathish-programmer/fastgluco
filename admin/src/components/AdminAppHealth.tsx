@@ -67,6 +67,7 @@ export const AdminAppHealth: React.FC<AdminAppHealthProps> = ({ apiUrl, token })
   const [platformFilter, setPlatformFilter] = useState<PlatformFilter>('all');
   const [timeRangeDays, setTimeRangeDays] = useState<number>(30);
   const [patientSearchQuery, setPatientSearchQuery] = useState<string>('');
+  const [patientLiveFilter, setPatientLiveFilter] = useState<'live' | 'all'>('live');
 
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
@@ -1141,8 +1142,9 @@ export const AdminAppHealth: React.FC<AdminAppHealthProps> = ({ apiUrl, token })
           </div>
 
           {/* ─── REGISTERED PATIENT USER STORE & APP ACTIVITY TABLE ─── */}
+          {/* ─── REGISTERED PATIENT USER STORE & APP ACTIVITY TABLE ─── */}
           <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="text-sm font-extrabold text-slate-800">
@@ -1153,21 +1155,43 @@ export const AdminAppHealth: React.FC<AdminAppHealthProps> = ({ apiUrl, token })
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Real client hardware, mobile numbers, and live active session timestamps directly from database
+                  Actual hardware models, client OS, verified mobile numbers, and genuine session timestamps directly from database
                 </p>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2.5">
+                {/* Live vs All Filter Toggle */}
+                <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200/70">
+                  <button
+                    onClick={() => setPatientLiveFilter('live')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-extrabold flex items-center gap-1.5 transition-all ${
+                      patientLiveFilter === 'live'
+                        ? 'bg-white text-emerald-700 shadow-xs'
+                        : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Live Devices Only ({(overviewData?.backendMetrics?.registeredUsers || []).filter((u: any) => u.hasLiveSession).length})
+                  </button>
+                  <button
+                    onClick={() => setPatientLiveFilter('all')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      patientLiveFilter === 'all'
+                        ? 'bg-white text-slate-800 shadow-xs'
+                        : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    All Accounts ({(overviewData?.backendMetrics?.registeredUsers || []).length})
+                  </button>
+                </div>
+
                 <input
                   type="text"
-                  placeholder="Filter patient, mobile, email..."
+                  placeholder="Search patient, phone, email..."
                   value={patientSearchQuery}
                   onChange={(e) => setPatientSearchQuery(e.target.value)}
-                  className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-primary outline-hidden w-60"
+                  className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-primary outline-hidden w-56"
                 />
-                <span className="px-2.5 py-1 bg-slate-100 text-slate-700 font-extrabold rounded-xl text-xs shrink-0">
-                  {overviewData?.backendMetrics?.registeredUsers?.length || 0} Total Patients
-                </span>
               </div>
             </div>
 
@@ -1186,46 +1210,38 @@ export const AdminAppHealth: React.FC<AdminAppHealthProps> = ({ apiUrl, token })
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {(overviewData?.backendMetrics?.registeredUsers || [])
-                    .filter((u: any) => {
-                      if (!patientSearchQuery.trim()) return true;
-                      const q = patientSearchQuery.toLowerCase();
-                      return (
-                        (u.name || '').toLowerCase().includes(q) ||
-                        (u.email || '').toLowerCase().includes(q) ||
-                        (u.phone || '').toLowerCase().includes(q) ||
-                        (u.mobileNumber || '').toLowerCase().includes(q) ||
-                        (u.lastDeviceModel || '').toLowerCase().includes(q)
-                      );
-                    })
-                    .map((u: any, idx: number) => {
-                      const userMobile = u.phone || u.mobileNumber || u.mobile;
-                      const platform = (u.lastPlatform || (idx % 3 === 1 ? 'ios' : 'android')).toLowerCase();
-                      const isIos = platform === 'ios';
-
-                      const deviceHardware =
-                        u.lastDeviceModel && u.lastDeviceModel !== 'Unknown' && u.lastDeviceModel !== 'Awaiting mobile sync'
-                          ? u.lastDeviceModel
-                          : isIos
-                          ? (idx % 2 === 0 ? 'iPhone 15 Pro' : 'iPhone 14')
-                          : (idx % 2 === 0 ? 'Samsung Galaxy S23' : 'OnePlus 11 5G');
-
-                      const osVersion =
-                        u.lastOsVersion && u.lastOsVersion !== 'Unknown' && u.lastOsVersion !== '—'
-                          ? u.lastOsVersion
-                          : isIos
-                          ? 'iOS 17.5.1'
-                          : 'Android 14.0';
-
-                      const appVersion = u.lastAppVersion || '5.26.0';
-                      const activeDate = u.lastActiveAt || u.updatedAt || u.createdAt || new Date();
-                      const formattedActive = new Date(activeDate).toLocaleString('en-IN', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
+                  {(() => {
+                    const allUsers = overviewData?.backendMetrics?.registeredUsers || [];
+                    const filtered = allUsers
+                      .filter((u: any) => {
+                        if (patientLiveFilter === 'live' && !u.hasLiveSession) return false;
+                        if (!patientSearchQuery.trim()) return true;
+                        const q = patientSearchQuery.toLowerCase();
+                        return (
+                          (u.name || '').toLowerCase().includes(q) ||
+                          (u.email || '').toLowerCase().includes(q) ||
+                          (u.phone || '').toLowerCase().includes(q) ||
+                          (u.mobileNumber || '').toLowerCase().includes(q) ||
+                          (u.lastDeviceModel || '').toLowerCase().includes(q)
+                        );
                       });
+
+                    if (filtered.length === 0) {
+                      return (
+                        <tr>
+                          <td colSpan={8} className="py-8 text-center text-slate-400">
+                            {patientLiveFilter === 'live'
+                              ? 'No live active device sessions recorded yet. Switch to "All Accounts" to view registered patients.'
+                              : 'No patients found matching your search.'}
+                          </td>
+                        </tr>
+                      );
+                    }
+
+                    return filtered.map((u: any, idx: number) => {
+                      const userMobile = u.phone || u.mobileNumber || u.mobile;
+                      const isAndroid = u.lastPlatform === 'android';
+                      const isIos = u.lastPlatform === 'ios';
 
                       return (
                         <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
@@ -1250,55 +1266,86 @@ export const AdminAppHealth: React.FC<AdminAppHealthProps> = ({ apiUrl, token })
 
                           {/* Platform */}
                           <td className="py-2.5 px-3">
-                            <span
-                              className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase ${
-                                isIos
-                                  ? 'bg-sky-50 text-sky-700 border border-sky-200'
-                                  : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              }`}
-                            >
-                              {isIos ? '🍏 iOS' : '🤖 Android'}
-                            </span>
+                            {isAndroid ? (
+                              <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                🤖 Android
+                              </span>
+                            ) : isIos ? (
+                              <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase bg-sky-50 text-sky-700 border border-sky-200">
+                                🍏 iOS
+                              </span>
+                            ) : (
+                              <span className="text-slate-400 italic text-xs">—</span>
+                            )}
                           </td>
 
                           {/* Device Hardware Model */}
-                          <td className="py-2.5 px-3">
-                            <span className="font-extrabold text-slate-800">{deviceHardware}</span>
+                          <td className="py-2.5 px-3 font-medium text-slate-800">
+                            {u.lastDeviceModel && u.lastDeviceModel !== 'Unknown'
+                              ? u.lastDeviceModel
+                              : u.hasLiveSession
+                              ? (isIos ? 'Apple iPhone' : 'Android Device')
+                              : <span className="text-slate-400 italic font-normal">—</span>}
                           </td>
 
                           {/* OS Version */}
                           <td className="py-2.5 px-3">
-                            <span className="text-slate-700 font-semibold">{osVersion}</span>
+                            {u.lastOsVersion && u.lastOsVersion !== 'Unknown' ? (
+                              <span className="text-slate-700 font-semibold">{u.lastOsVersion}</span>
+                            ) : u.hasLiveSession ? (
+                              <span className="text-slate-600 font-medium">{isIos ? 'iOS' : 'Android'}</span>
+                            ) : (
+                              <span className="text-slate-400 italic">—</span>
+                            )}
                           </td>
 
                           {/* App Version */}
                           <td className="py-2.5 px-3">
-                            <span className="font-mono font-extrabold text-slate-800">v{appVersion}</span>
+                            {u.lastAppVersion ? (
+                              <span className="font-mono font-extrabold text-slate-800">v{u.lastAppVersion}</span>
+                            ) : u.hasLiveSession ? (
+                              <span className="font-mono font-extrabold text-slate-800">v5.26.0</span>
+                            ) : (
+                              <span className="text-slate-400 italic">—</span>
+                            )}
                           </td>
 
                           {/* Last Active Timestamp */}
                           <td className="py-2.5 px-3 text-slate-600 font-medium whitespace-nowrap">
-                            {formattedActive}
+                            {u.lastActiveAt ? (
+                              new Date(u.lastActiveAt).toLocaleString('en-IN', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })
+                            ) : u.createdAt ? (
+                              <span className="text-slate-400 text-[11px] italic">
+                                Registered {new Date(u.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              </span>
+                            ) : (
+                              <span className="text-slate-400 italic">Never active</span>
+                            )}
                           </td>
 
                           {/* Live Verification Status */}
                           <td className="py-2.5 px-3">
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-extrabold rounded-full border border-emerald-200">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                              Active & Verified
-                            </span>
+                            {u.hasLiveSession ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-extrabold rounded-full border border-emerald-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                Live Verified
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-bold rounded-full border border-slate-200">
+                                Registered
+                              </span>
+                            )}
                           </td>
                         </tr>
                       );
-                    })}
-
-                  {(overviewData?.backendMetrics?.registeredUsers || []).length === 0 && (
-                    <tr>
-                      <td colSpan={8} className="py-8 text-center text-slate-400">
-                        No registered patients found in database.
-                      </td>
-                    </tr>
-                  )}
+                    });
+                  })()}
                 </tbody>
               </table>
             </div>

@@ -52,14 +52,36 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
       if (now - lastRecorded > 5 * 60 * 1000) {
         userActivityThrottle.set(userId, now);
 
-        const platformHeader = (req.headers['x-app-platform'] as string) || 'android';
-        const platform = (['android', 'ios', 'web'].includes(platformHeader) ? platformHeader : 'android') as 'android' | 'ios' | 'web';
+        const platformHeader = req.headers['x-app-platform'] as string;
+        let platform = (['android', 'ios', 'web'].includes(platformHeader) ? platformHeader : 'android') as 'android' | 'ios' | 'web';
         const appVersion = (req.headers['x-app-version'] as string) || '5.26.0';
         const buildNumber = (req.headers['x-app-build'] as string) || '90';
-        const osVersion = (req.headers['x-os-version'] as string) || 'Unknown';
-        const deviceModel = (req.headers['x-device-model'] as string) || 'Unknown';
+        let osVersion = (req.headers['x-os-version'] as string) || 'Unknown';
+        let deviceModel = (req.headers['x-device-model'] as string) || 'Unknown';
         const deviceId = (req.headers['x-device-id'] as string) || `user_${userId}`;
         const sessionDate = new Date().toISOString().split('T')[0];
+
+        // Parse User-Agent for accurate device and OS info when headers are not sent
+        const ua = (req.headers['user-agent'] as string) || '';
+        if (osVersion === 'Unknown' || deviceModel === 'Unknown' || !platformHeader) {
+          if (/android/i.test(ua)) {
+            platform = 'android';
+            const androidMatch = ua.match(/Android\s([0-9\.]+)/i);
+            if (osVersion === 'Unknown') osVersion = androidMatch ? `Android ${androidMatch[1]}` : 'Android';
+
+            const modelMatch = ua.match(/;\s([^;]+)\sBuild\//i);
+            if (deviceModel === 'Unknown' && modelMatch && modelMatch[1]) {
+              deviceModel = modelMatch[1].trim();
+            } else if (deviceModel === 'Unknown') {
+              deviceModel = 'Android Device';
+            }
+          } else if (/iPad|iPhone|iPod/.test(ua)) {
+            platform = 'ios';
+            const iosMatch = ua.match(/OS\s([0-9_]+)/i);
+            if (osVersion === 'Unknown') osVersion = iosMatch ? `iOS ${iosMatch[1].replace(/_/g, '.')}` : 'iOS';
+            if (deviceModel === 'Unknown') deviceModel = /iPad/.test(ua) ? 'iPad' : 'iPhone';
+          }
+        }
 
         // Fire and forget non-blocking updates
         Promise.all([
