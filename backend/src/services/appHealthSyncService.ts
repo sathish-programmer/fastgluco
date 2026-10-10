@@ -266,44 +266,6 @@ java.lang.SecurityException: Need android.permission.BLUETOOTH_CONNECT permissio
             diagnosticUrl: 'https://appstoreconnect.apple.com/apps/6783705985/analytics/overview?dateSpec=d90',
             status: 'OPEN',
             source: 'APPLE_APP_STORE_CONNECT'
-          },
-          {
-            platform: 'android',
-            issueId: 'ANR_BLE_CGM_TIMEOUT_5.25.0',
-            title: 'Input dispatching timed out (BleContinuousGlucoseService lock)',
-            subtitle: 'ANR in BleContinuousGlucoseService - Main thread blocked waiting for BLE lock',
-            errorType: 'ANR',
-            crashCount: 2,
-            affectedUsers: 2,
-            firstSeen: new Date(Date.now() - 6 * 86400000),
-            lastSeen: new Date(Date.now() - 4 * 86400000),
-            affectedVersions: ['5.25.0'],
-            affectedDevices: ['Samsung Galaxy S23 (SM-S911B)', 'OnePlus 11'],
-            affectedOsVersions: ['Android 14 (API 34)', 'Android 13 (API 33)'],
-            sampleStackTrace: androidAnrLog,
-            rawCrashLog: androidAnrLog,
-            diagnosticUrl: 'https://play.google.com/console/developers',
-            status: 'INVESTIGATING',
-            source: 'GOOGLE_PLAY_REPORTING'
-          },
-          {
-            platform: 'android',
-            issueId: 'FATAL_EXC_BLUETOOTH_GATT_5.20.0',
-            title: 'java.lang.SecurityException: Need android.permission.BLUETOOTH_CONNECT',
-            subtitle: 'Missing runtime permission check on Android 12+ prior to connectGatt',
-            errorType: 'CRASH',
-            crashCount: 5,
-            affectedUsers: 4,
-            firstSeen: new Date(Date.now() - 20 * 86400000),
-            lastSeen: new Date(Date.now() - 14 * 86400000),
-            affectedVersions: ['5.20.0'],
-            affectedDevices: ['Pixel 7', 'Xiaomi Redmi Note 12', 'Samsung Galaxy A54'],
-            affectedOsVersions: ['Android 13 (API 33)'],
-            sampleStackTrace: androidCrashLog,
-            rawCrashLog: androidCrashLog,
-            diagnosticUrl: 'https://play.google.com/console/developers',
-            status: 'RESOLVED',
-            source: 'GOOGLE_PLAY_REPORTING'
           }
         ]);
       }
