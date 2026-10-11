@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { Calendar as CalendarIcon, Clock, ArrowLeft, Star, Sparkles, Globe, Video, Building2, Download, FileText, Loader2, Check, Info, X } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, ArrowLeft, Star, Sparkles, Globe, Video, Building2, Download, FileText, Loader2, Check, Info, X, ExternalLink, MapPin } from 'lucide-react';
 import { useConsultation } from '../../context/ConsultationContext';
 import { downloadFile } from '../../utils/fileDownloader';
 
@@ -85,7 +85,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
   const [selectedSlot, setSelectedSlot] = useState('');
   const [reason, setReason] = useState('General Consultation');
   const [patientNotes, setPatientNotes] = useState('');
-  const [consultationType, setConsultationType] = useState<'online' | 'offline'>('offline');
+  const [consultationType, setConsultationType] = useState<'online' | 'offline'>('online');
 
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -124,8 +124,8 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
     if (downloadingPrescriptionId) return;
     setDownloadingPrescriptionId(apptId);
     try {
-      const url = prescriptionUrl.startsWith('http') 
-        ? prescriptionUrl 
+      const url = prescriptionUrl.startsWith('http')
+        ? prescriptionUrl
         : `${apiUrl.replace(/\/api$/, '')}${prescriptionUrl}`;
       const ext = prescriptionUrl.split('.').pop() || 'pdf';
       await downloadFile({
@@ -143,7 +143,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
   };
 
   // Generate next 14 days for the date picker
-  const upcomingDates = Array.from({length: 14}, (_, i) => {
+  const upcomingDates = Array.from({ length: 14 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() + i);
     return d.toISOString().split('T')[0];
@@ -503,7 +503,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
             <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
               <CalendarIcon className="h-5 w-5 text-indigo-500" /> {t('appointment.appointmentSchedule', 'Appointment Schedule')}
             </h3>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">{t('appointment.selectSpecialist', 'Select Specialist')}</label>
@@ -544,44 +544,43 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                       isDental
                         ? 'Preventive Dentistry Focus'
                         : isMetabolic
-                        ? 'Metabolic Lifestyle Modulation Focus'
-                        : isPsychological
-                        ? 'Psychological Support Focus'
-                        : isSleep
-                        ? 'Sleep Evaluation Focus'
-                        : 'Specialist Consultation Focus'
+                          ? 'Metabolic Lifestyle Modulation Focus'
+                          : isPsychological
+                            ? 'Psychological Support Focus'
+                            : isSleep
+                              ? 'Sleep Evaluation Focus'
+                              : 'Specialist Consultation Focus'
                     );
 
                     const focusIcon = doc.focusIcon || (
                       isDental
                         ? '🦷'
                         : isMetabolic
-                        ? '🎗️'
-                        : isPsychological
-                        ? '🧠'
-                        : isSleep
-                        ? '🌙'
-                        : '🩺'
+                          ? '🎗️'
+                          : isPsychological
+                            ? '🧠'
+                            : isSleep
+                              ? '🌙'
+                              : '🩺'
                     );
 
                     const noteText = (isDental && (!doc.sleepEvaluationNote || /restorative sleep/i.test(doc.sleepEvaluationNote)))
                       ? 'Oral health & preventive dentistry for systemic wellness, early screening, and cavity prevention'
                       : (isPsychological && (!doc.sleepEvaluationNote || /restorative sleep/i.test(doc.sleepEvaluationNote)))
-                      ? 'for emotional wellbeing, coping strategies, and psychological support'
-                      : (isMetabolic && (!doc.sleepEvaluationNote || /restorative sleep/i.test(doc.sleepEvaluationNote)))
-                      ? 'Metabolic lifestyle modulation for cancer prevention and cancer therapy'
-                      : doc.sleepEvaluationNote;
+                        ? 'for emotional wellbeing, coping strategies, and psychological support'
+                        : (isMetabolic && (!doc.sleepEvaluationNote || /restorative sleep/i.test(doc.sleepEvaluationNote)))
+                          ? 'Metabolic lifestyle modulation for cancer prevention and cancer therapy'
+                          : doc.sleepEvaluationNote;
 
                     return (
                       <button
                         key={doc._id}
                         type="button"
                         onClick={() => setSelectedDoctor(doc)}
-                        className={`group relative text-left p-4 rounded-2xl border transition-all duration-200 flex flex-col justify-between cursor-pointer w-full min-w-0 overflow-hidden ${
-                          isSelected
-                            ? 'border-indigo-600 dark:border-indigo-500 bg-white dark:bg-slate-900 shadow-md ring-2 ring-indigo-500/20'
-                            : 'border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-xs'
-                        }`}
+                        className={`group relative text-left p-4 rounded-2xl border transition-all duration-200 flex flex-col justify-between cursor-pointer w-full min-w-0 overflow-hidden ${isSelected
+                          ? 'border-indigo-600 dark:border-indigo-500 bg-white dark:bg-slate-900 shadow-md ring-2 ring-indigo-500/20'
+                          : 'border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-xs'
+                          }`}
                       >
                         <div className="w-full min-w-0">
                           {/* Header: Avatar + Details + Radio Indicator */}
@@ -637,11 +636,10 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                             {/* Radio / Checkmark Selection Button */}
                             <div className="absolute top-3.5 right-3.5 shrink-0">
                               <div
-                                className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${
-                                  isSelected
-                                    ? 'bg-indigo-600 text-white shadow-xs ring-2 ring-indigo-200 dark:ring-indigo-900/60'
-                                    : 'border-2 border-slate-300 dark:border-slate-700 bg-transparent group-hover:border-slate-400'
-                                }`}
+                                className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${isSelected
+                                  ? 'bg-indigo-600 text-white shadow-xs ring-2 ring-indigo-200 dark:ring-indigo-900/60'
+                                  : 'border-2 border-slate-300 dark:border-slate-700 bg-transparent group-hover:border-slate-400'
+                                  }`}
                               >
                                 {isSelected && (
                                   <Check className="w-3 h-3 stroke-[3]" />
@@ -685,26 +683,24 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                           {/* Specialist Focus Callout */}
                           {noteText && (
                             <div
-                              className={`mt-2.5 p-2.5 rounded-xl border text-xs transition-colors ${
-                                isDental
-                                  ? 'bg-cyan-50/70 dark:bg-cyan-950/20 border-cyan-200/70 dark:border-cyan-900/40'
-                                  : isMetabolic
+                              className={`mt-2.5 p-2.5 rounded-xl border text-xs transition-colors ${isDental
+                                ? 'bg-cyan-50/70 dark:bg-cyan-950/20 border-cyan-200/70 dark:border-cyan-900/40'
+                                : isMetabolic
                                   ? 'bg-rose-50/70 dark:bg-rose-950/20 border-rose-200/70 dark:border-rose-900/40'
                                   : isPsychological
-                                  ? 'bg-purple-50/70 dark:bg-purple-950/20 border-purple-200/70 dark:border-purple-900/40'
-                                  : 'bg-amber-50/70 dark:bg-amber-950/20 border-amber-200/70 dark:border-amber-900/40'
-                              }`}
+                                    ? 'bg-purple-50/70 dark:bg-purple-950/20 border-purple-200/70 dark:border-purple-900/40'
+                                    : 'bg-amber-50/70 dark:bg-amber-950/20 border-amber-200/70 dark:border-amber-900/40'
+                                }`}
                             >
                               <div
-                                className={`font-bold text-[10px] uppercase tracking-wider flex items-center gap-1.5 mb-0.5 ${
-                                  isDental
-                                    ? 'text-cyan-700 dark:text-cyan-400'
-                                    : isMetabolic
+                                className={`font-bold text-[10px] uppercase tracking-wider flex items-center gap-1.5 mb-0.5 ${isDental
+                                  ? 'text-cyan-700 dark:text-cyan-400'
+                                  : isMetabolic
                                     ? 'text-rose-700 dark:text-rose-400'
                                     : isPsychological
-                                    ? 'text-purple-700 dark:text-purple-400'
-                                    : 'text-amber-700 dark:text-amber-400'
-                                }`}
+                                      ? 'text-purple-700 dark:text-purple-400'
+                                      : 'text-amber-700 dark:text-amber-400'
+                                  }`}
                               >
                                 <span>{focusIcon}</span>
                                 <span className="truncate">{focusTitle}</span>
@@ -758,150 +754,248 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
 
               {selectedDoctor && (
                 <>
-                  <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl p-4 my-2">
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">{t('appointment.consultationType', 'Consultation Type')}</label>
-                    <div className="grid grid-cols-2 gap-3">
+                  {/* Modern Compact Consultation Type Selector */}
+                  <div className="space-y-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                      {t('appointment.consultationType', 'Consultation Type')}
+                    </label>
+                    <div className="grid grid-cols-2 gap-2.5">
                       <button
                         type="button"
                         onClick={() => setConsultationType('online')}
-                        className={`p-3 rounded-xl border text-sm font-bold text-center transition-all flex flex-col items-center justify-center gap-0.5 ${consultationType === 'online' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'}`}
+                        className={`p-3 rounded-2xl border text-left transition-all relative flex flex-col justify-between cursor-pointer ${consultationType === 'online'
+                          ? 'bg-gradient-to-br from-indigo-50/80 to-white dark:from-slate-800 dark:to-slate-850 border-indigo-600 dark:border-indigo-500 shadow-xs ring-2 ring-indigo-500/15'
+                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                          }`}
                       >
-                        <span className="flex items-center gap-1.5"><Video className="h-4 w-4" /> {t('appointment.onlineConsultation', 'Online Consultation')}</span>
-                        <span className="block text-[10px] opacity-80 font-normal mt-0.5">{t('appointment.feeRs', { amount: selectedDoctor.onlineConsultationFee || selectedDoctor.consultationFee || 0 }, 'Fee: Rs. {{amount}}')} ({selectedDoctor.slotDuration || 30}m)</span>
+                        <div className="flex items-center justify-between w-full">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${consultationType === 'online' ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
+                              <Video className="w-3.5 h-3.5" />
+                            </div>
+                            <span className="text-xs font-bold text-slate-900 dark:text-slate-100 leading-tight">
+                              Online Video
+                            </span>
+                          </div>
+                          <span className={`w-4 h-4 rounded-full border flex items-center justify-center ${consultationType === 'online' ? 'border-indigo-600 bg-indigo-600' : 'border-slate-300 dark:border-slate-600'}`}>
+                            {consultationType === 'online' && <Check className="w-2.5 h-2.5 text-white stroke-[3]" />}
+                          </span>
+                        </div>
+                        <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-baseline justify-between text-[11px]">
+                          <span className="font-extrabold text-slate-900 dark:text-slate-100">
+                            ₹{selectedDoctor.onlineConsultationFee || selectedDoctor.consultationFee || 750}
+                          </span>
+                          <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold">
+                            In-App Call • {selectedDoctor.slotDuration || 30}m
+                          </span>
+                        </div>
                       </button>
+
                       <button
                         type="button"
                         onClick={() => setConsultationType('offline')}
-                        className={`p-3 rounded-xl border text-sm font-bold text-center transition-all flex flex-col items-center justify-center gap-0.5 ${consultationType === 'offline' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'}`}
+                        className={`p-3 rounded-2xl border text-left transition-all relative flex flex-col justify-between cursor-pointer ${consultationType === 'offline'
+                          ? 'bg-gradient-to-br from-purple-50/80 to-white dark:from-slate-800 dark:to-slate-850 border-purple-600 dark:border-purple-500 shadow-xs ring-2 ring-purple-500/15'
+                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                          }`}
                       >
-                        <span className="flex items-center gap-1.5"><Building2 className="h-4 w-4" /> {t('appointment.inClinicVisit', 'In-Clinic Visit')}</span>
-                        <span className="block text-[10px] opacity-80 font-normal mt-0.5">{t('appointment.feeRs', { amount: selectedDoctor.offlineConsultationFee || selectedDoctor.consultationFee || 0 }, 'Fee: Rs. {{amount}}')} ({selectedDoctor.slotDuration || 30}m)</span>
-                        {selectedDoctor.hospitalName && (
-                          <span className="block text-[10px] opacity-90 font-medium mt-0.5">📍 {selectedDoctor.hospitalName}</span>
-                        )}
+                        <div className="flex items-center justify-between w-full">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${consultationType === 'offline' ? 'bg-purple-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
+                              <Building2 className="w-3.5 h-3.5" />
+                            </div>
+                            <span className="text-xs font-bold text-slate-900 dark:text-slate-100 leading-tight">
+                              Hospital Visit
+                            </span>
+                          </div>
+                          <span className={`w-4 h-4 rounded-full border flex items-center justify-center ${consultationType === 'offline' ? 'border-purple-600 bg-purple-600' : 'border-slate-300 dark:border-slate-600'}`}>
+                            {consultationType === 'offline' && <Check className="w-2.5 h-2.5 text-white stroke-[3]" />}
+                          </span>
+                        </div>
+                        <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-baseline justify-between text-[11px]">
+                          <span className="font-extrabold text-slate-900 dark:text-slate-100 truncate max-w-[90px]" title={selectedDoctor.hospitalName || 'HCG Cancer Hospital'}>
+                            {selectedDoctor.hospitalName || 'HCG Hospital'}
+                          </span>
+                          <span className="text-[10px] text-purple-600 dark:text-purple-400 font-semibold">
+                            Hospital Portal
+                          </span>
+                        </div>
                       </button>
                     </div>
                   </div>
-                  <div className="mb-4">
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-                      <CalendarIcon className="h-3.5 w-3.5" /> {t('appointment.chooseDate', 'Choose a Date')}
-                    </label>
-                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                      {upcomingDates.map(d => {
-                        const dateObj = new Date(d);
-                        const isSelected = date === d;
-                        const isHoliday = (selectedDoctor?.holidays || []).includes(d);
-                        const dayIdx = dateObj.getDay();
-                        const dayKey = dayIdx === 0 ? 'sun' : dayIdx === 1 ? 'mon' : dayIdx === 2 ? 'tue' : dayIdx === 3 ? 'wed' : dayIdx === 4 ? 'thu' : dayIdx === 5 ? 'fri' : 'sat';
-                        const dayLabel = t(`appointment.${dayKey}`, dateObj.toLocaleDateString('en-US', { weekday: 'short' }));
-                        return (
-                          <button
-                            key={d}
-                            type="button"
-                            onClick={() => { if (!isHoliday) setDate(d); }}
-                            disabled={isHoliday}
-                            className={`flex-shrink-0 flex flex-col items-center justify-center p-3 rounded-xl border-2 min-w-[70px] transition-all ${
-                              isHoliday ? 'border-rose-100 dark:border-rose-950/30 bg-rose-50 dark:bg-rose-950/20 opacity-60 cursor-not-allowed' :
-                              isSelected ? 'border-indigo-600 bg-indigo-600 text-white shadow-md' : 'border-slate-100 dark:border-slate-850 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:border-slate-200 dark:hover:border-slate-700'
-                            }`}
-                          >
-                            <span className={`text-[10px] uppercase font-bold tracking-widest ${isHoliday ? 'text-rose-400' : isSelected ? 'text-indigo-200' : 'text-slate-400 dark:text-slate-500'}`}>
-                              {dayLabel}
-                            </span>
-                            <span className={`text-xl font-black mt-1 ${isHoliday ? 'text-rose-700 dark:text-rose-400' : ''}`}>
-                              {dateObj.getDate()}
-                            </span>
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                  <div className="mb-4">
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">{t('appointment.reasonForAppt', 'Reason for Appointment')}</label>
-                      <select
-                        value={reason}
-                        onChange={(e) => setReason(e.target.value)}
-                        className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-400 font-bold text-slate-800 dark:text-slate-100"
-                      >
-                        {reasons.map(r => (
-                          <option key={r} value={r} className="dark:bg-slate-900 dark:text-slate-100">{r}</option>
-                        ))}
-                      </select>
-                    </div>
 
-                  {date && (
-                    <div className="space-y-3">
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">{t('appointment.selectTime', 'Select Consultation Time')}</label>
-                      {availableSlots.length === 0 ? (
-                        <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-xl p-3 text-xs text-amber-600 dark:text-amber-450 font-bold">
-                          {t('appointment.noSlotsAvailable', 'No slots available on this day. Please pick another date.')}
+                  {consultationType === 'offline' ? (
+                    /* OFFLINE / HOSPITAL DIRECT BOOKING REDIRECT CARD */
+                    <div className="mt-3 p-4 rounded-2xl bg-gradient-to-br from-purple-50/70 via-indigo-50/30 to-white dark:from-slate-850 dark:to-slate-900 border border-purple-200/80 dark:border-purple-800/60 shadow-xs space-y-3">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-2xl bg-purple-100 dark:bg-purple-950/70 border border-purple-200 dark:border-purple-800/80 flex items-center justify-center text-purple-600 dark:text-purple-300 shrink-0 shadow-2xs">
+                          <Building2 className="w-5 h-5" />
                         </div>
-                      ) : (
-                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                          {availableSlots.map((slotObj: any, idx) => {
-                            const slotTime = slotObj.time || slotObj;
-                            let isAvailable = slotObj.isAvailable !== false;
+                        <div className="flex-1 min-w-0">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 block">
+                            In-Person Hospital Consultation
+                          </span>
+                          <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 mt-0.5">
+                            {selectedDoctor.hospitalName || 'HCG Cancer Hospital KR Road, Bangalore'}
+                          </h4>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                            In-person clinic appointments with <strong>{selectedDoctor.name}</strong> directly at the hospital.
+                          </p>
+                        </div>
+                      </div>
 
-                            // If date is today, disable past timeslots
-                            const todayStr = getLocalDateString();
-                            if (date === todayStr) {
-                              const [sHour, sMin] = slotTime.split(':').map(Number);
-                              const now = new Date();
-                              const currentHour = now.getHours();
-                              const currentMin = now.getMinutes();
-                              if (sHour < currentHour || (sHour === currentHour && sMin < currentMin)) {
-                                isAvailable = false;
-                              }
-                            }
+                      <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-purple-100 dark:border-slate-800 space-y-1.5 text-xs">
+                        <div className="flex items-start gap-2 text-slate-600 dark:text-slate-300">
+                          <MapPin className="w-3.5 h-3.5 text-purple-500 shrink-0 mt-0.5" />
+                          <span className="text-[11px] leading-snug">
+                            {selectedDoctor.address || 'HCG Cancer Hospital, No 8, P Kalinga Rao Rd, Sampangi Rama Nagar, Bengaluru, Karnataka 560027'}
+                          </span>
+                        </div>
+                        {selectedDoctor.workingHours && (
+                          <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-[10px] pt-1 border-t border-slate-100 dark:border-slate-800">
+                            <Clock className="w-3 h-3 text-purple-400 shrink-0" />
+                            <span>OPD Hours: {selectedDoctor.workingHours}</span>
+                          </div>
+                        )}
+                      </div>
 
+                      <a
+                        href={selectedDoctor.hospitalBookingUrl || 'https://www.hcgoncology.com/book-an-appointment/'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full py-3 px-4 rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer hover:shadow-md active:scale-[0.99]"
+                      >
+                        <span>Book Appointment at HCG Hospital</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                      <p className="text-[10px] text-center text-slate-400 dark:text-slate-500">
+                        Redirects directly to HCG appointment booking portal.
+                      </p>
+                    </div>
+                  ) : (
+                    /* ONLINE VIDEO CONSULTATION IN-APP SCHEDULER */
+                    <>
+                      <div className="mt-3 mb-3">
+                        <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                          <CalendarIcon className="h-3.5 w-3.5 text-indigo-500" /> {t('appointment.chooseDate', 'Choose a Date')}
+                        </label>
+                        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                          {upcomingDates.map(d => {
+                            const dateObj = new Date(d);
+                            const isSelected = date === d;
+                            const isHoliday = (selectedDoctor?.holidays || []).includes(d);
+                            const dayIdx = dateObj.getDay();
+                            const dayKey = dayIdx === 0 ? 'sun' : dayIdx === 1 ? 'mon' : dayIdx === 2 ? 'tue' : dayIdx === 3 ? 'wed' : dayIdx === 4 ? 'thu' : dayIdx === 5 ? 'fri' : 'sat';
+                            const dayLabel = t(`appointment.${dayKey}`, dateObj.toLocaleDateString('en-US', { weekday: 'short' }));
                             return (
                               <button
-                                key={`${slotTime}-${idx}`}
+                                key={d}
                                 type="button"
-                                disabled={!isAvailable}
-                                onClick={() => setSelectedSlot(slotTime)}
-                                className={`py-3 rounded-2xl border text-xs font-bold transition-all text-center flex items-center justify-center gap-1 shadow-sm ${
-                                  !isAvailable 
-                                    ? 'bg-slate-100 dark:bg-slate-950 border-slate-200 dark:border-slate-800/80 text-slate-400 dark:text-slate-650 cursor-not-allowed opacity-60' 
-                                    : selectedSlot === slotTime 
-                                      ? 'bg-indigo-600 text-white border-indigo-600 ring-2 ring-indigo-100 dark:ring-indigo-950/50' 
-                                      : 'bg-slate-50 dark:bg-slate-900 border-slate-200/60 dark:border-slate-800 text-slate-700 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-850'
-                                }`}
+                                onClick={() => { if (!isHoliday) setDate(d); }}
+                                disabled={isHoliday}
+                                className={`flex-shrink-0 flex flex-col items-center justify-center p-2.5 rounded-xl border-2 min-w-[65px] transition-all cursor-pointer ${isHoliday ? 'border-rose-100 dark:border-rose-950/30 bg-rose-50 dark:bg-rose-950/20 opacity-60 cursor-not-allowed' :
+                                  isSelected ? 'border-indigo-600 bg-indigo-600 text-white shadow-xs' : 'border-slate-100 dark:border-slate-850 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:border-slate-200 dark:hover:border-slate-700'
+                                  }`}
                               >
-                                <Clock className="w-3.5 h-3.5 opacity-65" /> {slotTime} {!isAvailable && (slotObj.isAvailable === false ? `(${t('appointment.booked', 'Booked')})` : `(${t('appointment.past', 'Past')})`)}
+                                <span className={`text-[10px] uppercase font-bold tracking-widest ${isHoliday ? 'text-rose-400' : isSelected ? 'text-indigo-200' : 'text-slate-400 dark:text-slate-500'}`}>
+                                  {dayLabel}
+                                </span>
+                                <span className={`text-lg font-black mt-0.5 ${isHoliday ? 'text-rose-700 dark:text-rose-400' : ''}`}>
+                                  {dateObj.getDate()}
+                                </span>
                               </button>
-                            );
+                            )
                           })}
                         </div>
+                      </div>
+
+                      <div className="mb-3">
+                        <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">{t('appointment.reasonForAppt', 'Reason for Appointment')}</label>
+                        <select
+                          value={reason}
+                          onChange={(e) => setReason(e.target.value)}
+                          className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-xs focus:outline-none focus:border-indigo-400 font-bold text-slate-800 dark:text-slate-100 cursor-pointer"
+                        >
+                          {reasons.map(r => (
+                            <option key={r} value={r} className="dark:bg-slate-900 dark:text-slate-100">{r}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {date && (
+                        <div className="space-y-2 mt-2">
+                          <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('appointment.selectTime', 'Select Consultation Time')}</label>
+                          {availableSlots.length === 0 ? (
+                            <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-xl p-3 text-xs text-amber-600 dark:text-amber-450 font-bold">
+                              {t('appointment.noSlotsAvailable', 'No slots available on this day. Please pick another date.')}
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                              {availableSlots.map((slotObj: any, idx) => {
+                                const slotTime = slotObj.time || slotObj;
+                                let isAvailable = slotObj.isAvailable !== false;
+
+                                // If date is today, disable past timeslots
+                                const todayStr = getLocalDateString();
+                                if (date === todayStr) {
+                                  const [sHour, sMin] = slotTime.split(':').map(Number);
+                                  const now = new Date();
+                                  const currentHour = now.getHours();
+                                  const currentMin = now.getMinutes();
+                                  if (sHour < currentHour || (sHour === currentHour && sMin < currentMin)) {
+                                    isAvailable = false;
+                                  }
+                                }
+
+                                return (
+                                  <button
+                                    key={`${slotTime}-${idx}`}
+                                    type="button"
+                                    disabled={!isAvailable}
+                                    onClick={() => setSelectedSlot(slotTime)}
+                                    className={`py-2.5 rounded-xl border text-xs font-bold transition-all text-center flex items-center justify-center gap-1 cursor-pointer shadow-2xs ${!isAvailable
+                                      ? 'bg-slate-100 dark:bg-slate-950 border-slate-200 dark:border-slate-800/80 text-slate-400 dark:text-slate-650 cursor-not-allowed opacity-60'
+                                      : selectedSlot === slotTime
+                                        ? 'bg-indigo-600 text-white border-indigo-600 ring-2 ring-indigo-100 dark:ring-indigo-950/50'
+                                        : 'bg-slate-50 dark:bg-slate-900 border-slate-200/60 dark:border-slate-800 text-slate-700 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-850'
+                                      }`}
+                                  >
+                                    <Clock className="w-3 h-3 opacity-65" /> {slotTime} {!isAvailable && (slotObj.isAvailable === false ? `(${t('appointment.booked', 'Booked')})` : `(${t('appointment.past', 'Past')})`)}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
                       )}
-                    </div>
-                  )}
 
-                  {/* Notes to Doctor — shown after slot selected */}
-                  {selectedSlot && (
-                    <div className="border border-indigo-100 dark:border-slate-800 bg-indigo-50/40 dark:bg-slate-900/40 rounded-2xl p-4">
-                      <label className="block text-xs font-bold text-indigo-400 dark:text-indigo-300 uppercase tracking-wider mb-2 flex items-center gap-1">
-                        📝 {t('appointment.notesToDoctor', 'Notes for the Doctor (Optional)')}
-                      </label>
-                      <textarea
-                        value={patientNotes}
-                        onChange={e => setPatientNotes(e.target.value)}
-                        placeholder={t('appointment.notesPlaceholder', 'Share any symptoms, concerns or context the doctor should know before your visit...')}
-                        rows={3}
-                        maxLength={500}
-                        className="w-full bg-white dark:bg-slate-950 border border-indigo-100 dark:border-slate-800 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-950/50 focus:border-indigo-400 text-slate-700 dark:text-slate-200 resize-none leading-relaxed"
-                      />
-                      <p className="text-[10px] text-slate-300 dark:text-slate-500 text-right mt-1">{patientNotes.length}/500</p>
-                    </div>
-                  )}
+                      {/* Notes to Doctor — shown after slot selected */}
+                      {selectedSlot && (
+                        <div className="border border-indigo-100 dark:border-slate-800 bg-indigo-50/40 dark:bg-slate-900/40 rounded-2xl p-3.5 mt-3">
+                          <label className="block text-xs font-bold text-indigo-400 dark:text-indigo-300 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                            📝 {t('appointment.notesToDoctor', 'Notes for the Doctor (Optional)')}
+                          </label>
+                          <textarea
+                            value={patientNotes}
+                            onChange={e => setPatientNotes(e.target.value)}
+                            placeholder={t('appointment.notesPlaceholder', 'Share any symptoms, concerns or context the doctor should know before your visit...')}
+                            rows={2}
+                            maxLength={500}
+                            className="w-full bg-white dark:bg-slate-950 border border-indigo-100 dark:border-slate-800 rounded-xl p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-950/50 focus:border-indigo-400 text-slate-700 dark:text-slate-200 resize-none leading-relaxed"
+                          />
+                          <p className="text-[10px] text-slate-300 dark:text-slate-500 text-right mt-0.5">{patientNotes.length}/500</p>
+                        </div>
+                      )}
 
-                  <button
-                    onClick={handleBook}
-                    disabled={loading || !selectedSlot}
-                    className="w-full py-4 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-sm disabled:opacity-50 mt-6"
-                  >
-                    {loading ? t('appointment.booking', 'Booking...') : t('appointment.confirmBooking', 'Confirm & Book Appointment')}
-                  </button>
+                      <button
+                        onClick={handleBook}
+                        disabled={loading || !selectedSlot}
+                        className="w-full py-3.5 rounded-xl font-bold text-sm text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-sm disabled:opacity-50 mt-4 cursor-pointer"
+                      >
+                        {loading ? t('appointment.booking', 'Booking...') : t('appointment.confirmBooking', 'Confirm & Book Video Appointment')}
+                      </button>
+                    </>
+                  )}
 
                   {/* Pending appointment warning modal */}
                   {showPendingWarning && (
@@ -950,28 +1044,27 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                   <div className="flex justify-between items-start">
                     <div>
                       <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">
-                        {appt.doctorId?.name 
+                        {appt.doctorId?.name
                           ? (/^(Dr|Ms|Mr|Mrs)\.?/i.test(appt.doctorId.name) ? appt.doctorId.name : `Dr. ${appt.doctorId.name}`)
                           : (appt.doctorName || 'Doctor')}
                       </h4>
                       <p className="text-[10px] text-slate-400 uppercase font-mono tracking-wide">{formatDate(appt.date)} {t('common.at', 'at')} {appt.time}</p>
                     </div>
                     <div className="flex flex-col items-end gap-1">
-                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                        appt.paymentStatus === 'failed' 
-                          ? 'bg-rose-50 dark:bg-rose-950/20 text-rose-600 border border-rose-100 dark:border-rose-900/30'
-                          : (appt.status === 'pending' || appt.status === 'confirmed') && isExpired(appt.date, appt.time)
-                            ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-250 dark:border-slate-700'
-                            : appt.status === 'confirmed' 
-                              ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400' 
-                              : appt.status === 'completed' 
-                                ? 'bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400' 
-                                : appt.status === 'cancelled' 
-                                  ? 'bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-450' 
-                                  : 'bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400'
-                      }`}>
-                        {appt.paymentStatus === 'failed' 
-                          ? t('appointment.paymentFailed', 'Payment Failed') 
+                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${appt.paymentStatus === 'failed'
+                        ? 'bg-rose-50 dark:bg-rose-950/20 text-rose-600 border border-rose-100 dark:border-rose-900/30'
+                        : (appt.status === 'pending' || appt.status === 'confirmed') && isExpired(appt.date, appt.time)
+                          ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-250 dark:border-slate-700'
+                          : appt.status === 'confirmed'
+                            ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400'
+                            : appt.status === 'completed'
+                              ? 'bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400'
+                              : appt.status === 'cancelled'
+                                ? 'bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-450'
+                                : 'bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400'
+                        }`}>
+                        {appt.paymentStatus === 'failed'
+                          ? t('appointment.paymentFailed', 'Payment Failed')
                           : (appt.status === 'pending' || appt.status === 'confirmed') && isExpired(appt.date, appt.time)
                             ? t('appointment.expired', 'Expired')
                             : appt.status === 'confirmed'
@@ -987,7 +1080,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                       </span>
                     </div>
                   </div>
-                  
+
                   <p className="text-xs text-slate-655 dark:text-slate-350"><strong className="text-slate-400">{t('diag.reason', 'Reason:')}</strong> {getLocalizedReason(appt.reason)}</p>
 
                   {appt.patientNotes?.trim() && (

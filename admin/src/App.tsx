@@ -49,7 +49,8 @@ import {
   Bell,
   Sparkles,
   History,
-  Smartphone
+  Smartphone,
+  Stethoscope
 } from 'lucide-react';
 import {
   BarChart, Bar, PieChart, Pie, Cell,
@@ -277,6 +278,58 @@ const AdminPanelContent: React.FC = () => {
   const [selectedStainReview, setSelectedStainReview] = useState<any | null>(null);
   const [stainFilter, setStainFilter] = useState<'all' | 'pending' | 'reviewed'>('all');
   const [activeDoctors, setActiveDoctors] = useState<any[]>([]);
+  const [doctorPortalSession, setDoctorPortalSession] = useState<{ id: string; name: string; token: string } | null>(null);
+
+  const handleLaunchDoctorPortal = async (doctor: any) => {
+    try {
+      const docId = doctor._id || doctor.id;
+      const res = await fetch(`${apiUrl}/admin/doctors/${docId}/token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.message || 'Failed to switch to Doctor Dashboard');
+        return;
+      }
+      setDoctorPortalSession({
+        id: docId,
+        name: data.doctor?.name || doctor.name || 'Doctor',
+        token: data.token
+      });
+    } catch (err: any) {
+      console.error('Error switching to doctor portal:', err);
+      alert('Network error switching to Doctor Dashboard');
+    }
+  };
+
+  const handleSwitchDoctor = async (docId: string) => {
+    try {
+      const res = await fetch(`${apiUrl}/admin/doctors/${docId}/token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.message || 'Failed to switch doctor');
+        return;
+      }
+      setDoctorPortalSession({
+        id: docId,
+        name: data.doctor?.name || 'Doctor',
+        token: data.token
+      });
+    } catch (err: any) {
+      console.error('Error switching doctor:', err);
+      alert('Network error switching doctor');
+    }
+  };
   const [labs, setLabs] = useState<any[]>([]);
   
   const [patients, setPatients] = useState<any[]>([]);
@@ -2060,6 +2113,21 @@ const AdminPanelContent: React.FC = () => {
     return <DoctorPortal apiUrl={apiUrl} token={token || ''} onLogout={logout} />;
   }
 
+  // Admin access to Doctor Dashboard
+  if (doctorPortalSession) {
+    return (
+      <DoctorPortal
+        apiUrl={apiUrl}
+        token={doctorPortalSession.token}
+        onLogout={() => setDoctorPortalSession(null)}
+        adminReturn={() => setDoctorPortalSession(null)}
+        adminModeDoctorName={doctorPortalSession.name}
+        allDoctors={activeDoctors}
+        onSwitchDoctor={handleSwitchDoctor}
+      />
+    );
+  }
+
   if (admin && admin.role === ('Vendor' as any)) {
     return <VendorPortal apiUrl={apiUrl} token={token || ''} onLogout={logout} />;
   }
@@ -2162,12 +2230,44 @@ const AdminPanelContent: React.FC = () => {
                       Profile Edits
                     </button>
                     <button 
-                      onClick={() => { setActiveView('doctors-management'); setSearchQuery(''); }}
+                      onClick={() => { setActiveView('doctors-management'); setSearchQuery(''); fetchActiveDoctors(); }}
                       className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
                         activeView === 'doctors-management' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
                       }`}
                     >
                       Doctors
+                    </button>
+                    <button 
+                      onClick={async () => {
+                        if (activeDoctors.length > 0) {
+                          handleLaunchDoctorPortal(activeDoctors[0]);
+                        } else {
+                          try {
+                            const res = await fetch(`${apiUrl}/admin/doctors`, {
+                              headers: { 'Authorization': `Bearer ${token}` }
+                            });
+                            if (res.ok) {
+                              const docs = await res.json();
+                              setActiveDoctors(docs);
+                              if (docs.length > 0) {
+                                handleLaunchDoctorPortal(docs[0]);
+                                return;
+                              }
+                            }
+                          } catch (e) {}
+                          setActiveView('doctors-management');
+                        }
+                      }}
+                      className="w-full text-left px-4 py-2 rounded-lg text-xs font-semibold flex items-center justify-between text-emerald-400 hover:text-emerald-300 hover:bg-slate-800 transition-colors"
+                      title="Directly access Doctor Dashboard to manage schedule, slots, and profile"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <Stethoscope className="w-3.5 h-3.5" />
+                        Doctor Portal
+                      </span>
+                      <span className="bg-emerald-500/20 text-emerald-300 text-[9px] font-extrabold px-1.5 py-0.5 rounded border border-emerald-500/30">
+                        Live
+                      </span>
                     </button>
                     <button 
                       onClick={() => { setActiveView('vendors-management'); setSearchQuery(''); }}
@@ -3741,7 +3841,7 @@ const AdminPanelContent: React.FC = () => {
 
         {/* DOCTORS MANAGEMENT VIEW */}
         {activeView === 'doctors-management' && (
-          <AdminExtDashboard apiUrl={apiUrl} token={token} defaultTab="doctors" />
+          <AdminExtDashboard apiUrl={apiUrl} token={token} defaultTab="doctors" onLaunchDoctorPortal={handleLaunchDoctorPortal} />
         )}
 
         {/* VENDORS MANAGEMENT VIEW */}

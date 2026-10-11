@@ -216,6 +216,32 @@ export class DoctorController {
     }
   }
 
+  public static async adminGetDoctorToken(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const doc = await Doctor.findById(id);
+      if (!doc || doc.isDeleted) {
+        return res.status(404).json({ message: 'Doctor not found.' });
+      }
+      const token = jwt.sign(
+        { id: doc._id, email: doc.email, role: 'Doctor' },
+        JWT_SECRET,
+        { expiresIn: '30d' }
+      );
+      res.json({
+        token,
+        doctor: {
+          id: doc._id,
+          name: doc.name,
+          email: doc.email,
+          role: 'Doctor'
+        }
+      });
+    } catch (err: any) {
+      res.status(500).json({ message: 'Error generating doctor access token' });
+    }
+  }
+
   // --- DOCTOR ACTIONS ---
 
   public static async doctorLogin(req: Request, res: Response) {

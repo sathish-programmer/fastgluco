@@ -27,11 +27,15 @@ interface DoctorPortalProps {
   apiUrl: string;
   token: string;
   onLogout: () => void;
+  adminReturn?: () => void;
+  adminModeDoctorName?: string;
+  allDoctors?: any[];
+  onSwitchDoctor?: (docId: string) => void;
 }
 
 type TabType = 'dashboard' | 'appointments' | 'calendar' | 'patients' | 'availability' | 'notes' | 'prescriptions' | 'feedback' | 'profile' | 'settings';
 
-export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLogout }) => {
+export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLogout, adminReturn, adminModeDoctorName, allDoctors, onSwitchDoctor }) => {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [calendarTab, setCalendarTab] = useState<'month' | 'week' | 'day'>('month');
   const [appointments, setAppointments] = useState<any[]>([]);
@@ -559,7 +563,43 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
   };
 
   return (
-    <div className="min-h-screen flex bg-slate-50 text-slate-800 font-sans antialiased">
+    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-800 font-sans antialiased">
+      {adminReturn && (
+        <header className="bg-slate-900 text-white px-6 py-2.5 flex items-center justify-between border-b border-slate-800 text-xs shrink-0 z-30 shadow-md">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <span className="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 font-bold border border-indigo-500/30 text-[10px] tracking-wider uppercase">
+              Admin Impersonation Mode
+            </span>
+            <span className="text-slate-300">
+              Managing Doctor Dashboard for: <strong className="text-white">{adminModeDoctorName || doctorInfo?.name || 'Specialist'}</strong>
+            </span>
+            {allDoctors && allDoctors.length > 0 && onSwitchDoctor && (
+              <div className="flex items-center gap-1.5 ml-2">
+                <span className="text-[11px] text-slate-400">Switch:</span>
+                <select
+                  value={doctorInfo?._id || ''}
+                  onChange={(e) => onSwitchDoctor(e.target.value)}
+                  className="px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-lg text-xs font-semibold text-white focus:outline-none cursor-pointer hover:bg-slate-700 transition-colors"
+                >
+                  {allDoctors.map((d: any) => (
+                    <option key={d._id} value={d._id}>
+                      {d.name} ({d.specialty})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+          <button
+            onClick={adminReturn}
+            className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-all shadow-sm flex items-center gap-1.5 cursor-pointer text-xs active:scale-95 shrink-0"
+          >
+            <span>← Return to Admin Panel</span>
+          </button>
+        </header>
+      )}
+
+      <div className="flex-1 flex min-h-0">
       
       {/* 1. COLLAPSIBLE SIDEBAR PANEL */}
       <aside className={`bg-slate-900 text-slate-300 flex flex-col justify-between shrink-0 transition-all ${sidebarCollapsed ? 'w-20' : 'w-64'}`}>
@@ -1995,6 +2035,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
         </div>
       )}
 
+      </div>
     </div>
   );
 };

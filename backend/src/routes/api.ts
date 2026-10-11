@@ -598,6 +598,7 @@ router.post('/admin/doctors', authenticateToken, requireRole(['SuperAdmin', 'Adm
 router.put('/admin/doctors/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), DoctorController.adminEditDoctor);
 router.delete('/admin/doctors/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), DoctorController.adminDeleteDoctor);
 router.get('/admin/doctors/:id/availability', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), DoctorController.adminGetDoctorAvailability);
+router.post('/admin/doctors/:id/token', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), DoctorController.adminGetDoctorToken);
 
 // --- VENDOR MANAGEMENT FOR ADMIN ---
 router.get('/admin/vendors', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), VendorController.adminGetVendors);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Trash2, Edit, UserCheck, UserX, Upload, Image as ImageIcon } from 'lucide-react';
+import { Plus, Trash2, Edit, UserCheck, UserX, Upload, Image as ImageIcon, Stethoscope } from 'lucide-react';
 
 const formatDate = (dateStr: string | undefined | null, withTime = false): string => {
   if (!dateStr) return '--';
@@ -25,9 +25,10 @@ interface AdminExtDashboardProps {
   apiUrl: string;
   token: string;
   adminRole?: string;
+  onLaunchDoctorPortal?: (doc: any) => void;
 }
 
-export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?: 'doctors' | 'availability' | 'vendors' | 'orders' | 'reports' }> = ({ apiUrl, token, defaultTab }) => {
+export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?: 'doctors' | 'availability' | 'vendors' | 'orders' | 'reports' }> = ({ apiUrl, token, defaultTab, onLaunchDoctorPortal }) => {
   const [activeTab, setActiveTab] = useState<'doctors' | 'availability' | 'vendors' | 'orders' | 'reports'>(defaultTab || 'doctors');
   
   // Doctors Management
@@ -308,8 +309,18 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
               <h2 className="text-xl font-bold text-slate-800 font-sans">Doctors Management</h2>
               <p className="text-xs text-slate-500 mt-1">Register, edit and configure consultant doctors, fees, and sleep evaluation details</p>
             </div>
-            <button
-              onClick={() => {
+            <div className="flex items-center gap-2.5">
+              {onLaunchDoctorPortal && doctors.length > 0 && (
+                <button
+                  onClick={() => onLaunchDoctorPortal(doctors[0])}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition"
+                >
+                  <Stethoscope className="w-4 h-4" />
+                  Doctor Dashboard
+                </button>
+              )}
+              <button
+                onClick={() => {
                 setDocForm({
                   _id: '',
                   name: '',
@@ -341,6 +352,7 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
             >
               <Plus className="h-4 w-4" /> Add Doctor
             </button>
+            </div>
           </div>
 
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -443,7 +455,17 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
                           </span>
                         )}
                       </td>
-                      <td className="px-5 py-4 text-right flex justify-end gap-2 mt-2">
+                      <td className="px-5 py-4 text-right flex justify-end items-center gap-2 mt-2">
+                        {onLaunchDoctorPortal && (
+                          <button
+                            onClick={() => onLaunchDoctorPortal(doc)}
+                            className="px-2.5 py-1.5 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl cursor-pointer flex items-center gap-1.5 font-bold text-xs transition-all shadow-2xs hover:scale-105 active:scale-95"
+                            title="Open Doctor Dashboard to manage appointments, availability & clinical settings"
+                          >
+                            <Stethoscope className="h-3.5 w-3.5" />
+                            <span className="hidden sm:inline">Portal</span>
+                          </button>
+                        )}
                         <button
                           onClick={() => {
                             setDocForm({
