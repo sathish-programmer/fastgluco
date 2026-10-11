@@ -103,7 +103,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
 
   useEffect(() => {
     fetchInitialData();
-  }, []);
+  }, [token]);
 
   const fetchInitialData = async () => {
     setLoading(true);
@@ -571,19 +571,22 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
               Admin Impersonation Mode
             </span>
             <span className="text-slate-300">
-              Managing Doctor Dashboard for: <strong className="text-white">{adminModeDoctorName || doctorInfo?.name || 'Specialist'}</strong>
+              Managing Doctor Dashboard for: <strong className="text-white">{doctorInfo?.name || adminModeDoctorName || 'Specialist'}</strong>
             </span>
             {allDoctors && allDoctors.length > 0 && onSwitchDoctor && (
               <div className="flex items-center gap-1.5 ml-2">
-                <span className="text-[11px] text-slate-400">Switch:</span>
+                <span className="text-[11px] text-slate-400 font-bold">Switch:</span>
                 <select
-                  value={doctorInfo?._id || ''}
-                  onChange={(e) => onSwitchDoctor(e.target.value)}
+                  value={doctorInfo?._id || allDoctors.find((d: any) => d.name === (doctorInfo?.name || adminModeDoctorName))?._id || ''}
+                  onChange={(e) => {
+                    const nextDocId = e.target.value;
+                    if (nextDocId) onSwitchDoctor(nextDocId);
+                  }}
                   className="px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-lg text-xs font-semibold text-white focus:outline-none cursor-pointer hover:bg-slate-700 transition-colors"
                 >
                   {allDoctors.map((d: any) => (
                     <option key={d._id} value={d._id}>
-                      {d.name} ({d.specialty})
+                      {d.name} ({d.specialty || d.specialization || 'Consultant'})
                     </option>
                   ))}
                 </select>
@@ -681,7 +684,11 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
             {/* Header / Breadcrumb */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <div>
-                <h1 className="text-xl font-black text-slate-800">Dr. {doctorInfo?.name || 'Consultant'}</h1>
+                <h1 className="text-xl font-black text-slate-800">
+                  {doctorInfo?.name
+                    ? (/^(Dr|Ms|Mr|Mrs)\.?\s+/i.test(doctorInfo.name) ? doctorInfo.name : `Dr. ${doctorInfo.name}`)
+                    : 'Consultant'}
+                </h1>
                 <span className="text-[10px] text-indigo-650 font-bold uppercase tracking-wider">{profileForm.specialty || 'General Practitioner'}</span>
               </div>
               <span className="text-xs text-slate-400 font-semibold">{new Date().toDateString()}</span>
@@ -694,7 +701,11 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
                 <div className="bg-gradient-to-r from-slate-900 to-indigo-950 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="space-y-2">
                     <span className="bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider">Clinician Portal</span>
-                    <h2 className="text-xl md:text-2xl font-black tracking-tight">Welcome back, Dr. {doctorInfo?.name || 'Consultant'}!</h2>
+                    <h2 className="text-xl md:text-2xl font-black tracking-tight">
+                      Welcome back, {doctorInfo?.name
+                        ? (/^(Dr|Ms|Mr|Mrs)\.?\s+/i.test(doctorInfo.name) ? doctorInfo.name : `Dr. ${doctorInfo.name}`)
+                        : 'Doctor'}!
+                    </h2>
                     <p className="text-slate-350 text-xs font-semibold max-w-md">Access patient stain tracker logs, schedule consultations, diagnostic reports, and manage availability settings.</p>
                   </div>
                   <div className="flex gap-4 self-end md:self-auto shrink-0 bg-white/5 border border-white/10 backdrop-blur-md p-4 rounded-2xl">

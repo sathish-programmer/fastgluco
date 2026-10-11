@@ -54,8 +54,8 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
 
         const platformHeader = req.headers['x-app-platform'] as string;
         let platform = (['android', 'ios', 'web'].includes(platformHeader) ? platformHeader : 'android') as 'android' | 'ios' | 'web';
-        const appVersion = (req.headers['x-app-version'] as string) || '5.26.0';
-        const buildNumber = (req.headers['x-app-build'] as string) || '90';
+        const appVersion = (req.headers['x-app-version'] as string) || '5.27.0';
+        const buildNumber = (req.headers['x-app-build'] as string) || '91';
         let osVersion = (req.headers['x-os-version'] as string) || 'Unknown';
         let deviceModel = (req.headers['x-device-model'] as string) || 'Unknown';
         const deviceId = (req.headers['x-device-id'] as string) || `user_${userId}`;

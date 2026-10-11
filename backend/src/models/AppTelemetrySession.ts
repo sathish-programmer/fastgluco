@@ -20,8 +20,8 @@ const appTelemetrySessionSchema = new Schema<IAppTelemetrySession>(
     userId: { type: Schema.Types.ObjectId, ref: 'User', index: true, sparse: true },
     deviceId: { type: String, required: true, index: true },
     platform: { type: String, enum: ['android', 'ios', 'web'], required: true, index: true },
-    appVersion: { type: String, required: true, index: true, default: '5.26.0' },
-    buildNumber: { type: String, default: '90' },
+    appVersion: { type: String, required: true, index: true, default: '5.27.0' },
+    buildNumber: { type: String, default: '91' },
     osVersion: { type: String, default: 'Unknown' },
     deviceModel: { type: String, default: 'Unknown' },
     sessionDate: { type: String, required: true, index: true }, // Format: YYYY-MM-DD for fast aggregation

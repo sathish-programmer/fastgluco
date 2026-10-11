@@ -49,10 +49,10 @@ export interface IAppHealthConfig extends Document {
 
 const versionRuleSchema = new Schema<IVersionRule>(
   {
-    latestReleasedVersion: { type: String, default: '5.26.0' },
-    latestBuildNumber: { type: String, default: '90' },
+    latestReleasedVersion: { type: String, default: '5.27.0' },
+    latestBuildNumber: { type: String, default: '91' },
     minSupportedVersion: { type: String, default: '5.20.0' },
-    recommendedVersion: { type: String, default: '5.26.0' },
+    recommendedVersion: { type: String, default: '5.27.0' },
     forceUpdate: { type: Boolean, default: false },
     updateUrl: { type: String, default: 'https://play.google.com/store/apps/details?id=com.mitoreboot.app' },
     releaseNotes: { type: String, default: 'Performance improvements, metabolic telemetry, and stability updates.' },
@@ -96,25 +96,25 @@ const appHealthConfigSchema = new Schema<IAppHealthConfig>(
     androidVersionRules: {
       type: versionRuleSchema,
       default: () => ({
-        latestReleasedVersion: '5.26.0',
-        latestBuildNumber: '90',
+        latestReleasedVersion: '5.27.0',
+        latestBuildNumber: '91',
         minSupportedVersion: '5.20.0',
-        recommendedVersion: '5.26.0',
+        recommendedVersion: '5.27.0',
         forceUpdate: false,
         updateUrl: 'https://play.google.com/store/apps/details?id=com.mitoreboot.app',
-        releaseNotes: 'Stability updates, clinical coaching, and telemetry tracking'
+        releaseNotes: 'Stability updates, clinical coaching, and doctor consultation features'
       })
     },
     iosVersionRules: {
       type: versionRuleSchema,
       default: () => ({
-        latestReleasedVersion: '5.26.0',
-        latestBuildNumber: '90',
+        latestReleasedVersion: '5.27.0',
+        latestBuildNumber: '93',
         minSupportedVersion: '5.20.0',
-        recommendedVersion: '5.26.0',
+        recommendedVersion: '5.27.0',
         forceUpdate: false,
-        updateUrl: 'https://apps.apple.com/app/mitoreboot/id6470000000',
-        releaseNotes: 'Stability updates, clinical coaching, and telemetry tracking'
+        updateUrl: 'https://apps.apple.com/app/mitoreboot/id6783705985',
+        releaseNotes: 'Stability updates, clinical coaching, and doctor consultation features'
       })
     },
 

@@ -1890,7 +1890,7 @@ export const AdminAppHealth: React.FC<AdminAppHealthProps> = ({ apiUrl, token })
                             })
                           }
                           className="w-full px-3 py-2 bg-white rounded-xl border border-slate-200 font-bold"
-                          placeholder="5.26.0"
+                          placeholder="5.27.0"
                         />
                       </div>
                       <div>
@@ -1966,7 +1966,7 @@ export const AdminAppHealth: React.FC<AdminAppHealthProps> = ({ apiUrl, token })
                             })
                           }
                           className="w-full px-3 py-2 bg-white rounded-xl border border-slate-200 font-bold"
-                          placeholder="5.26.0"
+                          placeholder="5.27.0"
                         />
                       </div>
                       <div>

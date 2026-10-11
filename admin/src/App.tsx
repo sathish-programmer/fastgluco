@@ -283,6 +283,16 @@ const AdminPanelContent: React.FC = () => {
   const handleLaunchDoctorPortal = async (doctor: any) => {
     try {
       const docId = doctor._id || doctor.id;
+      if (!activeDoctors || activeDoctors.length === 0) {
+        try {
+          const docsRes = await fetch(`${apiUrl}/admin/doctors`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (docsRes.ok) {
+            setActiveDoctors(await docsRes.json());
+          }
+        } catch (e) {}
+      }
       const res = await fetch(`${apiUrl}/admin/doctors/${docId}/token`, {
         method: 'POST',
         headers: {
@@ -320,9 +330,10 @@ const AdminPanelContent: React.FC = () => {
         alert(data.message || 'Failed to switch doctor');
         return;
       }
+      const matchedDoc = activeDoctors.find((d: any) => d._id === docId);
       setDoctorPortalSession({
         id: docId,
-        name: data.doctor?.name || 'Doctor',
+        name: data.doctor?.name || matchedDoc?.name || 'Doctor',
         token: data.token
       });
     } catch (err: any) {
@@ -2117,6 +2128,7 @@ const AdminPanelContent: React.FC = () => {
   if (doctorPortalSession) {
     return (
       <DoctorPortal
+        key={doctorPortalSession.id}
         apiUrl={apiUrl}
         token={doctorPortalSession.token}
         onLogout={() => setDoctorPortalSession(null)}
