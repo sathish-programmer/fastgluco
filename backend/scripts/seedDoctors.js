@@ -156,6 +156,32 @@ async function seedDoctors() {
         isDeleted: false,
         visibility: true,
         isRecommended: false
+      },
+      {
+        name: 'Dr. Pavithra Dilip',
+        email: 'dr.pavithra@mitoreboot.in',
+        passwordHash: defaultPasswordHash,
+        avatar: '/uploads/dr_pavithra_dilip.jpg',
+        specialty: 'Preventive Dentistry, Dental Surgeon',
+        qualification: 'BDS, MDS (Preventive Dentistry)',
+        experience: 22,
+        slotDuration: 30,
+        consultationFee: 750,
+        onlineConsultationFee: 750,
+        offlineConsultationFee: 750,
+        extraFeePer15Min: 100,
+        feePolicy: 'extra 100/- every 15 mins, if consultation exceeds 30mins',
+        focusTitle: 'Preventive Dentistry Focus',
+        focusIcon: '🦷',
+        sleepEvaluationNote: 'Oral health & preventive dentistry for systemic wellness, early screening, and cavity prevention',
+        description: 'Specialist in Preventive Dentistry with 22 years of clinical experience. Focus on comprehensive oral health, preventive dental care, early screening, and oral microbiome balance.',
+        languagesKnown: ['English', 'Kannada', 'Hindi', 'Tamil'],
+        workingHours: '09:00 - 18:00',
+        availableDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+        isActive: true,
+        isDeleted: false,
+        visibility: true,
+        isRecommended: false
       }
     ];
 

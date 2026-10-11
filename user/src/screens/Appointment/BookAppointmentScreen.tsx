@@ -231,6 +231,9 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
     if (targetSpec.includes('oncol') || targetSpec.includes('cancer') || activeJourney === 'treatment' || activeJourney === 'prevention' || activeJourney === 'secondary_prevention') {
       return docText.includes('oncol') || docText.includes('cancer') || docText.includes('chemo') || docText.includes('radiation') || docText.includes('surgical oncol');
     }
+    if (targetSpec.includes('dent') || targetSpec.includes('oral') || targetSpec.includes('mouth')) {
+      return docText.includes('dent') || docText.includes('oral') || docText.includes('caries');
+    }
     return targetSpec ? docText.includes(targetSpec) : false;
   };
 
@@ -600,8 +603,15 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                             )}
                           </div>
 
-                          {/* Specialist Focus Callout (Metabolic / Psychological / Sleep / Clinical) */}
+                          {/* Specialist Focus Callout (Dental / Metabolic / Psychological / Sleep / Clinical) */}
                           {(() => {
+                            const isDental = Boolean(
+                              (doc.specialty && /dent|oral/i.test(doc.specialty)) ||
+                              (doc.qualification && /bds|mds|dent/i.test(doc.qualification)) ||
+                              (doc.focusTitle && /dent|oral/i.test(doc.focusTitle)) ||
+                              (doc.name && /Pavithra/i.test(doc.name))
+                            );
+
                             const isMetabolic = Boolean(
                               (doc.specialty && /metabolic|cancer|oncol|radiation/i.test(doc.specialty)) ||
                               (doc.qualification && /oncology|metabolic/i.test(doc.qualification)) ||
@@ -622,7 +632,9 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                             );
 
                             const focusTitle = doc.focusTitle || (
-                              isMetabolic
+                              isDental
+                                ? 'Preventive Dentistry Focus'
+                                : isMetabolic
                                 ? 'Metabolic Lifestyle Modulation Focus'
                                 : isPsychological
                                 ? 'Psychological Support Focus'
@@ -632,7 +644,9 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                             );
 
                             const focusIcon = doc.focusIcon || (
-                              isMetabolic
+                              isDental
+                                ? '🦷'
+                                : isMetabolic
                                 ? '🎗️'
                                 : isPsychological
                                 ? '🧠'
@@ -641,7 +655,9 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                                 : '🩺'
                             );
 
-                            const noteText = (isPsychological && (!doc.sleepEvaluationNote || /restorative sleep/i.test(doc.sleepEvaluationNote)))
+                            const noteText = (isDental && (!doc.sleepEvaluationNote || /restorative sleep/i.test(doc.sleepEvaluationNote)))
+                              ? 'Oral health & preventive dentistry for systemic wellness, early screening, and cavity prevention'
+                              : (isPsychological && (!doc.sleepEvaluationNote || /restorative sleep/i.test(doc.sleepEvaluationNote)))
                               ? 'for emotional wellbeing, coping strategies, and psychological support'
                               : (isMetabolic && (!doc.sleepEvaluationNote || /restorative sleep/i.test(doc.sleepEvaluationNote)))
                               ? 'Metabolic lifestyle modulation for cancer prevention and cancer therapy'
@@ -657,7 +673,9 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                             return (
                               <div
                                 className={`mt-2.5 p-2.5 rounded-xl border text-xs ${
-                                  isMetabolic
+                                  isDental
+                                    ? 'bg-cyan-500/10 border-cyan-500/25 text-cyan-900 dark:text-cyan-200'
+                                    : isMetabolic
                                     ? 'bg-rose-500/10 border-rose-500/25 text-rose-900 dark:text-rose-200'
                                     : isPsychological
                                     ? 'bg-purple-500/10 border-purple-500/25 text-purple-900 dark:text-purple-200'
@@ -666,7 +684,9 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                               >
                                 <span
                                   className={`font-bold text-[10px] uppercase tracking-wider flex items-center gap-1.5 mb-0.5 ${
-                                    isMetabolic
+                                    isDental
+                                      ? 'text-cyan-700 dark:text-cyan-400'
+                                      : isMetabolic
                                       ? 'text-rose-700 dark:text-rose-400'
                                       : isPsychological
                                       ? 'text-purple-700 dark:text-purple-400'
