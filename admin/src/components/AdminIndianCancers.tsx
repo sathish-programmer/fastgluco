@@ -55,7 +55,7 @@ export const AdminIndianCancers: React.FC<AdminIndianCancersProps> = ({ apiUrl, 
     const ytThumbFromThumb = getYoutubeThumbnailUrl(thumbnailUrl);
     if (ytThumbFromThumb) return ytThumbFromThumb;
     if (thumbnailUrl) {
-      return thumbnailUrl.startsWith('/uploads/') ? `${apiUrl.replace('/api', '')}${thumbnailUrl}` : thumbnailUrl;
+      return thumbnailUrl.startsWith('/uploads/') ? `${(apiUrl || '').replace(/\/api\/?$/, '')}${thumbnailUrl}` : thumbnailUrl;
     }
     const ytThumbFromVideo = getYoutubeThumbnailUrl(videoUrl);
     if (ytThumbFromVideo) return ytThumbFromVideo;

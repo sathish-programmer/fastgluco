@@ -91,7 +91,7 @@ export const IndianCancersScreen: React.FC<IndianCancersScreenProps> = ({ onBack
     const ytThumbFromThumb = getYoutubeThumbnailUrl(thumbnailUrl);
     if (ytThumbFromThumb) return ytThumbFromThumb;
     if (thumbnailUrl) {
-      return thumbnailUrl.startsWith('/uploads/') ? `${apiUrl.replace('/api', '')}${thumbnailUrl}` : thumbnailUrl;
+      return thumbnailUrl.startsWith('/uploads/') ? `${(apiUrl || '').replace(/\/api\/?$/, '')}${thumbnailUrl}` : thumbnailUrl;
     }
     const ytThumbFromVideo = getYoutubeThumbnailUrl(videoUrl);
     if (ytThumbFromVideo) return ytThumbFromVideo;
@@ -125,7 +125,7 @@ export const IndianCancersScreen: React.FC<IndianCancersScreenProps> = ({ onBack
 
   const renderVideoPlayer = (url: string, title: string) => {
     if (url.startsWith('/uploads/')) {
-      const baseUrl = apiUrl.replace('/api', '');
+      const baseUrl = (apiUrl || '').replace(/\/api\/?$/, '');
       const fullUrl = `${baseUrl}${url}`;
       return (
         <video controls className="w-full aspect-video rounded-2xl bg-black" poster={activeVideo?.thumbnailUrl ? `${baseUrl}${activeVideo.thumbnailUrl}` : undefined}>

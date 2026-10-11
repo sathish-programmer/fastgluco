@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { Calendar as CalendarIcon, Clock, ArrowLeft, Star, Sparkles, Globe, Video, Building2, Download, FileText, Loader2 } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, ArrowLeft, Star, Sparkles, Globe, Video, Building2, Download, FileText, Loader2, Check } from 'lucide-react';
 import { useConsultation } from '../../context/ConsultationContext';
 import { downloadFile } from '../../utils/fileDownloader';
 
@@ -239,9 +239,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
 
   const isRecommendedDoctor = (doc: any): boolean => {
     if (!doc) return false;
-    if (doc.isRecommended === true) return true;
-    if (doc.name && /Krithikaa/i.test(doc.name)) return true;
-    return isMatchingSpecialty(doc);
+    return Boolean(doc.isRecommended === true || (doc.name && /Krithikaa/i.test(doc.name)));
   };
 
   const fetchDoctors = async () => {
@@ -508,28 +506,88 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">{t('appointment.selectSpecialist', 'Select Specialist')}</label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                   {doctors.map(doc => {
                     const isRec = isRecommendedDoctor(doc);
                     const isSelected = selectedDoctor?._id === doc._id;
                     const avatarSrc = getAvatarUrl(doc.avatar, apiUrl);
                     const effectiveDuration = doc.slotDuration || 30;
 
+                    const isDental = Boolean(
+                      (doc.specialty && /dent|oral/i.test(doc.specialty)) ||
+                      (doc.qualification && /bds|mds|dent/i.test(doc.qualification)) ||
+                      (doc.focusTitle && /dent|oral/i.test(doc.focusTitle)) ||
+                      (doc.name && /Pavithra/i.test(doc.name))
+                    );
+
+                    const isMetabolic = Boolean(
+                      (doc.specialty && /metabolic|cancer|oncol|radiation/i.test(doc.specialty)) ||
+                      (doc.qualification && /oncology|metabolic/i.test(doc.qualification)) ||
+                      (doc.focusTitle && /metabolic|cancer/i.test(doc.focusTitle)) ||
+                      (doc.name && /Krithikaa/i.test(doc.name))
+                    );
+
+                    const isPsychological = Boolean(
+                      (doc.specialty && /psycho|counsel|mental|addiction/i.test(doc.specialty)) ||
+                      (doc.qualification && /psycho|counsel|mental/i.test(doc.qualification)) ||
+                      (doc.focusTitle && /psycho|mental|counsel/i.test(doc.focusTitle)) ||
+                      (doc.name && /Sailee/i.test(doc.name))
+                    );
+
+                    const isSleep = Boolean(
+                      (doc.specialty && /sleep|pulmon|respiratory/i.test(doc.specialty)) ||
+                      (doc.focusTitle && /sleep/i.test(doc.focusTitle))
+                    );
+
+                    const focusTitle = doc.focusTitle || (
+                      isDental
+                        ? 'Preventive Dentistry Focus'
+                        : isMetabolic
+                        ? 'Metabolic Lifestyle Modulation Focus'
+                        : isPsychological
+                        ? 'Psychological Support Focus'
+                        : isSleep
+                        ? 'Sleep Evaluation Focus'
+                        : 'Specialist Consultation Focus'
+                    );
+
+                    const focusIcon = doc.focusIcon || (
+                      isDental
+                        ? '🦷'
+                        : isMetabolic
+                        ? '🎗️'
+                        : isPsychological
+                        ? '🧠'
+                        : isSleep
+                        ? '🌙'
+                        : '🩺'
+                    );
+
+                    const noteText = (isDental && (!doc.sleepEvaluationNote || /restorative sleep/i.test(doc.sleepEvaluationNote)))
+                      ? 'Oral health & preventive dentistry for systemic wellness, early screening, and cavity prevention'
+                      : (isPsychological && (!doc.sleepEvaluationNote || /restorative sleep/i.test(doc.sleepEvaluationNote)))
+                      ? 'for emotional wellbeing, coping strategies, and psychological support'
+                      : (isMetabolic && (!doc.sleepEvaluationNote || /restorative sleep/i.test(doc.sleepEvaluationNote)))
+                      ? 'Metabolic lifestyle modulation for cancer prevention and cancer therapy'
+                      : doc.sleepEvaluationNote;
+
                     return (
                       <button
                         key={doc._id}
+                        type="button"
                         onClick={() => setSelectedDoctor(doc)}
-                        className={`p-4 rounded-2xl border text-left transition-all flex flex-col justify-between ${
-                          isSelected 
-                            ? 'border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/30 shadow-md ring-1 ring-indigo-500/50 text-slate-800 dark:text-slate-100' 
-                            : 'border-slate-150 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/60 hover:border-slate-300 dark:hover:border-slate-700'
+                        className={`group relative text-left p-4 rounded-2xl border transition-all duration-200 flex flex-col justify-between cursor-pointer ${
+                          isSelected
+                            ? 'border-indigo-600 dark:border-indigo-500 bg-white dark:bg-slate-900 shadow-md ring-2 ring-indigo-500/20'
+                            : 'border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-xs'
                         }`}
                       >
-                        <div>
-                          {/* Header: Avatar + Name + Rating */}
-                          <div className="flex items-start gap-3">
+                        <div className="w-full">
+                          {/* Header: Avatar + Details + Radio Indicator */}
+                          <div className="flex items-start gap-3 w-full">
+                            {/* Avatar */}
                             <div className="relative shrink-0">
-                              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold flex items-center justify-center text-sm shadow-sm overflow-hidden border border-slate-200 dark:border-slate-700">
+                              <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-indigo-50 to-slate-100 dark:from-slate-800 dark:to-slate-850 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-center font-bold text-indigo-600 dark:text-indigo-400 text-sm overflow-hidden shadow-2xs">
                                 {avatarSrc ? (
                                   <img
                                     src={avatarSrc}
@@ -541,195 +599,136 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                                   doc.name.replace(/^(Dr\.?|Ms\.?|Mr\.?)\s+/i, '').charAt(0) || 'D'
                                 )}
                               </div>
-                              {isSelected && (
-                                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-indigo-600 text-white rounded-full flex items-center justify-center text-[10px] font-black ring-2 ring-white dark:ring-slate-900 z-10">
-                                  ✓
-                                </div>
-                              )}
+                              <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full ring-2 ring-white dark:ring-slate-900" title="Active Specialist" />
                             </div>
 
-                            <div className="flex-1 min-w-0">
+                            {/* Name & Specialty Info */}
+                            <div className="flex-1 min-w-0 pr-6">
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm leading-tight">{doc.name}</h4>
-                                {isRec && (
-                                  <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/80 flex items-center gap-0.5">
-                                    <Sparkles className="h-2.5 w-2.5 text-blue-600 dark:text-blue-400" /> {t('appointment.recommended', 'Recommended')}
-                                  </span>
-                                )}
+                                <h4 className="font-bold text-slate-900 dark:text-slate-100 text-[14px] leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                  {doc.name}
+                                </h4>
                               </div>
 
                               {doc.qualification && (
-                                <p className="text-[11px] font-medium text-slate-600 dark:text-slate-350 line-clamp-2 mt-0.5 leading-snug">
+                                <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate mt-0.5" title={doc.qualification}>
                                   {doc.qualification}
                                 </p>
                               )}
 
-                              <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 mt-0.5">{doc.specialty}</p>
+                              <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 line-clamp-1 mt-0.5">
+                                {doc.specialty}
+                              </p>
                             </div>
 
-                            {doc.avgRating != null && (
-                              <div className="flex flex-col items-end shrink-0">
-                                <div className="flex items-center gap-0.5">
-                                  {[1,2,3,4,5].map((star: number) => (
-                                    <svg key={star} className={`w-3 h-3 ${star <= Math.round(doc.avgRating) ? 'text-amber-400' : 'text-slate-200'}`} fill="currentColor" viewBox="0 0 20 20">
-                                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.168c.969 0 1.371 1.24.588 1.81l-3.374 2.452a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118L10 14.347l-3.952 2.701c-.784.57-1.838-.196-1.539-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.058 9.394c-.783-.57-.38-1.81.588-1.81h4.168a1 1 0 00.95-.69l1.285-3.967z"/>
-                                    </svg>
-                                  ))}
-                                </div>
-                                <span className="text-[9px] text-slate-400 mt-0.5">{doc.avgRating} ({doc.ratingCount})</span>
+                            {/* Radio / Checkmark Selection Button */}
+                            <div className="absolute top-3.5 right-3.5 shrink-0">
+                              <div
+                                className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${
+                                  isSelected
+                                    ? 'bg-indigo-600 text-white shadow-xs ring-2 ring-indigo-200 dark:ring-indigo-900/60'
+                                    : 'border-2 border-slate-300 dark:border-slate-700 bg-transparent group-hover:border-slate-400'
+                                }`}
+                              >
+                                {isSelected && (
+                                  <Check className="w-3 h-3 stroke-[3]" />
+                                )}
                               </div>
-                            )}
+                            </div>
                           </div>
 
-                          {/* Credentials Badges */}
-                          <div className="flex items-center gap-1.5 mt-2 flex-wrap text-[10px]">
-                            {doc.hospitalName && (
-                              <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold border border-slate-200/60 dark:border-slate-700 flex items-center gap-1">
-                                <Building2 className="h-3 w-3 inline text-indigo-500" /> {doc.hospitalName}
+                          {/* Pills Row: Recommended + Experience + Duration + Hospital */}
+                          <div className="flex items-center gap-1.5 mt-2.5 flex-wrap text-[10px]">
+                            {isRec && (
+                              <span className="font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/30 text-amber-700 dark:text-amber-300 border border-amber-300/80 dark:border-amber-700/60 flex items-center gap-1 shadow-2xs">
+                                <Sparkles className="h-2.5 w-2.5 text-amber-600 dark:text-amber-400 fill-amber-500/20" />
+                                {t('appointment.recommended', 'Recommended')}
                               </span>
                             )}
+
                             {doc.experience != null && (
-                              <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold border border-slate-200/60 dark:border-slate-700">
+                              <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold border border-slate-200/60 dark:border-slate-700/80">
                                 🎓 {doc.experience} {t('appointment.yrsExpLabel', 'yrs exp')}
                               </span>
                             )}
-                            <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold border border-slate-200/60 dark:border-slate-700">
-                              ⏱️ {effectiveDuration} mins
+
+                            <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold border border-slate-200/60 dark:border-slate-700/80">
+                              ⏱️ {effectiveDuration}m
                             </span>
+
+                            {doc.hospitalName && (
+                              <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium border border-slate-200/60 dark:border-slate-700/80 truncate max-w-[140px]" title={doc.hospitalName}>
+                                📍 {doc.hospitalName}
+                              </span>
+                            )}
+
                             {doc.languagesKnown && doc.languagesKnown.length > 0 && (
-                              <span className="text-slate-400 font-semibold flex items-center gap-1">
-                                <Globe className="h-3 w-3 inline text-slate-400" /> {doc.languagesKnown.join(', ')}
+                              <span className="text-slate-400 font-medium text-[10px] hidden sm:inline-flex items-center gap-1 ml-auto">
+                                <Globe className="h-2.5 w-2.5 inline" /> {doc.languagesKnown.slice(0, 2).join(', ')}
                               </span>
                             )}
                           </div>
 
-                          {/* Specialist Focus Callout (Dental / Metabolic / Psychological / Sleep / Clinical) */}
-                          {(() => {
-                            const isDental = Boolean(
-                              (doc.specialty && /dent|oral/i.test(doc.specialty)) ||
-                              (doc.qualification && /bds|mds|dent/i.test(doc.qualification)) ||
-                              (doc.focusTitle && /dent|oral/i.test(doc.focusTitle)) ||
-                              (doc.name && /Pavithra/i.test(doc.name))
-                            );
-
-                            const isMetabolic = Boolean(
-                              (doc.specialty && /metabolic|cancer|oncol|radiation/i.test(doc.specialty)) ||
-                              (doc.qualification && /oncology|metabolic/i.test(doc.qualification)) ||
-                              (doc.focusTitle && /metabolic|cancer/i.test(doc.focusTitle)) ||
-                              (doc.name && /Krithikaa/i.test(doc.name))
-                            );
-
-                            const isPsychological = Boolean(
-                              (doc.specialty && /psycho|counsel|mental|addiction/i.test(doc.specialty)) ||
-                              (doc.qualification && /psycho|counsel|mental/i.test(doc.qualification)) ||
-                              (doc.focusTitle && /psycho|mental|counsel/i.test(doc.focusTitle)) ||
-                              (doc.name && /Sailee/i.test(doc.name))
-                            );
-
-                            const isSleep = Boolean(
-                              (doc.specialty && /sleep|pulmon|respiratory/i.test(doc.specialty)) ||
-                              (doc.focusTitle && /sleep/i.test(doc.focusTitle))
-                            );
-
-                            const focusTitle = doc.focusTitle || (
-                              isDental
-                                ? 'Preventive Dentistry Focus'
-                                : isMetabolic
-                                ? 'Metabolic Lifestyle Modulation Focus'
-                                : isPsychological
-                                ? 'Psychological Support Focus'
-                                : isSleep
-                                ? 'Sleep Evaluation Focus'
-                                : 'Specialist Consultation Focus'
-                            );
-
-                            const focusIcon = doc.focusIcon || (
-                              isDental
-                                ? '🦷'
-                                : isMetabolic
-                                ? '🎗️'
-                                : isPsychological
-                                ? '🧠'
-                                : isSleep
-                                ? '🌙'
-                                : '🩺'
-                            );
-
-                            const noteText = (isDental && (!doc.sleepEvaluationNote || /restorative sleep/i.test(doc.sleepEvaluationNote)))
-                              ? 'Oral health & preventive dentistry for systemic wellness, early screening, and cavity prevention'
-                              : (isPsychological && (!doc.sleepEvaluationNote || /restorative sleep/i.test(doc.sleepEvaluationNote)))
-                              ? 'for emotional wellbeing, coping strategies, and psychological support'
-                              : (isMetabolic && (!doc.sleepEvaluationNote || /restorative sleep/i.test(doc.sleepEvaluationNote)))
-                              ? 'Metabolic lifestyle modulation for cancer prevention and cancer therapy'
-                              : doc.sleepEvaluationNote;
-
-                            if (!noteText) {
-                              if (doc.description) {
-                                return <p className="text-[10px] text-slate-400 mt-1.5 line-clamp-2">{doc.description}</p>;
-                              }
-                              return null;
-                            }
-
-                            return (
+                          {/* Specialist Focus Callout */}
+                          {noteText && (
+                            <div
+                              className={`mt-2.5 p-2.5 rounded-xl border text-xs transition-colors ${
+                                isDental
+                                  ? 'bg-cyan-50/70 dark:bg-cyan-950/20 border-cyan-200/70 dark:border-cyan-900/40'
+                                  : isMetabolic
+                                  ? 'bg-rose-50/70 dark:bg-rose-950/20 border-rose-200/70 dark:border-rose-900/40'
+                                  : isPsychological
+                                  ? 'bg-purple-50/70 dark:bg-purple-950/20 border-purple-200/70 dark:border-purple-900/40'
+                                  : 'bg-amber-50/70 dark:bg-amber-950/20 border-amber-200/70 dark:border-amber-900/40'
+                              }`}
+                            >
                               <div
-                                className={`mt-2.5 p-2.5 rounded-xl border text-xs ${
+                                className={`font-bold text-[10px] uppercase tracking-wider flex items-center gap-1.5 mb-0.5 ${
                                   isDental
-                                    ? 'bg-cyan-500/10 border-cyan-500/25 text-cyan-900 dark:text-cyan-200'
+                                    ? 'text-cyan-700 dark:text-cyan-400'
                                     : isMetabolic
-                                    ? 'bg-rose-500/10 border-rose-500/25 text-rose-900 dark:text-rose-200'
+                                    ? 'text-rose-700 dark:text-rose-400'
                                     : isPsychological
-                                    ? 'bg-purple-500/10 border-purple-500/25 text-purple-900 dark:text-purple-200'
-                                    : 'bg-amber-500/10 border-amber-500/25 text-amber-900 dark:text-amber-200'
+                                    ? 'text-purple-700 dark:text-purple-400'
+                                    : 'text-amber-700 dark:text-amber-400'
                                 }`}
                               >
-                                <span
-                                  className={`font-bold text-[10px] uppercase tracking-wider flex items-center gap-1.5 mb-0.5 ${
-                                    isDental
-                                      ? 'text-cyan-700 dark:text-cyan-400'
-                                      : isMetabolic
-                                      ? 'text-rose-700 dark:text-rose-400'
-                                      : isPsychological
-                                      ? 'text-purple-700 dark:text-purple-400'
-                                      : 'text-amber-700 dark:text-amber-400'
-                                  }`}
-                                >
-                                  <span>{focusIcon}</span> {focusTitle}
-                                </span>
-                                <p className="text-[11px] leading-relaxed italic">
-                                  "{noteText}"
-                                </p>
+                                <span>{focusIcon}</span>
+                                <span className="truncate">{focusTitle}</span>
                               </div>
-                            );
-                          })()}
+                              <p className="text-[11px] leading-snug text-slate-600 dark:text-slate-300 italic line-clamp-2">
+                                "{noteText}"
+                              </p>
+                            </div>
+                          )}
                         </div>
 
                         {/* Pricing & Policy Footer */}
-                        <div className="mt-3 pt-2.5 border-t border-slate-200/70 dark:border-slate-800/80 space-y-1.5">
-                          <div className="flex items-center justify-between gap-2 flex-wrap">
-                            <div className="flex gap-2">
-                              {doc.onlineConsultationFee !== undefined && (
-                                <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-lg border border-emerald-200/60 dark:border-emerald-800/60">
-                                  <Video className="h-3 w-3 inline" /> ₹{doc.onlineConsultationFee} / {effectiveDuration}m
-                                </span>
-                              )}
-                              {doc.offlineConsultationFee !== undefined && (
-                                <span className="text-[11px] font-bold text-purple-700 dark:text-purple-400 flex items-center gap-1 bg-purple-50 dark:bg-purple-950/40 px-2 py-0.5 rounded-lg border border-purple-200/60 dark:border-purple-800/60">
-                                  <Building2 className="h-3 w-3 inline" /> ₹{doc.offlineConsultationFee} / {effectiveDuration}m
-                                </span>
-                              )}
-                            </div>
+                        <div className="mt-3 pt-2.5 border-t border-slate-150 dark:border-slate-800 flex items-center justify-between gap-2 flex-wrap w-full">
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-sm font-extrabold text-slate-900 dark:text-white">
+                              ₹{doc.onlineConsultationFee || doc.consultationFee || 750}
+                            </span>
+                            <span className="text-[10px] font-medium text-slate-400">
+                              / {effectiveDuration}m
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1.5">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-lg border border-emerald-200/60 dark:border-emerald-800/60">
+                              <Video className="w-2.5 h-2.5" /> Online
+                            </span>
+                            {doc.offlineConsultationFee !== undefined && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 px-2 py-0.5 rounded-lg border border-purple-200/60 dark:border-purple-800/60">
+                                <Building2 className="w-2.5 h-2.5" /> Clinic
+                              </span>
+                            )}
                             {Boolean(doc.extraFeePer15Min && doc.extraFeePer15Min > 0) && (
-                              <span className="text-[10px] font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 px-2 py-0.5 rounded-md border border-rose-200/60 dark:border-rose-900/40">
+                              <span className="text-[9px] font-medium text-slate-400 hidden sm:inline">
                                 +₹{doc.extraFeePer15Min}/15m OT
                               </span>
                             )}
                           </div>
-
-                          {Boolean(doc.feePolicy || (doc.extraFeePer15Min && doc.extraFeePer15Min > 0)) && (
-                            <p className="text-[10px] text-slate-500 dark:text-slate-400 italic leading-snug">
-                              ℹ️ {doc.feePolicy || `Extra ₹${doc.extraFeePer15Min} every 15 mins if consultation exceeds ${effectiveDuration} mins`}
-                            </p>
-                          )}
                         </div>
                       </button>
                     );

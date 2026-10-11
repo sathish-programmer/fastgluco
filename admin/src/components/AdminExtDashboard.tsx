@@ -14,6 +14,13 @@ const formatDate = (dateStr: string | undefined | null, withTime = false): strin
   } catch { return dateStr; }
 };
 
+const getAdminAvatarUrl = (avatar?: string, apiUrl?: string): string => {
+  if (!avatar) return '';
+  if (avatar.startsWith('http://') || avatar.startsWith('https://')) return avatar;
+  const baseUrl = (apiUrl || '').replace(/\/api\/?$/, '');
+  return `${baseUrl}${avatar.startsWith('/') ? '' : '/'}${avatar}`;
+};
+
 interface AdminExtDashboardProps {
   apiUrl: string;
   token: string;
@@ -351,19 +358,24 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
               </thead>
               <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
                 {doctors.map(doc => {
-                  const avatarSrc = doc.avatar
-                    ? (doc.avatar.startsWith('/uploads/') ? `${apiUrl.replace('/api', '')}${doc.avatar}` : doc.avatar)
-                    : '';
+                  const avatarSrc = getAdminAvatarUrl(doc.avatar, apiUrl);
+                  const initial = doc.name.replace(/^(Dr\.?|Ms\.?|Mr\.?)\s*/i, '').charAt(0) || 'D';
                   return (
                     <tr key={doc._id} className="hover:bg-slate-50/50 transition-colors">
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center font-bold text-indigo-600 shrink-0 overflow-hidden shadow-2xs">
+                          <div className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center font-bold text-indigo-600 shrink-0 overflow-hidden shadow-2xs relative">
                             {avatarSrc ? (
-                              <img src={avatarSrc} alt={doc.name} className="w-full h-full object-cover" />
-                            ) : (
-                              doc.name.replace(/^(Dr\.?|Ms\.?|Mr\.?)\s*/i, '').charAt(0) || 'D'
-                            )}
+                              <img
+                                src={avatarSrc}
+                                alt={doc.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  (e.currentTarget as HTMLElement).style.display = 'none';
+                                }}
+                              />
+                            ) : null}
+                            <span className="text-sm font-black select-none">{initial}</span>
                           </div>
                           <div className="min-w-0 max-w-xs">
                             <h4 className="font-bold text-slate-800 text-sm truncate">{doc.name}</h4>
@@ -753,9 +765,12 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
                 <div className="w-16 h-16 rounded-2xl bg-white border border-slate-200 flex items-center justify-center font-bold text-slate-400 overflow-hidden shrink-0 shadow-2xs">
                   {docForm.avatar ? (
                     <img
-                      src={docForm.avatar.startsWith('/uploads/') ? `${apiUrl.replace('/api', '')}${docForm.avatar}` : docForm.avatar}
+                      src={getAdminAvatarUrl(docForm.avatar, apiUrl)}
                       alt="Doctor Profile"
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLElement).style.display = 'none';
+                      }}
                     />
                   ) : (
                     <ImageIcon className="h-6 w-6 text-slate-300" />
