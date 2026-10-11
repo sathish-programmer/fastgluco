@@ -39,7 +39,12 @@ export class AppointmentController {
           const avgRating = ratingCount > 0
             ? parseFloat((feedbacks.reduce((sum: number, f: any) => sum + f.rating, 0) / ratingCount).toFixed(1))
             : null;
-          return { ...doc.toObject(), avgRating, ratingCount };
+          const avatar = doc.avatar
+            ? (doc.avatar.startsWith('http://') || doc.avatar.startsWith('https://')
+                ? doc.avatar
+                : `https://api.mitoreboot.in${doc.avatar.startsWith('/') ? '' : '/'}${doc.avatar}`)
+            : '';
+          return { ...doc.toObject(), avatar, avgRating, ratingCount };
         })
       );
 

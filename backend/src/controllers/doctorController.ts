@@ -48,6 +48,7 @@ export class DoctorController {
 
       const fee = Number(onlineConsultationFee || consultationFee || 500);
       const passwordHash = await bcrypt.hash(password, 10);
+      const fullAvatar = avatar && avatar.startsWith('/uploads/') ? `https://api.mitoreboot.in${avatar}` : (avatar || '');
       const doc = new Doctor({
         name,
         email,
@@ -56,7 +57,7 @@ export class DoctorController {
         qualification: qualification || '',
         experience: experience !== undefined ? Number(experience) : 0,
         description: description || '',
-        avatar: avatar || '',
+        avatar: fullAvatar,
         languagesKnown: Array.isArray(languagesKnown) ? languagesKnown : [],
         consultationFee: fee,
         onlineConsultationFee: fee,
@@ -134,7 +135,9 @@ export class DoctorController {
       if (experience !== undefined) doc.experience = Number(experience);
       if (description !== undefined) doc.description = description;
       if (isActive !== undefined) doc.isActive = isActive;
-      if (avatar !== undefined) doc.avatar = avatar;
+      if (avatar !== undefined) {
+        doc.avatar = avatar && avatar.startsWith('/uploads/') ? `https://api.mitoreboot.in${avatar}` : avatar;
+      }
       if (consultationFee !== undefined) doc.consultationFee = Number(consultationFee);
       if (onlineConsultationFee !== undefined) doc.onlineConsultationFee = Number(onlineConsultationFee);
       if (offlineConsultationFee !== undefined) doc.offlineConsultationFee = Number(offlineConsultationFee);
@@ -188,7 +191,12 @@ export class DoctorController {
           const avgRating = ratingCount > 0
             ? parseFloat((feedbacks.reduce((sum: number, f: any) => sum + f.rating, 0) / ratingCount).toFixed(1))
             : null;
-          return { ...doc.toObject(), avgRating, ratingCount };
+          const avatar = doc.avatar
+            ? (doc.avatar.startsWith('http://') || doc.avatar.startsWith('https://')
+                ? doc.avatar
+                : `https://api.mitoreboot.in${doc.avatar.startsWith('/') ? '' : '/'}${doc.avatar}`)
+            : '';
+          return { ...doc.toObject(), avatar, avgRating, ratingCount };
         })
       );
 

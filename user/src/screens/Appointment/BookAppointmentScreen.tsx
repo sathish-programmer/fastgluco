@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { Calendar as CalendarIcon, Clock, ArrowLeft, Star, Sparkles, Globe, Video, Building2, Download, FileText, Loader2, Check } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, ArrowLeft, Star, Sparkles, Globe, Video, Building2, Download, FileText, Loader2, Check, Info, X } from 'lucide-react';
 import { useConsultation } from '../../context/ConsultationContext';
 import { downloadFile } from '../../utils/fileDownloader';
 
@@ -79,6 +79,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
 
   const [doctors, setDoctors] = useState<any[]>([]);
   const [selectedDoctor, setSelectedDoctor] = useState<any | null>(null);
+  const [profileDoctor, setProfileDoctor] = useState<any | null>(null);
   const [date, setDate] = useState('');
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [selectedSlot, setSelectedSlot] = useState('');
@@ -586,9 +587,17 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                           {/* Header: Avatar + Details + Radio Indicator */}
                           <div className="flex items-start gap-3 w-full min-w-0">
                             {/* Avatar */}
-                            <div className="relative shrink-0 w-14 h-14" style={{ width: 56, height: 56, minWidth: 56, minHeight: 56, maxWidth: 56, maxHeight: 56 }}>
+                            <div
+                              className="relative shrink-0 w-14 h-14 cursor-pointer group/avatar"
+                              style={{ width: 56, height: 56, minWidth: 56, minHeight: 56, maxWidth: 56, maxHeight: 56 }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setProfileDoctor(doc);
+                              }}
+                              title="Click to view full doctor profile"
+                            >
                               <div
-                                className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-50 to-slate-100 dark:from-slate-800 dark:to-slate-850 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-center font-bold text-indigo-600 dark:text-indigo-400 text-sm overflow-hidden shadow-2xs"
+                                className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-50 to-slate-100 dark:from-slate-800 dark:to-slate-850 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-center font-bold text-indigo-600 dark:text-indigo-400 text-sm overflow-hidden shadow-2xs group-hover/avatar:ring-2 group-hover/avatar:ring-indigo-400/50 transition-all"
                                 style={{ width: 56, height: 56, minWidth: 56, minHeight: 56, maxWidth: 56, maxHeight: 56 }}
                               >
                                 {avatarSrc ? (
@@ -718,18 +727,25 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                             </span>
                           </div>
 
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1.5 ml-auto">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setProfileDoctor(doc);
+                              }}
+                              className="px-2 py-0.5 rounded-md text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-200/80 dark:border-indigo-800/80 flex items-center gap-1 transition-all cursor-pointer hover:shadow-2xs"
+                              title="View full doctor credentials, bio, and clinic details"
+                            >
+                              <Info className="w-2.5 h-2.5" />
+                              <span>View Profile</span>
+                            </button>
                             <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-lg border border-emerald-200/60 dark:border-emerald-800/60">
                               <Video className="w-2.5 h-2.5" /> Online
                             </span>
                             {doc.offlineConsultationFee !== undefined && (
                               <span className="inline-flex items-center gap-1 text-[10px] font-bold text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 px-2 py-0.5 rounded-lg border border-purple-200/60 dark:border-purple-800/60">
                                 <Building2 className="w-2.5 h-2.5" /> Clinic
-                              </span>
-                            )}
-                            {Boolean(doc.extraFeePer15Min && doc.extraFeePer15Min > 0) && (
-                              <span className="text-[9px] font-medium text-slate-400 hidden sm:inline">
-                                +₹{doc.extraFeePer15Min}/15m OT
                               </span>
                             )}
                           </div>
@@ -1171,6 +1187,221 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                 className="px-4 py-2 bg-indigo-600 rounded-xl text-xs font-bold text-white shadow hover:bg-indigo-700 transition-colors"
               >
                 Accept & Pay
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Doctor Full Profile Inspection Modal */}
+      {profileDoctor && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setProfileDoctor(null)}
+        >
+          <div
+            className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-xl max-h-[90vh] shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header Banner */}
+            <div className="relative p-6 bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-transparent border-b border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setProfileDoctor(null)}
+                className="absolute top-4 right-4 h-9 w-9 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 flex items-center justify-center transition-all cursor-pointer shadow-xs"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="flex items-start gap-4 pr-10">
+                <div
+                  className="w-18 h-18 min-w-[72px] min-h-[72px] rounded-2xl bg-gradient-to-br from-indigo-50 to-slate-100 dark:from-slate-800 dark:to-slate-850 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-bold text-indigo-600 dark:text-indigo-400 text-xl overflow-hidden shadow-sm shrink-0 relative"
+                  style={{ width: 72, height: 72, minWidth: 72, minHeight: 72 }}
+                >
+                  {getAvatarUrl(profileDoctor.avatar, apiUrl) ? (
+                    <img
+                      src={getAvatarUrl(profileDoctor.avatar, apiUrl)!}
+                      alt={profileDoctor.name}
+                      className="w-full h-full object-cover rounded-2xl block"
+                      style={{ width: 72, height: 72, objectFit: 'cover' }}
+                      onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                    />
+                  ) : (
+                    profileDoctor.name.replace(/^(Dr\.?|Ms\.?|Mr\.?)\s+/i, '').charAt(0) || 'D'
+                  )}
+                  <span className="absolute bottom-1 right-1 w-3.5 h-3.5 bg-emerald-500 rounded-full ring-2 ring-white dark:ring-slate-900" />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 leading-tight">
+                      {profileDoctor.name}
+                    </h3>
+                    {isRecommendedDoctor(profileDoctor) && (
+                      <span className="font-bold px-2.5 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700 text-[11px] flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-amber-500" /> Recommended
+                      </span>
+                    )}
+                  </div>
+
+                  {profileDoctor.qualification && (
+                    <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 mt-1">
+                      🎓 {profileDoctor.qualification}
+                    </p>
+                  )}
+
+                  <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">
+                    {profileDoctor.specialty}
+                  </p>
+
+                  <div className="flex items-center gap-2 mt-2 flex-wrap text-[11px]">
+                    {profileDoctor.experience != null && (
+                      <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold">
+                        ⏳ {profileDoctor.experience} yrs experience
+                      </span>
+                    )}
+                    {profileDoctor.slotDuration && (
+                      <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold">
+                        ⏱️ {profileDoctor.slotDuration} mins session
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Content - Scrollable */}
+            <div className="p-6 space-y-5 overflow-y-auto max-h-[60vh] text-slate-700 dark:text-slate-200 text-sm">
+              {/* Focus Banner */}
+              {(profileDoctor.focusTitle || profileDoctor.sleepEvaluationNote) && (
+                <div className="p-3.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50">
+                  <div className="flex items-center gap-1.5 font-bold text-xs uppercase tracking-wider text-indigo-700 dark:text-indigo-300 mb-1">
+                    <span>{profileDoctor.focusIcon || '🩺'}</span>
+                    <span>{profileDoctor.focusTitle || 'Clinical Focus Area'}</span>
+                  </div>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed italic">
+                    "{profileDoctor.sleepEvaluationNote || profileDoctor.focusTitle}"
+                  </p>
+                </div>
+              )}
+
+              {/* Clinical Biography / About */}
+              {profileDoctor.description && (
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-indigo-500" /> About Specialist
+                  </h4>
+                  <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300 whitespace-pre-line bg-slate-50/60 dark:bg-slate-800/40 p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800">
+                    {profileDoctor.description}
+                  </p>
+                </div>
+              )}
+
+              {/* Hospital & Location */}
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
+                  <Building2 className="w-3.5 h-3.5 text-indigo-500" /> Practice & Clinic Location
+                </h4>
+                <div className="bg-slate-50/60 dark:bg-slate-800/40 p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-1.5 text-xs">
+                  {profileDoctor.hospitalName && (
+                    <p className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                      <span>📍 Hospital/Clinic:</span>
+                      <span>{profileDoctor.hospitalName}</span>
+                    </p>
+                  )}
+                  {profileDoctor.address && (
+                    <p className="text-slate-500 dark:text-slate-400 flex items-start gap-1.5">
+                      <span>🏢 Address:</span>
+                      <span>{profileDoctor.address}</span>
+                    </p>
+                  )}
+                  {profileDoctor.workingHours && (
+                    <p className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                      <span>🕒 Timing:</span>
+                      <span>{profileDoctor.workingHours}</span>
+                    </p>
+                  )}
+                  {profileDoctor.availableDays && profileDoctor.availableDays.length > 0 && (
+                    <p className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                      <span>📅 Available Days:</span>
+                      <span>{profileDoctor.availableDays.join(', ')}</span>
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Languages Spoken */}
+              {profileDoctor.languagesKnown && profileDoctor.languagesKnown.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5 text-indigo-500" /> Languages Spoken
+                  </h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {profileDoctor.languagesKnown.map((lang: string) => (
+                      <span
+                        key={lang}
+                        className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-xs border border-slate-200/60 dark:border-slate-700"
+                      >
+                        🗣️ {lang}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Consultation Fees & Overtime Policy */}
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-indigo-500" /> Consultation Fees & Policy
+                </h4>
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div className="p-3 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40">
+                    <span className="block font-bold text-emerald-800 dark:text-emerald-300 text-[11px] uppercase">Online Video Visit</span>
+                    <span className="text-lg font-black text-emerald-900 dark:text-emerald-100 mt-0.5 block">
+                      ₹{profileDoctor.onlineConsultationFee || profileDoctor.consultationFee || 750}
+                    </span>
+                    <span className="text-[10px] text-emerald-700/80 dark:text-emerald-400">Duration: {profileDoctor.slotDuration || 30} mins</span>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-purple-50/60 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-900/40">
+                    <span className="block font-bold text-purple-800 dark:text-purple-300 text-[11px] uppercase">In-Clinic Visit</span>
+                    <span className="text-lg font-black text-purple-900 dark:text-purple-100 mt-0.5 block">
+                      ₹{profileDoctor.offlineConsultationFee || profileDoctor.consultationFee || 750}
+                    </span>
+                    <span className="text-[10px] text-purple-700/80 dark:text-purple-400">Duration: {profileDoctor.slotDuration || 30} mins</span>
+                  </div>
+                </div>
+
+                {(profileDoctor.feePolicy || profileDoctor.extraFeePer15Min) && (
+                  <div className="mt-2.5 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                    <span className="text-amber-500 text-sm">ℹ️</span>
+                    <span>
+                      {profileDoctor.feePolicy || `Additional ₹${profileDoctor.extraFeePer15Min}/- per 15 minutes applies if session exceeds ${profileDoctor.slotDuration || 30} mins.`}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="p-4 bg-slate-50 dark:bg-slate-850 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => setProfileDoctor(null)}
+                className="px-4 py-2.5 rounded-xl font-bold text-xs text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 cursor-pointer transition-all"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedDoctor(profileDoctor);
+                  setProfileDoctor(null);
+                }}
+                className="flex-1 py-2.5 px-4 rounded-xl font-bold text-xs text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm flex items-center justify-center gap-2 cursor-pointer transition-all"
+              >
+                <Check className="w-4 h-4 stroke-[2.5]" />
+                <span>Select Specialist & Choose Slot</span>
               </button>
             </div>
           </div>
