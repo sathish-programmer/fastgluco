@@ -497,7 +497,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Side: Booking Form */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2 min-w-0 space-y-4">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-3xl p-5 transition-colors duration-300">
             <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
               <CalendarIcon className="h-5 w-5 text-indigo-500" /> {t('appointment.appointmentSchedule', 'Appointment Schedule')}
@@ -576,30 +576,34 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                         key={doc._id}
                         type="button"
                         onClick={() => setSelectedDoctor(doc)}
-                        className={`group relative text-left p-4 rounded-2xl border transition-all duration-200 flex flex-col justify-between cursor-pointer ${
+                        className={`group relative text-left p-4 rounded-2xl border transition-all duration-200 flex flex-col justify-between cursor-pointer w-full min-w-0 overflow-hidden ${
                           isSelected
                             ? 'border-indigo-600 dark:border-indigo-500 bg-white dark:bg-slate-900 shadow-md ring-2 ring-indigo-500/20'
                             : 'border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-xs'
                         }`}
                       >
-                        <div className="w-full">
+                        <div className="w-full min-w-0">
                           {/* Header: Avatar + Details + Radio Indicator */}
-                          <div className="flex items-start gap-3 w-full">
+                          <div className="flex items-start gap-3 w-full min-w-0">
                             {/* Avatar */}
-                            <div className="relative shrink-0">
-                              <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-indigo-50 to-slate-100 dark:from-slate-800 dark:to-slate-850 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-center font-bold text-indigo-600 dark:text-indigo-400 text-sm overflow-hidden shadow-2xs">
+                            <div className="relative shrink-0 w-14 h-14" style={{ width: 56, height: 56, minWidth: 56, minHeight: 56, maxWidth: 56, maxHeight: 56 }}>
+                              <div
+                                className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-50 to-slate-100 dark:from-slate-800 dark:to-slate-850 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-center font-bold text-indigo-600 dark:text-indigo-400 text-sm overflow-hidden shadow-2xs"
+                                style={{ width: 56, height: 56, minWidth: 56, minHeight: 56, maxWidth: 56, maxHeight: 56 }}
+                              >
                                 {avatarSrc ? (
                                   <img
                                     src={avatarSrc}
                                     alt={doc.name}
-                                    className="w-full h-full object-cover"
+                                    className="w-full h-full object-cover rounded-2xl block"
+                                    style={{ width: 56, height: 56, minWidth: 56, minHeight: 56, maxWidth: 56, maxHeight: 56, objectFit: 'cover' }}
                                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
                                   />
                                 ) : (
                                   doc.name.replace(/^(Dr\.?|Ms\.?|Mr\.?)\s+/i, '').charAt(0) || 'D'
                                 )}
                               </div>
-                              <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full ring-2 ring-white dark:ring-slate-900" title="Active Specialist" />
+                              <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full ring-2 ring-white dark:ring-slate-900 z-10 pointer-events-none" title="Active Specialist" />
                             </div>
 
                             {/* Name & Specialty Info */}
@@ -918,7 +922,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
         </div>
 
         {/* Right Side: Appointment List & Feedback */}
-        <div className="space-y-4">
+        <div className="lg:col-span-1 min-w-0 space-y-4">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-3xl p-5 transition-colors duration-300">
             <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
               <Clock className="h-5 w-5 text-indigo-500" /> {t('appointment.upcomingAndPastVisits', 'Upcoming & Past Visits')}
