@@ -30,6 +30,8 @@ export class DoctorController {
         extraFeePer15Min,
         feePolicy,
         sleepEvaluationNote,
+        focusTitle,
+        focusIcon,
         commissionType,
         commissionValue
       } = req.body;
@@ -62,6 +64,8 @@ export class DoctorController {
         extraFeePer15Min: extraFeePer15Min !== undefined ? Number(extraFeePer15Min) : 0,
         feePolicy: feePolicy || '',
         sleepEvaluationNote: sleepEvaluationNote || '',
+        focusTitle: focusTitle || '',
+        focusIcon: focusIcon || '',
         commissionType: commissionType || 'PERCENTAGE',
         commissionValue: commissionValue !== undefined ? Number(commissionValue) : 10
       });
@@ -113,6 +117,8 @@ export class DoctorController {
         extraFeePer15Min,
         feePolicy,
         sleepEvaluationNote,
+        focusTitle,
+        focusIcon,
         commissionType,
         commissionValue
       } = req.body;
@@ -133,6 +139,8 @@ export class DoctorController {
       if (extraFeePer15Min !== undefined) doc.extraFeePer15Min = Number(extraFeePer15Min);
       if (feePolicy !== undefined) doc.feePolicy = feePolicy;
       if (sleepEvaluationNote !== undefined) doc.sleepEvaluationNote = sleepEvaluationNote;
+      if (focusTitle !== undefined) doc.focusTitle = focusTitle;
+      if (focusIcon !== undefined) doc.focusIcon = focusIcon;
       if (commissionType !== undefined) doc.commissionType = commissionType;
       if (commissionValue !== undefined) doc.commissionValue = Number(commissionValue);
       if (languagesKnown !== undefined) {

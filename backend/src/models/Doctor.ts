@@ -29,6 +29,8 @@ export interface IDoctor extends Document {
   extraFeePer15Min?: number;
   feePolicy?: string;
   sleepEvaluationNote?: string;
+  focusTitle?: string;
+  focusIcon?: string;
   commissionType?: 'PERCENTAGE' | 'FIXED';
   commissionValue?: number;
   createdAt: Date;
@@ -55,6 +57,8 @@ const DoctorSchema: Schema = new Schema(
     extraFeePer15Min: { type: Number, default: 0 },
     feePolicy: { type: String, default: "" },
     sleepEvaluationNote: { type: String, default: "" },
+    focusTitle: { type: String, default: "" },
+    focusIcon: { type: String, default: "" },
     phone: { type: String },
     address: { type: String },
     languagesKnown: { type: [String], default: [] },

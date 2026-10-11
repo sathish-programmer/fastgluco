@@ -37,6 +37,7 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
     qualification: '',
     experience: 0,
     description: '',
+    focusTitle: '',
     sleepEvaluationNote: '',
     consultationFee: 750,
     onlineConsultationFee: 750,
@@ -310,6 +311,7 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
                   qualification: '',
                   experience: 0,
                   description: '',
+                  focusTitle: '',
                   sleepEvaluationNote: '',
                   consultationFee: 750,
                   onlineConsultationFee: 750,
@@ -439,6 +441,7 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
                               qualification: doc.qualification || '',
                               experience: doc.experience ?? 0,
                               description: doc.description || '',
+                              focusTitle: doc.focusTitle || '',
                               sleepEvaluationNote: doc.sleepEvaluationNote || '',
                               consultationFee: doc.consultationFee ?? doc.onlineConsultationFee ?? 750,
                               onlineConsultationFee: doc.onlineConsultationFee ?? doc.consultationFee ?? 750,
@@ -929,19 +932,33 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
                 </div>
               </div>
 
-              {/* Sleep Evaluation Focus & Clinical Description */}
+              {/* Clinical Focus (Psychological / Sleep Evaluation) & Bio */}
               <div className="space-y-3">
-                <div>
-                  <label className="block font-black text-amber-900 uppercase tracking-wider text-[10px] mb-1">
-                    🌙 Why Sleep Evaluation / Clinical Focus Note (1-2 lines)
-                  </label>
-                  <textarea
-                    value={docForm.sleepEvaluationNote}
-                    onChange={e => setDocForm({ ...docForm, sleepEvaluationNote: e.target.value })}
-                    placeholder="e.g. Sleep evaluation helps detect treatable sleep disorders, improving recovery, immunity, energy, and overall quality of life"
-                    rows={2}
-                    className="w-full border border-amber-200 bg-amber-50/40 rounded-xl p-2.5 text-xs font-medium text-slate-800 focus:outline-none focus:border-amber-400"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block font-black text-slate-700 uppercase tracking-wider text-[10px] mb-1">
+                      🎯 Focus Badge Title
+                    </label>
+                    <input
+                      type="text"
+                      value={docForm.focusTitle}
+                      onChange={e => setDocForm({ ...docForm, focusTitle: e.target.value })}
+                      placeholder="e.g. Psychological Support Focus"
+                      className="w-full border border-slate-200 bg-white rounded-xl p-2.5 text-xs font-medium text-slate-800 focus:outline-none focus:border-indigo-400"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block font-black text-slate-700 uppercase tracking-wider text-[10px] mb-1">
+                      💡 Focus Explanation Note (1-2 lines)
+                    </label>
+                    <input
+                      type="text"
+                      value={docForm.sleepEvaluationNote}
+                      onChange={e => setDocForm({ ...docForm, sleepEvaluationNote: e.target.value })}
+                      placeholder="e.g. for emotional wellbeing, coping strategies, and psychological support"
+                      className="w-full border border-slate-200 bg-white rounded-xl p-2.5 text-xs font-medium text-slate-800 focus:outline-none focus:border-indigo-400"
+                    />
+                  </div>
                 </div>
 
                 <div>

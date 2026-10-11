@@ -584,21 +584,70 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                             )}
                           </div>
 
-                          {/* Sleep Evaluation Focus Callout */}
-                          {doc.sleepEvaluationNote && (
-                            <div className="mt-2.5 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-900 dark:text-amber-200 text-xs">
-                              <span className="font-bold text-[10px] uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center gap-1 mb-0.5">
-                                <span>🌙</span> Sleep Evaluation Focus
-                              </span>
-                              <p className="text-[11px] leading-relaxed italic">
-                                "{doc.sleepEvaluationNote}"
-                              </p>
-                            </div>
-                          )}
+                          {/* Specialist Focus Callout (Psychological Support / Sleep Evaluation / Clinical Focus) */}
+                          {(() => {
+                            const isPsychological = Boolean(
+                              (doc.specialty && /psycho|counsel|mental|addiction/i.test(doc.specialty)) ||
+                              (doc.qualification && /psycho|counsel|mental/i.test(doc.qualification)) ||
+                              (doc.focusTitle && /psycho|mental|counsel/i.test(doc.focusTitle)) ||
+                              (doc.name && /Sailee/i.test(doc.name))
+                            );
 
-                          {doc.description && !doc.sleepEvaluationNote && (
-                            <p className="text-[10px] text-slate-400 mt-1.5 line-clamp-2">{doc.description}</p>
-                          )}
+                            const isSleep = Boolean(
+                              (doc.specialty && /sleep|pulmon|respiratory/i.test(doc.specialty)) ||
+                              (doc.focusTitle && /sleep/i.test(doc.focusTitle))
+                            );
+
+                            const focusTitle = doc.focusTitle || (
+                              isPsychological
+                                ? 'Psychological Support Focus'
+                                : isSleep
+                                ? 'Sleep Evaluation Focus'
+                                : 'Specialist Consultation Focus'
+                            );
+
+                            const focusIcon = doc.focusIcon || (
+                              isPsychological
+                                ? '🧠'
+                                : isSleep
+                                ? '🌙'
+                                : '🩺'
+                            );
+
+                            const noteText = (isPsychological && (!doc.sleepEvaluationNote || /restorative sleep/i.test(doc.sleepEvaluationNote)))
+                              ? 'for emotional wellbeing, coping strategies, and psychological support'
+                              : doc.sleepEvaluationNote;
+
+                            if (!noteText) {
+                              if (doc.description) {
+                                return <p className="text-[10px] text-slate-400 mt-1.5 line-clamp-2">{doc.description}</p>;
+                              }
+                              return null;
+                            }
+
+                            return (
+                              <div
+                                className={`mt-2.5 p-2.5 rounded-xl border text-xs ${
+                                  isPsychological
+                                    ? 'bg-purple-500/10 border-purple-500/25 text-purple-900 dark:text-purple-200'
+                                    : 'bg-amber-500/10 border-amber-500/25 text-amber-900 dark:text-amber-200'
+                                }`}
+                              >
+                                <span
+                                  className={`font-bold text-[10px] uppercase tracking-wider flex items-center gap-1.5 mb-0.5 ${
+                                    isPsychological
+                                      ? 'text-purple-700 dark:text-purple-400'
+                                      : 'text-amber-700 dark:text-amber-400'
+                                  }`}
+                                >
+                                  <span>{focusIcon}</span> {focusTitle}
+                                </span>
+                                <p className="text-[11px] leading-relaxed italic">
+                                  "{noteText}"
+                                </p>
+                              </div>
+                            );
+                          })()}
                         </div>
 
                         {/* Pricing & Policy Footer */}
