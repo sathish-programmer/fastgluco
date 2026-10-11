@@ -31,6 +31,7 @@ export interface IDoctor extends Document {
   sleepEvaluationNote?: string;
   focusTitle?: string;
   focusIcon?: string;
+  isRecommended?: boolean;
   commissionType?: 'PERCENTAGE' | 'FIXED';
   commissionValue?: number;
   createdAt: Date;
@@ -59,6 +60,7 @@ const DoctorSchema: Schema = new Schema(
     sleepEvaluationNote: { type: String, default: "" },
     focusTitle: { type: String, default: "" },
     focusIcon: { type: String, default: "" },
+    isRecommended: { type: Boolean, default: false },
     phone: { type: String },
     address: { type: String },
     languagesKnown: { type: [String], default: [] },

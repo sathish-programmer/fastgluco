@@ -234,6 +234,13 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
     return targetSpec ? docText.includes(targetSpec) : false;
   };
 
+  const isRecommendedDoctor = (doc: any): boolean => {
+    if (!doc) return false;
+    if (doc.isRecommended === true) return true;
+    if (doc.name && /Krithikaa/i.test(doc.name)) return true;
+    return isMatchingSpecialty(doc);
+  };
+
   const fetchDoctors = async () => {
     try {
       const res = await fetch(`${apiUrl}/patient/doctors`, {
@@ -248,8 +255,12 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
         setReason(customReason);
       }
 
-      // Sort: Specialty matches FIRST, then highest rated, then most experienced, then lowest fee
+      // Sort: Recommended doctors FIRST, then specialty matches, then highest rated, then most experienced, then lowest fee
       const sorted = [...data].sort((a: any, b: any) => {
+        const recA = isRecommendedDoctor(a) ? 1 : 0;
+        const recB = isRecommendedDoctor(b) ? 1 : 0;
+        if (recB !== recA) return recB - recA;
+
         const matchA = isMatchingSpecialty(a) ? 1 : 0;
         const matchB = isMatchingSpecialty(b) ? 1 : 0;
         if (matchB !== matchA) return matchB - matchA;
@@ -496,7 +507,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">{t('appointment.selectSpecialist', 'Select Specialist')}</label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {doctors.map(doc => {
-                    const isRec = isMatchingSpecialty(doc);
+                    const isRec = isRecommendedDoctor(doc);
                     const isSelected = selectedDoctor?._id === doc._id;
                     const avatarSrc = getAvatarUrl(doc.avatar, apiUrl);
                     const effectiveDuration = doc.slotDuration || 30;
@@ -569,6 +580,11 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
 
                           {/* Credentials Badges */}
                           <div className="flex items-center gap-1.5 mt-2 flex-wrap text-[10px]">
+                            {doc.hospitalName && (
+                              <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold border border-slate-200/60 dark:border-slate-700 flex items-center gap-1">
+                                <Building2 className="h-3 w-3 inline text-indigo-500" /> {doc.hospitalName}
+                              </span>
+                            )}
                             {doc.experience != null && (
                               <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold border border-slate-200/60 dark:border-slate-700">
                                 🎓 {doc.experience} {t('appointment.yrsExpLabel', 'yrs exp')}
@@ -584,8 +600,15 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                             )}
                           </div>
 
-                          {/* Specialist Focus Callout (Psychological Support / Sleep Evaluation / Clinical Focus) */}
+                          {/* Specialist Focus Callout (Metabolic / Psychological / Sleep / Clinical) */}
                           {(() => {
+                            const isMetabolic = Boolean(
+                              (doc.specialty && /metabolic|cancer|oncol|radiation/i.test(doc.specialty)) ||
+                              (doc.qualification && /oncology|metabolic/i.test(doc.qualification)) ||
+                              (doc.focusTitle && /metabolic|cancer/i.test(doc.focusTitle)) ||
+                              (doc.name && /Krithikaa/i.test(doc.name))
+                            );
+
                             const isPsychological = Boolean(
                               (doc.specialty && /psycho|counsel|mental|addiction/i.test(doc.specialty)) ||
                               (doc.qualification && /psycho|counsel|mental/i.test(doc.qualification)) ||
@@ -599,7 +622,9 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                             );
 
                             const focusTitle = doc.focusTitle || (
-                              isPsychological
+                              isMetabolic
+                                ? 'Metabolic Lifestyle Modulation Focus'
+                                : isPsychological
                                 ? 'Psychological Support Focus'
                                 : isSleep
                                 ? 'Sleep Evaluation Focus'
@@ -607,7 +632,9 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                             );
 
                             const focusIcon = doc.focusIcon || (
-                              isPsychological
+                              isMetabolic
+                                ? '🎗️'
+                                : isPsychological
                                 ? '🧠'
                                 : isSleep
                                 ? '🌙'
@@ -616,6 +643,8 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
 
                             const noteText = (isPsychological && (!doc.sleepEvaluationNote || /restorative sleep/i.test(doc.sleepEvaluationNote)))
                               ? 'for emotional wellbeing, coping strategies, and psychological support'
+                              : (isMetabolic && (!doc.sleepEvaluationNote || /restorative sleep/i.test(doc.sleepEvaluationNote)))
+                              ? 'Metabolic lifestyle modulation for cancer prevention and cancer therapy'
                               : doc.sleepEvaluationNote;
 
                             if (!noteText) {
@@ -628,14 +657,18 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                             return (
                               <div
                                 className={`mt-2.5 p-2.5 rounded-xl border text-xs ${
-                                  isPsychological
+                                  isMetabolic
+                                    ? 'bg-rose-500/10 border-rose-500/25 text-rose-900 dark:text-rose-200'
+                                    : isPsychological
                                     ? 'bg-purple-500/10 border-purple-500/25 text-purple-900 dark:text-purple-200'
                                     : 'bg-amber-500/10 border-amber-500/25 text-amber-900 dark:text-amber-200'
                                 }`}
                               >
                                 <span
                                   className={`font-bold text-[10px] uppercase tracking-wider flex items-center gap-1.5 mb-0.5 ${
-                                    isPsychological
+                                    isMetabolic
+                                      ? 'text-rose-700 dark:text-rose-400'
+                                      : isPsychological
                                       ? 'text-purple-700 dark:text-purple-400'
                                       : 'text-amber-700 dark:text-amber-400'
                                   }`}
@@ -704,6 +737,9 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                       >
                         <span className="flex items-center gap-1.5"><Building2 className="h-4 w-4" /> {t('appointment.inClinicVisit', 'In-Clinic Visit')}</span>
                         <span className="block text-[10px] opacity-80 font-normal mt-0.5">{t('appointment.feeRs', { amount: selectedDoctor.offlineConsultationFee || selectedDoctor.consultationFee || 0 }, 'Fee: Rs. {{amount}}')} ({selectedDoctor.slotDuration || 30}m)</span>
+                        {selectedDoctor.hospitalName && (
+                          <span className="block text-[10px] opacity-90 font-medium mt-0.5">📍 {selectedDoctor.hospitalName}</span>
+                        )}
                       </button>
                     </div>
                   </div>

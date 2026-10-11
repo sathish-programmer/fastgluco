@@ -22,6 +22,9 @@ const DoctorSchema = new mongoose.Schema(
     extraFeePer15Min: { type: Number, default: 0 },
     feePolicy: { type: String, default: "" },
     sleepEvaluationNote: { type: String, default: "" },
+    focusTitle: { type: String, default: "" },
+    focusIcon: { type: String, default: "" },
+    isRecommended: { type: Boolean, default: false },
     phone: { type: String },
     address: { type: String },
     languagesKnown: { type: [String], default: [] },
@@ -76,6 +79,33 @@ async function seedDoctors() {
 
     const doctorsData = [
       {
+        name: 'Dr. Krithikaa Sekar',
+        email: 'dr.krithikaa@mitoreboot.in',
+        passwordHash: defaultPasswordHash,
+        avatar: '/uploads/dr_krithikaa_sekar.jpg',
+        specialty: 'Radiation Oncology, Metabolic Lifestyle Modulation',
+        qualification: 'Radiation Oncology MD',
+        experience: 12,
+        hospitalName: 'HCG Cancer Hospital KR Road',
+        slotDuration: 30,
+        consultationFee: 1000,
+        onlineConsultationFee: 1000,
+        offlineConsultationFee: 1000,
+        extraFeePer15Min: 150,
+        feePolicy: 'extra 150/- every 15 mins, if consultation exceeds 30mins',
+        focusTitle: 'Metabolic Lifestyle Modulation Focus',
+        focusIcon: '🎗️',
+        sleepEvaluationNote: 'Metabolic lifestyle modulation for cancer prevention and cancer therapy. Founder and Chairman Mitoreboot. Consult online or at HCG Cancer Hospital KR Road.',
+        description: 'Founder and Chairman Mitoreboot. MD Radiation Oncology with 12 years of experience. Focus: Metabolic lifestyle Modulation for Cancer prevention and cancer therapy. Consult online or at HCG Cancer Hospital KR Road.',
+        languagesKnown: ['English', 'Tamil', 'Kannada', 'Hindi'],
+        workingHours: '09:00 - 18:00',
+        availableDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+        isActive: true,
+        isDeleted: false,
+        visibility: true,
+        isRecommended: true
+      },
+      {
         name: 'Dr Krishnaveni Renganathan',
         email: 'dr.krishnaveni@fastgluco.com',
         passwordHash: defaultPasswordHash,
@@ -98,7 +128,8 @@ async function seedDoctors() {
         availableDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
         isActive: true,
         isDeleted: false,
-        visibility: true
+        visibility: true,
+        isRecommended: false
       },
       {
         name: 'Ms. Sailee Dayanand Rao',
@@ -123,7 +154,8 @@ async function seedDoctors() {
         availableDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
         isActive: true,
         isDeleted: false,
-        visibility: true
+        visibility: true,
+        isRecommended: false
       }
     ];
 

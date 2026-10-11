@@ -47,6 +47,7 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
     feePolicy: 'extra 100/- every 15 mins, if consultation exceeds 30mins',
     avatar: '',
     isActive: true,
+    isRecommended: false,
     languagesKnown: [] as string[],
     commissionType: 'PERCENTAGE' as 'PERCENTAGE' | 'FIXED',
     commissionValue: 10
@@ -321,6 +322,7 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
                   feePolicy: 'extra 100/- every 15 mins, if consultation exceeds 30mins',
                   avatar: '',
                   isActive: true,
+                  isRecommended: false,
                   languagesKnown: ['English'],
                   commissionType: 'PERCENTAGE',
                   commissionValue: 10
@@ -451,6 +453,7 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
                               feePolicy: doc.feePolicy || '',
                               avatar: doc.avatar || '',
                               isActive: doc.isActive !== false,
+                              isRecommended: Boolean(doc.isRecommended),
                               languagesKnown: doc.languagesKnown || [],
                               commissionType: doc.commissionType || 'PERCENTAGE',
                               commissionValue: doc.commissionValue ?? 10
@@ -1000,18 +1003,33 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
                 </div>
               </div>
 
-              {/* Active Toggle */}
-              <div className="flex items-center gap-2 pt-1">
-                <input
-                  type="checkbox"
-                  id="docActiveToggle"
-                  checked={docForm.isActive}
-                  onChange={e => setDocForm({ ...docForm, isActive: e.target.checked })}
-                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
-                />
-                <label htmlFor="docActiveToggle" className="font-bold text-slate-700 cursor-pointer">
-                  Doctor is Active and Visible for Booking
-                </label>
+              {/* Active & Recommended Toggles */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="docActiveToggle"
+                    checked={docForm.isActive}
+                    onChange={e => setDocForm({ ...docForm, isActive: e.target.checked })}
+                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                  />
+                  <label htmlFor="docActiveToggle" className="font-bold text-slate-700 cursor-pointer text-xs">
+                    Doctor is Active and Visible
+                  </label>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="docRecToggle"
+                    checked={docForm.isRecommended}
+                    onChange={e => setDocForm({ ...docForm, isRecommended: e.target.checked })}
+                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                  />
+                  <label htmlFor="docRecToggle" className="font-bold text-slate-700 cursor-pointer text-xs flex items-center gap-1">
+                    <span>⭐</span> Recommended Specialist
+                  </label>
+                </div>
               </div>
 
               <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-100">

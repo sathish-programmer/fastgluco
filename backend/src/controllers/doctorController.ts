@@ -32,6 +32,7 @@ export class DoctorController {
         sleepEvaluationNote,
         focusTitle,
         focusIcon,
+        isRecommended,
         commissionType,
         commissionValue
       } = req.body;
@@ -66,6 +67,7 @@ export class DoctorController {
         sleepEvaluationNote: sleepEvaluationNote || '',
         focusTitle: focusTitle || '',
         focusIcon: focusIcon || '',
+        isRecommended: isRecommended !== undefined ? Boolean(isRecommended) : false,
         commissionType: commissionType || 'PERCENTAGE',
         commissionValue: commissionValue !== undefined ? Number(commissionValue) : 10
       });
@@ -119,6 +121,7 @@ export class DoctorController {
         sleepEvaluationNote,
         focusTitle,
         focusIcon,
+        isRecommended,
         commissionType,
         commissionValue
       } = req.body;
@@ -141,6 +144,7 @@ export class DoctorController {
       if (sleepEvaluationNote !== undefined) doc.sleepEvaluationNote = sleepEvaluationNote;
       if (focusTitle !== undefined) doc.focusTitle = focusTitle;
       if (focusIcon !== undefined) doc.focusIcon = focusIcon;
+      if (isRecommended !== undefined) doc.isRecommended = Boolean(isRecommended);
       if (commissionType !== undefined) doc.commissionType = commissionType;
       if (commissionValue !== undefined) doc.commissionValue = Number(commissionValue);
       if (languagesKnown !== undefined) {
