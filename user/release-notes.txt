@@ -1,14 +1,14 @@
 <en-US>
-- Streamlined Doctor Consultations: Experience a cleaner, faster booking flow with enhanced specialist profiles and availability.
-- Smarter Consultation Selection: Modernized options for online video consultations and in-person hospital visits.
-- Direct In-Clinic Booking: Seamless access to in-person appointments at partner cancer care centers (HCG).
-- Antioxidants & Wellness Reading: Dedicated wellness and antioxidant literature directly inside your nutrition log.
-- Performance & Reliability: Under-the-hood stability improvements, smoother UI transitions, and faster load times.
+• Enhanced Order Tracking: Real-time tracking updates, carrier details, and clear status milestones for your wellness orders.
+• Product Showcase & Zoom: Explore wellness products with an interactive image gallery and high-resolution zoom.
+• Easy Reviews & Ratings: Share your feedback and rate delivered products with a smooth, intuitive review flow.
+• Transparent Refunds & Returns: Clear refund status indicators and financial breakdowns on cancellations.
+• Performance Improvements: Smoother navigation and overall app reliability enhancements.
 </en-US>
 <en-IN>
-- Streamlined Doctor Consultations: Experience a cleaner, faster booking flow with enhanced specialist profiles and availability.
-- Smarter Consultation Selection: Modernized options for online video consultations and in-person hospital visits.
-- Direct In-Clinic Booking: Seamless access to in-person appointments at partner cancer care centers (HCG).
-- Antioxidants & Wellness Reading: Dedicated wellness and antioxidant literature directly inside your nutrition log.
-- Performance & Reliability: Under-the-hood stability improvements, smoother UI transitions, and faster load times.
+• Enhanced Order Tracking: Real-time tracking updates, carrier details, and clear status milestones for your wellness orders.
+• Product Showcase & Zoom: Explore wellness products with an interactive image gallery and high-resolution zoom.
+• Easy Reviews & Ratings: Share your feedback and rate delivered products with a smooth, intuitive review flow.
+• Transparent Refunds & Returns: Clear refund status indicators and financial breakdowns on cancellations.
+• Performance Improvements: Smoother navigation and overall app reliability enhancements.
 </en-IN>
