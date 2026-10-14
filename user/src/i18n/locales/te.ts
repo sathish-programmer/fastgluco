@@ -2277,6 +2277,7 @@ export const te = {
   "rateOrder": "ఉత్పత్తులను రేట్ చేయండి",
   "openDailyCheckinChatbot": "AI రోజువారీ చెక్-ఇన్ అసిస్టెంట్‌ని తెరవండి",
   "appBackButton": "వెనుకకు",
+  "app.pressBackAgainToExit": "నిష్క్రమించడానికి మళ్లీ వెనుకకు నొక్కండి",
   "common.logged": "లాగిన్ చేయబడింది",
   "common.minutes": "నిమిషాలు",
   "Yes": "అవును",

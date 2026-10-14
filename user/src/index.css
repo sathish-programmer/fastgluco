@@ -14,11 +14,17 @@
   body,
   #root {
     @apply h-full w-full overflow-hidden;
+    overscroll-behavior-x: none;
+    overscroll-behavior-y: none;
+    overscroll-behavior: none;
   }
 
   body {
     @apply bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 font-sans antialiased selection:bg-primary-light selection:text-primary-dark transition-colors duration-300;
     -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-x: none;
+    overscroll-behavior-y: none;
+    overscroll-behavior: none;
   }
 }
 

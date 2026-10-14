@@ -2278,6 +2278,7 @@ export const en = {
   "rateOrder": "Rate Products",
   "openDailyCheckinChatbot": "Open AI Daily Check-in Assistant",
   "appBackButton": "Back",
+  "app.pressBackAgainToExit": "Press back again to exit",
   "common.logged": "Logged",
   "common.minutes": "Minutes",
   "Yes": "Yes",

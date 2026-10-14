@@ -2277,6 +2277,7 @@ export const hi = {
   "rateOrder": "उत्पादों को रेट करें",
   "openDailyCheckinChatbot": "AI दैनिक चेक-इन सहायक खोलें",
   "appBackButton": "वापस",
+  "app.pressBackAgainToExit": "बाहर निकलने के लिए फिर से वापस दबाएं",
   "common.logged": "दर्ज किया गया",
   "common.minutes": "मिनट",
   "Yes": "हाँ",

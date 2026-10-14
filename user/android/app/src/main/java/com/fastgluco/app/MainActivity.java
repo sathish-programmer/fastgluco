@@ -43,6 +43,8 @@ public class MainActivity extends BridgeActivity {
                 if (webView != null) {
                     // Enable hardware acceleration for smooth bitmap rendering
                     webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+                    // Disable overscroll bounce and unwanted navigation gestures
+                    webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
 
                     // Configure Cookies for Razorpay cross-origin iframe
                     CookieManager cookieManager = CookieManager.getInstance();

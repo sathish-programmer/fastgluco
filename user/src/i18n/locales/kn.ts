@@ -2277,6 +2277,7 @@ export const kn = {
   "rateOrder": "ಉತ್ಪನ್ನಗಳನ್ನು ರೇಟ್ ಮಾಡಿ",
   "openDailyCheckinChatbot": "AI ದೈನಂದಿನ ತಪಾಸಣೆ ಸಹಾಯಕರನ್ನು ತೆರೆಯಿರಿ",
   "appBackButton": "ಹಿಂದಕ್ಕೆ",
+  "app.pressBackAgainToExit": "ನಿರ್ಗಮಿಸಲು ಮತ್ತೆ ಹಿಂದಕ್ಕೆ ಒತ್ತಿರಿ",
   "common.logged": "ದಾಖಲಿಸಲಾಗಿದೆ",
   "common.minutes": "ನಿಮಿಷಗಳು",
   "Yes": "ಹೌದು",

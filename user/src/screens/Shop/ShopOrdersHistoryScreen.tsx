@@ -49,6 +49,29 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
   const [downloadingLabReportId, setDownloadingLabReportId] = useState<string | null>(null);
   const [copiedOrderId, setCopiedOrderId] = useState<string | null>(null);
 
+  useEffect(() => {
+    (window as any).ordersSubViewActive = !!(selectedOrder || showSupportModal);
+    const handleBack = (e: Event) => {
+      if (showSupportModal) {
+        e.preventDefault();
+        if ('stopImmediatePropagation' in e) e.stopImmediatePropagation();
+        setShowSupportModal(false);
+        return;
+      }
+      if (selectedOrder) {
+        e.preventDefault();
+        if ('stopImmediatePropagation' in e) e.stopImmediatePropagation();
+        setSelectedOrder(null);
+        return;
+      }
+    };
+    window.addEventListener('appBackButton', handleBack);
+    return () => {
+      (window as any).ordersSubViewActive = false;
+      window.removeEventListener('appBackButton', handleBack);
+    };
+  }, [selectedOrder, showSupportModal]);
+
   const handleCopyOrderId = (e: React.MouseEvent, orderId: string) => {
     e.stopPropagation();
     navigator.clipboard.writeText(orderId);

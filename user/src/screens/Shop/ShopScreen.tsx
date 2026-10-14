@@ -741,9 +741,11 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
       }
     };
 
+    (window as any).shopSubViewActive = !!(showBasket || selectedProduct);
     window.addEventListener('appBackButton', handleBackButtonEvent);
     window.addEventListener('popstate', handleBackButtonEvent);
     return () => {
+      (window as any).shopSubViewActive = false;
       window.removeEventListener('appBackButton', handleBackButtonEvent);
       window.removeEventListener('popstate', handleBackButtonEvent);
     };

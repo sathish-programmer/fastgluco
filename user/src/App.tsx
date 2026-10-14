@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { ToastProvider } from './context/ToastContext';
+import { ToastProvider, useToast } from './context/ToastContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { ConsultationProvider } from './context/ConsultationContext';
@@ -53,6 +53,7 @@ import { initNotificationScheduler } from './utils/notificationScheduler';
 const MainAppContent: React.FC = () => {
   const { isAuthenticated, isLoading, token, apiUrl, logout, branding, user, activeMode, isOnline, refreshProfile } = useAuth();
   const { t } = useLanguage();
+  const { showToast } = useToast();
   // Theme toggle moved to Profile settings
 
   // Parse route and orderId from URL (supports https://app.mitoreboot.in/orders/:id and ?tab=orders)
@@ -317,12 +318,43 @@ const MainAppContent: React.FC = () => {
     window.scrollTo(0, 0);
   }, [activeTab, isSubScreenActive, showCancerCGMDashboard]);
 
-  // Reset sub-screen active state when changing tabs
+  // Double-back-to-exit tracking
+  const lastBackPressTimeRef = useRef<number>(0);
+  const exitResetTimerRef = useRef<any>(null);
+
+  // Synchronized refs to avoid re-attaching listener or encountering stale closures
+  const activeTabRef = useRef(activeTab);
+  activeTabRef.current = activeTab;
+
+  const navigationHistoryRef = useRef(navigationHistory);
+  navigationHistoryRef.current = navigationHistory;
+
+  const showCancerCGMDashboardRef = useRef(showCancerCGMDashboard);
+  showCancerCGMDashboardRef.current = showCancerCGMDashboard;
+
+  const showWhatsNewRef = useRef(showWhatsNew);
+  showWhatsNewRef.current = showWhatsNew;
+
+  const showAskMitoDrawerRef = useRef(showAskMitoDrawer);
+  showAskMitoDrawerRef.current = showAskMitoDrawer;
+
+  const showHelpModalRef = useRef(showHelpModal);
+  showHelpModalRef.current = showHelpModal;
+
+  const showOnboardingRef = useRef(showOnboarding);
+  showOnboardingRef.current = showOnboarding;
+
+  // Reset back press timer when user navigates to a different tab
   useEffect(() => {
     setIsSubScreenActive(false);
+    lastBackPressTimeRef.current = 0;
+    if (exitResetTimerRef.current) {
+      clearTimeout(exitResetTimerRef.current);
+      exitResetTimerRef.current = null;
+    }
   }, [activeTab]);
 
-  // Listen to Android hardware back button for stack-based navigation
+  // Listen to Android hardware back button & system edge gesture for stack-based navigation & double-back-to-exit
   useEffect(() => {
     let active = true;
     let listener: any = null;
@@ -335,33 +367,122 @@ const MainAppContent: React.FC = () => {
         const handle = await App.addListener('backButton', () => {
           if (!active) return;
 
-          // If a child view (like Profile settings subview) has captured/intercepted the back button
-          if (activeTab === 'Profile' && (window as any).profileSubViewActive) {
+          // 1. If any modal or drawer is open, dismiss it first
+          if (showWhatsNewRef.current) {
+            setShowWhatsNew(false);
+            return;
+          }
+          if (showAskMitoDrawerRef.current) {
+            setShowAskMitoDrawer(false);
+            return;
+          }
+          if (showHelpModalRef.current) {
+            setShowHelpModal(false);
+            return;
+          }
+          if (showOnboardingRef.current) {
+            setShowOnboarding(false);
+            return;
+          }
+
+          // 2. If Profile subview (e.g. Account, Notifications, Security settings) is active
+          if (activeTabRef.current === 'Profile' && (window as any).profileSubViewActive) {
             window.dispatchEvent(new CustomEvent('appBackButton'));
             return;
           }
 
-          // If the Cancer CGM dashboard sub-view is active
-          if (activeTab === 'Home' && showCancerCGMDashboard) {
+          // 3. If Shop subview (e.g. Product Details modal or Basket) is active
+          if (activeTabRef.current === 'Shop' && (window as any).shopSubViewActive) {
+            window.dispatchEvent(new CustomEvent('appBackButton'));
+            return;
+          }
+
+          // 4. If Shop Orders subview (e.g. Dedicated Order Details) is active
+          if (activeTabRef.current === 'Shop Orders' && (window as any).ordersSubViewActive) {
+            window.dispatchEvent(new CustomEvent('appBackButton'));
+            return;
+          }
+
+          // 5. If Cancer CGM dashboard sub-view is active on Home
+          if (activeTabRef.current === 'Home' && showCancerCGMDashboardRef.current) {
             setShowCancerCGMDashboard(false);
             return;
           }
 
-          // If a sub-screen on the Home dashboard is active
-          if (activeTab === 'Home' && (window as any).activeSubScreen) {
+          // 6. If a sub-screen on the Home dashboard is active (e.g. water/activity loggers)
+          if (activeTabRef.current === 'Home' && (window as any).activeSubScreen) {
             window.dispatchEvent(new CustomEvent('appBackButton'));
             return;
           }
 
-          if (navigationHistory.length > 1) {
-            const newHistory = [...navigationHistory];
-            newHistory.pop(); // Remove the current tab
+          // 7. Dispatch a cancelable appBackButton event in case any other active component intercepts it
+          const customBackEvent = new CustomEvent('appBackButton', { cancelable: true });
+          window.dispatchEvent(customBackEvent);
+          if (customBackEvent.defaultPrevented) {
+            return;
+          }
+
+          const currentTab = activeTabRef.current;
+          const currentHistory = navigationHistoryRef.current;
+
+          // 8. If on any screen other than Home, navigate back to previous screen
+          if (currentTab !== 'Home') {
+            lastBackPressTimeRef.current = 0;
+            if (exitResetTimerRef.current) {
+              clearTimeout(exitResetTimerRef.current);
+              exitResetTimerRef.current = null;
+            }
+
+            if (currentHistory.length > 1) {
+              const newHistory = [...currentHistory];
+              newHistory.pop(); // Remove the current screen
+              const previousTab = newHistory[newHistory.length - 1];
+              setNavigationHistory(newHistory);
+              _setActiveTab(previousTab);
+              syncUrlWithTab(previousTab);
+            } else {
+              // If history has no prior screens, return to root Home dashboard
+              setNavigationHistory(['Home']);
+              _setActiveTab('Home');
+              syncUrlWithTab('Home');
+              window.dispatchEvent(new CustomEvent('navigateToHomeDashboard'));
+            }
+            return;
+          }
+
+          // 9. If currently on Home, but history has residual entries
+          if (currentHistory.length > 1) {
+            const newHistory = [...currentHistory];
+            newHistory.pop();
             const previousTab = newHistory[newHistory.length - 1];
             setNavigationHistory(newHistory);
             _setActiveTab(previousTab);
-          } else {
-            // Already at the Home tab, exit the app
+            syncUrlWithTab(previousTab);
+            return;
+          }
+
+          // 10. We are at the root Main Screen (Home):
+          // Double-back-to-exit pattern
+          const now = Date.now();
+          if (now - lastBackPressTimeRef.current <= 2000) {
+            // Second back press within 2 seconds: close the app
+            lastBackPressTimeRef.current = 0;
+            if (exitResetTimerRef.current) {
+              clearTimeout(exitResetTimerRef.current);
+              exitResetTimerRef.current = null;
+            }
             App.exitApp();
+          } else {
+            // First back press: prompt user with toast and start 2-second confirmation window
+            lastBackPressTimeRef.current = now;
+            showToast(t('app.pressBackAgainToExit', 'Press back again to exit'), 'info', 2000);
+
+            if (exitResetTimerRef.current) {
+              clearTimeout(exitResetTimerRef.current);
+            }
+            exitResetTimerRef.current = setTimeout(() => {
+              lastBackPressTimeRef.current = 0;
+            }, 2000);
           }
         });
 
@@ -382,8 +503,12 @@ const MainAppContent: React.FC = () => {
       if (listener) {
         listener.remove();
       }
+      if (exitResetTimerRef.current) {
+        clearTimeout(exitResetTimerRef.current);
+        exitResetTimerRef.current = null;
+      }
     };
-  }, [activeTab, navigationHistory, showCancerCGMDashboard]);
+  }, []);
 
 
   const [isSubscribed, setIsSubscribed] = useState<boolean | null>(null);

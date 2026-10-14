@@ -2277,6 +2277,7 @@ export const ta = {
   "rateOrder": "தயாரிப்புகளை மதிப்பிடுங்கள்",
   "openDailyCheckinChatbot": "AI தினசரி பரிசோதனை உதவியாளரைத் திற",
   "appBackButton": "பின்செல்",
+  "app.pressBackAgainToExit": "வெளியேற மீண்டும் பின்செல்லவும்",
   "common.logged": "பதிவு செய்யப்பட்டது",
   "common.minutes": "நிமிடங்கள்",
   "Yes": "ஆம்",
