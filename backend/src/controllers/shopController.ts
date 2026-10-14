@@ -679,7 +679,7 @@ export const validateShopCoupon = async (req: Request, res: Response) => {
 
 // Helper: Auto-assign order to vendor and dispatch order via vendor adapter
 
-async function autoAssignAndSubmitVendorOrder(order: any) {
+export async function autoAssignAndSubmitVendorOrder(order: any) {
   try {
     let matchedVendorId = order.vendorId;
 
@@ -1177,20 +1177,44 @@ export const submitProductReview = async (req: any, res: Response) => {
       return res.status(400).json({ message: 'Product ID, Order ID, and Rating are required.' });
     }
 
-    // Check if order exists, is completed, and belongs to user
-    const order = await ShopOrder.findOne({ _id: orderId, userId, status: 'completed' });
+    // Check if order exists and belongs to user (status completed or deliveryStatus delivered)
+    const order = await ShopOrder.findOne({ 
+      _id: orderId, 
+      userId,
+      $or: [{ status: 'completed' }, { deliveryStatus: 'delivered' }]
+    });
     if (!order) {
       return res.status(404).json({ message: 'Order not found or not completed.' });
     }
 
-    // Check if product belongs to order
-    const hasProduct = order.products.some(p => p.productId.toString() === productId);
-    if (!hasProduct) {
+    // Check if product belongs to order - match either by productId, subdocument _id, or name
+    const prodIdStr = productId.toString();
+    const matchingProduct = order.products.find((p: any) => 
+      (p.productId && p.productId.toString() === prodIdStr) ||
+      (p._id && p._id.toString() === prodIdStr) ||
+      (p.name && p.name.toLowerCase() === prodIdStr.toLowerCase())
+    );
+
+    if (!matchingProduct) {
       return res.status(400).json({ message: 'This product was not purchased in this order.' });
     }
 
+    // Determine target productId to store in ProductReview (must be a valid ObjectId)
+    const matchingItem: any = matchingProduct;
+    const targetProductId = (matchingItem.productId && mongoose.Types.ObjectId.isValid(matchingItem.productId))
+      ? matchingItem.productId
+      : (matchingItem._id || (mongoose.Types.ObjectId.isValid(prodIdStr) ? prodIdStr : new mongoose.Types.ObjectId()));
+
     // Check if already reviewed
-    const existing = await ProductReview.findOne({ productId, orderId, userId });
+    const existing = await ProductReview.findOne({
+      orderId,
+      userId,
+      $or: [
+        { productId: targetProductId },
+        ...(mongoose.Types.ObjectId.isValid(prodIdStr) ? [{ productId: prodIdStr }] : []),
+        ...(matchingItem._id ? [{ productId: matchingItem._id }] : [])
+      ]
+    });
     if (existing) {
       return res.status(409).json({ message: 'You have already reviewed this product for this order.' });
     }
@@ -1199,7 +1223,7 @@ export const submitProductReview = async (req: any, res: Response) => {
     const patientName = userRecord?.name || 'Valued Patient';
 
     const review = new ProductReview({
-      productId,
+      productId: targetProductId,
       orderId,
       userId,
       patientName,

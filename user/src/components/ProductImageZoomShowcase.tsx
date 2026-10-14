@@ -48,7 +48,12 @@ export const ProductImageZoomShowcase: React.FC<ProductImageZoomShowcaseProps> =
 
   // Resolve true image URL
   const resolveUrl = useCallback((src?: string): string => {
-    const raw = (src && src.trim() !== '') ? src : (productName ? verifiedImagesMap[productName] : undefined);
+    const isPlaceholder = typeof src === 'string' && (src.includes('11Sa2OpQXzL') || src.includes('no-img') || src.includes('placeholder'));
+    const matchedVerified = productName
+      ? (verifiedImagesMap[productName] ||
+         Object.entries(verifiedImagesMap).find(([k]) => productName.toLowerCase().includes(k.toLowerCase()) || k.toLowerCase().includes(productName.toLowerCase()))?.[1])
+      : undefined;
+    const raw = (!isPlaceholder && src && src.trim() !== '') ? src : matchedVerified;
     if (!raw) return '';
     if (!raw.startsWith('/') && !raw.startsWith('http') && raw.length <= 4) return ''; // Emoji
     const baseUrl = apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl;

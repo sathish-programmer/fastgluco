@@ -50,7 +50,9 @@ import {
   Sparkles,
   History,
   Smartphone,
-  Stethoscope
+  Stethoscope,
+  RefreshCw,
+  Package
 } from 'lucide-react';
 import {
   BarChart, Bar, PieChart, Pie, Cell,
@@ -74,6 +76,7 @@ import { AdminDailyLoggingWorkflows } from './components/AdminDailyLoggingWorkfl
 import { AdminAskMitoTopics } from './components/AdminAskMitoTopics';
 import { AdminUserFeedback } from './components/AdminUserFeedback';
 import { AdminAppHealth } from './components/AdminAppHealth';
+import { OrderManagementHub } from './components/orderManagement/OrderManagementHub';
 
 const getCategoryStyle = (score: number) => {
   if (score <= 15) return 'bg-emerald-50 text-emerald-700 border-emerald-250';
@@ -195,6 +198,7 @@ const AdminPanelContent: React.FC = () => {
     appointments: true,
     diagnostics: true,
     store: true,
+    orderSupport: true,
     reports: true,
     settings: false
   });
@@ -252,6 +256,8 @@ const AdminPanelContent: React.FC = () => {
 
   // API Data states
   const [stats, setStats] = useState<any>(null);
+  const [reportsAnalytics, setReportsAnalytics] = useState<any>(null);
+  const [reportsAnalyticsLoading, setReportsAnalyticsLoading] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 10, pages: 1 });
@@ -654,6 +660,9 @@ const AdminPanelContent: React.FC = () => {
       if (activeView.startsWith('appointments-') || activeView === 'appointments-list') {
         fetchAdminAppointments();
       }
+      if (activeView === 'reports-analytics') {
+        fetchReportsAnalytics();
+      }
     }
   }, [isAuthenticated, admin, activeView, searchQuery]);
 
@@ -893,6 +902,23 @@ const AdminPanelContent: React.FC = () => {
       if (res.ok) setStats(await res.json());
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const fetchReportsAnalytics = async () => {
+    setReportsAnalyticsLoading(true);
+    try {
+      const res = await fetch(`${apiUrl}/admin/reports-analytics`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setReportsAnalytics(data);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setReportsAnalyticsLoading(false);
     }
   };
 
@@ -2551,6 +2577,92 @@ const AdminPanelContent: React.FC = () => {
               </button>
             </div>
 
+            {/* CATEGORY: ORDER & SUPPORT MANAGEMENT */}
+            <div className="space-y-1">
+              {!sidebarCollapsed && <p className="px-4 text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-2">Order & Support Management</p>}
+
+              <div className="space-y-1">
+                <button 
+                  onClick={() => toggleGroup('orderSupport')}
+                  className="w-full flex items-center justify-between px-4 py-2 text-slate-400 hover:text-white transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <Package className="h-4.5 w-4.5 shrink-0 text-primary" />
+                    {!sidebarCollapsed && <span className="text-[10px] font-black uppercase tracking-wider">Order & Support</span>}
+                  </div>
+                  {!sidebarCollapsed && (openGroups.orderSupport ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />)}
+                </button>
+                {openGroups.orderSupport && !sidebarCollapsed && (
+                  <div className="pl-6 space-y-1 border-l border-slate-800 ml-6">
+                    <button 
+                      onClick={() => { setActiveView('order-mgmt-overview'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'order-mgmt-overview' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      1. Order Overview
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('order-mgmt-orders'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'order-mgmt-orders' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      2. All Orders
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('order-mgmt-refunds'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'order-mgmt-refunds' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      3. Refunds & Cancellations
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('order-mgmt-support'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'order-mgmt-support' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      4. Customer Support Inbox
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('order-mgmt-messages'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'order-mgmt-messages' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      5. Customer Messages
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('order-mgmt-reports'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'order-mgmt-reports' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      6. Reports & Analytics
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('order-mgmt-vendors'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'order-mgmt-vendors' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      7. Vendors & Fulfilment
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('order-mgmt-settings'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'order-mgmt-settings' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      8. Order Settings & Audit
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* CATEGORY: RESOURCES & CONTENT */}
             <div className="space-y-1">
               {!sidebarCollapsed && <p className="px-4 text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-2">Content & Library</p>}
@@ -2786,7 +2898,7 @@ const AdminPanelContent: React.FC = () => {
           {/* Left: Breadcrumbs & Recently Used */}
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-400">
-              {['Admin', ...(activeView === 'dashboard' ? ['Dashboard'] : activeView === 'users' ? ['Users', 'Patients'] : activeView === 'pendingEdits' ? ['Users', 'Profile Edits'] : activeView === 'doctors-management' ? ['Users', 'Doctors'] : activeView === 'vendors-management' ? ['Users', 'Vendors'] : activeView.startsWith('appointments-') ? ['Appointments', activeView.replace('appointments-', '')] : activeView === 'screening-tests' ? ['Appointments', 'Screening Tests'] : activeView === 'partner-labs' ? ['Appointments', 'Partner Labs'] : activeView === 'store-products' ? ['Health Store', 'Products'] : activeView === 'store-orders' ? ['Health Store', 'Orders Routing'] : activeView === 'store-reports' ? ['Health Store', 'Sales Reports'] : [activeView])].map((part, idx, arr) => (
+              {['Admin', ...(activeView === 'dashboard' ? ['Dashboard'] : activeView === 'users' ? ['Users', 'Patients'] : activeView === 'pendingEdits' ? ['Users', 'Profile Edits'] : activeView === 'doctors-management' ? ['Users', 'Doctors'] : activeView === 'vendors-management' ? ['Users', 'Vendors'] : activeView.startsWith('appointments-') ? ['Appointments', activeView.replace('appointments-', '')] : activeView === 'screening-tests' ? ['Appointments', 'Screening Tests'] : activeView === 'partner-labs' ? ['Appointments', 'Partner Labs'] : activeView === 'store-products' ? ['Health Store', 'Products'] : activeView === 'store-orders' ? ['Health Store', 'Orders Routing'] : activeView === 'store-reports' ? ['Health Store', 'Sales Reports'] : activeView.startsWith('order-mgmt-') ? ['Order & Support Management', activeView.replace('order-mgmt-', '').replace('-', ' ')] : [activeView])].map((part, idx, arr) => (
                 <React.Fragment key={idx}>
                   {idx > 0 && <span className="text-[10px]">/</span>}
                   <span className={idx === arr.length - 1 ? 'text-slate-800 font-extrabold' : ''}>{part}</span>
@@ -2796,9 +2908,9 @@ const AdminPanelContent: React.FC = () => {
             {/* Quick Recently Used Tags */}
             <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400">
               <span>Recent:</span>
+              <button onClick={() => setActiveView('order-mgmt-overview')} className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 rounded text-slate-655 transition-all">Order & Support</button>
               <button onClick={() => setActiveView('store-products')} className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 rounded text-slate-655 transition-all">Products</button>
               <button onClick={() => setActiveView('doctors-management')} className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 rounded text-slate-655 transition-all">Doctors</button>
-              <button onClick={() => setActiveView('store-orders')} className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 rounded text-slate-655 transition-all">Orders</button>
             </div>
           </div>
 
@@ -4082,6 +4194,29 @@ const AdminPanelContent: React.FC = () => {
           <AdminExtDashboard apiUrl={apiUrl} token={token} defaultTab="orders" />
         )}
 
+        {/* ORDER & SUPPORT MANAGEMENT MODULE */}
+        {activeView.startsWith('order-mgmt-') && (
+          <OrderManagementHub
+            key={activeView}
+            apiUrl={apiUrl}
+            token={token || ''}
+            adminRole={admin?.role || 'Admin'}
+            initialTab={
+              activeView === 'order-mgmt-overview' ? 'overview' :
+              activeView === 'order-mgmt-orders' ? 'orders' :
+              activeView === 'order-mgmt-refunds' ? 'refunds' :
+              activeView === 'order-mgmt-support' ? 'support' :
+              activeView === 'order-mgmt-messages' ? 'messages' :
+              activeView === 'order-mgmt-reports' ? 'reports' :
+              activeView === 'order-mgmt-vendors' ? 'vendors' :
+              activeView === 'order-mgmt-settings' ? 'settings' : 'overview'
+            }
+            onNavigateTab={(tab) => {
+              setActiveView(`order-mgmt-${tab}`);
+            }}
+          />
+        )}
+
         {/* HEALTH STORE REPORTS VIEW */}
         {activeView === 'store-reports' && (
           <AdminShopReports apiUrl={apiUrl} token={token || ''} />
@@ -4105,26 +4240,71 @@ const AdminPanelContent: React.FC = () => {
         {/* REPORTS & ANALYTICS VIEW */}
         {activeView === 'reports-analytics' && (
           <div className="space-y-6">
-            <div>
-              <h2 className="text-xl font-bold text-slate-800">System Reports & Analytics</h2>
-              <p className="text-xs text-slate-500 mt-1">Cross-platform clinical activity and store transaction streams</p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                  System Reports & Analytics
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Live Realtime
+                  </span>
+                </h2>
+                <p className="text-xs text-slate-500 mt-1">Cross-platform clinical activity and store transaction streams from production database</p>
+              </div>
+
+              <button
+                onClick={fetchReportsAnalytics}
+                disabled={reportsAnalyticsLoading}
+                className="self-start md:self-auto flex items-center gap-2 px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 shadow-sm transition-all"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${reportsAnalyticsLoading ? 'animate-spin text-primary' : ''}`} />
+                <span>{reportsAnalyticsLoading ? 'Updating...' : 'Refresh Live Data'}</span>
+              </button>
+            </div>
+
+            {/* Quick Metrics Bar */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-soft">
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">6-Month Revenue</span>
+                <p className="text-xl font-bold text-slate-800 mt-1">
+                  ₹{(reportsAnalytics?.revenueTrends || []).reduce((acc: number, r: any) => acc + (r.revenue || 0), 0).toLocaleString('en-IN')}
+                </p>
+                <span className="text-[10px] text-slate-400">Delivered store orders</span>
+              </div>
+              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-soft">
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">6-Month Orders</span>
+                <p className="text-xl font-bold text-emerald-600 mt-1">
+                  {(reportsAnalytics?.monthlyOrders || []).reduce((acc: number, r: any) => acc + (r.orders || 0), 0)}
+                </p>
+                <span className="text-[10px] text-slate-400">Total store purchases</span>
+              </div>
+              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-soft">
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">This Week Appointments</span>
+                <p className="text-xl font-bold text-indigo-600 mt-1">
+                  {(reportsAnalytics?.weeklyAppointments || []).reduce((acc: number, a: any) => acc + (a.completed || 0) + (a.pending || 0), 0)}
+                </p>
+                <span className="text-[10px] text-slate-400">Completed & active consultations</span>
+              </div>
+              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-soft">
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Integrated Vendors</span>
+                <p className="text-xl font-bold text-purple-600 mt-1">
+                  {(reportsAnalytics?.vendorEfficiency || []).length}
+                </p>
+                <span className="text-[10px] text-slate-400">Active fulfillment partners</span>
+              </div>
             </div>
 
             {/* Graphs Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Chart 1: Revenue Trends */}
               <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-soft">
-                <h3 className="text-sm font-bold text-slate-700 mb-4">Revenue Trends (Jan - Jun)</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-bold text-slate-700">Revenue Trends (Last 6 Months)</h3>
+                  <span className="text-[11px] font-semibold text-slate-400">₹ Realtime</span>
+                </div>
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={[
-                      { month: 'Jan', revenue: 42000 },
-                      { month: 'Feb', revenue: 51000 },
-                      { month: 'Mar', revenue: 68000 },
-                      { month: 'Apr', revenue: 82000 },
-                      { month: 'May', revenue: 95000 },
-                      { month: 'Jun', revenue: stats?.revenue || 120000 },
-                    ]}>
+                    <AreaChart data={reportsAnalytics?.revenueTrends || []}>
                       <defs>
                         <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor="#2563EB" stopOpacity={0.8}/>
@@ -4133,7 +4313,7 @@ const AdminPanelContent: React.FC = () => {
                       </defs>
                       <XAxis dataKey="month" stroke="#94A3B8" fontSize={11} />
                       <YAxis stroke="#94A3B8" fontSize={11} />
-                      <Tooltip />
+                      <Tooltip formatter={(val: any) => [`₹${val}`, 'Revenue']} />
                       <Area type="monotone" dataKey="revenue" stroke="#2563EB" fillOpacity={1} fill="url(#colorRevenue)" />
                     </AreaChart>
                   </ResponsiveContainer>
@@ -4142,20 +4322,16 @@ const AdminPanelContent: React.FC = () => {
 
               {/* Chart 2: Orders Count */}
               <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-soft">
-                <h3 className="text-sm font-bold text-slate-700 mb-4">Monthly Orders Volume</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-bold text-slate-700">Monthly Orders Volume</h3>
+                  <span className="text-[11px] font-semibold text-slate-400">Realtime Count</span>
+                </div>
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={[
-                      { month: 'Jan', orders: 120 },
-                      { month: 'Feb', orders: 150 },
-                      { month: 'Mar', orders: 190 },
-                      { month: 'Apr', orders: 240 },
-                      { month: 'May', orders: 310 },
-                      { month: 'Jun', orders: stats?.foodLogs || 400 },
-                    ]}>
+                    <BarChart data={reportsAnalytics?.monthlyOrders || []}>
                       <XAxis dataKey="month" stroke="#94A3B8" fontSize={11} />
-                      <YAxis stroke="#94A3B8" fontSize={11} />
-                      <Tooltip />
+                      <YAxis stroke="#94A3B8" fontSize={11} allowDecimals={false} />
+                      <Tooltip formatter={(val: any) => [val, 'Orders']} />
                       <Bar dataKey="orders" fill="#14B8A6" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -4164,23 +4340,19 @@ const AdminPanelContent: React.FC = () => {
 
               {/* Chart 3: Appointment Trends */}
               <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-soft">
-                <h3 className="text-sm font-bold text-slate-700 mb-4">Weekly Appointment Status Trends</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-bold text-slate-700">Weekly Appointment Status Trends</h3>
+                  <span className="text-[11px] font-semibold text-slate-400">Current Week</span>
+                </div>
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={[
-                      { day: 'Mon', completed: 12, cancelled: 1 },
-                      { day: 'Tue', completed: 18, cancelled: 2 },
-                      { day: 'Wed', completed: 24, cancelled: 4 },
-                      { day: 'Thu', completed: 16, cancelled: 2 },
-                      { day: 'Fri', completed: 22, cancelled: 3 },
-                      { day: 'Sat', completed: 10, cancelled: 1 },
-                      { day: 'Sun', completed: 5, cancelled: 0 },
-                    ]}>
+                    <LineChart data={reportsAnalytics?.weeklyAppointments || []}>
                       <XAxis dataKey="day" stroke="#94A3B8" fontSize={11} />
-                      <YAxis stroke="#94A3B8" fontSize={11} />
+                      <YAxis stroke="#94A3B8" fontSize={11} allowDecimals={false} />
                       <Tooltip />
-                      <Line type="monotone" dataKey="completed" stroke="#10B981" strokeWidth={2} />
-                      <Line type="monotone" dataKey="cancelled" stroke="#EF4444" strokeWidth={2} />
+                      <Line type="monotone" dataKey="completed" name="Completed" stroke="#10B981" strokeWidth={2} />
+                      <Line type="monotone" dataKey="cancelled" name="Cancelled" stroke="#EF4444" strokeWidth={2} />
+                      <Line type="monotone" dataKey="pending" name="Pending" stroke="#F59E0B" strokeWidth={2} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -4188,18 +4360,16 @@ const AdminPanelContent: React.FC = () => {
 
               {/* Chart 4: Vendor Performance */}
               <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-soft">
-                <h3 className="text-sm font-bold text-slate-700 mb-4">Partner Vendor Efficiency (%)</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-bold text-slate-700">Partner Vendor Efficiency (%)</h3>
+                  <span className="text-[11px] font-semibold text-slate-400">Live Partners</span>
+                </div>
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={[
-                      { name: 'Fast Delivery', efficiency: 94 },
-                      { name: 'Rx Express', efficiency: 88 },
-                      { name: 'City Medics', efficiency: 75 },
-                      { name: 'Apex Pharmacy', efficiency: 92 },
-                    ]}>
+                    <BarChart data={reportsAnalytics?.vendorEfficiency || []}>
                       <XAxis dataKey="name" stroke="#94A3B8" fontSize={11} />
-                      <YAxis stroke="#94A3B8" fontSize={11} />
-                      <Tooltip />
+                      <YAxis stroke="#94A3B8" fontSize={11} domain={[0, 100]} />
+                      <Tooltip formatter={(val: any) => [`${val}%`, 'Efficiency']} />
                       <Bar dataKey="efficiency" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>

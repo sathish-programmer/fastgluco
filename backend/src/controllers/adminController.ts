@@ -1114,4 +1114,114 @@ export class AdminController {
       return res.status(500).json({ message: err.message || 'Error processing global search' });
     }
   }
+
+  public static async getReportsAnalytics(req: AuthRequest, res: Response) {
+    try {
+      // 1. Monthly Revenue & Orders (Last 6 months)
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const now = new Date();
+      
+      const last6Months: { year: number; monthIndex: number; month: string }[] = [];
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        last6Months.push({
+          year: d.getFullYear(),
+          monthIndex: d.getMonth(),
+          month: months[d.getMonth()]
+        });
+      }
+
+      const sixMonthsAgoStart = new Date(last6Months[0].year, last6Months[0].monthIndex, 1);
+
+      const orders = await ShopOrder.find({
+        createdAt: { $gte: sixMonthsAgoStart }
+      }).lean();
+
+      const revenueTrends = last6Months.map(m => {
+        const ordersInMonth = orders.filter(o => {
+          const od = new Date(o.createdAt);
+          return od.getFullYear() === m.year && od.getMonth() === m.monthIndex;
+        });
+        const revenue = ordersInMonth
+          .filter(o => o.status === 'completed' || o.deliveryStatus === 'delivered')
+          .reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+        return {
+          month: m.month,
+          revenue: Math.round(revenue * 100) / 100,
+          orders: ordersInMonth.length
+        };
+      });
+
+      // 2. Weekly Appointment Status Trends (Mon - Sun of current week)
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const currentDay = now.getDay();
+      const diffToMonday = (currentDay === 0 ? -6 : 1) - currentDay;
+      const monday = new Date(now);
+      monday.setDate(now.getDate() + diffToMonday);
+      monday.setHours(0, 0, 0, 0);
+
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      sunday.setHours(23, 59, 59, 999);
+
+      const mondayStr = monday.toISOString().split('T')[0];
+      const sundayStr = sunday.toISOString().split('T')[0];
+
+      const appointments = await Appointment.find({
+        $or: [
+          { createdAt: { $gte: monday, $lte: sunday } },
+          { date: { $gte: mondayStr, $lte: sundayStr } }
+        ]
+      }).lean();
+
+      const orderedDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      const weeklyAppointments = orderedDays.map(dayName => {
+        const dayAppts = appointments.filter(a => {
+          let d: Date;
+          if (a.date && typeof a.date === 'string' && a.date.includes('-')) {
+            d = new Date(a.date);
+          } else {
+            d = new Date(a.createdAt);
+          }
+          return dayNames[d.getDay()] === dayName;
+        });
+
+        const completed = dayAppts.filter(a => a.status === 'completed').length;
+        const cancelled = dayAppts.filter(a => a.status === 'cancelled').length;
+        const pending = dayAppts.filter(a => a.status === 'pending' || a.status === 'confirmed').length;
+
+        return { day: dayName, completed, cancelled, pending };
+      });
+
+      // 3. Partner Vendor Performance / Efficiency (%)
+      const vendors = await Vendor.find().lean();
+      const allOrders = await ShopOrder.find().lean();
+
+      const vendorEfficiency = vendors.map(v => {
+        const vOrders = allOrders.filter(o => o.vendorId && o.vendorId.toString() === v._id.toString());
+        const totalAssigned = vOrders.length;
+        const delivered = vOrders.filter(o => o.deliveryStatus === 'delivered' || o.status === 'completed').length;
+        const efficiency = totalAssigned > 0 ? Math.round((delivered / totalAssigned) * 100) : 0;
+        return {
+          name: v.name || v.businessName || 'Vendor',
+          businessName: v.businessName || v.name,
+          totalAssigned,
+          delivered,
+          efficiency
+        };
+      }).slice(0, 8);
+
+      return res.status(200).json({
+        revenueTrends,
+        monthlyOrders: revenueTrends.map(r => ({ month: r.month, orders: r.orders })),
+        weeklyAppointments,
+        vendorEfficiency: vendorEfficiency.length > 0 ? vendorEfficiency : [
+          { name: 'No Vendors', efficiency: 0 }
+        ]
+      });
+    } catch (err: any) {
+      console.error('Error in getReportsAnalytics:', err);
+      return res.status(500).json({ message: err.message || 'Error fetching reports analytics' });
+    }
+  }
 }

@@ -49,10 +49,10 @@ export interface IAppHealthConfig extends Document {
 
 const versionRuleSchema = new Schema<IVersionRule>(
   {
-    latestReleasedVersion: { type: String, default: '5.27.0' },
-    latestBuildNumber: { type: String, default: '91' },
+    latestReleasedVersion: { type: String, default: '5.28.0' },
+    latestBuildNumber: { type: String, default: '92' },
     minSupportedVersion: { type: String, default: '5.20.0' },
-    recommendedVersion: { type: String, default: '5.27.0' },
+    recommendedVersion: { type: String, default: '5.28.0' },
     forceUpdate: { type: Boolean, default: false },
     updateUrl: { type: String, default: 'https://play.google.com/store/apps/details?id=com.mitoreboot.app' },
     releaseNotes: { type: String, default: 'Performance improvements, metabolic telemetry, and stability updates.' },
@@ -96,10 +96,10 @@ const appHealthConfigSchema = new Schema<IAppHealthConfig>(
     androidVersionRules: {
       type: versionRuleSchema,
       default: () => ({
-        latestReleasedVersion: '5.27.0',
-        latestBuildNumber: '91',
+        latestReleasedVersion: '5.28.0',
+        latestBuildNumber: '92',
         minSupportedVersion: '5.20.0',
-        recommendedVersion: '5.27.0',
+        recommendedVersion: '5.28.0',
         forceUpdate: false,
         updateUrl: 'https://play.google.com/store/apps/details?id=com.mitoreboot.app',
         releaseNotes: 'Stability updates, clinical coaching, and doctor consultation features'
@@ -108,10 +108,10 @@ const appHealthConfigSchema = new Schema<IAppHealthConfig>(
     iosVersionRules: {
       type: versionRuleSchema,
       default: () => ({
-        latestReleasedVersion: '5.27.0',
-        latestBuildNumber: '93',
+        latestReleasedVersion: '5.28.0',
+        latestBuildNumber: '94',
         minSupportedVersion: '5.20.0',
-        recommendedVersion: '5.27.0',
+        recommendedVersion: '5.28.0',
         forceUpdate: false,
         updateUrl: 'https://apps.apple.com/app/mitoreboot/id6783705985',
         releaseNotes: 'Stability updates, clinical coaching, and doctor consultation features'

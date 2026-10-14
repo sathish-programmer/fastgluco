@@ -1317,7 +1317,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
             </sup>
           </span>
           <span>•</span>
-          <span>v5.9.0</span>
+          <span>{CURRENT_APP_VERSION}</span>
         </p>
         <p className="text-[9px] text-slate-400/80">
           © {new Date().getFullYear()} MitoReboot Private Limited. All rights reserved.

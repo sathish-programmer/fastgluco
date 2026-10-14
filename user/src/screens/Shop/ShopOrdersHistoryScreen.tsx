@@ -608,7 +608,14 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
                 const currencySymbol = order.currency === 'USD' ? '$' : '₹';
                 const hasRated = userReviews.some(r => r.orderId === order._id);
                 const isDelivered = order.deliveryStatus === 'delivered';
-                const statusMeta = getStatusBadge(order.deliveryStatus);
+                const isFullyRefunded = (order.totalRefundedAmount || 0) >= order.totalAmount && order.totalAmount > 0;
+                const statusMeta = (order.deliveryStatus === 'cancelled' || (isFullyRefunded && !isDelivered))
+                  ? {
+                      label: isFullyRefunded ? 'Cancelled & Refunded' : 'Cancelled',
+                      color: 'bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800/40',
+                      dot: 'bg-rose-500'
+                    }
+                  : getStatusBadge(order.deliveryStatus);
                 const formattedDate = new Date(order.createdAt || order.updatedAt || Date.now()).toLocaleDateString(activeLocale, {
                   month: 'short',
                   day: 'numeric',
@@ -661,13 +668,23 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
                         </div>
 
                         {/* Payment Pill */}
-                        <span className={`text-[11px] font-black px-3 py-1 rounded-full border uppercase tracking-wider shadow-2xs ${
-                          order.status === 'completed'
-                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-                            : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
-                        }`}>
-                          {order.status === 'completed' ? '✓ Paid Online' : 'Payment Pending'}
-                        </span>
+                        {isFullyRefunded ? (
+                          <span className="text-[11px] font-black px-3 py-1 rounded-full border uppercase tracking-wider shadow-2xs bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20">
+                            Refunded
+                          </span>
+                        ) : (order.totalRefundedAmount || 0) > 0 ? (
+                          <span className="text-[11px] font-black px-3 py-1 rounded-full border uppercase tracking-wider shadow-2xs bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20">
+                            Partial Refund
+                          </span>
+                        ) : (
+                          <span className={`text-[11px] font-black px-3 py-1 rounded-full border uppercase tracking-wider shadow-2xs ${
+                            order.status === 'completed'
+                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                              : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
+                          }`}>
+                            {order.status === 'completed' ? '✓ Paid Online' : 'Payment Pending'}
+                          </span>
+                        )}
                       </div>
                     </div>
 

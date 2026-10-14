@@ -45,6 +45,7 @@ export interface IShopOrder extends Document {
     courierName: string;
     trackingId: string;
     trackingUrl?: string;
+    trackingNotes?: string;
   };
   invoiceUrl?: string;
   platformCommission?: number;
@@ -78,6 +79,26 @@ export interface IShopOrder extends Document {
     customerGatewayCharge: number; // Borne by customer (2.36%)
     finalVendorPayable: number; // Vendor product share + shipping
   };
+
+  // Payment method & Admin Notes
+  paymentMethod?: string;
+  adminNotes?: string;
+  totalRefundedAmount?: number;
+
+  // Refund history & tracking
+  refunds?: {
+    refundId: string;
+    refundRequestNumber: string;
+    amount: number;
+    reason: string;
+    status: 'PENDING' | 'COMPLETED' | 'FAILED' | 'REJECTED';
+    gatewayRefundId?: string;
+    gatewayResponse?: any;
+    initiatedAt: Date;
+    completedAt?: Date;
+    initiatedBy?: mongoose.Types.ObjectId;
+    idempotencyKey?: string;
+  }[];
 
   // Customer Cancellation / Return / Refund Workflow
   cancellationRequest?: {
@@ -143,7 +164,8 @@ const ShopOrderSchema: Schema = new Schema({
   trackingDetails: {
     courierName: { type: String, default: '' },
     trackingId: { type: String, default: '' },
-    trackingUrl: { type: String, default: '' }
+    trackingUrl: { type: String, default: '' },
+    trackingNotes: { type: String, default: '' }
   },
   invoiceUrl: { type: String, default: '' },
   platformCommission: { type: Number, default: 0 },
@@ -201,7 +223,23 @@ const ShopOrderSchema: Schema = new Schema({
       arivuActionNotes: { type: String, default: '' }
     }, { _id: false }),
     default: null
-  }
+  },
+  paymentMethod: { type: String, default: 'Razorpay' },
+  adminNotes: { type: String, default: '' },
+  totalRefundedAmount: { type: Number, default: 0 },
+  refunds: [{
+    refundId: { type: String, required: true },
+    refundRequestNumber: { type: String, default: '' },
+    amount: { type: Number, required: true },
+    reason: { type: String, default: '' },
+    status: { type: String, enum: ['PENDING', 'COMPLETED', 'FAILED', 'REJECTED'], default: 'PENDING' },
+    gatewayRefundId: { type: String },
+    gatewayResponse: { type: Schema.Types.Mixed },
+    initiatedAt: { type: Date, default: Date.now },
+    completedAt: { type: Date },
+    initiatedBy: { type: Schema.Types.ObjectId, ref: 'AdminUser' },
+    idempotencyKey: { type: String }
+  }]
 }, { timestamps: true });
 
 export default mongoose.model<IShopOrder>('ShopOrder', ShopOrderSchema);

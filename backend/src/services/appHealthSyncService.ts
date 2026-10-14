@@ -23,19 +23,19 @@ export class AppHealthSyncService {
         googleStatus: 'AUTHENTICATED',
         appleStatus: 'AUTHENTICATED',
         androidVersionRules: {
-          latestReleasedVersion: '5.27.0',
-          latestBuildNumber: '91',
+          latestReleasedVersion: '5.28.0',
+          latestBuildNumber: '92',
           minSupportedVersion: '5.20.0',
-          recommendedVersion: '5.27.0',
+          recommendedVersion: '5.28.0',
           forceUpdate: false,
           updateUrl: 'https://play.google.com/store/apps/details?id=com.mitoreboot.app',
           releaseNotes: 'Stability updates, clinical coaching, and doctor consultation features'
         },
         iosVersionRules: {
-          latestReleasedVersion: '5.27.0',
-          latestBuildNumber: '93',
+          latestReleasedVersion: '5.28.0',
+          latestBuildNumber: '94',
           minSupportedVersion: '5.20.0',
-          recommendedVersion: '5.27.0',
+          recommendedVersion: '5.28.0',
           forceUpdate: false,
           updateUrl: 'https://apps.apple.com/app/mitoreboot/id6783705985',
           releaseNotes: 'Stability updates, clinical coaching, and doctor consultation features'

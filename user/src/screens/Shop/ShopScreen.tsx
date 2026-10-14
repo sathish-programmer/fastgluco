@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   ArrowLeft, Search, SlidersHorizontal, Sparkles, AlertCircle, ShoppingCart,
   Package, MapPin, Plus, Minus, ChevronRight, ExternalLink,
-  Check, X, Share2, ShieldCheck, Stethoscope, Truck, Tag, Leaf, Zap
+  Check, X, Share2, ShieldCheck, Stethoscope, Truck, Tag, Leaf, Zap, BookOpen
 } from 'lucide-react';
 import { BasketScreen } from './BasketScreen';
 import { PincodeDeliveryChecker } from '../../components/PincodeDeliveryChecker';
@@ -18,7 +18,7 @@ interface ShopScreenProps {
   defaultSearch?: string;
 }
 
-// Verified Cloudinary packaging photography hosted on Arivu Foods' CDN
+// Verified packaging & high-res book photography hosted on CDN
 const VERIFIED_CLIENT_IMAGES: Record<string, string> = {
   'Multi Seed Dosa': 'https://res.cloudinary.com/dzexvqcnl/image/upload/v1739889943/squlpcnma8gkeojw5z7a.png',
   'Multi Seed Atta': 'https://res.cloudinary.com/dzexvqcnl/image/upload/v1739888457/xnjvdqb269yskfuxxc5h.png',
@@ -30,7 +30,11 @@ const VERIFIED_CLIENT_IMAGES: Record<string, string> = {
   'Women’s Health Nutri Mix': 'https://res.cloudinary.com/dzexvqcnl/image/upload/v1775031738/nuxin2ynchkil57qucgc.jpg',
   'Multi Seed Chakli': 'https://res.cloudinary.com/dzexvqcnl/image/upload/v1739891802/nmcwib3u8wjpjde7majb.png',
   'Mix Seed Dosa': 'https://res.cloudinary.com/dzexvqcnl/image/upload/v1739889943/squlpcnma8gkeojw5z7a.png',
-  'Low-Carb Multi Seeds Atta': 'https://res.cloudinary.com/dzexvqcnl/image/upload/v1739888457/xnjvdqb269yskfuxxc5h.png'
+  'Low-Carb Multi Seeds Atta': 'https://res.cloudinary.com/dzexvqcnl/image/upload/v1739888457/xnjvdqb269yskfuxxc5h.png',
+  'The Antioxidant Save-Your-Life Cookbook': 'https://m.media-amazon.com/images/I/61i3mWj9I+L.jpg',
+  'The Antioxidant Miracle: High-Performance Longevity': 'https://m.media-amazon.com/images/I/61i3mWj9I+L.jpg',
+  'The Antioxidant Miracle': 'https://m.media-amazon.com/images/I/61i3mWj9I+L.jpg',
+  'The Antioxidant Save-Your-Life Cookbook: 150 Nutritious High-Fiber, Low-Fat Recipes to Protect Yourself Against the Damaging Effects of Free Radicals (Jane Kinderlehrer Smart Food Series)': 'https://m.media-amazon.com/images/I/61i3mWj9I+L.jpg'
 };
 
 export const ProductImage: React.FC<{
@@ -44,7 +48,16 @@ export const ProductImage: React.FC<{
   const [error, setError] = useState(false);
   const { t } = useLanguage();
 
-  const resolvedSrc = (src && src.trim() !== '') ? src : (title ? VERIFIED_CLIENT_IMAGES[title] : undefined);
+  // Filter out Amazon default placeholder icon (11Sa2OpQXzL.png is the grey box rotating arrow)
+  const isAmazonPlaceholder = typeof src === 'string' && (src.includes('11Sa2OpQXzL') || src.includes('no-img') || src.includes('placeholder'));
+
+  // Match against verified client image repository by exact or partial substring
+  const matchedVerifiedImage = title
+    ? (VERIFIED_CLIENT_IMAGES[title] ||
+       Object.entries(VERIFIED_CLIENT_IMAGES).find(([k]) => title.toLowerCase().includes(k.toLowerCase()) || k.toLowerCase().includes(title.toLowerCase()))?.[1])
+    : undefined;
+
+  const resolvedSrc = (!isAmazonPlaceholder && src && src.trim() !== '') ? src : matchedVerifiedImage;
 
   if (resolvedSrc && !error) {
     const isEmoji = !resolvedSrc.startsWith('/') && !resolvedSrc.startsWith('http') && resolvedSrc.length <= 4;
@@ -65,6 +78,24 @@ export const ProductImage: React.FC<{
         loading="lazy"
         referrerPolicy="no-referrer"
       />
+    );
+  }
+
+  // If Book category or book in title, render an elegant book cover card
+  const isBook = (category && category.toLowerCase().includes('book')) || (title && title.toLowerCase().includes('book'));
+  if (isBook) {
+    return (
+      <div className={`${className} bg-gradient-to-br from-amber-50 via-orange-50/50 to-amber-100/70 dark:from-slate-900 dark:via-amber-950/20 dark:to-slate-950 border border-amber-200/80 dark:border-amber-900/40 flex flex-col items-center justify-center p-3 relative overflow-hidden select-none shadow-xs`}>
+        <div className="h-10 w-10 rounded-2xl bg-amber-500/10 dark:bg-amber-400/15 border border-amber-300/60 dark:border-amber-600/30 flex items-center justify-center shadow-xs mb-1.5">
+          <BookOpen className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+        </div>
+        <span className="text-[9px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-200 text-center max-w-[120px] line-clamp-2 leading-tight">
+          {title || 'Health Literature'}
+        </span>
+        <span className="text-[8px] font-bold text-amber-600 dark:text-amber-400 tracking-wide mt-1">
+          MitoReboot Library
+        </span>
+      </div>
     );
   }
 
@@ -638,6 +669,18 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
 
   const distinctBrands = Array.from(new Set(products.map(p => p.brand).filter(Boolean))) as string[];
 
+  const scrollToScreenTop = () => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    const mainEl = document.querySelector('main');
+    if (mainEl) mainEl.scrollTop = 0;
+    const scrollables = document.querySelectorAll('.overflow-y-auto, .overflow-y-scroll, .shop-screen-container');
+    scrollables.forEach(el => {
+      el.scrollTop = 0;
+    });
+  };
+
   const openProductDetails = (item: ShopItem) => {
     if (item.buyOnAmazonUrl) {
       window.open(item.buyOnAmazonUrl, '_blank', 'noopener,noreferrer');
@@ -652,7 +695,25 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
     } else {
       setSelectedVariant(null);
     }
+    scrollToScreenTop();
   };
+
+  // Ensure product details always starts scrolled to the very top
+  useEffect(() => {
+    if (selectedProduct) {
+      scrollToScreenTop();
+      const raf = requestAnimationFrame(() => {
+        scrollToScreenTop();
+      });
+      const timer = setTimeout(() => {
+        scrollToScreenTop();
+      }, 50);
+      return () => {
+        cancelAnimationFrame(raf);
+        clearTimeout(timer);
+      };
+    }
+  }, [selectedProduct]);
 
   const closeProductDetails = () => {
     setSelectedProduct(null);

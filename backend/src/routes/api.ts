@@ -40,6 +40,7 @@ import * as DailyLoggingWorkflowController from '../controllers/dailyLoggingWork
 import * as AskMitoController from '../controllers/askMitoController';
 import { AiChatController } from '../controllers/aiChatController';
 import { AppHealthController } from '../controllers/appHealthController';
+import { OrderManagementController } from '../controllers/orderManagementController';
 
 const router = Router();
 
@@ -414,6 +415,7 @@ router.get('/admin/stain-image/:filename', authenticateToken, requireRole(['Supe
 router.use('/admin', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']));
 
 router.get('/admin/stats', AdminController.getStats);
+router.get('/admin/reports-analytics', AdminController.getReportsAnalytics);
 router.get('/admin/users', AdminController.getUsers);
 router.get('/admin/users/:id/activity', AdminController.getUserActivity);
 router.get('/admin/profile-edits', AdminController.getPendingProfileEdits);
@@ -743,7 +745,22 @@ router.get('/patient/orders', authenticateToken, requireRole(['User']), async (r
       }
     }
 
-    res.json(orders);
+    const sanitizedOrders = orders.map((order: any) => {
+      const origIds = typeof order.populated === 'function' ? order.populated('products.productId') : null;
+      const orderObj = typeof order.toObject === 'function' ? order.toObject() : order;
+      if (Array.isArray(orderObj.products)) {
+        orderObj.products.forEach((p: any, idx: number) => {
+          if (!p.productId && origIds && origIds[idx]) {
+            p.productId = origIds[idx].toString();
+          } else if (!p.productId && p._id) {
+            p.productId = p._id.toString();
+          }
+        });
+      }
+      return orderObj;
+    });
+
+    res.json(sanitizedOrders);
   } catch (err) {
     res.status(500).json({ message: 'Error fetching patient orders.' });
   }
@@ -797,7 +814,19 @@ router.get('/patient/orders/:id', authenticateToken, requireRole(['User']), asyn
       }
     }
 
-    res.json(order);
+    const origIds = typeof order.populated === 'function' ? order.populated('products.productId') : null;
+    const orderObj = typeof order.toObject === 'function' ? order.toObject() : order;
+    if (Array.isArray(orderObj.products)) {
+      orderObj.products.forEach((p: any, idx: number) => {
+        if (!p.productId && origIds && origIds[idx]) {
+          p.productId = origIds[idx].toString();
+        } else if (!p.productId && p._id) {
+          p.productId = p._id.toString();
+        }
+      });
+    }
+
+    res.json(orderObj);
   } catch (err) {
     res.status(500).json({ message: 'Error retrieving order details.' });
   }
@@ -833,5 +862,25 @@ router.post('/admin/app-health/sync-now', authenticateToken, requireRole(['Super
 // Client-facing Telemetry & Version Checking
 router.post('/telemetry/heartbeat', AppHealthController.recordHeartbeat);
 router.get('/config/version-check', AppHealthController.checkVersion);
+
+// ─── ORDER & SUPPORT MANAGEMENT MODULE ROUTES ───────────────────────────
+router.get('/admin/order-management/overview', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), OrderManagementController.getOverviewMetrics);
+router.get('/admin/order-management/orders', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), OrderManagementController.getAllOrders);
+router.get('/admin/order-management/orders/:orderId', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), OrderManagementController.getOrderDetails);
+router.put('/admin/order-management/orders/:orderId/lifecycle', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), OrderManagementController.updateOrderLifecycle);
+router.post('/admin/order-management/orders/:orderId/notes', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), OrderManagementController.addAdminNote);
+router.post('/admin/order-management/orders/:orderId/cancellation', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), OrderManagementController.manageCancellation);
+router.post('/admin/order-management/orders/:orderId/refund', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), OrderManagementController.processRefund);
+router.get('/admin/order-management/refunds-cancellations', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), OrderManagementController.getRefundsAndCancellations);
+router.get('/admin/order-management/support/tickets', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), OrderManagementController.getSupportInbox);
+router.get('/admin/order-management/support/tickets/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), OrderManagementController.getTicketDetails);
+router.put('/admin/order-management/support/tickets/:id', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), OrderManagementController.updateTicket);
+router.post('/admin/order-management/messages/send', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), OrderManagementController.sendCustomerMessage);
+router.get('/admin/order-management/vendors/orders', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), OrderManagementController.getVendorFulfilmentOrders);
+router.post('/admin/order-management/vendors/orders/:orderId/retry', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), OrderManagementController.retryVendorSubmission);
+router.get('/admin/order-management/analytics', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), OrderManagementController.getReportsAndAnalytics);
+router.get('/admin/order-management/audit-history', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), OrderManagementController.getAuditHistory);
+router.get('/admin/order-management/settings', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), OrderManagementController.getOrderSettings);
+router.put('/admin/order-management/settings', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), OrderManagementController.updateOrderSettings);
 
 export default router;

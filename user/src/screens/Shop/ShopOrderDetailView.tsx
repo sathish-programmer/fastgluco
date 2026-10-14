@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   ArrowLeft, Package, Truck, Download, Star, HelpCircle, 
   RefreshCw, ExternalLink, MapPin, Copy, Check, Clock, ShieldCheck, 
-  Receipt, AlertCircle, RotateCcw, X, AlertTriangle
+  Receipt, AlertCircle, RotateCcw, X, AlertTriangle, MessageSquare
 } from 'lucide-react';
 import { ProductImage } from './ShopScreen';
 import { useLanguage } from '../../context/LanguageContext';
@@ -113,7 +113,8 @@ export const ShopOrderDetailView: React.FC<ShopOrderDetailViewProps> = ({
 
   const currencySymbol = order.currency === 'USD' ? '$' : '₹';
   const isDelivered = order.deliveryStatus === 'delivered';
-  const isCancelled = order.deliveryStatus === 'cancelled';
+  const isFullyRefunded = (order.totalRefundedAmount || 0) >= order.totalAmount && order.totalAmount > 0;
+  const isCancelled = order.deliveryStatus === 'cancelled' || (isFullyRefunded && !isDelivered);
 
   // Delivery status styling
   const getDeliveryStatusMeta = (status?: string) => {
@@ -175,11 +176,13 @@ export const ShopOrderDetailView: React.FC<ShopOrderDetailViewProps> = ({
         };
       case 'cancelled':
         return {
-          label: 'Cancelled',
+          label: isFullyRefunded ? 'Cancelled & Refunded' : 'Cancelled',
           color: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
           dot: 'bg-rose-500 shadow-rose-500/50',
           icon: AlertCircle,
-          desc: 'This order was cancelled and refunded'
+          desc: isFullyRefunded 
+            ? `Order cancelled. Full refund of ${currencySymbol}${order.totalRefundedAmount || order.totalAmount} processed.` 
+            : 'This order was cancelled and refunded'
         };
       default:
         return {
@@ -192,7 +195,9 @@ export const ShopOrderDetailView: React.FC<ShopOrderDetailViewProps> = ({
     }
   };
 
-  const statusMeta = getDeliveryStatusMeta(order.deliveryStatus);
+  const statusMeta = isCancelled 
+    ? getDeliveryStatusMeta('cancelled') 
+    : getDeliveryStatusMeta(order.deliveryStatus);
 
   // Fulfillment timeline steps (user-friendly customer language)
   const steps = [
@@ -328,13 +333,23 @@ export const ShopOrderDetailView: React.FC<ShopOrderDetailViewProps> = ({
               </div>
 
               {/* Payment Badge */}
-              <span className={`px-3 py-1.5 rounded-xl border text-xs font-bold uppercase tracking-wider ${
-                order.status === 'completed'
-                  ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-405 border-emerald-200 dark:border-emerald-900/40'
-                  : 'bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-900/40'
-              }`}>
-                {order.status === 'completed' ? '✓ Paid Online' : 'Payment Pending'}
-              </span>
+              {isFullyRefunded ? (
+                <span className="px-3 py-1.5 rounded-xl border text-xs font-bold uppercase tracking-wider bg-purple-50 dark:bg-purple-950/20 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800/40">
+                  ✓ Refunded ({currencySymbol}{order.totalRefundedAmount || order.totalAmount})
+                </span>
+              ) : (order.totalRefundedAmount || 0) > 0 ? (
+                <span className="px-3 py-1.5 rounded-xl border text-xs font-bold uppercase tracking-wider bg-purple-50 dark:bg-purple-950/20 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800/40">
+                  Partially Refunded ({currencySymbol}{order.totalRefundedAmount})
+                </span>
+              ) : (
+                <span className={`px-3 py-1.5 rounded-xl border text-xs font-bold uppercase tracking-wider ${
+                  order.status === 'completed'
+                    ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-405 border-emerald-200 dark:border-emerald-900/40'
+                    : 'bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-900/40'
+                }`}>
+                  {order.status === 'completed' ? '✓ Paid Online' : 'Payment Pending'}
+                </span>
+              )}
             </div>
           </div>
 
@@ -541,8 +556,148 @@ export const ShopOrderDetailView: React.FC<ShopOrderDetailViewProps> = ({
                     </div>
                   </div>
                 </div>
+
+                {/* Tracking Note / Status Note entered by admin during fulfilment */}
+                {(() => {
+                  const latestTrackingNote = order.trackingDetails?.trackingNotes || (
+                    order.orderTimeline && Array.isArray(order.orderTimeline)
+                      ? [...order.orderTimeline].reverse().find((t: any) => t.comment && !t.comment.includes('Internal Note'))?.comment?.replace(/^Fulfilment updated to [^:]+:\s*/i, '').replace(/^Fulfilment updated to [^\.]+\.\s*/i, '')
+                      : ''
+                  );
+                  if (!latestTrackingNote) return null;
+                  return (
+                    <div className="bg-white dark:bg-slate-900 p-3 sm:p-3.5 rounded-xl border border-indigo-100/90 dark:border-slate-800 flex items-start gap-2.5 shadow-2xs mt-2.5">
+                      <div className="h-6 w-6 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/60 dark:border-indigo-800/60 flex items-center justify-center shrink-0 mt-0.5">
+                        <MessageSquare className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[9.5px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 block">
+                          Fulfilment & Tracking Note
+                        </span>
+                        <p className="text-xs font-bold text-slate-800 dark:text-slate-100 mt-0.5 leading-snug">
+                          {latestTrackingNote}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             ) : null}
+
+            {/* Customer-Facing Tracking Timeline & Updates Log */}
+            {order.orderTimeline && order.orderTimeline.length > 0 && (() => {
+              const publicTimeline = order.orderTimeline.filter((t: any) => t.status !== 'internal_note' && (!t.comment || !t.comment.includes('Internal Note')));
+              if (publicTimeline.length === 0) return null;
+              return (
+                <div className="bg-slate-50/70 dark:bg-slate-900/40 rounded-2xl p-4 sm:p-5 border border-slate-200/70 dark:border-slate-800/80 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                    <span className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                      Tracking Updates & Dispatch History
+                    </span>
+                  </div>
+                  <div className="space-y-3 pl-2 border-l-2 border-indigo-200 dark:border-indigo-900/60 ml-2">
+                    {[...publicTimeline].reverse().map((item: any, idx: number) => {
+                      const dateStr = item.timestamp ? new Date(item.timestamp).toLocaleString(activeLocale, {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      }) : '';
+                      return (
+                        <div key={item._id || idx} className="relative pl-3">
+                          <div className="absolute -left-[19px] top-1 h-2.5 w-2.5 rounded-full bg-indigo-500 ring-4 ring-white dark:ring-slate-950" />
+                          <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
+                            <span className="font-bold text-slate-900 dark:text-slate-100 capitalize">
+                              {item.status?.replace(/_/g, ' ')}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-medium">{dateStr}</span>
+                          </div>
+                          {item.comment && (
+                            <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 leading-relaxed font-medium">
+                              {item.comment}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {isCancelled && (
+          <div className="bg-white dark:bg-slate-900 border border-rose-200/80 dark:border-rose-900/50 rounded-3xl p-5 sm:p-6 shadow-sm space-y-5">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800/60 flex items-center justify-center shrink-0">
+                <AlertCircle className="h-5 w-5 text-rose-600 dark:text-rose-400" />
+              </div>
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-rose-600 dark:text-rose-400 block">
+                  Fulfilment Status
+                </span>
+                <h3 className="text-base font-black text-slate-900 dark:text-slate-100">
+                  {isFullyRefunded ? 'Order Cancelled & Fully Refunded' : 'Order Cancelled'}
+                </h3>
+              </div>
+            </div>
+
+            <div className="bg-rose-50/60 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/40 rounded-2xl p-4 text-xs space-y-1.5">
+              <p className="font-bold text-rose-900 dark:text-rose-200">
+                {isFullyRefunded 
+                  ? `This order was cancelled and a full refund of ${currencySymbol}${order.totalRefundedAmount || order.totalAmount} was processed.`
+                  : 'This order was cancelled. Dispatch and shipping have been halted.'}
+              </p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Dispatch and shipping have been halted. All funds have been returned to your original payment method.
+              </p>
+            </div>
+
+            {/* Tracking updates history log */}
+            {order.orderTimeline && order.orderTimeline.length > 0 && (() => {
+              const publicTimeline = order.orderTimeline.filter((t: any) => t.status !== 'internal_note' && (!t.comment || !t.comment.includes('Internal Note')));
+              if (publicTimeline.length === 0) return null;
+              return (
+                <div className="bg-slate-50/70 dark:bg-slate-900/40 rounded-2xl p-4 sm:p-5 border border-slate-200/70 dark:border-slate-800/80 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                    <span className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                      Tracking Updates & Dispatch History
+                    </span>
+                  </div>
+                  <div className="space-y-3 pl-2 border-l-2 border-rose-200 dark:border-rose-900/60 ml-2">
+                    {[...publicTimeline].reverse().map((item: any, idx: number) => {
+                      const dateStr = item.timestamp ? new Date(item.timestamp).toLocaleString(activeLocale, {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      }) : '';
+                      return (
+                        <div key={idx} className="relative pl-3 text-xs">
+                          <span className="absolute -left-[13px] top-1.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900" />
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-extrabold text-slate-800 dark:text-slate-200 capitalize">
+                              {item.status?.replace(/_/g, ' ')}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-semibold">{dateStr}</span>
+                          </div>
+                          {item.comment && (
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
+                              {item.comment}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
 

@@ -294,7 +294,7 @@ export class AppHealthController {
               );
 
               const realPlatform = u.lastPlatform || session?.platform || fcmPlatform || null;
-              const realAppVersion = u.lastAppVersion || session?.appVersion || (hasLiveSession ? '5.27.0' : null);
+              const realAppVersion = u.lastAppVersion || session?.appVersion || (hasLiveSession ? '5.28.0' : null);
 
               let realOsVersion = null;
               if (u.lastOsVersion && u.lastOsVersion !== 'Unknown') {
@@ -876,8 +876,8 @@ export class AppHealthController {
     try {
       const {
         platform = 'android',
-        appVersion = '5.27.0',
-        buildNumber = '91',
+        appVersion = '5.28.0',
+        buildNumber = '92',
         osVersion = 'Unknown',
         deviceModel = 'Unknown',
         deviceId

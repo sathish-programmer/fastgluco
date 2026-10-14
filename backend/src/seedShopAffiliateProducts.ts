@@ -576,23 +576,23 @@ export const AFFILIATE_PRODUCTS = [
     keyBenefits: ['Cellular pharmacology of master antioxidants', 'Dosage strategies for clinical care', 'Physician and clinician oriented insights']
   },
   {
-    name: 'The Antioxidant Miracle: High-Performance Longevity',
-    description: 'Bestselling guide by leading researchers breaking down the antioxidant network (Vitamins C & E, CoQ10, Lipoic Acid, and Glutathione) to protect cells from premature aging.',
-    shortDescription: 'The definitive guide to the 5 key network antioxidants for longevity.',
+    name: 'The Antioxidant Save-Your-Life Cookbook: 150 Nutritious High-Fiber, Low-Fat Recipes to Protect Yourself Against the Damaging Effects of Free Radicals (Jane Kinderlehrer Smart Food Series)',
+    description: 'Evidence-based culinary guide by Jane Kinderlehrer and Daniel A. Kinderlehrer M.D. featuring 150 delicious, nutrient-dense recipes rich in natural antioxidants to neutralize free radicals, support cellular repair, and enhance longevity.',
+    shortDescription: '150 nutritious high-fiber, low-fat recipes to shield cells from oxidative stress.',
     category: 'Books',
     subcategory: 'Books on natural antioxidant food',
-    brand: 'Health Books',
+    brand: 'Jane Kinderlehrer Smart Food Series',
     price: 499,
     regularPrice: 699,
     offerPrice: 499,
     discountPercent: 29,
-    image: 'https://m.media-amazon.com/images/I/11Sa2OpQXzL.png',
-    images: ['https://m.media-amazon.com/images/I/11Sa2OpQXzL.png'],
+    image: 'https://m.media-amazon.com/images/I/61i3mWj9I+L.jpg',
+    images: ['https://m.media-amazon.com/images/I/61i3mWj9I+L.jpg'],
     buyOnAmazonUrl: 'https://www.amazon.in/gp/product/1557043019?tag=mitoreboot-21&linkCode=ll2',
     stock: 25,
     isActive: true,
     doctorRecommended: false,
-    keyBenefits: ['How the five network antioxidants rejuvenate each other', 'Supplements versus whole food intake guidelines', 'Targeted protocols for energy and vitality']
+    keyBenefits: ['150 antioxidant-packed recipes', 'Clinically supported by Jane & Daniel Kinderlehrer M.D.', 'Targeted protocols for cell protection and vitality']
   },
   {
     name: 'The Ultimate Guide to Antioxidants & DNA Protection',

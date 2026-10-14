@@ -10,3 +10,4 @@ scripts/import*.ts
 *.p8
 *.log
 *.tsbuildinfo
+scratch/

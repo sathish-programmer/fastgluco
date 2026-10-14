@@ -47,7 +47,7 @@ export const ProductRatingScreen: React.FC<ProductRatingScreenProps> = ({ orderI
             // Initialize rating states
             const initial: any = {};
             targetOrder.products.forEach((p: any) => {
-              const pId = p.productId && typeof p.productId === 'object' ? p.productId._id : p.productId;
+              const pId = (p.productId && typeof p.productId === 'object' ? p.productId._id : p.productId) || p._id || p.name;
               initial[pId] = { rating: 5, comment: '', submitting: false, submitted: false };
             });
             setReviewsState(initial);
@@ -146,17 +146,28 @@ export const ProductRatingScreen: React.FC<ProductRatingScreenProps> = ({ orderI
       
       {/* Sticky Header Banner */}
       <div 
-        className="sticky top-0 z-50 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 px-4 py-2.5 sm:py-3 shadow-xs"
+        className="sticky top-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800/80 px-4 py-2.5 sm:py-3 shadow-xs"
       >
-        <div className="max-w-2xl mx-auto flex items-center justify-between">
-          <button 
-            onClick={onBack}
-            className="h-10 px-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 shadow-2xs transition-all cursor-pointer"
-          >
-            <ArrowLeft className="h-4 w-4" /> {t('common.back', 'Back')}
-          </button>
-          <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">
-            {t('shop.deliveredOrderFeedback', 'Delivered Order Feedback')}
+        <div className="max-w-2xl mx-auto flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={onBack}
+              className="h-10 px-4 bg-slate-100/90 dark:bg-slate-800/90 hover:bg-slate-200/90 dark:hover:bg-slate-700/90 border border-slate-200/60 dark:border-slate-700/60 rounded-2xl flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200 transition-all cursor-pointer shadow-2xs shrink-0"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>{t('common.back', 'Back')}</span>
+            </button>
+            <div>
+              <span className="text-[10px] font-black tracking-widest text-indigo-600 dark:text-indigo-400 uppercase block">
+                {t('shop.storeTitle', 'MitoReboot Store')}
+              </span>
+              <h1 className="text-sm sm:text-base font-black text-slate-900 dark:text-slate-100 leading-tight">
+                {t('shop.rateYourProducts', 'Rate Your Products')}
+              </h1>
+            </div>
+          </div>
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800/50 shrink-0">
+            {t('shop.feedbackBadge', 'Feedback')}
           </span>
         </div>
       </div>
@@ -168,21 +179,26 @@ export const ProductRatingScreen: React.FC<ProductRatingScreenProps> = ({ orderI
         <h2 className="text-xl font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
           ⭐ {t('shop.rateYourProducts', 'Rate Your Products')}
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-          {t('shop.thankYouForPurchaseDesc', 'Thank you for your purchase! Let us know how your new items worked out.')}
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+          {t('shop.deliveredOrderFeedback', 'Rate your delivered items to help us improve clinical product recommendations.')}
         </p>
 
         <div className="bg-slate-50 dark:bg-slate-950 p-4 border border-slate-100 dark:border-slate-800 rounded-2xl mt-4 flex justify-between items-center text-xs font-bold text-slate-700 dark:text-slate-300">
           <span>{t('shop.orderId', 'Order ID:')} #{order.vendorOrderId || order._id.slice(-8).toUpperCase()}</span>
-          <span>{t('shop.deliveredDate', 'Delivered:')} {new Date(order.deliveryDate || order.updatedAt).toLocaleDateString(activeLocale)}</span>
+          <span>
+            {(() => {
+              const dateStr = new Date(order.deliveryDate || order.updatedAt).toLocaleDateString(activeLocale);
+              return t('shop.deliveredDate', { date: dateStr }, `Delivered on ${dateStr}`);
+            })()}
+          </span>
         </div>
       </div>
 
       {/* Products list */}
       <div className="space-y-4">
-        {order.products.map((p: any) => {
-          const pId = p.productId && typeof p.productId === 'object' ? p.productId._id : p.productId;
-          const pImage = p.productId && typeof p.productId === 'object' ? p.productId.image : p.image;
+        {order.products.map((p: any, idx: number) => {
+          const pId = (p.productId && typeof p.productId === 'object' ? p.productId._id : p.productId) || p._id || p.name || `product_${idx}`;
+          const pImage = (p.productId && typeof p.productId === 'object' ? p.productId.image : null) || p.image;
           const state = reviewsState[pId] || { rating: 5, comment: '', submitting: false, submitted: false };
 
           return (

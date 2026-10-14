@@ -25,8 +25,8 @@ const maskPhoneOrEmail = (identifier: string): string => {
 
 const extractTelemetryMeta = (req: Request) => {
   const platform = (req.headers['x-app-platform'] as string) || req.body?.platform || 'android';
-  const appVersion = (req.headers['x-app-version'] as string) || req.body?.appVersion || '5.27.0';
-  const buildNumber = (req.headers['x-app-build'] as string) || req.body?.buildNumber || '91';
+  const appVersion = (req.headers['x-app-version'] as string) || req.body?.appVersion || '5.28.0';
+  const buildNumber = (req.headers['x-app-build'] as string) || req.body?.buildNumber || '92';
   const osVersion = (req.headers['x-os-version'] as string) || req.body?.osVersion || 'Unknown';
   const deviceModel = (req.headers['x-device-model'] as string) || req.body?.deviceModel || 'Unknown';
   return {
