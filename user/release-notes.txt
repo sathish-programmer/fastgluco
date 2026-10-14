@@ -1,14 +1,14 @@
 <en-US>
-• Enhanced Order Tracking: Real-time tracking updates, carrier details, and clear status milestones for your wellness orders.
-• Product Showcase & Zoom: Explore wellness products with an interactive image gallery and high-resolution zoom.
-• Easy Reviews & Ratings: Share your feedback and rate delivered products with a smooth, intuitive review flow.
-• Transparent Refunds & Returns: Clear refund status indicators and financial breakdowns on cancellations.
-• Performance Improvements: Smoother navigation and overall app reliability enhancements.
+• Real-time Order Tracking: Live updates, carrier details & delivery milestones.
+• Product Zoom & Showcase: High-res image zoom and interactive product viewer.
+• Ratings & Reviews: Submit feedback and rate your delivered wellness orders.
+• Clear Refund Visibility: Instant refund tracking and updated balance details.
+• Stability & Polish: Performance optimizations and smoother app navigation.
 </en-US>
 <en-IN>
-• Enhanced Order Tracking: Real-time tracking updates, carrier details, and clear status milestones for your wellness orders.
-• Product Showcase & Zoom: Explore wellness products with an interactive image gallery and high-resolution zoom.
-• Easy Reviews & Ratings: Share your feedback and rate delivered products with a smooth, intuitive review flow.
-• Transparent Refunds & Returns: Clear refund status indicators and financial breakdowns on cancellations.
-• Performance Improvements: Smoother navigation and overall app reliability enhancements.
+• Real-time Order Tracking: Live updates, carrier details & delivery milestones.
+• Product Zoom & Showcase: High-res image zoom and interactive product viewer.
+• Ratings & Reviews: Submit feedback and rate your delivered wellness orders.
+• Clear Refund Visibility: Instant refund tracking and updated balance details.
+• Stability & Polish: Performance optimizations and smoother app navigation.
 </en-IN>
