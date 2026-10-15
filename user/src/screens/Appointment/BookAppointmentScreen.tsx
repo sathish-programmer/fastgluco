@@ -813,8 +813,8 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                           </span>
                         </div>
                         <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-baseline justify-between text-[11px]">
-                          <span className="font-extrabold text-slate-900 dark:text-slate-100 truncate max-w-[90px]" title={selectedDoctor.hospitalName || 'HCG Cancer Hospital'}>
-                            {selectedDoctor.hospitalName || 'HCG Hospital'}
+                          <span className="font-extrabold text-slate-900 dark:text-slate-100 truncate max-w-[90px]" title={selectedDoctor.hospitalName || 'Cancer Specialist Hospital'}>
+                            {selectedDoctor.hospitalName || 'Specialist Clinic'}
                           </span>
                           <span className="text-[10px] text-purple-600 dark:text-purple-400 font-semibold">
                             Hospital Portal
@@ -836,10 +836,10 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                             In-Person Hospital Consultation
                           </span>
                           <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 mt-0.5">
-                            {selectedDoctor.hospitalName || 'HCG Cancer Hospital KR Road, Bangalore'}
+                            {selectedDoctor.hospitalName || 'Cancer Care Specialist Clinic'}
                           </h4>
                           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                            In-person clinic appointments with <strong>{selectedDoctor.name}</strong> directly at the hospital.
+                            In-person clinic appointments with <strong>{selectedDoctor.name}</strong> directly at the hospital or clinic.
                           </p>
                         </div>
                       </div>
@@ -848,7 +848,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                         <div className="flex items-start gap-2 text-slate-600 dark:text-slate-300">
                           <MapPin className="w-3.5 h-3.5 text-purple-500 shrink-0 mt-0.5" />
                           <span className="text-[11px] leading-snug">
-                            {selectedDoctor.address || 'HCG Cancer Hospital, No 8, P Kalinga Rao Rd, Sampangi Rama Nagar, Bengaluru, Karnataka 560027'}
+                            {selectedDoctor.address || 'Consult a cancer specialist in your town'}
                           </span>
                         </div>
                         {selectedDoctor.workingHours && (
@@ -859,17 +859,23 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                         )}
                       </div>
 
-                      <a
-                        href={selectedDoctor.hospitalBookingUrl || 'https://www.hcgoncology.com/book-an-appointment/'}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-full py-3 px-4 rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer hover:shadow-md active:scale-[0.99]"
-                      >
-                        <span>Book Appointment at HCG Hospital</span>
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
+                      {selectedDoctor.hospitalBookingUrl ? (
+                        <a
+                          href={selectedDoctor.hospitalBookingUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full py-3 px-4 rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer hover:shadow-md active:scale-[0.99]"
+                        >
+                          <span>Book Hospital Appointment</span>
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      ) : (
+                        <div className="w-full py-3 px-4 rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-purple-600 to-indigo-600 shadow-sm flex items-center justify-center gap-2">
+                          <span>Consult a cancer specialist in your town</span>
+                        </div>
+                      )}
                       <p className="text-[10px] text-center text-slate-400 dark:text-slate-500">
-                        Redirects directly to HCG appointment booking portal.
+                        {selectedDoctor.hospitalBookingUrl ? 'Redirects directly to appointment booking portal.' : 'Consult a cancer specialist in your town for an in-person appointment.'}
                       </p>
                     </div>
                   ) : (

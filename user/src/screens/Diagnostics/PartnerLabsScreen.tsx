@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, MapPin, TestTube2, Clock, CheckCircle2, Building2, ExternalLink } from 'lucide-react';
+import { ArrowLeft, MapPin, TestTube2, Clock, CheckCircle2, Building2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -48,7 +48,7 @@ export const PartnerLabsScreen: React.FC<PartnerLabsScreenProps> = ({ testId, te
         </div>
       </div>
 
-      <div className="mb-6 bg-gradient-to-r from-rose-50 to-orange-50 border border-rose-200/80 rounded-2xl p-3.5 flex items-center justify-between gap-3">
+      <div className="mb-6 bg-gradient-to-r from-rose-50 to-orange-50 border border-rose-200/80 rounded-2xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-600 flex items-center justify-center shrink-0">
             <Building2 className="w-4 h-4" />
@@ -58,19 +58,13 @@ export const PartnerLabsScreen: React.FC<PartnerLabsScreenProps> = ({ testId, te
               {t('cancerScreen.hcgConsultPrompt', 'Need an expert oncologist consultation?')}
             </h4>
             <p className="text-[11px] text-slate-500">
-              {t('cancerScreen.hcgConsultPromptDesc', 'Virtual consultation & cancer screening assessment at HCG Hospitals.')}
+              {t('cancerScreen.hcgConsultPromptDesc', 'Consult a cancer specialist in your town for clinical evaluation.')}
             </p>
           </div>
         </div>
-        <a
-          href="https://www.hcgoncology.com/hcg-in-news/cancer-patients-find-virtual-consultation-a-boon-in-these-times-of-crisis/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-xs font-bold rounded-lg shadow-2xs transition-all"
-        >
-          <span>{t('cancerScreen.hcgBannerBtn', 'Consult HCG')}</span>
-          <ExternalLink className="w-3 h-3" />
-        </a>
+        <div className="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 bg-rose-600 text-white text-xs font-bold rounded-lg shadow-2xs">
+          <span>{t('cancerScreen.hcgBannerBtn', 'Consult a cancer specialist in your town')}</span>
+        </div>
       </div>
 
       <div className="mb-6 flex justify-between items-end">
@@ -85,15 +79,9 @@ export const PartnerLabsScreen: React.FC<PartnerLabsScreenProps> = ({ testId, te
           <TestTube2 className="h-10 w-10 text-slate-300 mx-auto mb-3" />
           <p className="font-bold">{t('noLabsAvailable', 'No labs available')}</p>
           <p className="text-xs mt-1 mb-4">{t('noLabsAvailableDesc', 'Currently there are no partner labs offering this specific test.')}</p>
-          <a
-            href="https://www.hcgoncology.com/hcg-in-news/cancer-patients-find-virtual-consultation-a-boon-in-these-times-of-crisis/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-xs font-bold rounded-xl transition-all shadow-sm"
-          >
-            <span>{t('cancerScreen.hcgConsult', 'Consult at HCG Hospitals')}</span>
-            <ExternalLink className="h-3.5 w-3.5" />
-          </a>
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-rose-600 text-white text-xs font-bold rounded-xl shadow-sm">
+            <span>{t('cancerScreen.hcgConsult', 'Consult a cancer specialist in your town')}</span>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4">

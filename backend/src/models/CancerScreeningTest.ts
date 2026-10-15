@@ -22,7 +22,7 @@ const CancerScreeningTestSchema: Schema = new Schema({
   whyItIsNeeded: { type: String, default: '' },
   recommendedAge: { type: String, default: '' },
   generalPreparationInstructions: { type: String, default: '' },
-  hospitalUrl: { type: String, default: 'https://www.hcgoncology.com/hcg-in-news/cancer-patients-find-virtual-consultation-a-boon-in-these-times-of-crisis/' },
+  hospitalUrl: { type: String, default: '' },
   isActive: { type: Boolean, default: true }
 }, { timestamps: true });
 

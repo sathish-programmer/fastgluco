@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Calendar, Save, Beaker, ExternalLink, Building2 } from 'lucide-react';
+import { ArrowLeft, Calendar, Save, Beaker, Building2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { HabitsService, type HabitLog } from '../../services/habitsService';
@@ -9,7 +9,7 @@ import { PaymentScreen } from '../Diagnostics/PaymentScreen';
 import { BookingTrackingScreen } from '../Diagnostics/BookingTrackingScreen';
 import { ReportViewerScreen } from '../Diagnostics/ReportViewerScreen';
 
-export const HCG_HOSPITALS_URL = 'https://www.hcgoncology.com/hcg-in-news/cancer-patients-find-virtual-consultation-a-boon-in-these-times-of-crisis/';
+export const HCG_HOSPITALS_URL = '';
 
 interface CancerScreeningScreenProps {
   onBack: () => void;
@@ -347,26 +347,17 @@ export const CancerScreeningScreen: React.FC<CancerScreeningScreenProps> = ({ on
           <div>
             <div className="flex items-center gap-2">
               <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100">
-                {t('cancerScreen.hcgBannerTitle', 'Virtual Cancer Consultation & Screening — HCG Hospitals')}
+                {t('cancerScreen.hcgBannerTitle', 'Cancer Consultation & Screening')}
               </h4>
-              {/* <span className="text-[9px] font-black uppercase tracking-wider bg-rose-100 dark:bg-rose-900/60 text-rose-700 dark:text-rose-300 px-1.5 py-0.5 rounded">
-                  HCG Partner
-                </span> */}
             </div>
             <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
-              {t('cancerScreen.hcgBannerDesc', 'Connect directly with leading oncology specialists at HCG Cancer Centres for virtual consultations, test evaluations, and expert opinions.')}
+              {t('cancerScreen.hcgBannerDesc', 'Consult a cancer specialist in your town for clinical evaluations, test recommendations, and expert medical opinions.')}
             </p>
           </div>
         </div>
-        <a
-          href={HCG_HOSPITALS_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-xs transition-all"
-        >
-          <span>{t('cancerScreen.hcgBannerBtn', 'Consult HCG')}</span>
-          <ExternalLink className="w-3.5 h-3.5" />
-        </a>
+        <div className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 bg-rose-600 text-white text-xs font-bold rounded-xl shadow-xs">
+          <span>{t('cancerScreen.hcgBannerBtn', 'Consult a cancer specialist in your town')}</span>
+        </div>
       </div>
 
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm flex sticky top-0 z-10">
@@ -424,15 +415,9 @@ export const CancerScreeningScreen: React.FC<CancerScreeningScreenProps> = ({ on
           <strong>{t('wholeBodyMri', 'Whole-Body MRI')}</strong> {t('cancerScreen.highRiskNoteDesc', '— yearly, from age 60 — is suggested in addition to the standard screening above for individuals with a known genetic predisposition (e.g. BRCA1/2, Lynch syndrome) or a strong family history of cancer, or anyone otherwise assessed as high-risk. This should be discussed with a genetic counsellor or oncologist rather than done as a routine test for the general population.')}
         </p>
         <div className="mt-3">
-          <a
-            href={HCG_HOSPITALS_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#5B4A8A] hover:bg-[#4A3C70] text-white text-xs font-bold rounded-xl shadow-xs transition-all"
-          >
-            <ExternalLink className="h-3.5 w-3.5" />
-            {t('cancerScreen.hcgConsultRisk', 'Consult HCG Hospitals Specialists')}
-          </a>
+          <div className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#5B4A8A] text-white text-xs font-bold rounded-xl shadow-xs">
+            <span>{t('cancerScreen.hcgConsultRisk', 'Consult a cancer specialist in your town')}</span>
+          </div>
         </div>
       </section>
 
@@ -571,15 +556,9 @@ const TestRowItem: React.FC<{
             {t('cancerScreen.bookAppointmentTest', 'Book Appointment Test')}
           </button>
         )}
-        <a
-          href={HCG_HOSPITALS_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/50 text-xs font-bold rounded-lg hover:bg-rose-100 dark:hover:bg-rose-900/60 active:scale-95 transition-all shadow-2xs"
-        >
-          <ExternalLink className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
-          <span>{t('cancerScreen.hcgConsult', 'Consult at HCG Hospitals')}</span>
-        </a>
+        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/50 text-xs font-bold rounded-lg shadow-2xs">
+          <span>{t('cancerScreen.hcgConsult', 'Consult a cancer specialist in your town')}</span>
+        </div>
       </div>
     </div>
   );

@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, Stethoscope, Calendar, ExternalLink, Volume2, VolumeX, ShieldAlert, RotateCcw, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { Browser } from '@capacitor/browser';
+import { X, Send, Stethoscope, Calendar, Volume2, VolumeX, ShieldAlert, RotateCcw, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { RoboAvatar } from './RoboAvatar';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { SYMPTOM_QUESTIONS, SPECIALIST_MAP, getStoredSymptomCheckins, reconstructAnswers } from '../screens/HabitScreens/SymptomCheckinScreen';
-import { HCG_HOSPITALS_URL } from '../screens/HabitScreens/CancerScreeningScreen';
 import { speakText, stopSpeaking, useTtsSpeed } from '../utils/ttsHelper';
 
 interface SymptomCheckAIChatModalProps {
@@ -95,11 +93,10 @@ export const SymptomCheckAIChatModal: React.FC<SymptomCheckAIChatModalProps> = (
     }
   };
 
-  const handleConsultSpecialist = async () => {
-    try {
-      await Browser.open({ url: HCG_HOSPITALS_URL });
-    } catch {
-      window.open(HCG_HOSPITALS_URL, '_blank', 'noopener,noreferrer');
+  const handleConsultSpecialist = () => {
+    if (onBookAppointment) {
+      onClose();
+      onBookAppointment('cancer_specialist');
     }
   };
 
@@ -493,8 +490,7 @@ export const SymptomCheckAIChatModal: React.FC<SymptomCheckAIChatModalProps> = (
                       className="flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer transition-all active:scale-[0.98]"
                     >
                       <Stethoscope className="w-3.5 h-3.5" />
-                      <span>{t('symptomCheck.consultSpecialist', 'Consult Specialist (HCG Virtual)')}</span>
-                      <ExternalLink className="w-3 h-3 opacity-80" />
+                      <span>{t('symptomCheck.consultSpecialist', 'Consult a cancer specialist in your town')}</span>
                     </button>
                     {onBookAppointment && (
                       <button

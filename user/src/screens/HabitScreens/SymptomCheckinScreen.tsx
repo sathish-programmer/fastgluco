@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Award, Clock, Calendar, ExternalLink, RotateCcw, Stethoscope, ChevronRight, ChevronDown, ShieldAlert, Sparkles, CheckCircle2 } from 'lucide-react';
-import { Browser } from '@capacitor/browser';
+import { ArrowLeft, Award, Clock, Calendar, RotateCcw, Stethoscope, ChevronRight, ChevronDown, ShieldAlert, Sparkles, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { HabitsService } from '../../services/habitsService';
-import { HCG_HOSPITALS_URL } from './CancerScreeningScreen';
 import { scheduleSymptomCheckinReminder } from '../../utils/notificationScheduler';
 
 export interface SymptomQuestion {
@@ -299,11 +297,9 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleConsultSpecialist = async () => {
-    try {
-      await Browser.open({ url: HCG_HOSPITALS_URL });
-    } catch {
-      window.open(HCG_HOSPITALS_URL, '_blank', 'noopener,noreferrer');
+  const handleConsultSpecialist = () => {
+    if (onBookAppointment) {
+      onBookAppointment('cancer_specialist');
     }
   };
 
@@ -467,8 +463,7 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({
                     className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.98] cursor-pointer"
                   >
                     <Stethoscope className="w-4 h-4" />
-                    <span>{t('symptomCheck.consultSpecialist', 'Consult Specialist (HCG Virtual / Hospital)')}</span>
-                    <ExternalLink className="w-3.5 h-3.5 opacity-80" />
+                    <span>{t('symptomCheck.consultSpecialist', 'Consult a cancer specialist in your town')}</span>
                   </button>
 
                   {onBookAppointment && (
