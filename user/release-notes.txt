@@ -1,14 +1,12 @@
 <en-US>
-• Real-time Order Tracking: Live updates, carrier details & delivery milestones.
-• Product Zoom & Showcase: High-res image zoom and interactive product viewer.
-• Ratings & Reviews: Submit feedback and rate your delivered wellness orders.
-• Clear Refund Visibility: Instant refund tracking and updated balance details.
-• Stability & Polish: Performance optimizations and smoother app navigation.
+• Streamlined Doctor Booking: Book 1-on-1 private online video consultations directly with verified specialists.
+• Enhanced Doctor Profiles: View detailed specialist credentials, focus areas, transparent fees, and clinical background.
+• Local Care Advisory: Clear guidance to consult specialists in your town for physical check-ups and diagnostics.
+• Performance & Stability: Enhanced appointment scheduling, improved navigation, and overall reliability fixes.
 </en-US>
 <en-IN>
-• Real-time Order Tracking: Live updates, carrier details & delivery milestones.
-• Product Zoom & Showcase: High-res image zoom and interactive product viewer.
-• Ratings & Reviews: Submit feedback and rate your delivered wellness orders.
-• Clear Refund Visibility: Instant refund tracking and updated balance details.
-• Stability & Polish: Performance optimizations and smoother app navigation.
+• Streamlined Doctor Booking: Book 1-on-1 private online video consultations directly with verified specialists.
+• Enhanced Doctor Profiles: View detailed specialist credentials, focus areas, transparent fees, and clinical background.
+• Local Care Advisory: Clear guidance to consult specialists in your town for physical check-ups and diagnostics.
+• Performance & Stability: Enhanced appointment scheduling, improved navigation, and overall reliability fixes.
 </en-IN>
