@@ -96,10 +96,10 @@ const appHealthConfigSchema = new Schema<IAppHealthConfig>(
     androidVersionRules: {
       type: versionRuleSchema,
       default: () => ({
-        latestReleasedVersion: '5.28.0',
-        latestBuildNumber: '92',
+        latestReleasedVersion: '5.29.0',
+        latestBuildNumber: '93',
         minSupportedVersion: '5.20.0',
-        recommendedVersion: '5.28.0',
+        recommendedVersion: '5.29.0',
         forceUpdate: false,
         updateUrl: 'https://play.google.com/store/apps/details?id=com.mitoreboot.app',
         releaseNotes: 'Stability updates, clinical coaching, and doctor consultation features'
@@ -108,10 +108,10 @@ const appHealthConfigSchema = new Schema<IAppHealthConfig>(
     iosVersionRules: {
       type: versionRuleSchema,
       default: () => ({
-        latestReleasedVersion: '5.28.0',
-        latestBuildNumber: '94',
+        latestReleasedVersion: '5.29.0',
+        latestBuildNumber: '95',
         minSupportedVersion: '5.20.0',
-        recommendedVersion: '5.28.0',
+        recommendedVersion: '5.29.0',
         forceUpdate: false,
         updateUrl: 'https://apps.apple.com/app/mitoreboot/id6783705985',
         releaseNotes: 'Stability updates, clinical coaching, and doctor consultation features'
