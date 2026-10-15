@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, BrainCircuit, HeartHandshake, MessageSquare, Sparkles } from 'lucide-react';
+import { ArrowLeft, BrainCircuit, MessageSquare, Sparkles, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { useToast } from '../../context/ToastContext';
 import { HabitsService, type HabitLog } from '../../services/habitsService';
 import { ConsultationBanner } from '../../components/ConsultationBanner';
 import { DeStressAIChatModal } from '../../components/DeStressAIChatModal';
@@ -13,24 +14,25 @@ interface StressLogScreenProps {
 }
 
 const faces = [
-  { id: 'calm', label: 'Calm', emoji: '😁' },
-  { id: 'steady', label: 'Steady', emoji: '🙂' },
-  { id: 'tense', label: 'Tense', emoji: '😐' },
-  { id: 'stressed', label: 'Stressed', emoji: '☹️' },
-  { id: 'maxed', label: 'Maxed', emoji: '😫' },
+  { id: 'calm', label: 'Calm', emoji: '😁', baseScore: 0 },
+  { id: 'steady', label: 'Steady', emoji: '🙂', baseScore: 1 },
+  { id: 'tense', label: 'Tense', emoji: '😐', baseScore: 2 },
+  { id: 'stressed', label: 'Overwhelmed', emoji: '☹️', baseScore: 3 },
+  { id: 'maxed', label: 'High Stress', emoji: '😫', baseScore: 4 },
 ];
 
 const STRESS_SUB_OPTIONS = [
-  { id: 'work_life', label: 'Work-life balance' },
-  { id: 'relationship', label: 'Relationship issue' },
+  { id: 'work_life', label: 'Work-life balance & burnout' },
+  { id: 'relationship', label: 'Relationship issues' },
   { id: 'loss', label: 'Loss of dear ones' },
-  { id: 'mood_swings', label: 'Premenstrual or perimenopausal mood swings' },
+  { id: 'mood_swings', label: 'Premenstrual or hormonal mood swings' },
   { id: 'sexual_health', label: 'Sexual health' },
-  { id: 'others', label: 'Others' }
+  { id: 'others', label: 'Financial or other concerns' }
 ];
 
 export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBookAppointment, onNavigateToIntimacy }) => {
   const { t, language } = useLanguage();
+  const { showToast } = useToast();
 
   const LOCALE_MAP: Record<string, string> = {
     en: 'en-US',
@@ -47,8 +49,15 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [loading, setLoading] = useState(false);
   
+  // Clinical Stress Screening Questions (scored 0-2 each)
+  const [qNervous, setQNervous] = useState<number>(0);
+  const [qTension, setQTension] = useState<number>(0);
+  const [qOverwhelmed, setQOverwhelmed] = useState<number>(0);
+
   const [selectedSubOption, setSelectedSubOption] = useState<string | null>(null);
-  const [showDeStressModal, setShowDeStressModal] = useState(true);
+  
+  // AI Modal is CLOSED by default so user can complete manual scoring first
+  const [showDeStressModal, setShowDeStressModal] = useState<boolean>(false);
   const [initialCategory, setInitialCategory] = useState('general');
 
   useEffect(() => {
@@ -84,6 +93,12 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
         else if (sub.includes('hormon') || sub.includes('Premenstru')) setSelectedSubOption('mood_swings');
         else if (sub.includes('sexual') || sub.includes('Sexual')) setSelectedSubOption('sexual_health');
         else if (sub.includes('other') || sub.includes('Other')) setSelectedSubOption('others');
+
+        if (todayLog.value.questions) {
+          if (typeof todayLog.value.questions.qNervous === 'number') setQNervous(todayLog.value.questions.qNervous);
+          if (typeof todayLog.value.questions.qTension === 'number') setQTension(todayLog.value.questions.qTension);
+          if (typeof todayLog.value.questions.qOverwhelmed === 'number') setQOverwhelmed(todayLog.value.questions.qOverwhelmed);
+        }
       }
 
     } catch (err) {
@@ -93,51 +108,75 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
     }
   };
 
+  // Compute total manual stress score (0-10 scale)
+  const faceBase = faces.find(f => f.id === selectedFace)?.baseScore ?? 0;
+  const questionsTotal = qNervous + qTension + qOverwhelmed; // 0 to 6
+  // Scaled composite score out of 10
+  const computedStressScore = Math.min(10, faceBase * 1.5 + questionsTotal);
+  
+  const getStressTier = (score: number) => {
+    if (score <= 3) return { label: t('stress.low', 'Low / Manageable Stress'), color: 'emerald', bg: 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300' };
+    if (score <= 6) return { label: t('stress.moderate', 'Moderate Stress Load'), color: 'amber', bg: 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300' };
+    return { label: t('stress.high', 'High Stress / Overwhelmed'), color: 'rose', bg: 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300' };
+  };
+
+  const stressTier = getStressTier(computedStressScore);
+
   const handleLog = async () => {
     if (!selectedFace || !user?.id) return;
     setLoading(true);
     try {
       const faceData = faces.find(f => f.id === selectedFace);
-      await HabitsService.logHabit(apiUrl, token, 'Stress', { faceId: selectedFace, label: faceData?.label, emoji: faceData?.emoji });
+      await HabitsService.logHabit(apiUrl, token, 'Stress', { 
+        faceId: selectedFace, 
+        label: faceData?.label, 
+        emoji: faceData?.emoji,
+        stressScore: computedStressScore,
+        subOption: selectedSubOption ? (STRESS_SUB_OPTIONS.find(o => o.id === selectedSubOption)?.label || selectedSubOption) : null,
+        questions: { qNervous, qTension, qOverwhelmed }
+      });
+      showToast(t('stress.loggedSuccess', "Today's stress assessment saved!"), 'success');
       await loadHistory();
     } catch (err) {
       console.error('Failed to log stress', err);
+      showToast(t('common.errorOccurred', 'Failed to save stress log. Please try again.'), 'error');
     } finally {
       setLoading(false);
     }
   };
 
   const sadDaysCount = history.filter(h => h.value.faceId === 'tense' || h.value.faceId === 'stressed' || h.value.faceId === 'maxed').length;
-  
-  const showSubOptions = sadDaysCount >= 3 || (selectedFace === 'tense' || selectedFace === 'stressed' || selectedFace === 'maxed');
 
   return (
     <div 
-      className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100"
+      className="pb-24 pt-6 px-4 max-w-5xl mx-auto bg-slate-50 dark:bg-slate-950 min-h-screen font-sans antialiased text-slate-800 dark:text-slate-100 transition-colors duration-300"
       style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
     >
-      
+      {/* Header */}
       <div className="flex items-center gap-4 mb-6 sub-page-internal-header">
         <button 
           onClick={onBack}
-          className="h-10 w-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all"
+          className="h-10 w-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all"
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div>
           <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">{t('habits.stress', 'Damage · Stress')}</span>
-          <h2 className="text-2xl font-sans font-bold text-slate-800 dark:text-slate-50 leading-none mt-1">{t('habits.areYouStressed', 'How heavy is today?')}</h2>
+          <h2 className="text-2xl font-sans font-bold text-slate-800 dark:text-slate-50 leading-none mt-1">{t('habits.areYouStressed', 'Stress & Mood Assessment')}</h2>
         </div>
       </div>
 
+      {/* Mia Mental Health AI Expert Hero Banner (Optional Trigger) */}
       <div className="bg-gradient-to-r from-indigo-50/90 via-purple-50/80 to-slate-50 dark:from-slate-900 dark:to-slate-900/90 rounded-3xl p-5 mb-6 shadow-xs border border-indigo-100 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="space-y-1.5 max-w-xl">
-          <span className="text-[10px] font-black uppercase tracking-widest text-indigo-700 dark:text-indigo-300 bg-indigo-100/80 dark:bg-indigo-950/60 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 border border-indigo-200/60 dark:border-indigo-800">
-            <Sparkles className="h-3 w-3 text-indigo-600" /> {t('mia.mentalHealthAiExpert', 'Mental Health AI Expert')}
-          </span>
-          <h3 className="text-base font-extrabold text-slate-900 dark:text-white leading-tight">{t('mia.stressHeading', 'Feeling stressed, anxious, or struggling with sleep?')}</h3>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-black uppercase tracking-widest text-indigo-700 dark:text-indigo-300 bg-indigo-100/80 dark:bg-indigo-950/60 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 border border-indigo-200/60 dark:border-indigo-800">
+              <Sparkles className="h-3 w-3 text-indigo-600" /> {t('mia.mentalHealthAiExpert', 'Mental Health AI Expert')}
+            </span>
+          </div>
+          <h3 className="text-base font-extrabold text-slate-900 dark:text-white leading-tight">{t('mia.stressHeading', 'Stress Management & Mood Log')}</h3>
           <p className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
-            {t('mia.greetingStress', 'Chat with Mia, your Mental Health AI Expert for 4 personalized lifestyle steps, sleep assessments, and dedicated support.')}
+            {t('mia.greetingStressDesc', 'Score your stress manually below. If you want interactive conversational therapy, sleep assessments, or guided breathing, Mia is available 24/7.')}
           </p>
         </div>
         <button
@@ -147,34 +186,36 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
           }}
           className="bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs px-4 py-3 rounded-2xl transition-all shadow-sm shrink-0 whitespace-nowrap cursor-pointer flex items-center gap-2 active:scale-95"
         >
-          <MessageSquare className="h-4 w-4" /> {t('mia.stressSupport', 'Chat with Mia AI Expert')}
+          <MessageSquare className="h-4 w-4" /> {t('mia.chatWithMia', 'Chat with Mia')}
         </button>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm rounded-2xl p-4 mb-6">
+      {/* Clinical Context Card */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl p-4 mb-6">
         <h3 className="font-bold text-slate-800 dark:text-slate-200 mb-1.5 flex items-center gap-2">
-          <BrainCircuit className="h-4 w-4 text-amber-500" /> {t('habits.stressImpact', 'Chronic stress wears cells down.')}
+          <BrainCircuit className="h-4 w-4 text-amber-500" /> {t('habits.stressImpact', 'Chronic high stress elevates cortisol and blood sugar.')}
         </h3>
         <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-          {t('stress.stressSubtext', "Tap how today feels. A run of hard days is your cue to lean on support — we'll flag it.")}
+          {t('stress.stressSubtext', 'Tracking daily stress helps identify triggers and restores hormonal balance. Complete your manual score below.')}
         </p>
       </div>
 
-      {/* Face Selector Card */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm rounded-3xl p-5 mb-8">
-        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-6">{t('stress.todaysLoad', "Today's Load")}</span>
+      {/* Step 1: Mood Face Selector */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-3xl p-5 mb-6">
+        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-4">
+          {t('stress.step1Title', "Step 1 · Today's Mood & Emotional Load")}
+        </span>
         
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex justify-between items-center mb-6">
           {faces.map((f) => (
             <button 
               key={f.id}
               onClick={() => {
                 setSelectedFace(f.id);
-                setSelectedSubOption(null);
               }}
-              className="flex flex-col items-center gap-2 transition-all"
+              className="flex flex-col items-center gap-2 transition-all p-2 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800"
             >
-              <div className={`text-3xl transition-transform ${selectedFace === f.id ? 'scale-125 grayscale-0 opacity-100 drop-shadow-sm' : 'grayscale opacity-50'}`}>
+              <div className={`text-3xl transition-transform ${selectedFace === f.id ? 'scale-125 grayscale-0 opacity-100 drop-shadow-md' : 'grayscale opacity-50 hover:opacity-80'}`}>
                 {f.emoji}
               </div>
               <span className={`text-[10px] ${selectedFace === f.id ? 'text-amber-500 font-bold' : 'text-slate-400'}`}>
@@ -184,100 +225,188 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
           ))}
         </div>
 
-        <div className="text-center mb-6">
-          <h3 className="text-2xl font-sans text-amber-500 font-bold">
-            {selectedFace ? t(`stress.${selectedFace}`, faces.find(f => f.id === selectedFace)?.label || '') : t('stress.tapAFace', 'Tap a face')}
+        <div className="text-center py-2 bg-slate-50 dark:bg-slate-850 rounded-2xl border border-slate-100 dark:border-slate-800">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-0.5">{t('stress.tapAFace', 'Selected mood today:')}</p>
+          <h3 className="text-xl font-sans text-amber-600 dark:text-amber-400 font-extrabold">
+            {selectedFace ? t(`stress.${selectedFace}`, faces.find(f => f.id === selectedFace)?.label || '') : t('stress.tapPrompt', 'Tap an emotion above')}
           </h3>
         </div>
-
-        <button 
-          onClick={handleLog}
-          disabled={!selectedFace || loading}
-          className={`w-full py-3.5 rounded-xl font-bold transition-all shadow-sm ${selectedFace ? 'bg-amber-400 hover:bg-amber-500 text-slate-900' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 cursor-not-allowed'}`}
-        >
-          {loading ? t('common.saving') : t('stress.logToday', 'Log today')}
-        </button>
       </div>
 
-      {/* Sub-options for contributing factors */}
-      {showSubOptions && (
-        <div className="bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-700 rounded-3xl p-5 mb-8 animate-in slide-in-from-top duration-300">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-lg">🎯</span>
-            <div>
-              <h4 className="font-extrabold text-sm text-slate-800 dark:text-slate-200">{t('stress.whatIsContributing', 'What is contributing to your stress?')}</h4>
-              <p className="text-[10px] text-slate-450 uppercase font-bold tracking-wider mt-0.5">{t('stress.selectFactor', 'Select a factor to receive specialized guidance')}</p>
-            </div>
-          </div>
+      {/* Step 2: Clinical Screening Questions */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-3xl p-5 mb-6 space-y-6">
+        <div>
+          <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-1">
+            {t('stress.step2Title', 'Step 2 · Manual Stress Check Questions')}
+          </span>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            {t('stress.step2Subtitle', 'Rate each indicator to calculate your clinical stress score:')}
+          </p>
+        </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
-            {STRESS_SUB_OPTIONS.map((opt) => (
+        {/* Question 1: Nervous / Racing Thoughts */}
+        <div className="space-y-2.5">
+          <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
+            1. {t('stress.q1', 'Feeling nervous, anxious, or unable to stop worrying?')}
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { score: 0, label: t('stress.notAtAll', 'Not at all') },
+              { score: 1, label: t('stress.sometimes', 'Several days') },
+              { score: 2, label: t('stress.often', 'Nearly every day') },
+            ].map((opt) => (
               <button
-                key={opt.id}
-                onClick={() => {
-                  setSelectedSubOption(opt.id);
-                  if (opt.id === 'sexual_health' && onNavigateToIntimacy) {
-                    onNavigateToIntimacy();
-                  }
-                }}
-                className={`p-3 rounded-xl border text-left text-xs font-bold transition-all ${selectedSubOption === opt.id ? 'bg-indigo-50 border-indigo-300 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-400' : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                key={opt.score}
+                type="button"
+                onClick={() => setQNervous(opt.score)}
+                className={`py-2 px-3 rounded-xl border text-xs font-semibold transition-all ${
+                  qNervous === opt.score
+                    ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
+                    : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100'
+                }`}
               >
-                {t(`stress.sub.${opt.id}`, opt.label)}
+                {opt.label}
               </button>
             ))}
           </div>
+        </div>
 
-          {/* Connect to mental health specialist banner */}
-          {selectedSubOption && selectedSubOption !== 'sexual_health' && (
-            <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30 border border-purple-200/80 dark:border-purple-800/40 rounded-2xl p-4 mt-5 space-y-3 animate-in fade-in duration-200">
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-purple-600 text-white flex items-center justify-center text-sm font-black shrink-0">
-                  🤍
-                </div>
-                <div>
-                  <h5 className="text-xs font-black text-purple-950 dark:text-purple-200">{t('stress.chatOrConsult', 'Chat with Mito AI or Consult Specialist')}</h5>
-                  <p className="text-xs text-purple-800 dark:text-purple-300 leading-relaxed mt-0.5 font-medium">
-                    {t('stress.chatOrConsultDesc', 'Our AI de-stress companion Mito AI can guide you through tailored relaxation exercises, or you can book a direct session with a counselor.')}
-                  </p>
-                </div>
-              </div>
+        {/* Question 2: Physical Tension / Headaches */}
+        <div className="space-y-2.5">
+          <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
+            2. {t('stress.q2', 'Trouble relaxing, physical muscle tension, or headaches?')}
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { score: 0, label: t('stress.none', 'None') },
+              { score: 1, label: t('stress.mild', 'Mild / Moderate') },
+              { score: 2, label: t('stress.severe', 'Severe / Frequent') },
+            ].map((opt) => (
+              <button
+                key={opt.score}
+                type="button"
+                onClick={() => setQTension(opt.score)}
+                className={`py-2 px-3 rounded-xl border text-xs font-semibold transition-all ${
+                  qTension === opt.score
+                    ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
+                    : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                <button
-                  onClick={() => {
-                    const catMap: Record<string, string> = {
-                      work_life: 'worklife',
-                      relationship: 'relationship',
-                      loss: 'loss',
-                      mood_swings: 'hormonal',
-                      sexual_health: 'sexual',
-                      others: 'others'
-                    };
-                    setInitialCategory(catMap[selectedSubOption] || 'general');
-                    setShowDeStressModal(true);
-                  }}
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-black text-xs py-3 px-3 rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <MessageSquare className="h-4 w-4" /> {t('stress.chatWithMito', 'Chat with Mito AI')}
-                </button>
+        {/* Question 3: Overwhelmed by Responsibilities */}
+        <div className="space-y-2.5">
+          <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
+            3. {t('stress.q3', 'Feeling overwhelmed by personal, work, or care responsibilities?')}
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { score: 0, label: t('stress.manageable', 'Manageable') },
+              { score: 1, label: t('stress.strained', 'Often strained') },
+              { score: 2, label: t('stress.overwhelming', 'Overwhelming') },
+            ].map((opt) => (
+              <button
+                key={opt.score}
+                type="button"
+                onClick={() => setQOverwhelmed(opt.score)}
+                className={`py-2 px-3 rounded-xl border text-xs font-semibold transition-all ${
+                  qOverwhelmed === opt.score
+                    ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
+                    : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
-                {onBookAppointment && (
-                  <button
-                    onClick={() => onBookAppointment(`Stress Management: ${STRESS_SUB_OPTIONS.find(o => o.id === selectedSubOption)?.label}`)}
-                    className="w-full bg-white dark:bg-slate-800 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 hover:bg-purple-50 font-black text-xs py-3 px-3 rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    <HeartHandshake className="h-4 w-4" /> {t('stress.bookSpecialist', 'Book Specialist')}
-                  </button>
-                )}
-              </div>
+        {/* Calculated Score Meter */}
+        <div className={`p-4 rounded-2xl border ${stressTier.bg} flex items-center justify-between gap-4 mt-4`}>
+          <div className="space-y-0.5">
+            <span className="text-[10px] font-black uppercase tracking-wider block opacity-75">
+              {t('stress.calculatedScore', 'Calculated Stress Index')}
+            </span>
+            <div className="text-base font-black flex items-center gap-2">
+              {computedStressScore <= 3 ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <AlertTriangle className="h-4 w-4 text-amber-500" />}
+              {stressTier.label}
             </div>
-          )}
+          </div>
+          <div className="text-right">
+            <span className="text-2xl font-black">{Math.round(computedStressScore)}</span>
+            <span className="text-xs font-bold opacity-75"> / 10</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Step 3: Contributing Factors (Optional) */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 mb-8">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-lg">🎯</span>
+          <div>
+            <h4 className="font-extrabold text-sm text-slate-800 dark:text-slate-200">{t('stress.whatIsContributing', 'What is contributing to your stress?')}</h4>
+            <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mt-0.5">{t('stress.selectFactor', 'Select a primary factor (optional)')}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
+          {STRESS_SUB_OPTIONS.map((opt) => (
+            <button
+              key={opt.id}
+              onClick={() => {
+                setSelectedSubOption(opt.id === selectedSubOption ? null : opt.id);
+                if (opt.id === 'sexual_health' && onNavigateToIntimacy) {
+                  onNavigateToIntimacy();
+                }
+              }}
+              className={`p-3 rounded-xl border text-left text-xs font-bold transition-all ${selectedSubOption === opt.id ? 'bg-indigo-50 border-indigo-300 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400 shadow-xs' : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+            >
+              {t(`stress.sub.${opt.id}`, opt.label)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Manual Submission Button */}
+      <div className="mb-8">
+        <button 
+          onClick={handleLog}
+          disabled={!selectedFace || loading}
+          className={`w-full py-4 rounded-2xl font-black text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-98 ${
+            selectedFace 
+              ? 'bg-amber-400 hover:bg-amber-500 text-slate-950 shadow-amber-400/20' 
+              : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed'
+          }`}
+        >
+          <ShieldCheck className="h-5 w-5" />
+          {loading ? t('common.saving', 'Saving...') : `${t('stress.logToday', "Log Today's Stress")} (Score: ${Math.round(computedStressScore)}/10)`}
+        </button>
+      </div>
+
+      {/* High Stress Specialist Consultation Recommendation */}
+      {(sadDaysCount >= 3 || computedStressScore >= 7) && (
+        <div className="mb-8">
+          <ConsultationBanner
+            sourceModule="Stress"
+            reason="Stress Consultation"
+            triggerCondition="Logged high stress"
+            riskLevel="High"
+            recommendedSpecialty="Psychologist/Counselor"
+            title={t('stressManagementSupport', 'Stress Management Support')}
+            description="You've logged high stress levels recently. Consider talking to a certified mental health professional to help manage it effectively."
+            colorTheme="amber"
+            onBookAppointment={onBookAppointment!}
+          />
         </div>
       )}
 
-      {/* History */}
+      {/* Past 7 Days History */}
       <div>
-        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-3">{t('common.last7Days', 'Last 7 Days')}</span>
+        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-3">{t('common.last7Days', 'Last 7 Days History')}</span>
         
         <div className="flex flex-col gap-2">
           {loadingHistory ? (
@@ -285,37 +414,39 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
               <div className="w-6 h-6 border-2 border-slate-200 border-t-slate-400 rounded-full animate-spin mx-auto mb-3"></div>
             </div>
           ) : history.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-xs text-slate-400">{t('common.noDaysLogged', 'No days logged yet')}</p>
+            <div className="text-center py-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
+              <p className="text-xs text-slate-400">{t('common.noDaysLogged', 'No stress entries logged in the last 7 days')}</p>
             </div>
           ) : (
             history.map((h) => {
               const emojiMap: Record<string, string> = { calm: '😁', steady: '🙂', tense: '😐', stressed: '☹️', maxed: '😫' };
-              const displayEmoji = h.value?.emoji || (h.value?.faceId ? emojiMap[h.value.faceId] : '😫');
+              const displayEmoji = h.value?.emoji || (h.value?.faceId ? emojiMap[h.value.faceId] : '😐');
               const rawLabel = h.value?.label || h.value?.option || (h.value?.faceId ? h.value.faceId.charAt(0).toUpperCase() + h.value.faceId.slice(1) : 'Stress Logged');
-              const lowerLabel = String(rawLabel).toLowerCase();
-              let displayLabel = rawLabel;
-              if (lowerLabel.includes('calm')) displayLabel = t('stress.calm', 'Calm');
-              else if (lowerLabel.includes('steady')) displayLabel = t('stress.steady', 'Steady');
-              else if (lowerLabel.includes('mild')) displayLabel = t('stress.mildStress', 'Mild Stress');
-              else if (lowerLabel.includes('tense')) displayLabel = t('stress.tense', 'Tense');
-              else if (lowerLabel.includes('moderate')) displayLabel = t('stress.moderateStress', 'Moderate Stress');
-              else if (lowerLabel.includes('maxed') || lowerLabel.includes('high')) displayLabel = t('stress.maxed', 'Maxed');
-              else if (lowerLabel.includes('stress')) displayLabel = t('stress.stressed', 'Stressed');
+              const scoreVal = typeof h.value?.stressScore === 'number' ? h.value.stressScore : null;
               const isAi = h.value?.source === 'ai_mia';
 
               return (
-                <div key={h.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm rounded-xl p-3 flex justify-between items-center">
+                <div key={h.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs rounded-xl p-3 flex justify-between items-center">
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-base">{displayEmoji}</span>
-                      <span className="text-sm font-bold text-slate-800 dark:text-slate-100">{displayLabel}</span>
+                      <span className="text-sm font-bold text-slate-800 dark:text-slate-100">{rawLabel}</span>
+                      {scoreVal !== null && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                          {Math.round(scoreVal)}/10
+                        </span>
+                      )}
                       {isAi && (
                         <span className="text-[9px] bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-300 font-extrabold px-2 py-0.5 rounded-full border border-indigo-100 dark:border-indigo-900/60 uppercase">
                           Mia AI
                         </span>
                       )}
                     </div>
+                    {h.value?.subOption && (
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5">
+                        {h.value.subOption}
+                      </span>
+                    )}
                     <span className="text-[10px] text-slate-400 mt-1 block font-medium">
                       {new Date(h.timestamp).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </span>
@@ -327,23 +458,7 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
         </div>
       </div>
 
-      {sadDaysCount >= 3 && (
-        <div className="mt-6">
-          <ConsultationBanner
-            sourceModule="Stress"
-            reason="Stress Consultation"
-            triggerCondition="Logged high stress"
-            riskLevel="High"
-            recommendedSpecialty="Psychologist/Counselor"
-            title={t('stressManagementSupport')}
-            description="You've logged high stress levels recently. Consider talking to a professional to help manage it effectively."
-            colorTheme="amber"
-            onBookAppointment={onBookAppointment!}
-          />
-        </div>
-      )}
-
-      {/* Mito AI De-Stress Chat Modal */}
+      {/* Mia Mental Health AI Chat Modal (Only opens when user explicitly clicks) */}
       <DeStressAIChatModal
         isOpen={showDeStressModal}
         onClose={() => setShowDeStressModal(false)}
