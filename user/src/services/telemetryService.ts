@@ -88,7 +88,7 @@ class TelemetryService {
     const deviceId = this.getOrCreateDeviceId();
 
     let appVersion = '6.0.1';
-    let buildNumber = platform === 'ios' ? '100' : '98';
+    let buildNumber = platform === 'ios' ? '101' : '98';
 
     try {
       const appInfo = await App.getInfo();
