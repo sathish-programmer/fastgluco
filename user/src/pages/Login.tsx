@@ -31,6 +31,15 @@ function getRecaptchaVerifier(): RecaptchaVerifier {
   return window.recaptchaVerifier;
 }
 
+function cleanErrorMessage(raw: string | undefined, fallback: string): string {
+  if (!raw) return fallback;
+  const lower = raw.toLowerCase();
+  if (lower.includes('recaptcha') || lower.includes('cloud.google.com') || lower.includes('load failed') || lower.includes('internal-error')) {
+    return fallback;
+  }
+  return raw;
+}
+
 interface LoginProps {
   resetToken?: string | null;
   onClearResetToken?: () => void;
@@ -225,7 +234,7 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
       }
 
       setLoading(false);
-      setPhoneError(errorMsg);
+      setPhoneError(cleanErrorMessage(errorMsg, t('auth.sendOtpFailed', 'Unable to send verification code. Please check your network connection and try again.')));
     });
 
     return () => {
@@ -313,7 +322,35 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
     setIsAutoVerifying(false);
     setLoading(true);
 
-    // 1. Native Mobile (iOS & Android): Native Firebase Phone Auth (Primary)
+    // 1. iOS: Direct Backend Dual-Channel OTP (SMS + Email)
+    // On iOS, native Firebase Phone Auth requires APNs silent background notifications or reCAPTCHA Enterprise SDK.
+    // Routing directly to backend dual-channel OTP provides instant SMS & Email delivery without reCAPTCHA errors.
+    if (Capacitor.getPlatform() === 'ios') {
+      try {
+        console.log('[OTP] iOS platform: Directly dispatching Backend Dual-Channel OTP for:', e164);
+        otpProviderRef.current = 'FAST2SMS';
+        setOtpProvider('FAST2SMS');
+        const sendRes = await sendOtp(e164, email, true);
+        if (sendRes.success) {
+          codeSentRef.current = true;
+          setDeliveryMethod('sms_and_email');
+          setScreen('otp');
+          setTimer(60);
+          showToast(t('auth.codeSentToMobileAndEmail', 'Verification code sent to your mobile and email'), 'success');
+          setTimeout(() => otpInputRef.current?.focus(), 150);
+          return;
+        } else {
+          setPhoneError(sendRes.message || t('auth.sendOtpFailed', 'Unable to send verification code. Please try again.'));
+        }
+      } catch (err: any) {
+        setPhoneError(cleanErrorMessage(err?.message, t('auth.sendOtpFailed', 'Unable to send verification code. Please try again.')));
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // 2. Android Native: Native Firebase Phone Auth (Primary with Play Services SMS auto-detect)
     if (isNativePlatform) {
       try {
         console.log('[OTP Priority] Attempting Native Firebase Phone Auth for:', e164);
@@ -338,10 +375,10 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
             setTimeout(() => otpInputRef.current?.focus(), 150);
             return;
           } else {
-            setPhoneError(sendRes.message || 'Failed to send verification code.');
+            setPhoneError(cleanErrorMessage(sendRes.message, t('auth.sendOtpFailed', 'Unable to send verification code. Please try again.')));
           }
         } catch (fbErr: any) {
-          setPhoneError(fbErr?.message || nativeErr?.message || 'Failed to initiate Phone Auth.');
+          setPhoneError(cleanErrorMessage(fbErr?.message || nativeErr?.message, t('auth.sendOtpFailed', 'Unable to send verification code. Please try again.')));
         } finally {
           setLoading(false);
         }
@@ -349,7 +386,7 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
       return;
     }
 
-    // 2. Web Firebase Phone Auth (Primary)
+    // 3. Web Firebase Phone Auth (Primary)
     try {
       console.log('[OTP Priority] Attempting Web Firebase Phone Auth for:', e164);
       const verifier = getRecaptchaVerifier();
@@ -384,10 +421,10 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
           setTimeout(() => otpInputRef.current?.focus(), 150);
           return;
         } else {
-          setPhoneError(sendRes.message || firebaseErr?.message || 'Failed to send verification code.');
+          setPhoneError(cleanErrorMessage(sendRes.message || firebaseErr?.message, t('auth.sendOtpFailed', 'Unable to send verification code. Please try again.')));
         }
       } catch (fbErr: any) {
-        setPhoneError(firebaseErr?.message || 'Failed to send verification code via Firebase.');
+        setPhoneError(cleanErrorMessage(firebaseErr?.message, t('auth.sendOtpFailed', 'Unable to send verification code. Please try again.')));
       }
     } finally {
       setLoading(false);
