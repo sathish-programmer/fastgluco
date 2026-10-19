@@ -1552,12 +1552,14 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
           const dayMod = (d.getDate() * 7 + i * 11) % 13;
           const repVariance = Math.sin((i / (numPoints || 1)) * Math.PI * 3.14 + dayMod * 0.4) * 0.6;
           const dmgVariance = Math.cos((i / (numPoints || 1)) * Math.PI * 2.7 + dayMod * 0.5) * 0.5;
-          rep = Math.max(0, Math.round((rep + repVariance) * 10) / 10);
-          dmg = Math.max(0, Math.round((dmg + dmgVariance) * 10) / 10);
+          rep = Math.max(0, Math.round(rep + repVariance));
+          dmg = Math.max(0, Math.round(dmg + dmgVariance));
         }
 
-        const tot = dmg + rep;
-        const repPct = tot === 0 ? 50 : Math.round((rep / tot) * 100);
+        const cleanDmg = Math.round(dmg);
+        const cleanRep = Math.round(rep);
+        const tot = cleanDmg + cleanRep;
+        const repPct = tot === 0 ? 50 : Math.round((cleanRep / tot) * 100);
 
         const label = timePeriod === 'weekly'
           ? d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' })
@@ -1569,9 +1571,9 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
           dateStr: d.toISOString(),
           label,
           fullDate,
-          damage: dmg,
-          repair: rep,
-          net: Math.round((rep - dmg) * 10) / 10,
+          damage: cleanDmg,
+          repair: cleanRep,
+          net: cleanRep - cleanDmg,
           repairPct: repPct,
           damagePct: tot === 0 ? 50 : 100 - repPct
         });
@@ -1579,9 +1581,11 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     }
 
     const n = chartData.length;
-    const avgRepair = n > 0 ? (chartData.reduce((acc, c) => acc + c.repair, 0) / n).toFixed(1) : '0.0';
-    const avgDamage = n > 0 ? (chartData.reduce((acc, c) => acc + c.damage, 0) / n).toFixed(1) : '0.0';
-    const avgNet = (parseFloat(avgRepair) - parseFloat(avgDamage)).toFixed(1);
+    const totalRepair = chartData.reduce((acc, c) => acc + c.repair, 0);
+    const totalDamage = chartData.reduce((acc, c) => acc + c.damage, 0);
+    const avgRepair = n > 0 ? String(Math.round(totalRepair / n)) : '0';
+    const avgDamage = n > 0 ? String(Math.round(totalDamage / n)) : '0';
+    const avgNet = String(Number(avgRepair) - Number(avgDamage));
 
     const half = Math.floor(n / 2);
     const firstHalf = chartData.slice(0, half);
@@ -2438,7 +2442,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                                         ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                                         : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
                                         }`}>
-                                        {data.net >= 0 ? `+${data.net} Net Repair` : `${data.net} Net Stress`}
+                                        {data.net >= 0 ? `+${Math.round(data.net)} Net Repair` : `${Math.round(data.net)} Net Stress`}
                                       </span>
                                     </div>
                                     <div className="flex items-center justify-between gap-4 text-emerald-400 font-semibold py-0.5">
@@ -2446,14 +2450,14 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                                         <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)] shrink-0" />
                                         <span>{t('dashboard.repairHabits', 'Repair habits')}:</span>
                                       </span>
-                                      <span className="font-black text-white">{data.repair} {timePeriod === 'today' ? 'logged' : 'avg'}</span>
+                                      <span className="font-black text-white">{Math.round(data.repair)} {timePeriod === 'today' ? 'logged' : 'habits'}</span>
                                     </div>
                                     <div className="flex items-center justify-between gap-4 text-rose-400 font-semibold py-0.5 mt-0.5">
                                       <span className="flex items-center gap-1.5">
                                         <span className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.8)] shrink-0" />
                                         <span>{t('dashboard.stressIndicators', 'Stress indicators')}:</span>
                                       </span>
-                                      <span className="font-black text-white">{data.damage} {timePeriod === 'today' ? 'logged' : 'avg'}</span>
+                                      <span className="font-black text-white">{Math.round(data.damage)} {timePeriod === 'today' ? 'logged' : 'indicators'}</span>
                                     </div>
                                   </div>
                                 );
