@@ -1,12 +1,12 @@
 <en-US>
-• Streamlined Doctor Booking: Book 1-on-1 private online video consultations directly with verified specialists.
-• Enhanced Doctor Profiles: View detailed specialist credentials, focus areas, transparent fees, and clinical background.
-• Local Care Advisory: Clear guidance to consult specialists in your town for physical check-ups and diagnostics.
-• Performance & Stability: Enhanced appointment scheduling, improved navigation, and overall reliability fixes.
+• AI Voice Speed Controls: Seamlessly adjust speech speed (0.5x to 2x) with instant playback updates across all Mito AI assistants.
+• Synchronized Daily Habits: Fully synchronized 19 metabolic repair & circadian protection tracking modules.
+• Transparent Doctor Consultations: Dynamic consultation pricing and verified specialist booking.
+• Performance & Stability: Enhanced multilingual audio clarity, smoother navigation, and overall performance fixes.
 </en-US>
 <en-IN>
-• Streamlined Doctor Booking: Book 1-on-1 private online video consultations directly with verified specialists.
-• Enhanced Doctor Profiles: View detailed specialist credentials, focus areas, transparent fees, and clinical background.
-• Local Care Advisory: Clear guidance to consult specialists in your town for physical check-ups and diagnostics.
-• Performance & Stability: Enhanced appointment scheduling, improved navigation, and overall reliability fixes.
+• AI Voice Speed Controls: Seamlessly adjust speech speed (0.5x to 2x) with instant playback updates across all Mito AI assistants.
+• Synchronized Daily Habits: Fully synchronized 19 metabolic repair & circadian protection tracking modules.
+• Transparent Doctor Consultations: Dynamic consultation pricing and verified specialist booking.
+• Performance & Stability: Enhanced multilingual audio clarity, smoother navigation, and overall performance fixes.
 </en-IN>
