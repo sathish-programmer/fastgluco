@@ -28,4 +28,16 @@ end
 
 post_install do |installer|
   assertDeploymentTarget(installer)
+  frameworks_script = 'Pods/Target Support Files/Pods-App/Pods-App-frameworks.sh'
+  if File.exist?(frameworks_script)
+    content = File.read(frameworks_script)
+    unless content.include?('RecaptchaEnterprise.framework')
+      target_line = 'install_framework "${BUILT_PRODUCTS_DIR}/RecaptchaInterop/RecaptchaInterop.framework"'
+      replacement = %{#{target_line}
+  install_framework "${BUILT_PRODUCTS_DIR}/RecaptchaEnterprise/RecaptchaEnterprise.framework"
+  install_framework "${BUILT_PRODUCTS_DIR}/XCFrameworkIntermediates/RecaptchaEnterpriseSDK/RecaptchaEnterpriseSDK.framework"}
+      content.gsub!(target_line, replacement)
+      File.write(frameworks_script, content)
+    end
+  end
 end
