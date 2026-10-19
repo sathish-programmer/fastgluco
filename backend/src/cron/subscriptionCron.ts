@@ -73,7 +73,10 @@ export class SubscriptionCron {
     // Find subscriptions that have passed their expiration date but are still marked active/trialing/cancelled
     const expiredSubs = await UserSubscription.find({
       status: { $in: ['active', 'Active', 'trialing', 'Trialing', 'cancelled', 'Cancelled'] },
-      endDate: { $lt: now }
+      $or: [
+        { status: { $in: ['trialing', 'Trialing'] }, trialEndDate: { $lt: now } },
+        { status: { $nin: ['trialing', 'Trialing'] }, endDate: { $lt: now } }
+      ]
     }).populate('userId');
 
     let expiredCount = 0;

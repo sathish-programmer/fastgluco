@@ -12,6 +12,7 @@ export interface IPaymentGatewayConfig extends Document {
   enableIOSExternalPayments: boolean;
   enableSaferFoodCoupons: boolean;
   gstPercentage: number; // GST Percentage configured by admin (e.g. 18)
+  subscriptionGstInclusive: boolean; // Whether subscription prices include GST (default: true)
   shopGstPercentage: number; // GST for Shop products
   shopDiscountPercentage: number; // Global Discount for Shop products
   shopShippingFee: number; // Shipping fee for shop orders
@@ -38,6 +39,7 @@ export interface IPaymentGatewayConfig extends Document {
   cancerTreatmentDisclaimer?: string;
   cancerSecondaryDisclaimer?: string;
   cancerPreventionDisclaimer?: string;
+  founderNote?: string;
   updatedBy?: Schema.Types.ObjectId; // ref: AdminUser
   createdAt: Date;
   updatedAt: Date;
@@ -56,6 +58,7 @@ const paymentGatewayConfigSchema = new Schema<IPaymentGatewayConfig>(
     enableIOSExternalPayments: { type: Boolean, default: false },
     enableSaferFoodCoupons: { type: Boolean, default: true },
     gstPercentage: { type: Number, default: 18, min: 0, required: true },
+    subscriptionGstInclusive: { type: Boolean, default: true },
     shopGstPercentage: { type: Number, default: 0, min: 0 },
     shopDiscountPercentage: { type: Number, default: 0, min: 0 },
     shopShippingFee: { type: Number, default: 0, min: 0 },
@@ -194,11 +197,77 @@ By continuing to use this application, you confirm that you have read, understoo
     },
     aiCompletionMessage: { type: String, default: "Thank you for sharing this context. We have recorded your activity. Remember to stay hydrated and walk 15 mins after heavy meals!" },
     glucoseAlertMinIntervalHours: { type: Number, default: 2, required: true },
+    founderNote: {
+      type: String,
+      default: `# A Note from the Founder
+
+## MitoReboot — Reboot Your Lifestyle. Restore Your Health.
+
+As a radiation oncologist and cancer researcher, I have spent years understanding cancer not just as a disease of abnormal cells, but as a complex biological process influenced by genetics, metabolism, inflammation, the environment, and the way we live.
+
+One question has stayed with me: *What if we could intervene much earlier, before years of accumulated biological damage translate into disease?*
+
+Our lifestyle is more than a collection of daily habits. What we eat, when we eat, how well we sleep, how much we move, how we manage stress, and the environmental exposures we encounter can influence the body's metabolic balance, inflammatory pathways, oxidative stress, and mitochondrial function.
+
+Mitochondria, the energy-producing structures within our cells, play a vital role in cellular energy metabolism, redox balance, and cell survival. When these systems are disrupted, they may contribute to metabolic dysfunction, chronic inflammation, and an environment that favours disease development. These mechanisms are relevant to cancer and several other chronic conditions, including type 2 diabetes, cardiovascular disease, and fatty liver disease.
+
+Cancer prevention, therefore, must extend beyond screening and early diagnosis. It must also include understanding and modifying the lifestyle and environmental factors that influence our long-term health. Although not every cancer or metabolic disease is preventable, addressing established risk factors offers an important opportunity to reduce risk and improve overall well-being.
+
+*This is the philosophy behind MitoReboot.*
+
+We created MitoReboot to help people understand the relationship between everyday choices and long-term health through a simple, practical approach: identifying potential sources of biological damage and strengthening the body's natural repair and resilience mechanisms.
+
+Through daily lifestyle scoring, nutrition awareness, physical activity, sleep, stress management, metabolic health tracking, and environmental awareness, MitoReboot aims to transform health knowledge into consistent, measurable action.
+
+Our vision is to move from a reactive model of healthcare to a proactive culture of prevention — where people do not wait for disease to appear before taking responsibility for their health.
+
+I believe prevention should not be complicated, inaccessible, or limited to occasional medical visits. It should begin with the choices we make every day.
+
+*MitoReboot is more than an app. It is an invitation to understand your biology, rethink your habits, and take meaningful steps towards a healthier future.*
+
+Let us make prevention a daily practice, not a distant promise.
+
+*Dr. Krithikaa Sekar*
+Founder & Chairman, MitoReboot Private Limited
+Consultant, Radiation Oncology | Cancer Researcher`
+    },
     updatedBy: { type: Schema.Types.ObjectId, ref: 'AdminUser' }
   },
   {
     timestamps: true
   }
 );
+
+export const DEFAULT_FOUNDER_NOTE = `# A Note from the Founder
+
+## MitoReboot — Reboot Your Lifestyle. Restore Your Health.
+
+As a radiation oncologist and cancer researcher, I have spent years understanding cancer not just as a disease of abnormal cells, but as a complex biological process influenced by genetics, metabolism, inflammation, the environment, and the way we live.
+
+One question has stayed with me: *What if we could intervene much earlier, before years of accumulated biological damage translate into disease?*
+
+Our lifestyle is more than a collection of daily habits. What we eat, when we eat, how well we sleep, how much we move, how we manage stress, and the environmental exposures we encounter can influence the body's metabolic balance, inflammatory pathways, oxidative stress, and mitochondrial function.
+
+Mitochondria, the energy-producing structures within our cells, play a vital role in cellular energy metabolism, redox balance, and cell survival. When these systems are disrupted, they may contribute to metabolic dysfunction, chronic inflammation, and an environment that favours disease development. These mechanisms are relevant to cancer and several other chronic conditions, including type 2 diabetes, cardiovascular disease, and fatty liver disease.
+
+Cancer prevention, therefore, must extend beyond screening and early diagnosis. It must also include understanding and modifying the lifestyle and environmental factors that influence our long-term health. Although not every cancer or metabolic disease is preventable, addressing established risk factors offers an important opportunity to reduce risk and improve overall well-being.
+
+*This is the philosophy behind MitoReboot.*
+
+We created MitoReboot to help people understand the relationship between everyday choices and long-term health through a simple, practical approach: identifying potential sources of biological damage and strengthening the body's natural repair and resilience mechanisms.
+
+Through daily lifestyle scoring, nutrition awareness, physical activity, sleep, stress management, metabolic health tracking, and environmental awareness, MitoReboot aims to transform health knowledge into consistent, measurable action.
+
+Our vision is to move from a reactive model of healthcare to a proactive culture of prevention — where people do not wait for disease to appear before taking responsibility for their health.
+
+I believe prevention should not be complicated, inaccessible, or limited to occasional medical visits. It should begin with the choices we make every day.
+
+*MitoReboot is more than an app. It is an invitation to understand your biology, rethink your habits, and take meaningful steps towards a healthier future.*
+
+Let us make prevention a daily practice, not a distant promise.
+
+*Dr. Krithikaa Sekar*
+Founder & Chairman, MitoReboot Private Limited
+Consultant, Radiation Oncology | Cancer Researcher`;
 
 export const PaymentGatewayConfig = model<IPaymentGatewayConfig>('PaymentGatewayConfig', paymentGatewayConfigSchema);

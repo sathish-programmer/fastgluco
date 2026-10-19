@@ -25,7 +25,7 @@ import * as RecommendedFoodController from '../controllers/recommendedFoodContro
 import * as HabitController from '../controllers/habitController';
 import { authenticateToken, requireRole } from '../middlewares/authMiddleware';
 import { requireSubscriptionFeature } from '../middlewares/subscriptionMiddleware';
-import { PaymentGatewayConfig } from '../models/PaymentGatewayConfig';
+import { PaymentGatewayConfig, DEFAULT_FOUNDER_NOTE } from '../models/PaymentGatewayConfig';
 import { Appointment } from '../models/Appointment';
 import * as ShopController from '../controllers/shopController';
 import * as ScreeningController from '../controllers/screeningController';
@@ -265,7 +265,8 @@ By using this application, you acknowledge and agree that:
 • This application does not establish a doctor–patient relationship between you and the Company or any healthcare professional associated with it.
 • To the fullest extent permitted by applicable law, the Company and its associated healthcare professionals disclaim all legal responsibility and liability for any decisions made or actions taken based on the information provided in this application.
 
-By continuing to use this application, you confirm that you have read, understood, and accepted this disclaimer and agree to use the information responsibly as part of a healthy lifestyle, while seeking professional medical advice whenever appropriate.`
+By continuing to use this application, you confirm that you have read, understood, and accepted this disclaimer and agree to use the information responsibly as part of a healthy lifestyle, while seeking professional medical advice whenever appropriate.`,
+      founderNote: config.founderNote || DEFAULT_FOUNDER_NOTE
     });
   } catch (error: any) {
     return res.status(500).json({ message: error.message || 'Error fetching system configurations.' });
@@ -282,6 +283,7 @@ router.get('/subscriptions/plans', SubscriptionController.listActivePlans);
 router.use('/subscriptions', authenticateToken, requireRole(['User']));
 router.get('/subscriptions/current', SubscriptionController.getCurrentSubscription);
 router.post('/subscriptions/validate-coupon', SubscriptionController.validateCoupon);
+router.post('/subscriptions/start-trial', SubscriptionController.startFreeTrial);
 router.post('/subscriptions/create-order', SubscriptionController.createOrder);
 router.post('/subscriptions/verify-payment', SubscriptionController.verifyPayment);
 router.post('/subscriptions/mock-verify', SubscriptionController.verifyMockPayment);

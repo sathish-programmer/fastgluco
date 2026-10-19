@@ -31,6 +31,7 @@ import { motion } from 'framer-motion';
 import { CURRENT_APP_VERSION } from '../components/WhatsNewModal';
 import { Educational } from './Educational'; // import the sub-view
 import { Subscription } from './Subscription';
+import { FounderNoteModal } from '../components/FounderNoteModal';
 import { Capacitor } from '@capacitor/core';
 import { triggerTestNotification, scheduleDailyCheckinReminder, cancelDailyCheckinReminder } from '../utils/notificationScheduler';
 
@@ -120,6 +121,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
   // Account Deletion States
   const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState<boolean>(false);
+  const [showFounderModal, setShowFounderModal] = useState<boolean>(false);
 
   // LibreLinkUp states
   const [libreEmail, setLibreEmail] = useState(user?.libreEmail || '');
@@ -1267,6 +1269,20 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
           </button>
           <button
             type="button"
+            onClick={() => setShowFounderModal(true)}
+            className="w-full flex items-center justify-between p-3 rounded-2xl bg-gradient-to-r from-rose-500/5 via-amber-500/5 to-rose-500/5 hover:from-rose-500/10 hover:to-amber-500/10 dark:bg-slate-800/60 dark:hover:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 transition-all border border-rose-200/60 dark:border-rose-900/40 text-left cursor-pointer"
+          >
+            <div className="flex items-center space-x-2.5">
+              <span className="text-base">👑</span>
+              <div>
+                <span className="block">{t('founderMessageTitle', 'A Note from the Founder')}</span>
+                <span className="text-[10px] text-slate-400 font-normal">Dr. Krithikaa Sekar • Founder & Chairman</span>
+              </div>
+            </div>
+            <ChevronRight className="h-4 w-4 text-slate-400 shrink-0" />
+          </button>
+          <button
+            type="button"
             onClick={() => onNavigateToTab?.('Terms of Service')}
             className="w-full flex items-center justify-between p-3 rounded-2xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 transition-all border border-slate-200/60 dark:border-slate-700/60 text-left cursor-pointer"
           >
@@ -1415,6 +1431,12 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
           </motion.div>
         </div>
       )}
+
+      {/* Founder Note Modal */}
+      <FounderNoteModal
+        isOpen={showFounderModal}
+        onClose={() => setShowFounderModal(false)}
+      />
     </motion.div>
   );
 };

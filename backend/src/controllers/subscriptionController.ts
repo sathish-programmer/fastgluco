@@ -106,8 +106,24 @@ export class SubscriptionController {
 
       // Fetch global settings config (already loaded above)
       const gstPercentage = config ? config.gstPercentage : 18;
-      const gstAmount = parseFloat(((finalAmount * gstPercentage) / 100).toFixed(2));
-      const totalAmount = parseFloat((finalAmount + gstAmount).toFixed(2));
+      const isInclusive = config ? (config.subscriptionGstInclusive ?? true) : true;
+      let gstAmount = 0;
+      let totalAmount = 0;
+      let taxableBaseAmount = finalAmount;
+
+      if (hasPlanDetails) {
+        if (isInclusive) {
+          totalAmount = finalAmount;
+          taxableBaseAmount = gstPercentage > 0
+            ? parseFloat((totalAmount / (1 + gstPercentage / 100)).toFixed(2))
+            : totalAmount;
+          gstAmount = parseFloat((totalAmount - taxableBaseAmount).toFixed(2));
+        } else {
+          taxableBaseAmount = finalAmount;
+          gstAmount = parseFloat(((taxableBaseAmount * gstPercentage) / 100).toFixed(2));
+          totalAmount = parseFloat((taxableBaseAmount + gstAmount).toFixed(2));
+        }
+      }
 
       return res.status(200).json({
         valid: true,
@@ -118,9 +134,11 @@ export class SubscriptionController {
           discountAmount,
           originalAmount: originalPrice,
           finalAmount,
+          taxableBaseAmount,
           gstPercentage,
           gstAmount,
-          totalAmount
+          totalAmount,
+          subscriptionGstInclusive: isInclusive
         } : {}),
         message: `Coupon '${coupon.code}' is valid.`
       });
@@ -137,19 +155,35 @@ export class SubscriptionController {
       const userId = req.user?.id;
       const now = new Date();
 
-      // Find active user subscription (including trial runs)
+      // Find active user subscription:
+      // If trialing: trialEndDate must be in the future.
+      // If active or cancelled: endDate must be in the future.
       const subscription = await UserSubscription.findOne({
         userId,
         status: { $in: ['active', 'trialing', 'cancelled'] },
         $or: [
-          { endDate: { $gte: now } },
-          { trialEndDate: { $gte: now } }
+          { status: 'trialing', trialEndDate: { $gte: now } },
+          { status: { $in: ['active', 'cancelled'] }, endDate: { $gte: now } }
         ]
       });
 
       let planDetails = null;
       if (subscription) {
         planDetails = await SubscriptionPlan.findById(subscription.planId);
+      }
+
+      // Check if user has already used their 48-hour free trial
+      const previousTrial = await UserSubscription.findOne({
+        userId,
+        trialStartDate: { $exists: true, $ne: null }
+      });
+      const hasUsedTrial = !!previousTrial;
+      const canStartTrial = !subscription && !hasUsedTrial;
+
+      let trialHoursRemaining = 0;
+      if (subscription && subscription.status === 'trialing' && subscription.trialEndDate) {
+        const msLeft = new Date(subscription.trialEndDate).getTime() - now.getTime();
+        trialHoursRemaining = Math.max(0, Math.ceil(msLeft / (1000 * 60 * 60)));
       }
 
       // Fetch payment and invoice histories
@@ -160,6 +194,7 @@ export class SubscriptionController {
       const config = await PaymentGatewayConfig.findOne();
       const subscriptionsRequired = config ? config.enableSubscriptions : true;
       const gstPercentage = config ? config.gstPercentage : 18;
+      const subscriptionGstInclusive = config ? (config.subscriptionGstInclusive ?? true) : true;
 
       return res.status(200).json({
         subscription,
@@ -167,10 +202,107 @@ export class SubscriptionController {
         invoices,
         transactions,
         subscriptionsRequired,
-        gstPercentage
+        gstPercentage,
+        subscriptionGstInclusive,
+        canStartTrial,
+        hasUsedTrial,
+        trialHoursRemaining
       });
     } catch (error: any) {
       return res.status(500).json({ message: error.message || 'Error fetching subscription details.' });
+    }
+  }
+
+  /**
+   * Start 48-Hour Free Trial
+   */
+  public static async startFreeTrial(req: AuthRequest, res: Response) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: 'Authentication required.' });
+      }
+
+      const now = new Date();
+
+      // Check if user already has an active subscription or valid trial
+      const existingActive = await UserSubscription.findOne({
+        userId,
+        status: { $in: ['active', 'trialing', 'cancelled'] },
+        $or: [
+          { status: 'trialing', trialEndDate: { $gte: now } },
+          { status: { $in: ['active', 'cancelled'] }, endDate: { $gte: now } }
+        ]
+      });
+
+      if (existingActive) {
+        return res.status(400).json({
+          message: existingActive.status === 'trialing'
+            ? 'Your 48-hour free trial is already active!'
+            : 'You already have an active subscription.',
+          subscription: existingActive
+        });
+      }
+
+      // Check if user already used their free trial
+      const previousTrial = await UserSubscription.findOne({
+        userId,
+        trialStartDate: { $exists: true, $ne: null }
+      });
+
+      if (previousTrial) {
+        return res.status(400).json({
+          message: 'You have already used your 48-hour free trial. Please subscribe for ₹1,000/year to continue enjoying full access.',
+          hasUsedTrial: true
+        });
+      }
+
+      // Find the single active plan
+      const plan = await SubscriptionPlan.findOne({ isActive: true, isDeleted: false }).sort({ displayOrder: 1 });
+      if (!plan) {
+        return res.status(404).json({ message: 'No active subscription plan found.' });
+      }
+
+      // Trial duration: exactly 48 hours
+      const trialHours = (plan as any).trialHours || (plan.trialDays ? plan.trialDays * 24 : 48);
+      const trialEndDate = new Date(now.getTime() + trialHours * 60 * 60 * 1000);
+
+      // Disable any expired/old records to prevent conflicts
+      await UserSubscription.updateMany(
+        { userId, status: { $in: ['active', 'trialing'] } },
+        { $set: { status: 'expired' } }
+      );
+
+      const subscription = new UserSubscription({
+        userId,
+        planId: plan._id,
+        billingCycle: 'yearly',
+        status: 'trialing',
+        startDate: now,
+        endDate: trialEndDate,
+        trialStartDate: now,
+        trialEndDate,
+        cancelAtPeriodEnd: false
+      });
+
+      await subscription.save();
+
+      // Dispatch FCM Push Notification
+      FCMService.sendPushNotification(
+        userId,
+        '48-Hour Free Trial Activated!',
+        `Enjoy full access to ${plan.name} features for the next 48 hours!`,
+        'SubscriptionActivated' as any
+      ).catch(() => {});
+
+      return res.status(200).json({
+        message: 'Your 48-hour free trial has been activated successfully!',
+        subscription,
+        plan
+      });
+    } catch (error: any) {
+      console.error('Error starting free trial:', error);
+      return res.status(500).json({ message: error.message || 'Error activating free trial.' });
     }
   }
 
@@ -295,10 +427,22 @@ export class SubscriptionController {
           subscription
         });
       }
+      const isInclusive = config ? (config.subscriptionGstInclusive ?? true) : true;
+      let baseAmount = finalPrice;
+      let gstAmount = 0;
+      let totalAmountCharged = finalPrice;
 
-      const baseAmount = finalPrice;
-      const gstAmount = parseFloat(((baseAmount * gstPercentage) / 100).toFixed(2));
-      const totalAmountCharged = parseFloat((baseAmount + gstAmount).toFixed(2));
+      if (isInclusive) {
+        totalAmountCharged = finalPrice;
+        baseAmount = gstPercentage > 0
+          ? parseFloat((totalAmountCharged / (1 + gstPercentage / 100)).toFixed(2))
+          : totalAmountCharged;
+        gstAmount = parseFloat((totalAmountCharged - baseAmount).toFixed(2));
+      } else {
+        baseAmount = finalPrice;
+        gstAmount = parseFloat(((baseAmount * gstPercentage) / 100).toFixed(2));
+        totalAmountCharged = parseFloat((baseAmount + gstAmount).toFixed(2));
+      }
 
       if (useRazorpay) {
         // 3. Initialize Razorpay Client
@@ -653,11 +797,9 @@ export class SubscriptionController {
       userId,
       planId: plan._id,
       billingCycle: cycle,
-      status: plan.trialDays > 0 ? 'trialing' : 'active',
+      status: 'active',
       startDate: now,
       endDate,
-      trialStartDate: plan.trialDays > 0 ? now : undefined,
-      trialEndDate,
       cancelAtPeriodEnd: false,
       couponCode
     });

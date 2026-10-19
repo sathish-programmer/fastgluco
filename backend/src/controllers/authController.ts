@@ -13,6 +13,8 @@ export const CURRENT_TERMS_VERSION = '1.0';
 
 import { PaymentGatewayConfig } from '../models/PaymentGatewayConfig';
 import { AppOtpTelemetry, OtpChannel, OtpEventStatus } from '../models/AppOtpTelemetry';
+import { UserSubscription } from '../models/UserSubscription';
+import { SubscriptionPlan } from '../models/SubscriptionPlan';
 
 const maskPhoneOrEmail = (identifier: string): string => {
   if (!identifier) return '***';
@@ -496,6 +498,32 @@ export class AuthController {
       // Send Welcome Email asynchronously if email is provided
       if (user.email) {
         EmailService.sendWelcomeEmail(user.email, user.name || 'User').catch(console.error);
+      }
+
+      // Automatically provision 48-hour free trial if new user has no subscription yet
+      try {
+        const existingSub = await UserSubscription.findOne({ userId: user._id });
+        if (!existingSub) {
+          const plan = await SubscriptionPlan.findOne({ isActive: true, isDeleted: false }).sort({ displayOrder: 1 });
+          if (plan) {
+            const now = new Date();
+            const trialHours = (plan as any).trialHours || (plan.trialDays ? plan.trialDays * 24 : 48);
+            const trialEndDate = new Date(now.getTime() + trialHours * 60 * 60 * 1000);
+            await UserSubscription.create({
+              userId: user._id,
+              planId: plan._id,
+              billingCycle: 'yearly',
+              status: 'trialing',
+              startDate: now,
+              endDate: trialEndDate,
+              trialStartDate: now,
+              trialEndDate,
+              cancelAtPeriodEnd: false
+            });
+          }
+        }
+      } catch (subErr) {
+        console.warn('[Onboarding] Auto-trial provisioning failed:', subErr);
       }
 
       return res.status(200).json({

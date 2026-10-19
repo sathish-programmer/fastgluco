@@ -32,7 +32,7 @@ const userSubscriptionSchema = new Schema<IUserSubscription>(
     startDate: { type: Date, required: true },
     endDate: { type: Date, required: true, index: true },
     trialStartDate: { type: Date },
-    trialEndDate: { type: Date },
+    trialEndDate: { type: Date, index: true },
     cancelAtPeriodEnd: { type: Boolean, default: false },
     razorpaySubscriptionId: { type: String },
     couponCode: { type: String },

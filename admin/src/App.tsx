@@ -577,13 +577,13 @@ const AdminPanelContent: React.FC = () => {
     name: '',
     code: '',
     description: '',
-    monthlyPrice: 100,
+    monthlyPrice: 1000,
     yearlyPrice: 1000,
-    originalMonthlyPrice: 350,
-    originalYearlyPrice: 3500,
+    originalMonthlyPrice: 0,
+    originalYearlyPrice: 3600,
     monthlyFreeQuestions: 1,
     yearlyFreeQuestions: 10,
-    trialDays: 7,
+    trialDays: 2,
     displayOrder: 1,
     badge: 'None' as any,
     color: '#2563EB',
@@ -647,7 +647,10 @@ const AdminPanelContent: React.FC = () => {
       if (activeView === 'coupons') fetchCoupons();
       if (activeView === 'legal' || activeView === 'app-user-terms') fetchLegalDocuments();
       if (activeView === 'healthInsights') fetchHealthInsights();
-      if (activeView === 'founders') fetchFounders();
+      if (activeView === 'founders') {
+        fetchFounders();
+        fetchPaymentConfig();
+      }
       if (activeView === 'payments') {
         fetchPaymentConfig();
         fetchPaymentStats();
@@ -1653,13 +1656,13 @@ const AdminPanelContent: React.FC = () => {
           name: '',
           code: '',
           description: '',
-          monthlyPrice: 100,
+          monthlyPrice: 1000,
           yearlyPrice: 1000,
-          originalMonthlyPrice: 350,
-          originalYearlyPrice: 3500,
+          originalMonthlyPrice: 0,
+          originalYearlyPrice: 3600,
           monthlyFreeQuestions: 1,
           yearlyFreeQuestions: 10,
-          trialDays: 7,
+          trialDays: 2,
           displayOrder: 1,
           badge: 'None',
           color: '#2563EB',
@@ -5710,13 +5713,13 @@ const AdminPanelContent: React.FC = () => {
                     name: '',
                     code: '',
                     description: '',
-                    monthlyPrice: 100,
+                    monthlyPrice: 1000,
                     yearlyPrice: 1000,
-                    originalMonthlyPrice: 350,
-                    originalYearlyPrice: 3500,
+                    originalMonthlyPrice: 0,
+                    originalYearlyPrice: 3600,
                     monthlyFreeQuestions: 1,
                     yearlyFreeQuestions: 10,
-                    trialDays: 7,
+                    trialDays: 2,
                     displayOrder: 1,
                     badge: 'None',
                     color: '#2563EB',
@@ -6147,7 +6150,7 @@ const AdminPanelContent: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-4 gap-6 pt-3 border-t border-slate-100">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-3 border-t border-slate-100">
                         <div>
                           <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Subscription GST (%)</label>
                           <input
@@ -6160,7 +6163,27 @@ const AdminPanelContent: React.FC = () => {
                             placeholder="18"
                             className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
                           />
-                          <p className="text-[10px] text-slate-400 font-semibold mt-1">For Subscriptions.</p>
+                          <p className="text-[10px] text-slate-400 font-semibold mt-1">GST percentage rate applied to subscriptions (e.g., 0, 5, 12, 18).</p>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Subscription GST Mode</label>
+                          <div className="mt-1.5 p-2 bg-slate-50 border border-slate-200 rounded-xl">
+                            <label className="flex items-center space-x-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={paymentConfig.subscriptionGstInclusive ?? true}
+                                onChange={(e) => setPaymentConfig({ ...paymentConfig, subscriptionGstInclusive: e.target.checked })}
+                                className="h-4 w-4 text-primary rounded border-slate-300 focus:ring-primary"
+                              />
+                              <span className="text-xs font-bold text-slate-800">GST Included in Plan Price</span>
+                            </label>
+                          </div>
+                          <p className="text-[10px] text-slate-500 font-semibold mt-1">
+                            {(paymentConfig.subscriptionGstInclusive ?? true)
+                              ? 'Inclusive: Customer pays exactly ₹1000 (tax is factored inside).'
+                              : 'Exclusive: Tax is added on top of ₹1000 at checkout.'}
+                          </p>
                         </div>
 
                         <div>
@@ -6493,6 +6516,26 @@ const AdminPanelContent: React.FC = () => {
                           />
                         </div>
                         <p className="text-[10px] text-slate-400 font-semibold mt-1.5">This disclaimer popup is shown to users during registration if they select "CANCER PREVENTION [NO HISTORY OF CANCER]".</p>
+                      </div>
+
+                      <div className="pt-4 border-t border-slate-100/50">
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">A Note from the Founder (Founder's Vision)</label>
+                          <span className="text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-200/60 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                            <span>👑 App & Web Founder Note</span>
+                          </span>
+                        </div>
+                        <div className="bg-white [&_.ql-container]:rounded-b-2xl [&_.ql-toolbar]:rounded-t-2xl [&_.ql-editor]:min-h-[220px]">
+                          <ReactQuill
+                            theme="snow"
+                            value={paymentConfig.founderNote !== undefined ? paymentConfig.founderNote : ''}
+                            onChange={(val) => setPaymentConfig({ ...paymentConfig, founderNote: val })}
+                            placeholder="Enter Note from the Founder..."
+                          />
+                        </div>
+                        <p className="text-[10px] text-slate-400 font-semibold mt-1.5">
+                          Displayed under Help & Support → Founder Note and Profile in the mobile app, and on the public website.
+                        </p>
                       </div>
                     </div>
 
@@ -7654,6 +7697,69 @@ const AdminPanelContent: React.FC = () => {
                 <Plus className="h-4.5 w-4.5" />
                 <span>Add Founder</span>
               </button>
+            </div>
+
+            {/* A Note from the Founder Card */}
+            <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm mb-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-4 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-rose-500 to-amber-500 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+                    👑
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-slate-800">A Note from the Founder</h3>
+                    <p className="text-xs text-slate-400 font-medium">
+                      Official message from Dr. Krithikaa Sekar displayed in the mobile app & website.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setSavingPaymentConfig(true);
+                    try {
+                      const res = await fetch(`${apiUrl}/admin/payments/config`, {
+                        method: 'PUT',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(paymentConfig)
+                      });
+                      if (res.ok) {
+                        alert('Founder Note updated successfully!');
+                        fetchPaymentConfig();
+                      } else {
+                        const data = await res.json();
+                        alert(data.message || 'Failed to update founder note.');
+                      }
+                    } catch (e) {
+                      console.error(e);
+                      alert('Error updating founder note.');
+                    } finally {
+                      setSavingPaymentConfig(false);
+                    }
+                  }}
+                  disabled={savingPaymentConfig || !paymentConfig}
+                  className="bg-primary hover:bg-primary-dark disabled:opacity-50 text-white font-extrabold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer self-start sm:self-auto"
+                >
+                  <Save className="h-4 w-4" />
+                  <span>{savingPaymentConfig ? 'Saving...' : 'Save Founder Note'}</span>
+                </button>
+              </div>
+
+              {paymentConfig ? (
+                <div className="bg-white [&_.ql-container]:rounded-b-2xl [&_.ql-toolbar]:rounded-t-2xl [&_.ql-editor]:min-h-[220px]">
+                  <ReactQuill
+                    theme="snow"
+                    value={paymentConfig.founderNote !== undefined ? paymentConfig.founderNote : ''}
+                    onChange={(val) => setPaymentConfig({ ...paymentConfig, founderNote: val })}
+                    placeholder="Enter Note from the Founder..."
+                  />
+                </div>
+              ) : (
+                <div className="text-xs text-slate-400 font-semibold py-4 text-center">Loading configuration...</div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

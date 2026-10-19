@@ -11,6 +11,7 @@ export interface ISubscriptionPlan extends Document {
   monthlyFreeQuestions: number; // Free 48h Doctor queries per month (default 1)
   yearlyFreeQuestions: number; // Free 48h Doctor queries per year (default 10)
   trialDays: number;
+  trialHours: number; // Free trial hours (e.g. 48)
   displayOrder: number;
   badge?: 'Popular' | 'Recommended' | 'Best Value' | 'None';
   color?: string; // Hex code, e.g. "#2563EB"
@@ -35,13 +36,14 @@ export interface ISubscriptionPlan extends Document {
       name: { type: String, required: true, trim: true },
       code: { type: String, required: true, unique: true, index: true, lowercase: true, trim: true },
       description: { type: String, trim: true },
-      monthlyPrice: { type: Number, required: true, default: 100, min: 0 },
+      monthlyPrice: { type: Number, required: true, default: 1000, min: 0 },
       yearlyPrice: { type: Number, required: true, default: 1000, min: 0 },
       originalMonthlyPrice: { type: Number, default: 0, min: 0 },
-      originalYearlyPrice: { type: Number, default: 0, min: 0 },
+      originalYearlyPrice: { type: Number, default: 3600, min: 0 },
       monthlyFreeQuestions: { type: Number, default: 1, min: 0 },
       yearlyFreeQuestions: { type: Number, default: 10, min: 0 },
-      trialDays: { type: Number, required: true, default: 0, min: 0 },
+      trialDays: { type: Number, required: true, default: 2, min: 0 },
+      trialHours: { type: Number, required: true, default: 48, min: 0 },
       displayOrder: { type: Number, required: true, default: 0 },
       badge: { 
         type: String, 

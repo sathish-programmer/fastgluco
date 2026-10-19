@@ -185,53 +185,27 @@ const seed = async () => {
     await FAQ.insertMany(SEED_FAQS);
     console.log(`Successfully seeded ${SEED_FAQS.length} support FAQs.`);
 
-    // 5. Seed Subscription Plans
-    console.log('Seeding subscription plans...');
+    // 5. Seed Subscription Plans (Single Plan: 48h free trial, 1000/yr, slashed from 3600)
+    console.log('Seeding single subscription plan...');
     const BASIC_PLAN_ID = new mongoose.Types.ObjectId('6a2ac86dcd7c91d367ceb356');
     const PREMIUM_PLAN_ID = new mongoose.Types.ObjectId('6a2ac86dcd7c91d367ceb357');
 
     await SubscriptionPlan.deleteMany({});
     await SubscriptionPlan.create([
       {
-        _id: BASIC_PLAN_ID,
-        name: 'Basic Plan',
-        code: 'basic',
-        description: 'Access to food insights, customized notifications, and 1 free doctor consultation question/month.',
-        monthlyPrice: 100,
-        yearlyPrice: 1000,
-        originalMonthlyPrice: 350,
-        originalYearlyPrice: 3500,
-        monthlyFreeQuestions: 1,
-        yearlyFreeQuestions: 10,
-        trialDays: 7,
-        displayOrder: 1,
-        badge: 'Recommended',
-        color: '#0284C7',
-        isActive: true,
-        features: {
-          unlimitedReports: false,
-          advancedAnalysis: false,
-          premiumVideos: false,
-          foodInsights: true,
-          exportReports: false,
-          notifications: true,
-          aiCoaching: false,
-          foodScanner: false
-        }
-      },
-      {
         _id: PREMIUM_PLAN_ID,
         name: 'Premium Plan',
         code: 'premium',
-        description: 'Complete access to all features including unlimited report uploads, advanced analysis, and included doctor consultations.',
-        monthlyPrice: 100,
+        description: 'Complete access to all features including unlimited report uploads, advanced glucose & spike analysis, AI coaching, food scanner, and 10 doctor consultations.',
+        monthlyPrice: 1000,
         yearlyPrice: 1000,
-        originalMonthlyPrice: 350,
-        originalYearlyPrice: 3500,
+        originalMonthlyPrice: 0,
+        originalYearlyPrice: 3600,
         monthlyFreeQuestions: 1,
         yearlyFreeQuestions: 10,
-        trialDays: 14,
-        displayOrder: 2,
+        trialDays: 2,
+        trialHours: 48,
+        displayOrder: 1,
         badge: 'Best Value',
         color: '#4F46E5',
         isActive: true,
@@ -247,31 +221,22 @@ const seed = async () => {
         }
       }
     ]);
-    console.log('Successfully seeded subscription plans with static ObjectIds.');
+    console.log('Successfully seeded single subscription plan (Premium Plan - ₹1,000/yr slashed from ₹3,600, 48h free trial).');
 
-    // Migrate any transactions and subscriptions pointing to the temporary/previous basic/premium plan IDs
-    // to the static BASIC_PLAN_ID and PREMIUM_PLAN_ID.
+    // Migrate any transactions and subscriptions pointing to the previous basic plan IDs to PREMIUM_PLAN_ID.
     const tempBasicId = new mongoose.Types.ObjectId('6a2acbfb7ff08757d5dcedee');
     const tempPremiumId = new mongoose.Types.ObjectId('6a2acbfb7ff08757d5dcedef');
 
     await mongoose.connection.db!.collection('usersubscriptions').updateMany(
-      { planId: tempBasicId },
-      { $set: { planId: BASIC_PLAN_ID } }
-    );
-    await mongoose.connection.db!.collection('usersubscriptions').updateMany(
-      { planId: tempPremiumId },
+      { planId: { $in: [BASIC_PLAN_ID, tempBasicId, tempPremiumId] } },
       { $set: { planId: PREMIUM_PLAN_ID } }
     );
 
     await mongoose.connection.db!.collection('paymenttransactions').updateMany(
-      { planId: tempBasicId },
-      { $set: { planId: BASIC_PLAN_ID } }
-    );
-    await mongoose.connection.db!.collection('paymenttransactions').updateMany(
-      { planId: tempPremiumId },
+      { planId: { $in: [BASIC_PLAN_ID, tempBasicId, tempPremiumId] } },
       { $set: { planId: PREMIUM_PLAN_ID } }
     );
-    console.log('Successfully migrated database plan references to static ObjectIds.');
+    console.log('Successfully migrated database plan references to single Premium Plan ObjectId.');
 
     // 5.5. Seed Coupons
     console.log('Seeding discount coupons...');

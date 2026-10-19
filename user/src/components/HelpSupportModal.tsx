@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { X, Star, MessageSquare, Heart, Code2, Headphones, Send, Mail, Edit3, Trash2, Sparkles, ShieldCheck } from 'lucide-react';
+import { X, Star, MessageSquare, Heart, Code2, Headphones, Send, Mail, Edit3, Trash2, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useLanguage } from '../context/LanguageContext';
+import { FounderNoteContent } from './FounderNoteModal';
 
 interface HelpSupportModalProps {
   isOpen: boolean;
@@ -421,28 +422,13 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
                       {t('founderVision', "Founder's Vision")}
                     </span>
                     <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-slate-100 mt-0.5">
-                      {t('founderMessageTitle', 'A Message from Our Founders')}
+                      {t('founderMessageTitle', 'A Note from the Founder')}
                     </h3>
                   </div>
                 </div>
 
-                <div className="space-y-3 text-xs text-slate-700 dark:text-slate-300 leading-relaxed italic border-l-2 border-rose-400 pl-3.5 py-0.5">
-                  <p>
-                    "{t('founderPara1', 'Welcome to Mito_Reboot. Our vision was born out of a deep passion to solve chronic lifestyle conditions naturally by harnessing the power of circadian biology, smart nutrition, and continuous glucose monitoring.').replace('{appName}', branding?.appName || 'Mito_Reboot')}"
-                  </p>
-                  <p>
-                    "{t('founderPara2', 'We built this platform so you have evidence-backed lifestyle protocols, personalized food spike scores, and real-time clinical guidance at your fingertips. Your health journey is personal, and our entire mission is dedicated to helping you live a vibrant, disease-free, and energized life.')}"
-                  </p>
-                  <p>
-                    "{t('founderPara3', 'Thank you for placing your trust in our platform and being a part of this preventive health movement.')}"
-                  </p>
-                </div>
-
-                <div className="pt-3 border-t border-rose-200/60 dark:border-rose-900/40 flex items-center justify-between">
-                  <span className="text-[11px] font-black text-slate-900 dark:text-slate-100 flex items-center gap-1">
-                    <ShieldCheck className="h-3.5 w-3.5 text-rose-500" /> {t('theFoundersTeam', 'The Founders Team')}
-                  </span>
-                  <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400">{branding?.appName || 'Mito_Reboot Health'}</span>
+                <div className="pt-2 border-t border-rose-200/60 dark:border-rose-900/40">
+                  <FounderNoteContent />
                 </div>
               </div>
             </div>

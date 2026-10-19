@@ -30,8 +30,8 @@ export const requireSubscriptionFeature = (featureKey: 'unlimitedReports' | 'adv
         userId,
         status: { $in: ['active', 'trialing', 'cancelled'] },
         $or: [
-          { endDate: { $gte: now } },
-          { trialEndDate: { $gte: now } }
+          { status: 'trialing', trialEndDate: { $gte: now } },
+          { status: { $in: ['active', 'cancelled'] }, endDate: { $gte: now } }
         ]
       });
 

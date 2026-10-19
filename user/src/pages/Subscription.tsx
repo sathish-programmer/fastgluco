@@ -46,6 +46,7 @@ interface Plan {
   monthlyFreeQuestions?: number;
   yearlyFreeQuestions?: number;
   trialDays: number;
+  trialHours?: number;
   badge?: 'Popular' | 'Recommended' | 'Best Value' | 'None';
   color?: string;
   features: FeatureFlag;
@@ -98,11 +99,16 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
   const [activeSub, setActiveSub] = useState<SubscriptionDetails | null>(null);
   const [activePlanDetails, setActivePlanDetails] = useState<Plan | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+  const billingCycle = 'yearly';
   const [gstPercentage, setGstPercentage] = useState<number>(18);
+  const [subscriptionGstInclusive, setSubscriptionGstInclusive] = useState<boolean>(true);
 
   const [loading, setLoading] = useState<boolean>(true);
   const [actionLoading, setActionLoading] = useState<boolean>(false);
+  const [trialLoading, setTrialLoading] = useState<boolean>(false);
+  const [canStartTrial, setCanStartTrial] = useState<boolean>(false);
+  const [hasUsedTrial, setHasUsedTrial] = useState<boolean>(false);
+  const [trialHoursRemaining, setTrialHoursRemaining] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
@@ -176,13 +182,20 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
           if (subData.gstPercentage !== undefined) {
             setGstPercentage(subData.gstPercentage);
           }
-          // Show popup if the user does not have an active subscription
+          if (subData.subscriptionGstInclusive !== undefined) {
+            setSubscriptionGstInclusive(subData.subscriptionGstInclusive);
+          }
+          setCanStartTrial(!!subData.canStartTrial);
+          setHasUsedTrial(!!subData.hasUsedTrial);
+          setTrialHoursRemaining(subData.trialHoursRemaining || 0);
+
+          // Show popup if the user can start a trial and does not have an active subscription
           const hasActive = subData.subscription && (
-            subData.subscription.status === 'active' ||
-            subData.subscription.status === 'trialing' ||
+            (subData.subscription.status === 'active' && new Date(subData.subscription.endDate) > new Date()) ||
+            (subData.subscription.status === 'trialing' && subData.subscription.trialEndDate && new Date(subData.subscription.trialEndDate) > new Date()) ||
             (subData.subscription.status === 'cancelled' && new Date(subData.subscription.endDate) > new Date())
           );
-          if (!hasActive) {
+          if (!hasActive && subData.canStartTrial) {
             setShowTrialPopup(true);
           }
         }
@@ -191,6 +204,32 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
       setError(err.message || 'An error occurred loading subscription details.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleStartTrial = async () => {
+    setTrialLoading(true);
+    setError(null);
+    setSuccessMsg(null);
+    try {
+      const res = await fetch(`${apiUrl}/subscriptions/start-trial`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'X-Platform': Capacitor.getPlatform()
+        }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to start free trial.');
+      setSuccessMsg(data.message || 'Congratulations! Your 48-hour free trial has been activated.');
+      setShowTrialPopup(false);
+      await fetchData();
+      if (onSuccess) onSuccess();
+    } catch (err: any) {
+      setError(err.message || 'Error starting free trial.');
+    } finally {
+      setTrialLoading(false);
     }
   };
 
@@ -448,22 +487,6 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
     );
   };
 
-  // Dynamically calculate average yearly savings percentage based on active plans & MRP discount
-  const yearlySavingsPercentage = React.useMemo(() => {
-    if (!plans || plans.length === 0) return 71;
-    const validPlans = plans.filter(p => (p.originalYearlyPrice && p.originalYearlyPrice > p.yearlyPrice) || (p.monthlyPrice > 0 && p.yearlyPrice > 0));
-    if (validPlans.length === 0) return 71;
-    const totalSavings = validPlans.reduce((acc, plan) => {
-      const benchmarkPrice = (plan.originalYearlyPrice && plan.originalYearlyPrice > plan.yearlyPrice)
-        ? plan.originalYearlyPrice
-        : plan.monthlyPrice * 12;
-      const savings = ((benchmarkPrice - plan.yearlyPrice) / benchmarkPrice) * 100;
-      return acc + savings;
-    }, 0);
-    const avgSavings = Math.round(totalSavings / validPlans.length);
-    return avgSavings > 0 ? avgSavings : 71;
-  }, [plans]);
-
   if (loading) {
     return (
       <div className="min-h-full bg-slate-50 dark:bg-slate-950 flex flex-col pt-12 pb-24 px-6 md:px-10 lg:px-16">
@@ -650,47 +673,23 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
 
       {/* Pricing Cards Listing */}
       <div className="mb-8">
-        {/* Modern Section Header & Segmented Billing Cycle Selector */}
+        {/* Modern Section Header for Single Annual Plan */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
           <div>
             <h4 className="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-              <span>{t('sub.availablePlans', 'Available Pricing Plans')}</span>
+              <span>{t('sub.annualMembership', 'Mito_Reboot Annual Membership')}</span>
             </h4>
             <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium mt-0.5">
-              {t('sub.flexibleBilling', 'Flexible billing • Cancel anytime')}
+              48 Hours Free Trial • ₹1,000 / year thereafter (slashed from ₹3,600)
             </p>
           </div>
 
-          {/* Premium Segmented Toggle */}
-          <div className="self-stretch sm:self-auto bg-slate-100 dark:bg-slate-800/90 p-1 rounded-2xl flex items-center border border-slate-200/80 dark:border-slate-700/60 shadow-inner">
-            <button
-              type="button"
-              onClick={() => setBillingCycle('monthly')}
-              className={`flex-1 sm:flex-initial text-center px-4 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 ${
-                billingCycle === 'monthly'
-                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm font-black'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
-            >
-              {t('sub.monthly', 'Monthly')}
-            </button>
-            <button
-              type="button"
-              onClick={() => setBillingCycle('yearly')}
-              className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 ${
-                billingCycle === 'yearly'
-                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm font-black'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
-            >
-              <span>{t('sub.yearly', 'Yearly')}</span>
-              {yearlySavingsPercentage > 0 && (
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-black bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
-                  {t('sub.savePercentage', { percent: yearlySavingsPercentage, pct: yearlySavingsPercentage }, `Save ${yearlySavingsPercentage}%`)}
-                </span>
-              )}
-            </button>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/60 self-start sm:self-auto shadow-2xs">
+            <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+            <span className="text-[11px] font-black text-indigo-700 dark:text-indigo-300">
+              72% OFF Special Launch Offer
+            </span>
           </div>
         </div>
 
@@ -762,9 +761,11 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
 
         <div className="space-y-4">
           {plans.map((plan) => {
-            const isActivePlan = activeSub && activeSub.planId === plan._id;
-            const price = billingCycle === 'yearly' ? plan.yearlyPrice : plan.monthlyPrice;
-            const color = plan.color || '#2563EB';
+            const isTrialActive = activeSub && activeSub.status === 'trialing' && activeSub.trialEndDate && new Date(activeSub.trialEndDate) > new Date();
+            const isPaidActive = activeSub && activeSub.status === 'active' && new Date(activeSub.endDate) > new Date();
+            const isActivePlan = isPaidActive;
+            const price = plan.yearlyPrice;
+            const color = plan.color || '#4F46E5';
             const currencySymbol = user?.currency === 'USD' ? '$' : '₹';
 
             // Calculate coupon discount
@@ -780,9 +781,27 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
               }
             }
             const finalPrice = parseFloat((price - discount).toFixed(2));
-            const origPrice = billingCycle === 'yearly' ? (plan.originalYearlyPrice || 0) : (plan.originalMonthlyPrice || 0);
+            const origPrice = plan.originalYearlyPrice || 3600;
             const hasOriginalPrice = origPrice > price;
-            const discountPct = hasOriginalPrice ? Math.round(((origPrice - price) / origPrice) * 100) : 0;
+            const discountPct = hasOriginalPrice ? Math.round(((origPrice - price) / origPrice) * 100) : 72;
+
+            // GST and total calculation
+            const effectivePrice = discount > 0 ? finalPrice : price;
+            let taxableBase = effectivePrice;
+            let gstAmount = 0;
+            let totalToPay = effectivePrice;
+
+            if (subscriptionGstInclusive) {
+              totalToPay = effectivePrice;
+              taxableBase = gstPercentage > 0
+                ? parseFloat((totalToPay / (1 + gstPercentage / 100)).toFixed(2))
+                : totalToPay;
+              gstAmount = parseFloat((totalToPay - taxableBase).toFixed(2));
+            } else {
+              taxableBase = effectivePrice;
+              gstAmount = parseFloat(((taxableBase * gstPercentage) / 100).toFixed(2));
+              totalToPay = parseFloat((taxableBase + gstAmount).toFixed(2));
+            }
 
             return (
               <div
@@ -790,22 +809,21 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                 className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-soft transition-all hover:border-slate-300 dark:hover:border-slate-700 relative"
               >
                 {/* Accent line */}
-                <div className="h-1.5 w-full" style={{ backgroundColor: color }}></div>
+                <div className="h-1.5 w-full bg-gradient-to-r from-indigo-500 via-primary to-indigo-600"></div>
 
                 <div className="p-5 sm:p-6">
                   <div className="flex items-center justify-between gap-2 flex-wrap mb-1.5">
-                    <h4 className="text-lg font-black tracking-tight" style={{ color: color }}>
+                    <h4 className="text-lg sm:text-xl font-black tracking-tight" style={{ color: color }}>
                       {plan.name}
                     </h4>
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      {plan.badge && plan.badge !== 'None' && !isIOSAppStoreBlocked && (
-                        <span
-                          className="text-[10px] font-black px-2.5 py-0.5 rounded-full text-white shadow-xs"
-                          style={{ backgroundColor: color }}
-                        >
-                          {plan.badge}
-                        </span>
-                      )}
+                      <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full text-white bg-indigo-600 shadow-xs">
+                        {plan.badge || 'Best Value'}
+                      </span>
+                      <span className="text-[10px] font-black px-2.5 py-0.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 rounded-full flex items-center gap-1">
+                        <Sparkles className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                        <span>48 Hours Free Trial</span>
+                      </span>
                       {hasOriginalPrice && (
                         <span className="text-[10px] font-black px-2.5 py-0.5 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/60 rounded-full flex items-center gap-1">
                           <Percent className="h-3 w-3" />
@@ -820,26 +838,24 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
 
                   {/* Price breakdown: Base, GST, Total */}
                   <div className="mb-4 text-xs font-semibold text-slate-600 dark:text-slate-400 space-y-1.5 bg-slate-50/80 dark:bg-slate-800/50 p-3.5 rounded-2xl border border-slate-200/60 dark:border-slate-800">
-                    {hasOriginalPrice && (
-                      <div className="flex items-center justify-between bg-gradient-to-r from-amber-500/10 via-amber-400/10 to-orange-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 p-2.5 rounded-xl text-xs font-bold mb-2">
-                        <span className="flex items-center gap-1.5">
-                          <Sparkles className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-                          <span>{t('limitedIntroDeal')}</span>
-                        </span>
-                        <div className="flex items-center gap-1.5">
-                          <span className="line-through text-slate-400 text-xs font-medium">{currencySymbol}{origPrice}</span>
-                          <span className="text-amber-600 dark:text-amber-400 font-black text-sm">{currencySymbol}{price}</span>
-                        </div>
+                    <div className="flex items-center justify-between bg-gradient-to-r from-amber-500/10 via-amber-400/10 to-orange-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 p-2.5 rounded-xl text-xs font-bold mb-2">
+                      <span className="flex items-center gap-1.5">
+                        <Sparkles className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                        <span>Special Launch Deal (Save {discountPct}%)</span>
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="line-through text-slate-400 text-xs font-medium">{currencySymbol}{origPrice}</span>
+                        <span className="text-amber-600 dark:text-amber-400 font-black text-sm">{currencySymbol}{price} / year</span>
                       </div>
-                    )}
+                    </div>
 
                     <div className="flex justify-between">
-                      <span>{t('basePlanPriceLabel')}</span>
+                      <span>{subscriptionGstInclusive ? t('basePlanPriceExclLabel', 'Base Plan Price (Excl. Tax)') : t('basePlanPriceLabel', 'Base Plan Price')}</span>
                       <span className="text-slate-800 dark:text-slate-200 font-extrabold flex items-center gap-1.5">
-                        {hasOriginalPrice && discount === 0 && (
+                        {discount === 0 && (
                           <span className="line-through text-slate-400 text-[11px] font-normal">{currencySymbol}{origPrice}</span>
                         )}
-                        <span>{currencySymbol}{discount > 0 ? finalPrice : price}</span>
+                        <span>{currencySymbol}{taxableBase.toFixed(2)}</span>
                       </span>
                     </div>
                     {discount > 0 && (
@@ -849,25 +865,23 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                       </div>
                     )}
                     <div className="flex justify-between text-[11px]">
-                      <span>GST ({gstPercentage}%):</span>
-                      <span className="text-slate-800 dark:text-slate-200 font-bold">{currencySymbol}{((discount > 0 ? finalPrice : price) * gstPercentage / 100).toFixed(2)}</span>
+                      <span>GST ({gstPercentage}%{subscriptionGstInclusive ? ' Included' : ''}):</span>
+                      <span className="text-slate-800 dark:text-slate-200 font-bold">{currencySymbol}{gstAmount.toFixed(2)}</span>
                     </div>
                     <div className="border-t border-slate-200/60 dark:border-slate-750/50 my-1"></div>
                     <div className="flex justify-between font-black text-slate-900 dark:text-slate-100 text-sm">
                       <span className="flex items-baseline space-x-0.5">
                         <span>Total Price</span>
-                        <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold ml-1">/ {billingCycle === 'yearly' ? 'year' : 'month'}</span>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold ml-1">/ year</span>
                       </span>
-                      <span className="text-primary font-black">{currencySymbol}{((discount > 0 ? finalPrice : price) * (1 + gstPercentage / 100)).toFixed(2)}</span>
+                      <span className="text-primary font-black">{currencySymbol}{totalToPay.toFixed(2)}</span>
                     </div>
-                    {plan.trialDays > 0 && (
-                      <div className="pt-1 flex items-center justify-between">
-                        <span className="text-[10px] font-extrabold text-blue-700 dark:text-blue-300 bg-blue-50/90 dark:bg-blue-900/30 border border-blue-200/80 dark:border-blue-800/40 px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
-                          <Sparkles className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-                          <span>{plan.trialDays} Days Free Trial included</span>
-                        </span>
-                      </div>
-                    )}
+                    <div className="pt-1 flex items-center justify-between">
+                      <span className="text-[10px] font-extrabold text-blue-700 dark:text-blue-300 bg-blue-50/90 dark:bg-blue-900/30 border border-blue-200/80 dark:border-blue-800/40 px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
+                        <Sparkles className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                        <span>Free for 48 hours • Then {currencySymbol}{price} / year</span>
+                      </span>
+                    </div>
                   </div>
 
                   {/* Feature Checklist */}
@@ -875,27 +889,85 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                     {renderFeatureList(plan.features, plan)}
                   </div>
 
-                  {/* Action Button */}
-                  <div className="mt-4">
+                  {/* Action Buttons */}
+                  <div className="mt-4 space-y-2">
                     {isActivePlan ? (
                       <div className="text-center py-3 text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 rounded-2xl border border-emerald-200 dark:border-emerald-900/40 font-extrabold flex items-center justify-center space-x-1.5 shadow-xs">
                         <Check className="h-4 w-4 text-emerald-500" />
-                        <span>{t('sub.activeSubscription', 'Active Subscription')}</span>
+                        <span>{t('sub.activeSubscription', 'Active Annual Subscription')}</span>
+                      </div>
+                    ) : isTrialActive ? (
+                      <div className="space-y-2">
+                        <div className="p-3 bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300 text-xs font-bold rounded-2xl border border-amber-200/70 dark:border-amber-900/30 flex items-center justify-between">
+                          <span className="flex items-center gap-1.5">
+                            <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
+                            <span>Free Trial Active ({trialHoursRemaining}h remaining)</span>
+                          </span>
+                          <span className="text-[10px] font-extrabold bg-amber-200/60 dark:bg-amber-900/60 px-2 py-0.5 rounded-md">
+                            48h SLA
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => handleSubscribe(plan._id)}
+                          disabled={actionLoading}
+                          className="w-full text-white font-extrabold py-3.5 px-4 rounded-2xl shadow-md hover:shadow-lg active:scale-[0.99] flex items-center justify-center space-x-2 transition-all disabled:opacity-50 cursor-pointer bg-primary hover:bg-primary-dark"
+                        >
+                          <CreditCard className="h-4.5 w-4.5" />
+                          <span className="text-xs sm:text-sm font-black tracking-wide">
+                            Upgrade Now to Annual Plan ({currencySymbol}{totalToPay.toFixed(2)}/yr)
+                          </span>
+                        </button>
                       </div>
                     ) : isIOSAppStoreBlocked ? (
                       <div className="text-center py-3 text-xs text-slate-500 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 font-bold px-2">
                         <span>{t('sub.iosIapSoon', 'In-App Purchases coming soon to iOS')}</span>
                       </div>
+                    ) : canStartTrial ? (
+                      <div className="space-y-2">
+                        <button
+                          onClick={handleStartTrial}
+                          disabled={trialLoading || actionLoading}
+                          className="w-full bg-gradient-to-r from-primary via-indigo-600 to-primary hover:from-primary-dark hover:to-indigo-700 text-white font-extrabold py-3.5 px-4 rounded-2xl shadow-lg hover:shadow-xl active:scale-[0.99] flex items-center justify-center space-x-2 transition-all disabled:opacity-50 cursor-pointer"
+                        >
+                          {trialLoading ? (
+                            <Loader2 className="h-4.5 w-4.5 animate-spin" />
+                          ) : (
+                            <Sparkles className="h-4.5 w-4.5 text-amber-300 animate-pulse" />
+                          )}
+                          <span className="text-xs sm:text-sm font-black tracking-wide">
+                            {trialLoading ? 'Activating Free Trial...' : 'Start 48-Hour Free Trial (No Card Needed)'}
+                          </span>
+                        </button>
+
+                        <button
+                          onClick={() => handleSubscribe(plan._id)}
+                          disabled={actionLoading || trialLoading}
+                          className="w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-extrabold py-3 px-4 rounded-2xl transition-all cursor-pointer flex items-center justify-center space-x-2 text-xs border border-slate-200/80 dark:border-slate-700"
+                        >
+                          <CreditCard className="h-4 w-4" />
+                          <span>Or Subscribe Directly ({currencySymbol}{totalToPay.toFixed(2)} / yr)</span>
+                        </button>
+                      </div>
                     ) : (
-                      <button
-                        onClick={() => handleSubscribe(plan._id)}
-                        disabled={actionLoading}
-                        className="w-full text-white font-extrabold py-3.5 px-4 rounded-2xl shadow-md hover:shadow-lg active:scale-[0.99] flex items-center justify-center space-x-2 transition-all disabled:opacity-50 cursor-pointer"
-                        style={{ backgroundColor: color }}
-                      >
-                        <CreditCard className="h-4.5 w-4.5" />
-                        <span className="text-xs sm:text-sm font-black tracking-wide">{plan.trialDays > 0 && !activeSub ? 'Start Free Trial' : `Subscribe Now (${currencySymbol}${((discount > 0 ? finalPrice : price) * (1 + gstPercentage / 100)).toFixed(2)})`}</span>
-                      </button>
+                      <div className="space-y-2">
+                        {hasUsedTrial && (
+                          <div className="p-2.5 bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 text-xs font-semibold rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center gap-1.5">
+                            <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+                            <span>Your 48-hour free trial has ended. Subscribe to unlock all features.</span>
+                          </div>
+                        )}
+                        <button
+                          onClick={() => handleSubscribe(plan._id)}
+                          disabled={actionLoading}
+                          className="w-full text-white font-extrabold py-3.5 px-4 rounded-2xl shadow-md hover:shadow-lg active:scale-[0.99] flex items-center justify-center space-x-2 transition-all disabled:opacity-50 cursor-pointer"
+                          style={{ backgroundColor: color }}
+                        >
+                          <CreditCard className="h-4.5 w-4.5" />
+                          <span className="text-xs sm:text-sm font-black tracking-wide">
+                            Subscribe Now ({currencySymbol}{totalToPay.toFixed(2)} / year)
+                          </span>
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -1012,7 +1084,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
           </div>
         </div>
       )}
-      {showTrialPopup && !activeSub && (
+      {showTrialPopup && !activeSub && canStartTrial && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
           <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 max-w-sm w-full border border-slate-100 dark:border-slate-800 shadow-2xl relative overflow-hidden transition-all duration-300">
             {/* Background design elements */}
@@ -1028,41 +1100,36 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
 
             <div className="text-center pt-4">
               <div className="inline-flex items-center justify-center p-4 bg-primary/10 text-primary rounded-[2rem] mb-4 shadow-soft">
-                <Sparkles className="h-8 w-8 text-primary" />
+                <Sparkles className="h-8 w-8 text-primary animate-pulse" />
               </div>
               
               <h3 className="text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-tight">
-                Unlock Free Premium Trial!
+                Claim 48-Hour Free Trial!
               </h3>
               
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 font-medium leading-relaxed">
-                Use code <span className="font-extrabold text-primary px-2 py-0.5 bg-primary/10 rounded-md">FREE100</span> to get full premium features for free. No credit card required, we won't charge you!
+                Enjoy complete access to CGM reports, glucose spike analysis, AI food scanner, and coaching. Free for 48 hours, then ₹1,000/year (slashed from ₹3,600). No credit card required!
               </p>
 
               <div className="mt-6 space-y-2">
                 <button
-                  onClick={() => {
-                    setCouponCode('FREE100');
-                    setShowTrialPopup(false);
-                    // Automatically trigger the apply coupon behavior
-                    setTimeout(() => {
-                      const applyBtn = document.getElementById('apply-coupon-btn');
-                      if (applyBtn) {
-                        applyBtn.removeAttribute('disabled');
-                        applyBtn.click();
-                      }
-                    }, 200);
-                  }}
-                  className="w-full bg-primary hover:bg-primary-dark text-white font-extrabold py-3.5 px-4 rounded-2xl shadow-soft transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] text-xs"
+                  onClick={handleStartTrial}
+                  disabled={trialLoading}
+                  className="w-full bg-gradient-to-r from-primary to-indigo-600 hover:from-primary-dark hover:to-indigo-700 text-white font-extrabold py-3.5 px-4 rounded-2xl shadow-soft transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] text-xs flex items-center justify-center space-x-2"
                 >
-                  Apply Code Automatically
+                  {trialLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-4 h-4 text-amber-300" />
+                  )}
+                  <span>{trialLoading ? 'Activating Trial...' : 'Start 48-Hour Free Trial'}</span>
                 </button>
                 
                 <button
                   onClick={() => setShowTrialPopup(false)}
                   className="w-full bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold py-2.5 px-4 rounded-2xl transition-all duration-200 text-xs"
                 >
-                  I'll enter it manually
+                  Explore Membership Details
                 </button>
               </div>
             </div>

@@ -74,6 +74,7 @@ export interface AppBranding {
   enableSubscriptions?: boolean;
   enableExternalPayments?: boolean;
   enableIOSExternalPayments?: boolean;
+  founderNote?: string;
 }
 
 interface AuthContextType {
@@ -190,7 +191,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               enableSaferFoodCoupons: config.enableSaferFoodCoupons ?? true,
               enableSubscriptions: config.enableSubscriptions,
               enableExternalPayments: config.enableExternalPayments,
-              enableIOSExternalPayments: config.enableIOSExternalPayments
+              enableIOSExternalPayments: config.enableIOSExternalPayments,
+              founderNote: config.founderNote || ''
             });
             document.title = `${config.appName} - ${tagline}`;
           }

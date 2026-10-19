@@ -536,8 +536,8 @@ const MainAppContent: React.FC = () => {
         if (data.subscriptionsRequired) {
           const sub = data.subscription;
           const hasActive = sub && (
-            sub.status === 'active' ||
-            sub.status === 'trialing' ||
+            (sub.status === 'active' && new Date(sub.endDate) > new Date()) ||
+            (sub.status === 'trialing' && sub.trialEndDate && new Date(sub.trialEndDate) > new Date()) ||
             (sub.status === 'cancelled' && new Date(sub.endDate) > new Date())
           );
           // Bypass paywall entirely on iOS to comply with App Store Guidelines

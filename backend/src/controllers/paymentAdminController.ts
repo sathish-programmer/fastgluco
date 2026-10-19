@@ -55,6 +55,7 @@ export class PaymentAdminController {
         enableIOSExternalPayments,
         enableSaferFoodCoupons,
         gstPercentage, 
+        subscriptionGstInclusive,
         safeGlucoseThreshold, 
         moderateGlucoseThreshold, 
         aiSpikeThreshold, 
@@ -70,6 +71,7 @@ export class PaymentAdminController {
         cancerTreatmentDisclaimer,
         cancerSecondaryDisclaimer,
         cancerPreventionDisclaimer,
+        founderNote,
         shopGstPercentage,
         shopDiscountPercentage,
         shopShippingFee,
@@ -97,6 +99,7 @@ export class PaymentAdminController {
       if (enableIOSExternalPayments !== undefined) config.enableIOSExternalPayments = enableIOSExternalPayments;
       if (enableSaferFoodCoupons !== undefined) config.enableSaferFoodCoupons = enableSaferFoodCoupons;
       if (gstPercentage !== undefined) config.gstPercentage = gstPercentage;
+      if (subscriptionGstInclusive !== undefined) config.subscriptionGstInclusive = subscriptionGstInclusive;
       if (askMitoQuestionFee !== undefined) config.askMitoQuestionFee = Number(askMitoQuestionFee);
       if (safeGlucoseThreshold !== undefined) config.safeGlucoseThreshold = safeGlucoseThreshold;
       if (moderateGlucoseThreshold !== undefined) config.moderateGlucoseThreshold = moderateGlucoseThreshold;
@@ -113,6 +116,7 @@ export class PaymentAdminController {
       if (cancerTreatmentDisclaimer !== undefined) config.cancerTreatmentDisclaimer = cancerTreatmentDisclaimer;
       if (cancerSecondaryDisclaimer !== undefined) config.cancerSecondaryDisclaimer = cancerSecondaryDisclaimer;
       if (cancerPreventionDisclaimer !== undefined) config.cancerPreventionDisclaimer = cancerPreventionDisclaimer;
+      if (founderNote !== undefined) config.founderNote = founderNote;
       if (shopGstPercentage !== undefined) config.shopGstPercentage = shopGstPercentage;
       if (shopDiscountPercentage !== undefined) config.shopDiscountPercentage = shopDiscountPercentage;
       if (shopShippingFee !== undefined) config.shopShippingFee = shopShippingFee;
