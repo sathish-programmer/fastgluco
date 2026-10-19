@@ -6,7 +6,7 @@ import { LanguageSelector } from '../components/LanguageSelector';
 import { AlertCircle, Smartphone, ChevronDown, Search, ArrowLeft, RefreshCw, Mail, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import type { ConfirmationResult } from 'firebase/auth';
-import { auth, isNativePlatform } from '../config/firebase';
+import { auth } from '../config/firebase';
 import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 
@@ -290,25 +290,25 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
     setIsAutoVerifying(false);
     setLoading(true);
 
-    // 1. Native Mobile (iOS & Android): Native Firebase Phone Auth
-    if (isNativePlatform) {
+    // 1. Android Native: Native Firebase Phone Auth with Google Play Services auto-detect
+    if (Capacitor.getPlatform() === 'android') {
       try {
-        console.log('[Firebase Auth] Attempting Native Firebase Phone Auth for:', e164);
+        console.log('[Firebase Auth] Attempting Android Native Firebase Phone Auth for:', e164);
         otpProviderRef.current = 'FIREBASE';
         setOtpProvider('FIREBASE');
         await FirebaseAuthentication.signInWithPhoneNumber({ phoneNumber: e164 });
         // phoneCodeSent listener will transition screen to 'otp' and set codeSentRef.current = true
       } catch (nativeErr: any) {
-        console.warn('[Firebase Auth] Native Firebase Phone Auth initiation error:', nativeErr);
+        console.warn('[Firebase Auth] Android Native Firebase Phone Auth error:', nativeErr);
         setLoading(false);
         setPhoneError(nativeErr?.message || 'Failed to send verification code via Firebase. Please try again.');
       }
       return;
     }
 
-    // 2. Web Firebase Phone Auth
+    // 2. iOS & Web: Firebase Phone Auth via Web SDK (Invisible reCAPTCHA inside WebView)
     try {
-      console.log('[Firebase Auth] Attempting Web Firebase Phone Auth for:', e164);
+      console.log('[Firebase Auth] Attempting Firebase Phone Auth for:', e164);
       const verifier = getRecaptchaVerifier();
       const confirmation = await signInWithPhoneNumber(auth, e164, verifier);
 
@@ -323,7 +323,7 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
       showToast(t('auth.codeSentToMobile', { mobileNumber: e164 }, `Verification code sent to ${e164}`), 'success');
       setTimeout(() => otpInputRef.current?.focus(), 100);
     } catch (firebaseErr: any) {
-      console.warn('[Firebase Auth] Web Firebase initiation error:', firebaseErr);
+      console.warn('[Firebase Auth] Firebase initiation error:', firebaseErr);
       setConfirmationResult(null);
       window.confirmationResult = null;
       setPhoneError(firebaseErr?.message || 'Failed to send verification code via Firebase. Please try again.');
@@ -353,9 +353,9 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
         // --- 1. FIREBASE AUTHENTICATION FLOW (PRIMARY) ---
         let idToken: string | null = null;
 
-        if (isNativePlatform && window.verificationId) {
+        if (Capacitor.getPlatform() === 'android' && window.verificationId) {
           try {
-            console.log('[Auth] Verifying Firebase OTP with verificationId:', window.verificationId);
+            console.log('[Auth] Verifying Android Native Firebase OTP with verificationId:', window.verificationId);
             await FirebaseAuthentication.confirmVerificationCode({
               verificationId: window.verificationId,
               verificationCode: code
@@ -364,18 +364,16 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
             idToken = idTokenRes.token || null;
           } catch (fbErr: any) {
             console.error('[Auth] Native Firebase confirmation failed:', fbErr);
-            // DO NOT fallback to Fast2SMS for an incorrect or expired Firebase OTP!
             setOtpError(t('auth.invalidOtp', 'Invalid or expired Firebase verification code. Please check your SMS and try again.'));
             return;
           }
         } else if (confirmationResult) {
           try {
-            console.log('[Auth] Verifying Web Firebase OTP...');
+            console.log('[Auth] Verifying Firebase OTP...');
             const userCredential = await confirmationResult.confirm(code);
             idToken = await userCredential.user.getIdToken();
           } catch (fbErr: any) {
-            console.error('[Auth] Web Firebase confirmation failed:', fbErr);
-            // DO NOT fallback to Fast2SMS for an incorrect or expired Firebase OTP!
+            console.error('[Auth] Firebase confirmation failed:', fbErr);
             setOtpError(t('auth.invalidOtp', 'Invalid or expired Firebase verification code. Please check your SMS and try again.'));
             return;
           }
