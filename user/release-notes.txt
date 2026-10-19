@@ -1,12 +1,14 @@
 <en-US>
-• AI Voice Speed Controls: Seamlessly adjust speech speed (0.5x to 2x) with instant playback updates across all Mito AI assistants.
-• Synchronized Daily Habits: Fully synchronized 19 metabolic repair & circadian protection tracking modules.
-• Transparent Doctor Consultations: Dynamic consultation pricing and verified specialist booking.
-• Performance & Stability: Enhanced multilingual audio clarity, smoother navigation, and overall performance fixes.
+• Seamless Mobile Sign-In: Optimized secure Firebase phone authentication and reliable OTP delivery.
+• Consistent Health Metrics: Unified score formatting across cellular balance cards, charts, and daily logs.
+• AI & Habit Tracking: Enhanced audio responsiveness and synchronized daily circadian modules.
+• Performance & Stability: General bug fixes, smoother navigation, and app optimizations.
 </en-US>
 <en-IN>
-• AI Voice Speed Controls: Seamlessly adjust speech speed (0.5x to 2x) with instant playback updates across all Mito AI assistants.
-• Synchronized Daily Habits: Fully synchronized 19 metabolic repair & circadian protection tracking modules.
-• Transparent Doctor Consultations: Dynamic consultation pricing and verified specialist booking.
-• Performance & Stability: Enhanced multilingual audio clarity, smoother navigation, and overall performance fixes.
+• Seamless Mobile Sign-In: Optimized secure Firebase phone authentication and reliable OTP delivery.
+• Consistent Health Metrics: Unified score formatting across cellular balance cards, charts, and daily logs.
+• AI & Habit Tracking: Enhanced audio responsiveness and synchronized daily circadian modules.
+• Performance & Stability: General bug fixes, smoother navigation, and app optimizations.
 </en-IN>
+
+
