@@ -13,6 +13,7 @@ import { AppointmentReminderCron } from './cron/appointmentReminderCron';
 import { LibreSyncService } from './services/libreSyncService';
 import { FoodSyncService } from './services/foodSyncService';
 import { VendorOrderStatusCron } from './cron/vendorOrderStatusCron';
+import { DailyCheckinReminderCron } from './cron/dailyCheckinReminderCron';
 import { seedWorkflows } from './utils/seedWorkflows';
 import { seedAskMitoTopics } from './utils/seedAskMitoTopics';
 import { AppHealthSyncService } from './services/appHealthSyncService';
@@ -69,6 +70,11 @@ const bootstrap = async () => {
       // Sends email reminders 30 mins and 10 mins before confirmed appointments
       cron.schedule('* * * * *', async () => {
         await AppointmentReminderCron.sendUpcomingReminders();
+      });
+
+      // Daily Metabolic Check-in reminder cron — runs hourly to check user preferred check-in time
+      cron.schedule('0 * * * *', async () => {
+        await DailyCheckinReminderCron.sendDailyCheckinReminders();
       });
 
       // Vendor orders status tracking cron (Arivu Foods)

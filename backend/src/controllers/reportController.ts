@@ -11,9 +11,45 @@ import mongoose from 'mongoose';
 import { User } from '../models/User';
 import { GlucoseReading } from '../models/GlucoseReading';
 import { FoodLog } from '../models/FoodLog';
+import { FCMService } from '../services/fcmService';
+import { EmailService } from '../services/emailService';
+import { SMSService } from '../services/smsService';
 
 
 export class ReportController {
+  private static async notifyUserReportProcessed(userId: string, reportName: string, readingsCount: number, reportId: string) {
+    try {
+      const user = await User.findById(userId);
+      if (!user) return;
+      const notifPrefs = user.notificationPreferences || {};
+      const pushEnabled = notifPrefs.push?.reportUpload !== false;
+      const emailEnabled = notifPrefs.email?.reportUpload !== false;
+      const smsEnabled = notifPrefs.sms?.reportUpload === true;
+
+      if (pushEnabled) {
+        FCMService.sendNotificationToUser(userId, {
+          title: 'Health Report Processed',
+          body: `Your report "${reportName}" has been analyzed (${readingsCount} readings). Biomarker trends are updated.`,
+          type: 'ReportProcessed',
+          data: { reportId }
+        }).catch(console.error);
+      }
+
+      if (emailEnabled && user.email) {
+        EmailService.sendReportProcessedEmail(user.email, user.name || 'Valued Patient', reportName, readingsCount).catch(console.error);
+      }
+
+      if (smsEnabled && user.mobileNumber) {
+        SMSService.sendSMS(
+          user.mobileNumber,
+          `[Mito Reboot] Your health report "${reportName}" has been processed. View your updated biomarker analytics in the app.`
+        ).catch(console.error);
+      }
+    } catch (err) {
+      console.error('[ReportController] notifyUserReportProcessed error:', err);
+    }
+  }
+
   /**
    * Upload Abbott CGM report CSV/PDF
    */
@@ -68,6 +104,8 @@ export class ReportController {
         if (parseResult.errorMessage) report.errorMessage = parseResult.errorMessage;
         await report.save();
 
+        ReportController.notifyUserReportProcessed(userId!, file.originalname, parseResult.readingsCount, report.id);
+
         try { await GlucoseService.analyzeAllUserFoodLogs(userId!); } catch (_) {}
         return res.status(200).json({ message: 'Report uploaded and parsed successfully.', readingsCount: parseResult.readingsCount, report });
       } else {
@@ -110,6 +148,10 @@ export class ReportController {
                 if (parseResult.errorMessage) bgReport.errorMessage = parseResult.errorMessage;
               }
               await bgReport.save();
+
+              if (bgReport.status === 'Processed') {
+                ReportController.notifyUserReportProcessed(userId!, file.originalname, parseResult.readingsCount, bgReport.id);
+              }
             }
             await GlucoseService.analyzeAllUserFoodLogs(userId!);
           } catch (bgErr) {

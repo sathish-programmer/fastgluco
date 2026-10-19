@@ -9,7 +9,7 @@ import {
   getGuidedQuickRepliesFallback,
   getGuidedOncogeneticReplyFallback
 } from '../data/giaData';
-import { speakText, stopSpeaking, useTtsSpeed } from '../utils/ttsHelper';
+import { speakText, stopSpeaking, useTtsSpeed, getStoredTtsSpeed } from '../utils/ttsHelper';
 
 interface GeneticRiskAIChatModalProps {
   isOpen: boolean;
@@ -68,19 +68,24 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
     speakText({
       text: textToSpeak,
       language: curLang,
-      rate: customRate ?? ttsSpeed,
+      rate: customRate ?? getStoredTtsSpeed(),
       onEnd: () => setSpeakingMsgId(null),
       onError: () => setSpeakingMsgId(null)
     });
   };
 
-  const handleCycleSpeed = (msgId?: string, msgText?: string) => {
+  const handleCycleSpeed = (_msgId?: string, msgText?: string) => {
     const nextSpeed = cycleTtsSpeed();
-    if (speakingMsgId && msgId && msgText && speakingMsgId === msgId) {
-      stopSpeaking();
-      setTimeout(() => {
-        handleSpeak(msgId, msgText, nextSpeed);
-      }, 60);
+    if (speakingMsgId) {
+      const activeMsgId = speakingMsgId;
+      const activeMsg = messages.find(m => m.id === activeMsgId);
+      const textToSpeak = activeMsg?.text || msgText || '';
+      if (textToSpeak) {
+        stopSpeaking();
+        setTimeout(() => {
+          handleSpeak(activeMsgId, textToSpeak, nextSpeed);
+        }, 60);
+      }
     }
   };
 

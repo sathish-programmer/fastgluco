@@ -930,9 +930,29 @@ export class EmailService {
     let subject = '';
     let attachments: any[] = [];
 
+    const orderUser: any = order.userId;
+    const emailEnabled = orderUser?.notificationPreferences?.email?.orderUpdates !== false;
+    const smsEnabled = orderUser?.notificationPreferences?.sms?.orderUpdates === true;
+
+    // Dispatch SMS to customer for order updates if enabled
+    if (smsEnabled) {
+      const recipientPhone = orderUser?.mobileNumber || order.patientPhone || order.shippingAddress?.phone;
+      if (recipientPhone) {
+        let smsMsg = '';
+        if (type === 'placed') smsMsg = `[Mito Reboot] Order #${displayOrderId} confirmed! Total: ${totalFormatted}. Our team is preparing your items.`;
+        else if (type === 'shipped') smsMsg = `[Mito Reboot] Order #${displayOrderId} has been shipped! Track your package in the app.`;
+        else if (type === 'delivered') smsMsg = `[Mito Reboot] Order #${displayOrderId} has been delivered! Enjoy your wellness products.`;
+        else if (type === 'cancelled') smsMsg = `[Mito Reboot] Order #${displayOrderId} cancellation processed. Refund initiated if applicable.`;
+        if (smsMsg) {
+          SMSService.sendSMS(recipientPhone, smsMsg).catch(console.error);
+        }
+      }
+    }
+
     if (type === 'placed') {
-      // 1. Send Co-Branded Placed confirmation to Patient
-      if (order.userId?.email) {
+      // 1. Send Co-Branded Placed confirmation to Patient (if email enabled)
+      if (emailEnabled && (order.userId?.email || order.patientEmail)) {
+        const recipientEmail = order.userId?.email || order.patientEmail;
         subject = `Order Placed Successfully (#${displayOrderId})`;
         const userHtml = generateShopCoBrandedEmailTemplate({
           vendorName,
@@ -1004,7 +1024,7 @@ export class EmailService {
 
     if (type === 'assigned') {
       // Send mail to Patient
-      if (order.userId?.email) {
+      if (emailEnabled && order.userId?.email) {
         subject = `Your Order #${displayOrderId} has been Assigned`;
         const userHtml = generateShopCoBrandedEmailTemplate({
           vendorName,
@@ -1085,7 +1105,7 @@ export class EmailService {
     }
 
     if (type === 'shipped') {
-      if (order.userId?.email) {
+      if (emailEnabled && order.userId?.email) {
         subject = `Your Order #${displayOrderId} has been Shipped!`;
         const courier = order.trackingDetails?.courierName || `${vendorName} Logistics`;
         const trackingId = order.trackingDetails?.trackingId || 'In Transit';
@@ -1147,7 +1167,7 @@ export class EmailService {
       }
 
       // Send to Patient
-      if (order.userId?.email) {
+      if (emailEnabled && order.userId?.email) {
         subject = `Your Order #${displayOrderId} has been Delivered 🎉`;
         
         const userHtml = generateShopCoBrandedEmailTemplate({
@@ -1209,7 +1229,7 @@ export class EmailService {
     }
 
     if (type === 'cancelled') {
-      if (order.userId?.email || order.patientEmail) {
+      if (emailEnabled && (order.userId?.email || order.patientEmail)) {
         const recipientEmail = order.patientEmail || order.userId?.email;
         subject = `Order #${displayOrderId} Cancellation & Refund Update`;
         const userHtml = generateShopCoBrandedEmailTemplate({
@@ -1282,5 +1302,65 @@ export class EmailService {
       <p>Thank you for choosing ${appName}!</p>
     `, appName, appTagline);
     try { await transporter.sendMail({ from: `"${appName}" <support@mitoreboot.in>`, to: email, subject: `Your Lab Report is Ready`, html }); } catch (err) { console.error(err); }
+  }
+
+  /**
+   * Send Daily Metabolic Check-in Reminder Email
+   */
+  public static async sendDailyCheckinEmail(email: string, name: string) {
+    const { appName, appTagline } = await EmailService.getBranding();
+    const html = generateEmailTemplate('Daily Metabolic & Habit Check-in', `
+      <p>Hi ${name},</p>
+      <p>It's time for your daily metabolic check-in! Logging your habits, fasting windows, and activity takes less than 60 seconds and helps protect your cellular defenses.</p>
+      <div style="background-color: #eff6ff; border: 1px solid #bfdbfe; border-left: 4px solid #3b82f6; padding: 16px; border-radius: 8px; margin: 20px 0;">
+        <p style="margin: 0; color: #1e40af; font-weight: 600;">Today's Focus:</p>
+        <ul style="margin-top: 8px; margin-bottom: 0; color: #1d4ed8; padding-left: 20px;">
+          <li>Review your glucose & dietary balance</li>
+          <li>Log your stillness & breathwork sessions</li>
+          <li>Maintain your wellness and longevity streak</li>
+        </ul>
+      </div>
+      <p><a href="https://app.mitoreboot.in" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Open Daily Check-in</a></p>
+    `, appName, appTagline);
+    try {
+      await transporter.sendMail({
+        from: `"${appName}" <support@mitoreboot.in>`,
+        to: email,
+        subject: `Daily Metabolic Check-in • ${appName}`,
+        html
+      });
+    } catch (err) {
+      console.error('[EmailService] Daily check-in email error:', err);
+    }
+  }
+
+  /**
+   * Send Medical / Lab Report Processed Email
+   */
+  public static async sendReportProcessedEmail(email: string, name: string, reportName: string, readingsCount: number) {
+    const { appName, appTagline } = await EmailService.getBranding();
+    const html = generateEmailTemplate('Report Processed Successfully', `
+      <p>Hi ${name},</p>
+      <p>Your uploaded health report <strong>${reportName}</strong> has been successfully analyzed.</p>
+      <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #22c55e; padding: 16px; border-radius: 8px; margin: 20px 0;">
+        <p style="margin: 0; color: #166534; font-weight: 600;">Analysis Summary:</p>
+        <ul style="margin-top: 8px; margin-bottom: 0; color: #15803d; padding-left: 20px;">
+          <li>Report: <strong>${reportName}</strong></li>
+          <li>Data Points Parsed: <strong>${readingsCount} readings</strong></li>
+          <li>Biomarker Trends & Metrics: <strong>Updated</strong></li>
+        </ul>
+      </div>
+      <p><a href="https://app.mitoreboot.in" style="background-color: #059669; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">View Biomarker Insights</a></p>
+    `, appName, appTagline);
+    try {
+      await transporter.sendMail({
+        from: `"${appName}" <support@mitoreboot.in>`,
+        to: email,
+        subject: `Report Processed: ${reportName} • ${appName}`,
+        html
+      });
+    } catch (err) {
+      console.error('[EmailService] Report processed email error:', err);
+    }
   }
 }

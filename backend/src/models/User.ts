@@ -46,6 +46,8 @@ export interface IUser extends Document {
   addressState?: string;
   addressPinCode?: string;
   notificationPreferences?: any;
+  checkinReminderTime?: string;
+  lastCheckinReminderSentAt?: Date;
   language?: 'en' | 'ta' | 'kn' | 'hi' | 'te';
   lastActiveAt?: Date;
   lastPlatform?: 'android' | 'ios' | 'web';
@@ -112,6 +114,8 @@ const userSchema = new Schema<IUser>(
     addressState: { type: String, default: '' },
     addressPinCode: { type: String, default: '' },
     notificationPreferences: { type: Object, default: {} },
+    checkinReminderTime: { type: String, default: '20:00' },
+    lastCheckinReminderSentAt: { type: Date },
     language: { type: String, enum: ['en', 'ta', 'kn', 'hi', 'te'], default: 'en' },
     lastActiveAt: { type: Date, index: true },
     lastPlatform: { type: String, enum: ['android', 'ios', 'web'] },

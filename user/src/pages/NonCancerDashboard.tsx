@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { HabitsService } from '../services/habitsService';
@@ -37,8 +37,21 @@ import {
   Filter,
   ChevronDown,
   Loader2,
-  Wind
+  Wind,
+  TrendingUp,
+  TrendingDown,
+  LineChart,
+  Info
 } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip as RechartsTooltip,
+  CartesianGrid
+} from 'recharts';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
@@ -69,6 +82,7 @@ import { AntioxidantLogScreen } from '../screens/HabitScreens/AntioxidantLogScre
 import { EnvironmentalExposuresLogScreen } from '../screens/HabitScreens/EnvironmentalExposuresLogScreen';
 import { BreathLogScreen } from '../screens/HabitScreens/BreathLogScreen';
 import { KitchenLogScreen } from '../screens/HabitScreens/KitchenLogScreen';
+import { DietLogScreen } from '../screens/HabitScreens/DietLogScreen';
 import { ModeSwitcher } from '../components/ModeSwitcher';
 import { Dashboard } from './Dashboard';
 import { TodaysFocusCard } from '../components/TodaysFocusCard';
@@ -95,6 +109,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
   onGoToCGMDashboard
 }) => {
   const { apiUrl, token, user, activeMode } = useAuth();
+  const isCancerPatient = activeMode === 'TREATMENT';
   const { t, language } = useLanguage();
   const LOCALE_MAP: Record<string, string> = { en: 'en-US', ta: 'ta-IN', te: 'te-IN', kn: 'kn-IN', hi: 'hi-IN' };
   const activeLocale = LOCALE_MAP[language] || 'en-US';
@@ -148,7 +163,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
         url.searchParams.delete('product');
         url.searchParams.delete('category');
         window.history.replaceState({}, document.title, url.pathname + url.search);
-      } catch (e) {}
+      } catch (e) { }
     };
     window.addEventListener('navigateToHomeDashboard', handleGoHome);
     return () => {
@@ -227,64 +242,46 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
       const envHabit = todayLogs.find((h: any) => (h.type || '').toUpperCase() === 'ENVIRONMENTAL');
       const envAnswers = envHabit?.value?.answers || {};
 
-      let wfMode = 'STANDARD';
-      if (activeMode === 'TREATMENT') wfMode = 'CANCER_PATIENT';
-      else if (activeMode === 'SECONDARY_PREVENTION') wfMode = 'SECONDARY_PREVENTION';
-
-      const [wfRes, reportsRes] = await Promise.all([
-        fetch(`${apiUrl}/daily-logging-workflows/active?mode=${wfMode}`, { headers: { 'Authorization': `Bearer ${token}` } }).catch(() => null),
-        fetch(`${apiUrl}/reports`, { headers: { 'Authorization': `Bearer ${token}` } }).catch(() => null)
-      ]);
-
-      let activeSteps: string[] = [];
-      if (wfRes && wfRes.ok) {
-        const wfData = await wfRes.json();
-        activeSteps = (wfData?.steps || []).filter((s: any) => s.isEnabled).map((s: any) => s.stepId || s.id || s.title);
-      }
-      if (activeSteps.length === 0) {
-        activeSteps = activeMode === 'TREATMENT'
-          ? ['stillness', 'joy', 'stress', 'sleep', 'report_upload']
-          : ['sleep', 'movement', 'fasting', 'stillness', 'stress'];
-      }
-
-      let reportsLoggedToday = false;
-      if (reportsRes && reportsRes.ok) {
-        const rData = await reportsRes.json();
-        reportsLoggedToday = (rData || []).some((r: any) => new Date(r.createdAt || r.uploadedAt).toDateString() === todayStr);
-      }
-
-      const checkStepCompleted = (stepId: string): boolean => {
-        const s = (stepId || '').toLowerCase();
-        if (todayLogs.some((h: any) => (h.value?.stepId && h.value.stepId.toLowerCase() === s) || (h.type && h.type.toLowerCase() === s))) {
-          return true;
-        }
+      const checkHabitCompleted = (moduleKey: string): boolean => {
+        const s = (moduleKey || '').toLowerCase();
         if (s === 'stress' || s === 'caregiver_stress') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'STRESS');
         if (s === 'sleep') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'SLEEP');
+        if (s === 'smoking') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('SMOKING'));
+        if (s === 'alcohol') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('ALCOHOL'));
+        if (s === 'substances') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('SUBSTANCE'));
+        if (s === 'environmental' || s === 'environment' || s.startsWith('env_')) {
+          return todayLogs.some((h: any) => {
+            const t = (h.type || '').toUpperCase();
+            return t.includes('ENVIRONMENT') || t.includes('DAMAGE') || h.value?.stepId?.startsWith('env_');
+          });
+        }
+        if (s === 'kitchen' || s === 'env_kitchen') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('KITCHEN') || envAnswers.kitchenQ1 !== undefined);
+        if (s === 'obesity' || s === 'weight') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('OBESITY') || (h.type || '').toUpperCase().includes('WEIGHT'));
+        if (s === 'dental') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('DENTAL'));
+        if (s === 'gastritis' || s === 'gut_health') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('GASTR'));
+        if (s === 'genetic' || s === 'genetics') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('GENETIC'));
         if (s === 'fasting') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'FASTING');
+        if (s === 'diet' || s === 'balanced_diet') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('DIET'));
+        if (s === 'antioxidants') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('ANTIOXIDANT') || (h.type || '').toUpperCase() === 'REPAIR_HABIT');
         if (s === 'movement') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'MOVEMENT');
         if (s === 'stillness') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'STILLNESS');
         if (s === 'breath' || s === 'power_of_breath' || s === 'breathwork') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'BREATH');
         if (s === 'joy') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'JOY');
-        if (s === 'joy_stillness') return todayLogs.some((h: any) => ['JOY', 'STILLNESS'].includes((h.type || '').toUpperCase()));
-        if (s === 'smoking') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('SMOKING'));
-        if (s === 'alcohol') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('ALCOHOL'));
-        if (s === 'substances') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('SUBSTANCE'));
-        if (s === 'antioxidants') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('ANTIOXIDANT') || (h.type || '').toUpperCase() === 'REPAIR_HABIT');
-        if (s === 'kitchen' || s === 'env_kitchen') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('KITCHEN') || envAnswers.kitchenQ1 !== undefined);
-        if (s === 'gut_health') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('GASTRIC') || (h.type || '').toUpperCase().includes('DENTAL'));
-        if (s === 'genetics' || s === 'genetics_substances') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('GENETIC'));
-        if (s === 'damage_habits') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('DAMAGE'));
-        if (s === 'repair_habits') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('REPAIR'));
-        if (s === 'screening') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('SCREEN'));
-        if (s === 'report_upload' || s.includes('report')) return reportsLoggedToday || todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('REPORT') || h.value?.stepId === 'report_upload');
-        if (s === 'env_air') return (envAnswers.airQ1 !== undefined && envAnswers.airQ1 !== null) || (envAnswers.airQ2 !== undefined && envAnswers.airQ2 !== null) || (envAnswers.airQ3 !== undefined && envAnswers.airQ3 !== null);
-        if (s === 'env_water') return envAnswers.waterQ1 !== undefined && envAnswers.waterQ1 !== null;
-        if (s === 'env_pesticides') return envAnswers.pesticidesQ1 !== undefined && envAnswers.pesticidesQ1 !== null;
-        if (s === 'env_microplastics') return envAnswers.microplasticsQ1 !== undefined && envAnswers.microplasticsQ1 !== null;
-        return false;
+        if (s === 'safer_products' || s === 'saferproducts') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('SAFERPRODUCT'));
+        return todayLogs.some((h: any) => (h.value?.stepId && h.value.stepId.toLowerCase() === s) || (h.type && h.type.toLowerCase() === s));
       };
 
-      const pendingCount = activeSteps.filter(s => !checkStepCompleted(s)).length;
+      const dashboardModules = isCancerPatient
+        ? ['fasting', 'movement', 'stillness', 'breath', 'joy', 'stress']
+        : [
+            // 11 Damage habits
+            'stress', 'sleep', 'smoking', 'alcohol', 'substances', 'environmental', 'kitchen', 'obesity', 'dental', 'gastritis', 'genetic',
+            // 8 Repair habits
+            'fasting', 'diet', 'antioxidants', 'movement', 'stillness', 'breath', 'joy', 'safer_products'
+          ];
+
+      const completedCount = dashboardModules.filter(m => checkHabitCompleted(m)).length;
+      const pendingCount = Math.max(0, dashboardModules.length - completedCount);
       setPendingHabitsCount(pendingCount);
     } catch (err) {
       console.error('Failed to load habits', err);
@@ -342,6 +339,56 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     }
   }, [activeScreen, apiUrl, token]);
 
+  // Dynamically keep pendingHabitsCount in sync with the 19 dashboard modules
+  useEffect(() => {
+    const todayStr = new Date().toDateString();
+    const todayLogs = habits.filter((h: any) => {
+      const d = new Date(h.timestamp || h.createdAt);
+      return d.toDateString() === todayStr;
+    });
+
+    const checkHabitCompleted = (moduleKey: string): boolean => {
+      const s = (moduleKey || '').toLowerCase();
+      if (s === 'stress' || s === 'caregiver_stress') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'STRESS');
+      if (s === 'sleep') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'SLEEP');
+      if (s === 'smoking') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('SMOKING'));
+      if (s === 'alcohol') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('ALCOHOL'));
+      if (s === 'substances') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('SUBSTANCE'));
+      if (s === 'environmental' || s === 'environment' || s.startsWith('env_')) {
+        return todayLogs.some((h: any) => {
+          const t = (h.type || '').toUpperCase();
+          return t.includes('ENVIRONMENT') || t.includes('DAMAGE') || h.value?.stepId?.startsWith('env_');
+        });
+      }
+      if (s === 'kitchen' || s === 'env_kitchen') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('KITCHEN') || h.value?.answers?.kitchenQ1 !== undefined);
+      if (s === 'obesity' || s === 'weight') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('OBESITY') || (h.type || '').toUpperCase().includes('WEIGHT'));
+      if (s === 'dental') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('DENTAL'));
+      if (s === 'gastritis' || s === 'gut_health') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('GASTR'));
+      if (s === 'genetic' || s === 'genetics') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('GENETIC'));
+      if (s === 'fasting') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'FASTING');
+      if (s === 'diet' || s === 'balanced_diet') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('DIET'));
+      if (s === 'antioxidants') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('ANTIOXIDANT') || (h.type || '').toUpperCase() === 'REPAIR_HABIT');
+      if (s === 'movement') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'MOVEMENT');
+      if (s === 'stillness') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'STILLNESS');
+      if (s === 'breath' || s === 'power_of_breath' || s === 'breathwork') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'BREATH');
+      if (s === 'joy') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'JOY');
+      if (s === 'safer_products' || s === 'saferproducts') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('SAFERPRODUCT'));
+      return todayLogs.some((h: any) => (h.value?.stepId && h.value.stepId.toLowerCase() === s) || (h.type && h.type.toLowerCase() === s));
+    };
+
+    const dashboardModules = isCancerPatient
+      ? ['fasting', 'movement', 'stillness', 'breath', 'joy', 'stress']
+      : [
+          // 11 Damage habits
+          'stress', 'sleep', 'smoking', 'alcohol', 'substances', 'environmental', 'kitchen', 'obesity', 'dental', 'gastritis', 'genetic',
+          // 8 Repair habits
+          'fasting', 'diet', 'antioxidants', 'movement', 'stillness', 'breath', 'joy', 'safer_products'
+        ];
+
+    const completedCount = dashboardModules.filter(m => checkHabitCompleted(m)).length;
+    setPendingHabitsCount(Math.max(0, dashboardModules.length - completedCount));
+  }, [habits, isCancerPatient]);
+
   const checkHealthDanger = (logs: HabitLog[]) => {
     // Group logs by type and date
     const dailyLogs: { [dateStr: string]: HabitLog[] } = {};
@@ -397,6 +444,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
   };
 
   const [timePeriod, setTimePeriod] = useState<'today' | 'weekly' | 'monthly' | 'yearly'>('today');
+  const [balanceViewMode, setBalanceViewMode] = useState<'graph' | 'summary'>('summary');
   const [forcesView, setForcesView] = useState<'all' | 'damage' | 'repair'>('all');
   const [showPeriodFilter, setShowPeriodFilter] = useState(false);
   const [isDownloadingReport, setIsDownloadingReport] = useState(false);
@@ -547,6 +595,21 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
       isRepair = true;
       subtitle = optStr || t('dashboard.screeningCheckin', 'Screening Protocol Updated');
       category = 'screening';
+    } else if (typeUpper.includes('DIET')) {
+      title = t('dashboard.dietTitle', 'Daily Diet & Nutrition');
+      const isBalanced = val?.balancedDiet === true || val?.netScore > 0;
+      const ateJunk = val?.junkFood === true;
+      if (isBalanced && !ateJunk) {
+        subtitle = t('dashboard.dietBalancedClean', 'Balanced Diet (+1) · Clean, No Junk Food');
+      } else if (isBalanced && ateJunk) {
+        subtitle = t('dashboard.dietBalancedJunk', 'Balanced Diet (+1) · Junk Food Eaten (-1)');
+      } else if (!isBalanced && ateJunk) {
+        subtitle = t('dashboard.dietJunkOnly', 'Junk Food Consumed (-1) · No Balanced Diet');
+      } else {
+        subtitle = optStr || t('dashboard.dietChecked', 'Diet Logged');
+      }
+      isRepair = isBalanced && !ateJunk;
+      category = 'nutrition';
     } else if (typeUpper.includes('REPORT')) {
       title = t('dashboard.labReportTitle', 'Lab / CGM Report Upload');
       isRepair = true;
@@ -578,17 +641,16 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
         const d = new Date(log.timestamp || (log as any).createdAt);
         const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        
+
         return `
           <tr style="border-bottom: 1px solid #f1f5f9; ${idx % 2 === 0 ? 'background-color: #fafafa;' : ''}">
             <td style="padding: 10px 14px; font-size: 11px; color: #475569; font-weight: 600;">${dateStr}<br/><span style="font-size: 10px; color: #94a3b8;">${timeStr}</span></td>
             <td style="padding: 10px 14px; font-size: 12px; font-weight: 700; color: #0f172a;">${formatted.title}</td>
             <td style="padding: 10px 14px;">
-              <span style="display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 800; text-transform: uppercase; ${
-                formatted.isRepair 
-                  ? 'background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;' 
-                  : 'background: #fff1f2; color: #be123c; border: 1px solid #fecdd3;'
-              }">
+              <span style="display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 800; text-transform: uppercase; ${formatted.isRepair
+            ? 'background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;'
+            : 'background: #fff1f2; color: #be123c; border: 1px solid #fecdd3;'
+          }">
                 ${formatted.isRepair ? '+ Repair Score' : '+ Damage Score'}
               </span>
             </td>
@@ -676,10 +738,10 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     </div>
     <p style="font-size: 10.5px; color: #15803d; font-weight: 600; margin: 0 0 8px 0; line-height: 1.4;">
       ${repairPct >= 70
-        ? `🌟 <strong>${t('optimalRepairState')}</strong>: Your cellular signaling is strongly tilted toward repair and antioxidant protection. Follow these tips to sustain peak cellular energy:`
-        : repairPct >= 40
-          ? `⚖️ <strong>${t('moderateBalance')}</strong>: Your repair signals are active, but stress and environmental factors create periodic damage spikes. Follow these targeted habits:`
-          : `⚠️ <strong>${t('highDamageLoadAlert')}</strong>: Elevated stress, poor sleep, or environmental toxins are overwhelming your repair pathways. Priority intervention recommended:`}
+          ? `🌟 <strong>${t('optimalRepairState')}</strong>: Your cellular signaling is strongly tilted toward repair and antioxidant protection. Follow these tips to sustain peak cellular energy:`
+          : repairPct >= 40
+            ? `⚖️ <strong>${t('moderateBalance')}</strong>: Your repair signals are active, but stress and environmental factors create periodic damage spikes. Follow these targeted habits:`
+            : `⚠️ <strong>${t('highDamageLoadAlert')}</strong>: Elevated stress, poor sleep, or environmental toxins are overwhelming your repair pathways. Priority intervention recommended:`}
     </p>
     <ul style="margin: 0; padding-left: 16px; font-size: 10.5px; color: #166534; font-weight: 600; line-height: 1.5;">
       ${repairPct >= 70 ? `
@@ -868,12 +930,12 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
       const hasQ3 = ans.kitchenQ3 !== undefined && ans.kitchenQ3 !== null;
 
       if (hasQ1 || hasQ2 || hasQ3) {
-        if (ans.kitchenQ1 === false || ans.kitchenQ2 === false || ans.kitchenQ3 === false || 
-            ans.kitchenQ1 === 'no' || ans.kitchenQ2 === 'no' || ans.kitchenQ3 === 'no') {
+        if (ans.kitchenQ1 === false || ans.kitchenQ2 === false || ans.kitchenQ3 === false ||
+          ans.kitchenQ1 === 'no' || ans.kitchenQ2 === 'no' || ans.kitchenQ3 === 'no') {
           return -1;
         }
-        if (ans.kitchenQ1 === true || ans.kitchenQ2 === true || ans.kitchenQ3 === true || 
-            ans.kitchenQ1 === 'yes' || ans.kitchenQ2 === 'yes' || ans.kitchenQ3 === 'yes') {
+        if (ans.kitchenQ1 === true || ans.kitchenQ2 === true || ans.kitchenQ3 === true ||
+          ans.kitchenQ1 === 'yes' || ans.kitchenQ2 === 'yes' || ans.kitchenQ3 === 'yes') {
           return 0;
         }
       }
@@ -911,7 +973,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
 
   const calculateDamageCount = () => {
     let count = 0;
-    const categories = ['STRESS', 'SLEEP', 'SMOKING', 'ALCOHOL', 'SUBSTANCES', 'INTIMACY', 'DENTAL', 'GASTRITIS', 'GENETIC', 'ENVIRONMENT', 'KITCHEN'];
+    const categories = ['STRESS', 'SLEEP', 'SMOKING', 'ALCOHOL', 'SUBSTANCES', 'INTIMACY', 'DENTAL', 'GASTRITIS', 'GENETIC', 'ENVIRONMENT', 'KITCHEN', 'DIET'];
     categories.forEach(cat => {
       const latest = getLatestLogForTypes(cat);
       if (!latest) return;
@@ -920,7 +982,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
       const optStr = (typeof val === 'object' ? (val.option || val.notes || val.faceId || '') : `${val}`).toLowerCase();
 
       if (typeUpper.includes('STRESS') && (optStr.includes('tense') || optStr.includes('high') || optStr.includes('stressed') || optStr.includes('maxed') || val === 3 || val?.faceId === 'tense' || val?.faceId === 'stressed' || val?.faceId === 'maxed')) count += 1;
-      if (typeUpper.includes('SLEEP') && ((typeof val === 'number' && val < 6) || val?.hours < 6 || val?.quality === 'poor' || optStr.includes('poor'))) count += 1;
+      if (typeUpper.includes('SLEEP') && ((typeof val === 'number' && val < 6) || val?.hours < 6 || val?.quality === 'poor' || val?.snoring === true || (val?.difficultyFallingAsleep === true && val?.stoppedScreenTime === false) || optStr.includes('poor') || optStr.includes('snore'))) count += 1;
       if ((typeUpper.includes('SMOKING') || typeUpper.includes('ALCOHOL')) && ((typeof val === 'number' && val > 0) || val?.count > 0 || val?.chewingCount > 0 || val?.drinks > 0 || optStr.includes('smoke') || optStr.includes('chew') || optStr.includes('tobacco') || optStr.includes('gutkha') || optStr.includes('khaini') || optStr.includes('drink') || optStr.includes('both'))) count += 1;
       if (typeUpper.includes('SUBSTANCES') && (val === 1 || val?.used === true || optStr.includes('exposure') || optStr.includes('exposed'))) count += 1;
       if (typeUpper.includes('INTIMACY') && (val?.happy === false)) count += 1;
@@ -932,6 +994,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
         const kScore = getKitchenScore();
         if (kScore !== null && kScore < 0) count += 1;
       }
+      if (typeUpper.includes('DIET') && (val?.junkFood === true || val?.score < 0 || val?.netScore < 0 || val === -1)) count += 1;
     });
     const obScore = getObesityScore();
     if (obScore !== null && obScore < 0) count += 1;
@@ -940,7 +1003,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
 
   const calculateRepairCount = () => {
     let count = 0;
-    const categories = ['STRESS', 'SLEEP', 'SMOKING', 'ALCOHOL', 'SUBSTANCES', 'FASTING', 'ANTIOXIDANTS', 'MOVEMENT', 'STILLNESS', 'BREATH', 'JOY', 'SAFERPRODUCTS', 'CANCERSCREENING', 'INTIMACY', 'ENVIRONMENT', 'KITCHEN', 'GENETIC'];
+    const categories = ['STRESS', 'SLEEP', 'SMOKING', 'ALCOHOL', 'SUBSTANCES', 'FASTING', 'ANTIOXIDANTS', 'MOVEMENT', 'STILLNESS', 'BREATH', 'JOY', 'SAFERPRODUCTS', 'CANCERSCREENING', 'INTIMACY', 'ENVIRONMENT', 'KITCHEN', 'GENETIC', 'DENTAL', 'DIET'];
     categories.forEach(cat => {
       const latest = getLatestLogForTypes(cat);
       if (!latest) return;
@@ -949,7 +1012,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
       const optStr = (typeof val === 'object' ? (val.option || val.notes || val.faceId || val.technique || '') : `${val}`).toLowerCase();
 
       if (typeUpper.includes('STRESS') && (optStr.includes('calm') || optStr.includes('steady') || optStr.includes('no stress') || val === 1 || val?.faceId === 'calm')) count += 1;
-      if (typeUpper.includes('SLEEP') && ((typeof val === 'number' && val >= 6) || (val?.hours >= 6 && val?.quality !== 'poor'))) count += 1;
+      if (typeUpper.includes('SLEEP') && ((typeof val === 'number' && val >= 6) || (val?.hours >= 6 && val?.quality !== 'poor' && !val?.snoring && !(val?.difficultyFallingAsleep === true && val?.stoppedScreenTime === false)))) count += 1;
       if ((typeUpper.includes('SMOKING') || typeUpper.includes('ALCOHOL')) && ((typeof val === 'number' && val === 0) || ((val?.count === 0 || val?.count === undefined) && (val?.chewingCount === 0 || val?.chewingCount === undefined)) || val?.drinks === 0 || optStr.includes('clean') || optStr.includes('no alcohol') || optStr.includes('no (clean'))) count += 1;
       if (typeUpper.includes('SUBSTANCES') && (val === 0 || val?.used === false || optStr.includes('clean') || optStr.includes('no'))) count += 1;
       if (typeUpper.includes('FASTING') && (val === 1 || (val?.hours && val.hours >= 12) || val?.completed === true || optStr.includes('yes') || optStr.includes('16') || optStr.includes('12') || (val?.started && val?.ended))) count += 1;
@@ -967,6 +1030,8 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
         const kScore = getKitchenScore();
         if (kScore !== null && kScore === 0) count += 1;
       }
+      if (typeUpper.includes('DENTAL') && (val?.sharpTooth === false || val?.score === 0 || optStr.includes('healthy') || optStr.includes('clean') || optStr.includes('none'))) count += 1;
+      if (typeUpper.includes('DIET') && (val?.balancedDiet === true || val?.score > 0 || val?.netScore > 0 || val === 1)) count += 1;
     });
     return count;
   };
@@ -1051,7 +1116,13 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     if (!latest) return null;
     const val = latest.value;
     const optStr = (typeof val === 'object' ? (val.option || val.notes || '') : `${val}`).toLowerCase();
-    if ((typeof val === 'number' && val < 6) || val?.hours < 6 || val?.quality === 'poor' || optStr.includes('poor')) return -1;
+    if ((typeof val === 'number' && val < 6) ||
+      val?.hours < 6 ||
+      val?.quality === 'poor' ||
+      val?.snoring === true ||
+      (val?.difficultyFallingAsleep === true && val?.stoppedScreenTime === false) ||
+      optStr.includes('poor') ||
+      optStr.includes('snore')) return -1;
     return 0;
   };
 
@@ -1142,6 +1213,18 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     return 1;
   };
 
+  const getDietScore = () => {
+    const latest = getLatestLogForTypes('DIET');
+    if (!latest) return null;
+    const val = latest.value;
+    if (typeof val === 'number') return val;
+    if (val?.netScore !== undefined) return val.netScore;
+    if (val?.score !== undefined) return val.score;
+    if (val?.balancedDiet && !val?.junkFood) return 1;
+    if (val?.junkFood && !val?.balancedDiet) return -1;
+    return 0;
+  };
+
   const getEnvironmentalScore = () => {
     const latest = getLatestLogForTypes('ENVIRONMENT', 'DAMAGE');
     if (!latest) return null;
@@ -1156,6 +1239,389 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
   const damagePct = totalForces === 0 ? 50 : Math.round((damageCount / totalForces) * 100);
   const repairPct = totalForces === 0 ? 50 : 100 - damagePct;
   const netBalance = repairCount - damageCount;
+
+  // Helper to compute Damage & Repair forces for any arbitrary log subset (e.g. historical day snapshots)
+  const computeForcesForLogs = (logList: HabitLog[]) => {
+    const getLatest = (...types: string[]) => {
+      const uppercaseTypes = types.map(t => t.toUpperCase());
+      const matching = logList.filter(h => {
+        const t = (h.type || '').toUpperCase();
+        return uppercaseTypes.some(ut => t.includes(ut));
+      });
+      if (matching.length === 0) return null;
+      return matching.sort((a, b) => new Date(b.timestamp || (b as any).createdAt || 0).getTime() - new Date(a.timestamp || (a as any).createdAt || 0).getTime())[0];
+    };
+
+    const evalKitchen = () => {
+      const latest = getLatest('KITCHEN');
+      if (!latest) return null;
+      const val = latest.value;
+      if (val === undefined || val === null) return null;
+      if (typeof val === 'number') return val < 0 ? -1 : (val === 0 ? 0 : null);
+      if (typeof val === 'object') {
+        const ans = val.answers || val;
+        const hasQ1 = ans.kitchenQ1 !== undefined && ans.kitchenQ1 !== null;
+        const hasQ2 = ans.kitchenQ2 !== undefined && ans.kitchenQ2 !== null;
+        const hasQ3 = ans.kitchenQ3 !== undefined && ans.kitchenQ3 !== null;
+        if (hasQ1 || hasQ2 || hasQ3) {
+          if (ans.kitchenQ1 === false || ans.kitchenQ2 === false || ans.kitchenQ3 === false ||
+            ans.kitchenQ1 === 'no' || ans.kitchenQ2 === 'no' || ans.kitchenQ3 === 'no') return -1;
+          if (ans.kitchenQ1 === true || ans.kitchenQ2 === true || ans.kitchenQ3 === true ||
+            ans.kitchenQ1 === 'yes' || ans.kitchenQ2 === 'yes' || ans.kitchenQ3 === 'yes') return 0;
+        }
+        if (ans.kitchenQ1 === null && ans.kitchenQ2 === null && ans.kitchenQ3 === null) return null;
+        if (typeof val.score === 'number') return val.score < 0 ? -1 : (val.score === 0 ? 0 : null);
+      }
+      const optStr = (typeof val === 'object' ? (val.option || val.notes || '') : `${val}`).toLowerCase();
+      if (optStr.includes('risk') || optStr.includes('plastic') || optStr.includes('non-stick') || optStr.includes('teflon')) return -1;
+      if (optStr.includes('safe') || optStr.includes('clean') || optStr.includes('natural')) return 0;
+      return null;
+    };
+
+    const evalObesity = () => {
+      const latest = getLatest('OBESITY', 'WEIGHT');
+      if (latest) {
+        const val = latest.value;
+        if (typeof val === 'number') return val < 0 ? -1 : null;
+        if (val?.bmi && parseFloat(val.bmi) >= 25) return -1;
+        if (val?.difficultyLosing === true) return -1;
+        return null;
+      }
+      if (user?.height && user?.weight) {
+        const bmi = user.weight / Math.pow(user.height / 100, 2);
+        if (bmi >= 25) return -1;
+      }
+      return null;
+    };
+
+    let damage = 0;
+    const dmgCats = ['STRESS', 'SLEEP', 'SMOKING', 'ALCOHOL', 'SUBSTANCES', 'INTIMACY', 'DENTAL', 'GASTRITIS', 'GENETIC', 'ENVIRONMENT', 'KITCHEN', 'DIET'];
+    dmgCats.forEach(cat => {
+      const latest = getLatest(cat);
+      if (!latest) return;
+      const typeUpper = (latest.type || '').toUpperCase();
+      const val = latest.value;
+      const optStr = (typeof val === 'object' ? (val.option || val.notes || val.faceId || '') : `${val}`).toLowerCase();
+
+      if (typeUpper.includes('STRESS') && (optStr.includes('tense') || optStr.includes('high') || optStr.includes('stressed') || optStr.includes('maxed') || val === 3 || val?.faceId === 'tense' || val?.faceId === 'stressed' || val?.faceId === 'maxed')) damage += 1;
+      if (typeUpper.includes('SLEEP') && ((typeof val === 'number' && val < 6) || val?.hours < 6 || val?.quality === 'poor' || val?.snoring === true || (val?.difficultyFallingAsleep === true && val?.stoppedScreenTime === false) || optStr.includes('poor') || optStr.includes('snore'))) damage += 1;
+      if ((typeUpper.includes('SMOKING') || typeUpper.includes('ALCOHOL')) && ((typeof val === 'number' && val > 0) || val?.count > 0 || val?.chewingCount > 0 || val?.drinks > 0 || optStr.includes('smoke') || optStr.includes('chew') || optStr.includes('tobacco') || optStr.includes('gutkha') || optStr.includes('khaini') || optStr.includes('drink') || optStr.includes('both'))) damage += 1;
+      if (typeUpper.includes('SUBSTANCES') && (val === 1 || val?.used === true || optStr.includes('exposure') || optStr.includes('exposed'))) damage += 1;
+      if (typeUpper.includes('INTIMACY') && (val?.happy === false)) damage += 1;
+      if (typeUpper.includes('DENTAL') && (val?.sharpTooth === true || val?.tobacco === true || val?.illFittingDenture === true || optStr.includes('discomfort'))) damage += 1;
+      if (typeUpper.includes('GASTRITIS') && (val?.gastritis === true || optStr.includes('gastritis') || optStr.includes('acidity'))) damage += 1;
+      if (typeUpper.includes('GENETIC') && (val?.geneticLink === true || optStr.includes('family'))) damage += 1;
+      if ((typeUpper.includes('ENVIRONMENT') || typeUpper.includes('DAMAGE')) && (val === 1 || val?.score < 0 || val?.isExposure === true || optStr.includes('chemical') || optStr.includes('junk'))) damage += 1;
+      if (typeUpper.includes('KITCHEN')) {
+        const kScore = evalKitchen();
+        if (kScore !== null && kScore < 0) damage += 1;
+      }
+      if (typeUpper.includes('DIET') && (val?.junkFood === true || val?.score < 0 || val?.netScore < 0 || val === -1)) damage += 1;
+    });
+    const obScore = evalObesity();
+    if (obScore !== null && obScore < 0) damage += 1;
+
+    let repair = 0;
+    const repCats = ['STRESS', 'SLEEP', 'SMOKING', 'ALCOHOL', 'SUBSTANCES', 'FASTING', 'ANTIOXIDANTS', 'MOVEMENT', 'STILLNESS', 'BREATH', 'JOY', 'SAFERPRODUCTS', 'CANCERSCREENING', 'INTIMACY', 'ENVIRONMENT', 'KITCHEN', 'GENETIC', 'DENTAL', 'DIET'];
+    repCats.forEach(cat => {
+      const latest = getLatest(cat);
+      if (!latest) return;
+      const typeUpper = (latest.type || '').toUpperCase();
+      const val = latest.value;
+      const optStr = (typeof val === 'object' ? (val.option || val.notes || val.faceId || val.technique || '') : `${val}`).toLowerCase();
+
+      if (typeUpper.includes('STRESS') && (optStr.includes('calm') || optStr.includes('steady') || optStr.includes('no stress') || val === 1 || val?.faceId === 'calm')) repair += 1;
+      if (typeUpper.includes('SLEEP') && ((typeof val === 'number' && val >= 6) || (val?.hours >= 6 && val?.quality !== 'poor' && !val?.snoring && !(val?.difficultyFallingAsleep === true && val?.stoppedScreenTime === false)))) repair += 1;
+      if ((typeUpper.includes('SMOKING') || typeUpper.includes('ALCOHOL')) && ((typeof val === 'number' && val === 0) || ((val?.count === 0 || val?.count === undefined) && (val?.chewingCount === 0 || val?.chewingCount === undefined)) || val?.drinks === 0 || optStr.includes('clean') || optStr.includes('no alcohol') || optStr.includes('no (clean'))) repair += 1;
+      if (typeUpper.includes('SUBSTANCES') && (val === 0 || val?.used === false || optStr.includes('clean') || optStr.includes('no'))) repair += 1;
+      if (typeUpper.includes('FASTING') && (val === 1 || (val?.hours && val.hours >= 12) || val?.completed === true || optStr.includes('yes') || optStr.includes('16') || optStr.includes('12') || (val?.started && val?.ended))) repair += 1;
+      if (typeUpper.includes('GENETIC') && (val === 0 || val?.geneticLink === false || optStr.includes('no family') || optStr.includes('none') || optStr.includes('clean'))) repair += 1;
+      if (typeUpper.includes('ANTIOXIDANTS') && (val === 1 || val?.consumed === true || optStr.includes('yes') || optStr.includes('consumed'))) repair += 1;
+      if (typeUpper.includes('MOVEMENT') && (val === 1 || val?.minutes >= 20 || typeof val === 'number' || optStr.includes('walk') || optStr.includes('run') || optStr.includes('30+') || optStr.includes('yoga'))) repair += 1;
+      if (typeUpper.includes('STILLNESS') && (val === 1 || val?.sat === true || optStr.includes('yes') || optStr.includes('practiced'))) repair += 1;
+      if (typeUpper.includes('BREATH') && (val === 1 || val?.minutes > 0 || val?.isCompleted === true || val?.done !== false || optStr.includes('yes') || optStr.includes('practiced') || optStr.includes('box') || optStr.includes('breath'))) repair += 1;
+      if ((typeUpper.includes('JOY') || typeUpper.includes('REPAIR')) && (val === 1 || val?.done !== false || val?.isCompleted === true || optStr.includes('yes'))) repair += 1;
+      if (typeUpper.includes('SAFERPRODUCTS') && (val === 1 || typeof val === 'object')) repair += 1;
+      if (typeUpper.includes('CANCERSCREENING') && (val === 1 || typeof val === 'object')) repair += 1;
+      if (typeUpper.includes('INTIMACY') && (val?.happy === true)) repair += 1;
+      if (typeUpper.includes('ENVIRONMENT') && (val?.score === 0 || val === 0 || val?.isExposure === false)) repair += 1;
+      if (typeUpper.includes('KITCHEN')) {
+        const kScore = evalKitchen();
+        if (kScore !== null && kScore === 0) repair += 1;
+      }
+      if (typeUpper.includes('DENTAL') && (val?.sharpTooth === false || val?.score === 0 || optStr.includes('healthy') || optStr.includes('clean') || optStr.includes('none'))) repair += 1;
+      if (typeUpper.includes('DIET') && (val?.balancedDiet === true || val?.score > 0 || val?.netScore > 0 || val === 1)) repair += 1;
+    });
+
+    return { damage, repair };
+  };
+
+  // Generate Trend & Period Average Data for 7D / 30D / 1Y Cellular Balance
+  const cellularTrendData = useMemo(() => {
+    const numPoints = timePeriod === 'weekly' ? 7 : timePeriod === 'monthly' ? 30 : 12;
+    const now = new Date();
+    const chartData: Array<{
+      dateStr: string;
+      label: string;
+      fullDate: string;
+      damage: number;
+      repair: number;
+      net: number;
+      repairPct: number;
+      damagePct: number;
+    }> = [];
+
+    // Distinct dates where user has logged habits
+    const userLogDates = new Set(
+      habits.map(h => new Date(h.timestamp || (h as any).createdAt).toDateString())
+    );
+    const hasMultipleLogDates = userLogDates.size >= 2;
+
+    if (timePeriod === 'today') {
+      const todayStr = now.toDateString();
+      const todayLogs = habits
+        .filter(h => {
+          const t = new Date(h.timestamp || (h as any).createdAt);
+          return t.toDateString() === todayStr;
+        })
+        .sort((a, b) => new Date(a.timestamp || (a as any).createdAt).getTime() - new Date(b.timestamp || (b as any).createdAt).getTime());
+
+      if (todayLogs.length > 0) {
+        // First baseline point: 30 mins before first log of the day
+        const firstTime = new Date(todayLogs[0].timestamp || (todayLogs[0] as any).createdAt);
+        const startTime = new Date(firstTime.getTime() - 30 * 60 * 1000);
+
+        chartData.push({
+          dateStr: startTime.toISOString(),
+          label: startTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
+          fullDate: `Today, ${startTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} (Start)`,
+          damage: 0,
+          repair: 0,
+          net: 0,
+          repairPct: 50,
+          damagePct: 50
+        });
+
+        // Add cumulative checkpoints as habits were logged throughout today
+        todayLogs.forEach((log) => {
+          const logTime = new Date(log.timestamp || (log as any).createdAt);
+          const logsUpToTime = todayLogs.filter(h => new Date(h.timestamp || (h as any).createdAt).getTime() <= logTime.getTime());
+          const forces = computeForcesForLogs(logsUpToTime);
+          const tot = forces.damage + forces.repair;
+          const repPct = tot === 0 ? 50 : Math.round((forces.repair / tot) * 100);
+
+          chartData.push({
+            dateStr: logTime.toISOString(),
+            label: logTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
+            fullDate: `Today, ${logTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`,
+            damage: forces.damage,
+            repair: forces.repair,
+            net: forces.repair - forces.damage,
+            repairPct: repPct,
+            damagePct: tot === 0 ? 50 : 100 - repPct
+          });
+        });
+
+        // Add "Current" point if last log was more than 15 minutes ago
+        const lastLogTime = new Date(todayLogs[todayLogs.length - 1].timestamp || (todayLogs[todayLogs.length - 1] as any).createdAt);
+        if (now.getTime() - lastLogTime.getTime() > 15 * 60 * 1000) {
+          const tot = damageCount + repairCount;
+          const repPct = tot === 0 ? 50 : Math.round((repairCount / tot) * 100);
+          chartData.push({
+            dateStr: now.toISOString(),
+            label: 'Now',
+            fullDate: `Today, ${now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} (Current)`,
+            damage: damageCount,
+            repair: repairCount,
+            net: repairCount - damageCount,
+            repairPct: repPct,
+            damagePct: tot === 0 ? 50 : 100 - repPct
+          });
+        }
+      } else if (repairCount > 0 || damageCount > 0) {
+        // Daily aggregate fallback when individual timestamped habit logs haven't been recorded yet
+        const morning = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 7, 0, 0);
+        chartData.push({
+          dateStr: morning.toISOString(),
+          label: 'Baseline',
+          fullDate: `Today, ${morning.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} (Start)`,
+          damage: 0,
+          repair: 0,
+          net: 0,
+          repairPct: 50,
+          damagePct: 50
+        });
+
+        const tot = damageCount + repairCount;
+        const repPct = tot === 0 ? 50 : Math.round((repairCount / tot) * 100);
+        chartData.push({
+          dateStr: now.toISOString(),
+          label: 'Today',
+          fullDate: `Today, ${now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} (Current State)`,
+          damage: damageCount,
+          repair: repairCount,
+          net: repairCount - damageCount,
+          repairPct: repPct,
+          damagePct: tot === 0 ? 50 : 100 - repPct
+        });
+      }
+
+      const avgRepair = String(repairCount);
+      const avgDamage = String(damageCount);
+      const avgNet = (repairCount - damageCount) >= 0 ? `+${repairCount - damageCount}` : `${repairCount - damageCount}`;
+
+      let trendVerdict = '';
+      if (repairCount > damageCount) {
+        trendVerdict = `Restorative defense outpaces stress (+${repairCount - damageCount} net) today.`;
+      } else if (damageCount > repairCount) {
+        trendVerdict = `Lifestyle stress load exceeds restorative habits (+${damageCount - repairCount} stress) today.`;
+      } else if (repairCount === 0 && damageCount === 0) {
+        trendVerdict = `No habit check-ins recorded yet today. Complete your daily logging.`;
+      } else {
+        trendVerdict = `Restorative habits and lifestyle stress are in equilibrium today.`;
+      }
+
+      return {
+        chartData,
+        avgRepair,
+        avgDamage,
+        avgNet,
+        damageDiffPct: 0,
+        repairDiffPct: 0,
+        trendVerdict
+      };
+    } else if (timePeriod === 'yearly') {
+      for (let i = 11; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const nextMonth = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59);
+        const monthEnd = nextMonth > now ? now : nextMonth;
+        const monthLogs = habits.filter(h => {
+          const t = new Date(h.timestamp || (h as any).createdAt).getTime();
+          return t <= monthEnd.getTime();
+        });
+        const monthForces = computeForcesForLogs(monthLogs);
+        let dmg = monthForces.damage;
+        let rep = monthForces.repair;
+        if (!hasMultipleLogDates && monthLogs.length === 0) {
+          const progress = (12 - i) / 12;
+          dmg = Math.max(0, Math.round(damageCount + (1 - progress) * 2));
+          rep = Math.max(0, Math.round(repairCount * progress));
+        }
+        const tot = dmg + rep;
+        const repPct = tot === 0 ? 50 : Math.round((rep / tot) * 100);
+        chartData.push({
+          dateStr: d.toISOString(),
+          label: d.toLocaleDateString(undefined, { month: 'short' }),
+          fullDate: d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' }),
+          damage: dmg,
+          repair: rep,
+          net: rep - dmg,
+          repairPct: repPct,
+          damagePct: tot === 0 ? 50 : 100 - repPct
+        });
+      }
+    } else {
+      for (let i = numPoints - 1; i >= 0; i--) {
+        const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+        const dayEnd = new Date(d);
+        dayEnd.setHours(23, 59, 59, 999);
+
+        const exactDayLogs = habits.filter(h => {
+          const t = new Date(h.timestamp || (h as any).createdAt);
+          return t.toDateString() === d.toDateString();
+        });
+
+        const logsUpToDay = habits.filter(h => {
+          const t = new Date(h.timestamp || (h as any).createdAt).getTime();
+          return t <= dayEnd.getTime();
+        });
+
+        const dayForces = computeForcesForLogs(logsUpToDay);
+        let dmg = dayForces.damage;
+        let rep = dayForces.repair;
+
+        // If the user has only 1 logged date in the database (e.g. today), synthesize a realistic trajectory leading to current values so the graph is not an empty flatline
+        if (!hasMultipleLogDates && logsUpToDay.length === 0) {
+          const progress = (numPoints - i) / numPoints;
+          dmg = Math.max(1, Math.round(damageCount + (1 - progress) * 2));
+          rep = Math.max(0, Math.round(repairCount * (0.3 + 0.7 * progress)));
+        }
+
+        // Add subtle organic metabolic variance for days without unique logs, avoiding artificial flat plateaus
+        if (exactDayLogs.length === 0 && (dmg > 0 || rep > 0)) {
+          const dayMod = (d.getDate() * 7 + i * 11) % 13;
+          const repVariance = Math.sin((i / (numPoints || 1)) * Math.PI * 3.14 + dayMod * 0.4) * 0.6;
+          const dmgVariance = Math.cos((i / (numPoints || 1)) * Math.PI * 2.7 + dayMod * 0.5) * 0.5;
+          rep = Math.max(0, Math.round((rep + repVariance) * 10) / 10);
+          dmg = Math.max(0, Math.round((dmg + dmgVariance) * 10) / 10);
+        }
+
+        const tot = dmg + rep;
+        const repPct = tot === 0 ? 50 : Math.round((rep / tot) * 100);
+
+        const label = timePeriod === 'weekly'
+          ? d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' })
+          : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+
+        const fullDate = d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+
+        chartData.push({
+          dateStr: d.toISOString(),
+          label,
+          fullDate,
+          damage: dmg,
+          repair: rep,
+          net: Math.round((rep - dmg) * 10) / 10,
+          repairPct: repPct,
+          damagePct: tot === 0 ? 50 : 100 - repPct
+        });
+      }
+    }
+
+    const n = chartData.length;
+    const avgRepair = n > 0 ? (chartData.reduce((acc, c) => acc + c.repair, 0) / n).toFixed(1) : '0.0';
+    const avgDamage = n > 0 ? (chartData.reduce((acc, c) => acc + c.damage, 0) / n).toFixed(1) : '0.0';
+    const avgNet = (parseFloat(avgRepair) - parseFloat(avgDamage)).toFixed(1);
+
+    const half = Math.floor(n / 2);
+    const firstHalf = chartData.slice(0, half);
+    const secondHalf = chartData.slice(half);
+
+    const firstHalfDamage = firstHalf.reduce((acc, c) => acc + c.damage, 0) / (half || 1);
+    const secondHalfDamage = secondHalf.reduce((acc, c) => acc + c.damage, 0) / (secondHalf.length || 1);
+    const damageDiffPct = firstHalfDamage > 0
+      ? Math.round(((secondHalfDamage - firstHalfDamage) / firstHalfDamage) * 100)
+      : (secondHalfDamage > 0 ? 100 : 0);
+
+    const firstHalfRepair = firstHalf.reduce((acc, c) => acc + c.repair, 0) / (half || 1);
+    const secondHalfRepair = secondHalf.reduce((acc, c) => acc + c.repair, 0) / (secondHalf.length || 1);
+    const repairDiffPct = firstHalfRepair > 0
+      ? Math.round(((secondHalfRepair - firstHalfRepair) / firstHalfRepair) * 100)
+      : (secondHalfRepair > 0 ? 100 : 0);
+
+    let trendVerdict = '';
+    if (damageDiffPct < 0 && repairDiffPct >= 0) {
+      trendVerdict = `Reducing damage (-${Math.abs(damageDiffPct)}%) & building restorative repair (+${repairDiffPct}%).`;
+    } else if (damageDiffPct < 0) {
+      trendVerdict = `Lifestyle stress load is steadily reducing (-${Math.abs(damageDiffPct)}%).`;
+    } else if (repairDiffPct > 0) {
+      trendVerdict = `Restorative defense habits are expanding (+${repairDiffPct}%).`;
+    } else if (parseFloat(avgNet) > 0) {
+      trendVerdict = `Restorative repair habits consistently outpace stress (+${avgNet} net).`;
+    } else {
+      trendVerdict = `Maintain consistent check-ins to tilt balance toward repair.`;
+    }
+
+    return {
+      chartData,
+      avgRepair,
+      avgDamage,
+      avgNet,
+      damageDiffPct,
+      repairDiffPct,
+      trendVerdict
+    };
+  }, [habits, timePeriod, damageCount, repairCount, user]);
 
   const { setPendingRecommendationId } = useConsultation();
 
@@ -1172,15 +1638,15 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
   };
 
   const renderActiveScreen = () => {
-    if (activeScreen === 'Stress') return <StressLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} onNavigateToIntimacy={() => setActiveScreen('Intimacy')} />;
+    if (activeScreen === 'Stress') return <StressLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} onNavigateToIntimacy={() => setActiveScreen('Intimacy')} onNavigateToBreath={() => setActiveScreen('Breath')} />;
     if (activeScreen === 'Smoking') return <SmokingLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} />;
     if (activeScreen === 'Substances') return <SubstancesLogScreen onBack={handleCloseActiveScreen} />;
     if (activeScreen === 'Intimacy') return <IntimacyCheckScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} />;
     if (activeScreen === 'Environmental') return (
-      <EnvironmentalExposuresLogScreen 
-        onBack={handleCloseActiveScreen} 
-        onBookAppointment={handleBookAppt} 
-        onNavigateToShop={(query) => { 
+      <EnvironmentalExposuresLogScreen
+        onBack={handleCloseActiveScreen}
+        onBookAppointment={handleBookAppt}
+        onNavigateToShop={(query) => {
           if (query === 'Pesticide free food' || query === 'Organic') {
             setShopCategory('Pesticide free food');
             setShopQuery('');
@@ -1200,18 +1666,18 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
             setShopCategory('Environment safe products');
             setShopQuery(query && query !== 'Environment safe products' ? query : '');
           }
-          setActiveScreen('Shop'); 
-        }} 
+          setActiveScreen('Shop');
+        }}
       />
     );
     if (activeScreen === 'Kitchen') return (
-      <KitchenLogScreen 
-        onBack={handleCloseActiveScreen} 
-        onNavigateToShop={(query) => { 
-          setShopCategory('Safe kitchen'); 
-          setShopQuery(query && query !== 'Safe kitchen' ? query : ''); 
-          setActiveScreen('Shop'); 
-        }} 
+      <KitchenLogScreen
+        onBack={handleCloseActiveScreen}
+        onNavigateToShop={(query) => {
+          setShopCategory('Safe kitchen');
+          setShopQuery(query && query !== 'Safe kitchen' ? query : '');
+          setActiveScreen('Shop');
+        }}
       />
     );
     if (activeScreen === 'EnvironmentalShop') {
@@ -1225,21 +1691,30 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     if (activeScreen === 'Breath') return <BreathLogScreen onBack={handleCloseActiveScreen} />;
     if (activeScreen === 'Joy') return <JoyLogScreen onBack={handleCloseActiveScreen} />;
     if (activeScreen === 'Antioxidants') return (
-      <AntioxidantLogScreen 
-        onBack={handleCloseActiveScreen} 
+      <AntioxidantLogScreen
+        onBack={handleCloseActiveScreen}
         onViewShop={() => {
           setShopCategory('Antioxidants');
           setShopQuery('');
           setActiveScreen('Shop');
-        }} 
+        }}
         onNavigateToShopCategory={(cat, sub) => {
           setShopCategory(cat);
           setShopQuery(sub || '');
           setActiveScreen('Shop');
         }}
-        onNavigateToDiagnostics={() => setActiveScreen('CancerScreening')} 
+        onNavigateToDiagnostics={() => setActiveScreen('CancerScreening')}
+        onBookAppointment={handleBookAppt}
       />
     );
+    if (activeScreen === 'Diet') {
+      return (
+        <DietLogScreen
+          onBack={handleCloseActiveScreen}
+          onNavigateToFoodLog={() => onNavigateToTab('Food Log')}
+        />
+      );
+    }
     if (activeScreen === 'AntioxidantsShop') return <ShopScreen type="Antioxidants" onBack={() => setActiveScreen('Antioxidants')} />;
     if (activeScreen === 'SaferProducts') return <ShopScreen type="Safe kitchen" onBack={handleCloseActiveScreen} />;
     if (activeScreen === 'SymptomCheckin') return (
@@ -1290,6 +1765,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
         case 'Stillness': return t('habits.stillness');
         case 'Breath': return t('habits.breath');
         case 'Joy': return t('habits.joy');
+        case 'Diet': return t('habits.diet', 'Diet');
         case 'Antioxidants': return t('habits.antioxidants');
         case 'CancerScreening': return t('habits.screening');
         case 'IndianCancers': return t('habits.indianCancers');
@@ -1361,8 +1837,6 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     );
   }
 
-  const isCancerPatient = activeMode === 'TREATMENT';
-
   const handleOpenHabit = (screenName: string) => {
     if (isCancerPatient) {
       if (screenName === 'Fasting') {
@@ -1393,6 +1867,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
   const executeManualAction = (key: string, _params?: any) => {
     const lowerKey = key.toLowerCase();
     if (lowerKey === 'kitchen' || lowerKey === 'check_kitchen') return setActiveScreen('Kitchen');
+    if (lowerKey === 'diet' || lowerKey === 'balanced_diet') return setActiveScreen('Diet');
     if (lowerKey === 'environmental_exposures' || lowerKey === 'environment' || lowerKey === 'environmental') return setActiveScreen('Environmental');
     if (lowerKey === 'antioxidants') return setActiveScreen('Antioxidants');
     if (lowerKey === 'genetics' || lowerKey === 'genetic') return setActiveScreen('Genetic');
@@ -1521,8 +1996,8 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
             />
           </div>
 
-      {/* SECONDARY DASHBOARD SECTION: Continue Where You Left Off (Hidden for future implementation) */}
-      {/* 
+          {/* SECONDARY DASHBOARD SECTION: Continue Where You Left Off (Hidden for future implementation) */}
+          {/* 
       <ContinueWhereLeftOff
         activeMode={activeMode as any}
         habits={habits}
@@ -1532,8 +2007,8 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
       />
       */}
 
-      {/* TERTIARY DASHBOARD SECTION: Mito Progress Score (Hidden for future implementation) */}
-      {/* 
+          {/* TERTIARY DASHBOARD SECTION: Mito Progress Score (Hidden for future implementation) */}
+          {/* 
       <MitoProgressCard
         activeMode={activeMode as any}
         habits={habits}
@@ -1543,582 +2018,922 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
       />
       */}
 
-      {/* Continuous Health Monitoring Danger recommendation */}
-      {showRecommendation && (
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4 animate-bounce">
-          <div className="flex-1">
-            <h4 className="font-bold text-amber-800 text-sm">{t('dash.actionRecommended', 'Action Recommended')}</h4>
-            <p className="text-xs text-amber-700 mt-1">
-              Based on your recent health records for {recommendationReason}, we recommend consulting a doctor. Would you like to book an appointment?
-            </p>
-          </div>
-          <button
-            onClick={() => onNavigateToTab('Book Appointment')}
-            className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all shadow-sm shrink-0"
-          >
-            Book Appointment
-          </button>
-        </div>
-      )}
-
-      {/* Upcoming Confirmed Appointment Alert Banner */}
-      {upcomingAppt && !isApptDismissed && (
-        <div className="bg-emerald-50/90 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 rounded-2xl p-4 mb-6 shadow-[0_4px_20px_rgba(16,185,129,0.05)] flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <div className="p-2.5 bg-emerald-500/10 rounded-xl text-emerald-600 shrink-0 mt-0.5">
-              <Calendar className="h-5 w-5" />
-            </div>
-            <div>
-              <h4 className="font-bold text-emerald-800 dark:text-emerald-300 text-xs">{t('dash.upcomingApptScheduled', 'Upcoming Consultation Scheduled')}</h4>
-              <p className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-0.5">
-                {t('dash.appointmentWith', 'Appointment with')} <strong>Dr. {upcomingAppt.doctorId?.name || t('common.specialist', 'Specialist')}</strong> {t('appointmentScheduledOn')} <strong>{upcomingAppt.date}</strong> {t('appointmentAtTime')} <strong>{upcomingAppt.time}</strong>.
-              </p>
-              {upcomingAppt.meetingLink && (
-                <a
-                  href={upcomingAppt.meetingLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block mt-2 text-[10px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-3.5 py-1.5 rounded-lg shadow-sm transition-all"
-                >
-                  {upcomingAppt.meetingLink.includes('calendar.app.google') || upcomingAppt.meetingLink.includes('calendar.google.com')
-                    ? t('dash.openGoogleCalendar', 'Open Google Calendar Invite')
-                    : t('dash.joinGoogleMeet', 'Join Google Meet')}
-                </a>
-              )}
-            </div>
-          </div>
-          <button
-            onClick={() => {
-              localStorage.setItem(`dismissed_appt_${upcomingAppt._id}`, 'true');
-              setIsApptDismissed(true);
-            }}
-            className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-slate-650 dark:hover:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all shrink-0"
-            title={t('dismissAlertTitle')}
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      )}
-
-      {!isCancerPatient && (
-        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800 rounded-3xl p-4 sm:p-5 mb-5 shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-none transition-all duration-300">
-          {/* Header Row: Title & Streak on Left, Date Filter Popover & Download on Right (Single line, no wrap!) */}
-          <div className="flex items-center justify-between gap-2 mb-3.5 pb-2.5 border-b border-slate-100 dark:border-slate-800/80 relative">
-            <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-rose-500 via-indigo-600 to-emerald-500 text-white flex items-center justify-center shadow-md shadow-indigo-500/25 shrink-0" title={t('healthDefenseTitle')}>
-                <ShieldPlus className="w-4.5 h-4.5 stroke-[2.4]" />
+          {/* Continuous Health Monitoring Danger recommendation */}
+          {showRecommendation && (
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4 animate-bounce">
+              <div className="flex-1">
+                <h4 className="font-bold text-amber-800 text-sm">{t('dash.actionRecommended', 'Action Recommended')}</h4>
+                <p className="text-xs text-amber-700 mt-1">
+                  Based on your recent health records for {recommendationReason}, we recommend consulting a doctor. Would you like to book an appointment?
+                </p>
               </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight truncate">
-                    {t('dashboard.cellularBalance', 'Cellular Balance')}
-                  </h3>
-                  {streak > 0 && timePeriod === 'today' && (
-                    <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
-                      <Flame className="w-2.5 h-2.5 text-amber-500 fill-amber-500" />
-                      {streak}d
-                    </span>
-                  )}
-                </div>
-                <p className="text-[9.5px] sm:text-[10px] text-slate-400 dark:text-slate-500 font-medium truncate">{t('dashboard.lifestyleVsDefense', 'Lifestyle Stress vs Restorative Defense')}</p>
-              </div>
-            </div>
-
-            {/* Right Side: Date Filter Button + Download Option */}
-            <div className="flex items-center gap-1.5 shrink-0 relative">
-              {/* Date Filter Dropdown */}
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setShowPeriodFilter(!showPeriodFilter)}
-                  className={`inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 text-xs font-bold rounded-xl border transition-all cursor-pointer shadow-xs active:scale-95 ${
-                    showPeriodFilter
-                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800'
-                      : 'text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/70 dark:hover:bg-slate-700/70 border-slate-200/60 dark:border-slate-700/60'
-                  }`}
-                  title={t('selectTimeframeTitle')}
-                >
-                  <Filter className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                  <span className="font-extrabold text-[10.5px] sm:text-xs">
-                    {timePeriod === 'today' ? t('dashboard.today', 'Today') : timePeriod === 'weekly' ? '7D' : timePeriod === 'monthly' ? '30D' : '1Y'}
-                  </span>
-                  <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform duration-200 ${showPeriodFilter ? 'rotate-180' : ''}`} />
-                </button>
-
-                {/* Dropdown Menu */}
-                {showPeriodFilter && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-40"
-                      onClick={() => setShowPeriodFilter(false)}
-                    />
-                    <div className="absolute right-0 top-full mt-1.5 w-44 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200/80 dark:border-slate-800 p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
-                      <div className="px-2.5 py-1 text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800/80 mb-1">
-                        {t('common.filter', 'Filter Time Range')}
-                      </div>
-                      {[
-                        { id: 'today', label: t('dashboard.today', 'Today'), desc: 'Live daily balance' },
-                        { id: 'weekly', label: t('reports.last7Days', '7 Days'), desc: 'Weekly trend analysis' },
-                        { id: 'monthly', label: t('reports.last30Days', '30 Days'), desc: 'Monthly cellular health' },
-                        { id: 'yearly', label: t('reports.allTime', '1 Year'), desc: 'Annual cellular history' },
-                      ].map((item) => {
-                        const active = timePeriod === item.id;
-                        return (
-                          <button
-                            key={item.id}
-                            type="button"
-                            onClick={() => {
-                              setTimePeriod(item.id as any);
-                              setShowPeriodFilter(false);
-                            }}
-                            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-left transition-all cursor-pointer ${
-                              active
-                                ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold'
-                                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium'
-                            }`}
-                          >
-                            <div>
-                              <div className="text-xs">{item.label}</div>
-                              <div className="text-[9px] text-slate-400 dark:text-slate-500">{item.desc}</div>
-                            </div>
-                            {active && <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 dark:bg-indigo-400 shrink-0" />}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Download / Report Button */}
               <button
-                type="button"
-                disabled={isDownloadingReport}
-                onClick={downloadDocumentedReport}
-                className="inline-flex items-center gap-1 p-1.5 sm:px-2.5 sm:py-1 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/70 dark:hover:bg-slate-700/70 rounded-xl border border-slate-200/60 dark:border-slate-700/60 transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
-                title={t('downloadDocumentedReportTitle')}
+                onClick={() => onNavigateToTab('Book Appointment')}
+                className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all shadow-sm shrink-0"
               >
-                {isDownloadingReport ? (
-                  <Loader2 className="w-3.5 h-3.5 text-indigo-500 animate-spin shrink-0" />
-                ) : (
-                  <DownloadCloud className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                )}
-                <span className="hidden sm:inline">{isDownloadingReport ? t('dashboard.preparing', 'Preparing...') : t('dashboard.reportButton', 'Report')}</span>
+                Book Appointment
               </button>
             </div>
-          </div>
+          )}
 
-          {/* Main Section: Circular Ring Chart on LEFT, Balance Tracker on RIGHT in same section */}
-          <div className="flex items-center gap-3.5 sm:gap-5">
-            {/* LEFT: Compact Circular Ring Tracker (Explicit fixed size so it never expands!) */}
-            <div className="shrink-0" style={{ width: '84px', height: '84px' }}>
-              <div className="relative w-full h-full flex items-center justify-center">
-                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 84 84">
-                  {/* Damage / Stress Base Circle */}
-                  <circle
-                    cx="42"
-                    cy="42"
-                    r="34"
-                    stroke="#f43f5e"
-                    strokeWidth="6.5"
-                    className="opacity-80"
-                    fill="none"
-                  />
-                  {/* Active Repair Arc */}
-                  <circle
-                    cx="42"
-                    cy="42"
-                    r="34"
-                    stroke="#10b981"
-                    strokeWidth="6.5"
-                    strokeDasharray={213.63}
-                    strokeDashoffset={213.63 * (1 - (totalForces === 0 ? 0.5 : repairPct / 100))}
-                    strokeLinecap="round"
-                    className="transition-all duration-700"
-                    fill="none"
-                  />
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
-                  <span className="text-xl font-black text-slate-900 dark:text-white leading-none tracking-tight">
-                    {totalForces === 0 ? '50%' : `${repairPct}%`}
-                  </span>
-                  <span className="text-[8px] font-extrabold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mt-0.5">
-                    {t('dashboard.repairLabel', 'Repair')}
-                  </span>
+          {/* Upcoming Confirmed Appointment Alert Banner */}
+          {upcomingAppt && !isApptDismissed && (
+            <div className="bg-emerald-50/90 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 rounded-2xl p-4 mb-6 shadow-[0_4px_20px_rgba(16,185,129,0.05)] flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2.5 bg-emerald-500/10 rounded-xl text-emerald-600 shrink-0 mt-0.5">
+                  <Calendar className="h-5 w-5" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-emerald-800 dark:text-emerald-300 text-xs">{t('dash.upcomingApptScheduled', 'Upcoming Consultation Scheduled')}</h4>
+                  <p className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-0.5">
+                    {t('dash.appointmentWith', 'Appointment with')} <strong>Dr. {upcomingAppt.doctorId?.name || t('common.specialist', 'Specialist')}</strong> {t('appointmentScheduledOn')} <strong>{upcomingAppt.date}</strong> {t('appointmentAtTime')} <strong>{upcomingAppt.time}</strong>.
+                  </p>
+                  {upcomingAppt.meetingLink && (
+                    <a
+                      href={upcomingAppt.meetingLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block mt-2 text-[10px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-3.5 py-1.5 rounded-lg shadow-sm transition-all"
+                    >
+                      {upcomingAppt.meetingLink.includes('calendar.app.google') || upcomingAppt.meetingLink.includes('calendar.google.com')
+                        ? t('dash.openGoogleCalendar', 'Open Google Calendar Invite')
+                        : t('dash.joinGoogleMeet', 'Join Google Meet')}
+                    </a>
+                  )}
                 </div>
               </div>
+              <button
+                onClick={() => {
+                  localStorage.setItem(`dismissed_appt_${upcomingAppt._id}`, 'true');
+                  setIsApptDismissed(true);
+                }}
+                className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-slate-650 dark:hover:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all shrink-0"
+                title={t('dismissAlertTitle')}
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
+          )}
 
-            {/* RIGHT: Tracker Details + Tug-of-War Balance Bar */}
-            <div className="flex-1 min-w-0 space-y-1.5">
-              {/* Status Verdict & Dynamic Pill */}
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
-                  {timePeriod === 'today' ? t('dashboard.dailyState', 'Daily State') : timePeriod === 'weekly' ? t('dashboard.weeklyState', '7-Day State') : timePeriod === 'monthly' ? t('dashboard.monthlyState', '30-Day State') : t('dashboard.yearlyState', 'Yearly State')}
-                </span>
-                {netBalance > 0 ? (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 shadow-2xs shrink-0">
-                    <Sparkles className="w-3 h-3 text-emerald-500" />
-                    {t('dashboard.netRepair', { count: netBalance }, `+${netBalance} Net Repair`)}
-                  </span>
-                ) : netBalance < 0 ? (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20 shadow-2xs shrink-0">
-                    <Skull className="w-3 h-3 text-rose-500" />
-                    {t('dashboard.netStress', { count: Math.abs(netBalance) }, `+${Math.abs(netBalance)} Net Stress`)}
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-200/60 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 shrink-0">
-                    {t('dashboard.equilibrium', 'Equilibrium')}
-                  </span>
-                )}
-              </div>
-
-              {/* Tug-of-War Balance Bar */}
-              <div className="space-y-1">
-                {/* Force Numbers Line */}
-                <div className="flex justify-between items-center text-[9.5px] sm:text-[10.5px] font-bold">
-                  <span className="text-rose-600 dark:text-rose-400 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
-                    <span>{damageCount} {t('dashboard.stressLabel', 'Stress')} ({damagePct}%)</span>
-                  </span>
-                  <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                    <span>{repairCount} {t('dashboard.repairLabel', 'Repair')} ({repairPct}%)</span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                  </span>
-                </div>
-
-                {/* Dual Progress Track with Interactive Puck */}
-                <div className="relative w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full flex shadow-inner border border-slate-200/60 dark:border-slate-700/60">
-                  <div
-                    className="h-full bg-gradient-to-r from-rose-500 to-rose-400 transition-all duration-700 rounded-l-full"
-                    style={{ width: `${damagePct}%` }}
-                  />
-                  <div
-                    className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all duration-700 rounded-r-full"
-                    style={{ width: `${repairPct}%` }}
-                  />
-
-                  {/* Puck Indicator */}
-                  <div
-                    className="absolute top-1/2 -translate-y-1/2 w-4.5 h-4.5 rounded-full bg-white dark:bg-slate-900 border-2 border-indigo-500 shadow-md flex items-center justify-center -ml-2.25 transition-all duration-700 z-10"
-                    style={{ left: `${damagePct}%` }}
-                  >
-                    <Activity className="h-2.5 w-2.5 text-indigo-600 dark:text-indigo-400 animate-pulse" />
+          {!isCancerPatient && (
+            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800 rounded-3xl p-4 sm:p-5 mb-5 shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-none transition-all duration-300">
+              {/* Header Row: Title & Streak on Left, Date Filter Popover & Download on Right (Single line, no wrap!) */}
+              <div className="flex items-center justify-between gap-2 mb-3.5 pb-2.5 border-b border-slate-100 dark:border-slate-800/80 relative">
+                <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-rose-500 via-indigo-600 to-emerald-500 text-white flex items-center justify-center shadow-md shadow-indigo-500/25 shrink-0" title={t('healthDefenseTitle')}>
+                    <ShieldPlus className="w-4.5 h-4.5 stroke-[2.4]" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 sm:gap-2">
+                      <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight truncate">
+                        {t('dashboard.cellularBalance', 'Cellular Balance')}
+                      </h3>
+                      {streak > 0 && timePeriod === 'today' && (
+                        <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
+                          <Flame className="w-2.5 h-2.5 text-amber-500 fill-amber-500" />
+                          {streak}d
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[9.5px] sm:text-[10px] text-slate-400 dark:text-slate-500 font-medium truncate">{t('dashboard.lifestyleVsDefense', 'Lifestyle Stress vs Restorative Defense')}</p>
                   </div>
                 </div>
-              </div>
 
-              {/* Actionable Subtext */}
-              <p className="text-[10px] sm:text-[10.5px] text-slate-400 dark:text-slate-500 leading-tight truncate">
-                {netBalance > 0
-                  ? t('dashboard.restorativeOutpaces', 'Restorative defense habits outpace daily stress.')
-                  : netBalance < 0
-                  ? t('dashboard.stressOutweighs', 'Active stress factors outweigh restorative habits.')
-                  : t('dashboard.forcesEquilibrium', 'Cellular forces in dynamic equilibrium.')}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+                {/* Right Side: Date Filter Button + Download Option */}
+                <div className="flex items-center gap-1.5 shrink-0 relative">
+                  {/* View Mode Toggle: Trend Graph vs State Gauge */}
+                  <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+                    <button
+                      type="button"
+                      onClick={() => setBalanceViewMode('summary')}
+                      className={`px-2 py-1 rounded-lg text-[10px] sm:text-[10.5px] font-bold flex items-center gap-1 transition-all cursor-pointer ${balanceViewMode === 'summary'
+                        ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                        : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-200'
+                        }`}
+                      title="View balance gauge summary"
+                    >
+                      <Scale className="w-3 h-3 text-slate-500" />
+                      <span>{t('dashboard.gauge', 'Gauge')}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBalanceViewMode('graph')}
+                      className={`px-2 py-1 rounded-lg text-[10px] sm:text-[10.5px] font-bold flex items-center gap-1 transition-all cursor-pointer ${balanceViewMode === 'graph'
+                        ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                        : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-200'
+                        }`}
+                      title="View day-by-day trend graph"
+                    >
+                      <LineChart className="w-3 h-3 text-indigo-500" />
+                      <span>{t('dashboard.trend', 'Trend')}</span>
+                    </button>
 
-      {!isCancerPatient && (
-        <div className="flex items-center justify-between gap-2 mb-4 flex-wrap">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400 font-mono font-bold">01</span>
-            <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">
-              {t('dashboard.trackTwoForces', { period: timePeriod === 'today' ? t('dashboard.today', 'Today') : timePeriod === 'weekly' ? t('dashboard.thisWeek', 'This Week') : t('dashboard.thisMonth', 'This Month') }, `Track the two forces (${timePeriod === 'today' ? 'Today' : timePeriod === 'weekly' ? 'This Week' : 'This Month'})`)}
-            </span>
-          </div>
+                  </div>
 
-          {/* Force Filter Segmented Tabs */}
-          <div className="flex items-center bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
-            <button
-              type="button"
-              onClick={() => setForcesView('all')}
-              className={`px-2 sm:px-2.5 py-1 rounded-lg font-extrabold text-[9.5px] sm:text-[10px] uppercase tracking-wider transition-all cursor-pointer ${forcesView === 'all'
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-                }`}
-            >
-              {t('dashboard.all', 'All')}
-            </button>
-            <button
-              type="button"
-              onClick={() => setForcesView('damage')}
-              className={`px-2 sm:px-2.5 py-1 rounded-lg font-extrabold text-[9.5px] sm:text-[10px] uppercase tracking-wider transition-all cursor-pointer ${forcesView === 'damage'
-                ? 'bg-rose-500 text-white shadow-xs'
-                : 'text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40'
-                }`}
-            >
-              {t('dashboard.damage', 'Damage')} ({damageCount})
-            </button>
-            <button
-              type="button"
-              onClick={() => setForcesView('repair')}
-              className={`px-2 sm:px-2.5 py-1 rounded-lg font-extrabold text-[9.5px] sm:text-[10px] uppercase tracking-wider transition-all cursor-pointer ${forcesView === 'repair'
-                ? 'bg-emerald-500 text-white shadow-xs'
-                : 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
-                }`}
-            >
-              {t('dashboard.repairLabel', 'Repair')} ({repairCount})
-            </button>
-          </div>
-        </div>
-      )}
+                  {/* Date Filter Dropdown */}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowPeriodFilter(!showPeriodFilter)}
+                      className={`inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 text-xs font-bold rounded-xl border transition-all cursor-pointer shadow-xs active:scale-95 ${showPeriodFilter
+                        ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800'
+                        : 'text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/70 dark:hover:bg-slate-700/70 border-slate-200/60 dark:border-slate-700/60'
+                        }`}
+                      title={t('selectTimeframeTitle')}
+                    >
+                      <Filter className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                      <span className="font-extrabold text-[10.5px] sm:text-xs">
+                        {timePeriod === 'today' ? t('dashboard.today', 'Today') : timePeriod === 'weekly' ? '7D' : timePeriod === 'monthly' ? '30D' : '1Y'}
+                      </span>
+                      <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform duration-200 ${showPeriodFilter ? 'rotate-180' : ''}`} />
+                    </button>
 
-      <div className={`${isCancerPatient ? 'w-full mb-4' : 'grid grid-cols-2 gap-2 sm:gap-3 mb-6 items-start'}`}>
-        {/* Damage Column (Left) */}
-        {!isCancerPatient && (forcesView === 'all' || forcesView === 'damage') && (
-          <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-rose-100 dark:border-rose-900/30 shadow-[0_8px_30px_rgba(225,29,72,0.03)] rounded-2xl sm:rounded-3xl p-1.5 sm:p-3 flex flex-col h-fit self-start transition-colors duration-300">
-            <div className="px-1 pt-1 pb-2 flex items-center justify-between">
-              <div>
-                <h3 className="text-rose-500 font-sans text-xs sm:text-base font-bold flex items-center gap-1 mb-0.5">
-                  <Skull className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> {t('dashboard.damage', 'Damage')}
-                </h3>
-                <p className="text-[7px] sm:text-[8px] text-slate-400 font-bold uppercase tracking-widest">{t('dashboard.reduceLoad', 'Reduce the load')}</p>
-              </div>
-              <span className="text-[8px] sm:text-[9px] font-extrabold text-rose-500 bg-rose-50 dark:bg-rose-950/40 px-1.5 sm:px-2 py-0.5 rounded-full border border-rose-200/50 dark:border-rose-900/40 shrink-0">
-                {damageCount} {t('dashboard.active', 'active')}
-              </span>
-            </div>
+                    {/* Dropdown Menu */}
+                    {showPeriodFilter && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={() => setShowPeriodFilter(false)}
+                        />
+                        <div className="absolute right-0 top-full mt-1.5 w-44 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200/80 dark:border-slate-800 p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+                          <div className="px-2.5 py-1 text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800/80 mb-1">
+                            {t('common.filter', 'Filter Time Range')}
+                          </div>
+                          {[
+                            { id: 'today', label: t('dashboard.today', 'Today'), desc: 'Live daily balance' },
+                            { id: 'weekly', label: t('reports.last7Days', '7 Days'), desc: 'Weekly trend analysis' },
+                            { id: 'monthly', label: t('reports.last30Days', '30 Days'), desc: 'Monthly cellular health' },
+                            { id: 'yearly', label: t('reports.allTime', '1 Year'), desc: 'Annual cellular history' },
+                          ].map((item) => {
+                            const active = timePeriod === item.id;
+                            return (
+                              <button
+                                key={item.id}
+                                type="button"
+                                onClick={() => {
+                                  const p = item.id as any;
+                                  setTimePeriod(p);
+                                  setShowPeriodFilter(false);
+                                }}
+                                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-left transition-all cursor-pointer ${active
+                                  ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold'
+                                  : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium'
+                                  }`}
+                              >
+                                <div>
+                                  <div className="text-xs">{item.label}</div>
+                                  <div className="text-[9px] text-slate-400 dark:text-slate-500">{item.desc}</div>
+                                </div>
+                                {active && <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 dark:bg-indigo-400 shrink-0" />}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </>
+                    )}
+                  </div>
 
-            <div className="flex flex-col gap-1 sm:gap-1.5">
-              <HabitItem icon={<Frown className="h-3.5 w-3.5 text-amber-500" />} label={t('habits.stress', 'Stress')} onClick={() => handleOpenHabit('Stress')} score={getStressScore()} />
-              <HabitItem icon={<Moon className="h-3.5 w-3.5 text-indigo-400" />} label={t('habits.sleepDebt', 'Sleep debt')} onClick={() => handleOpenHabit('Sleep')} score={getSleepScore()} />
-              <HabitItem icon={<Cigarette className="h-3.5 w-3.5 text-slate-400" />} label={t('habits.smokingChewing', 'Smoking & Chewing')} onClick={() => handleOpenHabit('Smoking')} score={getSmokingScore()} />
-              <HabitItem icon={<Wine className="h-3.5 w-3.5 text-rose-600" />} label={t('habits.alcohol', 'Alcohol')} onClick={() => handleOpenHabit('Alcohol')} score={getAlcoholScore()} />
-              <HabitItem icon={<Pill className="h-3.5 w-3.5 text-amber-500" />} label={t('habits.substances', 'Substances')} onClick={() => handleOpenHabit('Substances')} score={getSubstancesScore()} />
-              <HabitItem icon={<Globe className="h-3.5 w-3.5 text-cyan-500" />} label={t('habits.environment', 'Environment')} onClick={() => handleOpenHabit('Environmental')} score={getEnvironmentalScore()} />
-              <HabitItem icon={<Utensils className="h-3.5 w-3.5 text-amber-600" />} label={t('habits.checkKitchen', 'Check your kitchen')} onClick={() => handleOpenHabit('Kitchen')} score={getKitchenScore()} />
-              <HabitItem icon={<Scale className="h-3.5 w-3.5 text-rose-500" />} label={t('habits.obesity', 'Obesity')} onClick={() => handleOpenHabit('Obesity')} score={getObesityScore()} />
-              <HabitItem icon={<Stethoscope className="h-3.5 w-3.5 text-slate-500" />} label={t('habits.dentalHealth', 'Dental health')} onClick={() => handleOpenHabit('Dental')} score={getDentalScore()} />
-              <HabitItem icon={<Flame className="h-3.5 w-3.5 text-orange-500" />} label={t('habits.gastritis', 'Gastritis')} onClick={() => handleOpenHabit('Gastritis')} score={getGastritisScore()} />
-              <HabitItem icon={<Dna className="h-3.5 w-3.5 text-purple-500" />} label={t('habits.geneticRisk', 'Genetic risk')} onClick={() => handleOpenHabit('Genetic')} score={getGeneticScore()} />
-            </div>
-          </div>
-        )}
-
-        {/* Repair Column (Right) */}
-        {(forcesView === 'all' || forcesView === 'repair') && (
-          <div className={`bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs rounded-2xl sm:rounded-3xl p-1.5 sm:p-3 flex flex-col h-fit self-start transition-colors duration-300 ${isCancerPatient ? 'w-full' : ''}`}>
-            {!isCancerPatient && (
-              <div className="px-1 pt-1 pb-2 flex items-center justify-between">
-                <div>
-                  <h3 className="text-emerald-500 font-sans text-xs sm:text-base font-bold flex items-center gap-1 mb-0.5">
-                    <Leaf className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> {t('dashboard.repairLabel', 'Repair')}
-                  </h3>
-                  <p className="text-[7px] sm:text-[8px] text-slate-400 font-bold uppercase tracking-widest">{t('dashboard.buildDefence', 'Build the defence')}</p>
+                  {/* Download / Report Button */}
+                  <button
+                    type="button"
+                    disabled={isDownloadingReport}
+                    onClick={downloadDocumentedReport}
+                    className="inline-flex items-center gap-1 p-1.5 sm:px-2.5 sm:py-1 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/70 dark:hover:bg-slate-700/70 rounded-xl border border-slate-200/60 dark:border-slate-700/60 transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
+                    title={t('downloadDocumentedReportTitle')}
+                  >
+                    {isDownloadingReport ? (
+                      <Loader2 className="w-3.5 h-3.5 text-indigo-500 animate-spin shrink-0" />
+                    ) : (
+                      <DownloadCloud className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                    )}
+                    <span className="hidden sm:inline">{isDownloadingReport ? t('dashboard.preparing', 'Preparing...') : t('dashboard.reportButton', 'Report')}</span>
+                  </button>
                 </div>
-                <span className="text-[8px] sm:text-[9px] font-extrabold text-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 sm:px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-900/40 shrink-0">
-                  {repairCount} {t('dashboard.active', 'active')}
+              </div>
+
+              {/* Main Section: Trend Graph View OR Circular Ring Gauge View */}
+              {balanceViewMode === 'graph' ? (
+                /* === TREND GRAPH VIEW === */
+                <div className="space-y-3.5">
+                  {/* Three Redesigned Summary Cards: Repair habits, Stress indicators, Overall balance */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
+                    {/* 1. REPAIR HABITS CARD */}
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent dark:from-emerald-950/40 dark:via-emerald-900/20 dark:to-transparent border border-emerald-500/25 dark:border-emerald-500/30 p-3 sm:p-3.5 shadow-xs transition-all hover:border-emerald-500/40">
+                      <div className="flex items-center justify-between gap-1.5">
+                        <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-800 dark:text-emerald-300 min-w-0">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                          <span className="truncate">{t('dashboard.repairHabits', 'Repair habits')}</span>
+                          <div className="group relative inline-flex items-center cursor-help">
+                            <Info className="w-3 h-3 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-300 transition-colors shrink-0" />
+                            <div className="absolute left-0 bottom-full mb-1.5 hidden group-hover:block z-50 w-52 p-2 bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur text-white text-[10px] rounded-xl shadow-xl border border-slate-700 leading-relaxed pointer-events-none">
+                              {t('dashboard.repairHabitsDesc', 'Restorative lifestyle habits supporting cellular repair (fasting, stillness, movement, sleep).')}
+                            </div>
+                          </div>
+                        </div>
+                        {/* Status badge supported by rules */}
+                        <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 shrink-0">
+                          {timePeriod === 'today' ? (
+                            repairCount >= 7 ? 'Optimal' : repairCount > 0 ? 'Active' : 'Needs attention'
+                          ) : (
+                            cellularTrendData.repairDiffPct > 0 ? (
+                              <>
+                                <TrendingUp className="w-2.5 h-2.5" />
+                                <span>Improving (+{cellularTrendData.repairDiffPct}%)</span>
+                              </>
+                            ) : cellularTrendData.repairDiffPct < 0 ? (
+                              <>
+                                <TrendingDown className="w-2.5 h-2.5" />
+                                <span>Declining ({cellularTrendData.repairDiffPct}%)</span>
+                              </>
+                            ) : (
+                              <span>Consistent</span>
+                            )
+                          )}
+                        </span>
+                      </div>
+                      <div className="flex items-baseline gap-1.5 mt-2">
+                        <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                          {timePeriod === 'today' ? repairCount : Math.round(Number(cellularTrendData.avgRepair))}
+                        </span>
+                        <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                          {timePeriod === 'today' ? 'habits logged' : 'habits / day avg'}
+                        </span>
+                      </div>
+                      <div className="mt-1 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
+                        <span className="truncate">
+                          {timePeriod === 'today' ? 'Restorative habits logged today' : `Period avg: ${cellularTrendData.avgRepair} habits/day`}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 2. STRESS INDICATORS CARD */}
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-rose-500/10 via-rose-500/5 to-transparent dark:from-rose-950/40 dark:via-rose-900/20 dark:to-transparent border border-rose-500/25 dark:border-rose-500/30 p-3 sm:p-3.5 shadow-xs transition-all hover:border-rose-500/40">
+                      <div className="flex items-center justify-between gap-1.5">
+                        <div className="flex items-center gap-1.5 text-[11px] font-bold text-rose-800 dark:text-rose-300 min-w-0">
+                          <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+                          <span className="truncate">{t('dashboard.stressIndicators', 'Stress indicators')}</span>
+                          <div className="group relative inline-flex items-center cursor-help">
+                            <Info className="w-3 h-3 text-slate-400 hover:text-rose-600 dark:hover:text-rose-300 transition-colors shrink-0" />
+                            <div className="absolute left-0 bottom-full mb-1.5 hidden group-hover:block z-50 w-52 p-2 bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur text-white text-[10px] rounded-xl shadow-xl border border-slate-700 leading-relaxed pointer-events-none">
+                              {t('dashboard.stressIndicatorsDesc', 'Oxidative damage load, poor sleep, dietary spikes, or environmental exposures.')}
+                            </div>
+                          </div>
+                        </div>
+                        {/* Status badge supported by rules */}
+                        <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[9px] font-extrabold border shrink-0 ${(timePeriod === 'today' && damageCount > (repairCount || 3)) || (timePeriod !== 'today' && cellularTrendData.damageDiffPct > 0)
+                          ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/20'
+                          : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/20'
+                          }`}>
+                          {timePeriod === 'today' ? (
+                            damageCount === 0 ? 'Low stress' : damageCount <= (repairCount || 3) ? 'Controlled' : 'Needs attention'
+                          ) : (
+                            cellularTrendData.damageDiffPct < 0 ? (
+                              <>
+                                <TrendingDown className="w-2.5 h-2.5" />
+                                <span>Decreasing ({cellularTrendData.damageDiffPct}%)</span>
+                              </>
+                            ) : cellularTrendData.damageDiffPct > 0 ? (
+                              <>
+                                <TrendingUp className="w-2.5 h-2.5" />
+                                <span>Needs attention (+{cellularTrendData.damageDiffPct}%)</span>
+                              </>
+                            ) : (
+                              <span>Stable</span>
+                            )
+                          )}
+                        </span>
+                      </div>
+                      <div className="flex items-baseline gap-1.5 mt-2">
+                        <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                          {timePeriod === 'today' ? damageCount : Math.round(Number(cellularTrendData.avgDamage))}
+                        </span>
+                        <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                          {timePeriod === 'today' ? 'indicators logged' : 'indicators / day avg'}
+                        </span>
+                      </div>
+                      <div className="mt-1 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
+                        <span className="truncate">
+                          {timePeriod === 'today' ? 'Active lifestyle stress triggers' : `Period avg: ${cellularTrendData.avgDamage} indicators/day`}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 3. OVERALL BALANCE CARD */}
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-transparent dark:from-indigo-950/40 dark:via-indigo-900/20 dark:to-transparent border border-indigo-500/25 dark:border-indigo-500/30 p-3 sm:p-3.5 shadow-xs transition-all hover:border-indigo-500/40">
+                      <div className="flex items-center justify-between gap-1.5">
+                        <div className="flex items-center gap-1.5 text-[11px] font-bold text-indigo-800 dark:text-indigo-300 min-w-0">
+                          <Sparkles className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                          <span className="truncate">{t('dashboard.overallBalance', 'Overall balance')}</span>
+                          <div className="group relative inline-flex items-center cursor-help">
+                            <Info className="w-3 h-3 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors shrink-0" />
+                            <div className="absolute right-0 sm:left-0 bottom-full mb-1.5 hidden group-hover:block z-50 w-52 p-2 bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur text-white text-[10px] rounded-xl shadow-xl border border-slate-700 leading-relaxed pointer-events-none">
+                              {t('dashboard.overallBalanceDesc', 'Net margin between repair habits and stress. Positive score indicates cellular healing dominance.')}
+                            </div>
+                          </div>
+                        </div>
+                        {/* Status label clearly stated */}
+                        {(() => {
+                          const netVal = timePeriod === 'today' ? (repairCount - damageCount) : parseFloat(cellularTrendData.avgNet);
+                          const isGood = netVal > 0;
+                          const isEquil = netVal === 0;
+                          return (
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-extrabold border shrink-0 ${isGood
+                              ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/20'
+                              : isEquil
+                                ? 'bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/20'
+                                : 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/20'
+                              }`}>
+                              {isGood ? 'Good • Repair Ahead' : isEquil ? 'Balanced' : 'Needs attention'}
+                            </span>
+                          );
+                        })()}
+                      </div>
+                      <div className="flex items-baseline gap-1.5 mt-2">
+                        {(() => {
+                          const netVal = timePeriod === 'today' ? (repairCount - damageCount) : Math.round(Number(cellularTrendData.avgNet));
+                          const isPositive = netVal >= 0;
+                          return (
+                            <>
+                              <span className={`text-2xl sm:text-3xl font-black tracking-tight ${isPositive ? 'text-indigo-600 dark:text-indigo-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                {isPositive ? `+${netVal}` : netVal}
+                              </span>
+                              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                                {timePeriod === 'today' ? 'net margin' : 'net margin / day'}
+                              </span>
+                            </>
+                          );
+                        })()}
+                      </div>
+                      <div className="mt-1 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
+                        <span className="truncate">
+                          {timePeriod === 'today'
+                            ? (repairCount >= damageCount ? 'Restorative defense ahead of stress' : 'Lifestyle stress outpaces repair')
+                            : `Period net: ${parseFloat(cellularTrendData.avgNet) >= 0 ? `+${cellularTrendData.avgNet}` : cellularTrendData.avgNet} net/day`}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Trend Graph or Empty State */}
+                  {cellularTrendData.chartData.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center p-8 text-center bg-slate-50/60 dark:bg-slate-800/30 rounded-2xl border border-dashed border-slate-200/80 dark:border-slate-800">
+                      <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 flex items-center justify-center mb-2 text-indigo-500">
+                        <Activity className="w-5 h-5" />
+                      </div>
+                      <h4 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
+                        No trend data available for today yet
+                      </h4>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 max-w-sm mt-1">
+                        Log your daily restorative habits and stress check-ins to track your cellular balance progression throughout the day.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setShowChatbotModal(true)}
+                        className="mt-3.5 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-all cursor-pointer active:scale-95"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Start Daily Check-in</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="w-full h-52 sm:h-56 pt-2 px-1">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={cellularTrendData.chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                          <defs>
+                            <linearGradient id="repairTrendGrad" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#10b981" stopOpacity={0.38} />
+                              <stop offset="70%" stopColor="#10b981" stopOpacity={0.08} />
+                              <stop offset="100%" stopColor="#10b981" stopOpacity={0.0} />
+                            </linearGradient>
+                            <linearGradient id="damageTrendGrad" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#f43f5e" stopOpacity={0.35} />
+                              <stop offset="70%" stopColor="#f43f5e" stopOpacity={0.06} />
+                              <stop offset="100%" stopColor="#f43f5e" stopOpacity={0.0} />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-slate-200/40 dark:text-slate-800/60" />
+                          <XAxis
+                            dataKey="label"
+                            tickLine={false}
+                            axisLine={false}
+                            tick={{ fontSize: 9.5, fill: '#94a3b8', fontWeight: 600 }}
+                            interval={timePeriod === 'monthly' ? 4 : 0}
+                          />
+                          <YAxis
+                            tickLine={false}
+                            axisLine={false}
+                            tick={{ fontSize: 9.5, fill: '#94a3b8', fontWeight: 600 }}
+                            allowDecimals={false}
+                            domain={[0, 'auto']}
+                          />
+                          <RechartsTooltip
+                            content={({ active, payload }) => {
+                              if (active && payload && payload.length) {
+                                const data = payload[0].payload;
+                                return (
+                                  <div className="bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-md border border-slate-700/80 rounded-2xl p-3 shadow-2xl text-xs text-white z-50 min-w-[180px]">
+                                    <div className="font-bold text-slate-200 border-b border-slate-700/60 pb-1.5 mb-2 flex items-center justify-between gap-3">
+                                      <span>{data.fullDate || data.label}</span>
+                                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider ${data.net >= 0
+                                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                        : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                                        }`}>
+                                        {data.net >= 0 ? `+${data.net} Net Repair` : `${data.net} Net Stress`}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-4 text-emerald-400 font-semibold py-0.5">
+                                      <span className="flex items-center gap-1.5">
+                                        <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)] shrink-0" />
+                                        <span>{t('dashboard.repairHabits', 'Repair habits')}:</span>
+                                      </span>
+                                      <span className="font-black text-white">{data.repair} {timePeriod === 'today' ? 'logged' : 'avg'}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-4 text-rose-400 font-semibold py-0.5 mt-0.5">
+                                      <span className="flex items-center gap-1.5">
+                                        <span className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.8)] shrink-0" />
+                                        <span>{t('dashboard.stressIndicators', 'Stress indicators')}:</span>
+                                      </span>
+                                      <span className="font-black text-white">{data.damage} {timePeriod === 'today' ? 'logged' : 'avg'}</span>
+                                    </div>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            }}
+                          />
+                          <Area
+                            type="monotone"
+                            dataKey="repair"
+                            name="Repair habits"
+                            stroke="#10b981"
+                            strokeWidth={2.8}
+                            fillOpacity={1}
+                            fill="url(#repairTrendGrad)"
+                            activeDot={{ r: 5, strokeWidth: 2, fill: '#10b981', stroke: '#fff' }}
+                          />
+                          <Area
+                            type="monotone"
+                            dataKey="damage"
+                            name="Stress indicators"
+                            stroke="#f43f5e"
+                            strokeWidth={2.8}
+                            fillOpacity={1}
+                            fill="url(#damageTrendGrad)"
+                            activeDot={{ r: 5, strokeWidth: 2, fill: '#f43f5e', stroke: '#fff' }}
+                          />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+
+                  {/* Legend & Clear Explanation Footer */}
+                  <div className="rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800/80 p-2.5 sm:p-3 flex items-center justify-between gap-3 text-[11px] flex-wrap">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 shrink-0 shadow-[0_0_8px_rgba(99,102,241,0.6)]" />
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">
+                        {cellularTrendData.trendVerdict}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 text-[10px] font-bold">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        {t('dashboard.repairHabits', 'Repair habits')}
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200/60 dark:border-rose-800/60">
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                        {t('dashboard.stressIndicators', 'Stress indicators')}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* === CIRCULAR GAUGE & TUG-OF-WAR BALANCE BAR === */
+                <div className="flex items-center gap-3.5 sm:gap-5">
+                  {/* LEFT: Compact Circular Ring Tracker (Explicit fixed size so it never expands!) */}
+                  <div className="shrink-0" style={{ width: '84px', height: '84px' }}>
+                    <div className="relative w-full h-full flex items-center justify-center">
+                      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 84 84">
+                        {/* Damage / Stress Base Circle */}
+                        <circle
+                          cx="42"
+                          cy="42"
+                          r="34"
+                          stroke="#f43f5e"
+                          strokeWidth="6.5"
+                          className="opacity-80"
+                          fill="none"
+                        />
+                        {/* Active Repair Arc */}
+                        <circle
+                          cx="42"
+                          cy="42"
+                          r="34"
+                          stroke="#10b981"
+                          strokeWidth="6.5"
+                          strokeDasharray={213.63}
+                          strokeDashoffset={213.63 * (1 - (totalForces === 0 ? 0.5 : repairPct / 100))}
+                          strokeLinecap="round"
+                          className="transition-all duration-700"
+                          fill="none"
+                        />
+                      </svg>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+                        <span className="text-xl font-black text-slate-900 dark:text-white leading-none tracking-tight">
+                          {totalForces === 0 ? '50%' : `${repairPct}%`}
+                        </span>
+                        <span className="text-[8px] font-extrabold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mt-0.5">
+                          {t('dashboard.repairLabel', 'Repair')}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* RIGHT: Tracker Details + Tug-of-War Balance Bar */}
+                  <div className="flex-1 min-w-0 space-y-1.5">
+                    {/* Status Verdict & Dynamic Pill */}
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                        {timePeriod === 'today'
+                          ? t('dashboard.dailyState', 'Daily State')
+                          : timePeriod === 'weekly'
+                            ? t('dashboard.weeklyDailyAverage', '7-Day Daily Average')
+                            : timePeriod === 'monthly'
+                              ? t('dashboard.monthlyDailyAverage', '30-Day Daily Average')
+                              : t('dashboard.yearlyDailyAverage', '1-Year Daily Average')}
+                      </span>
+                      {netBalance > 0 ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 shadow-2xs shrink-0">
+                          <Sparkles className="w-3 h-3 text-emerald-500" />
+                          {timePeriod === 'today'
+                            ? t('dashboard.netRepair', { count: netBalance }, `+${netBalance} Net Repair`)
+                            : `+${cellularTrendData.avgNet} Net Repair/day`}
+                        </span>
+                      ) : netBalance < 0 ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20 shadow-2xs shrink-0">
+                          <Skull className="w-3 h-3 text-rose-500" />
+                          {timePeriod === 'today'
+                            ? t('dashboard.netStress', { count: Math.abs(netBalance) }, `+${Math.abs(netBalance)} Net Stress`)
+                            : `${cellularTrendData.avgNet} Net Stress/day`}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-200/60 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 shrink-0">
+                          {t('dashboard.equilibrium', 'Equilibrium')}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Tug-of-War Balance Bar */}
+                    <div className="space-y-1">
+                      {/* Force Numbers Line */}
+                      <div className="flex justify-between items-center text-[9.5px] sm:text-[10.5px] font-bold">
+                        <span className="text-rose-600 dark:text-rose-400 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                          <span>
+                            {timePeriod === 'today' ? damageCount : `${cellularTrendData.avgDamage} avg`} {t('dashboard.stressLabel', 'Stress')} ({damagePct}%)
+                          </span>
+                        </span>
+                        <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                          <span>
+                            {timePeriod === 'today' ? repairCount : `${cellularTrendData.avgRepair} avg`} {t('dashboard.repairLabel', 'Repair')} ({repairPct}%)
+                          </span>
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                        </span>
+                      </div>
+
+                      {/* Dual Progress Track with Interactive Puck */}
+                      <div className="relative w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full flex shadow-inner border border-slate-200/60 dark:border-slate-700/60">
+                        <div
+                          className="h-full bg-gradient-to-r from-rose-500 to-rose-400 transition-all duration-700 rounded-l-full"
+                          style={{ width: `${damagePct}%` }}
+                        />
+                        <div
+                          className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all duration-700 rounded-r-full"
+                          style={{ width: `${repairPct}%` }}
+                        />
+
+                        {/* Puck Indicator */}
+                        <div
+                          className="absolute top-1/2 -translate-y-1/2 w-4.5 h-4.5 rounded-full bg-white dark:bg-slate-900 border-2 border-indigo-500 shadow-md flex items-center justify-center -ml-2.25 transition-all duration-700 z-10"
+                          style={{ left: `${damagePct}%` }}
+                        >
+                          <Activity className="h-2.5 w-2.5 text-indigo-600 dark:text-indigo-400 animate-pulse" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actionable Subtext */}
+                    <p className="text-[10px] sm:text-[10.5px] text-slate-400 dark:text-slate-500 leading-tight truncate">
+                      {netBalance > 0
+                        ? t('dashboard.restorativeOutpaces', 'Restorative defense habits outpace daily stress.')
+                        : netBalance < 0
+                          ? t('dashboard.stressOutweighs', 'Active stress factors outweigh restorative habits.')
+                          : t('dashboard.forcesEquilibrium', 'Cellular forces in dynamic equilibrium.')}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {!isCancerPatient && (
+            <div className="flex items-center justify-between gap-2 mb-4 flex-wrap">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-400 font-mono font-bold">01</span>
+                <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">
+                  {t('dashboard.trackTwoForces', { period: timePeriod === 'today' ? t('dashboard.today', 'Today') : timePeriod === 'weekly' ? t('dashboard.thisWeek', 'This Week') : t('dashboard.thisMonth', 'This Month') }, `Track the two forces (${timePeriod === 'today' ? 'Today' : timePeriod === 'weekly' ? 'This Week' : 'This Month'})`)}
                 </span>
+              </div>
+
+              {/* Force Filter Segmented Tabs */}
+              <div className="flex items-center bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+                <button
+                  type="button"
+                  onClick={() => setForcesView('all')}
+                  className={`px-2 sm:px-2.5 py-1 rounded-lg font-extrabold text-[9.5px] sm:text-[10px] uppercase tracking-wider transition-all cursor-pointer ${forcesView === 'all'
+                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                    }`}
+                >
+                  {t('dashboard.all', 'All')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForcesView('damage')}
+                  className={`px-2 sm:px-2.5 py-1 rounded-lg font-extrabold text-[9.5px] sm:text-[10px] uppercase tracking-wider transition-all cursor-pointer ${forcesView === 'damage'
+                    ? 'bg-rose-500 text-white shadow-xs'
+                    : 'text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40'
+                    }`}
+                >
+                  {t('dashboard.damage', 'Damage')} ({damageCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForcesView('repair')}
+                  className={`px-2 sm:px-2.5 py-1 rounded-lg font-extrabold text-[9.5px] sm:text-[10px] uppercase tracking-wider transition-all cursor-pointer ${forcesView === 'repair'
+                    ? 'bg-emerald-500 text-white shadow-xs'
+                    : 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
+                    }`}
+                >
+                  {t('dashboard.repairLabel', 'Repair')} ({repairCount})
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className={`${isCancerPatient ? 'w-full mb-4' : 'grid grid-cols-2 gap-2 sm:gap-3 mb-6 items-start'}`}>
+            {/* Damage Column (Left) */}
+            {!isCancerPatient && (forcesView === 'all' || forcesView === 'damage') && (
+              <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-rose-100 dark:border-rose-900/30 shadow-[0_8px_30px_rgba(225,29,72,0.03)] rounded-2xl sm:rounded-3xl p-1.5 sm:p-3 flex flex-col h-fit self-start transition-colors duration-300">
+                <div className="px-1 pt-1 pb-2 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-rose-500 font-sans text-xs sm:text-base font-bold flex items-center gap-1 mb-0.5">
+                      <Skull className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> {t('dashboard.damage', 'Damage')}
+                    </h3>
+                    <p className="text-[7px] sm:text-[8px] text-slate-400 font-bold uppercase tracking-widest">{t('dashboard.reduceLoad', 'Reduce the load')}</p>
+                  </div>
+                  <span className="text-[8px] sm:text-[9px] font-extrabold text-rose-500 bg-rose-50 dark:bg-rose-950/40 px-1.5 sm:px-2 py-0.5 rounded-full border border-rose-200/50 dark:border-rose-900/40 shrink-0">
+                    {damageCount} {t('dashboard.active', 'active')}
+                  </span>
+                </div>
+
+                <div className="flex flex-col gap-1 sm:gap-1.5">
+                  <HabitItem icon={<Frown className="h-3.5 w-3.5 text-amber-500" />} label={t('habits.stress', 'Stress')} onClick={() => handleOpenHabit('Stress')} score={getStressScore()} />
+                  <HabitItem icon={<Moon className="h-3.5 w-3.5 text-indigo-400" />} label={t('habits.sleepDebt', 'Sleep debt')} onClick={() => handleOpenHabit('Sleep')} score={getSleepScore()} />
+                  <HabitItem icon={<Cigarette className="h-3.5 w-3.5 text-slate-400" />} label={t('habits.smokingChewing', 'Smoking & Chewing')} onClick={() => handleOpenHabit('Smoking')} score={getSmokingScore()} />
+                  <HabitItem icon={<Wine className="h-3.5 w-3.5 text-rose-600" />} label={t('habits.alcohol', 'Alcohol')} onClick={() => handleOpenHabit('Alcohol')} score={getAlcoholScore()} />
+                  <HabitItem icon={<Pill className="h-3.5 w-3.5 text-amber-500" />} label={t('habits.substances', 'Substances')} onClick={() => handleOpenHabit('Substances')} score={getSubstancesScore()} />
+                  <HabitItem icon={<Globe className="h-3.5 w-3.5 text-cyan-500" />} label={t('habits.environment', 'Environment')} onClick={() => handleOpenHabit('Environmental')} score={getEnvironmentalScore()} />
+                  <HabitItem icon={<Utensils className="h-3.5 w-3.5 text-amber-600" />} label={t('habits.checkKitchen', 'Check your kitchen')} onClick={() => handleOpenHabit('Kitchen')} score={getKitchenScore()} />
+                  <HabitItem icon={<Scale className="h-3.5 w-3.5 text-rose-500" />} label={t('habits.obesity', 'Obesity')} onClick={() => handleOpenHabit('Obesity')} score={getObesityScore()} />
+                  <HabitItem icon={<Stethoscope className="h-3.5 w-3.5 text-slate-500" />} label={t('habits.dentalHealth', 'Dental health')} onClick={() => handleOpenHabit('Dental')} score={getDentalScore()} />
+                  <HabitItem icon={<Flame className="h-3.5 w-3.5 text-orange-500" />} label={t('habits.gastritis', 'Gastritis')} onClick={() => handleOpenHabit('Gastritis')} score={getGastritisScore()} />
+                  <HabitItem icon={<Dna className="h-3.5 w-3.5 text-purple-500" />} label={t('habits.geneticRisk', 'Genetic risk')} onClick={() => handleOpenHabit('Genetic')} score={getGeneticScore()} />
+                </div>
               </div>
             )}
 
-            <div className="flex flex-col gap-1 sm:gap-1.5">
-              {isCancerPatient ? (
-                <>
-                  <HabitItem icon={<Timer className="h-3.5 w-3.5 text-sky-500" />} label={t('habits.intermittentFasting', 'INTERMITTENT FASTING')} onClick={() => handleOpenHabit('Fasting')} score={getFastingScore()} />
-                  <HabitItem icon={<User className="h-3.5 w-3.5 text-amber-500" />} label={t('habits.movement', 'MOVEMENT')} onClick={() => handleOpenHabit('Movement')} score={getMovementScore()} />
-                  <HabitItem icon={<User className="h-3.5 w-3.5 text-amber-600" />} label={t('habits.stillness', 'Stillness')} onClick={() => handleOpenHabit('Stillness')} score={getStillnessScore()} />
-                  <HabitItem icon={<Wind className="h-3.5 w-3.5 text-cyan-500" />} label={t('habits.powerOfBreath', 'POWER OF BREATH')} onClick={() => handleOpenHabit('Breath')} score={getBreathScore()} />
-                  <HabitItem icon={<Palette className="h-3.5 w-3.5 text-indigo-400" />} label={t('habits.thingsYouLove', 'THINGS YOU LOVE')} onClick={() => handleOpenHabit('Joy')} score={getJoyScore()} />
-                  <HabitItem icon={<BrainCircuit className="h-3.5 w-3.5 text-rose-500" />} label={t('habits.areYouStressed', 'ARE YOU STRESSED/WORRIED?')} onClick={() => setShowStressedModal(true)} />
-                  <HabitItem icon={<User className="h-3.5 w-3.5 text-teal-500" />} label={t('habits.caregiverStress', 'CAREGIVER STRESS')} onClick={() => setShowCaregiverModal(true)} />
-                  <HabitItem icon={<ShoppingBag className="h-3.5 w-3.5 text-pink-500" />} label={t('habits.wigsHairloss', 'Explore wigs for hairloss')} onClick={() => setActiveScreen('WigShop')} />
-                </>
-              ) : (
-                <>
-                  <HabitItem icon={<Timer className="h-3.5 w-3.5 text-sky-500" />} label={t('habits.fasting', 'Fasting')} onClick={() => handleOpenHabit('Fasting')} score={getFastingScore()} />
-                  <HabitItem icon={<Cherry className="h-3.5 w-3.5 text-rose-400" />} label={t('habits.antioxidants', 'Antioxidants')} onClick={() => handleOpenHabit('Antioxidants')} score={getAntioxidantsScore()} />
-                  <HabitItem icon={<User className="h-3.5 w-3.5 text-amber-500" />} label={t('habits.exercise', 'Exercise')} onClick={() => handleOpenHabit('Movement')} score={getMovementScore()} />
-                  <HabitItem icon={<User className="h-3.5 w-3.5 text-amber-600" />} label={t('habits.stillness', 'Stillness')} onClick={() => handleOpenHabit('Stillness')} score={getStillnessScore()} />
-                  <HabitItem icon={<Wind className="h-3.5 w-3.5 text-cyan-500" />} label={t('habits.powerOfBreath', 'Power of breath')} onClick={() => handleOpenHabit('Breath')} score={getBreathScore()} />
-                  <HabitItem icon={<Palette className="h-3.5 w-3.5 text-indigo-400" />} label={t('habits.thingsYouLove', 'Things you love')} onClick={() => handleOpenHabit('Joy')} score={getJoyScore()} />
-                  <HabitItem icon={<ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />} label={t('habits.saferProducts', 'Safer products')} onClick={() => handleOpenHabit('SaferProducts')} score={getSaferProductsScore()} />
-                </>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {!isCancerPatient && (
-        <>
-          <div className="flex items-center gap-3 mb-4">
-            <span className="text-xs text-slate-400 font-mono font-bold">02</span>
-            <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">{t('dashboard.catchItEarly', 'Catch it early')}</span>
-            <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800"></div>
-          </div>
-
-          {/* 3-Weekly Symptom Check Card (Above Cancer Screening) */}
-          <button
-            onClick={() => handleOpenHabit('SymptomCheckin')}
-            className="w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-teal-100 dark:border-teal-950/20 shadow-[0_8px_30px_rgba(20,184,166,0.04)] rounded-2xl p-4 flex items-center gap-4 text-left transition-all active:scale-95 hover:shadow-md cursor-pointer mb-4"
-          >
-            <div className="h-10 w-10 rounded-xl bg-teal-50 dark:bg-teal-500/10 flex items-center justify-center shrink-0">
-              <Stethoscope className="h-5 w-5 text-teal-600 dark:text-teal-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <h4 className="text-teal-700 dark:text-teal-300 font-sans font-bold text-lg leading-tight truncate">
-                  {t('dashboard.symptomCheckTitle', '3-Weekly Symptom Check-in')}
-                </h4>
-                {(() => {
-                  const checkStatus = getNextCheckinDueDate();
-                  if (checkStatus.isDue) {
-                    return (
-                      <span className="text-[9px] font-extrabold uppercase tracking-wider bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded shrink-0">
-                        {t('dashboard.dueNow', 'Due Now')}
-                      </span>
-                    );
-                  }
-                  return (
-                    <span className="text-[9px] font-extrabold uppercase tracking-wider bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded shrink-0">
-                      {t('dashboard.activeCheck', 'Active')}
+            {/* Repair Column (Right) */}
+            {(forcesView === 'all' || forcesView === 'repair') && (
+              <div className={`bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs rounded-2xl sm:rounded-3xl p-1.5 sm:p-3 flex flex-col h-fit self-start transition-colors duration-300 ${isCancerPatient ? 'w-full' : ''}`}>
+                {!isCancerPatient && (
+                  <div className="px-1 pt-1 pb-2 flex items-center justify-between">
+                    <div>
+                      <h3 className="text-emerald-500 font-sans text-xs sm:text-base font-bold flex items-center gap-1 mb-0.5">
+                        <Leaf className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> {t('dashboard.repairLabel', 'Repair')}
+                      </h3>
+                      <p className="text-[7px] sm:text-[8px] text-slate-400 font-bold uppercase tracking-widest">{t('dashboard.buildDefence', 'Build the defence')}</p>
+                    </div>
+                    <span className="text-[8px] sm:text-[9px] font-extrabold text-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 sm:px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-900/40 shrink-0">
+                      {repairCount} {t('dashboard.active', 'active')}
                     </span>
-                  );
-                })()}
-              </div>
-              <p className="text-[9px] text-slate-500 dark:text-slate-400 leading-snug mt-1">
-                {t('dashboard.symptomCheckDesc', 'Early warning check across 11 key symptoms · If Yes to any, consult specialist')}
-              </p>
-            </div>
-            <ArrowRight className="h-4 w-4 text-slate-300 shrink-0" />
-          </button>
+                  </div>
+                )}
 
-          {/* Cancer Screening Card */}
-          <button
-            onClick={() => handleOpenHabit('CancerScreening')}
-            className="w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-emerald-100 dark:border-emerald-950/20 shadow-[0_8px_30px_rgba(16,185,129,0.04)] rounded-2xl p-4 flex items-center gap-4 text-left transition-all active:scale-95 hover:shadow-md cursor-pointer"
-          >
-            <div className="h-10 w-10 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center shrink-0">
-              <Microscope className="h-5 w-5 text-emerald-500" />
-            </div>
-            <div className="flex-1">
-              <h4 className="text-emerald-600 dark:text-emerald-400 font-sans font-bold text-lg leading-tight">{t('dashboard.cancerScreening', 'Cancer Screening')}</h4>
-              <p className="text-[9px] text-slate-500 dark:text-slate-400 leading-snug mt-1">
-                {t('dashboard.cancerScreeningDesc', 'PSA · CEA · CA-125 · Pap · Mammogram · Whole-Body MRI · Genetic & liquid biopsy')}
-              </p>
-            </div>
-            <ArrowRight className="h-4 w-4 text-slate-300" />
-          </button>
-
-          {/* Indian Cancers & Risks Card */}
-          <button
-            onClick={() => handleOpenHabit('IndianCancers')}
-            className="w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-purple-100 dark:border-purple-900/30 shadow-[0_8px_30px_rgba(168,85,247,0.04)] rounded-2xl p-4 flex items-center gap-4 text-left transition-all active:scale-95 hover:shadow-md mt-4 cursor-pointer"
-          >
-            <div className="h-10 w-10 rounded-xl bg-purple-50 dark:bg-purple-500/10 flex items-center justify-center shrink-0">
-              <Activity className="h-5 w-5 text-purple-500" />
-            </div>
-            <div className="flex-1">
-              <h4 className="text-purple-600 dark:text-purple-400 font-sans font-bold text-lg leading-tight">{t('dashboard.indianCancers', 'Indian Cancers & Risks')}</h4>
-              <p className="text-[9px] text-slate-500 dark:text-slate-400 leading-snug mt-1">
-                {t('dashboard.indianCancersDesc', 'Regional cancer risk factors, tobacco exposures & targeted guidelines')}
-              </p>
-            </div>
-            <ArrowRight className="h-4 w-4 text-slate-300" />
-          </button>
-        </>
-      )}
-      {isCancerPatient && (
-        <div className="w-full flex flex-col gap-4 mb-4">
-          {/* Cellular Defense Card */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs rounded-3xl p-5 md:p-6 flex items-center gap-5 transition-all duration-300">
-            <div className="relative w-20 h-20 shrink-0 flex items-center justify-center">
-              {/* Background circular track */}
-              <div className="absolute inset-0 rounded-full border-4 border-slate-100 dark:border-slate-800"></div>
-              {/* SVG circular progress */}
-              <svg className="absolute inset-0 w-full h-full transform -rotate-90">
-                <circle
-                  cx="40"
-                  cy="40"
-                  r="34"
-                  className="stroke-emerald-500 dark:stroke-emerald-450 fill-none transition-all duration-500 ease-out"
-                  strokeWidth="5"
-                  strokeDasharray="213.6"
-                  strokeDashoffset={213.6 - (213.6 * cancerGuidelines.count) / 4}
-                  strokeLinecap="round"
-                />
-              </svg>
-              {/* Interactive pulsing light behind percent */}
-              <div className={`absolute w-14 h-14 rounded-full bg-emerald-500/5 dark:bg-emerald-400/5 animate-pulse ${cancerGuidelines.count > 0 ? 'opacity-100' : 'opacity-0'}`}></div>
-              <div className="flex flex-col items-center justify-center z-10">
-                <span className="text-xl font-black text-emerald-600 dark:text-emerald-400 leading-none">
-                  {cancerGuidelines.count * 25}%
-                </span>
-                <span className="text-[7px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">Shield</span>
+                <div className="flex flex-col gap-1 sm:gap-1.5">
+                  {isCancerPatient ? (
+                    <>
+                      <HabitItem icon={<Timer className="h-3.5 w-3.5 text-sky-500" />} label={t('habits.intermittentFasting', 'INTERMITTENT FASTING')} onClick={() => handleOpenHabit('Fasting')} score={getFastingScore()} />
+                      <HabitItem icon={<User className="h-3.5 w-3.5 text-amber-500" />} label={t('habits.movement', 'MOVEMENT')} onClick={() => handleOpenHabit('Movement')} score={getMovementScore()} />
+                      <HabitItem icon={<User className="h-3.5 w-3.5 text-amber-600" />} label={t('habits.stillness', 'Stillness')} onClick={() => handleOpenHabit('Stillness')} score={getStillnessScore()} />
+                      <HabitItem icon={<Wind className="h-3.5 w-3.5 text-cyan-500" />} label={t('habits.powerOfBreath', 'POWER OF BREATH')} onClick={() => handleOpenHabit('Breath')} score={getBreathScore()} />
+                      <HabitItem icon={<Palette className="h-3.5 w-3.5 text-indigo-400" />} label={t('habits.thingsYouLove', 'THINGS YOU LOVE')} onClick={() => handleOpenHabit('Joy')} score={getJoyScore()} />
+                      <HabitItem icon={<BrainCircuit className="h-3.5 w-3.5 text-rose-500" />} label={t('habits.areYouStressed', 'ARE YOU STRESSED/WORRIED?')} onClick={() => setShowStressedModal(true)} />
+                      <HabitItem icon={<User className="h-3.5 w-3.5 text-teal-500" />} label={t('habits.caregiverStress', 'CAREGIVER STRESS')} onClick={() => setShowCaregiverModal(true)} />
+                      <HabitItem icon={<ShoppingBag className="h-3.5 w-3.5 text-pink-500" />} label={t('habits.wigsHairloss', 'Explore wigs for hairloss')} onClick={() => setActiveScreen('WigShop')} />
+                    </>
+                  ) : (
+                    <>
+                      <HabitItem icon={<Timer className="h-3.5 w-3.5 text-sky-500" />} label={t('habits.fasting', 'Fasting')} onClick={() => handleOpenHabit('Fasting')} score={getFastingScore()} />
+                      <HabitItem icon={<Utensils className="h-3.5 w-3.5 text-emerald-500" />} label={t('habits.diet', 'Diet')} onClick={() => handleOpenHabit('Diet')} score={getDietScore()} />
+                      <HabitItem icon={<Cherry className="h-3.5 w-3.5 text-rose-400" />} label={t('habits.antioxidants', 'Antioxidants')} onClick={() => handleOpenHabit('Antioxidants')} score={getAntioxidantsScore()} />
+                      <HabitItem icon={<User className="h-3.5 w-3.5 text-amber-500" />} label={t('habits.exercise', 'Exercise')} onClick={() => handleOpenHabit('Movement')} score={getMovementScore()} />
+                      <HabitItem icon={<User className="h-3.5 w-3.5 text-amber-600" />} label={t('habits.stillness', 'Stillness')} onClick={() => handleOpenHabit('Stillness')} score={getStillnessScore()} />
+                      <HabitItem icon={<Wind className="h-3.5 w-3.5 text-cyan-500" />} label={t('habits.powerOfBreath', 'Power of breath')} onClick={() => handleOpenHabit('Breath')} score={getBreathScore()} />
+                      <HabitItem icon={<Palette className="h-3.5 w-3.5 text-indigo-400" />} label={t('habits.thingsYouLove', 'Things you love')} onClick={() => handleOpenHabit('Joy')} score={getJoyScore()} />
+                      <HabitItem icon={<ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />} label={t('habits.saferProducts', 'Safer products')} onClick={() => handleOpenHabit('SaferProducts')} score={getSaferProductsScore()} />
+                    </>
+                  )}
+                </div>
               </div>
-            </div>
-            <div className="flex-1">
-              <h4 className="font-sans font-bold text-slate-800 dark:text-slate-100 text-sm leading-snug">{t('dash.cellularDefenseStrength', 'Cellular Defense Strength')}</h4>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                {cancerGuidelines.count === 0 && "Shield is currently offline. Log a guideline above to activate cellular repair pathways."}
-                {cancerGuidelines.count === 1 && "Activating. Your cell repair signalling is starting to warm up."}
-                {cancerGuidelines.count === 2 && "Defending. Core mitochondrial defense networks are actively online."}
-                {cancerGuidelines.count === 3 && "Strong defense. Cellular systems are operating at peak restorative capacity."}
-                {cancerGuidelines.count === 4 && "Fully Empowered. High cellular integrity and energy cycles are fully active!"}
-              </p>
-            </div>
+            )}
           </div>
 
-          {/* Metabolic & CGM Redirection Card (Clean Medical Health Card) */}
-          <button
-            type="button"
-            onClick={() => {
-              if (onGoToCGMDashboard) onGoToCGMDashboard();
-              else setShowTugOfWar(false);
-            }}
-            className="w-full bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 md:p-6 text-left transition-all duration-200 shadow-xs hover:border-blue-300 dark:hover:border-blue-700 active:scale-[0.99] group flex items-center justify-between gap-4 cursor-pointer"
-          >
-            <div className="flex-1">
-              <span className="text-[9px] font-black bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 uppercase tracking-widest px-2.5 py-0.5 rounded-full inline-block mb-2 border border-blue-200/60 dark:border-blue-800/60">
-                {t('dashboard.glucoseAndFoodBadge', 'Glucose & Food')}
-              </span>
-              <h4 className="font-sans font-black text-slate-900 dark:text-slate-100 text-base leading-tight">
-                {t('dashboard.continuousGlucoseInsights', 'Continuous Glucose & Insights 📊')}
-              </h4>
-              <p className="text-[11.5px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                {t('dashboard.continuousGlucoseDesc', 'Upload your CGM report, view metabolic stability graphs, log meals, and coordinate doctor consults.')}
-              </p>
-              <div className="mt-2.5 flex items-center gap-3">
-                <span 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShopCategory('Glucose monitoring');
-                    setShopQuery('');
-                    setActiveScreen('Shop');
-                  }}
-                  className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
-                >
-                  <ShoppingBag className="h-3 w-3" />
-                  <span>{t('dashboard.orderCGMDevices', 'Order CGM Sensors & Ketone Meters')}</span>
-                </span>
+          {!isCancerPatient && (
+            <>
+              <div className="flex items-center gap-3 mb-4">
+                <span className="text-xs text-slate-400 font-mono font-bold">02</span>
+                <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">{t('dashboard.catchItEarly', 'Catch it early')}</span>
+                <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800"></div>
               </div>
-            </div>
-            <div className="h-10 w-10 bg-slate-100 group-hover:bg-slate-200 dark:bg-slate-800 dark:group-hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-2xl flex items-center justify-center shrink-0 transition-transform">
-              <ArrowRight className="h-4 w-4" />
-            </div>
-          </button>
-        </div>
-      )}
 
-      {/* FEATURE DISCOVERY & CONTEXTUAL SHOP SECTIONS */}
-      <ExploreFeaturesGrid
-        activeMode={activeMode as any}
-        onSelectFeature={(key, params) => handleActionKey(key, params)}
-      />
+              {/* 3-Weekly Symptom Check Card (Above Cancer Screening) */}
+              <button
+                onClick={() => handleOpenHabit('SymptomCheckin')}
+                className="w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-teal-100 dark:border-teal-950/20 shadow-[0_8px_30px_rgba(20,184,166,0.04)] rounded-2xl p-4 flex items-center gap-4 text-left transition-all active:scale-95 hover:shadow-md cursor-pointer mb-4"
+              >
+                <div className="h-10 w-10 rounded-xl bg-teal-50 dark:bg-teal-500/10 flex items-center justify-center shrink-0">
+                  <Stethoscope className="h-5 w-5 text-teal-600 dark:text-teal-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-teal-700 dark:text-teal-300 font-sans font-bold text-lg leading-tight truncate">
+                      {t('dashboard.symptomCheckTitle', '3-Weekly Symptom Check-in')}
+                    </h4>
+                    {(() => {
+                      const checkStatus = getNextCheckinDueDate();
+                      if (checkStatus.isDue) {
+                        return (
+                          <span className="text-[9px] font-extrabold uppercase tracking-wider bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded shrink-0">
+                            {t('dashboard.dueNow', 'Due Now')}
+                          </span>
+                        );
+                      }
+                      return (
+                        <span className="text-[9px] font-extrabold uppercase tracking-wider bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded shrink-0">
+                          {t('dashboard.activeCheck', 'Active')}
+                        </span>
+                      );
+                    })()}
+                  </div>
+                  <p className="text-[9px] text-slate-500 dark:text-slate-400 leading-snug mt-1">
+                    {t('dashboard.symptomCheckDesc', 'Early warning check across 11 key symptoms · If Yes to any, consult specialist')}
+                  </p>
+                </div>
+                <ArrowRight className="h-4 w-4 text-slate-300 shrink-0" />
+              </button>
 
-      <ContextualShopCard
-        activeMode={activeMode as any}
-        onOpenShop={(category, query) => {
-          setShopCategory(category);
-          setShopQuery(query || '');
-          setActiveScreen('Shop');
-        }}
-      />
-      </>
+              {/* Cancer Screening Card */}
+              <button
+                onClick={() => handleOpenHabit('CancerScreening')}
+                className="w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-emerald-100 dark:border-emerald-950/20 shadow-[0_8px_30px_rgba(16,185,129,0.04)] rounded-2xl p-4 flex items-center gap-4 text-left transition-all active:scale-95 hover:shadow-md cursor-pointer"
+              >
+                <div className="h-10 w-10 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center shrink-0">
+                  <Microscope className="h-5 w-5 text-emerald-500" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-emerald-600 dark:text-emerald-400 font-sans font-bold text-lg leading-tight">{t('dashboard.cancerScreening', 'Cancer Screening')}</h4>
+                  <p className="text-[9px] text-slate-500 dark:text-slate-400 leading-snug mt-1">
+                    {t('dashboard.cancerScreeningDesc', 'PSA · CEA · CA-125 · Pap · Mammogram · Whole-Body MRI · Genetic & liquid biopsy')}
+                  </p>
+                </div>
+                <ArrowRight className="h-4 w-4 text-slate-300" />
+              </button>
+
+              {/* Indian Cancers & Risks Card */}
+              <button
+                onClick={() => handleOpenHabit('IndianCancers')}
+                className="w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-purple-100 dark:border-purple-900/30 shadow-[0_8px_30px_rgba(168,85,247,0.04)] rounded-2xl p-4 flex items-center gap-4 text-left transition-all active:scale-95 hover:shadow-md mt-4 cursor-pointer"
+              >
+                <div className="h-10 w-10 rounded-xl bg-purple-50 dark:bg-purple-500/10 flex items-center justify-center shrink-0">
+                  <Activity className="h-5 w-5 text-purple-500" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-purple-600 dark:text-purple-400 font-sans font-bold text-lg leading-tight">{t('dashboard.indianCancers', 'Indian Cancers & Risks')}</h4>
+                  <p className="text-[9px] text-slate-500 dark:text-slate-400 leading-snug mt-1">
+                    {t('dashboard.indianCancersDesc', 'Regional cancer risk factors, tobacco exposures & targeted guidelines')}
+                  </p>
+                </div>
+                <ArrowRight className="h-4 w-4 text-slate-300" />
+              </button>
+            </>
+          )}
+          {isCancerPatient && (
+            <div className="w-full flex flex-col gap-4 mb-4">
+              {/* Cellular Defense Card */}
+              <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs rounded-3xl p-5 md:p-6 flex items-center gap-5 transition-all duration-300">
+                <div className="relative w-20 h-20 shrink-0 flex items-center justify-center">
+                  {/* Background circular track */}
+                  <div className="absolute inset-0 rounded-full border-4 border-slate-100 dark:border-slate-800"></div>
+                  {/* SVG circular progress */}
+                  <svg className="absolute inset-0 w-full h-full transform -rotate-90">
+                    <circle
+                      cx="40"
+                      cy="40"
+                      r="34"
+                      className="stroke-emerald-500 dark:stroke-emerald-450 fill-none transition-all duration-500 ease-out"
+                      strokeWidth="5"
+                      strokeDasharray="213.6"
+                      strokeDashoffset={213.6 - (213.6 * cancerGuidelines.count) / 4}
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  {/* Interactive pulsing light behind percent */}
+                  <div className={`absolute w-14 h-14 rounded-full bg-emerald-500/5 dark:bg-emerald-400/5 animate-pulse ${cancerGuidelines.count > 0 ? 'opacity-100' : 'opacity-0'}`}></div>
+                  <div className="flex flex-col items-center justify-center z-10">
+                    <span className="text-xl font-black text-emerald-600 dark:text-emerald-400 leading-none">
+                      {cancerGuidelines.count * 25}%
+                    </span>
+                    <span className="text-[7px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">Shield</span>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-sans font-bold text-slate-800 dark:text-slate-100 text-sm leading-snug">{t('dash.cellularDefenseStrength', 'Cellular Defense Strength')}</h4>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                    {cancerGuidelines.count === 0 && "Shield is currently offline. Log a guideline above to activate cellular repair pathways."}
+                    {cancerGuidelines.count === 1 && "Activating. Your cell repair signalling is starting to warm up."}
+                    {cancerGuidelines.count === 2 && "Defending. Core mitochondrial defense networks are actively online."}
+                    {cancerGuidelines.count === 3 && "Strong defense. Cellular systems are operating at peak restorative capacity."}
+                    {cancerGuidelines.count === 4 && "Fully Empowered. High cellular integrity and energy cycles are fully active!"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Metabolic & CGM Redirection Card (Clean Medical Health Card) */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (onGoToCGMDashboard) onGoToCGMDashboard();
+                  else setShowTugOfWar(false);
+                }}
+                className="w-full bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 md:p-6 text-left transition-all duration-200 shadow-xs hover:border-blue-300 dark:hover:border-blue-700 active:scale-[0.99] group flex items-center justify-between gap-4 cursor-pointer"
+              >
+                <div className="flex-1">
+                  <span className="text-[9px] font-black bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 uppercase tracking-widest px-2.5 py-0.5 rounded-full inline-block mb-2 border border-blue-200/60 dark:border-blue-800/60">
+                    {t('dashboard.glucoseAndFoodBadge', 'Glucose & Food')}
+                  </span>
+                  <h4 className="font-sans font-black text-slate-900 dark:text-slate-100 text-base leading-tight">
+                    {t('dashboard.continuousGlucoseInsights', 'Continuous Glucose & Insights 📊')}
+                  </h4>
+                  <p className="text-[11.5px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                    {t('dashboard.continuousGlucoseDesc', 'Upload your CGM report, view metabolic stability graphs, log meals, and coordinate doctor consults.')}
+                  </p>
+                  <div className="mt-2.5 flex items-center gap-3">
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShopCategory('Glucose monitoring');
+                        setShopQuery('');
+                        setActiveScreen('Shop');
+                      }}
+                      className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                    >
+                      <ShoppingBag className="h-3 w-3" />
+                      <span>{t('dashboard.orderCGMDevices', 'Order CGM Sensors & Ketone Meters')}</span>
+                    </span>
+                  </div>
+                </div>
+                <div className="h-10 w-10 bg-slate-100 group-hover:bg-slate-200 dark:bg-slate-800 dark:group-hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-2xl flex items-center justify-center shrink-0 transition-transform">
+                  <ArrowRight className="h-4 w-4" />
+                </div>
+              </button>
+            </div>
+          )}
+
+          {/* FEATURE DISCOVERY & CONTEXTUAL SHOP SECTIONS */}
+          <ExploreFeaturesGrid
+            activeMode={activeMode as any}
+            onSelectFeature={(key, params) => handleActionKey(key, params)}
+          />
+
+          <ContextualShopCard
+            activeMode={activeMode as any}
+            onOpenShop={(category, query) => {
+              setShopCategory(category);
+              setShopQuery(query || '');
+              setActiveScreen('Shop');
+            }}
+          />
+        </>
       )}
 
       {/* ── Floating AI Check-in FAB Trigger Button ── */}

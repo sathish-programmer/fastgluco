@@ -39,11 +39,34 @@ export class FCMService {
         isSent: true
       });
 
-      // 2. Fetch User and device tokens
       const user = await User.findById(userId);
       if (!user) {
         console.warn(`[FCM] User ${userId} not found, saved in-app notification only.`);
         return false;
+      }
+
+      // Check user push notification preferences
+      if (user.notificationPreferences?.push) {
+        const pushPrefs = user.notificationPreferences.push;
+        if (type === 'SpikeAlert' && pushPrefs.healthInsights === false) {
+          console.log(`[FCM] Suppressed SpikeAlert push for user ${userId} per notification preferences.`);
+          return false;
+        }
+        if (type === 'LogReminder' && pushPrefs.dailyCheckin === false) {
+          console.log(`[FCM] Suppressed LogReminder push for user ${userId} per notification preferences.`);
+          return false;
+        }
+        if (type === 'ReportProcessed' && pushPrefs.reportUpload === false) {
+          console.log(`[FCM] Suppressed ReportProcessed push for user ${userId} per notification preferences.`);
+          return false;
+        }
+        if (
+          ['OrderPlaced', 'OrderPaid', 'OrderProcessing', 'OrderShipped', 'OrderDelivered', 'OrderCancelled'].includes(type) &&
+          pushPrefs.orderUpdates === false
+        ) {
+          console.log(`[FCM] Suppressed ${type} order push for user ${userId} per notification preferences.`);
+          return false;
+        }
       }
 
       // Collect all valid tokens from fcmTokens array and legacy fcmToken field

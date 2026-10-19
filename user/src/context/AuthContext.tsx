@@ -59,6 +59,7 @@ export interface UserProfile {
   addressState?: string;
   addressPinCode?: string;
   notificationPreferences?: UserNotificationPreferences;
+  checkinReminderTime?: string;
   language?: SupportedLanguage;
 }
 
@@ -285,14 +286,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const sendOtp = async (mobileNumber: string, email: string, sendSms: boolean = true): Promise<{ success: boolean; message?: string }> => {
     try {
-      const telemetryHeaders = await telemetryService.getHeaders();
+      const meta = await telemetryService.getTelemetryMeta();
       const response = await fetch(`${apiUrl}/auth/send-otp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...telemetryHeaders
+          'x-platform': meta.platform
         },
-        body: JSON.stringify({ mobileNumber, email, sendSms }),
+        body: JSON.stringify({
+          mobileNumber,
+          email,
+          sendSms,
+          platform: meta.platform,
+          appVersion: meta.appVersion,
+          buildNumber: meta.buildNumber,
+          osVersion: meta.osVersion,
+          deviceModel: meta.deviceModel,
+          deviceId: meta.deviceId
+        }),
       });
 
       const contentType = response.headers.get('content-type') || '';
@@ -314,14 +325,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     setError(null);
     try {
-      const telemetryHeaders = await telemetryService.getHeaders();
+      const meta = await telemetryService.getTelemetryMeta();
       const response = await fetch(`${apiUrl}/auth/verify-otp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...telemetryHeaders
+          'x-platform': meta.platform
         },
-        body: JSON.stringify({ mobileNumber, otp, email }),
+        body: JSON.stringify({
+          mobileNumber,
+          otp,
+          email,
+          platform: meta.platform,
+          appVersion: meta.appVersion,
+          buildNumber: meta.buildNumber,
+          osVersion: meta.osVersion,
+          deviceModel: meta.deviceModel,
+          deviceId: meta.deviceId
+        }),
       });
 
       const contentType = response.headers.get('content-type') || '';

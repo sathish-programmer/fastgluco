@@ -34,7 +34,7 @@ export class ProfileController {
         libreEmail, librePassword, libreRegion, libreActive,
         cancerJourney, cancerDisclaimerAccepted, cancerDisclaimerAcceptedAt,
         addressLine1, addressCity, addressState, addressPinCode,
-        notificationPreferences
+        notificationPreferences, checkinReminderTime
       } = req.body;
 
       const user = await User.findById(userId);
@@ -80,8 +80,14 @@ export class ProfileController {
       if (addressLine1 !== undefined) user.addressLine1 = addressLine1;
       if (addressCity !== undefined) user.addressCity = addressCity;
       if (addressState !== undefined) user.addressState = addressState;
-      if (addressPinCode !== undefined) user.addressPinCode = addressPinCode;
-      if (notificationPreferences !== undefined) user.notificationPreferences = notificationPreferences;
+      if (checkinReminderTime !== undefined) user.checkinReminderTime = checkinReminderTime;
+      if (notificationPreferences !== undefined) {
+        user.notificationPreferences = notificationPreferences;
+        if (notificationPreferences.checkinReminderTime) {
+          user.checkinReminderTime = notificationPreferences.checkinReminderTime;
+        }
+        user.markModified('notificationPreferences');
+      }
 
       if (libreEmail !== undefined) user.libreEmail = libreEmail;
       if (librePassword !== undefined) user.librePassword = librePassword;

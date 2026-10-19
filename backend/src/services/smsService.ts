@@ -113,17 +113,45 @@ export class SMSService {
         return false;
       }
 
-      // Send via Fast2SMS
+      // Send via Fast2SMS OTP route if code is present
       const code = otpCode || message.match(/\b\d{6}\b/)?.[0] || '';
       if (code) {
         const sent = await this.sendFast2SmsOtp(normalizedTo, code);
         if (sent) {
-          console.log(`[SMS Service] Fast2SMS delivered to ${normalizedTo}`);
+          console.log(`[SMS Service] Fast2SMS OTP delivered to ${normalizedTo}`);
           return true;
         }
       }
 
-      return false;
+      // If not OTP or OTP route failed, send using Quick SMS route
+      const apiKey = process.env.FAST2SMS_API_KEY;
+      if (!apiKey || apiKey === 'disabled') {
+        console.log('[Fast2SMS] FAST2SMS_API_KEY is missing or disabled.');
+        return false;
+      }
+
+      const cleaned = normalizedTo.replace(/[\s\-\(\)\+]/g, '').slice(-10);
+      if (cleaned.length !== 10) {
+        console.error('[Fast2SMS] Invalid 10-digit phone number:', normalizedTo);
+        return false;
+      }
+
+      const response = await fetch('https://www.fast2sms.com/dev/bulkV2', {
+        method: 'POST',
+        headers: {
+          'authorization': apiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          route: 'q',
+          message: message,
+          numbers: cleaned
+        })
+      });
+
+      const data: any = await response.json();
+      console.log('[Fast2SMS Quick SMS Response]:', data);
+      return data.return === true || data.status_code === 200;
     } catch (error) {
       console.error('[SMS Service] Error sending SMS:', error);
       return false;

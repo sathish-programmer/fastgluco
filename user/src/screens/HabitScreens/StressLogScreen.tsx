@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, BrainCircuit, MessageSquare, Sparkles, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, BrainCircuit, MessageSquare, Sparkles, CheckCircle2, AlertTriangle, ShieldCheck, Wind } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useToast } from '../../context/ToastContext';
@@ -11,6 +11,7 @@ interface StressLogScreenProps {
   onBack: () => void;
   onBookAppointment?: (reason: string) => void;
   onNavigateToIntimacy?: () => void;
+  onNavigateToBreath?: () => void;
 }
 
 const faces = [
@@ -30,7 +31,7 @@ const STRESS_SUB_OPTIONS = [
   { id: 'others', label: 'Financial or other concerns' }
 ];
 
-export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBookAppointment, onNavigateToIntimacy }) => {
+export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBookAppointment, onNavigateToIntimacy, onNavigateToBreath }) => {
   const { t, language } = useLanguage();
   const { showToast } = useToast();
 
@@ -49,6 +50,10 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [loading, setLoading] = useState(false);
   
+  // Breath Count (Respiratory Inhalations / Min)
+  // Clinical rule: <= 12 is calm/optimal, > 12 indicates stress / need to calm down
+  const [breathRate, setBreathRate] = useState<number>(12);
+
   // Clinical Stress Screening Questions (scored 0-2 each)
   const [qNervous, setQNervous] = useState<number>(0);
   const [qTension, setQTension] = useState<number>(0);
@@ -94,6 +99,10 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
         else if (sub.includes('sexual') || sub.includes('Sexual')) setSelectedSubOption('sexual_health');
         else if (sub.includes('other') || sub.includes('Other')) setSelectedSubOption('others');
 
+        if (typeof todayLog.value.breathCount === 'number') {
+          setBreathRate(todayLog.value.breathCount);
+        }
+
         if (todayLog.value.questions) {
           if (typeof todayLog.value.questions.qNervous === 'number') setQNervous(todayLog.value.questions.qNervous);
           if (typeof todayLog.value.questions.qTension === 'number') setQTension(todayLog.value.questions.qTension);
@@ -132,6 +141,7 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
         label: faceData?.label, 
         emoji: faceData?.emoji,
         stressScore: computedStressScore,
+        breathCount: breathRate,
         subOption: selectedSubOption ? (STRESS_SUB_OPTIONS.find(o => o.id === selectedSubOption)?.label || selectedSubOption) : null,
         questions: { qNervous, qTension, qOverwhelmed }
       });
@@ -233,11 +243,119 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
         </div>
       </div>
 
-      {/* Step 2: Clinical Screening Questions */}
+      {/* Step 2 · Count Your Breath (Respiratory Rate & Stress Regulation) */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-3xl p-5 mb-6 space-y-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xl">🫁</span>
+              <h4 className="font-extrabold text-sm text-slate-800 dark:text-slate-100">
+                {t('stress.countYourBreath', 'Count Your Breath (Inhalations / Min)')}
+              </h4>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
+              {t('stress.countYourBreathSub', 'Rest quietly for 30s and count your inhalations over 1 minute. Number of inhalations: if more than 12, you need to calm down and do a breathing exercise.')}
+            </p>
+          </div>
+          <div className={`px-3 py-1.5 rounded-2xl border text-center shrink-0 ${
+            breathRate > 12 
+              ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300' 
+              : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
+          }`}>
+            <span className="text-xl font-black block leading-none">{breathRate}</span>
+            <span className="text-[9px] font-bold uppercase tracking-wider block mt-0.5">
+              {breathRate > 12 ? t('stress.elevated', 'Elevated') : t('stress.calmState', 'Calm')}
+            </span>
+          </div>
+        </div>
+
+        {/* Interactive Stepper & Presets */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 bg-slate-50 dark:bg-slate-850 rounded-2xl border border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => setBreathRate(prev => Math.max(4, prev - 1))}
+              className="h-9 w-9 rounded-xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 font-black text-slate-700 dark:text-slate-200 hover:bg-slate-100 active:scale-95 transition-all text-base flex items-center justify-center cursor-pointer shadow-2xs"
+            >
+              -
+            </button>
+            <div className="text-center px-2 min-w-[70px]">
+              <span className="text-lg font-black text-slate-900 dark:text-white">{breathRate}</span>
+              <span className="text-[9.5px] text-slate-400 block font-semibold leading-tight">{t('stress.inhalationsPerMin', 'inhalations / min')}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setBreathRate(prev => Math.min(35, prev + 1))}
+              className="h-9 w-9 rounded-xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 font-black text-slate-700 dark:text-slate-200 hover:bg-slate-100 active:scale-95 transition-all text-base flex items-center justify-center cursor-pointer shadow-2xs"
+            >
+              +
+            </button>
+          </div>
+
+          {/* Quick presets */}
+          <div className="flex items-center gap-1.5 flex-wrap justify-center sm:justify-end">
+            {[
+              { val: 8, label: '8-10 (Calm)' },
+              { val: 12, label: '11-12 (Optimal)' },
+              { val: 15, label: '13-16 (Stress)' },
+              { val: 18, label: '>16 (High)' }
+            ].map(p => (
+              <button
+                key={p.val}
+                type="button"
+                onClick={() => setBreathRate(p.val)}
+                className={`px-2.5 py-1 rounded-xl text-[10px] font-bold border transition-all cursor-pointer ${
+                  breathRate === p.val
+                    ? 'bg-amber-500 text-white border-amber-500 shadow-2xs'
+                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Real-time Dynamic Feedback Alert */}
+        {breathRate > 12 ? (
+          <div className="p-3.5 bg-rose-50/90 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-2.5">
+              <AlertTriangle className="h-4 w-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-bold text-rose-900 dark:text-rose-200 leading-snug">
+                  {t('stress.breathHighAlertTitle', 'Breath rate is > 12 inhalations/min')}
+                </p>
+                <p className="text-[11px] text-rose-700 dark:text-rose-300 mt-0.5 leading-relaxed font-medium">
+                  {t('stress.breathHighAlertDesc', 'Your sympathetic nervous system is elevated. You need to calm down — do a calming breathing exercise to lower cortisol.')}
+                </p>
+              </div>
+            </div>
+            {onNavigateToBreath && (
+              <button
+                type="button"
+                onClick={onNavigateToBreath}
+                className="bg-rose-600 hover:bg-rose-700 text-white text-xs font-black px-3.5 py-2 rounded-xl shrink-0 transition-all shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <Wind className="h-3.5 w-3.5" />
+                <span>{t('stress.doBreathingExercise', 'Do Breathing Exercise')}</span>
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="p-3 bg-emerald-50/90 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 rounded-2xl flex items-center gap-2.5">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <p className="text-[11px] font-bold text-emerald-800 dark:text-emerald-200 leading-snug">
+              {t('stress.breathCalmDesc', 'Your inhalation rate is ≤ 12/min. Your body is in a calm, restorative parasympathetic state.')}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Step 3: Clinical Screening Questions */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-3xl p-5 mb-6 space-y-6">
         <div>
           <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-1">
-            {t('stress.step2Title', 'Step 2 · Manual Stress Check Questions')}
+            {t('stress.step2Title', 'Step 3 · Manual Stress Check Questions')}
           </span>
           <p className="text-xs text-slate-500 dark:text-slate-400">
             {t('stress.step2Subtitle', 'Rate each indicator to calculate your clinical stress score:')}
@@ -343,6 +461,26 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
         </div>
       </div>
 
+      {/* Clinical Insight: Vitamin & Thyroid Deficiencies in Chronic Stress */}
+      <div className="bg-gradient-to-br from-amber-50 to-orange-50/70 dark:from-amber-950/30 dark:to-orange-950/20 border border-amber-200/90 dark:border-amber-800/40 rounded-3xl p-5 mb-8 shadow-xs">
+        <div className="flex items-start gap-3.5">
+          <div className="h-10 w-10 rounded-2xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center text-xl shrink-0 border border-amber-200 dark:border-amber-700/50">
+            💡
+          </div>
+          <div className="flex-1">
+            <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-400 block mb-1">
+              {t('stress.medicalInsightTag', 'Medical & Biochemical Insight')}
+            </span>
+            <p className="text-sm font-extrabold text-slate-800 dark:text-slate-100 leading-snug">
+              {t('stress.vitaminDeficiencyMain', 'Repeated anxiety and stress can also be a vitamin deficiency issue. Check your Vitamin D, B12, and thyroid levels.')}
+            </p>
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1.5 font-medium leading-relaxed">
+              {t('stress.vitaminDeficiencySub', 'Subclinical thyroid imbalances and low levels of Vitamin D3 or B12 directly affect brain neurotransmitters, often manifesting as persistent worry, brain fog, fatigue, and low resilience to stress.')}
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Step 3: Contributing Factors (Optional) */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 mb-8">
         <div className="flex items-center gap-2 mb-3">
@@ -423,12 +561,13 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
               const displayEmoji = h.value?.emoji || (h.value?.faceId ? emojiMap[h.value.faceId] : '😐');
               const rawLabel = h.value?.label || h.value?.option || (h.value?.faceId ? h.value.faceId.charAt(0).toUpperCase() + h.value.faceId.slice(1) : 'Stress Logged');
               const scoreVal = typeof h.value?.stressScore === 'number' ? h.value.stressScore : null;
+              const breathVal = typeof h.value?.breathCount === 'number' ? h.value.breathCount : null;
               const isAi = h.value?.source === 'ai_mia';
 
               return (
-                <div key={h.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs rounded-xl p-3 flex justify-between items-center">
+                <div key={h.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs rounded-xl p-3 flex flex-col sm:flex-row justify-between sm:items-center gap-2">
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-base">{displayEmoji}</span>
                       <span className="text-sm font-bold text-slate-800 dark:text-slate-100">{rawLabel}</span>
                       {scoreVal !== null && (
@@ -451,6 +590,21 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
                       {new Date(h.timestamp).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
+
+                  {/* Breath Count Column */}
+                  {breathVal !== null ? (
+                    <div className="shrink-0">
+                      <span className={`text-[10.5px] font-bold px-2.5 py-1 rounded-xl border inline-flex items-center gap-1.5 ${
+                        breathVal > 12
+                          ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300 border-rose-200 dark:border-rose-800'
+                          : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                      }`}>
+                        <span>🫁</span>
+                        <span>{breathVal} {t('stress.inhalationsShort', 'inhalations/m')}</span>
+                        <span className="opacity-80">· {breathVal > 12 ? t('stress.needCalmShort', 'Calm down') : t('stress.calmState', 'Calm')}</span>
+                      </span>
+                    </div>
+                  ) : null}
                 </div>
               );
             })

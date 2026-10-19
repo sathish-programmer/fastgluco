@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Trash2, Edit, UserCheck, UserX, Upload, Image as ImageIcon, Stethoscope } from 'lucide-react';
+import drMuthiahAvatar from '../assets/dr_muthiah_kasi.jpg';
 
 const formatDate = (dateStr: string | undefined | null, withTime = false): string => {
   if (!dateStr) return '--';
@@ -14,7 +15,13 @@ const formatDate = (dateStr: string | undefined | null, withTime = false): strin
   } catch { return dateStr; }
 };
 
-const getAdminAvatarUrl = (avatar?: string, apiUrl?: string): string => {
+const getAdminAvatarUrl = (avatar?: string, apiUrl?: string, docName?: string): string => {
+  if (docName && /muthiah/i.test(docName)) {
+    return drMuthiahAvatar;
+  }
+  if (avatar && /muthiah/i.test(avatar)) {
+    return drMuthiahAvatar;
+  }
   if (!avatar) return '';
   if (avatar.startsWith('http://') || avatar.startsWith('https://')) return avatar;
   const baseUrl = (apiUrl || '').replace(/\/api\/?$/, '');
@@ -127,12 +134,16 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
     try {
       const method = editingDocId ? 'PUT' : 'POST';
       const url = editingDocId ? `${apiUrl}/admin/doctors/${editingDocId}` : `${apiUrl}/admin/doctors`;
-      const payload = {
+      const payload: any = {
         ...docForm,
+        email: (docForm.email || '').trim().toLowerCase(),
         languagesKnown: typeof docForm.languagesKnown === 'string'
           ? (docForm.languagesKnown as string).split(',').map(s => s.trim()).filter(Boolean)
           : docForm.languagesKnown
       };
+      if (editingDocId && (!payload.password || payload.password.trim() === '')) {
+        delete payload.password;
+      }
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -142,10 +153,12 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
         setShowDocModal(false);
         fetchDoctors();
       } else {
-        alert('Error saving doctor profile');
+        const errData = await res.json().catch(() => ({}));
+        alert(errData.message || 'Error saving doctor profile');
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      alert(e.message || 'Network error saving doctor profile');
     }
   };
 
@@ -370,7 +383,7 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
               </thead>
               <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
                 {doctors.map(doc => {
-                  const avatarSrc = getAdminAvatarUrl(doc.avatar, apiUrl);
+                  const avatarSrc = getAdminAvatarUrl(doc.avatar, apiUrl, doc.name);
                   const initial = doc.name.replace(/^(Dr\.?|Ms\.?|Mr\.?)\s*/i, '').charAt(0) || 'D';
                   return (
                     <tr key={doc._id} className="hover:bg-slate-50/50 transition-colors">
@@ -383,7 +396,12 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
                                 alt={doc.name}
                                 className="w-full h-full object-cover"
                                 onError={(e) => {
-                                  (e.currentTarget as HTMLElement).style.display = 'none';
+                                  const img = e.currentTarget as HTMLImageElement;
+                                  if (img.src !== drMuthiahAvatar && (/muthiah/i.test(doc.name) || /muthiah/i.test(doc.avatar || ''))) {
+                                    img.src = drMuthiahAvatar;
+                                  } else {
+                                    img.style.display = 'none';
+                                  }
                                 }}
                               />
                             ) : null}
@@ -785,13 +803,18 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
                   className="hidden"
                 />
                 <div className="w-16 h-16 rounded-2xl bg-white border border-slate-200 flex items-center justify-center font-bold text-slate-400 overflow-hidden shrink-0 shadow-2xs">
-                  {docForm.avatar ? (
+                  {docForm.avatar || /muthiah/i.test(docForm.name) ? (
                     <img
-                      src={getAdminAvatarUrl(docForm.avatar, apiUrl)}
+                      src={getAdminAvatarUrl(docForm.avatar, apiUrl, docForm.name)}
                       alt="Doctor Profile"
                       className="w-full h-full object-cover"
                       onError={(e) => {
-                        (e.currentTarget as HTMLElement).style.display = 'none';
+                        const img = e.currentTarget as HTMLImageElement;
+                        if (img.src !== drMuthiahAvatar && (/muthiah/i.test(docForm.name) || /muthiah/i.test(docForm.avatar))) {
+                          img.src = drMuthiahAvatar;
+                        } else {
+                          img.style.display = 'none';
+                        }
                       }}
                     />
                   ) : (
@@ -855,19 +878,19 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
                 </div>
               </div>
 
-              {!editingDocId && (
-                <div>
-                  <label className="block font-black text-slate-600 uppercase tracking-wider text-[10px] mb-1">Doctor Portal Password *</label>
-                  <input
-                    required
-                    type="password"
-                    value={docForm.password}
-                    onChange={e => setDocForm({ ...docForm, password: e.target.value })}
-                    placeholder="Create login password"
-                    className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none focus:border-indigo-400 font-semibold text-slate-800"
-                  />
-                </div>
-              )}
+              <div>
+                <label className="block font-black text-slate-600 uppercase tracking-wider text-[10px] mb-1">
+                  {editingDocId ? 'Reset Doctor Portal Password (optional, leave blank to keep unchanged)' : 'Doctor Portal Password *'}
+                </label>
+                <input
+                  required={!editingDocId}
+                  type="password"
+                  value={docForm.password}
+                  onChange={e => setDocForm({ ...docForm, password: e.target.value })}
+                  placeholder={editingDocId ? 'Enter new password if changing' : 'Create login password'}
+                  className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none focus:border-indigo-400 font-semibold text-slate-800"
+                />
+              </div>
 
               {/* Specialty & Qualifications */}
               <div className="space-y-3.5">

@@ -6,6 +6,8 @@ import { Calendar as CalendarIcon, Clock, ArrowLeft, Star, Sparkles, Globe, Vide
 import { useConsultation } from '../../context/ConsultationContext';
 import { downloadFile } from '../../utils/fileDownloader';
 
+import drMuthiahAvatar from '../../assets/dr_muthiah_kasi.jpg';
+
 interface BookAppointmentScreenProps {
   onBack?: () => void;
 }
@@ -36,7 +38,10 @@ const LOCALE_MAP: Record<string, string> = {
   hi: 'hi-IN'
 };
 
-const getAvatarUrl = (avatarPath?: string, apiUrl?: string) => {
+const getAvatarUrl = (avatarPath?: string, apiUrl?: string, docName?: string) => {
+  if (docName && /Muthiah/i.test(docName)) {
+    return drMuthiahAvatar;
+  }
   if (!avatarPath) return null;
   if (avatarPath.startsWith('http://') || avatarPath.startsWith('https://')) return avatarPath;
   const baseUrl = (apiUrl || '').replace(/\/api\/?$/, '');
@@ -239,7 +244,24 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
 
   const isRecommendedDoctor = (doc: any): boolean => {
     if (!doc) return false;
-    return Boolean(doc.isRecommended === true || (doc.name && /Krithikaa/i.test(doc.name)));
+    // Strictly respect the database / admin configuration
+    if (typeof doc.isRecommended === 'boolean') {
+      return doc.isRecommended;
+    }
+    return Boolean(doc.isRecommended);
+  };
+
+  const getDoctorFee = (doc: any): number => {
+    if (!doc) return 0;
+    if (doc.consultationFee !== undefined && doc.consultationFee !== null && doc.consultationFee !== '') {
+      const f = Number(doc.consultationFee);
+      if (!isNaN(f) && f > 0) return f;
+    }
+    if (doc.onlineConsultationFee !== undefined && doc.onlineConsultationFee !== null && doc.onlineConsultationFee !== '') {
+      const f = Number(doc.onlineConsultationFee);
+      if (!isNaN(f) && f > 0) return f;
+    }
+    return 0;
   };
 
   const fetchDoctors = async () => {
@@ -274,8 +296,8 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
         const expB = b.experience ?? 0;
         if (expB !== expA) return expB - expA;
 
-        const feeA = a.onlineConsultationFee ?? 0;
-        const feeB = b.onlineConsultationFee ?? 0;
+        const feeA = getDoctorFee(a);
+        const feeB = getDoctorFee(b);
         return feeA - feeB;
       });
       setDoctors(sorted);
@@ -328,7 +350,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
     }
     setShowPendingWarning(false);
 
-    const fee = selectedDoctor.onlineConsultationFee || selectedDoctor.consultationFee || 0;
+    const fee = getDoctorFee(selectedDoctor);
     if (fee > 0) {
       setShowPaymentDisclaimer(true);
     } else {
@@ -509,7 +531,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                   {doctors.map(doc => {
                     const isRec = isRecommendedDoctor(doc);
                     const isSelected = selectedDoctor?._id === doc._id;
-                    const avatarSrc = getAvatarUrl(doc.avatar, apiUrl);
+                    const avatarSrc = getAvatarUrl(doc.avatar, apiUrl, doc.name);
                     const effectiveDuration = doc.slotDuration || 30;
 
                     const isDental = Boolean(
@@ -523,7 +545,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                       (doc.specialty && /metabolic|cancer|oncol|radiation/i.test(doc.specialty)) ||
                       (doc.qualification && /oncology|metabolic/i.test(doc.qualification)) ||
                       (doc.focusTitle && /metabolic|cancer/i.test(doc.focusTitle)) ||
-                      (doc.name && /Krithikaa/i.test(doc.name))
+                      (doc.name && /Krithikaa|Muthiah/i.test(doc.name))
                     );
 
                     const isPsychological = Boolean(
@@ -603,7 +625,14 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                                     alt={doc.name}
                                     className="w-full h-full object-cover rounded-2xl block"
                                     style={{ width: 56, height: 56, minWidth: 56, minHeight: 56, maxWidth: 56, maxHeight: 56, objectFit: 'cover' }}
-                                    onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                                    onError={(e) => {
+                                      const target = e.currentTarget as HTMLImageElement;
+                                      if (doc.name && /Muthiah/i.test(doc.name) && target.src !== drMuthiahAvatar) {
+                                        target.src = drMuthiahAvatar;
+                                        return;
+                                      }
+                                      target.style.display = 'none';
+                                    }}
                                   />
                                 ) : (
                                   doc.name.replace(/^(Dr\.?|Ms\.?|Mr\.?)\s+/i, '').charAt(0) || 'D'
@@ -673,7 +702,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
 
                             {doc.languagesKnown && doc.languagesKnown.length > 0 && (
                               <span className="text-slate-400 font-medium text-[10px] hidden sm:inline-flex items-center gap-1 ml-auto">
-                                <Globe className="h-2.5 w-2.5 inline" /> {doc.languagesKnown.slice(0, 2).join(', ')}
+                                <Globe className="h-2.5 w-2.5 inline" /> {doc.languagesKnown.join(', ')}
                               </span>
                             )}
                           </div>
@@ -714,7 +743,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                         <div className="mt-3 pt-2.5 border-t border-slate-150 dark:border-slate-800 flex items-center justify-between gap-2 flex-wrap w-full">
                           <div className="flex items-baseline gap-1">
                             <span className="text-sm font-extrabold text-slate-900 dark:text-white">
-                              ₹{doc.onlineConsultationFee || doc.consultationFee || 750}
+                              ₹{getDoctorFee(doc)}
                             </span>
                             <span className="text-[10px] font-medium text-slate-400">
                               / {effectiveDuration}m
@@ -770,7 +799,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                       </div>
                       <div className="text-right">
                         <span className="text-xs font-extrabold text-slate-900 dark:text-slate-100 block">
-                          ₹{selectedDoctor.onlineConsultationFee || selectedDoctor.consultationFee || 750}
+                          ₹{getDoctorFee(selectedDoctor)}
                         </span>
                       </div>
                     </div>
@@ -1155,7 +1184,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
             <div>
               <h3 className="text-base font-bold text-slate-800">{t('diag.redirectingPayment', 'Redirecting to Payment Gateway')}</h3>
               <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                To confirm your online video consultation with <strong>Dr. {selectedDoctor?.name}</strong>, {t('paymentRedirectNote')} <strong>Rs. {selectedDoctor?.onlineConsultationFee || selectedDoctor?.consultationFee || 750}</strong>.
+                To confirm your online video consultation with <strong>Dr. {selectedDoctor?.name}</strong>, {t('paymentRedirectNote')} <strong>Rs. {getDoctorFee(selectedDoctor)}</strong>.
               </p>
             </div>
             <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-100 text-[10px] text-slate-400 font-medium leading-relaxed">
@@ -1209,13 +1238,20 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                   className="w-18 h-18 min-w-[72px] min-h-[72px] rounded-2xl bg-gradient-to-br from-indigo-50 to-slate-100 dark:from-slate-800 dark:to-slate-850 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-bold text-indigo-600 dark:text-indigo-400 text-xl overflow-hidden shadow-sm shrink-0 relative"
                   style={{ width: 72, height: 72, minWidth: 72, minHeight: 72 }}
                 >
-                  {getAvatarUrl(profileDoctor.avatar, apiUrl) ? (
+                  {getAvatarUrl(profileDoctor.avatar, apiUrl, profileDoctor.name) ? (
                     <img
-                      src={getAvatarUrl(profileDoctor.avatar, apiUrl)!}
+                      src={getAvatarUrl(profileDoctor.avatar, apiUrl, profileDoctor.name)!}
                       alt={profileDoctor.name}
                       className="w-full h-full object-cover rounded-2xl block"
                       style={{ width: 72, height: 72, objectFit: 'cover' }}
-                      onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                      onError={(e) => {
+                        const target = e.currentTarget as HTMLImageElement;
+                        if (profileDoctor?.name && /Muthiah/i.test(profileDoctor.name) && target.src !== drMuthiahAvatar) {
+                          target.src = drMuthiahAvatar;
+                          return;
+                        }
+                        target.style.display = 'none';
+                      }}
                     />
                   ) : (
                     profileDoctor.name.replace(/^(Dr\.?|Ms\.?|Mr\.?)\s+/i, '').charAt(0) || 'D'
@@ -1364,7 +1400,7 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
 
                     <div className="text-right shrink-0">
                       <span className="text-xl font-black text-slate-900 dark:text-white">
-                        ₹{profileDoctor.onlineConsultationFee || profileDoctor.consultationFee || 750}
+                        ₹{getDoctorFee(profileDoctor)}
                       </span>
                       <span className="block text-[10px] font-medium text-slate-400">
                         per session

@@ -87,8 +87,8 @@ class TelemetryService {
     const { osVersion, deviceModel } = this.parseUserAgent();
     const deviceId = this.getOrCreateDeviceId();
 
-    let appVersion = '5.29.0';
-    let buildNumber = '93';
+    let appVersion = '6.0.0';
+    let buildNumber = '96';
 
     try {
       const appInfo = await App.getInfo();
@@ -137,7 +137,7 @@ class TelemetryService {
       const meta = await this.getTelemetryMeta();
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-        ...(await this.getHeaders())
+        'x-platform': meta.platform
       };
 
       if (authToken) {

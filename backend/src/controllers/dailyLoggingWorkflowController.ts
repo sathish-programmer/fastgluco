@@ -6,6 +6,7 @@ import DailyLoggingWorkflow, { IWorkflowStep } from '../models/DailyLoggingWorkf
 // Mirrors all manual items available in Cancer Prevention dashboard
 // ─────────────────────────────────────────────────────────────────────────────
 const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
+  // ── 11 Damage Habits ──
   {
     stepId: 'stress',
     title: 'Metabolic Stress Check',
@@ -17,47 +18,11 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
   },
   {
     stepId: 'sleep',
-    title: 'Sleep Duration',
+    title: 'Sleep Duration & Debt',
     questionPrompt: 'How many hours of quality sleep did you get last night? (Enter number, e.g., 7.5)',
     inputType: 'NUMBER',
     options: [],
     order: 2,
-    isEnabled: true
-  },
-  {
-    stepId: 'fasting',
-    title: 'Preventive Fasting Window',
-    questionPrompt: 'Did you complete your preventive fasting window today? (e.g., 16:8 intermittent fasting)',
-    inputType: 'OPTIONS',
-    options: ['Yes (16+ hrs)', 'Yes (12-16 hrs)', 'Partial (<12 hrs)', 'No (Skipped)'],
-    order: 3,
-    isEnabled: true
-  },
-  {
-    stepId: 'movement',
-    title: 'Movement & Exercise',
-    questionPrompt: 'Did you complete any physical movement or exercise today?',
-    inputType: 'OPTIONS',
-    options: ['30+ min Walk / Run', 'Yoga / Stretching (20+ min)', 'Strength Training', 'Light Activity (<20 min)', 'No Movement Today'],
-    order: 4,
-    isEnabled: true
-  },
-  {
-    stepId: 'stillness',
-    title: 'Stillness & Meditation',
-    questionPrompt: 'Did you practice stillness, quiet meditation, or deep breathing for at least 10 minutes today?',
-    inputType: 'YES_NO',
-    options: ['Yes (10+ min)', 'Not Today'],
-    order: 5,
-    isEnabled: true
-  },
-  {
-    stepId: 'joy',
-    title: 'Things You Love',
-    questionPrompt: 'Did you spend time doing something you love today (hobbies, music, family, art, gratitude)?',
-    inputType: 'YES_NO',
-    options: ['Yes (Done)', 'Not Today'],
-    order: 6,
     isEnabled: true
   },
   {
@@ -66,7 +31,7 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you smoke cigarettes/bidis or chew tobacco (gutkha, khaini, paan with tobacco) today?',
     inputType: 'YES_NO',
     options: ['No (Clean Day)', 'Yes (Smoked / Chewed Tobacco)'],
-    order: 7,
+    order: 3,
     isEnabled: true
   },
   {
@@ -75,70 +40,7 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you consume any alcoholic beverages today?',
     inputType: 'OPTIONS',
     options: ['No Alcohol (Clean Day)', '1-2 Drinks', '3+ Drinks (Heavy)'],
-    order: 8,
-    isEnabled: true
-  },
-  {
-    stepId: 'antioxidants',
-    title: 'Antioxidants & Repair Foods',
-    questionPrompt: 'Did you consume antioxidant-rich foods (berries, greens, amla, turmeric) or repair supplements today?',
-    inputType: 'YES_NO',
-    options: ['Yes (Consumed)', 'Not Today'],
-    order: 9,
-    isEnabled: true
-  },
-  {
-    stepId: 'env_air',
-    title: 'Air Pollution & Passive Smoke',
-    questionPrompt: 'Did you commute in heavy traffic (>30 min), encounter passive smoking (second-hand smoke), or experience indoor smoke/incense exposure today?',
-    inputType: 'YES_NO',
-    options: ['No (Clean Air)', 'Yes (Smog / Smoke / Passive Smoke)'],
-    order: 10,
-    isEnabled: true
-  },
-  {
-    stepId: 'env_water',
-    title: 'Water Carcinogens Check',
-    questionPrompt: 'Do you use safe filtered drinking water (RO / carbon filtered, free of heavy metals, chlorine byproducts, and PFAS)?',
-    inputType: 'YES_NO',
-    options: ['Yes (Safe Filtered)', 'No / Unfiltered Tap'],
-    order: 11,
-    isEnabled: true
-  },
-  {
-    stepId: 'env_pesticides',
-    title: 'Pesticides Exposure',
-    questionPrompt: 'Did you consume unwashed non-organic high-pesticide produce (Dirty Dozen) or use chemical bug sprays today?',
-    inputType: 'YES_NO',
-    options: ['No (Clean / Organic)', 'Yes (Pesticide Exposure)'],
-    order: 12,
-    isEnabled: true
-  },
-  {
-    stepId: 'env_microplastics',
-    title: 'Microplastics Exposure',
-    questionPrompt: 'Did you drink from heated plastic bottles, microwave food in plastic containers, or drink hot beverages from paper/plastic cups today?',
-    inputType: 'YES_NO',
-    options: ['No (Plastic-Free)', 'Yes (Plastic / Hot Cup Exposure)'],
-    order: 13,
-    isEnabled: true
-  },
-  {
-    stepId: 'gut_health',
-    title: 'Gut & Oral Health Check',
-    questionPrompt: 'Did you experience acidity/gastritis or oral/dental discomfort today?',
-    inputType: 'OPTIONS',
-    options: ['No Issues (Healthy)', 'Gastritis / Acidity', 'Dental Discomfort', 'Both'],
-    order: 14,
-    isEnabled: true
-  },
-  {
-    stepId: 'genetics',
-    title: 'Family History of Cancer',
-    questionPrompt: 'Do you have anybody in your family with cancer, or a self-diagnosis of cancer?',
-    inputType: 'YES_NO',
-    options: ['No Family History', 'Yes (Family History of Cancer)'],
-    order: 15,
+    order: 4,
     isEnabled: true
   },
   {
@@ -147,16 +49,135 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Were you exposed to harmful industrial chemicals, asbestos, or hazardous substances today?',
     inputType: 'YES_NO',
     options: ['No (Clean Day)', 'Yes (Chemical Exposure)'],
+    order: 5,
+    isEnabled: true
+  },
+  {
+    stepId: 'environmental',
+    title: 'Environmental Toxins & Air Quality',
+    questionPrompt: 'Did you encounter heavy traffic air pollution, smog, passive smoke, microplastics, or pesticides today?',
+    inputType: 'YES_NO',
+    options: ['No (Clean Environment)', 'Yes (Pollution / Smog / Toxins)'],
+    order: 6,
+    isEnabled: true
+  },
+  {
+    stepId: 'kitchen',
+    title: 'Safe Kitchen Audit',
+    questionPrompt: 'Is your kitchen free of heated plastic containers, synthetic non-stick teflon pans, and plastic drinking water cans?',
+    inputType: 'YES_NO',
+    options: ['Yes (Safe / Non-Plastic)', 'No (Plastic / Teflon Risk)'],
+    order: 7,
+    isEnabled: true
+  },
+  {
+    stepId: 'obesity',
+    title: 'Obesity & Weight Check',
+    questionPrompt: 'Do you face difficulty managing weight, high visceral fat, or BMI above healthy range?',
+    inputType: 'YES_NO',
+    options: ['No (Healthy Weight)', 'Yes (Weight Difficulty / Elevated BMI)'],
+    order: 8,
+    isEnabled: true
+  },
+  {
+    stepId: 'dental',
+    title: 'Dental & Oral Health Check',
+    questionPrompt: 'Do you have any persistent sharp tooth, bleeding gums, non-healing oral ulcers, or oral discomfort?',
+    inputType: 'YES_NO',
+    options: ['No Issues (Healthy)', 'Yes (Dental Discomfort / Sharp Tooth)'],
+    order: 9,
+    isEnabled: true
+  },
+  {
+    stepId: 'gastritis',
+    title: 'Gastritis & Gut Health Check',
+    questionPrompt: 'Did you experience acidity, heartburn, acid reflux, or gastritis discomfort today?',
+    inputType: 'YES_NO',
+    options: ['No Issues (Healthy)', 'Yes (Gastritis / Acidity Discomfort)'],
+    order: 10,
+    isEnabled: true
+  },
+  {
+    stepId: 'genetic',
+    title: 'Genetic Risk & Family History',
+    questionPrompt: 'Do you have anybody in your immediate family with cancer, or a personal history of cancer?',
+    inputType: 'YES_NO',
+    options: ['No Family History', 'Yes (Family History of Cancer)'],
+    order: 11,
+    isEnabled: true
+  },
+
+  // ── 8 Repair Habits ──
+  {
+    stepId: 'fasting',
+    title: 'Intermittent Fasting',
+    questionPrompt: 'Did you complete your intermittent fasting window today? (e.g., 14-16h overnight fast)',
+    inputType: 'OPTIONS',
+    options: ['Yes (16+ hrs)', 'Yes (12-16 hrs)', 'Partial (<12 hrs)', 'No (Skipped)'],
+    order: 12,
+    isEnabled: true
+  },
+  {
+    stepId: 'diet',
+    title: 'Diet & Nutrition Check',
+    questionPrompt: 'Did you follow a balanced clean diet (vegetables, clean protein, complex carbs) and avoid ultra-processed junk food today?',
+    inputType: 'OPTIONS',
+    options: ['Balanced Clean Diet (+1)', 'Clean Meals (No Junk)', 'Junk Food / Ultra-Processed (-1)', 'Both Balanced & Junk'],
+    order: 13,
+    isEnabled: true
+  },
+  {
+    stepId: 'antioxidants',
+    title: 'Antioxidants & Repair Foods',
+    questionPrompt: 'Did you consume antioxidant-rich foods (berries, greens, amla, turmeric) or repair supplements today?',
+    inputType: 'YES_NO',
+    options: ['Yes (Consumed)', 'Not Today'],
+    order: 14,
+    isEnabled: true
+  },
+  {
+    stepId: 'movement',
+    title: 'Movement & Exercise',
+    questionPrompt: 'Did you complete any physical movement, walking, or exercise today?',
+    inputType: 'OPTIONS',
+    options: ['30+ min Walk / Run', 'Yoga / Stretching (20+ min)', 'Strength Training', 'Light Activity (<20 min)', 'No Movement Today'],
+    order: 15,
+    isEnabled: true
+  },
+  {
+    stepId: 'stillness',
+    title: 'Stillness & Meditation',
+    questionPrompt: 'Did you practice stillness, quiet meditation, or mindfulness for at least 10 minutes today?',
+    inputType: 'YES_NO',
+    options: ['Yes (10+ min)', 'Not Today'],
     order: 16,
     isEnabled: true
   },
   {
-    stepId: 'report_upload',
-    title: 'Lab / CGM Report Upload',
-    questionPrompt: 'Do you have a new CGM report, HbA1c, or cancer screening result to upload today? Tap below to upload.',
-    inputType: 'FILE',
-    options: ['Skip for Now', 'Upload Report (PDF / CSV)'],
+    stepId: 'breath',
+    title: 'Power of Breath',
+    questionPrompt: 'Did you practice 5 to 10 minutes of conscious breathwork (box breathing, 4-7-8, or pranayama) today to restore cellular oxygenation?',
+    inputType: 'YES_NO',
+    options: ['Yes (Practiced 5-10 min)', 'Not Today'],
     order: 17,
+    isEnabled: true
+  },
+  {
+    stepId: 'joy',
+    title: 'Things You Love',
+    questionPrompt: 'Did you spend time doing something you love today (hobbies, music, family, art, gratitude)?',
+    inputType: 'YES_NO',
+    options: ['Yes (Done)', 'Not Today'],
+    order: 18,
+    isEnabled: true
+  },
+  {
+    stepId: 'safer_products',
+    title: 'Safer Personal Care Products',
+    questionPrompt: 'Did you use paraben-free, sulfate-free, and phthalate-free personal care / household products today?',
+    inputType: 'YES_NO',
+    options: ['Yes (Safe Products Used)', 'Not Today'],
+    order: 19,
     isEnabled: true
   }
 ];
@@ -175,21 +196,39 @@ const DEFAULT_TREATMENT_STEPS: IWorkflowStep[] = [
     isEnabled: true
   },
   {
+    stepId: 'diet',
+    title: 'Healing Nutrition & Diet',
+    questionPrompt: 'Did you eat clean, cancer-fighting whole foods (50% vegetables, clean protein, complex carbs) and avoid junk foods today?',
+    inputType: 'OPTIONS',
+    options: ['Balanced Clean Diet (+1)', 'Clean Meals (No Junk)', 'Junk Food / Processed (-1)', 'Both Balanced & Junk'],
+    order: 2,
+    isEnabled: true
+  },
+  {
     stepId: 'movement',
     title: 'Movement',
     questionPrompt: 'Did you complete any movement or gentle exercise today? Even light walking supports recovery.',
     inputType: 'OPTIONS',
     options: ['30+ min Walk', 'Yoga / Stretching (20+ min)', 'Light Walk (<20 min)', 'Bed Rest Only'],
-    order: 2,
+    order: 3,
     isEnabled: true
   },
   {
     stepId: 'stillness',
     title: 'Stillness & Meditation',
-    questionPrompt: 'Did you practice stillness, quiet meditation, or deep breathing for at least 10 minutes today?',
+    questionPrompt: 'Did you practice stillness, quiet meditation, or mindfulness for at least 10 minutes today?',
     inputType: 'YES_NO',
     options: ['Yes (Practiced)', 'Not Today'],
-    order: 3,
+    order: 4,
+    isEnabled: true
+  },
+  {
+    stepId: 'breath',
+    title: 'Power of Breath',
+    questionPrompt: 'Did you practice 5 to 10 minutes of gentle conscious breathwork (box breathing or slow pranayama) today?',
+    inputType: 'YES_NO',
+    options: ['Yes (Practiced)', 'Not Today'],
+    order: 5,
     isEnabled: true
   },
   {
@@ -198,7 +237,7 @@ const DEFAULT_TREATMENT_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you spend time doing something you love today — music, family, art, hobbies?',
     inputType: 'YES_NO',
     options: ['Yes (Done)', 'Not Today'],
-    order: 4,
+    order: 6,
     isEnabled: true
   },
   {
@@ -207,7 +246,7 @@ const DEFAULT_TREATMENT_STEPS: IWorkflowStep[] = [
     questionPrompt: 'How is your emotional state today? Stress management is a key part of recovery.',
     inputType: 'OPTIONS',
     options: ['Calm / Positive', 'Mild Worry', 'Moderate Stress', 'High Stress / Anxious'],
-    order: 5,
+    order: 7,
     isEnabled: true
   },
   {
@@ -216,7 +255,25 @@ const DEFAULT_TREATMENT_STEPS: IWorkflowStep[] = [
     questionPrompt: 'How many hours of restful sleep did you get last night?',
     inputType: 'NUMBER',
     options: [],
-    order: 6,
+    order: 8,
+    isEnabled: true
+  },
+  {
+    stepId: 'snoring',
+    title: 'Sleep Snoring & Airway Check',
+    questionPrompt: 'Do you snore loudly during sleep, gasp for breath, or wake up unrefreshed?',
+    inputType: 'YES_NO',
+    options: ['No (Quiet Sleep)', 'Yes (Snoring / Airway Gasps)'],
+    order: 9,
+    isEnabled: true
+  },
+  {
+    stepId: 'kitchen',
+    title: 'Safe Kitchen Audit',
+    questionPrompt: 'Is your food cooked and stored in safe, non-toxic cookware (glass, steel, clay) free of heated plastics and synthetic non-stick pans?',
+    inputType: 'YES_NO',
+    options: ['Yes (Safe / Non-Toxic)', 'No (Plastic / Teflon Risk)'],
+    order: 10,
     isEnabled: true
   },
   {
@@ -225,7 +282,7 @@ const DEFAULT_TREATMENT_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Do you have new lab reports, tumor markers (CEA / CA-125), chemo reports, or CGM data to upload? I will process and load them into your dashboard.',
     inputType: 'FILE',
     options: ['Skip for Now'],
-    order: 7,
+    order: 11,
     isEnabled: true
   }
 ];
@@ -253,12 +310,30 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     isEnabled: true
   },
   {
+    stepId: 'snoring',
+    title: 'Sleep Snoring & Airway Check',
+    questionPrompt: 'Do you snore loudly during sleep, gasp for breath, or wake up unrefreshed?',
+    inputType: 'YES_NO',
+    options: ['No (Quiet Sleep)', 'Yes (Snoring / Airway Gasps)'],
+    order: 3,
+    isEnabled: true
+  },
+  {
     stepId: 'fasting',
     title: 'Metabolic Fasting Window',
     questionPrompt: 'Did you complete your metabolic fasting window today? Fasting helps suppress recurrence risk.',
     inputType: 'OPTIONS',
     options: ['Yes (16+ hours)', 'Yes (12-16 hours)', 'Partial (Under 12h)', 'No (Skipped)'],
-    order: 3,
+    order: 4,
+    isEnabled: true
+  },
+  {
+    stepId: 'diet',
+    title: 'Diet & Anti-Cancer Nutrition',
+    questionPrompt: 'Did you follow a balanced diet (50% vegetables, clean protein, complex carbs) or consume junk/ultra-processed foods today?',
+    inputType: 'OPTIONS',
+    options: ['Balanced Clean Diet (+1)', 'Clean Meals (No Junk)', 'Junk Food / Ultra-Processed (-1)', 'Both Balanced & Junk'],
+    order: 5,
     isEnabled: true
   },
   {
@@ -267,16 +342,25 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'What physical activity did you complete today? Exercise is a proven recurrence-risk reducer.',
     inputType: 'OPTIONS',
     options: ['30+ min Walk / Jog', 'Yoga / Tai Chi', 'Strength Training', 'Swimming / Cycling', 'Light Stretching', 'Rest Day'],
-    order: 4,
+    order: 6,
     isEnabled: true
   },
   {
     stepId: 'stillness',
     title: 'Stillness & Meditation',
-    questionPrompt: 'Did you practice stillness, meditation, or deep breathing today?',
+    questionPrompt: 'Did you practice stillness, meditation, or mindfulness today?',
     inputType: 'YES_NO',
     options: ['Yes (Practiced)', 'Not Today'],
-    order: 5,
+    order: 7,
+    isEnabled: true
+  },
+  {
+    stepId: 'breath',
+    title: 'Power of Breath',
+    questionPrompt: 'Did you practice 5 to 10 minutes of conscious breathwork (box breathing, 4-7-8, or pranayama) today?',
+    inputType: 'YES_NO',
+    options: ['Yes (Practiced 5-10 min)', 'Not Today'],
+    order: 8,
     isEnabled: true
   },
   {
@@ -285,7 +369,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you practice gratitude or engage in activities that bring you joy today?',
     inputType: 'YES_NO',
     options: ['Yes (Done)', 'Not Today'],
-    order: 6,
+    order: 9,
     isEnabled: true
   },
   {
@@ -294,7 +378,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you include anti-cancer repair foods today (cruciferous vegetables, berries, turmeric, omega-3s)?',
     inputType: 'OPTIONS',
     options: ['Yes (Anti-cancer Meal)', 'Partial (1-2 items)', 'Hydration Goal Met', 'Supplements Taken', 'No Specific Nutrition'],
-    order: 7,
+    order: 10,
     isEnabled: true
   },
   {
@@ -303,7 +387,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you commute in heavy traffic (>30 min), encounter passive smoking (second-hand smoke), or experience indoor smoke/incense/mosquito coil exposure today?',
     inputType: 'YES_NO',
     options: ['No (Clean Air)', 'Yes (Smog / Smoke / Passive Smoke)'],
-    order: 8,
+    order: 11,
     isEnabled: true
   },
   {
@@ -312,7 +396,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Do you use safe filtered drinking water (RO / carbon filtered, free of heavy metals, chlorine byproducts, and PFAS)?',
     inputType: 'YES_NO',
     options: ['Yes (Safe Filtered)', 'No / Unfiltered Tap'],
-    order: 9,
+    order: 12,
     isEnabled: true
   },
   {
@@ -321,7 +405,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you consume unwashed non-organic high-pesticide produce (Dirty Dozen) or use chemical bug sprays today?',
     inputType: 'YES_NO',
     options: ['No (Clean / Organic)', 'Yes (Pesticide Exposure)'],
-    order: 10,
+    order: 13,
     isEnabled: true
   },
   {
@@ -330,7 +414,25 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you drink from heated plastic bottles, microwave food in plastic containers, or drink hot beverages from paper/plastic cups today?',
     inputType: 'YES_NO',
     options: ['No (Plastic-Free)', 'Yes (Plastic / Hot Cup Exposure)'],
-    order: 11,
+    order: 14,
+    isEnabled: true
+  },
+  {
+    stepId: 'kitchen',
+    title: 'Safe Kitchen Audit',
+    questionPrompt: 'Is your kitchen free of heated plastic containers, synthetic non-stick teflon pans, and plastic drinking water cans?',
+    inputType: 'YES_NO',
+    options: ['Yes (Safe / Non-Plastic)', 'No (Plastic / Teflon Risk)'],
+    order: 15,
+    isEnabled: true
+  },
+  {
+    stepId: 'dental',
+    title: 'Dental Health Check',
+    questionPrompt: 'Do you have any sharp tooth, bleeding gums, non-healing oral ulcers, or oral discomfort?',
+    inputType: 'YES_NO',
+    options: ['No Issues (Healthy)', 'Yes (Dental Discomfort / Sharp Tooth)'],
+    order: 16,
     isEnabled: true
   },
   {
@@ -339,7 +441,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Do you have anybody in your family with cancer, or a self-diagnosis of cancer?',
     inputType: 'YES_NO',
     options: ['No Family History', 'Yes (Family History of Cancer)'],
-    order: 12,
+    order: 17,
     isEnabled: true
   },
   {
@@ -348,7 +450,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you have any follow-up appointment, imaging, or blood work today? Are your next screenings scheduled?',
     inputType: 'OPTIONS',
     options: ['Appointment Today (Done)', 'Upcoming Scheduled', 'Need to Schedule', 'No Follow-up Required'],
-    order: 13,
+    order: 18,
     isEnabled: true
   },
   {
@@ -357,7 +459,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Do you have new follow-up labs, imaging reports (PET/CT/MRI), or tumor markers to upload? I will process and update your dashboard.',
     inputType: 'FILE',
     options: ['Skip for Now'],
-    order: 14,
+    order: 19,
     isEnabled: true
   }
 ];
@@ -380,33 +482,50 @@ export const getActiveWorkflow = async (req: Request, res: Response) => {
       targetMode = 'STANDARD'; // PREVENTION default
     }
 
+    let defaultSteps: IWorkflowStep[];
+    let workflowName: string;
+    
+    if (targetMode === 'CANCER_PATIENT') {
+      defaultSteps = DEFAULT_TREATMENT_STEPS;
+      workflowName = 'Cancer Treatment Daily Workflow';
+    } else if (targetMode === 'SECONDARY_PREVENTION') {
+      defaultSteps = DEFAULT_SECONDARY_PREVENTION_STEPS;
+      workflowName = 'Secondary Prevention Daily Workflow';
+    } else {
+      defaultSteps = DEFAULT_PREVENTION_STEPS;
+      workflowName = 'Cancer Prevention Daily Workflow';
+    }
+
     let workflow = await DailyLoggingWorkflow.findOne({
       isActive: true,
       targetMode: targetMode
     }).sort({ updatedAt: -1 });
 
     if (!workflow) {
-      // Auto-seed the correct default workflow if none exists
-      let defaultSteps: IWorkflowStep[];
-      let workflowName: string;
-      
-      if (targetMode === 'CANCER_PATIENT') {
-        defaultSteps = DEFAULT_TREATMENT_STEPS;
-        workflowName = 'Cancer Treatment Daily Workflow';
-      } else if (targetMode === 'SECONDARY_PREVENTION') {
-        defaultSteps = DEFAULT_SECONDARY_PREVENTION_STEPS;
-        workflowName = 'Secondary Prevention Daily Workflow';
-      } else {
-        defaultSteps = DEFAULT_PREVENTION_STEPS;
-        workflowName = 'Cancer Prevention Daily Workflow';
-      }
-
       workflow = await DailyLoggingWorkflow.create({
         name: workflowName,
         targetMode: targetMode,
         isActive: true,
         steps: defaultSteps
       });
+    } else if (workflow.steps.length !== defaultSteps.length) {
+      // Sync workflow steps if DB has stale step count
+      workflow.steps = defaultSteps as any;
+      workflow.name = workflowName;
+      await workflow.save();
+    } else {
+      // Auto-merge any newly added default steps into existing workflow in DB
+      const existingStepIds = new Set((workflow.steps || []).map(s => s.stepId));
+      let hasNewSteps = false;
+      defaultSteps.forEach(ds => {
+        if (!existingStepIds.has(ds.stepId)) {
+          workflow!.steps.push({ ...ds, order: workflow!.steps.length + 1 });
+          hasNewSteps = true;
+        }
+      });
+      if (hasNewSteps) {
+        await workflow.save();
+      }
     }
 
     res.json(workflow);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Check, Minus, Moon, Trash2, Sparkles, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Check, Minus, Moon, Trash2, Sparkles, MessageSquare, Smartphone, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useToast } from '../../context/ToastContext';
@@ -26,6 +26,9 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
   const { showToast } = useToast();
   const [hours, setHours] = useState<number>(7);
   const [quality, setQuality] = useState<string>('good');
+  const [difficultyFallingAsleep, setDifficultyFallingAsleep] = useState<boolean | null>(null);
+  const [stoppedScreenTime, setStoppedScreenTime] = useState<boolean | null>(null);
+  const [snoring, setSnoring] = useState<boolean>(false);
   const [showSleepPopup, setShowSleepPopup] = useState<boolean>(false);
   const [showMiaSleepModal, setShowMiaSleepModal] = useState<boolean>(false);
   const [history, setHistory] = useState<HabitLog[]>([]);
@@ -44,6 +47,17 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
       setLoadingHistory(true);
       const logs = await HabitsService.getRecentHabits(apiUrl, token, 'Sleep', 7);
       setHistory(logs);
+      if (logs.length > 0) {
+        const todayStr = new Date().toDateString();
+        const todayLog = logs.find(l => new Date(l.timestamp || (l as any).createdAt).toDateString() === todayStr);
+        if (todayLog?.value) {
+          if (typeof todayLog.value.hours === 'number') setHours(todayLog.value.hours);
+          if (todayLog.value.quality) setQuality(todayLog.value.quality);
+          if (todayLog.value.difficultyFallingAsleep !== undefined) setDifficultyFallingAsleep(todayLog.value.difficultyFallingAsleep);
+          if (todayLog.value.stoppedScreenTime !== undefined) setStoppedScreenTime(todayLog.value.stoppedScreenTime);
+          if (todayLog.value.snoring !== undefined) setSnoring(todayLog.value.snoring);
+        }
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -67,10 +81,19 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
     if (!user?.id) return;
     setLoading(true);
     try {
-      await HabitsService.logHabit(apiUrl, token, 'Sleep', { hours, quality });
+      const isDamaged = quality === 'poor' || hours < 6 || snoring === true || (difficultyFallingAsleep === true && stoppedScreenTime === false);
+      const score = isDamaged ? -1 : 0;
+      await HabitsService.logHabit(apiUrl, token, 'Sleep', { 
+        hours, 
+        quality,
+        difficultyFallingAsleep,
+        stoppedScreenTime,
+        snoring,
+        score
+      });
       showToast(t('habits.sleepLoggedSuccess', 'Sleep logged successfully!'), 'success');
       await loadHistory();
-      if (quality === 'poor' || hours < 6) {
+      if (quality === 'poor' || hours < 6 || snoring === true || (difficultyFallingAsleep === true && stoppedScreenTime === false)) {
         setShowSleepPopup(true);
       }
     } catch (err) {
@@ -173,6 +196,157 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
           ))}
         </div>
 
+        {/* Difficulty Falling Asleep Question */}
+        <div className="pt-4 border-t border-slate-100 dark:border-slate-800/80 mb-5">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block">
+              {t('habits.difficultyFallingAsleepLabel', 'Sleep Latency')}
+            </span>
+            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+              {difficultyFallingAsleep === true ? t('common.yes', 'Yes') : difficultyFallingAsleep === false ? t('common.no', 'No') : ''}
+            </span>
+          </div>
+          <p className="text-xs font-bold text-slate-800 dark:text-slate-200 mb-3">
+            {t('habits.difficultyFallingAsleepPrompt', 'Is there difficulty in beginning to fall asleep?')}
+          </p>
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            <button
+              type="button"
+              onClick={() => {
+                setDifficultyFallingAsleep(false);
+                setStoppedScreenTime(null);
+              }}
+              className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                difficultyFallingAsleep === false
+                  ? 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 shadow-2xs'
+                  : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 hover:border-slate-300 text-slate-600 dark:text-slate-300'
+              }`}
+            >
+              <span>✅</span> {t('habits.noEasySleep', 'No · Fall asleep easily')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setDifficultyFallingAsleep(true)}
+              className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                difficultyFallingAsleep === true
+                  ? 'border-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 shadow-2xs'
+                  : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 hover:border-slate-300 text-slate-600 dark:text-slate-300'
+              }`}
+            >
+              <span>⏱️</span> {t('habits.yesDifficulty', 'Yes · Takes 30+ mins')}
+            </button>
+          </div>
+
+          {/* Conditional Screen Time & Doom Scrolling Follow-up */}
+          {difficultyFallingAsleep === true && (
+            <div className="mt-3 p-3.5 bg-indigo-50/60 dark:bg-slate-800/60 border border-indigo-100 dark:border-indigo-900/40 rounded-2xl animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="flex items-center gap-2 mb-1.5 text-indigo-700 dark:text-indigo-300">
+                <Smartphone className="h-4 w-4" />
+                <span className="text-[11px] font-black uppercase tracking-wider">
+                  {t('habits.screenTimeHeader', 'Screen Time & Doom Scrolling Check')}
+                </span>
+              </div>
+              <p className="text-xs text-slate-700 dark:text-slate-300 font-medium mb-3 leading-relaxed">
+                {t('habits.screenTimeQuestion', 'Did you stop doom scrolling and bright screen watching at least 2 hours prior to sleep?')}
+              </p>
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <button
+                  type="button"
+                  onClick={() => setStoppedScreenTime(true)}
+                  className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    stoppedScreenTime === true
+                      ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 shadow-2xs'
+                      : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300'
+                  }`}
+                >
+                  <span>🌙</span> {t('habits.yesStoppedScreens', 'Yes · Powered off 2h prior')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStoppedScreenTime(false)}
+                  className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    stoppedScreenTime === false
+                      ? 'border-rose-400 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 shadow-2xs'
+                      : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300'
+                  }`}
+                >
+                  <span>📱</span> {t('habits.noWatchedScreens', 'No · Watched screens in bed')}
+                </button>
+              </div>
+
+              {/* If NO to stopping screens: Advisory & Habit Change Prompt + Connect to Expert */}
+              {stoppedScreenTime === false && (
+                <div className="p-3.5 bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl space-y-2.5">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <div className="text-xs text-amber-900 dark:text-amber-200 leading-relaxed font-medium">
+                      <span className="font-bold">{t('habits.habitChangeTitle', 'Change Habit Tonight & Revert Tomorrow:')}</span>{' '}
+                      {t('habits.habitChangeDesc', 'Blue light and rapid algorithm feeds suppress melatonin by up to 50%. Please power down all bright screens at least 2 hours before bed tonight, try relaxing reading or breathwork, and log your progress tomorrow morning.')}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between pt-1 border-t border-amber-200/60 dark:border-amber-800/40">
+                    <span className="text-[10px] text-amber-800 dark:text-amber-300 font-semibold">
+                      {t('habits.ifNoSleepPersists', 'If sleep difficulty persists:')}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => onBookAppointment?.('pending_Sleep Specialist')}
+                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white rounded-lg text-xs font-bold shadow-xs transition-all flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>🩺</span> {t('habits.connectToExpert', 'Connect to Expert')}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Snoring Check Question */}
+        <div className="pt-4 border-t border-slate-100 dark:border-slate-800/80 mb-6">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block">
+              {t('habits.snoringLabel', 'Snoring & Airway Check')}
+            </span>
+            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+              {snoring ? t('common.yes', 'Yes') : t('common.no', 'No')}
+            </span>
+          </div>
+          <p className="text-xs font-bold text-slate-800 dark:text-slate-200 mb-3">
+            {t('habits.snoringPrompt', 'Do you snore loudly during sleep, gasp for breath, or wake up unrefreshed?')}
+          </p>
+          <div className="grid grid-cols-2 gap-2 mb-2">
+            <button
+              type="button"
+              onClick={() => setSnoring(false)}
+              className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                !snoring
+                  ? 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 shadow-2xs'
+                  : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 hover:border-slate-300 text-slate-600 dark:text-slate-300'
+              }`}
+            >
+              <span>😴</span> {t('habits.noSnoring', 'No · Quiet Peaceful Sleep')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setSnoring(true)}
+              className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                snoring
+                  ? 'border-rose-500 bg-rose-50/70 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 shadow-2xs'
+                  : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 hover:border-slate-300 text-slate-600 dark:text-slate-300'
+              }`}
+            >
+              <span>💨</span> {t('habits.yesSnoring', 'Yes · Snoring / Airway Gasps')}
+            </button>
+          </div>
+          {snoring && (
+            <p className="text-[11px] text-rose-600 dark:text-rose-400 font-medium px-1 mt-1.5 flex items-center gap-1">
+              <AlertCircle className="h-3 w-3 shrink-0" />
+              {t('habits.snoringWarning', 'Airway resistance reduces nighttime oxygen saturation. Consider elevating your pillow and discussing with an expert.')}
+            </p>
+          )}
+        </div>
+
         <button 
           onClick={handleLog}
           disabled={loading}
@@ -198,14 +372,25 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
               <div key={h.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-xl p-3 flex justify-between items-center">
                 <div>
                   <span className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
-                    {h.value.hours >= 7 ? '🌟' : '🥱'} {h.value.hours ?? 0} {t('habits.hoursWord', 'hours')}
+                    {h.value.hours >= 7 && !h.value.snoring ? '🌟' : '🥱'} {h.value.hours ?? 0} {t('habits.hoursWord', 'hours')}
+                    {h.value.snoring && (
+                      <span className="text-[9.5px] font-black uppercase tracking-wider bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200/60 dark:border-rose-800/60 px-1.5 py-0.5 rounded-md">
+                        💨 {t('habits.snoring', 'Snoring')}
+                      </span>
+                    )}
+                    {h.value.difficultyFallingAsleep && (
+                      <span className="text-[9.5px] font-black uppercase tracking-wider bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/60 px-1.5 py-0.5 rounded-md">
+                        ⏱️ {t('habits.latency', 'Latency')}
+                      </span>
+                    )}
                   </span>
                   <span className="text-[10px] text-slate-400 mt-1 block">
                     {new Date(h.timestamp).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric' })}
                     {h.value.quality && ` · ${t('habits.quality', 'Quality')}: ${t('habits.quality_' + h.value.quality, h.value.quality.charAt(0).toUpperCase() + h.value.quality.slice(1))}`}
+                    {h.value.stoppedScreenTime === false && ` · ${t('habits.screensUsed', 'Screens used before bed')}`}
                   </span>
                 </div>
-                {h.value.hours >= 7 ? (
+                {h.value.hours >= 7 && !h.value.snoring && !(h.value.difficultyFallingAsleep && h.value.stoppedScreenTime === false) ? (
                   <Check className="h-4 w-4 text-emerald-500" />
                 ) : (
                   <Minus className="h-4 w-4 text-amber-500" />

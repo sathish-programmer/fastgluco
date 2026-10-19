@@ -797,6 +797,14 @@ export const initNotificationScheduler = async () => {
         await scheduleSymptomCheckinReminder(nextDue || undefined);
       }
 
+      // Check report upload reminders schedule on startup
+      if (localStorage.getItem('mito_report_reminder_enabled') === 'true') {
+        const hasReportReminder = pending.notifications.some(n => n.id === REPORT_UPLOAD_PM_NOTIFICATION_ID);
+        if (!hasReportReminder) {
+          await scheduleReportUploadReminders();
+        }
+      }
+
       if (!isEnabled || !savedCheckinTime) {
         await LocalNotifications.cancel({ notifications: [{ id: CHECKIN_NOTIFICATION_ID }] }).catch(() => {});
         return;

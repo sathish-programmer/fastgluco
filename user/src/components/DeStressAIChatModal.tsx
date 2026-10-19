@@ -12,7 +12,7 @@ import {
   getShortcutExerciseDataLocalized,
   detectIssueKeyMultilingual
 } from '../data/miaData';
-import { speakText, stopSpeaking, useTtsSpeed } from '../utils/ttsHelper';
+import { speakText, stopSpeaking, useTtsSpeed, getStoredTtsSpeed } from '../utils/ttsHelper';
 
 interface DeStressAIChatModalProps {
   isOpen: boolean;
@@ -117,19 +117,24 @@ export const DeStressAIChatModal: React.FC<DeStressAIChatModalProps> = ({
     speakText({
       text: textToSpeak,
       language: curLang,
-      rate: customRate ?? ttsSpeed,
+      rate: customRate ?? getStoredTtsSpeed(),
       onEnd: () => setSpeakingMsgId(null),
       onError: () => setSpeakingMsgId(null)
     });
   };
 
-  const handleCycleSpeed = (msgId?: string, msgText?: string) => {
+  const handleCycleSpeed = (_msgId?: string, msgText?: string) => {
     const nextSpeed = cycleTtsSpeed();
-    if (speakingMsgId && msgId && msgText && speakingMsgId === msgId) {
-      stopSpeaking();
-      setTimeout(() => {
-        handleSpeak(msgId, msgText, nextSpeed);
-      }, 60);
+    if (speakingMsgId) {
+      const activeMsgId = speakingMsgId;
+      const activeMsg = messages.find(m => m.id === activeMsgId);
+      const textToSpeak = activeMsg ? (activeMsg.text || activeMsg.lifestyleData?.intro || '') : (msgText || '');
+      if (textToSpeak) {
+        stopSpeaking();
+        setTimeout(() => {
+          handleSpeak(activeMsgId, textToSpeak, nextSpeed);
+        }, 60);
+      }
     }
   };
 

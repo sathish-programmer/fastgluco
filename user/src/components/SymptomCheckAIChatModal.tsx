@@ -4,7 +4,7 @@ import { RoboAvatar } from './RoboAvatar';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { SYMPTOM_QUESTIONS, SPECIALIST_MAP, getStoredSymptomCheckins, reconstructAnswers } from '../screens/HabitScreens/SymptomCheckinScreen';
-import { speakText, stopSpeaking, useTtsSpeed } from '../utils/ttsHelper';
+import { speakText, stopSpeaking, useTtsSpeed, getStoredTtsSpeed } from '../utils/ttsHelper';
 
 interface SymptomCheckAIChatModalProps {
   isOpen: boolean;
@@ -77,19 +77,24 @@ export const SymptomCheckAIChatModal: React.FC<SymptomCheckAIChatModalProps> = (
     speakText({
       text: textToSpeak.replace(/\*\*/g, '').replace(/•/g, '').trim(),
       language,
-      rate: customRate ?? ttsSpeed,
+      rate: customRate ?? getStoredTtsSpeed(),
       onEnd: () => setSpeakingMsgId(null),
       onError: () => setSpeakingMsgId(null)
     });
   };
 
-  const handleCycleSpeed = (msgId?: string, msgText?: string) => {
+  const handleCycleSpeed = (_msgId?: string, msgText?: string) => {
     const nextSpeed = cycleTtsSpeed();
-    if (speakingMsgId && msgId && msgText && speakingMsgId === msgId) {
-      stopSpeaking();
-      setTimeout(() => {
-        handleSpeak(msgId, msgText, nextSpeed);
-      }, 60);
+    if (speakingMsgId) {
+      const activeMsgId = speakingMsgId;
+      const activeMsg = messages.find(m => m.id === activeMsgId);
+      const textToSpeak = activeMsg?.text || msgText || '';
+      if (textToSpeak) {
+        stopSpeaking();
+        setTimeout(() => {
+          handleSpeak(activeMsgId, textToSpeak, nextSpeed);
+        }, 60);
+      }
     }
   };
 

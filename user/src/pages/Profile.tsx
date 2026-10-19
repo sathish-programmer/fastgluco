@@ -33,7 +33,7 @@ import { Educational } from './Educational'; // import the sub-view
 import { Subscription } from './Subscription';
 import { FounderNoteModal } from '../components/FounderNoteModal';
 import { Capacitor } from '@capacitor/core';
-import { triggerTestNotification, scheduleDailyCheckinReminder, cancelDailyCheckinReminder } from '../utils/notificationScheduler';
+import { triggerTestNotification, scheduleDailyCheckinReminder, cancelDailyCheckinReminder, scheduleReportUploadReminders } from '../utils/notificationScheduler';
 
 const defaultNotifPrefs: UserNotificationPreferences = {
   push: {
@@ -109,9 +109,24 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
   });
 
   const [checkinReminderTime, setCheckinReminderTime] = useState<string>(() => {
-    return localStorage.getItem('mito_checkin_reminder_time') || '20:00';
+    return (user as any)?.checkinReminderTime || (user?.notificationPreferences as any)?.checkinReminderTime || localStorage.getItem('mito_checkin_reminder_time') || '20:00';
   });
   const [isTestingNotif, setIsTestingNotif] = useState(false);
+
+  // Sync notification preferences whenever user profile updates/loads
+  useEffect(() => {
+    if (user?.notificationPreferences?.push) {
+      setNotifPrefs({
+        push: { ...defaultNotifPrefs.push, ...user.notificationPreferences.push },
+        email: { ...defaultNotifPrefs.email, ...user.notificationPreferences.email },
+        sms: { ...defaultNotifPrefs.sms, ...user.notificationPreferences.sms }
+      });
+    }
+    const userReminderTime = (user as any)?.checkinReminderTime || (user?.notificationPreferences as any)?.checkinReminderTime;
+    if (userReminderTime) {
+      setCheckinReminderTime(userReminderTime);
+    }
+  }, [user]);
 
   // Health Care Journey states
   const [cancerJourney, setCancerJourney] = useState<FocusModeType>(user?.cancerJourney || 'PREVENTION');
@@ -747,9 +762,16 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
                 cancelDailyCheckinReminder();
               }
 
+              // Synchronize report upload reminders schedule
+              scheduleReportUploadReminders();
+
               const success = await updateProfile({
-                notificationPreferences: notifPrefs
-              });
+                notificationPreferences: {
+                  ...notifPrefs,
+                  checkinReminderTime
+                },
+                checkinReminderTime
+              } as any);
 
               if (success) {
                 showToast('Notification preferences saved successfully!', 'success');

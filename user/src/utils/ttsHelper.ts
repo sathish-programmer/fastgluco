@@ -49,7 +49,7 @@ export const getStoredTtsSpeed = (): number => {
   if (typeof window === 'undefined') return 1.0;
   try {
     const val = parseFloat(localStorage.getItem(TTS_SPEED_STORAGE_KEY) || '1.0');
-    return !isNaN(val) && val >= 0.5 && val <= 2 ? val : 1.0;
+    return !isNaN(val) && (TTS_SPEED_PRESETS as readonly number[]).includes(val) ? val : 1.0;
   } catch {
     return 1.0;
   }

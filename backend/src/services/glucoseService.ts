@@ -4,6 +4,8 @@ import { CGMReport } from '../models/CGMReport';
 import { PaymentGatewayConfig } from '../models/PaymentGatewayConfig';
 import { User } from '../models/User';
 import { EmailService } from './emailService';
+import { FCMService } from './fcmService';
+import { SMSService } from './smsService';
 import { CoachingSession } from '../models/CoachingSession';
 import { Notification } from '../models/Notification';
 import { UserSubscription } from '../models/UserSubscription';
@@ -170,25 +172,55 @@ export class GlucoseService {
         }
       }
 
-      if (user && user.email && isRecentSpike) {
+      if (user && isRecentSpike) {
         const intervalHours = config?.glucoseAlertMinIntervalHours ?? 2;
         let shouldSendAlert = true;
         if (user.lastGlucoseAlertSentAt) {
           const hoursSinceLastAlert = (Date.now() - user.lastGlucoseAlertSentAt.getTime()) / (1000 * 60 * 60);
           if (hoursSinceLastAlert < intervalHours) {
             shouldSendAlert = false;
-            console.log(`Skipping high spike alert email for user ${user.email} (last alert sent ${hoursSinceLastAlert.toFixed(2)} hours ago, limit is ${intervalHours} hours).`);
+            console.log(`Skipping high spike alert for user ${user.email} (last alert sent ${hoursSinceLastAlert.toFixed(2)} hours ago, limit is ${intervalHours} hours).`);
           }
         }
 
         if (shouldSendAlert) {
-          EmailService.sendHighSpikeAlert(
-            user.email,
-            user.name || 'Mito_Reboot User',
-            peakGlucose,
-            user.spikeThreshold ?? 90,
-            peakReading.timestamp.toISOString()
-          ).catch(console.error);
+          const notifPrefs = user.notificationPreferences || {};
+          const emailEnabled = notifPrefs.email?.healthInsights !== false;
+          const pushEnabled = notifPrefs.push?.healthInsights !== false;
+          const smsEnabled = notifPrefs.sms?.healthInsights === true;
+
+          // 1. Email Alert (if enabled)
+          if (emailEnabled && user.email) {
+            EmailService.sendHighSpikeAlert(
+              user.email,
+              user.name || 'Mito_Reboot User',
+              peakGlucose,
+              user.spikeThreshold ?? 90,
+              peakReading.timestamp.toISOString()
+            ).catch(console.error);
+          }
+
+          // 2. Push Notification Alert (if enabled)
+          if (pushEnabled) {
+            FCMService.sendNotificationToUser(userId.toString(), {
+              title: '⚠️ Glucose Spike Detected',
+              body: `High spike of ${peakGlucose} mg/dL logged (threshold ${user.spikeThreshold ?? 90} mg/dL). Take a 15-min walk & stay hydrated.`,
+              type: 'SpikeAlert',
+              data: {
+                reading: String(peakGlucose),
+                threshold: String(user.spikeThreshold ?? 90),
+                mealTime: mealTime.toISOString()
+              }
+            }).catch(console.error);
+          }
+
+          // 3. SMS Alert (if enabled)
+          if (smsEnabled && user.mobileNumber) {
+            SMSService.sendSMS(
+              user.mobileNumber,
+              `[Mito Reboot] Alert: Elevated glucose of ${peakGlucose} mg/dL detected. We recommend a 15-minute gentle walk and drinking water.`
+            ).catch(console.error);
+          }
 
           user.lastGlucoseAlertSentAt = new Date();
           await user.save();

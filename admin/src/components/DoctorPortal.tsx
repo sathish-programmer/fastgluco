@@ -242,7 +242,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
           hospitalName: data.hospitalName || '',
           registrationNumber: data.registrationNumber || '',
           description: data.description || '',
-          consultationFee: data.consultationFee || 0,
+          consultationFee: data.consultationFee ?? data.onlineConsultationFee ?? 0,
           phone: data.phone || '',
           email: data.email || '',
           address: data.address || '',
@@ -296,6 +296,8 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ apiUrl, token, onLog
     try {
       const payload = {
         ...profileForm,
+        onlineConsultationFee: profileForm.consultationFee,
+        offlineConsultationFee: profileForm.consultationFee,
         languagesKnown: typeof profileForm.languagesKnown === 'string'
           ? (profileForm.languagesKnown as string).split(',').map(s => s.trim()).filter(Boolean)
           : profileForm.languagesKnown

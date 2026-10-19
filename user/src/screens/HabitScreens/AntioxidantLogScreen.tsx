@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Check, X, Info, ChevronDown, ChevronUp, Trash2, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Check, X, Info, ChevronDown, ChevronUp, Trash2, ChevronRight, Calendar } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { HabitsService, type HabitLog } from '../../services/habitsService';
@@ -10,6 +10,7 @@ interface AntioxidantLogScreenProps {
   onViewShop?: () => void;
   onNavigateToDiagnostics?: () => void;
   onNavigateToShopCategory?: (category: string, subcategory?: string) => void;
+  onBookAppointment?: (reason: string) => void;
 }
 
 const ANTIOXIDANT_FOODS = [
@@ -78,8 +79,9 @@ const antioxidantColors: Record<string, string> = {
 export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({
   onBack,
   onViewShop,
-  onNavigateToDiagnostics,
-  onNavigateToShopCategory
+  onNavigateToDiagnostics: _onNavigateToDiagnostics,
+  onNavigateToShopCategory,
+  onBookAppointment
 }) => {
   const { user, token, apiUrl } = useAuth();
   const { t, language } = useLanguage();
@@ -93,6 +95,7 @@ export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({
   };
   const activeLocale = LOCALE_MAP[language] || 'en-US';
   const [answer, setAnswer] = useState<'yes' | 'no' | null>(null);
+  const [showVitaminModal, setShowVitaminModal] = useState<boolean>(false);
   const [history, setHistory] = useState<HabitLog[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -343,27 +346,92 @@ export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({
           </div>
         )}
       </div>
-      {/* Check Vitamin Levels (Lab Testing) */}
-      {onNavigateToDiagnostics && (
-        <div className="mt-6">
-          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-widest uppercase block mb-3">{t('wantToCheckActualLevels', 'Want to check your actual levels?')}</span>
-          <button
-            onClick={onNavigateToDiagnostics}
-            className="w-full relative overflow-hidden rounded-3xl p-5 flex items-center justify-between gap-4 text-left shadow-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 transition-colors hover:shadow-lg active:scale-[0.99]"
-          >
-            <div className="flex items-center gap-4 relative z-10">
-              <div className="h-12 w-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center text-2xl shrink-0 border border-indigo-100 dark:border-indigo-800/40">
+      {/* Check Vitamin Levels (Accredited Lab Advisory) */}
+      <div className="mt-6">
+        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-widest uppercase block mb-3">
+          {t('wantToCheckActualLevels', 'Want to check your actual levels?')}
+        </span>
+        <button
+          onClick={() => setShowVitaminModal(true)}
+          className="w-full relative overflow-hidden rounded-3xl p-5 flex items-center justify-between gap-4 text-left shadow-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 transition-colors hover:shadow-lg active:scale-[0.99] cursor-pointer"
+        >
+          <div className="flex items-center gap-4 relative z-10">
+            <div className="h-12 w-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center text-2xl shrink-0 border border-indigo-100 dark:border-indigo-800/40">
+              🧪
+            </div>
+            <div>
+              <p className="text-sm font-extrabold text-slate-800 dark:text-slate-100">{t('checkVitaminLevels', 'Check Vitamin Levels')}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
+                {t('checkAccreditedLabSummary', 'Check in any accredited lab and book a consult with our experts')}
+              </p>
+            </div>
+          </div>
+          <div className="relative z-10 h-9 w-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-100 dark:border-indigo-800/50 flex items-center justify-center shrink-0">
+            <ChevronRight className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+          </div>
+        </button>
+      </div>
+
+      {/* Accredited Lab & Consult Modal */}
+      {showVitaminModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
+            <button
+              onClick={() => setShowVitaminModal(false)}
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="flex items-center gap-3.5 mb-4">
+              <div className="h-12 w-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 flex items-center justify-center text-2xl border border-indigo-100 dark:border-indigo-800/40">
                 🧪
               </div>
               <div>
-                <p className="text-sm font-extrabold text-slate-800 dark:text-slate-100">{t('checkVitaminLevels', 'Check Vitamin Levels')}</p>
-                <p className="text-xs text-slate-400 dark:text-slate-400 mt-0.5 font-medium">{t('bookLabTestPartner', 'Book a lab test with our partner diagnostics vendors')}</p>
+                <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100">
+                  {t('checkVitaminLevels', 'Check Vitamin Levels')}
+                </h3>
+                <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
+                  {t('diagnosticGuidance', 'Diagnostic Guidance')}
+                </span>
               </div>
             </div>
-            <div className="relative z-10 h-9 w-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-100 dark:border-indigo-800/50 flex items-center justify-center shrink-0">
-              <ChevronRight className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+
+            <div className="space-y-3 text-xs text-slate-600 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 mb-6">
+              <p className="font-bold text-slate-800 dark:text-slate-100 text-sm">
+                {t('accreditedLabTitle', 'Check in any accredited lab of your choice')}
+              </p>
+              <p className="text-slate-600 dark:text-slate-300">
+                {t('accreditedLabExplain', 'As we are not linking to any lab at this point, you can get your Vitamin D, B12, or antioxidant panel checked at any NABL or certified diagnostic laboratory convenient to you.')}
+              </p>
+              <div className="pt-2.5 border-t border-slate-200/80 dark:border-slate-700/80">
+                <p className="font-semibold text-slate-700 dark:text-slate-200">
+                  {t('accreditedLabConsultPrompt', 'Once you receive your lab reports, book a consultation with our medical specialists and clinical dietitians to review your levels and guide your nutritional plan.')}
+                </p>
+              </div>
             </div>
-          </button>
+
+            <div className="space-y-2">
+              {onBookAppointment && (
+                <button
+                  onClick={() => {
+                    setShowVitaminModal(false);
+                    onBookAppointment('Vitamin & Nutrition Consultation');
+                  }}
+                  className="w-full py-3.5 px-4 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-extrabold text-sm rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Calendar className="h-4 w-4" />
+                  {t('bookExpertConsult', 'Book a Consult with Our Experts')}
+                </button>
+              )}
+              <button
+                onClick={() => setShowVitaminModal(false)}
+                className="w-full py-3 px-4 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-2xl transition-all cursor-pointer"
+              >
+                {t('common.close', 'Close')}
+              </button>
+            </div>
+          </div>
         </div>
       )}
       {/* Books Column: Elderly Memory, Women Health & Natural Antioxidant Food */}

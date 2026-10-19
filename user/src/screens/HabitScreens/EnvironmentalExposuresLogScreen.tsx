@@ -50,7 +50,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
   }, [user]);
 
   useEffect(() => {
-    if (airQ1 !== null && airQ2 !== null && airQ3 !== null && currentView === 'air') {
+    if ((airQ1 === true || airQ2 === true || airQ3 === true) && currentView === 'air' && isUserInteractingRef.current) {
       setShowAirModal(true);
     }
   }, [airQ1, airQ2, airQ3, currentView]);
@@ -523,7 +523,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
               />
             )}
 
-            {airQ1 !== null && airQ2 !== null && airQ3 !== null && (
+            {(airQ1 === true || airQ2 === true || airQ3 === true) && (
               <div className="bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 rounded-2xl p-5 space-y-4 animate-in fade-in duration-300">
                 <p className="text-xs text-indigo-750 dark:text-indigo-400 font-semibold leading-relaxed">
                   ℹ️ <strong>{t('recommendationTitle')}:</strong> {t('env.airExposureRecDesc', 'Reduce your exposure to air pollution and passive second-hand smoke where possible. Use an N95 mask and an air purifier when appropriate.')}

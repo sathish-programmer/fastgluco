@@ -208,6 +208,9 @@ export function StressTracker({ value, onChange }: { value?: number; onChange: (
         <span>1 · {t('habits.calmRelaxed', 'Calm / Relaxed')}</span>
         <span>10 · {t('habits.overwhelmed', 'Overwhelmed')}</span>
       </div>
+      <p className="text-[10.5px] text-slate-500 dark:text-slate-400 mt-2 bg-slate-50 dark:bg-slate-800/60 p-2 rounded-xl border border-slate-100 dark:border-slate-800 leading-snug">
+        🫁 <span className="font-bold text-slate-700 dark:text-slate-300">{t('stress.breathTipLabel', 'Count your breath:')}</span> {t('stress.breathTipDetail', 'If your inhalations are more than 12 per minute, you need to calm down and do a breathing exercise.')}
+      </p>
     </div>
   );
 }

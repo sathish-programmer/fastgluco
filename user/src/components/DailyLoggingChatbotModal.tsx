@@ -95,6 +95,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
   const { speed: ttsSpeed, cycleSpeed: cycleTtsSpeed } = useTtsSpeed();
   const ttsSpeedRef = useRef(ttsSpeed);
   useEffect(() => { ttsSpeedRef.current = ttsSpeed; }, [ttsSpeed]);
+  const lastSpokenTextRef = useRef<string>('');
   const [showQuickShortcuts, setShowQuickShortcuts] = useState<boolean>(false);
 
   // Edit state
@@ -211,7 +212,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       }
     }
 
-    // 2. Sleep
+    // 2. Sleep & Snoring
     const sleepVal = getAnswer(['sleep', 'sleep_duration', 'sleep_hours']).toLowerCase();
     if (sleepVal) {
       const sleepHours = parseFloat(sleepVal);
@@ -222,6 +223,18 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       } else if ((sleepHours && sleepHours >= 6) || sleepVal.includes('good') || sleepVal.includes('restful') || sleepVal.includes('7') || sleepVal.includes('8') || sleepVal.includes('9')) {
         repairCount += 1;
         repairHighlights.push('7+ Hours Restorative Sleep');
+      }
+    }
+
+    const snoringVal = getAnswer(['snoring', 'sleep_apnea']).toLowerCase();
+    if (snoringVal) {
+      if (snoringVal.includes('yes') || snoringVal.includes('snore') || snoringVal.includes('gasp')) {
+        damageCount += 1;
+        damageHighlights.push('Sleep Snoring / Airway Gasps');
+        damageActionHints.push('Loud snoring or waking with dry mouth indicates airway resistance. Elevate your head or consult a sleep specialist.');
+      } else if (snoringVal.includes('no') || snoringVal.includes('quiet') || snoringVal.includes('silent') || snoringVal.includes('clean')) {
+        repairCount += 1;
+        repairHighlights.push('Restful Airway Sleep');
       }
     }
 
@@ -279,16 +292,43 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       }
     }
 
-    // 6. Gastritis / Acidity / Dental / Refined Sugar
-    const gutVal = getAnswer(['gut_health', 'gastritis', 'dental', 'damage_habits']).toLowerCase();
-    if (gutVal) {
-      if (gutVal.includes('gastritis') || gutVal.includes('acidity') || gutVal.includes('sugar') || gutVal.includes('junk') || gutVal.includes('discomfort') || gutVal.includes('sharp') || gutVal.includes('yes')) {
+    // Dental Health Check
+    const dentalVal = getAnswer(['dental', 'dental_health']).toLowerCase();
+    if (dentalVal) {
+      if (dentalVal.includes('yes') || dentalVal.includes('sharp') || dentalVal.includes('discomfort') || dentalVal.includes('pain') || dentalVal.includes('ulcer') || dentalVal.includes('bleed')) {
         damageCount += 1;
-        damageHighlights.push('Gastric Acidity / Refined Food');
-        damageActionHints.push('Avoid spicy, fried, or high-sugar foods to soothe your stomach lining.');
+        damageHighlights.push('Dental / Sharp Tooth Discomfort');
+        damageActionHints.push('Consult a dentist to smooth sharp tooth edges and heal irritated oral mucosal tissue.');
+      } else if (dentalVal.includes('no') || dentalVal.includes('healthy') || dentalVal.includes('clean') || dentalVal.includes('none')) {
+        repairCount += 1;
+        repairHighlights.push('Clean Dental & Oral Health');
+      }
+    }
+
+    // 6. Gastritis / Acidity / Refined Sugar
+    const gutVal = getAnswer(['gut_health', 'gastritis', 'damage_habits']).toLowerCase();
+    if (gutVal) {
+      if (gutVal.includes('gastritis') || gutVal.includes('acidity') || gutVal.includes('discomfort') || gutVal.includes('yes')) {
+        damageCount += 1;
+        damageHighlights.push('Gastric Acidity / Reflux');
+        damageActionHints.push('Avoid spicy, fried, or highly acidic foods to soothe your stomach lining.');
       } else if (gutVal.includes('none') || gutVal.includes('healthy') || gutVal.includes('clean') || gutVal.includes('no')) {
         repairCount += 1;
-        repairHighlights.push('Healthy Gut & Oral Balance');
+        repairHighlights.push('Healthy Gut Balance');
+      }
+    }
+
+    // Diet & Junk Food vs Balanced Nutrition
+    const dietVal = getAnswer(['diet', 'balanced_diet', 'junk_food', 'nutrition']).toLowerCase();
+    if (dietVal) {
+      if (dietVal.includes('junk') || dietVal.includes('ultra-processed') || dietVal.includes('-1') || dietVal.includes('processed') || dietVal.includes('fast food')) {
+        damageCount += 1;
+        damageHighlights.push('Junk / Ultra-Processed Food');
+        damageActionHints.push('Eliminate packaged foods with long shelf lives and chemical preservatives; aim for 50% fresh vegetables.');
+      }
+      if (dietVal.includes('balanced') || dietVal.includes('+1') || dietVal.includes('clean') || (!dietVal.includes('junk') && dietVal.includes('yes'))) {
+        repairCount += 1;
+        repairHighlights.push('50·25·25 Balanced Diet');
       }
     }
 
@@ -333,12 +373,23 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       repairActionHints.push('Add antioxidant-rich berries, dark greens, or turmeric to your meals.');
     }
 
-    // 10. Joy & Stillness / Breath
-    const joyVal = getAnswer(['joy', 'stillness', 'loved', 'breath', 'breathing']).toLowerCase();
-    if (joyVal) {
-      if (joyVal.includes('yes') || joyVal.includes('done') || joyVal.includes('sat') || joyVal.includes('loved') || joyVal.includes('mindful') || joyVal.includes('breath') || joyVal.includes('box')) {
+    // 10. Power of Breath
+    const breathVal = getAnswer(['breath', 'power_of_breath', 'breathwork']).toLowerCase();
+    if (breathVal) {
+      if (breathVal.includes('yes') || breathVal.includes('practiced') || breathVal.includes('box') || breathVal.includes('pranayama') || breathVal.includes('5') || breathVal.includes('10')) {
         repairCount += 1;
-        repairHighlights.push('Power of Breath & Mindfulness');
+        repairHighlights.push('Power of Breath Reset');
+      } else {
+        repairActionHints.push('Practice 5 to 10 minutes of box breathing or slow pranayama to oxygenate cells.');
+      }
+    }
+
+    // 11. Joy & Stillness
+    const joyVal = getAnswer(['joy', 'stillness', 'loved', 'gratitude']).toLowerCase();
+    if (joyVal) {
+      if (joyVal.includes('yes') || joyVal.includes('done') || joyVal.includes('sat') || joyVal.includes('loved') || joyVal.includes('mindful')) {
+        repairCount += 1;
+        repairHighlights.push('Joy & Mindful Stillness');
       }
     }
 
@@ -574,6 +625,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
     }
 
     setIsSpeaking(true);
+    lastSpokenTextRef.current = text;
 
     const clean = text.replace(/[*_#•]/g, '').trim();
     if (!clean) {
@@ -711,6 +763,16 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
   const handleCycleSpeed = () => {
     const nextSpeed = cycleTtsSpeed();
     ttsSpeedRef.current = nextSpeed;
+    if (isSpeaking && lastSpokenTextRef.current && !isVoiceMutedRef.current) {
+      if (Capacitor.isNativePlatform()) {
+        try { TextToSpeech.stop(); } catch {}
+      } else if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      setTimeout(() => {
+        speakQuestion(lastSpokenTextRef.current, undefined, nextSpeed);
+      }, 80);
+    }
   };
 
 
@@ -1347,9 +1409,9 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
           if (s === 'antioxidants') return todaysHabits.some(h =>
             h.type === 'Antioxidants' || h.type?.toUpperCase().includes('ANTIOXIDANT')
           );
-          // Environmental 4-question checks
-          if (s.startsWith('env_') || s === 'environmental') {
-            const envHabits = todaysHabits.filter(h => h.type === 'Environmental' || h.type?.toUpperCase() === 'ENVIRONMENTAL' || h.value?.stepId?.startsWith('env_'));
+          // Environmental check (single module or granular env_*)
+          if (s.startsWith('env_') || s === 'environmental' || s === 'environment') {
+            const envHabits = todaysHabits.filter(h => h.type === 'Environmental' || h.type?.toUpperCase() === 'ENVIRONMENTAL' || h.value?.stepId?.startsWith('env_') || h.type === 'Environment' || h.type === 'DAMAGE_HABIT');
             if (envHabits.length === 0) return false;
 
             if (s === 'env_air') {
@@ -1368,15 +1430,39 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
           }
           // Check Your Kitchen Audit
           if (s === 'kitchen' || s === 'env_kitchen') return todaysHabits.some(h =>
-            h.type === 'Kitchen' || h.type?.toUpperCase().includes('KITCHEN')
+            h.type === 'Kitchen' || h.type?.toUpperCase().includes('KITCHEN') || h.value?.answers?.kitchenQ1 !== undefined
           );
-          // Gut & Dental check
-          if (s === 'gut_health') return todaysHabits.some(h =>
+          // Obesity & Weight Check
+          if (s === 'obesity' || s === 'weight') return todaysHabits.some(h =>
+            (h.type || '').toUpperCase().includes('OBESITY') || (h.type || '').toUpperCase().includes('WEIGHT')
+          );
+          // Dental health check
+          if (s === 'dental' || s === 'dental_health') return todaysHabits.some(h =>
+            h.type === 'Dental' || h.type?.toUpperCase().includes('DENTAL')
+          );
+          // Gut & Gastritis check
+          if (s === 'gut_health' || s === 'gastritis') return todaysHabits.some(h =>
             h.type === 'Gastritis' || h.type === 'Dental' ||
-            h.type?.toUpperCase().includes('GASTRIC') || h.type?.toUpperCase().includes('DENTAL')
+            h.type?.toUpperCase().includes('GASTR') || h.type?.toUpperCase().includes('DENTAL')
+          );
+          // Snoring check
+          if (s === 'snoring') return todaysHabits.some(h =>
+            (h.type || '').toUpperCase() === 'SLEEP' && h.value?.snoring !== undefined
+          );
+          // Diet & Nutrition check
+          if (s === 'diet' || s === 'balanced_diet' || s === 'junk_food') return todaysHabits.some(h =>
+            h.type === 'Diet' || h.type?.toUpperCase().includes('DIET')
+          );
+          // Power of breath check
+          if (s === 'breath' || s === 'power_of_breath' || s === 'breathwork') return todaysHabits.some(h =>
+            h.type === 'Breath' || h.type?.toUpperCase().includes('BREATH')
+          );
+          // Safer Personal Care Products check
+          if (s === 'safer_products' || s === 'saferproducts') return todaysHabits.some(h =>
+            (h.type || '').toUpperCase().includes('SAFERPRODUCT')
           );
           // Genetics / Family History of Cancer
-          if (s === 'genetics' || s === 'genetics_substances') return todaysHabits.some(h =>
+          if (s === 'genetic' || s === 'genetics' || s === 'genetics_substances') return todaysHabits.some(h =>
             h.type === 'Genetic' || h.type?.toUpperCase().includes('GENETIC')
           );
           // Substances check
@@ -1416,13 +1502,20 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
             if (s === 'fasting') return t === 'fasting';
             if (s === 'stress' || s === 'caregiver_stress') return t === 'stress';
             if (s === 'sleep') return t === 'sleep';
+            if (s === 'snoring') return t === 'sleep' && h.value?.snoring !== undefined;
+            if (s === 'diet' || s === 'balanced_diet' || s === 'junk_food') return t.includes('diet');
+            if (s === 'breath' || s === 'power_of_breath' || s === 'breathwork') return t.includes('breath');
+            if (s === 'dental' || s === 'dental_health') return t.includes('dental');
             if (s === 'movement') return t === 'movement';
             if (s === 'stillness') return t === 'stillness';
             if (s === 'joy') return t === 'joy';
             if (s === 'antioxidants') return t === 'antioxidants';
             if (s === 'kitchen' || s === 'env_kitchen') return t.includes('kitchen');
-            if (s.startsWith('env_')) return t === 'environmental';
-            if (s === 'genetics') return t === 'genetic';
+            if (s === 'obesity' || s === 'weight') return t.includes('obesity') || t.includes('weight');
+            if (s === 'gastritis' || s === 'gut_health') return t.includes('gastr');
+            if (s === 'safer_products' || s === 'saferproducts') return t.includes('saferproduct');
+            if (s.startsWith('env_') || s === 'environmental' || s === 'environment') return t === 'environmental' || t === 'environment' || t.includes('damage');
+            if (s === 'genetic' || s === 'genetics') return t === 'genetic';
             if (s === 'substances') return t === 'substances';
             if (s === 'damage_habits') return t.includes('damage') || t === 'smoking' || t === 'alcohol';
             if (s === 'repair_habits') return t.includes('repair') || t === 'antioxidants';
@@ -1619,8 +1712,16 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       } else if (stepId === 'antioxidants') {
         habitType = 'Antioxidants';
         habitValue = { consumed: isYes, option: valueStr };
-      } else if (stepId.startsWith('env_')) {
+      } else if (stepId.startsWith('env_') || stepId === 'environmental' || stepId === 'environment') {
         habitType = 'Environmental';
+        if (stepId === 'environmental' || stepId === 'environment') {
+          const isPolluted = lowerVal.includes('yes') || lowerVal.includes('pollution') || lowerVal.includes('smog') || lowerVal.includes('toxin');
+          habitValue = {
+            score: isPolluted ? -1 : 0,
+            isExposure: isPolluted,
+            option: valueStr
+          };
+        } else {
         // Look up any existing Environmental habit from today to preserve other answers
         const todayStr = new Date().toDateString();
         const existingEnv = loggedHabits.find(h => 
@@ -1651,11 +1752,12 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
         if (updatedAnswers.pesticidesQ1 === true) calcScore -= 1;
         if (updatedAnswers.microplasticsQ1 === true) calcScore -= 1;
 
-        habitValue = {
-          score: calcScore,
-          answers: updatedAnswers,
-          option: valueStr
-        };
+          habitValue = {
+            score: calcScore,
+            answers: updatedAnswers,
+            option: valueStr
+          };
+        }
       } else if (stepId === 'kitchen' || stepId === 'env_kitchen') {
         habitType = 'Kitchen';
         const isSafe = isYes || lowerVal.includes('safe') || lowerVal.includes('no plastic') || lowerVal.includes('clean');
@@ -1668,6 +1770,51 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
           },
           option: valueStr
         };
+      } else if (stepId === 'snoring') {
+        habitType = 'Sleep';
+        const hasSnoring = lowerVal.includes('yes') || lowerVal.includes('snore') || lowerVal.includes('gasp');
+        const todayStr = new Date().toDateString();
+        const existingSleep = loggedHabits.find(h => (h.type === 'Sleep' || h.type?.toUpperCase() === 'SLEEP') && new Date(h.timestamp || h.createdAt).toDateString() === todayStr);
+        const prevVal = existingSleep?.value || {};
+        habitValue = {
+          ...prevVal,
+          snoring: hasSnoring,
+          option: valueStr,
+          score: hasSnoring ? -1 : (prevVal.score !== undefined ? prevVal.score : 0)
+        };
+      } else if (stepId === 'diet' || stepId === 'balanced_diet' || stepId === 'junk_food') {
+        habitType = 'Diet';
+        const isBalanced = lowerVal.includes('balanced') || lowerVal.includes('+1') || (isYes && !lowerVal.includes('junk'));
+        const ateJunk = lowerVal.includes('junk') || lowerVal.includes('-1') || lowerVal.includes('ultra-processed') || lowerVal.includes('processed') || lowerVal.includes('fast food');
+        const netScore = (isBalanced ? 1 : 0) + (ateJunk ? -1 : 0);
+        habitValue = {
+          balancedDiet: isBalanced,
+          junkFood: ateJunk,
+          score: netScore,
+          netScore: netScore,
+          balancedScore: isBalanced ? 1 : 0,
+          junkScore: ateJunk ? -1 : 0,
+          option: valueStr
+        };
+      } else if (stepId === 'breath' || stepId === 'power_of_breath' || stepId === 'breathwork') {
+        habitType = 'Breath';
+        habitValue = {
+          minutes: isYes ? 10 : 0,
+          technique: 'Box Breathing / Pranayama',
+          done: isYes,
+          isCompleted: isYes,
+          option: valueStr
+        };
+      } else if (stepId === 'dental' || stepId === 'dental_health') {
+        habitType = 'Dental';
+        const hasIssue = lowerVal.includes('yes') || lowerVal.includes('sharp') || lowerVal.includes('discomfort') || lowerVal.includes('pain') || lowerVal.includes('stain') || lowerVal.includes('ulcer');
+        habitValue = {
+          score: hasIssue ? -1 : 0,
+          sharpTooth: hasIssue,
+          tobacco: false,
+          illFittingDenture: false,
+          option: valueStr
+        };
       } else if (stepId === 'gut_health') {
         habitType = 'Gastritis';
         habitValue = { gastritis: lowerVal.includes('gastritis') || lowerVal.includes('both'), option: valueStr };
@@ -1678,10 +1825,22 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
             body: JSON.stringify({ type: 'Dental', value: { sharpTooth: true, tobaccoStain: false, option: valueStr }, source: 'chatbot', timestamp: new Date().toISOString() })
           }).catch(() => {});
         }
-      } else if (stepId === 'genetics') {
+      } else if (stepId === 'genetics' || stepId === 'genetic') {
         habitType = 'Genetic';
         const hasGeneticLink = (lowerVal.includes('yes') || lowerVal.includes('family') || lowerVal.includes('relative')) && !lowerVal.includes('no family') && !lowerVal.includes('none') && !lowerVal.includes('no (no');
         habitValue = { geneticLink: hasGeneticLink, option: valueStr };
+      } else if (stepId === 'obesity' || stepId === 'weight') {
+        habitType = 'Obesity';
+        const hasDifficulty = lowerVal.includes('yes') || lowerVal.includes('difficulty') || lowerVal.includes('overweight') || lowerVal.includes('bmi') || lowerVal.includes('weight');
+        habitValue = { difficultyLosing: hasDifficulty, score: hasDifficulty ? -1 : 0, option: valueStr };
+      } else if (stepId === 'safer_products' || stepId === 'saferproducts') {
+        habitType = 'SaferProducts';
+        const isSafe = isYes || lowerVal.includes('yes') || lowerVal.includes('safe') || lowerVal.includes('clean');
+        habitValue = { saferProductsUsed: isSafe, score: isSafe ? 1 : 0, option: valueStr };
+      } else if (stepId === 'gastritis') {
+        habitType = 'Gastritis';
+        const hasGastritis = lowerVal.includes('yes') || lowerVal.includes('gastritis') || lowerVal.includes('acidity') || lowerVal.includes('heartburn');
+        habitValue = { gastritis: hasGastritis, score: hasGastritis ? -1 : 0, option: valueStr };
       } else if (stepId === 'substances') {
         habitType = 'Substances';
         const isClean = lowerVal.includes('clean') || lowerVal.includes('no') || lowerVal.includes('none') || lowerVal.includes('zero') || lowerVal.includes('avoid');
@@ -1793,6 +1952,8 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
         },
         ...prev
       ]);
+
+      if (onRefreshDashboard) onRefreshDashboard();
     } catch (e) { console.error('Error saving habit:', e); }
   };
 

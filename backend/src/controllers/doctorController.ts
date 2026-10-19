@@ -106,6 +106,8 @@ export class DoctorController {
       const { id } = req.params;
       const {
         name,
+        email,
+        password,
         specialty,
         qualification,
         experience,
@@ -124,24 +126,56 @@ export class DoctorController {
         focusIcon,
         isRecommended,
         commissionType,
-        commissionValue
+        commissionValue,
+        hospitalName,
+        registrationNumber
       } = req.body;
       const doc = await Doctor.findById(id);
       if (!doc) return res.status(404).json({ message: 'Doctor not found.' });
 
-      if (name) doc.name = name;
-      if (specialty) doc.specialty = specialty;
+      if (name) doc.name = name.trim();
+      if (email !== undefined && typeof email === 'string') {
+        const normalizedEmail = email.trim().toLowerCase();
+        if (normalizedEmail) {
+          if (normalizedEmail !== doc.email) {
+            const existing = await Doctor.findOne({ email: normalizedEmail, _id: { $ne: doc._id } });
+            if (existing) {
+              return res.status(400).json({ message: 'Another doctor with this email address already exists.' });
+            }
+            doc.email = normalizedEmail;
+          }
+        }
+      }
+      if (password && typeof password === 'string' && password.trim().length > 0) {
+        doc.passwordHash = await bcrypt.hash(password.trim(), 10);
+      }
+      if (specialty) doc.specialty = specialty.trim();
       if (qualification !== undefined) doc.qualification = qualification;
       if (experience !== undefined) doc.experience = Number(experience);
       if (description !== undefined) doc.description = description;
-      if (isActive !== undefined) doc.isActive = isActive;
+      if (isActive !== undefined) doc.isActive = Boolean(isActive);
       if (avatar !== undefined) {
         doc.avatar = avatar && avatar.startsWith('/uploads/') ? `https://api.mitoreboot.in${avatar}` : avatar;
       }
-      if (consultationFee !== undefined) doc.consultationFee = Number(consultationFee);
-      if (onlineConsultationFee !== undefined) doc.onlineConsultationFee = Number(onlineConsultationFee);
+      if (onlineConsultationFee !== undefined) {
+        const fee = Number(onlineConsultationFee);
+        doc.onlineConsultationFee = fee;
+        if (consultationFee === undefined) doc.consultationFee = fee;
+      }
+      if (consultationFee !== undefined) {
+        const fee = Number(consultationFee);
+        doc.consultationFee = fee;
+        if (onlineConsultationFee === undefined) doc.onlineConsultationFee = fee;
+      }
       if (offlineConsultationFee !== undefined) doc.offlineConsultationFee = Number(offlineConsultationFee);
-      if (slotDuration !== undefined) doc.slotDuration = Number(slotDuration);
+      if (slotDuration !== undefined) {
+        const slot = Number(slotDuration);
+        doc.slotDuration = slot;
+        await DoctorAvailability.updateMany(
+          { doctorId: doc._id },
+          { $set: { slotDuration: slot } }
+        );
+      }
       if (extraFeePer15Min !== undefined) doc.extraFeePer15Min = Number(extraFeePer15Min);
       if (feePolicy !== undefined) doc.feePolicy = feePolicy;
       if (sleepEvaluationNote !== undefined) doc.sleepEvaluationNote = sleepEvaluationNote;
@@ -150,8 +184,16 @@ export class DoctorController {
       if (isRecommended !== undefined) doc.isRecommended = Boolean(isRecommended);
       if (commissionType !== undefined) doc.commissionType = commissionType;
       if (commissionValue !== undefined) doc.commissionValue = Number(commissionValue);
+      if (hospitalName !== undefined) doc.hospitalName = hospitalName;
+      if (registrationNumber !== undefined) doc.registrationNumber = registrationNumber;
       if (languagesKnown !== undefined) {
-        doc.languagesKnown = Array.isArray(languagesKnown) ? languagesKnown : [];
+        if (Array.isArray(languagesKnown)) {
+          doc.languagesKnown = languagesKnown;
+        } else if (typeof languagesKnown === 'string') {
+          doc.languagesKnown = (languagesKnown as string).split(',').map((s: string) => s.trim()).filter(Boolean);
+        } else {
+          doc.languagesKnown = [];
+        }
       }
 
       await doc.save();
@@ -385,9 +427,18 @@ export class DoctorController {
       if (experience !== undefined) doc.experience = experience;
       if (hospitalName !== undefined) doc.hospitalName = hospitalName;
       if (registrationNumber !== undefined) doc.registrationNumber = registrationNumber;
-      if (consultationFee !== undefined) doc.consultationFee = consultationFee;
-      if (onlineConsultationFee !== undefined) doc.onlineConsultationFee = onlineConsultationFee;
-      if (offlineConsultationFee !== undefined) doc.offlineConsultationFee = offlineConsultationFee;
+      if (consultationFee !== undefined) {
+        const fee = Number(consultationFee);
+        doc.consultationFee = fee;
+        if (onlineConsultationFee === undefined) doc.onlineConsultationFee = fee;
+        if (offlineConsultationFee === undefined) doc.offlineConsultationFee = fee;
+      }
+      if (onlineConsultationFee !== undefined) {
+        const fee = Number(onlineConsultationFee);
+        doc.onlineConsultationFee = fee;
+        if (consultationFee === undefined) doc.consultationFee = fee;
+      }
+      if (offlineConsultationFee !== undefined) doc.offlineConsultationFee = Number(offlineConsultationFee);
       if (phone !== undefined) doc.phone = phone;
       if (address !== undefined) doc.address = address;
       if (languagesKnown !== undefined) doc.languagesKnown = languagesKnown;
@@ -420,8 +471,12 @@ export class DoctorController {
       if (slotDuration !== undefined) doc.slotDuration = slotDuration;
       if (holidays !== undefined) doc.holidays = holidays;
       if (visibility !== undefined) doc.visibility = visibility;
-      if (onlineConsultationFee !== undefined) doc.onlineConsultationFee = onlineConsultationFee;
-      if (offlineConsultationFee !== undefined) doc.offlineConsultationFee = offlineConsultationFee;
+      if (onlineConsultationFee !== undefined) {
+        const fee = Number(onlineConsultationFee);
+        doc.onlineConsultationFee = fee;
+        doc.consultationFee = fee;
+      }
+      if (offlineConsultationFee !== undefined) doc.offlineConsultationFee = Number(offlineConsultationFee);
       if (deaddictionHelpline !== undefined) doc.deaddictionHelpline = deaddictionHelpline;
       if (notificationPreferences !== undefined) {
         doc.notificationPreferences = typeof notificationPreferences === 'object'
