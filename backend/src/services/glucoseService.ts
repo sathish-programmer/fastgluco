@@ -5,7 +5,6 @@ import { PaymentGatewayConfig } from '../models/PaymentGatewayConfig';
 import { User } from '../models/User';
 import { EmailService } from './emailService';
 import { FCMService } from './fcmService';
-import { SMSService } from './smsService';
 import { CoachingSession } from '../models/CoachingSession';
 import { Notification } from '../models/Notification';
 import { UserSubscription } from '../models/UserSubscription';
@@ -213,15 +212,6 @@ export class GlucoseService {
               }
             }).catch(console.error);
           }
-
-          // 3. SMS Alert (if enabled)
-          if (smsEnabled && user.mobileNumber) {
-            SMSService.sendSMS(
-              user.mobileNumber,
-              `[Mito Reboot] Alert: Elevated glucose of ${peakGlucose} mg/dL detected. We recommend a 15-minute gentle walk and drinking water.`
-            ).catch(console.error);
-          }
-
           user.lastGlucoseAlertSentAt = new Date();
           await user.save();
         }

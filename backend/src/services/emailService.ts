@@ -2,7 +2,6 @@ import nodemailer from 'nodemailer';
 import fs from 'fs';
 import path from 'path';
 import { PaymentGatewayConfig } from '../models/PaymentGatewayConfig';
-import { SMSService } from './smsService';
 
 // Configure transporter using SMTP environment variables
 const transporter = nodemailer.createTransport({
@@ -815,40 +814,6 @@ export class EmailService {
         console.error(err);
       }
     }
-
-    // Trigger SMS Notifications asynchronously
-    try {
-      if (type === 'booked' && appt.doctorId?.phone) {
-        const docMessage = `[Mito Reboot] Hello Dr. ${appt.doctorId.name}, you have a new appointment request from patient ${appt.userId?.name || 'User'} on ${appt.date} at ${appt.time}. Reason: ${appt.reason || 'General Consultation'}. Please check your dashboard to accept/reject.`;
-        SMSService.sendSMS(appt.doctorId.phone, docMessage).catch(err => {
-          console.error('[Background] Failed to send Doctor booking SMS:', err);
-        });
-      } else if (type === 'confirmed' && appt.userId?.mobileNumber) {
-        const isOnline = appt.type === 'online';
-        const patientMessage = isOnline 
-          ? `[Mito Reboot] Hi ${appt.userId.name}, your appointment with Dr. ${appt.doctorId.name} is confirmed for ${appt.date} at ${appt.time}. Join Meeting: ${appt.meetingLink}`
-          : `[Mito Reboot] Hi ${appt.userId.name}, your appointment with Dr. ${appt.doctorId.name} is confirmed for ${appt.date} at ${appt.time}. Details: ${appt.meetingLink || 'Please visit the clinic at the scheduled slot.'}`;
-        
-        SMSService.sendSMS(appt.userId.mobileNumber, patientMessage).catch(err => {
-          console.error('[Background] Failed to send Patient confirmation SMS:', err);
-        });
-      } else if (type === 'completed') {
-        if (appt.doctorId?.phone) {
-          const docMessage = `[Mito Reboot] Hello Dr. ${appt.doctorId.name}, your consultation with patient ${appt.userId?.name || 'User'} on ${appt.date} has been completed. Notes: ${appt.notes || 'None'}`;
-          SMSService.sendSMS(appt.doctorId.phone, docMessage).catch(err => {
-            console.error('[Background] Failed to send Doctor completion SMS:', err);
-          });
-        }
-        if (appt.userId?.mobileNumber) {
-          const patientMessage = `[Mito Reboot] Hi ${appt.userId.name}, your consultation with Dr. ${appt.doctorId.name} has been completed. Notes: ${appt.notes || 'None'}`;
-          SMSService.sendSMS(appt.userId.mobileNumber, patientMessage).catch(err => {
-            console.error('[Background] Failed to send Patient completion SMS:', err);
-          });
-        }
-      }
-    } catch (smsErr) {
-      console.error('[Background] Error in SMS dispatch hook:', smsErr);
-    }
   }
 
   public static async sendOrderEmail(type: 'placed' | 'assigned' | 'accepted' | 'shipped' | 'delivered' | 'cancelled', orderId: string) {
@@ -932,22 +897,6 @@ export class EmailService {
 
     const orderUser: any = order.userId;
     const emailEnabled = orderUser?.notificationPreferences?.email?.orderUpdates !== false;
-    const smsEnabled = orderUser?.notificationPreferences?.sms?.orderUpdates === true;
-
-    // Dispatch SMS to customer for order updates if enabled
-    if (smsEnabled) {
-      const recipientPhone = orderUser?.mobileNumber || order.patientPhone || order.shippingAddress?.phone;
-      if (recipientPhone) {
-        let smsMsg = '';
-        if (type === 'placed') smsMsg = `[Mito Reboot] Order #${displayOrderId} confirmed! Total: ${totalFormatted}. Our team is preparing your items.`;
-        else if (type === 'shipped') smsMsg = `[Mito Reboot] Order #${displayOrderId} has been shipped! Track your package in the app.`;
-        else if (type === 'delivered') smsMsg = `[Mito Reboot] Order #${displayOrderId} has been delivered! Enjoy your wellness products.`;
-        else if (type === 'cancelled') smsMsg = `[Mito Reboot] Order #${displayOrderId} cancellation processed. Refund initiated if applicable.`;
-        if (smsMsg) {
-          SMSService.sendSMS(recipientPhone, smsMsg).catch(console.error);
-        }
-      }
-    }
 
     if (type === 'placed') {
       // 1. Send Co-Branded Placed confirmation to Patient (if email enabled)

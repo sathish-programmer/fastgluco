@@ -3,7 +3,6 @@ import HabitLog from '../models/HabitLog';
 import { FoodLog } from '../models/FoodLog';
 import { FCMService } from '../services/fcmService';
 import { EmailService } from '../services/emailService';
-import { SMSService } from '../services/smsService';
 
 export class DailyCheckinReminderCron {
   /**
@@ -63,11 +62,10 @@ export class DailyCheckinReminderCron {
           const prefs = user.notificationPreferences || {};
           const pushEnabled = prefs.push?.dailyCheckin !== false;
           const emailEnabled = prefs.email?.dailyCheckin === true;
-          const smsEnabled = prefs.sms?.dailyCheckin === true;
 
           let didSend = false;
 
-          // 1. Remote FCM Push
+          // 1. Remote Firebase FCM Push
           if (pushEnabled) {
             FCMService.sendNotificationToUser(user._id.toString(), {
               title: 'Mito Reboot • Daily Health Check-in',
@@ -81,15 +79,6 @@ export class DailyCheckinReminderCron {
           // 2. Email Reminder
           if (emailEnabled && user.email) {
             EmailService.sendDailyCheckinEmail(user.email, user.name || 'Valued Patient').catch(console.error);
-            didSend = true;
-          }
-
-          // 3. SMS Reminder
-          if (smsEnabled && user.mobileNumber) {
-            SMSService.sendSMS(
-              user.mobileNumber,
-              '[Mito Reboot] Reminder: Time for your daily metabolic check-in! Log your habits in the app to maintain your wellness streak.'
-            ).catch(console.error);
             didSend = true;
           }
 

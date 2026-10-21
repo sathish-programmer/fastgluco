@@ -14,7 +14,6 @@ import { PaymentGatewayConfig } from '../models/PaymentGatewayConfig';
 import { AuthRequest } from '../middlewares/authMiddleware';
 import { EmailService } from '../services/emailService';
 import { FCMService } from '../services/fcmService';
-import { SMSService } from '../services/smsService';
 import { autoAssignAndSubmitVendorOrder } from './shopController';
 
 export class OrderManagementController {
@@ -1492,14 +1491,9 @@ export class OrderManagementController {
         }
       }
 
-      // 3. SMS Delivery
-      if (channels.includes('sms') && recipientPhone) {
-        try {
-          const sent = await SMSService.sendSMS(recipientPhone, `[Mito Reboot] ${subject}: ${message.slice(0, 120)}`);
-          deliveryStatus.sms = { success: sent, error: sent ? undefined : 'SMS delivery failed' };
-        } catch (e: any) {
-          deliveryStatus.sms = { success: false, error: e.message };
-        }
+      // 3. SMS Delivery (Disabled - only Firebase Push & Email are supported to avoid unwanted per-SMS charges)
+      if (channels.includes('sms')) {
+        deliveryStatus.sms = { success: false, error: 'SMS notifications are disabled. Only Firebase Push Notifications and Email are supported.' };
       }
 
       // If linked to an order, add to timeline

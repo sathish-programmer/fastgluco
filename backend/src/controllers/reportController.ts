@@ -13,7 +13,6 @@ import { GlucoseReading } from '../models/GlucoseReading';
 import { FoodLog } from '../models/FoodLog';
 import { FCMService } from '../services/fcmService';
 import { EmailService } from '../services/emailService';
-import { SMSService } from '../services/smsService';
 
 
 export class ReportController {
@@ -37,13 +36,6 @@ export class ReportController {
 
       if (emailEnabled && user.email) {
         EmailService.sendReportProcessedEmail(user.email, user.name || 'Valued Patient', reportName, readingsCount).catch(console.error);
-      }
-
-      if (smsEnabled && user.mobileNumber) {
-        SMSService.sendSMS(
-          user.mobileNumber,
-          `[Mito Reboot] Your health report "${reportName}" has been processed. View your updated biomarker analytics in the app.`
-        ).catch(console.error);
       }
     } catch (err) {
       console.error('[ReportController] notifyUserReportProcessed error:', err);

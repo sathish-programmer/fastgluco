@@ -1,5 +1,4 @@
 import { EmailService } from './emailService';
-import { SMSService } from './smsService';
 import { FCMService } from './fcmService';
 import { User } from '../models/User';
 
@@ -37,23 +36,8 @@ export class AdminNotificationService {
       }
 
       if (channel === 'sms') {
-        if (!user.mobileNumber) {
-          status.sms = { status: 'failed', error: 'User does not have a phone number' };
-          continue;
-        }
-        try {
-          const success = await SMSService.sendSMS(
-            user.mobileNumber,
-            `[Mito Reboot] New Doctor Recommendation: ${recommendationText.substring(0, 100)}... Check the app for more details.`
-          );
-          if (success) {
-            status.sms = { status: 'delivered', sentAt: new Date() };
-          } else {
-            status.sms = { status: 'failed', error: 'SMS delivery failed' };
-          }
-        } catch (err: any) {
-          status.sms = { status: 'failed', error: err.message || 'SMS delivery failed' };
-        }
+        status.sms = { status: 'failed', error: 'SMS notifications are disabled. Only Firebase Push Notifications and Email are supported.' };
+        continue;
       }
 
       if (channel === 'push') {

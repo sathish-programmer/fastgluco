@@ -89,6 +89,8 @@ export class SMSService {
 
   /**
    * Sends an SMS to a normalized recipient number using Fast2SMS.
+   * STRICT POLICY: Fast2SMS is exclusively reserved for rare emergency OTP login/signup fallback when Firebase fails.
+   * All non-OTP SMS notifications (daily check-ins, appointments, orders, alerts) are strictly blocked to prevent credit deductions.
    */
   public static async sendSMS(to: string, message: string, otpCode?: string): Promise<boolean> {
     try {
@@ -98,11 +100,18 @@ export class SMSService {
         return false;
       }
 
+      // Check if this is an OTP message
+      const code = otpCode || message.match(/\b\d{6}\b/)?.[0] || '';
+      if (!code) {
+        console.log(`[SMS Service] BLOCKED non-OTP SMS to ${normalizedTo}. Fast2SMS is strictly restricted to emergency OTP login fallback.`);
+        return false;
+      }
+
       const isMockMode = process.env.OTP_MOCK_MODE === 'true';
       if (isMockMode) {
         console.log(`\n--- [SMS MOCK SEND] ---`);
         console.log(`To      : ${normalizedTo}`);
-        console.log(`Message : ${message}`);
+        console.log(`Code    : ${code}`);
         console.log(`Reason  : OTP_MOCK_MODE is enabled`);
         console.log(`------------------------\n`);
         return true;
@@ -113,47 +122,16 @@ export class SMSService {
         return false;
       }
 
-      // Send via Fast2SMS OTP route if code is present
-      const code = otpCode || message.match(/\b\d{6}\b/)?.[0] || '';
-      if (code) {
-        const sent = await this.sendFast2SmsOtp(normalizedTo, code);
-        if (sent) {
-          console.log(`[SMS Service] Fast2SMS OTP delivered to ${normalizedTo}`);
-          return true;
-        }
+      // Send via Fast2SMS OTP route
+      const sent = await this.sendFast2SmsOtp(normalizedTo, code);
+      if (sent) {
+        console.log(`[SMS Service] Fast2SMS OTP delivered to ${normalizedTo}`);
+        return true;
       }
 
-      // If not OTP or OTP route failed, send using Quick SMS route
-      const apiKey = process.env.FAST2SMS_API_KEY;
-      if (!apiKey || apiKey === 'disabled') {
-        console.log('[Fast2SMS] FAST2SMS_API_KEY is missing or disabled.');
-        return false;
-      }
-
-      const cleaned = normalizedTo.replace(/[\s\-\(\)\+]/g, '').slice(-10);
-      if (cleaned.length !== 10) {
-        console.error('[Fast2SMS] Invalid 10-digit phone number:', normalizedTo);
-        return false;
-      }
-
-      const response = await fetch('https://www.fast2sms.com/dev/bulkV2', {
-        method: 'POST',
-        headers: {
-          'authorization': apiKey,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          route: 'q',
-          message: message,
-          numbers: cleaned
-        })
-      });
-
-      const data: any = await response.json();
-      console.log('[Fast2SMS Quick SMS Response]:', data);
-      return data.return === true || data.status_code === 200;
+      return false;
     } catch (error) {
-      console.error('[SMS Service] Error sending SMS:', error);
+      console.error('[SMS Service] Error sending SMS OTP:', error);
       return false;
     }
   }
