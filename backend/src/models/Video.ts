@@ -7,6 +7,7 @@ export interface IVideo extends Document {
   thumbnailUrl?: string;
   category: string; // e.g. "CGM Guide", "Dietary Tips", "Exercise Tips"
   targetPlatform: 'App' | 'Website' | 'Both';
+  isPaidOnly?: boolean; // When true, accessible only to active paid subscribers (not free or trial)
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -20,6 +21,7 @@ const videoSchema = new Schema<IVideo>(
     thumbnailUrl: { type: String },
     category: { type: String, required: true, trim: true },
     targetPlatform: { type: String, enum: ['App', 'Website', 'Both'], default: 'Both' },
+    isPaidOnly: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false }
   },
   {

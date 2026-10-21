@@ -549,7 +549,7 @@ export class AdminController {
    */
   public static async addVideo(req: AuthRequest, res: Response) {
     try {
-      const { title, description, url, thumbnailUrl, category, targetPlatform } = req.body;
+      const { title, description, url, thumbnailUrl, category, targetPlatform, isPaidOnly } = req.body;
       if (!title || !url || !category) {
         return res.status(400).json({ message: 'Title, URL, and category are required.' });
       }
@@ -570,14 +570,15 @@ export class AdminController {
         url: processedUrl, 
         thumbnailUrl: processedThumbnail, 
         category, 
-        targetPlatform: targetPlatform || 'Both' 
+        targetPlatform: targetPlatform || 'Both',
+        isPaidOnly: isPaidOnly !== undefined ? Boolean(isPaidOnly) : false
       });
       await video.save();
 
       await AuditLog.create({
         adminId: req.user?.id,
         action: 'ADD_VIDEO',
-        details: `Uploaded educational video: ${title}`,
+        details: `Uploaded educational video: ${title} (Paid Only: ${Boolean(isPaidOnly)})`,
         ipAddress: req.ip
       });
 
@@ -593,7 +594,7 @@ export class AdminController {
   public static async updateVideo(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
-      const { title, description, url, thumbnailUrl, category, targetPlatform } = req.body;
+      const { title, description, url, thumbnailUrl, category, targetPlatform, isPaidOnly } = req.body;
       const video = await Video.findById(id);
       if (!video) return res.status(404).json({ message: 'Video not found.' });
 
@@ -601,6 +602,7 @@ export class AdminController {
       if (description !== undefined) video.description = description;
       if (category !== undefined) video.category = category;
       if (targetPlatform !== undefined) video.targetPlatform = targetPlatform;
+      if (isPaidOnly !== undefined) video.isPaidOnly = Boolean(isPaidOnly);
       
       if (url !== undefined) {
         video.url = url;

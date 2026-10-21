@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useLanguage } from '../context/LanguageContext';
-import { BookOpen, Video, Eye, HelpCircle, MessageSquare, Send } from 'lucide-react';
+import { BookOpen, Video, Eye, HelpCircle, MessageSquare, Send, Lock, Sparkles, Crown } from 'lucide-react';
 
 const getEmbedUrl = (url: string) => {
   if (url.includes('youtube.com/watch?v=')) {
@@ -14,6 +14,18 @@ const getEmbedUrl = (url: string) => {
   return url;
 };
 
+const getYouTubeThumbnail = (url: string) => {
+  let videoId = '';
+  if (url.includes('youtube.com/watch?v=')) {
+    videoId = url.split('watch?v=')[1]?.split('&')[0];
+  } else if (url.includes('youtu.be/')) {
+    videoId = url.split('youtu.be/')[1]?.split('?')[0];
+  } else if (url.includes('youtube.com/embed/')) {
+    videoId = url.split('embed/')[1]?.split('?')[0];
+  }
+  return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : null;
+};
+
 export const Educational: React.FC = () => {
   const { token, apiUrl } = useAuth();
   const { showToast } = useToast();
@@ -22,6 +34,7 @@ export const Educational: React.FC = () => {
   const [guides, setGuides] = useState<any[]>([]);
   const [videos, setVideos] = useState<any[]>([]);
   const [faqs, setFaqs] = useState<any[]>([]);
+  const [isPaidUser, setIsPaidUser] = useState<boolean>(false);
   const [activeGuideId, setActiveGuideId] = useState<string | null>(null);
   const [activeGuideContent, setActiveGuideContent] = useState<any | null>(null);
   const [activeCategory, setActiveCategory] = useState<'all' | 'guides' | 'videos' | 'faqs' | 'support'>('all');
@@ -35,6 +48,28 @@ export const Educational: React.FC = () => {
 
   const fetchMaterials = async () => {
     try {
+      // Check user subscription status (paid users vs free / trial)
+      if (token) {
+        try {
+          const subRes = await fetch(`${apiUrl}/subscriptions/current`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (subRes.ok) {
+            const subData = await subRes.json();
+            const sub = subData.subscription;
+            const isPaid = !!(
+              sub &&
+              sub.status !== 'trialing' &&
+              (sub.status === 'active' || sub.status === 'cancelled') &&
+              new Date(sub.endDate) > new Date()
+            );
+            setIsPaidUser(isPaid);
+          }
+        } catch (subErr) {
+          console.error('Failed to verify subscription for educational videos:', subErr);
+        }
+      }
+
       // Fetch guides
       const guidesRes = await fetch(`${apiUrl}/guides`);
       if (guidesRes.ok) {
@@ -220,31 +255,93 @@ export const Educational: React.FC = () => {
                 {videos.length === 0 ? (
                   <p className="text-xs text-slate-400 font-semibold pl-2">{t('common.noDataFound', 'No video tutorials available.')}</p>
                 ) : (
-                  videos.map((video) => (
-                    <div 
-                      key={video._id}
-                      className="bg-cardBg dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 overflow-hidden shadow-soft"
-                    >
-                      {/* Video Player Embed */}
-                      <div className="aspect-video w-full">
-                        <iframe
-                          title={video.title}
-                          src={getEmbedUrl(video.url)}
-                          allowFullScreen
-                          className="w-full h-full border-none"
-                        />
+                  videos.map((video) => {
+                    const isLocked = !!video.isPaidOnly && !isPaidUser;
+                    const thumbnail = getYouTubeThumbnail(video.url);
+
+                    return (
+                      <div 
+                        key={video._id}
+                        className="bg-cardBg dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 overflow-hidden shadow-soft transition-all duration-300 hover:shadow-md"
+                      >
+                        {isLocked ? (
+                          /* Modern Locked Preview Card */
+                          <div className="relative aspect-video w-full bg-slate-950 flex flex-col items-center justify-center p-6 text-center overflow-hidden">
+                            {thumbnail && (
+                              <img 
+                                src={thumbnail} 
+                                alt="" 
+                                className="absolute inset-0 w-full h-full object-cover opacity-20 blur-md scale-105 pointer-events-none"
+                              />
+                            )}
+                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/75 to-slate-950/85 pointer-events-none" />
+
+                            <div className="relative z-10 flex flex-col items-center max-w-xs space-y-2.5">
+                              <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-[0_0_24px_rgba(245,158,11,0.25)]">
+                                <Lock className="w-6 h-6" />
+                              </div>
+                              <div>
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase tracking-wider mb-1">
+                                  <Crown className="w-3 h-3" />
+                                  {t('subscription.paidSubscribersOnly', 'Paid Members Only')}
+                                </span>
+                                <h5 className="text-xs font-bold text-white tracking-wide">
+                                  {t('learn.lockedVideoHeading', 'Exclusive Subscriber Content')}
+                                </h5>
+                                <p className="text-[10px] text-slate-400 mt-1 line-clamp-2">
+                                  {t('learn.lockedVideoSubtext', 'This video is reserved for active paid subscribers. Not available on free or trial plans.')}
+                                </p>
+                              </div>
+
+                              <button
+                                onClick={() => window.dispatchEvent(new CustomEvent('navigateToTab', { detail: 'Subscription' }))}
+                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-[11px] shadow-lg shadow-amber-500/25 active:scale-95 transition-all"
+                              >
+                                <Sparkles className="w-3.5 h-3.5" />
+                                <span>{t('subscription.upgradeToUnlock', 'Upgrade to Unlock')}</span>
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          /* Video Player Embed */
+                          <div className="aspect-video w-full">
+                            <iframe
+                              title={video.title}
+                              src={getEmbedUrl(video.url)}
+                              allowFullScreen
+                              className="w-full h-full border-none"
+                            />
+                          </div>
+                        )}
+
+                        <div className="p-4">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[10px] font-bold text-primary uppercase tracking-wider bg-primary-light/50 px-2 py-0.5 rounded-full">
+                              {localizeEducationText(video.category)}
+                            </span>
+                            {video.isPaidOnly ? (
+                              <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
+                                isPaidUser 
+                                  ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+                                  : 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200 dark:border-amber-800'
+                              }`}>
+                                <Crown className="w-3 h-3" />
+                                {isPaidUser ? t('subscription.proUnlocked', 'Pro Unlocked') : t('subscription.paidOnly', 'Paid Only')}
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-semibold text-slate-400">
+                                {t('common.free', 'Free Access')}
+                              </span>
+                            )}
+                          </div>
+                          <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 mt-2">{localizeEducationText(video.title)}</h4>
+                          <p className="text-[10px] text-slate-400 font-semibold mt-1">
+                            {localizeEducationText(video.description)}
+                          </p>
+                        </div>
                       </div>
-                      <div className="p-4">
-                        <span className="text-[10px] font-bold text-primary uppercase tracking-wider bg-primary-light/50 px-2 py-0.5 rounded-full">
-                          {localizeEducationText(video.category)}
-                        </span>
-                        <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 mt-2">{localizeEducationText(video.title)}</h4>
-                        <p className="text-[10px] text-slate-400 font-semibold mt-1">
-                          {localizeEducationText(video.description)}
-                        </p>
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </div>
