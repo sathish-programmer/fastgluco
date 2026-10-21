@@ -210,27 +210,27 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
         return;
       }
 
-      // Seamless fallback to Backend Dual-Channel OTP (Fast2SMS & Email) so user is never blocked
-      console.log('[Firebase Auth] Triggering backup OTP (Fast2SMS + Email) fallback...');
+      // Fallback to Backend Email OTP so user is never blocked
+      console.log('[Firebase Auth] Triggering backup Email OTP fallback...');
       try {
         const e164 = buildE164(mobileNumberRef.current);
         if (e164 && emailRef.current) {
           otpProviderRef.current = 'FAST2SMS';
           setOtpProvider('FAST2SMS');
-          const sendRes = await sendOtp(e164, emailRef.current, true);
+          const sendRes = await sendOtp(e164, emailRef.current, false);
           if (sendRes.success) {
             codeSentRef.current = true;
-            setDeliveryMethod('sms_and_email');
+            setDeliveryMethod('email');
             setScreen('otp');
             setTimer(60);
             setLoading(false);
-            showToast(t('auth.codeSentToMobileAndEmail', 'Verification code sent to your mobile and email'), 'success');
+            showToast(t('auth.codeSentToEmail', { email: emailRef.current }, `Verification code sent to ${emailRef.current}`), 'success');
             setTimeout(() => otpInputRef.current?.focus(), 150);
             return;
           }
         }
       } catch (fallbackErr) {
-        console.error('[Firebase Auth] Fallback OTP failed:', fallbackErr);
+        console.error('[Firebase Auth] Fallback Email OTP failed:', fallbackErr);
       }
 
       setLoading(false);
@@ -335,13 +335,13 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
         try {
           otpProviderRef.current = 'FAST2SMS';
           setOtpProvider('FAST2SMS');
-          const sendRes = await sendOtp(e164, email, true);
+          const sendRes = await sendOtp(e164, email, false);
           if (sendRes.success) {
             codeSentRef.current = true;
-            setDeliveryMethod('sms_and_email');
+            setDeliveryMethod('email');
             setScreen('otp');
             setTimer(60);
-            showToast(t('auth.codeSentToMobileAndEmail', 'Verification code sent to your mobile and email'), 'success');
+            showToast(t('auth.codeSentToEmail', { email }, `Verification code sent to ${email}`), 'success');
             setTimeout(() => otpInputRef.current?.focus(), 150);
           } else {
             setPhoneError(sendRes.message || cleanErrorMessage(nativeErr?.message, t('auth.sendOtpFailed', 'Unable to send verification code. Please try again.')));
@@ -378,13 +378,13 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
       try {
         otpProviderRef.current = 'FAST2SMS';
         setOtpProvider('FAST2SMS');
-        const sendRes = await sendOtp(e164, email, true);
+        const sendRes = await sendOtp(e164, email, false);
         if (sendRes.success) {
           codeSentRef.current = true;
-          setDeliveryMethod('sms_and_email');
+          setDeliveryMethod('email');
           setScreen('otp');
           setTimer(60);
-          showToast(t('auth.codeSentToMobileAndEmail', 'Verification code sent to your mobile and email'), 'success');
+          showToast(t('auth.codeSentToEmail', { email }, `Verification code sent to ${email}`), 'success');
           setTimeout(() => otpInputRef.current?.focus(), 150);
         } else {
           setPhoneError(sendRes.message || cleanErrorMessage(firebaseErr?.message, t('auth.sendOtpFailed', 'Unable to send verification code. Please try again.')));
