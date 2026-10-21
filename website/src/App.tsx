@@ -101,6 +101,19 @@ export default function App() {
   const [simMode, setSimMode] = useState<'PREVENTION' | 'TREATMENT'>('PREVENTION');
   const [showSimDisclaimer, setShowSimDisclaimer] = useState<boolean>(false);
   const [showSimWigsPopup, setShowSimWigsPopup] = useState<boolean>(false);
+  const [isSimulatorHighlighted, setIsSimulatorHighlighted] = useState<boolean>(false);
+
+  const handleTrySimulator = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const el = document.getElementById('interactive-simulator');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    setIsSimulatorHighlighted(true);
+    setTimeout(() => {
+      setIsSimulatorHighlighted(false);
+    }, 4500);
+  };
 
   // Interactive Breathwork Widget State
   const [breathType, setBreathType] = useState<'box' | 'relax' | 'coherent'>('box');
@@ -362,13 +375,19 @@ export default function App() {
                 </div>
               </a>
 
-              <a
-                href="#interactive-simulator"
-                className="px-5 py-3 rounded-2xl text-xs font-bold text-slate-700 hover:text-blue-600 bg-white hover:bg-slate-50 border border-slate-200/90 shadow-soft flex items-center gap-2 transition-all cursor-pointer"
+              <button
+                type="button"
+                onClick={handleTrySimulator}
+                className={`px-5 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                  isSimulatorHighlighted
+                    ? 'bg-blue-600 text-white shadow-glow-blue scale-105 ring-2 ring-blue-400'
+                    : 'text-slate-700 hover:text-blue-600 bg-white hover:bg-slate-50 border border-slate-200/90 shadow-soft'
+                }`}
               >
+                <Sparkles className="h-4 w-4 text-blue-500" />
                 <span>Try Live Simulator</span>
                 <ChevronRight className="h-4 w-4" />
-              </a>
+              </button>
             </div>
 
             <div className="flex items-center gap-3 text-xs font-medium text-slate-500 pt-1">
@@ -382,8 +401,19 @@ export default function App() {
           </div>
 
           {/* Interactive Mobile Simulator Device */}
-          <div id="interactive-simulator" className="lg:col-span-5 flex justify-center">
-            <div className="bg-slate-950 p-3 sm:p-4 rounded-[44px] shadow-2xl border-[5px] border-slate-800 max-w-[350px] w-full relative overflow-hidden select-none">
+          <div id="interactive-simulator" className="lg:col-span-5 flex justify-center relative">
+            {isSimulatorHighlighted && (
+              <div className="absolute -top-11 z-40 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-1.5 rounded-full text-[11px] font-black shadow-lg animate-bounce flex items-center gap-1.5 border border-white/20">
+                <Sparkles className="h-3.5 w-3.5" />
+                <span>Active Simulator: Tap habits inside to adjust Cellular Balance!</span>
+              </div>
+            )}
+
+            <div className={`bg-slate-950 p-3 sm:p-4 rounded-[44px] shadow-2xl border-[5px] transition-all duration-500 max-w-[350px] w-full relative overflow-hidden select-none ${
+              isSimulatorHighlighted
+                ? 'border-blue-500 ring-4 ring-blue-500/50 shadow-glow-blue scale-105'
+                : 'border-slate-800'
+            }`}>
               {/* Dynamic Island / Camera Notch */}
               <div className="absolute top-0 inset-x-0 h-5 flex justify-center z-30">
                 <div className="bg-slate-950 w-28 h-4 rounded-b-xl flex items-center justify-center">
@@ -494,8 +524,54 @@ export default function App() {
 
                   {/* Interactive Habit Logging Matrix */}
                   <div className="mt-2.5">
-                    <p className="text-[8px] text-center font-bold text-indigo-600 uppercase tracking-wider mb-2">
-                      👇 Tap any habit below to adjust balance:
+                    {/* 1-Tap Quick Presets */}
+                    <div className="flex items-center justify-between gap-1 mb-2 px-1">
+                      <span className="text-[7.5px] font-black uppercase text-slate-400">Presets:</span>
+                      <div className="flex gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSimStress(true);
+                            setSimSugarSpike(true);
+                            setSimEnv(true);
+                            setSimFasting(false);
+                            setSimExercise(false);
+                          }}
+                          className="text-[7.5px] font-bold px-1.5 py-0.5 rounded bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 cursor-pointer active:scale-95 transition-all"
+                        >
+                          ⚡ Stress Spike
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSimStress(false);
+                            setSimSugarSpike(false);
+                            setSimEnv(false);
+                            setSimFasting(true);
+                            setSimExercise(true);
+                          }}
+                          className="text-[7.5px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 cursor-pointer active:scale-95 transition-all"
+                        >
+                          🌿 Autophagy
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSimStress(false);
+                            setSimSugarSpike(false);
+                            setSimEnv(false);
+                            setSimFasting(false);
+                            setSimExercise(false);
+                          }}
+                          className="text-[7.5px] font-bold px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 cursor-pointer active:scale-95 transition-all"
+                        >
+                          ↺ Reset
+                        </button>
+                      </div>
+                    </div>
+
+                    <p className="text-[7.5px] text-center font-bold text-indigo-600 uppercase tracking-wider mb-1.5">
+                      👇 Tap any habit to test live balance:
                     </p>
 
                     <div className="grid grid-cols-2 gap-2 text-[9px]">
@@ -831,66 +907,212 @@ export default function App() {
               Consult Top Specialists In-App
             </h2>
             <p className="text-sm sm:text-base text-slate-500 font-medium mt-2">
-              Book live, secure video appointments with certified oncologists and lifestyle doctors who treat the root cellular cause of disease.
+              Book live, secure video appointments with certified oncologists, pulmonologists, and lifestyle doctors who treat the root cellular cause of disease.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {/* Doctor 1: Dr. Muthiah Kasi */}
-            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-soft flex flex-col sm:flex-row gap-6 items-center sm:items-start text-center sm:text-left">
-              <img
-                src="/assets/dr_muthiah_kasi.jpg"
-                alt="Dr. Muthiah Kasi"
-                className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover shadow-md shrink-0 border border-slate-100"
-                onError={(e) => { (e.target as any).src = '/favicon.jpg'; }}
-              />
-              <div className="space-y-3 flex-1">
-                <div>
-                  <div className="flex items-center justify-center sm:justify-start gap-2">
-                    <h3 className="text-lg font-black text-slate-900">Dr. Muthiah Kasi</h3>
-                    <span className="text-[9px] bg-emerald-50 text-emerald-700 font-extrabold px-2 py-0.5 rounded-full border border-emerald-200">
-                      Verified
-                    </span>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7">
+            {/* Doctor 1: Dr. Krithikaa Sekar */}
+            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-soft hover:shadow-card hover:-translate-y-1 transition-all flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="flex items-start gap-4">
+                  <img
+                    src="/assets/dr_krithikaa_sekar.jpg"
+                    alt="Dr. Krithikaa Sekar"
+                    className="w-20 h-20 rounded-2xl object-cover shadow-sm shrink-0 border border-slate-100"
+                    onError={(e) => { (e.target as any).src = '/favicon.jpg'; }}
+                  />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <h3 className="text-base font-black text-slate-900 leading-snug">Dr. Krithikaa Sekar</h3>
+                      <span className="text-[9px] bg-indigo-50 text-indigo-700 font-extrabold px-1.5 py-0.5 rounded border border-indigo-200">
+                        Founder & Chairman
+                      </span>
+                    </div>
+                    <p className="text-xs font-bold text-blue-600 mt-0.5">Radiation Oncology & Metabolic Modulation</p>
+                    <p className="text-[11px] text-slate-500 font-medium">Radiation Oncology MD • 12+ Yrs Exp</p>
                   </div>
-                  <p className="text-xs font-bold text-blue-600 mt-0.5">Radiation Oncology & Lifestyle Medicine</p>
-                  <p className="text-[11px] text-slate-500 font-medium">MD Radiation Oncology • 7+ Years Experience</p>
                 </div>
                 <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                  Specializes in targeted oncology care, radiotherapy support, metabolic therapy, and circadian fasting protocols for secondary cancer recurrence prevention.
+                  Founder & Chairman Mitoreboot. Specialized in metabolic lifestyle modulation for cancer prevention, treatment tolerance, and long-term recurrence defense.
                 </p>
-                <div className="flex items-center justify-center sm:justify-between pt-2 border-t border-slate-100 text-xs font-bold">
-                  <span className="text-slate-700">₹700 / 30 mins</span>
-                  <span className="text-blue-600 font-extrabold hidden sm:inline">Book via App →</span>
+              </div>
+              <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold">
+                <div>
+                  <span className="text-slate-900 font-black">₹1,000</span>
+                  <span className="text-[10px] text-slate-500 font-medium"> / 30 mins</span>
                 </div>
+                <span className="text-blue-600 font-extrabold hover:text-blue-700 transition-colors">Book via App →</span>
               </div>
             </div>
 
             {/* Doctor 2: Dr. Ritesh Santosham */}
-            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-soft flex flex-col sm:flex-row gap-6 items-center sm:items-start text-center sm:text-left">
-              <img
-                src="/assets/dr_ritesh_santosham.jpg"
-                alt="Dr. Ritesh Santosham"
-                className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover shadow-md shrink-0 border border-slate-100"
-                onError={(e) => { (e.target as any).src = '/favicon.jpg'; }}
-              />
-              <div className="space-y-3 flex-1">
-                <div>
-                  <div className="flex items-center justify-center sm:justify-start gap-2">
-                    <h3 className="text-lg font-black text-slate-900">Dr. Ritesh Santosham</h3>
-                    <span className="text-[9px] bg-emerald-50 text-emerald-700 font-extrabold px-2 py-0.5 rounded-full border border-emerald-200">
-                      Verified
-                    </span>
+            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-soft hover:shadow-card hover:-translate-y-1 transition-all flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="flex items-start gap-4">
+                  <img
+                    src="/assets/dr_ritesh_santosham.jpg"
+                    alt="Dr. Ritesh Santosham"
+                    className="w-20 h-20 rounded-2xl object-cover shadow-sm shrink-0 border border-slate-100"
+                    onError={(e) => { (e.target as any).src = '/favicon.jpg'; }}
+                  />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <h3 className="text-base font-black text-slate-900 leading-snug">Dr. Ritesh Santosham</h3>
+                      <span className="text-[9px] bg-emerald-50 text-emerald-700 font-extrabold px-1.5 py-0.5 rounded border border-emerald-200">
+                        Verified
+                      </span>
+                    </div>
+                    <p className="text-xs font-bold text-blue-600 mt-0.5">Clinical Oncologist & Palliative Care</p>
+                    <p className="text-[11px] text-slate-500 font-medium">M.D., F.R.C.R(UK)., Fellowship (TMC) • 9 Yrs Exp</p>
                   </div>
-                  <p className="text-xs font-bold text-blue-600 mt-0.5">Cardiothoracic & Preventive Care</p>
-                  <p className="text-[11px] text-slate-500 font-medium">Senior Consultant • 12+ Years Experience</p>
                 </div>
                 <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                  Expert guidance on cardiovascular endurance, lipid profile management, surgical recovery, and pulmonary conditioning.
+                  Comprehensive cancer management through precision radiotherapy, chemotherapy, immunotherapy, pain relief, and integrated palliative care.
                 </p>
-                <div className="flex items-center justify-center sm:justify-between pt-2 border-t border-slate-100 text-xs font-bold">
-                  <span className="text-slate-700">₹700 / 30 mins</span>
-                  <span className="text-blue-600 font-extrabold hidden sm:inline">Book via App →</span>
+              </div>
+              <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold">
+                <div>
+                  <span className="text-slate-900 font-black">₹750</span>
+                  <span className="text-[10px] text-slate-500 font-medium"> / 30 mins</span>
                 </div>
+                <span className="text-blue-600 font-extrabold hover:text-blue-700 transition-colors">Book via App →</span>
+              </div>
+            </div>
+
+            {/* Doctor 3: Dr. Muthiah Kasi */}
+            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-soft hover:shadow-card hover:-translate-y-1 transition-all flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="flex items-start gap-4">
+                  <img
+                    src="/assets/dr_muthiah_kasi.jpg"
+                    alt="Dr. Muthiah Kasi"
+                    className="w-20 h-20 rounded-2xl object-cover shadow-sm shrink-0 border border-slate-100"
+                    onError={(e) => { (e.target as any).src = '/favicon.jpg'; }}
+                  />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <h3 className="text-base font-black text-slate-900 leading-snug">Dr. Muthiah Kasi</h3>
+                      <span className="text-[9px] bg-emerald-50 text-emerald-700 font-extrabold px-1.5 py-0.5 rounded border border-emerald-200">
+                        Verified
+                      </span>
+                    </div>
+                    <p className="text-xs font-bold text-blue-600 mt-0.5">Radiation Oncology & Lifestyle Medicine</p>
+                    <p className="text-[11px] text-slate-500 font-medium">MD Radiation Oncology (ISLM) • 7 Yrs Exp</p>
+                  </div>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                  Member of Indian Society Of Lifestyle Medicine (ISLM). Specialized in targeted oncology care, radiotherapy support, metabolic therapy, and circadian fasting.
+                </p>
+              </div>
+              <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold">
+                <div>
+                  <span className="text-slate-900 font-black">₹700</span>
+                  <span className="text-[10px] text-slate-500 font-medium"> / 30 mins</span>
+                </div>
+                <span className="text-blue-600 font-extrabold hover:text-blue-700 transition-colors">Book via App →</span>
+              </div>
+            </div>
+
+            {/* Doctor 4: Dr Krishnaveni Renganathan */}
+            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-soft hover:shadow-card hover:-translate-y-1 transition-all flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="flex items-start gap-4">
+                  <img
+                    src="/assets/dr_krishnaveni_renganathan.jpg"
+                    alt="Dr Krishnaveni Renganathan"
+                    className="w-20 h-20 rounded-2xl object-cover shadow-sm shrink-0 border border-slate-100"
+                    onError={(e) => { (e.target as any).src = '/favicon.jpg'; }}
+                  />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <h3 className="text-base font-black text-slate-900 leading-snug">Dr Krishnaveni R.</h3>
+                      <span className="text-[9px] bg-emerald-50 text-emerald-700 font-extrabold px-1.5 py-0.5 rounded border border-emerald-200">
+                        Verified
+                      </span>
+                    </div>
+                    <p className="text-xs font-bold text-blue-600 mt-0.5">Pulmonologist, Allergy & Sleep</p>
+                    <p className="text-[11px] text-slate-500 font-medium">MBBS, MD, DNB, DAA (CMC) • 13 Yrs Exp</p>
+                  </div>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                  Consultant pulmonologist, allergy, and sleep specialist. Fellow in Sleep Medicine (St. John's) helping detect treatable sleep disorders to optimize recovery and immunity.
+                </p>
+              </div>
+              <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold">
+                <div>
+                  <span className="text-slate-900 font-black">₹750</span>
+                  <span className="text-[10px] text-slate-500 font-medium"> / 30 mins</span>
+                </div>
+                <span className="text-blue-600 font-extrabold hover:text-blue-700 transition-colors">Book via App →</span>
+              </div>
+            </div>
+
+            {/* Doctor 5: Dr. Pavithra Dilip */}
+            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-soft hover:shadow-card hover:-translate-y-1 transition-all flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="flex items-start gap-4">
+                  <img
+                    src="/assets/dr_pavithra_dilip.jpg"
+                    alt="Dr. Pavithra Dilip"
+                    className="w-20 h-20 rounded-2xl object-cover shadow-sm shrink-0 border border-slate-100"
+                    onError={(e) => { (e.target as any).src = '/favicon.jpg'; }}
+                  />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <h3 className="text-base font-black text-slate-900 leading-snug">Dr. Pavithra Dilip</h3>
+                      <span className="text-[9px] bg-emerald-50 text-emerald-700 font-extrabold px-1.5 py-0.5 rounded border border-emerald-200">
+                        Verified
+                      </span>
+                    </div>
+                    <p className="text-xs font-bold text-blue-600 mt-0.5">Preventive Dentistry & Oral Health</p>
+                    <p className="text-[11px] text-slate-500 font-medium">BDS, MDS (Preventive Dentistry) • 22 Yrs Exp</p>
+                  </div>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                  22 years of clinical expertise. Oral health & preventive dentistry for systemic wellness, early screening, oral microbiome balance, and toxic burden reduction.
+                </p>
+              </div>
+              <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold">
+                <div>
+                  <span className="text-slate-900 font-black">₹750</span>
+                  <span className="text-[10px] text-slate-500 font-medium"> / 30 mins</span>
+                </div>
+                <span className="text-blue-600 font-extrabold hover:text-blue-700 transition-colors">Book via App →</span>
+              </div>
+            </div>
+
+            {/* Doctor 6: Ms. Sailee Dayanand Rao */}
+            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-soft hover:shadow-card hover:-translate-y-1 transition-all flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="flex items-start gap-4">
+                  <img
+                    src="/assets/ms_sailee_dayanand_rao.jpg"
+                    alt="Ms. Sailee Dayanand Rao"
+                    className="w-20 h-20 rounded-2xl object-cover shadow-sm shrink-0 border border-slate-100"
+                    onError={(e) => { (e.target as any).src = '/favicon.jpg'; }}
+                  />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <h3 className="text-base font-black text-slate-900 leading-snug">Ms. Sailee D. Rao</h3>
+                      <span className="text-[9px] bg-purple-50 text-purple-700 font-extrabold px-1.5 py-0.5 rounded border border-purple-200">
+                        Counselor
+                      </span>
+                    </div>
+                    <p className="text-xs font-bold text-blue-600 mt-0.5">Psycho-Oncology & De-Addiction</p>
+                    <p className="text-[11px] text-slate-500 font-medium">M.Sc Psycho-oncology • 5 Yrs Exp</p>
+                  </div>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                  Specialist in psycho-oncology and certified addiction counselling for restorative emotional resilience, coping strategies, and mental well-being for patients and caregivers.
+                </p>
+              </div>
+              <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold">
+                <div>
+                  <span className="text-slate-900 font-black">₹500</span>
+                  <span className="text-[10px] text-slate-500 font-medium"> / 30 mins</span>
+                </div>
+                <span className="text-blue-600 font-extrabold hover:text-blue-700 transition-colors">Book via App →</span>
               </div>
             </div>
           </div>
