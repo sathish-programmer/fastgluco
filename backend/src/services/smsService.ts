@@ -57,6 +57,29 @@ export class SMSService {
       });
 
       let data: any = await response.json();
+      console.log('[Fast2SMS OTP Route Response (₹0.25)]:', data);
+
+      if (data.return === true || data.status_code === 200) {
+        return true;
+      }
+
+      // 2. Fallback to Quick SMS route if OTP route template/KYC is pending (Cost: ₹5 per SMS)
+      console.log('[Fast2SMS] OTP route fallback to Quick route...');
+      response = await fetch('https://www.fast2sms.com/dev/bulkV2', {
+        method: 'POST',
+        headers: {
+          'authorization': apiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          route: 'q',
+          message: `Your Mito Reboot verification code is ${otp}. Valid for 10 minutes.`,
+          numbers: cleaned
+        })
+      });
+
+      data = (await response.json()) as any;
+      console.log('[Fast2SMS Quick Route Response]:', data);
       return data.return === true || data.status_code === 200;
     } catch (err) {
       console.error('[Fast2SMS Exception]:', err);
