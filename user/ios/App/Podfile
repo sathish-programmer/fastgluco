@@ -23,8 +23,18 @@ end
 target 'App' do
   capacitor_pods
   pod 'Firebase/Auth'
+  pod 'RecaptchaEnterprise'
 end
 
 post_install do |installer|
   assertDeploymentTarget(installer)
+
+  request_file = 'Pods/FirebaseAuth/FirebaseAuth/Sources/Swift/Backend/RPC/SendVerificationTokenRequest.swift'
+  if File.exist?(request_file)
+    c = File.read(request_file)
+    unless c.include?('postBody[kreCAPTCHATokenKey] = captchaResponse')
+      c.sub!('if let captchaResponse {', "if let captchaResponse {\n      if postBody[kreCAPTCHATokenKey] == nil {\n        postBody[kreCAPTCHATokenKey] = captchaResponse\n      }")
+      File.write(request_file, c)
+    end
+  end
 end

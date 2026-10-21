@@ -1,14 +1,12 @@
 <en-US>
-• Seamless Mobile Sign-In: Optimized secure Firebase phone authentication and reliable OTP delivery.
-• Consistent Health Metrics: Unified score formatting across cellular balance cards, charts, and daily logs.
-• AI & Habit Tracking: Enhanced audio responsiveness and synchronized daily circadian modules.
-• Performance & Stability: General bug fixes, smoother navigation, and app optimizations.
+• Seamless Mobile Sign-In: Optimized secure Firebase phone authentication with instant backup OTP verification.
+• Doctor Profile & Contact: Added specialist contact email directly on consultation profiles.
+• Sign Out Confirmation: Added confirmation safeguard before logging out of user profiles.
+• Performance & Stability: Enhanced APNs configuration, updated version build targets, and general optimizations.
 </en-US>
 <en-IN>
-• Seamless Mobile Sign-In: Optimized secure Firebase phone authentication and reliable OTP delivery.
-• Consistent Health Metrics: Unified score formatting across cellular balance cards, charts, and daily logs.
-• AI & Habit Tracking: Enhanced audio responsiveness and synchronized daily circadian modules.
-• Performance & Stability: General bug fixes, smoother navigation, and app optimizations.
+• Seamless Mobile Sign-In: Optimized secure Firebase phone authentication with instant backup OTP verification.
+• Doctor Profile & Contact: Added specialist contact email directly on consultation profiles.
+• Sign Out Confirmation: Added confirmation safeguard before logging out of user profiles.
+• Performance & Stability: Enhanced APNs configuration, updated version build targets, and general optimizations.
 </en-IN>
-
-

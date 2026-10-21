@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Trash2, Edit, UserCheck, UserX, Upload, Image as ImageIcon, Stethoscope } from 'lucide-react';
-import drMuthiahAvatar from '../assets/dr_muthiah_kasi.jpg';
+
 
 const formatDate = (dateStr: string | undefined | null, withTime = false): string => {
   if (!dateStr) return '--';
@@ -15,17 +15,22 @@ const formatDate = (dateStr: string | undefined | null, withTime = false): strin
   } catch { return dateStr; }
 };
 
-const getAdminAvatarUrl = (avatar?: string, apiUrl?: string, docName?: string): string => {
-  if (docName && /muthiah/i.test(docName)) {
-    return drMuthiahAvatar;
+const getAdminAvatarUrl = (avatar?: string, apiUrl?: string): string => {
+  if (!avatar || typeof avatar !== 'string') return '';
+  const trimmed = avatar.trim();
+  if (!trimmed) return '';
+
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    if (apiUrl && (apiUrl.includes('localhost') || apiUrl.includes('127.0.0.1')) && trimmed.includes('/uploads/')) {
+      const baseUrl = apiUrl.replace(/\/api\/?$/, '');
+      const uploadPath = trimmed.substring(trimmed.indexOf('/uploads/'));
+      return `${baseUrl}${uploadPath}`;
+    }
+    return trimmed;
   }
-  if (avatar && /muthiah/i.test(avatar)) {
-    return drMuthiahAvatar;
-  }
-  if (!avatar) return '';
-  if (avatar.startsWith('http://') || avatar.startsWith('https://')) return avatar;
+
   const baseUrl = (apiUrl || '').replace(/\/api\/?$/, '');
-  return `${baseUrl}${avatar.startsWith('/') ? '' : '/'}${avatar}`;
+  return `${baseUrl}${trimmed.startsWith('/') ? '' : '/'}${trimmed}`;
 };
 
 interface AdminExtDashboardProps {
@@ -383,7 +388,7 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
               </thead>
               <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
                 {doctors.map(doc => {
-                  const avatarSrc = getAdminAvatarUrl(doc.avatar, apiUrl, doc.name);
+                  const avatarSrc = getAdminAvatarUrl(doc.avatar, apiUrl);
                   const initial = doc.name.replace(/^(Dr\.?|Ms\.?|Mr\.?)\s*/i, '').charAt(0) || 'D';
                   return (
                     <tr key={doc._id} className="hover:bg-slate-50/50 transition-colors">
@@ -397,15 +402,19 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
                                 className="w-full h-full object-cover"
                                 onError={(e) => {
                                   const img = e.currentTarget as HTMLImageElement;
-                                  if (img.src !== drMuthiahAvatar && (/muthiah/i.test(doc.name) || /muthiah/i.test(doc.avatar || ''))) {
-                                    img.src = drMuthiahAvatar;
-                                  } else {
-                                    img.style.display = 'none';
+                                  img.style.display = 'none';
+                                  if (img.nextElementSibling) {
+                                    (img.nextElementSibling as HTMLElement).style.display = 'flex';
                                   }
                                 }}
                               />
                             ) : null}
-                            <span className="text-sm font-black select-none">{initial}</span>
+                            <span
+                              className="text-sm font-black select-none w-full h-full items-center justify-center"
+                              style={{ display: avatarSrc ? 'none' : 'flex' }}
+                            >
+                              {initial}
+                            </span>
                           </div>
                           <div className="min-w-0 max-w-xs">
                             <h4 className="font-bold text-slate-800 text-sm truncate">{doc.name}</h4>
@@ -802,24 +811,27 @@ export const AdminExtDashboard: React.FC<AdminExtDashboardProps & { defaultTab?:
                   accept="image/*"
                   className="hidden"
                 />
-                <div className="w-16 h-16 rounded-2xl bg-white border border-slate-200 flex items-center justify-center font-bold text-slate-400 overflow-hidden shrink-0 shadow-2xs">
-                  {docForm.avatar || /muthiah/i.test(docForm.name) ? (
+                <div className="w-16 h-16 rounded-2xl bg-white border border-slate-200 flex items-center justify-center font-bold text-slate-400 overflow-hidden shrink-0 shadow-2xs relative">
+                  {docForm.avatar ? (
                     <img
-                      src={getAdminAvatarUrl(docForm.avatar, apiUrl, docForm.name)}
+                      src={getAdminAvatarUrl(docForm.avatar, apiUrl)}
                       alt="Doctor Profile"
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         const img = e.currentTarget as HTMLImageElement;
-                        if (img.src !== drMuthiahAvatar && (/muthiah/i.test(docForm.name) || /muthiah/i.test(docForm.avatar))) {
-                          img.src = drMuthiahAvatar;
-                        } else {
-                          img.style.display = 'none';
+                        img.style.display = 'none';
+                        if (img.nextElementSibling) {
+                          (img.nextElementSibling as HTMLElement).style.display = 'flex';
                         }
                       }}
                     />
-                  ) : (
-                    <ImageIcon className="h-6 w-6 text-slate-300" />
-                  )}
+                  ) : null}
+                  <div
+                    className="w-full h-full items-center justify-center text-slate-300"
+                    style={{ display: docForm.avatar ? 'none' : 'flex' }}
+                  >
+                    <ImageIcon className="h-6 w-6" />
+                  </div>
                 </div>
                 <div className="flex-1 min-w-0 space-y-1.5">
                   <span className="font-bold text-slate-700 block">Doctor Profile Photo</span>

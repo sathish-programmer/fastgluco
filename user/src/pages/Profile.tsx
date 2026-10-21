@@ -135,6 +135,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
 
   // Account Deletion States
   const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
+  const [showSignOutModal, setShowSignOutModal] = useState<boolean>(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState<boolean>(false);
   const [showFounderModal, setShowFounderModal] = useState<boolean>(false);
 
@@ -1327,7 +1328,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5, duration: 0.4 }}
-        onClick={logout}
+        onClick={() => setShowSignOutModal(true)}
         className="w-full border border-rose-250 dark:border-rose-900/50 hover:bg-rose-50/50 dark:hover:bg-rose-900/30 text-rose-600 dark:text-rose-400 font-bold py-3 px-4 rounded-3xl flex items-center justify-center space-x-2 transition-all mb-4 cursor-pointer"
       >
         <LogOut className="h-4 w-4" />
@@ -1448,6 +1449,44 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
                 className="flex-1 py-2.5 bg-rose-500 dark:bg-rose-600 hover:bg-rose-600 dark:hover:bg-rose-700 text-white rounded-xl text-xs font-semibold shadow-soft disabled:opacity-50 cursor-pointer"
               >
                 {isDeletingAccount ? t('profile.deleting', 'Deleting...') : t('auth.deleteAccount', 'Delete Account')}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Sign Out Confirmation Modal */}
+      {showSignOutModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-md w-full border border-slate-100 dark:border-slate-800 shadow-xl"
+          >
+            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-3 flex items-center space-x-2">
+              <LogOut className="h-5 w-5 text-rose-500 dark:text-rose-400" />
+              <span>{t('auth.signOutConfirmTitle', 'Sign Out')}</span>
+            </h3>
+            <p className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed mb-6">
+              {t('auth.signOutConfirmDesc', 'Are you sure you want to sign out of your account?')}
+            </p>
+            <div className="flex space-x-3">
+              <button
+                type="button"
+                onClick={() => setShowSignOutModal(false)}
+                className="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold cursor-pointer"
+              >
+                {t('common.cancel', 'Cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSignOutModal(false);
+                  logout();
+                }}
+                className="flex-1 py-2.5 bg-rose-500 dark:bg-rose-600 hover:bg-rose-600 dark:hover:bg-rose-700 text-white rounded-xl text-xs font-semibold shadow-soft cursor-pointer"
+              >
+                {t('auth.signOut', 'Sign Out')}
               </button>
             </div>
           </motion.div>

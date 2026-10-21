@@ -48,7 +48,7 @@ export class DoctorController {
 
       const fee = Number(onlineConsultationFee || consultationFee || 500);
       const passwordHash = await bcrypt.hash(password, 10);
-      const fullAvatar = avatar && avatar.startsWith('/uploads/') ? `https://api.mitoreboot.in${avatar}` : (avatar || '');
+      const fullAvatar = avatar ? avatar.trim() : '';
       const doc = new Doctor({
         name,
         email,
@@ -155,7 +155,7 @@ export class DoctorController {
       if (description !== undefined) doc.description = description;
       if (isActive !== undefined) doc.isActive = Boolean(isActive);
       if (avatar !== undefined) {
-        doc.avatar = avatar && avatar.startsWith('/uploads/') ? `https://api.mitoreboot.in${avatar}` : avatar;
+        doc.avatar = avatar ? avatar.trim() : '';
       }
       if (onlineConsultationFee !== undefined) {
         const fee = Number(onlineConsultationFee);
@@ -233,10 +233,16 @@ export class DoctorController {
           const avgRating = ratingCount > 0
             ? parseFloat((feedbacks.reduce((sum: number, f: any) => sum + f.rating, 0) / ratingCount).toFixed(1))
             : null;
+          const getBaseUrl = () => {
+            if (process.env.API_BASE_URL) return process.env.API_BASE_URL.replace(/\/+$/, '');
+            const proto = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'https';
+            const host = req.get('host') || 'api.mitoreboot.in';
+            return `${proto}://${host}`;
+          };
           const avatar = doc.avatar
             ? (doc.avatar.startsWith('http://') || doc.avatar.startsWith('https://')
                 ? doc.avatar
-                : `https://api.mitoreboot.in${doc.avatar.startsWith('/') ? '' : '/'}${doc.avatar}`)
+                : `${getBaseUrl()}${doc.avatar.startsWith('/') ? '' : '/'}${doc.avatar}`)
             : '';
           return { ...doc.toObject(), avatar, avgRating, ratingCount };
         })

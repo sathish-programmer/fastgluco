@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { Calendar as CalendarIcon, Clock, ArrowLeft, Star, Sparkles, Globe, Video, Building2, Download, FileText, Loader2, Check, Info, X } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, ArrowLeft, Star, Sparkles, Globe, Video, Building2, Download, FileText, Loader2, Check, Info, X, Mail } from 'lucide-react';
 import { useConsultation } from '../../context/ConsultationContext';
 import { downloadFile } from '../../utils/fileDownloader';
 
-import drMuthiahAvatar from '../../assets/dr_muthiah_kasi.jpg';
+
 
 interface BookAppointmentScreenProps {
   onBack?: () => void;
@@ -38,14 +38,22 @@ const LOCALE_MAP: Record<string, string> = {
   hi: 'hi-IN'
 };
 
-const getAvatarUrl = (avatarPath?: string, apiUrl?: string, docName?: string) => {
-  if (docName && /Muthiah/i.test(docName)) {
-    return drMuthiahAvatar;
+const getAvatarUrl = (avatarPath?: string, apiUrl?: string): string | null => {
+  if (!avatarPath || typeof avatarPath !== 'string') return null;
+  const trimmed = avatarPath.trim();
+  if (!trimmed) return null;
+
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    if (apiUrl && (apiUrl.includes('localhost') || apiUrl.includes('127.0.0.1')) && trimmed.includes('/uploads/')) {
+      const baseUrl = apiUrl.replace(/\/api\/?$/, '');
+      const uploadPath = trimmed.substring(trimmed.indexOf('/uploads/'));
+      return `${baseUrl}${uploadPath}`;
+    }
+    return trimmed;
   }
-  if (!avatarPath) return null;
-  if (avatarPath.startsWith('http://') || avatarPath.startsWith('https://')) return avatarPath;
+
   const baseUrl = (apiUrl || '').replace(/\/api\/?$/, '');
-  return `${baseUrl}${avatarPath.startsWith('/') ? '' : '/'}${avatarPath}`;
+  return `${baseUrl}${trimmed.startsWith('/') ? '' : '/'}${trimmed}`;
 };
 
 export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ onBack }) => {
@@ -531,28 +539,25 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                   {doctors.map(doc => {
                     const isRec = isRecommendedDoctor(doc);
                     const isSelected = selectedDoctor?._id === doc._id;
-                    const avatarSrc = getAvatarUrl(doc.avatar, apiUrl, doc.name);
+                    const avatarSrc = getAvatarUrl(doc.avatar, apiUrl);
                     const effectiveDuration = doc.slotDuration || 30;
 
                     const isDental = Boolean(
                       (doc.specialty && /dent|oral/i.test(doc.specialty)) ||
                       (doc.qualification && /bds|mds|dent/i.test(doc.qualification)) ||
-                      (doc.focusTitle && /dent|oral/i.test(doc.focusTitle)) ||
-                      (doc.name && /Pavithra/i.test(doc.name))
+                      (doc.focusTitle && /dent|oral/i.test(doc.focusTitle))
                     );
 
                     const isMetabolic = Boolean(
                       (doc.specialty && /metabolic|cancer|oncol|radiation/i.test(doc.specialty)) ||
                       (doc.qualification && /oncology|metabolic/i.test(doc.qualification)) ||
-                      (doc.focusTitle && /metabolic|cancer/i.test(doc.focusTitle)) ||
-                      (doc.name && /Krithikaa|Muthiah/i.test(doc.name))
+                      (doc.focusTitle && /metabolic|cancer/i.test(doc.focusTitle))
                     );
 
                     const isPsychological = Boolean(
                       (doc.specialty && /psycho|counsel|mental|addiction/i.test(doc.specialty)) ||
                       (doc.qualification && /psycho|counsel|mental/i.test(doc.qualification)) ||
-                      (doc.focusTitle && /psycho|mental|counsel/i.test(doc.focusTitle)) ||
-                      (doc.name && /Sailee/i.test(doc.name))
+                      (doc.focusTitle && /psycho|mental|counsel/i.test(doc.focusTitle))
                     );
 
                     const isSleep = Boolean(
@@ -627,16 +632,19 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                                     style={{ width: 56, height: 56, minWidth: 56, minHeight: 56, maxWidth: 56, maxHeight: 56, objectFit: 'cover' }}
                                     onError={(e) => {
                                       const target = e.currentTarget as HTMLImageElement;
-                                      if (doc.name && /Muthiah/i.test(doc.name) && target.src !== drMuthiahAvatar) {
-                                        target.src = drMuthiahAvatar;
-                                        return;
-                                      }
                                       target.style.display = 'none';
+                                      if (target.nextElementSibling) {
+                                        (target.nextElementSibling as HTMLElement).style.display = 'flex';
+                                      }
                                     }}
                                   />
-                                ) : (
-                                  doc.name.replace(/^(Dr\.?|Ms\.?|Mr\.?)\s+/i, '').charAt(0) || 'D'
-                                )}
+                                ) : null}
+                                <span
+                                  className="w-full h-full items-center justify-center font-black select-none text-base"
+                                  style={{ display: avatarSrc ? 'none' : 'flex' }}
+                                >
+                                  {doc.name.replace(/^(Dr\.?|Ms\.?|Mr\.?)\s+/i, '').charAt(0) || 'D'}
+                                </span>
                               </div>
                               <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full ring-2 ring-white dark:ring-slate-900 z-10 pointer-events-none" title="Active Specialist" />
                             </div>
@@ -658,6 +666,13 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                               <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 line-clamp-1 mt-0.5">
                                 {doc.specialty}
                               </p>
+
+                              {doc.email && (
+                                <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate mt-0.5 flex items-center gap-1" title={doc.email}>
+                                  <Mail className="w-3 h-3 text-indigo-500 shrink-0" />
+                                  <span>{doc.email}</span>
+                                </p>
+                              )}
                             </div>
 
                             {/* Radio / Checkmark Selection Button */}
@@ -1238,24 +1253,27 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                   className="w-18 h-18 min-w-[72px] min-h-[72px] rounded-2xl bg-gradient-to-br from-indigo-50 to-slate-100 dark:from-slate-800 dark:to-slate-850 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-bold text-indigo-600 dark:text-indigo-400 text-xl overflow-hidden shadow-sm shrink-0 relative"
                   style={{ width: 72, height: 72, minWidth: 72, minHeight: 72 }}
                 >
-                  {getAvatarUrl(profileDoctor.avatar, apiUrl, profileDoctor.name) ? (
+                  {getAvatarUrl(profileDoctor.avatar, apiUrl) ? (
                     <img
-                      src={getAvatarUrl(profileDoctor.avatar, apiUrl, profileDoctor.name)!}
+                      src={getAvatarUrl(profileDoctor.avatar, apiUrl)!}
                       alt={profileDoctor.name}
                       className="w-full h-full object-cover rounded-2xl block"
                       style={{ width: 72, height: 72, objectFit: 'cover' }}
                       onError={(e) => {
                         const target = e.currentTarget as HTMLImageElement;
-                        if (profileDoctor?.name && /Muthiah/i.test(profileDoctor.name) && target.src !== drMuthiahAvatar) {
-                          target.src = drMuthiahAvatar;
-                          return;
-                        }
                         target.style.display = 'none';
+                        if (target.nextElementSibling) {
+                          (target.nextElementSibling as HTMLElement).style.display = 'flex';
+                        }
                       }}
                     />
-                  ) : (
-                    profileDoctor.name.replace(/^(Dr\.?|Ms\.?|Mr\.?)\s+/i, '').charAt(0) || 'D'
-                  )}
+                  ) : null}
+                  <span
+                    className="w-full h-full items-center justify-center font-black select-none text-2xl"
+                    style={{ display: getAvatarUrl(profileDoctor.avatar, apiUrl) ? 'none' : 'flex' }}
+                  >
+                    {profileDoctor.name.replace(/^(Dr\.?|Ms\.?|Mr\.?)\s+/i, '').charAt(0) || 'D'}
+                  </span>
                   <span className="absolute bottom-1 right-1 w-3.5 h-3.5 bg-emerald-500 rounded-full ring-2 ring-white dark:ring-slate-900" />
                 </div>
 
@@ -1291,6 +1309,16 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                       <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold">
                         ⏱️ {profileDoctor.slotDuration} mins session
                       </span>
+                    )}
+                    {profileDoctor.email && (
+                      <a
+                        href={`mailto:${profileDoctor.email}`}
+                        className="px-2.5 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200/70 dark:border-indigo-800 font-semibold flex items-center gap-1 hover:underline"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Mail className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
+                        <span>{profileDoctor.email}</span>
+                      </a>
                     )}
                   </div>
                 </div>
@@ -1353,6 +1381,23 @@ export const BookAppointmentScreen: React.FC<BookAppointmentScreenProps> = ({ on
                       </div>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* Specialist Contact Email */}
+              {profileDoctor.email && (
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
+                    <Mail className="w-3.5 h-3.5 text-indigo-500" /> Specialist Email
+                  </h4>
+                  <a
+                    href={`mailto:${profileDoctor.email}`}
+                    className="flex items-center gap-2 bg-slate-50/70 dark:bg-slate-800/50 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-700/70 text-xs font-semibold text-slate-800 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Mail className="w-4 h-4 text-indigo-500 shrink-0" />
+                    <span>{profileDoctor.email}</span>
+                  </a>
                 </div>
               )}
 

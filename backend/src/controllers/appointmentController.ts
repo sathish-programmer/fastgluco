@@ -39,10 +39,16 @@ export class AppointmentController {
           const avgRating = ratingCount > 0
             ? parseFloat((feedbacks.reduce((sum: number, f: any) => sum + f.rating, 0) / ratingCount).toFixed(1))
             : null;
+          const getBaseUrl = () => {
+            if (process.env.API_BASE_URL) return process.env.API_BASE_URL.replace(/\/+$/, '');
+            const proto = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'https';
+            const host = req.get('host') || 'api.mitoreboot.in';
+            return `${proto}://${host}`;
+          };
           const avatar = doc.avatar
             ? (doc.avatar.startsWith('http://') || doc.avatar.startsWith('https://')
                 ? doc.avatar
-                : `https://api.mitoreboot.in${doc.avatar.startsWith('/') ? '' : '/'}${doc.avatar}`)
+                : `${getBaseUrl()}${doc.avatar.startsWith('/') ? '' : '/'}${doc.avatar}`)
             : '';
           return { ...doc.toObject(), avatar, avgRating, ratingCount };
         })

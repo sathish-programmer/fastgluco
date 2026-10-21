@@ -31,6 +31,15 @@ function getRecaptchaVerifier(): RecaptchaVerifier {
   return window.recaptchaVerifier;
 }
 
+function cleanErrorMessage(raw: string | undefined, fallback: string): string {
+  if (!raw) return fallback;
+  const lower = raw.toLowerCase();
+  if (lower.includes('recaptcha') || lower.includes('cloud.google.com') || lower.includes('load failed') || lower.includes('internal-error') || lower.includes('firebase')) {
+    return fallback;
+  }
+  return raw;
+}
+
 interface LoginProps {
   resetToken?: string | null;
   onClearResetToken?: () => void;
@@ -106,7 +115,7 @@ function detectCountryFromTimezone(): Country {
 
 
 export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearResetToken: _onClearResetToken }) => {
-  const { verifyOtp, loginWithFirebaseToken, error, clearError, isLoading: authLoading, branding, apiUrl } = useAuth();
+  const { sendOtp, verifyOtp, loginWithFirebaseToken, error, clearError, isLoading: authLoading, branding, apiUrl } = useAuth();
   const { showToast } = useToast();
   const { t } = useLanguage();
 
@@ -201,8 +210,31 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
         return;
       }
 
+      // Seamless fallback to Backend Dual-Channel OTP (Fast2SMS & Email) so user is never blocked
+      console.log('[Firebase Auth] Triggering backup OTP (Fast2SMS + Email) fallback...');
+      try {
+        const e164 = buildE164(mobileNumberRef.current);
+        if (e164 && emailRef.current) {
+          otpProviderRef.current = 'FAST2SMS';
+          setOtpProvider('FAST2SMS');
+          const sendRes = await sendOtp(e164, emailRef.current, true);
+          if (sendRes.success) {
+            codeSentRef.current = true;
+            setDeliveryMethod('sms_and_email');
+            setScreen('otp');
+            setTimer(60);
+            setLoading(false);
+            showToast(t('auth.codeSentToMobileAndEmail', 'Verification code sent to your mobile and email'), 'success');
+            setTimeout(() => otpInputRef.current?.focus(), 150);
+            return;
+          }
+        }
+      } catch (fallbackErr) {
+        console.error('[Firebase Auth] Fallback OTP failed:', fallbackErr);
+      }
+
       setLoading(false);
-      setPhoneError(errorMsg);
+      setPhoneError(cleanErrorMessage(errorMsg, t('auth.sendOtpFailed', 'Failed to send verification code via Firebase. Please try again.')));
     });
 
     return () => {
@@ -290,25 +322,42 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
     setIsAutoVerifying(false);
     setLoading(true);
 
-    // 1. Android Native: Native Firebase Phone Auth with Google Play Services auto-detect
-    if (Capacitor.getPlatform() === 'android') {
+    // 1. Native Mobile (iOS & Android): Native Firebase Phone Auth with automatic fallback
+    if (Capacitor.isNativePlatform()) {
       try {
-        console.log('[Firebase Auth] Attempting Android Native Firebase Phone Auth for:', e164);
+        console.log(`[Firebase Auth] Attempting Native Firebase Phone Auth (${Capacitor.getPlatform()}) for:`, e164);
         otpProviderRef.current = 'FIREBASE';
         setOtpProvider('FIREBASE');
         await FirebaseAuthentication.signInWithPhoneNumber({ phoneNumber: e164 });
-        // phoneCodeSent listener will transition screen to 'otp' and set codeSentRef.current = true
+        // Native phoneCodeSent listener will transition screen to 'otp' and set codeSentRef.current = true
       } catch (nativeErr: any) {
-        console.warn('[Firebase Auth] Android Native Firebase Phone Auth error:', nativeErr);
-        setLoading(false);
-        setPhoneError(nativeErr?.message || 'Failed to send verification code via Firebase. Please try again.');
+        console.warn(`[Firebase Auth] Native Firebase Phone Auth (${Capacitor.getPlatform()}) error, seamlessly falling back to backend OTP:`, nativeErr);
+        try {
+          otpProviderRef.current = 'FAST2SMS';
+          setOtpProvider('FAST2SMS');
+          const sendRes = await sendOtp(e164, email, true);
+          if (sendRes.success) {
+            codeSentRef.current = true;
+            setDeliveryMethod('sms_and_email');
+            setScreen('otp');
+            setTimer(60);
+            showToast(t('auth.codeSentToMobileAndEmail', 'Verification code sent to your mobile and email'), 'success');
+            setTimeout(() => otpInputRef.current?.focus(), 150);
+          } else {
+            setPhoneError(sendRes.message || cleanErrorMessage(nativeErr?.message, t('auth.sendOtpFailed', 'Unable to send verification code. Please try again.')));
+          }
+        } catch (fallbackErr: any) {
+          setPhoneError(cleanErrorMessage(fallbackErr?.message, t('auth.sendOtpFailed', 'Unable to send verification code. Please try again.')));
+        } finally {
+          setLoading(false);
+        }
       }
       return;
     }
 
-    // 2. iOS & Web: Firebase Phone Auth via Web SDK (Invisible reCAPTCHA inside WebView)
+    // 2. Web: Web Firebase Phone Auth with automatic fallback
     try {
-      console.log('[Firebase Auth] Attempting Firebase Phone Auth for:', e164);
+      console.log('[Firebase Auth] Attempting Web Firebase Phone Auth for:', e164);
       const verifier = getRecaptchaVerifier();
       const confirmation = await signInWithPhoneNumber(auth, e164, verifier);
 
@@ -323,10 +372,26 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
       showToast(t('auth.codeSentToMobile', { mobileNumber: e164 }, `Verification code sent to ${e164}`), 'success');
       setTimeout(() => otpInputRef.current?.focus(), 100);
     } catch (firebaseErr: any) {
-      console.warn('[Firebase Auth] Firebase initiation error:', firebaseErr);
+      console.warn('[Firebase Auth] Web Firebase initiation error, falling back to backend OTP:', firebaseErr);
       setConfirmationResult(null);
       window.confirmationResult = null;
-      setPhoneError(firebaseErr?.message || 'Failed to send verification code via Firebase. Please try again.');
+      try {
+        otpProviderRef.current = 'FAST2SMS';
+        setOtpProvider('FAST2SMS');
+        const sendRes = await sendOtp(e164, email, true);
+        if (sendRes.success) {
+          codeSentRef.current = true;
+          setDeliveryMethod('sms_and_email');
+          setScreen('otp');
+          setTimer(60);
+          showToast(t('auth.codeSentToMobileAndEmail', 'Verification code sent to your mobile and email'), 'success');
+          setTimeout(() => otpInputRef.current?.focus(), 150);
+        } else {
+          setPhoneError(sendRes.message || cleanErrorMessage(firebaseErr?.message, t('auth.sendOtpFailed', 'Unable to send verification code. Please try again.')));
+        }
+      } catch (fallbackErr: any) {
+        setPhoneError(cleanErrorMessage(fallbackErr?.message, t('auth.sendOtpFailed', 'Unable to send verification code. Please try again.')));
+      }
     } finally {
       setLoading(false);
     }
@@ -353,9 +418,9 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
         // --- 1. FIREBASE AUTHENTICATION FLOW (PRIMARY) ---
         let idToken: string | null = null;
 
-        if (Capacitor.getPlatform() === 'android' && window.verificationId) {
+        if (Capacitor.isNativePlatform() && window.verificationId) {
           try {
-            console.log('[Auth] Verifying Android Native Firebase OTP with verificationId:', window.verificationId);
+            console.log(`[Auth] Verifying Native Firebase OTP (${Capacitor.getPlatform()}) with verificationId:`, window.verificationId);
             await FirebaseAuthentication.confirmVerificationCode({
               verificationId: window.verificationId,
               verificationCode: code
@@ -363,8 +428,14 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
             const idTokenRes = await FirebaseAuthentication.getIdToken();
             idToken = idTokenRes.token || null;
           } catch (fbErr: any) {
-            console.error('[Auth] Native Firebase confirmation failed:', fbErr);
-            setOtpError(t('auth.invalidOtp', 'Invalid or expired Firebase verification code. Please check your SMS and try again.'));
+            console.warn('[Auth] Native Firebase confirmation failed, checking backup verification:', fbErr);
+            // Check if code verifies with backend OTP before failing
+            const ok = await verifyOtp(e164, code, email);
+            if (ok) {
+              showToast(t('auth.authSuccessWelcome', 'Authenticated successfully! Welcome.'), 'success');
+              return;
+            }
+            setOtpError(t('auth.invalidOtp', 'Invalid or expired verification code. Please check your SMS or Email and try again.'));
             return;
           }
         } else if (confirmationResult) {
@@ -373,14 +444,24 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
             const userCredential = await confirmationResult.confirm(code);
             idToken = await userCredential.user.getIdToken();
           } catch (fbErr: any) {
-            console.error('[Auth] Firebase confirmation failed:', fbErr);
-            setOtpError(t('auth.invalidOtp', 'Invalid or expired Firebase verification code. Please check your SMS and try again.'));
+            console.warn('[Auth] Firebase confirmation failed, checking backup verification:', fbErr);
+            const ok = await verifyOtp(e164, code, email);
+            if (ok) {
+              showToast(t('auth.authSuccessWelcome', 'Authenticated successfully! Welcome.'), 'success');
+              return;
+            }
+            setOtpError(t('auth.invalidOtp', 'Invalid or expired verification code. Please check your SMS or Email and try again.'));
             return;
           }
         }
 
         if (!idToken) {
-          setOtpError('Unable to retrieve Firebase verification token. Please request a new OTP.');
+          const ok = await verifyOtp(e164, code, email);
+          if (ok) {
+            showToast(t('auth.authSuccessWelcome', 'Authenticated successfully! Welcome.'), 'success');
+            return;
+          }
+          setOtpError('Unable to retrieve verification token. Please request a new OTP.');
           return;
         }
 

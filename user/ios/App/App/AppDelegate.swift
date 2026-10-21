@@ -10,9 +10,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         FirebaseApp.configure()
         application.registerForRemoteNotifications()
-        #if targetEnvironment(simulator)
-        Auth.auth().settings?.isAppVerificationDisabledForTesting = true
-        #endif
         return true
     }
 
@@ -49,6 +46,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        Auth.auth().application(application, didFailToRegisterForRemoteNotificationsWithError: error)
         NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications, object: error)
     }
 
