@@ -18,16 +18,19 @@ import {
   Languages,
   ChevronRight,
   ArrowRight,
-  Droplet,
   RotateCcw,
-  Check,
   HeartPulse,
   Smile,
   Menu,
   X,
-  Apple,
-  Flame
+  Flame,
+  TestTube,
+  Video,
+  Award,
+  ChevronDown
 } from 'lucide-react';
+
+const CURRENT_APP_VERSION = 'v6.0.3';
 
 const getEmbedUrl = (url: string) => {
   if (!url) return '';
@@ -95,7 +98,6 @@ export default function App() {
   const [simExercise, setSimExercise] = useState<boolean>(true);
   const [simBreathwork, setSimBreathwork] = useState<boolean>(true);
   const [simAntioxidants, setSimAntioxidants] = useState<boolean>(false);
-  const [simJoy, setSimJoy] = useState<boolean>(true);
   const [simMode, setSimMode] = useState<'PREVENTION' | 'TREATMENT'>('PREVENTION');
   const [showSimDisclaimer, setShowSimDisclaimer] = useState<boolean>(false);
   const [showSimWigsPopup, setShowSimWigsPopup] = useState<boolean>(false);
@@ -218,19 +220,19 @@ export default function App() {
 
   // Damage vs Repair Calculation
   const damageScore = (simStress ? 1 : 0) + (simEnv ? 1 : 0) + (simSugarSpike ? 1 : 0);
-  const repairScore = (simFasting ? 1 : 0) + (simExercise ? 1 : 0) + (simBreathwork ? 1 : 0) + (simAntioxidants ? 1 : 0) + (simJoy ? 1 : 0);
+  const repairScore = (simFasting ? 1 : 0) + (simExercise ? 1 : 0) + (simBreathwork ? 1 : 0) + (simAntioxidants ? 1 : 0);
   const netBalance = repairScore - damageScore;
 
   if (activeTab === 'privacy-policy') {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col justify-between">
         <Header activeTab={activeTab} onTabChange={setActiveTab} branding={branding} foundersCount={0} />
-        <main className="flex-grow max-w-4xl mx-auto w-full px-6 py-12 bg-white rounded-3xl border border-slate-200 shadow-soft mt-8 mb-12">
+        <main className="flex-grow max-w-4xl mx-auto w-full px-6 py-12 bg-white rounded-3xl border border-slate-200/80 shadow-soft mt-8 mb-12">
           <div className="border-b border-slate-100 pb-4 mb-6 flex items-center justify-between">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
               Privacy Policy for <BrandName appName={branding.appName} />
             </h1>
-            <span className="text-xs font-bold px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full">v5.9.0 Legal</span>
+            <span className="text-xs font-bold px-3 py-1 bg-blue-50 text-blue-700 rounded-full">{CURRENT_APP_VERSION} Legal</span>
           </div>
           <div
             className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium space-y-4 prose max-w-none"
@@ -246,12 +248,12 @@ export default function App() {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col justify-between">
         <Header activeTab={activeTab} onTabChange={setActiveTab} branding={branding} foundersCount={0} />
-        <main className="flex-grow max-w-4xl mx-auto w-full px-6 py-12 bg-white rounded-3xl border border-slate-200 shadow-soft mt-8 mb-12">
+        <main className="flex-grow max-w-4xl mx-auto w-full px-6 py-12 bg-white rounded-3xl border border-slate-200/80 shadow-soft mt-8 mb-12">
           <div className="border-b border-slate-100 pb-4 mb-6 flex items-center justify-between">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
               Terms & Conditions for <BrandName appName={branding.appName} />
             </h1>
-            <span className="text-xs font-bold px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full">v5.9.0 Legal</span>
+            <span className="text-xs font-bold px-3 py-1 bg-blue-50 text-blue-700 rounded-full">{CURRENT_APP_VERSION} Legal</span>
           </div>
           <div
             className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium space-y-4 prose max-w-none"
@@ -269,32 +271,31 @@ export default function App() {
       <Header activeTab={activeTab} onTabChange={setActiveTab} branding={branding} foundersCount={foundersData.length} />
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-blue-50/70 via-indigo-50/20 to-white pt-12 pb-20 px-4 sm:px-6 md:pt-20 md:pb-28">
+      <section className="relative overflow-hidden bg-gradient-to-b from-blue-50/70 via-indigo-50/20 to-white pt-10 pb-16 px-4 sm:px-6 md:pt-16 md:pb-24">
         {/* Floating Glowing Ambient Orbs */}
-        <div className="absolute top-12 left-1/4 w-96 h-96 bg-blue-400/20 rounded-full filter blur-3xl pointer-events-none animate-pulse-subtle"></div>
+        <div className="absolute top-10 left-1/4 w-96 h-96 bg-blue-400/20 rounded-full filter blur-3xl pointer-events-none animate-pulse-subtle"></div>
         <div className="absolute top-1/3 right-10 w-80 h-80 bg-teal-400/15 rounded-full filter blur-3xl pointer-events-none animate-pulse-subtle"></div>
-        <div className="absolute top-2/3 left-10 w-72 h-72 bg-purple-400/15 rounded-full filter blur-3xl pointer-events-none"></div>
 
-        <div className="max-w-7xl mx-auto grid lg:grid-cols-12 gap-12 lg:gap-8 items-center relative z-10">
+        <div className="max-w-7xl mx-auto grid lg:grid-cols-12 gap-10 lg:gap-8 items-center relative z-10">
           <div className="lg:col-span-7 space-y-6 text-left">
             {/* Spotlight Release Pill */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/90 border border-blue-200/80 shadow-xs backdrop-blur-md">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/95 border border-blue-200/80 shadow-xs backdrop-blur-md">
               <span className="flex h-2 w-2 relative">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
               </span>
               <span className="text-[11px] font-extrabold uppercase tracking-wider text-blue-900">
-                v5.9.0 Released
+                {CURRENT_APP_VERSION} Live
               </span>
               <span className="text-slate-300">•</span>
               <span className="text-[11px] font-bold text-slate-600">
-                Cellular Balance • CGM • Active Cancer Care
+                Cellular Balance • Abbott CGM • Specialist Care • At-Home Blood Tests
               </span>
             </div>
 
             {/* Main Headline */}
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-[1.12]">
-              Master Your Cellular Health & Longevity with{' '}
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-[1.12]">
+              Your Cellular Health & Longevity Platform with{' '}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-teal-600">
                 <BrandName appName={branding.appName} />
               </span>
@@ -302,38 +303,46 @@ export default function App() {
 
             {/* Description */}
             <p className="text-base sm:text-lg text-slate-600 font-medium leading-relaxed max-w-2xl">
-              Log daily habits, upload Abbott FreeStyle Libre CGM sensors, track environmental carcinogens, practice vagus nerve breathwork, and balance cellular damage vs repair to reset metabolic vitality.
+              Reverse chronic metabolic risk, track real-time Abbott FreeStyle Libre CGM glucose spikes, consult certified radiation oncologists & lifestyle physicians, practice vagus breathwork, and restore your biological balance every day.
             </p>
 
             {/* Key feature pills */}
             <div className="flex flex-wrap gap-2 pt-1 text-xs font-bold text-slate-700">
-              <span className="px-3 py-1.5 rounded-xl bg-slate-100/90 border border-slate-200/70 flex items-center gap-1.5">
+              <span className="px-3 py-1.5 rounded-xl bg-slate-100/90 border border-slate-200/70 flex items-center gap-1.5 shadow-2xs">
                 <CheckCircle2 className="h-3.5 w-3.5 text-blue-600" />
                 Damage vs Repair Engine
               </span>
-              <span className="px-3 py-1.5 rounded-xl bg-slate-100/90 border border-slate-200/70 flex items-center gap-1.5">
+              <span className="px-3 py-1.5 rounded-xl bg-slate-100/90 border border-slate-200/70 flex items-center gap-1.5 shadow-2xs">
                 <Activity className="h-3.5 w-3.5 text-teal-600" />
                 Abbott CGM Spikes
               </span>
-              <span className="px-3 py-1.5 rounded-xl bg-slate-100/90 border border-slate-200/70 flex items-center gap-1.5">
+              <span className="px-3 py-1.5 rounded-xl bg-slate-100/90 border border-slate-200/70 flex items-center gap-1.5 shadow-2xs">
+                <Video className="h-3.5 w-3.5 text-emerald-600" />
+                Doctor Tele-Consultations
+              </span>
+              <span className="px-3 py-1.5 rounded-xl bg-slate-100/90 border border-slate-200/70 flex items-center gap-1.5 shadow-2xs">
+                <TestTube className="h-3.5 w-3.5 text-purple-600" />
+                Home Diagnostic Tests
+              </span>
+              <span className="px-3 py-1.5 rounded-xl bg-slate-100/90 border border-slate-200/70 flex items-center gap-1.5 shadow-2xs">
                 <Wind className="h-3.5 w-3.5 text-indigo-600" />
                 Vagus Breathwork
               </span>
-              <span className="px-3 py-1.5 rounded-xl bg-slate-100/90 border border-slate-200/70 flex items-center gap-1.5">
-                <Languages className="h-3.5 w-3.5 text-purple-600" />
+              <span className="px-3 py-1.5 rounded-xl bg-slate-100/90 border border-slate-200/70 flex items-center gap-1.5 shadow-2xs">
+                <Languages className="h-3.5 w-3.5 text-rose-600" />
                 5 Regional Languages
               </span>
             </div>
 
             {/* App Store Download Badges */}
-            <div className="flex flex-wrap items-center gap-4 pt-4">
+            <div className="flex flex-wrap items-center gap-3.5 pt-3">
               <a
                 href="https://apps.apple.com/in/app/mito-reboot/id6783705985"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group bg-slate-950 hover:bg-slate-800 text-white px-5 py-3 rounded-2xl flex items-center space-x-3 transition-all duration-200 shadow-lg hover:shadow-xl hover:translate-y-[-2px] border border-slate-800"
+                className="group bg-slate-950 hover:bg-slate-800 text-white px-5 py-3 rounded-2xl flex items-center space-x-3 transition-all duration-200 shadow-card hover:translate-y-[-2px] border border-slate-800"
               >
-                <Smartphone className="h-6 w-6 text-white group-hover:scale-105 transition-transform" />
+                <Smartphone className="h-5 w-5 text-white group-hover:scale-105 transition-transform" />
                 <div className="text-left">
                   <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider leading-tight">Download on the</span>
                   <span className="text-sm font-bold block leading-none">App Store</span>
@@ -344,9 +353,9 @@ export default function App() {
                 href="https://play.google.com/store/apps/details?id=com.mitoreboot.app"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group bg-slate-950 hover:bg-slate-800 text-white px-5 py-3 rounded-2xl flex items-center space-x-3 transition-all duration-200 shadow-lg hover:shadow-xl hover:translate-y-[-2px] border border-slate-800"
+                className="group bg-slate-950 hover:bg-slate-800 text-white px-5 py-3 rounded-2xl flex items-center space-x-3 transition-all duration-200 shadow-card hover:translate-y-[-2px] border border-slate-800"
               >
-                <Play className="h-6 w-6 fill-white text-white group-hover:scale-105 transition-transform" />
+                <Play className="h-5 w-5 fill-white text-white group-hover:scale-105 transition-transform" />
                 <div className="text-left">
                   <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider leading-tight">Get it on</span>
                   <span className="text-sm font-bold block leading-none">Google Play</span>
@@ -355,26 +364,26 @@ export default function App() {
 
               <a
                 href="#interactive-simulator"
-                className="px-5 py-3 rounded-2xl text-xs font-bold text-slate-700 hover:text-blue-600 bg-white hover:bg-slate-50 border border-slate-200/90 shadow-soft flex items-center gap-2 transition-all"
+                className="px-5 py-3 rounded-2xl text-xs font-bold text-slate-700 hover:text-blue-600 bg-white hover:bg-slate-50 border border-slate-200/90 shadow-soft flex items-center gap-2 transition-all cursor-pointer"
               >
                 <span>Try Live Simulator</span>
                 <ChevronRight className="h-4 w-4" />
               </a>
             </div>
 
-            <div className="flex items-center gap-4 text-xs font-medium text-slate-500 pt-2">
+            <div className="flex items-center gap-3 text-xs font-medium text-slate-500 pt-1">
               <div className="flex -space-x-2">
-                <span className="inline-block h-7 w-7 rounded-full ring-2 ring-white bg-blue-500 text-white text-[10px] font-bold flex items-center justify-center">M</span>
-                <span className="inline-block h-7 w-7 rounded-full ring-2 ring-white bg-teal-500 text-white text-[10px] font-bold flex items-center justify-center">R</span>
-                <span className="inline-block h-7 w-7 rounded-full ring-2 ring-white bg-indigo-500 text-white text-[10px] font-bold flex items-center justify-center">C</span>
+                <span className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-blue-500 text-white text-[10px] font-bold flex items-center justify-center">M</span>
+                <span className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-teal-500 text-white text-[10px] font-bold flex items-center justify-center">R</span>
+                <span className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-indigo-500 text-white text-[10px] font-bold flex items-center justify-center">C</span>
               </div>
-              <span>Trusted by 10,000+ individuals seeking preventive metabolic health & chronic disease reversal</span>
+              <span className="text-[11px]">Clinical oncology backing • Abbott FreeStyle Libre telemetry • End-to-end encrypted</span>
             </div>
           </div>
 
           {/* Interactive Mobile Simulator Device */}
           <div id="interactive-simulator" className="lg:col-span-5 flex justify-center">
-            <div className="bg-slate-950 p-4 rounded-[46px] shadow-2xl border-[5px] border-slate-800 max-w-[360px] w-full relative overflow-hidden select-none">
+            <div className="bg-slate-950 p-3 sm:p-4 rounded-[44px] shadow-2xl border-[5px] border-slate-800 max-w-[350px] w-full relative overflow-hidden select-none">
               {/* Dynamic Island / Camera Notch */}
               <div className="absolute top-0 inset-x-0 h-5 flex justify-center z-30">
                 <div className="bg-slate-950 w-28 h-4 rounded-b-xl flex items-center justify-center">
@@ -384,7 +393,7 @@ export default function App() {
               </div>
 
               {/* Simulated Screen Body */}
-              <div className="bg-slate-50 rounded-[34px] overflow-hidden p-4 pt-6 text-left font-sans relative min-h-[500px] flex flex-col justify-between border border-slate-800/40">
+              <div className="bg-slate-50 rounded-[34px] overflow-hidden p-4 pt-6 text-left font-sans relative min-h-[490px] flex flex-col justify-between border border-slate-800/40">
                 <div>
                   {/* Simulated App Header */}
                   <div className="flex justify-between items-center mb-3">
@@ -399,7 +408,7 @@ export default function App() {
                           </span>
                           <sup className="text-[6.5px] font-black text-blue-600 ml-0.5 -top-1 relative">TM</sup>
                         </div>
-                        <span className="text-[8px] text-slate-400 font-bold block">v5.9.0 Active</span>
+                        <span className="text-[8px] text-slate-400 font-bold block">{CURRENT_APP_VERSION} Active</span>
                       </div>
                     </div>
                     <span className="text-[9px] bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow-2xs">
@@ -456,11 +465,11 @@ export default function App() {
                             {netBalance > 0 ? `+${netBalance}` : netBalance}
                           </span>
                           <span className="text-[10px] font-bold text-slate-400">
-                            {netBalance >= 2 ? 'Optimal Autophagy' : netBalance >= 0 ? 'Neutral Equilibrium' : 'Damage Dominated'}
+                            {netBalance >= 2 ? 'Optimal Autophagy' : netBalance >= 0 ? 'Equilibrium' : 'Damage Dominated'}
                           </span>
                         </div>
                       </div>
-                      <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
+                      <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
                         Abbott CGM Sync
                       </span>
                     </div>
@@ -468,8 +477,8 @@ export default function App() {
                     {/* Balance Bar Indicator */}
                     <div>
                       <div className="flex justify-between text-[8px] font-extrabold uppercase mb-1">
-                        <span className="text-rose-600">Damage Force ({damageScore})</span>
-                        <span className="text-emerald-600">Repair Force ({repairScore})</span>
+                        <span className="text-rose-600">Damage ({damageScore})</span>
+                        <span className="text-emerald-600">Repair ({repairScore})</span>
                       </div>
                       <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
                         <div
@@ -513,7 +522,7 @@ export default function App() {
                             simEnv ? 'bg-rose-50 border-rose-300 text-rose-800 font-bold shadow-2xs' : 'bg-white border-slate-200 text-slate-400 font-medium'
                           }`}
                         >
-                          <span>PM2.5 / PFAS Toxins</span>
+                          <span>Toxins / Non-Stick</span>
                           <span className="font-extrabold text-[10px]">{simEnv ? '-1' : '+0'}</span>
                         </button>
 
@@ -569,7 +578,7 @@ export default function App() {
                               simExercise ? 'bg-emerald-50 border-emerald-300 text-emerald-800 font-bold shadow-2xs' : 'bg-white border-slate-200 text-slate-400 font-medium'
                             }`}
                           >
-                            <span>Mito Zone 2 Cardio</span>
+                            <span>Zone 2 Cardio</span>
                             <span className="font-extrabold text-[10px]">{simExercise ? '+1' : '+0'}</span>
                           </button>
                         )}
@@ -595,32 +604,21 @@ export default function App() {
                           <span>Mito Antioxidants</span>
                           <span className="font-extrabold text-[10px]">{simAntioxidants ? '+1' : '+0'}</span>
                         </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setSimJoy(!simJoy)}
-                          className={`w-full p-2 rounded-xl text-left border flex justify-between items-center transition-all cursor-pointer ${
-                            simJoy ? 'bg-emerald-50 border-emerald-300 text-emerald-800 font-bold shadow-2xs' : 'bg-white border-slate-200 text-slate-400 font-medium'
-                          }`}
-                        >
-                          <span>Things I Love</span>
-                          <span className="font-extrabold text-[10px]">{simJoy ? '+1' : '+0'}</span>
-                        </button>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Bottom Status bar */}
-                <div className="pt-3 border-t border-slate-200/80 flex items-center justify-between text-[8px] text-slate-400 font-bold">
-                  <span>Mito Reboot™ Engine v5.9.0</span>
+                <div className="pt-2 border-t border-slate-200/80 flex items-center justify-between text-[8px] text-slate-400 font-bold">
+                  <span>Mito Reboot™ Engine {CURRENT_APP_VERSION}</span>
                   <span className="text-emerald-600 font-extrabold">● Sync Active</span>
                 </div>
 
                 {/* Simulated Medical Fasting Disclaimer Popup */}
                 {showSimDisclaimer && (
                   <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-xs z-40 flex items-center justify-center p-3">
-                    <div className="bg-white rounded-2xl p-4 border border-slate-200 max-w-[270px] w-full text-center space-y-2.5 shadow-2xl animate-in zoom-in-95 duration-150">
+                    <div className="bg-white rounded-2xl p-4 border border-slate-200 max-w-[270px] w-full text-center space-y-2.5 shadow-2xl">
                       <div className="h-8 w-8 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto text-sm font-black">⚠️</div>
                       <h4 className="text-[11px] font-black text-slate-900 uppercase">Oncology Fasting Disclaimer</h4>
                       <p className="text-[9px] text-slate-600 leading-relaxed font-medium">
@@ -649,11 +647,11 @@ export default function App() {
                 {/* Simulated Shop Popup */}
                 {showSimWigsPopup && (
                   <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-xs z-40 flex items-center justify-center p-3">
-                    <div className="bg-white rounded-2xl p-4 border border-slate-200 max-w-[270px] w-full text-center space-y-3 shadow-2xl animate-in zoom-in-95 duration-150">
+                    <div className="bg-white rounded-2xl p-4 border border-slate-200 max-w-[270px] w-full text-center space-y-3 shadow-2xl">
                       <div className="h-9 w-9 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center mx-auto text-base">🛍️</div>
                       <h4 className="text-[11px] font-black text-slate-900 uppercase">Curated Safe Living Store</h4>
                       <p className="text-[9px] text-slate-600 leading-relaxed font-medium">
-                        Filtered for cancer care scalp cooling caps, chemical-free natural wigs, and targeted antioxidants to support treatment recovery.
+                        Filtered for cancer care scalp cooling caps, chemical-free natural wigs, and targeted antioxidants in Indian Rupees (₹).
                       </p>
                       <button
                         type="button"
@@ -671,9 +669,9 @@ export default function App() {
         </div>
       </section>
 
-      {/* "What's New in v5.9.0" Highlights Strip */}
-      <section className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white py-6 px-4">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+      {/* "What's New in v6.0.3" Highlights Banner */}
+      <section className="bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-800 text-white py-5 px-4 shadow-sm">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-white/20 rounded-xl backdrop-blur-md shrink-0">
               <Sparkles className="h-5 w-5 text-amber-300" />
@@ -681,22 +679,221 @@ export default function App() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-black uppercase tracking-widest bg-white/20 px-2 py-0.5 rounded">
-                  Major Release
+                  What's New in {CURRENT_APP_VERSION}
                 </span>
-                <span className="text-xs font-bold text-amber-200">v5.9.0 Live on Stores</span>
+                <span className="text-xs font-bold text-amber-200">Live on iOS & Android</span>
               </div>
-              <p className="text-sm font-black text-white mt-0.5">
-                Discover what's new in <BrandName appName={branding.appName} supClassName="text-[0.6em] font-extrabold text-amber-200 ml-0.5 -top-1 relative" />: Active Cancer Care Mode, Vagus Nerve Breathwork, Parkinson's Support, and Full Regional Language Localization.
+              <p className="text-xs sm:text-sm font-bold text-white/95 mt-0.5">
+                Oncologist & Lifestyle Doctor Tele-Consultations • At-Home Blood Lab Testing • Standardized ₹ INR Store • Non-Stick Cookware Toxic Risk Audit
               </p>
             </div>
           </div>
           <a
-            href="#modules"
-            className="shrink-0 bg-white text-blue-700 hover:bg-blue-50 font-extrabold text-xs px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center gap-1.5"
+            href="#features"
+            className="shrink-0 bg-white text-blue-800 hover:bg-blue-50 font-extrabold text-xs px-4 py-2 rounded-xl transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
           >
-            <span>Explore All Features</span>
-            <ArrowRight className="h-4 w-4" />
+            <span>Explore Key Points</span>
+            <ArrowRight className="h-3.5 w-3.5" />
           </a>
+        </div>
+      </section>
+
+      {/* Core Key Features (Important Points Not All - Clean & Modern) */}
+      <section id="features" className="py-20 px-4 sm:px-6 max-w-7xl mx-auto">
+        <div className="text-center max-w-3xl mx-auto mb-14">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-full mb-3 border border-blue-200/80">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            <span>Core Health Pillars</span>
+          </span>
+          <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+            Important Features Designed for Real Clinical Impact
+          </h2>
+          <p className="text-sm sm:text-base text-slate-500 font-medium mt-2">
+            No endless fluff. <BrandName appName={branding.appName} /> combines real-time continuous biological telemetry with verified medical consultations to help you take control of your health.
+          </p>
+        </div>
+
+        {/* 6 Clean Feature Cards */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+          {/* Card 1: Cellular Balance */}
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-soft hover:shadow-card hover:-translate-y-1 transition-all flex flex-col justify-between">
+            <div className="space-y-4">
+              <div className="h-12 w-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-black">
+                <Activity className="h-6 w-6" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900">Two-Force Cellular Balance</h3>
+              <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                Our dynamic proprietary algorithm balances biological damage (glucose spikes, chronic stress, non-stick toxins) against cellular repair forces (autophagy fasting, cardio, restorative breathwork).
+              </p>
+            </div>
+            <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-blue-600">
+              <span>Real-Time Daily Scoring</span>
+              <span className="text-[10px] text-slate-400">Patented Algorithm</span>
+            </div>
+          </div>
+
+          {/* Card 2: Abbott FreeStyle Libre CGM */}
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-soft hover:shadow-card hover:-translate-y-1 transition-all flex flex-col justify-between">
+            <div className="space-y-4">
+              <div className="h-12 w-12 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center font-black">
+                <CheckCircle2 className="h-6 w-6" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900">Abbott FreeStyle Libre CGM</h3>
+              <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                Seamless continuous glucose tracking. Upload Abbott Libre CSV or PDF exports to instantly map food triggers, calculate Time In Range (TIR 70–140 mg/dL), and neutralize hidden glycemic surges.
+              </p>
+            </div>
+            <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-teal-600">
+              <span>Safe vs Dangerous Spikes</span>
+              <span className="text-[10px] text-slate-400">FreeStyle Libre Sync</span>
+            </div>
+          </div>
+
+          {/* Card 3: Certified Specialist Doctors */}
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-soft hover:shadow-card hover:-translate-y-1 transition-all flex flex-col justify-between">
+            <div className="space-y-4">
+              <div className="h-12 w-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-black">
+                <Stethoscope className="h-6 w-6" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900">Specialist Video Consultations</h3>
+              <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                Book confidential 1-on-1 video consultations with verified Radiation Oncologists, Lifestyle Medicine Specialists, and Metabolic Doctors directly through the mobile app.
+              </p>
+            </div>
+            <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-emerald-600">
+              <span>Certified Doctors (Dr. Muthiah & more)</span>
+              <span className="text-[10px] text-slate-400">HD Video Appointments</span>
+            </div>
+          </div>
+
+          {/* Card 4: Home Diagnostic Blood Tests */}
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-soft hover:shadow-card hover:-translate-y-1 transition-all flex flex-col justify-between">
+            <div className="space-y-4">
+              <div className="h-12 w-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center font-black">
+                <TestTube className="h-6 w-6" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900">At-Home Diagnostic Lab Tests</h3>
+              <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                Order comprehensive blood biomarker testing with certified phlebotomists collecting samples at your doorstep. Fast digital delivery for HbA1c, lipid profiles, hs-CRP, and vitamins.
+              </p>
+            </div>
+            <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-purple-600">
+              <span>Home Sample Collection</span>
+              <span className="text-[10px] text-slate-400">NABL Accredited Labs</span>
+            </div>
+          </div>
+
+          {/* Card 5: Vagus Nerve Breathwork */}
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-soft hover:shadow-card hover:-translate-y-1 transition-all flex flex-col justify-between">
+            <div className="space-y-4">
+              <div className="h-12 w-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-black">
+                <Wind className="h-6 w-6" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900">Vagus Breathwork Studio</h3>
+              <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                Guided visual pacing for Box Breathing (4-4-4-4), 4-7-8 Deep Calm, and Coherent 5.5s resonance. Stimulates the parasympathetic nervous system to rapidly lower stress-induced blood sugar.
+              </p>
+            </div>
+            <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-indigo-600">
+              <span>Audio Pacing & Haptics</span>
+              <span className="text-[10px] text-slate-400">Immediate Stress Relief</span>
+            </div>
+          </div>
+
+          {/* Card 6: Clean Living Store in INR */}
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-soft hover:shadow-card hover:-translate-y-1 transition-all flex flex-col justify-between">
+            <div className="space-y-4">
+              <div className="h-12 w-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-black">
+                <ShoppingCart className="h-6 w-6" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900">Curated Clean Living Store</h3>
+              <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                Authentic, lab-tested health hardware in Indian Rupees (₹ INR): genuine Abbott CGM sensors, non-stick risk-free cast-iron and ceramic cookware, HEPA air purifiers, and cancer scalp cooling caps.
+              </p>
+            </div>
+            <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-amber-600">
+              <span>Standard ₹ INR Pricing</span>
+              <span className="text-[10px] text-slate-400">Zero Toxic Coatings</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Specialist Doctors Showcase Section */}
+      <section id="specialists" className="py-20 px-4 sm:px-6 bg-slate-50 border-y border-slate-200/70">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center max-w-3xl mx-auto mb-14">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-full mb-3 border border-emerald-200/80">
+              <Award className="h-3.5 w-3.5" />
+              <span>Verified Medical Experts</span>
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+              Consult Top Specialists In-App
+            </h2>
+            <p className="text-sm sm:text-base text-slate-500 font-medium mt-2">
+              Book live, secure video appointments with certified oncologists and lifestyle doctors who treat the root cellular cause of disease.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {/* Doctor 1: Dr. Muthiah Kasi */}
+            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-soft flex flex-col sm:flex-row gap-6 items-center sm:items-start text-center sm:text-left">
+              <img
+                src="/assets/dr_muthiah_kasi.jpg"
+                alt="Dr. Muthiah Kasi"
+                className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover shadow-md shrink-0 border border-slate-100"
+                onError={(e) => { (e.target as any).src = '/favicon.jpg'; }}
+              />
+              <div className="space-y-3 flex-1">
+                <div>
+                  <div className="flex items-center justify-center sm:justify-start gap-2">
+                    <h3 className="text-lg font-black text-slate-900">Dr. Muthiah Kasi</h3>
+                    <span className="text-[9px] bg-emerald-50 text-emerald-700 font-extrabold px-2 py-0.5 rounded-full border border-emerald-200">
+                      Verified
+                    </span>
+                  </div>
+                  <p className="text-xs font-bold text-blue-600 mt-0.5">Radiation Oncology & Lifestyle Medicine</p>
+                  <p className="text-[11px] text-slate-500 font-medium">MD Radiation Oncology • 7+ Years Experience</p>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                  Specializes in targeted oncology care, radiotherapy support, metabolic therapy, and circadian fasting protocols for secondary cancer recurrence prevention.
+                </p>
+                <div className="flex items-center justify-center sm:justify-between pt-2 border-t border-slate-100 text-xs font-bold">
+                  <span className="text-slate-700">₹700 / 30 mins</span>
+                  <span className="text-blue-600 font-extrabold hidden sm:inline">Book via App →</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Doctor 2: Dr. Ritesh Santosham */}
+            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-soft flex flex-col sm:flex-row gap-6 items-center sm:items-start text-center sm:text-left">
+              <img
+                src="/assets/dr_ritesh_santosham.jpg"
+                alt="Dr. Ritesh Santosham"
+                className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover shadow-md shrink-0 border border-slate-100"
+                onError={(e) => { (e.target as any).src = '/favicon.jpg'; }}
+              />
+              <div className="space-y-3 flex-1">
+                <div>
+                  <div className="flex items-center justify-center sm:justify-start gap-2">
+                    <h3 className="text-lg font-black text-slate-900">Dr. Ritesh Santosham</h3>
+                    <span className="text-[9px] bg-emerald-50 text-emerald-700 font-extrabold px-2 py-0.5 rounded-full border border-emerald-200">
+                      Verified
+                    </span>
+                  </div>
+                  <p className="text-xs font-bold text-blue-600 mt-0.5">Cardiothoracic & Preventive Care</p>
+                  <p className="text-[11px] text-slate-500 font-medium">Senior Consultant • 12+ Years Experience</p>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                  Expert guidance on cardiovascular endurance, lipid profile management, surgical recovery, and pulmonary conditioning.
+                </p>
+                <div className="flex items-center justify-center sm:justify-between pt-2 border-t border-slate-100 text-xs font-bold">
+                  <span className="text-slate-700">₹700 / 30 mins</span>
+                  <span className="text-blue-600 font-extrabold hidden sm:inline">Book via App →</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -808,7 +1005,7 @@ export default function App() {
               </button>
             </div>
             <p className="text-xs text-slate-400 mt-4 max-w-md">
-              Synchronized with auditory guidance, vibration feedback, and daily reminders in the <BrandName appName={branding.appName} supClassName="text-[0.6em] font-extrabold text-blue-400 ml-0.5 -top-1 relative" /> mobile app.
+              Synchronized with auditory cues, vibration feedback, and daily reminders in the <BrandName appName={branding.appName} supClassName="text-[0.6em] font-extrabold text-blue-400 ml-0.5 -top-1 relative" /> mobile app.
             </p>
           </div>
         </div>
@@ -819,10 +1016,10 @@ export default function App() {
         <div className="text-center max-w-3xl mx-auto mb-14">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-full mb-3 border border-blue-200/80">
             <ShieldCheck className="h-3.5 w-3.5" />
-            <span>Specialized Clinical Protocols</span>
+            <span>Targeted Clinical Protocols</span>
           </span>
           <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-            Targeted Modules for Chronic Disease Reversal
+            Specialized Care Programs
           </h2>
           <p className="text-sm sm:text-base text-slate-500 font-medium mt-2">
             Whether you are preventing disease or navigating active medical care, <BrandName appName={branding.appName} /> provides evidence-based, doctor-formulated lifestyle guidance.
@@ -862,7 +1059,7 @@ export default function App() {
             <div className="grid md:grid-cols-2 gap-8 items-center">
               <div className="space-y-4">
                 <span className="text-[11px] font-black uppercase tracking-wider text-pink-600 bg-pink-50 px-3 py-1 rounded-full border border-pink-200">
-                  New in v5.9.0 • Oncology Support
+                  Oncology Support
                 </span>
                 <h3 className="text-2xl sm:text-3xl font-black text-slate-900">
                   Active Cancer Treatment & Tolerance Protocol
@@ -954,7 +1151,7 @@ export default function App() {
                   Type 2 Diabetes Reversal & Abbott FreeStyle Libre Sync
                 </h3>
                 <p className="text-sm text-slate-600 leading-relaxed font-medium">
-                  Continuous glucose monitoring is the cornerstone of metabolic repair. Upload your Abbott CSV or PDF sensor records directly into <BrandName appName={branding.appName} /> to classify meal spikes into Safe, Moderate, or Dangerous.
+                  Continuous glucose monitoring is the cornerstone of metabolic repair. Upload your Abbott CSV or PDF sensor records directly into <BrandName appName={branding.appName} /> to classify meal spikes into Safe, Moderate, or Avoid.
                 </p>
                 <div className="space-y-2 text-xs font-bold text-slate-700">
                   <div className="flex items-center gap-2">
@@ -1140,65 +1337,54 @@ export default function App() {
         </div>
       </section>
 
-      {/* Environmental Carcinogen & Clean Living Audit Section */}
+      {/* Clean Living & Cookware Audit Section */}
       <section id="environmental" className="py-20 px-4 sm:px-6 bg-slate-100/70 border-y border-slate-200/60">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center max-w-3xl mx-auto mb-16">
+          <div className="text-center max-w-3xl mx-auto mb-14">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-full mb-3 border border-emerald-200/80">
               <Globe className="h-3.5 w-3.5" />
-              <span>Clean Living & Toxin Defense</span>
+              <span>Clean Living & Cookware Audit</span>
             </span>
             <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-              Environmental Carcinogens & Cookware Audit
+              Eliminate Silent Environmental Carcinogens
             </h2>
             <p className="text-sm sm:text-base text-slate-500 font-medium mt-2">
-              You cannot reverse disease if your environment is continuously poisoning your cellular mitochondria. <BrandName appName={branding.appName} /> screens your everyday surroundings.
+              Chronic inflammation is often driven by daily hidden exposures. Audit and eliminate toxic synthetic coatings, microplastics, and contaminated water.
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-soft space-y-3 hover:translate-y-[-4px] transition-all">
-              <div className="h-12 w-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-black">
-                <Wind className="h-6 w-6" />
-              </div>
-              <h3 className="text-base font-extrabold text-slate-900">PM2.5 & Air Toxins</h3>
-              <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                Log regional AQI and indoor particulate matter. Actionable triggers for HEPA air purifiers and nasal antioxidant washes.
-              </p>
-              <span className="text-[10px] font-black uppercase text-indigo-600 block pt-1">Audited Daily</span>
-            </div>
-
-            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-soft space-y-3 hover:translate-y-[-4px] transition-all">
-              <div className="h-12 w-12 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center font-black">
-                <Droplet className="h-6 w-6" />
-              </div>
-              <h3 className="text-base font-extrabold text-slate-900">Drinking Water Contaminants</h3>
-              <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                Screen municipal tap water for heavy metals (lead, arsenic), chlorine, fluoride, and microplastics. Direct water filter kits.
-              </p>
-              <span className="text-[10px] font-black uppercase text-teal-600 block pt-1">RO / Carbon Guidance</span>
-            </div>
-
-            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-soft space-y-3 hover:translate-y-[-4px] transition-all">
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-soft space-y-3 hover:-translate-y-1 transition-all">
               <div className="h-12 w-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center font-black">
                 <Flame className="h-6 w-6" />
               </div>
-              <h3 className="text-base font-extrabold text-slate-900">Non-Stick & PFAS Cookware</h3>
+              <h3 className="text-base font-extrabold text-slate-900">Synthetic Non-Stick & PFAS</h3>
               <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                Eliminate forever chemicals from scratched non-stick pans. Swap to 304 food-grade stainless steel, cast iron, and 100% pure ceramic.
+                Eliminate forever chemicals released from scratched non-stick pans. Swap to 304 food-grade stainless steel, seasoned cast iron, and pure ceramic.
               </p>
-              <span className="text-[10px] font-black uppercase text-rose-600 block pt-1">Kitchen Audit</span>
+              <span className="text-[10px] font-black uppercase text-rose-600 block pt-1">Kitchen Safety Audit</span>
             </div>
 
-            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-soft space-y-3 hover:translate-y-[-4px] transition-all">
-              <div className="h-12 w-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-black">
-                <Apple className="h-6 w-6" />
+            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-soft space-y-3 hover:-translate-y-1 transition-all">
+              <div className="h-12 w-12 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center font-black">
+                <Globe className="h-6 w-6" />
               </div>
-              <h3 className="text-base font-extrabold text-slate-900">Pesticides & Dirty Dozen</h3>
+              <h3 className="text-base font-extrabold text-slate-900">PM2.5 Smog & Microplastics</h3>
               <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                Review annual chemical pesticide residue guides for produce. Learn baking soda washes to degrade organophosphates on fruit skins.
+                Audit fine particulate inhalation and heated food storage in disposable plastic. Protect alveoli and gut epithelial lining with HEPA filtration.
               </p>
-              <span className="text-[10px] font-black uppercase text-amber-600 block pt-1">Produce Safety</span>
+              <span className="text-[10px] font-black uppercase text-teal-600 block pt-1">Air & Storage Defense</span>
+            </div>
+
+            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-soft space-y-3 hover:-translate-y-1 transition-all">
+              <div className="h-12 w-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-black">
+                <ShieldCheck className="h-6 w-6" />
+              </div>
+              <h3 className="text-base font-extrabold text-slate-900">Pesticides & Water Quality</h3>
+              <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                Detect organophosphates and endocrine disruptors in tap water and raw produce. Use multi-stage RO/UV filtration and baking soda soak rinses.
+              </p>
+              <span className="text-[10px] font-black uppercase text-amber-600 block pt-1">Produce & Water Audit</span>
             </div>
           </div>
         </div>
@@ -1266,6 +1452,66 @@ export default function App() {
         </div>
       </section>
 
+      {/* Curated Clean Living Store Section */}
+      <section id="store" className="py-20 px-4 sm:px-6 max-w-6xl mx-auto">
+        <div className="text-center max-w-3xl mx-auto mb-14">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-700 text-xs font-bold rounded-full mb-3 border border-amber-200/80">
+            <ShoppingCart className="h-3.5 w-3.5" />
+            <span>Curated Health Store</span>
+          </span>
+          <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+            Verified Clean Living Products
+          </h2>
+          <p className="text-sm sm:text-base text-slate-500 font-medium mt-2">
+            Avoid counterfeit sensors and toxic kitchenware. Order verified products vetted directly by the <BrandName appName={branding.appName} /> clinical team, priced strictly in Indian Rupees (₹).
+          </p>
+        </div>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="bg-slate-50 rounded-3xl p-6 border border-slate-200 shadow-soft flex flex-col justify-between space-y-4">
+            <div className="space-y-2">
+              <span className="text-[10px] font-bold uppercase text-teal-600 bg-teal-50 px-2.5 py-1 rounded-full">Metabolic Hardware</span>
+              <h3 className="text-lg font-bold text-slate-900">Abbott FreeStyle Libre Sensors</h3>
+              <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                14-day continuous glucose monitoring patches with protective waterproof shields and sensor applicators.
+              </p>
+            </div>
+            <div className="pt-2 border-t border-slate-200/70 flex justify-between items-center text-xs font-bold">
+              <span className="text-slate-500">₹ Fast Dispatch</span>
+              <span className="text-blue-600">Available in App →</span>
+            </div>
+          </div>
+
+          <div className="bg-slate-50 rounded-3xl p-6 border border-slate-200 shadow-soft flex flex-col justify-between space-y-4">
+            <div className="space-y-2">
+              <span className="text-[10px] font-bold uppercase text-purple-600 bg-purple-50 px-2.5 py-1 rounded-full">Cancer Care Specialty</span>
+              <h3 className="text-lg font-bold text-slate-900">Scalp Cooling Caps & Natural Wigs</h3>
+              <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                Medical-grade scalp hypothermia caps to preserve follicles during chemotherapy, plus hypoallergenic natural wigs.
+              </p>
+            </div>
+            <div className="pt-2 border-t border-slate-200/70 flex justify-between items-center text-xs font-bold">
+              <span className="text-slate-500">Oncology Approved</span>
+              <span className="text-blue-600">Available in App →</span>
+            </div>
+          </div>
+
+          <div className="bg-slate-50 rounded-3xl p-6 border border-slate-200 shadow-soft flex flex-col justify-between space-y-4">
+            <div className="space-y-2">
+              <span className="text-[10px] font-bold uppercase text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full">Kitchen Safety</span>
+              <h3 className="text-lg font-bold text-slate-900">Zero-PFAS Cast Iron Cookware</h3>
+              <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                100% heavy-metal-free, pre-seasoned natural cookware crafted for high-heat cooking without synthetic non-stick fumes.
+              </p>
+            </div>
+            <div className="pt-2 border-t border-slate-200/70 flex justify-between items-center text-xs font-bold">
+              <span className="text-slate-500">Non-Toxic Living</span>
+              <span className="text-blue-600">Available in App →</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Application Screenshots Showcase Section */}
       <section id="screenshots" className="bg-slate-50 py-20 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
@@ -1290,7 +1536,7 @@ export default function App() {
             ].map((scr, idx) => (
               <div
                 key={idx}
-                className="bg-white p-3 sm:p-4 rounded-3xl border border-slate-200 shadow-soft hover:shadow-card hover:translate-y-[-4px] transition-all"
+                className="bg-white p-3 sm:p-4 rounded-3xl border border-slate-200 shadow-soft hover:shadow-card hover:-translate-y-1 transition-all"
               >
                 <span className="text-[9px] sm:text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-1">
                   {scr.title}
@@ -1312,70 +1558,10 @@ export default function App() {
         </div>
       </section>
 
-      {/* Curated Clean Living Store Section */}
-      <section id="store" className="py-20 px-4 sm:px-6 max-w-6xl mx-auto">
-        <div className="text-center max-w-3xl mx-auto mb-14">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-700 text-xs font-bold rounded-full mb-3 border border-amber-200/80">
-            <ShoppingCart className="h-3.5 w-3.5" />
-            <span>In-App Wellness Store</span>
-          </span>
-          <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-            Curated Products for Toxin-Free Living
-          </h2>
-          <p className="text-sm sm:text-base text-slate-500 font-medium mt-2">
-            Avoid counterfeit sensors and harmful kitchenware. Order verified products vetted directly by the <BrandName appName={branding.appName} /> clinical team.
-          </p>
-        </div>
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="bg-slate-50 rounded-3xl p-6 border border-slate-200 shadow-soft flex flex-col justify-between space-y-4">
-            <div className="space-y-2">
-              <span className="text-[10px] font-bold uppercase text-teal-600 bg-teal-50 px-2.5 py-1 rounded-full">Metabolic Hardware</span>
-              <h3 className="text-lg font-bold text-slate-900">Abbott FreeStyle Libre Sensors</h3>
-              <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                14-day continuous glucose monitoring patches with protective waterproof shields and sensor applicators.
-              </p>
-            </div>
-            <div className="pt-2 border-t border-slate-200/70 flex justify-between items-center text-xs font-bold">
-              <span className="text-slate-400">In-App Delivery</span>
-              <span className="text-blue-600">Available in App →</span>
-            </div>
-          </div>
-
-          <div className="bg-slate-50 rounded-3xl p-6 border border-slate-200 shadow-soft flex flex-col justify-between space-y-4">
-            <div className="space-y-2">
-              <span className="text-[10px] font-bold uppercase text-purple-600 bg-purple-50 px-2.5 py-1 rounded-full">Cancer Care Specialty</span>
-              <h3 className="text-lg font-bold text-slate-900">Scalp Cooling Caps & Natural Wigs</h3>
-              <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                Medical-grade scalp hypothermia caps to preserve follicles during chemotherapy, plus hypoallergenic wigs.
-              </p>
-            </div>
-            <div className="pt-2 border-t border-slate-200/70 flex justify-between items-center text-xs font-bold">
-              <span className="text-slate-400">Oncology Approved</span>
-              <span className="text-blue-600">Available in App →</span>
-            </div>
-          </div>
-
-          <div className="bg-slate-50 rounded-3xl p-6 border border-slate-200 shadow-soft flex flex-col justify-between space-y-4">
-            <div className="space-y-2">
-              <span className="text-[10px] font-bold uppercase text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full">Environmental Safety</span>
-              <h3 className="text-lg font-bold text-slate-900">Zero-PFAS Titanium Cookware</h3>
-              <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                100% heavy-metal-free, scratch-resistant cookware crafted for oil-free cooking without toxic non-stick fumes.
-              </p>
-            </div>
-            <div className="pt-2 border-t border-slate-200/70 flex justify-between items-center text-xs font-bold">
-              <span className="text-slate-400">Lab Tested Non-Toxic</span>
-              <span className="text-blue-600">Available in App →</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Video tutorials & Guides */}
       {videosData.length > 0 && (
         <section id="tutorials" className="py-20 px-4 sm:px-6 max-w-6xl mx-auto border-t border-slate-200/60">
-          <div className="text-center max-w-2xl mx-auto mb-16">
+          <div className="text-center max-w-2xl mx-auto mb-14">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-full mb-3 border border-blue-200/80">
               <Play className="h-3.5 w-3.5 fill-blue-600" />
               <span>Video Instructions</span>
@@ -1413,7 +1599,7 @@ export default function App() {
       {foundersData.length > 0 && (
         <section id="founders" className="bg-slate-50 py-20 px-4 sm:px-6 border-t border-slate-200">
           <div className="max-w-6xl mx-auto">
-            <div className="text-center max-w-2xl mx-auto mb-16">
+            <div className="text-center max-w-2xl mx-auto mb-14">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-bold rounded-full mb-3 border border-indigo-200/80">
                 <Stethoscope className="h-3.5 w-3.5" />
                 <span>Executive Leadership</span>
@@ -1424,9 +1610,9 @@ export default function App() {
               </p>
             </div>
 
-            <div className="space-y-16">
+            <div className="space-y-12">
               {foundersData.map((founder, idx) => (
-                <div key={idx} className="bg-white rounded-3xl p-6 md:p-10 border border-slate-200 shadow-soft flex flex-col lg:flex-row gap-8 lg:gap-10 items-stretch">
+                <div key={idx} className="bg-white rounded-3xl p-6 md:p-10 border border-slate-200 shadow-soft flex flex-col lg:flex-row gap-8 items-stretch">
                   <div className="w-full lg:w-5/12 flex items-center justify-center shrink-0">
                     {founder.videoUrl ? (
                       <div className="w-full aspect-video bg-slate-100 rounded-2xl overflow-hidden shadow-inner border border-slate-200 relative">
@@ -1453,20 +1639,20 @@ export default function App() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-semibold text-slate-600">
-                      <div className="bg-slate-50/70 hover:bg-slate-50 p-5 rounded-2xl border border-slate-200/70 transition-all">
-                        <span className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1.5">🎓 Background</span>
+                      <div className="bg-slate-50/70 p-4 rounded-2xl border border-slate-200/70">
+                        <span className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">🎓 Background</span>
                         <p className="leading-relaxed font-medium text-slate-600 whitespace-pre-line">{founder.background}</p>
                       </div>
-                      <div className="bg-slate-50/70 hover:bg-slate-50 p-5 rounded-2xl border border-slate-200/70 transition-all">
-                        <span className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1.5">🔬 Work Done</span>
+                      <div className="bg-slate-50/70 p-4 rounded-2xl border border-slate-200/70">
+                        <span className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">🔬 Work Done</span>
                         <p className="leading-relaxed font-medium text-slate-600 whitespace-pre-line">{founder.workDone}</p>
                       </div>
-                      <div className="bg-slate-50/70 hover:bg-slate-50 p-5 rounded-2xl border border-slate-200/70 transition-all">
-                        <span className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1.5">🏆 Achievements</span>
+                      <div className="bg-slate-50/70 p-4 rounded-2xl border border-slate-200/70">
+                        <span className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">🏆 Achievements</span>
                         <p className="leading-relaxed font-medium text-slate-600 whitespace-pre-line">{founder.achievements}</p>
                       </div>
-                      <div className="bg-slate-50/70 hover:bg-slate-50 p-5 rounded-2xl border border-slate-200/70 transition-all">
-                        <span className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1.5">🎯 Mission Solved</span>
+                      <div className="bg-slate-50/70 p-4 rounded-2xl border border-slate-200/70">
+                        <span className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">🎯 Mission</span>
                         <p className="leading-relaxed font-medium text-slate-600 whitespace-pre-line">{founder.tryingToSolve}</p>
                       </div>
                     </div>
@@ -1480,70 +1666,63 @@ export default function App() {
 
       {/* Frequently Asked Questions Section */}
       <section id="faqs" className="bg-white py-20 px-4 sm:px-6 max-w-4xl mx-auto">
-        <div className="text-center mb-14">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-slate-700 text-xs font-bold rounded-full mb-3 border border-slate-200">
-            <span>Got Questions?</span>
+        <div className="text-center max-w-2xl mx-auto mb-14">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-full mb-3 border border-blue-200/80">
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            <span>Questions & Answers</span>
           </span>
-          <h2 className="text-3xl font-extrabold text-slate-900">Frequently Asked Questions</h2>
-          <p className="text-sm text-slate-500 font-semibold mt-2">
-            Everything you need to know about <BrandName appName={branding.appName} />, sensor uploads, and clinical modules.
+          <h2 className="text-3xl font-black text-slate-900 tracking-tight">Frequently Asked Questions</h2>
+          <p className="text-sm text-slate-500 font-medium mt-2">
+            Everything you need to know about <BrandName appName={branding.appName} />, sensor uploads, and specialist consultations.
           </p>
         </div>
 
-        <div className="space-y-4">
-          {faqsData.map((faq, idx) => {
-            const isOpen = openFaqIndex === idx;
-            return (
-              <div key={idx} className="bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden transition-all shadow-xs">
-                <button
-                  type="button"
-                  onClick={() => setOpenFaqIndex(isOpen ? null : idx)}
-                  className="w-full flex justify-between items-center p-5 sm:p-6 text-left hover:bg-slate-100/80 transition-all focus:outline-none cursor-pointer"
-                >
-                  <span className="text-sm sm:text-base font-bold text-slate-800">{faq.question}</span>
-                  <span className="text-slate-400 font-bold ml-4 text-xs shrink-0">
-                    {isOpen ? '▲' : '▼'}
-                  </span>
-                </button>
-                {isOpen && (
-                  <div
-                    className="px-5 sm:px-6 pb-6 pt-2 text-xs sm:text-sm text-slate-600 border-t border-slate-200/60 leading-relaxed whitespace-pre-line"
-                    dangerouslySetInnerHTML={{ __html: faq.answer }}
-                  />
-                )}
-              </div>
-            );
-          })}
+        <div className="space-y-3">
+          {faqsData.map((faq, idx) => (
+            <div
+              key={idx}
+              className="border border-slate-200/80 rounded-2xl overflow-hidden bg-slate-50/60 transition-colors"
+            >
+              <button
+                type="button"
+                onClick={() => setOpenFaqIndex(openFaqIndex === idx ? null : idx)}
+                className="w-full p-5 text-left flex justify-between items-center text-sm font-bold text-slate-900 hover:text-blue-600 transition-colors cursor-pointer"
+              >
+                <span>{faq.question}</span>
+                <ChevronDown className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${openFaqIndex === idx ? 'rotate-180 text-blue-600' : ''}`} />
+              </button>
+              {openFaqIndex === idx && (
+                <div className="px-5 pb-5 pt-1 text-xs text-slate-600 leading-relaxed font-medium border-t border-slate-200/60 bg-white">
+                  {faq.answer}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* Contact Form Section */}
+      {/* Contact Support Section */}
       <section id="contact" className="bg-slate-50 py-20 px-4 sm:px-6 border-t border-slate-200/60">
-        <div className="max-w-xl mx-auto bg-white p-8 sm:p-10 rounded-3xl border border-slate-200 shadow-soft">
-          <div className="text-center mb-8">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-full mb-3 border border-blue-200/80">
-              <Mail className="h-3.5 w-3.5" />
-              <span>We're Here to Help</span>
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900">Get in Touch</h2>
-            <p className="text-xs sm:text-sm text-slate-500 font-semibold mt-1">
-              Inquiries regarding <BrandName appName={branding.appName} />? Send us a message or email us directly at{' '}
-              <a href="mailto:support@mitoreboot.in" className="text-blue-600 hover:underline">
-                support@mitoreboot.in
-              </a>.
-            </p>
-          </div>
+        <div className="max-w-2xl mx-auto text-center space-y-4">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-full border border-blue-200/80">
+            <Mail className="h-3.5 w-3.5" />
+            <span>Support & Medical Inquiries</span>
+          </span>
+          <h2 className="text-3xl font-black text-slate-900 tracking-tight">Need Assistance? Reach Our Team</h2>
+          <p className="text-sm text-slate-500 font-medium">
+            Have questions about Abbott sensor uploads, doctor video consultations, or lab tests? Our clinical support team is here to help.
+          </p>
 
           {formSuccess && (
-            <div className="mb-6 p-4 bg-emerald-50 text-emerald-800 text-xs font-bold rounded-2xl border border-emerald-200 text-center flex items-center justify-center gap-2">
-              <Check className="h-4 w-4 text-emerald-600" />
-              <span>Thank you! Your inquiry has been forwarded to our support team.</span>
+            <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold rounded-2xl flex items-center justify-center space-x-2">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+              <span>Thank you! Your message has been received. Our team will contact you shortly.</span>
             </div>
           )}
 
-          <form onSubmit={handleContactSubmit} className="space-y-4 text-left">
+          <form onSubmit={handleContactSubmit} className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-soft text-left space-y-4 mt-6">
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Your Name</label>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Full Name</label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
                   <User className="h-4 w-4" />
@@ -1598,7 +1777,7 @@ export default function App() {
                 required
                 value={contactMessage}
                 onChange={(e) => setContactMessage(e.target.value)}
-                placeholder="Ask about Abbott sensor uploads, cancer care protocols, or app features..."
+                placeholder="Ask about Abbott sensor uploads, doctor consults, cancer care protocols, or app features..."
                 className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs h-28 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               />
             </div>
@@ -1627,6 +1806,14 @@ const defaultFaqs = [
     answer: "Mito Reboot™ allows you to upload Abbott FreeStyle Libre sensor export files (CSV or PDF). Our system automatically parses postprandial glucose curves, detects glycemic spikes, and correlates them with your food logs to identify trigger meals."
   },
   {
+    question: "How do in-app specialist doctor consultations work?",
+    answer: "You can book confidential 1-on-1 video consultations with registered Radiation Oncologists and Lifestyle Medicine Physicians directly in the app. Appointments are conducted through end-to-end encrypted video, with prescriptions and care plans provided in-app."
+  },
+  {
+    question: "How can I book at-home diagnostic blood tests?",
+    answer: "Browse accredited lab panels (HbA1c, comprehensive lipid profiles, hs-CRP inflammatory markers, vitamin levels) within the app, select your preferred home collection date, and a certified phlebotomist visits your doorstep. Reports are delivered digitally in your health dashboard."
+  },
+  {
     question: "What is Active Cancer Care Support Mode?",
     answer: "Active Cancer Care Mode is a specialized app environment tailored for individuals currently undergoing chemotherapy, radiation, or oncological therapies. It focuses on organ protection, managing treatment-induced fatigue, guided fasting safety, and booking consults with oncology specialists."
   },
@@ -1637,10 +1824,6 @@ const defaultFaqs = [
   {
     question: "Which regional languages are supported?",
     answer: "Mito Reboot™ supports 5 complete native languages: English, தமிழ் (Tamil), తెలుగు (Telugu), ಕನ್ನಡ (Kannada), and हिन्दी (Hindi). You can switch your preferred language at any time in the app header or profile settings."
-  },
-  {
-    question: "Is intermittent fasting safe for everyone?",
-    answer: "While intermittent fasting stimulates autophagy and cellular cleanup, individuals with active cancer treatments, type 1 diabetes, or pregnant/nursing mothers must consult their treating physician prior to starting. Mito Reboot™ includes interactive medical disclaimers to ensure safe practice."
   }
 ];
 
@@ -1688,11 +1871,12 @@ const Header: React.FC<{
         {/* Desktop Navigation Links */}
         <nav className="hidden lg:flex items-center space-x-6 text-xs font-bold text-slate-600">
           <a href="#features" onClick={() => onTabChange('home')} className="hover:text-blue-600 transition-colors">Features</a>
+          <a href="#specialists" onClick={() => onTabChange('home')} className="hover:text-blue-600 transition-colors">Doctors</a>
           <a href="#breathwork" onClick={() => onTabChange('home')} className="hover:text-blue-600 transition-colors">Breathwork</a>
-          <a href="#modules" onClick={() => onTabChange('home')} className="hover:text-blue-600 transition-colors">Chronic Modules</a>
+          <a href="#modules" onClick={() => onTabChange('home')} className="hover:text-blue-600 transition-colors">Care Programs</a>
           <a href="#environmental" onClick={() => onTabChange('home')} className="hover:text-blue-600 transition-colors">Clean Living</a>
+          <a href="#store" onClick={() => onTabChange('home')} className="hover:text-blue-600 transition-colors">Store</a>
           <a href="#languages" onClick={() => onTabChange('home')} className="hover:text-blue-600 transition-colors">Languages</a>
-          <a href="#screenshots" onClick={() => onTabChange('home')} className="hover:text-blue-600 transition-colors">Screenshots</a>
           {foundersCount > 0 && (
             <a href="#founders" onClick={() => onTabChange('home')} className="hover:text-blue-600 transition-colors">Founders</a>
           )}
@@ -1726,7 +1910,7 @@ const Header: React.FC<{
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100"
+            className="lg:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 cursor-pointer"
             title="Toggle Menu"
           >
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -1738,9 +1922,11 @@ const Header: React.FC<{
       {mobileMenuOpen && (
         <div className="lg:hidden bg-white border-b border-slate-200 px-4 py-4 space-y-3 text-left font-bold text-sm text-slate-700">
           <a href="#features" onClick={() => { onTabChange('home'); setMobileMenuOpen(false); }} className="block py-1 hover:text-blue-600">Features</a>
+          <a href="#specialists" onClick={() => { onTabChange('home'); setMobileMenuOpen(false); }} className="block py-1 hover:text-blue-600">Doctors</a>
           <a href="#breathwork" onClick={() => { onTabChange('home'); setMobileMenuOpen(false); }} className="block py-1 hover:text-blue-600">Breathwork</a>
-          <a href="#modules" onClick={() => { onTabChange('home'); setMobileMenuOpen(false); }} className="block py-1 hover:text-blue-600">Chronic Modules</a>
+          <a href="#modules" onClick={() => { onTabChange('home'); setMobileMenuOpen(false); }} className="block py-1 hover:text-blue-600">Care Programs</a>
           <a href="#environmental" onClick={() => { onTabChange('home'); setMobileMenuOpen(false); }} className="block py-1 hover:text-blue-600">Clean Living</a>
+          <a href="#store" onClick={() => { onTabChange('home'); setMobileMenuOpen(false); }} className="block py-1 hover:text-blue-600">Store</a>
           <a href="#languages" onClick={() => { onTabChange('home'); setMobileMenuOpen(false); }} className="block py-1 hover:text-blue-600">Languages</a>
           <a href="#screenshots" onClick={() => { onTabChange('home'); setMobileMenuOpen(false); }} className="block py-1 hover:text-blue-600">Screenshots</a>
           <a href="#faqs" onClick={() => { onTabChange('home'); setMobileMenuOpen(false); }} className="block py-1 hover:text-blue-600">FAQ</a>
@@ -1793,11 +1979,11 @@ const Footer: React.FC<{
               />
             </div>
             <p className="text-slate-400 text-xs leading-relaxed font-medium">
-              A science-driven cellular health and chronic disease reversal platform. Empowering individuals with continuous glucose telemetry, vagus breathwork, and environmental carcinogen auditing.
+              A science-driven cellular health and chronic disease reversal platform. Empowering individuals with continuous glucose telemetry, vagus breathwork, verified doctor video consults, and environmental carcinogen auditing.
             </p>
             {/* Trademark Legal Notice */}
             <p className="text-[11px] text-slate-500 font-bold">
-              © 2026 <BrandName appName={branding.appName} className="text-slate-300" supClassName="text-[0.6em] text-blue-400 -top-1 relative" />. All rights reserved. Mito Reboot™ is a trademark of Mito Reboot.
+              © 2026 <BrandName appName={branding.appName} className="text-slate-300" supClassName="text-[0.6em] text-blue-400 -top-1 relative" />. All rights reserved. Mito Reboot™ is a registered trademark.
             </p>
           </div>
 
@@ -1806,6 +1992,7 @@ const Footer: React.FC<{
               <span className="text-[10px] font-black uppercase tracking-wider text-slate-200 block">Product</span>
               <ul className="space-y-1.5 text-slate-400">
                 <li><a href="#features" onClick={() => onTabChange('home')} className="hover:text-white transition-colors">Features</a></li>
+                <li><a href="#specialists" onClick={() => onTabChange('home')} className="hover:text-white transition-colors">Specialist Doctors</a></li>
                 <li><a href="#breathwork" onClick={() => onTabChange('home')} className="hover:text-white transition-colors">Vagus Breathwork</a></li>
                 <li><a href="#modules" onClick={() => onTabChange('home')} className="hover:text-white transition-colors">Active Cancer Care</a></li>
                 <li><a href="#languages" onClick={() => onTabChange('home')} className="hover:text-white transition-colors">5 Regional Languages</a></li>
@@ -1835,7 +2022,7 @@ const Footer: React.FC<{
                   className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-[11px] font-bold border border-slate-700 flex items-center gap-1.5"
                 >
                   <Smartphone className="h-3.5 w-3.5" />
-                  <span>iOS App Store</span>
+                  <span>iOS App Store ({CURRENT_APP_VERSION})</span>
                 </a>
                 <a
                   href="https://play.google.com/store/apps/details?id=com.mitoreboot.app"
@@ -1844,7 +2031,7 @@ const Footer: React.FC<{
                   className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-[11px] font-bold border border-slate-700 flex items-center gap-1.5"
                 >
                   <Play className="h-3.5 w-3.5 fill-white" />
-                  <span>Google Play Store</span>
+                  <span>Google Play Store ({CURRENT_APP_VERSION})</span>
                 </a>
               </div>
             </div>
