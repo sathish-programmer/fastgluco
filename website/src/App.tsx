@@ -1801,7 +1801,15 @@ export default function App() {
             </div>
             <div className="pt-2 border-t border-slate-200/70 flex justify-between items-center text-xs font-bold">
               <span className="text-slate-500">₹ Fast Dispatch</span>
-              <span className="text-blue-600">Available in App →</span>
+              <button
+                type="button"
+                onClick={() => openAppOrStore('shop')}
+                className="text-blue-600 font-extrabold hover:text-blue-700 transition-colors cursor-pointer flex items-center gap-1 active:scale-95"
+                title="Opens shop catalog in the Mito Reboot mobile app"
+              >
+                <span>Available in App</span>
+                <span>→</span>
+              </button>
             </div>
           </div>
 
@@ -1815,7 +1823,15 @@ export default function App() {
             </div>
             <div className="pt-2 border-t border-slate-200/70 flex justify-between items-center text-xs font-bold">
               <span className="text-slate-500">Oncology Approved</span>
-              <span className="text-blue-600">Available in App →</span>
+              <button
+                type="button"
+                onClick={() => openAppOrStore('shop')}
+                className="text-blue-600 font-extrabold hover:text-blue-700 transition-colors cursor-pointer flex items-center gap-1 active:scale-95"
+                title="Opens scalp caps in the Mito Reboot mobile app"
+              >
+                <span>Available in App</span>
+                <span>→</span>
+              </button>
             </div>
           </div>
 
@@ -1829,7 +1845,15 @@ export default function App() {
             </div>
             <div className="pt-2 border-t border-slate-200/70 flex justify-between items-center text-xs font-bold">
               <span className="text-slate-500">Non-Toxic Living</span>
-              <span className="text-blue-600">Available in App →</span>
+              <button
+                type="button"
+                onClick={() => openAppOrStore('shop')}
+                className="text-blue-600 font-extrabold hover:text-blue-700 transition-colors cursor-pointer flex items-center gap-1 active:scale-95"
+                title="Opens non-toxic cookware in the Mito Reboot mobile app"
+              >
+                <span>Available in App</span>
+                <span>→</span>
+              </button>
             </div>
           </div>
         </div>
