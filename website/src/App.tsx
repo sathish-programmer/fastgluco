@@ -115,6 +115,46 @@ export default function App() {
     }, 4500);
   };
 
+  // Smart Deep-Link: Opens app if installed on device, otherwise falls back to App Store / Google Play
+  const openAppOrStore = (path = '') => {
+    const cleanPath = path.replace(/^\//, '');
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    const isAndroid = /Android/.test(navigator.userAgent);
+
+    const appSchemeUrl = cleanPath ? `mitoreboot://${cleanPath}` : 'mitoreboot://home';
+    const appStoreUrl = 'https://apps.apple.com/in/app/mito-reboot/id6742055660';
+    const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.mitoreboot.app';
+
+    if (isAndroid) {
+      // Android Intent scheme launches the installed package, or automatically falls back to browser fallback url
+      const fallbackParam = encodeURIComponent(playStoreUrl);
+      const intentUrl = `intent://${cleanPath}#Intent;scheme=mitoreboot;package=com.mitoreboot.app;S.browser_fallback_url=${fallbackParam};end`;
+      window.location.href = intentUrl;
+      return;
+    }
+
+    if (isIOS) {
+      const startTime = Date.now();
+      window.location.href = appSchemeUrl;
+      setTimeout(() => {
+        // If still on the browser page after timeout, app is not installed
+        if (Date.now() - startTime < 2500) {
+          window.location.href = appStoreUrl;
+        }
+      }, 1500);
+      return;
+    }
+
+    // Desktop or other browser
+    const startTime = Date.now();
+    window.location.href = appSchemeUrl;
+    setTimeout(() => {
+      if (Date.now() - startTime < 2000) {
+        window.open(playStoreUrl, '_blank');
+      }
+    }, 1200);
+  };
+
   // Interactive Breathwork Widget State
   const [breathType, setBreathType] = useState<'box' | 'relax' | 'coherent'>('box');
   const [breathPhase, setBreathPhase] = useState<'inhale' | 'hold' | 'exhale' | 'hold2'>('inhale');
@@ -239,7 +279,7 @@ export default function App() {
   if (activeTab === 'privacy-policy') {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col justify-between">
-        <Header activeTab={activeTab} onTabChange={setActiveTab} branding={branding} foundersCount={0} />
+        <Header activeTab={activeTab} onTabChange={setActiveTab} branding={branding} foundersCount={0} onOpenApp={openAppOrStore} />
         <main className="flex-grow max-w-4xl mx-auto w-full px-6 py-12 bg-white rounded-3xl border border-slate-200/80 shadow-soft mt-8 mb-12">
           <div className="border-b border-slate-100 pb-4 mb-6 flex items-center justify-between">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
@@ -260,7 +300,7 @@ export default function App() {
   if (activeTab === 'terms-and-conditions') {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col justify-between">
-        <Header activeTab={activeTab} onTabChange={setActiveTab} branding={branding} foundersCount={0} />
+        <Header activeTab={activeTab} onTabChange={setActiveTab} branding={branding} foundersCount={0} onOpenApp={openAppOrStore} />
         <main className="flex-grow max-w-4xl mx-auto w-full px-6 py-12 bg-white rounded-3xl border border-slate-200/80 shadow-soft mt-8 mb-12">
           <div className="border-b border-slate-100 pb-4 mb-6 flex items-center justify-between">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
@@ -281,7 +321,7 @@ export default function App() {
   return (
     <div className="bg-white min-h-screen flex flex-col justify-between selection:bg-blue-600 selection:text-white">
       {/* Sticky Header Navigation */}
-      <Header activeTab={activeTab} onTabChange={setActiveTab} branding={branding} foundersCount={foundersData.length} />
+      <Header activeTab={activeTab} onTabChange={setActiveTab} branding={branding} foundersCount={foundersData.length} onOpenApp={openAppOrStore} />
 
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-b from-blue-50/70 via-indigo-50/20 to-white pt-10 pb-16 px-4 sm:px-6 md:pt-16 md:pb-24">
@@ -347,8 +387,21 @@ export default function App() {
               </span>
             </div>
 
-            {/* App Store Download Badges */}
-            <div className="flex flex-wrap items-center gap-3.5 pt-3">
+            {/* App Store Download & Try in App Badges */}
+            <div className="flex flex-wrap items-center gap-3 pt-3">
+              <button
+                type="button"
+                onClick={() => openAppOrStore()}
+                className="group bg-gradient-to-r from-blue-600 via-indigo-600 to-teal-600 hover:from-blue-700 hover:to-indigo-700 text-white px-5 py-3 rounded-2xl flex items-center space-x-3 transition-all duration-200 shadow-card hover:translate-y-[-2px] cursor-pointer"
+                title="Opens the Mito Reboot app directly if installed on your phone"
+              >
+                <Smartphone className="h-5 w-5 text-white group-hover:scale-110 transition-transform" />
+                <div className="text-left">
+                  <span className="text-[10px] text-blue-100 block font-bold uppercase tracking-wider leading-tight">Installed on phone?</span>
+                  <span className="text-sm font-black block leading-none">Try in App</span>
+                </div>
+              </button>
+
               <a
                 href="https://apps.apple.com/in/app/mito-reboot/id6783705985"
                 target="_blank"
@@ -942,7 +995,15 @@ export default function App() {
                   <span className="text-slate-900 font-black">₹1,000</span>
                   <span className="text-[10px] text-slate-500 font-medium"> / 30 mins</span>
                 </div>
-                <span className="text-blue-600 font-extrabold hover:text-blue-700 transition-colors">Book via App →</span>
+                <button
+                  type="button"
+                  onClick={() => openAppOrStore('doctors')}
+                  className="text-blue-600 font-extrabold hover:text-blue-700 transition-colors cursor-pointer flex items-center gap-1 active:scale-95"
+                  title="Opens doctor booking in the Mito Reboot mobile app"
+                >
+                  <span>Book via App</span>
+                  <span>→</span>
+                </button>
               </div>
             </div>
 
@@ -976,7 +1037,15 @@ export default function App() {
                   <span className="text-slate-900 font-black">₹750</span>
                   <span className="text-[10px] text-slate-500 font-medium"> / 30 mins</span>
                 </div>
-                <span className="text-blue-600 font-extrabold hover:text-blue-700 transition-colors">Book via App →</span>
+                <button
+                  type="button"
+                  onClick={() => openAppOrStore('doctors')}
+                  className="text-blue-600 font-extrabold hover:text-blue-700 transition-colors cursor-pointer flex items-center gap-1 active:scale-95"
+                  title="Opens doctor booking in the Mito Reboot mobile app"
+                >
+                  <span>Book via App</span>
+                  <span>→</span>
+                </button>
               </div>
             </div>
 
@@ -1010,7 +1079,15 @@ export default function App() {
                   <span className="text-slate-900 font-black">₹700</span>
                   <span className="text-[10px] text-slate-500 font-medium"> / 30 mins</span>
                 </div>
-                <span className="text-blue-600 font-extrabold hover:text-blue-700 transition-colors">Book via App →</span>
+                <button
+                  type="button"
+                  onClick={() => openAppOrStore('doctors')}
+                  className="text-blue-600 font-extrabold hover:text-blue-700 transition-colors cursor-pointer flex items-center gap-1 active:scale-95"
+                  title="Opens doctor booking in the Mito Reboot mobile app"
+                >
+                  <span>Book via App</span>
+                  <span>→</span>
+                </button>
               </div>
             </div>
 
@@ -1044,7 +1121,15 @@ export default function App() {
                   <span className="text-slate-900 font-black">₹750</span>
                   <span className="text-[10px] text-slate-500 font-medium"> / 30 mins</span>
                 </div>
-                <span className="text-blue-600 font-extrabold hover:text-blue-700 transition-colors">Book via App →</span>
+                <button
+                  type="button"
+                  onClick={() => openAppOrStore('doctors')}
+                  className="text-blue-600 font-extrabold hover:text-blue-700 transition-colors cursor-pointer flex items-center gap-1 active:scale-95"
+                  title="Opens doctor booking in the Mito Reboot mobile app"
+                >
+                  <span>Book via App</span>
+                  <span>→</span>
+                </button>
               </div>
             </div>
 
@@ -1078,7 +1163,15 @@ export default function App() {
                   <span className="text-slate-900 font-black">₹750</span>
                   <span className="text-[10px] text-slate-500 font-medium"> / 30 mins</span>
                 </div>
-                <span className="text-blue-600 font-extrabold hover:text-blue-700 transition-colors">Book via App →</span>
+                <button
+                  type="button"
+                  onClick={() => openAppOrStore('doctors')}
+                  className="text-blue-600 font-extrabold hover:text-blue-700 transition-colors cursor-pointer flex items-center gap-1 active:scale-95"
+                  title="Opens doctor booking in the Mito Reboot mobile app"
+                >
+                  <span>Book via App</span>
+                  <span>→</span>
+                </button>
               </div>
             </div>
 
@@ -1112,7 +1205,15 @@ export default function App() {
                   <span className="text-slate-900 font-black">₹500</span>
                   <span className="text-[10px] text-slate-500 font-medium"> / 30 mins</span>
                 </div>
-                <span className="text-blue-600 font-extrabold hover:text-blue-700 transition-colors">Book via App →</span>
+                <button
+                  type="button"
+                  onClick={() => openAppOrStore('doctors')}
+                  className="text-blue-600 font-extrabold hover:text-blue-700 transition-colors cursor-pointer flex items-center gap-1 active:scale-95"
+                  title="Opens doctor booking in the Mito Reboot mobile app"
+                >
+                  <span>Book via App</span>
+                  <span>→</span>
+                </button>
               </div>
             </div>
           </div>
@@ -2061,7 +2162,8 @@ const Header: React.FC<{
   onTabChange: (tab: any) => void;
   branding: BrandingProp;
   foundersCount: number;
-}> = ({ activeTab, onTabChange, branding, foundersCount }) => {
+  onOpenApp?: (path?: string) => void;
+}> = ({ activeTab, onTabChange, branding, foundersCount, onOpenApp }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
@@ -2117,15 +2219,15 @@ const Header: React.FC<{
               ← Back to Home
             </button>
           ) : (
-            <a
-              href="https://play.google.com/store/apps/details?id=com.mitoreboot.app"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden sm:inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs px-4 py-2 rounded-xl shadow-sm transition-all"
+            <button
+              type="button"
+              onClick={() => (onOpenApp ? onOpenApp() : window.open('https://play.google.com/store/apps/details?id=com.mitoreboot.app', '_blank'))}
+              className="hidden sm:inline-flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold text-xs px-4 py-2 rounded-xl shadow-sm transition-all cursor-pointer"
+              title="Opens Mito Reboot app directly if installed on your phone"
             >
               <Smartphone className="h-3.5 w-3.5" />
-              <span>Get Mito Reboot™</span>
-            </a>
+              <span>Try in App</span>
+            </button>
           )}
 
           {/* Mobile hamburger menu toggle */}
@@ -2154,6 +2256,14 @@ const Header: React.FC<{
           <a href="#faqs" onClick={() => { onTabChange('home'); setMobileMenuOpen(false); }} className="block py-1 hover:text-blue-600">FAQ</a>
           <a href="#contact" onClick={() => { onTabChange('home'); setMobileMenuOpen(false); }} className="block py-1 hover:text-blue-600">Contact Us</a>
           <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => { setMobileMenuOpen(false); if (onOpenApp) onOpenApp(); }}
+              className="w-full text-center py-2.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-teal-600 text-white rounded-xl text-xs font-black shadow-md flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Smartphone className="h-4 w-4" />
+              <span>Try in App (Open Mobile App)</span>
+            </button>
             <a
               href="https://apps.apple.com/in/app/mito-reboot/id6783705985"
               target="_blank"
@@ -2166,7 +2276,7 @@ const Header: React.FC<{
               href="https://play.google.com/store/apps/details?id=com.mitoreboot.app"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full text-center py-2 bg-blue-600 text-white rounded-xl text-xs font-bold"
+              className="w-full text-center py-2 bg-slate-100 text-slate-800 rounded-xl text-xs font-bold hover:bg-slate-200"
             >
               Download on Google Play
             </a>
