@@ -1234,11 +1234,10 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     return 0;
   };
 
-  // Calculate percentages and metrics for the Two-Force Cellular Balance
+  // Percentages for cellular report generation
   const totalForces = damageCount + repairCount;
   const damagePct = totalForces === 0 ? 50 : Math.round((damageCount / totalForces) * 100);
   const repairPct = totalForces === 0 ? 50 : 100 - damagePct;
-  const netBalance = repairCount - damageCount;
 
   // Helper to compute Damage & Repair forces for any arbitrary log subset (e.g. historical day snapshots)
   const computeForcesForLogs = (logList: HabitLog[]) => {
@@ -1627,6 +1626,15 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     };
   }, [habits, timePeriod, damageCount, repairCount, user]);
 
+  const displayDamage = timePeriod === 'today' ? damageCount : Math.round(Number(cellularTrendData.avgDamage) || 0);
+  const displayRepair = timePeriod === 'today' ? repairCount : Math.round(Number(cellularTrendData.avgRepair) || 0);
+  const displayTotalForces = displayDamage + displayRepair;
+  const displayDamagePct = displayTotalForces === 0 ? 50 : Math.round((displayDamage / displayTotalForces) * 100);
+  const displayRepairPct = displayTotalForces === 0 ? 50 : 100 - displayDamagePct;
+  const displayNet = timePeriod === 'today' ? (repairCount - damageCount) : Math.round(Number(cellularTrendData.avgNet) || (displayRepair - displayDamage));
+  const damageArcRatio = Math.min(1, Math.max(0, displayDamage / 11));
+  const repairArcRatio = Math.min(1, Math.max(0, displayRepair / 12));
+
   const { setPendingRecommendationId } = useConsultation();
 
   const handleBookAppt = (recommendationId: string) => {
@@ -1807,7 +1815,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
             {activeScreen === 'SymptomCheckin' ? (
               <AiBannerQuickNudge
                 title={t('symptomCheck.aiBannerTitle', 'AI Symptom Screening Assistant')}
-                subtitle={t('symptomCheck.aiBannerSubtitle', 'Ask about the 11 warning symptoms, red flags & specialist recommendations')}
+                subtitle={t('symptomCheck.aiBannerSubtitle', 'Ask about the 12 warning symptoms, red flags & specialist recommendations')}
                 buttonText={t('symptomCheck.askAi', 'Ask AI')}
                 onOpenAiCheckin={() => setShowSymptomAiModal(true)}
               />
@@ -2081,137 +2089,142 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
 
           {!isCancerPatient && (
             <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800 rounded-3xl p-4 sm:p-5 mb-5 shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-none transition-all duration-300">
-              {/* Header Row: Title & Streak on Left, Date Filter Popover & Download on Right (Single line, no wrap!) */}
-              <div className="flex items-center justify-between gap-2 mb-3.5 pb-2.5 border-b border-slate-100 dark:border-slate-800/80 relative">
-                <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-rose-500 via-indigo-600 to-emerald-500 text-white flex items-center justify-center shadow-md shadow-indigo-500/25 shrink-0" title={t('healthDefenseTitle')}>
-                    <ShieldPlus className="w-4.5 h-4.5 stroke-[2.4]" />
+              {/* Header: Title & Identity (Top), Mode & Filter Toolbar (Responsive) */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 mb-3.5 pb-2.5 border-b border-slate-100 dark:border-slate-800/80">
+                {/* Brand / Section Identity */}
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-rose-500 via-indigo-600 to-emerald-500 text-white flex items-center justify-center shadow-md shadow-indigo-500/25 shrink-0" title={t('healthDefenseTitle')}>
+                    <ShieldPlus className="w-5 h-5 stroke-[2.2]" />
                   </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5 sm:gap-2">
-                      <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight truncate">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-slate-100 tracking-tight whitespace-nowrap">
                         {t('dashboard.cellularBalance', 'Cellular Balance')}
                       </h3>
                       {streak > 0 && timePeriod === 'today' && (
-                        <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
                           <Flame className="w-2.5 h-2.5 text-amber-500 fill-amber-500" />
                           {streak}d
                         </span>
                       )}
                     </div>
-                    <p className="text-[9.5px] sm:text-[10px] text-slate-400 dark:text-slate-500 font-medium truncate">{t('dashboard.lifestyleVsDefense', 'Lifestyle Stress vs Restorative Defense')}</p>
+                    <p className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 font-medium truncate">
+                      {t('dashboard.lifestyleVsDefense', 'Lifestyle Stress vs Restorative Defense')}
+                    </p>
                   </div>
                 </div>
 
-                {/* Right Side: Date Filter Button + Download Option */}
-                <div className="flex items-center gap-1.5 shrink-0 relative">
+                {/* Right / Controls Toolbar: Mode Toggle + Timeframe Dropdown + Report Button */}
+                <div className="flex items-center justify-between sm:justify-end gap-1.5 sm:gap-2 w-full sm:w-auto relative">
                   {/* View Mode Toggle: Trend Graph vs State Gauge */}
-                  <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+                  <div className="flex items-center bg-slate-100/90 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60 shrink-0">
                     <button
                       type="button"
                       onClick={() => setBalanceViewMode('summary')}
-                      className={`px-2 py-1 rounded-lg text-[10px] sm:text-[10.5px] font-bold flex items-center gap-1 transition-all cursor-pointer ${balanceViewMode === 'summary'
+                      className={`px-2.5 py-1 rounded-lg text-[10.5px] sm:text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${balanceViewMode === 'summary'
                         ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
                         : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-200'
                         }`}
                       title="View balance gauge summary"
                     >
-                      <Scale className="w-3 h-3 text-slate-500" />
+                      <Scale className="w-3.5 h-3.5" />
                       <span>{t('dashboard.gauge', 'Gauge')}</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setBalanceViewMode('graph')}
-                      className={`px-2 py-1 rounded-lg text-[10px] sm:text-[10.5px] font-bold flex items-center gap-1 transition-all cursor-pointer ${balanceViewMode === 'graph'
+                      className={`px-2.5 py-1 rounded-lg text-[10.5px] sm:text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${balanceViewMode === 'graph'
                         ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
                         : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-200'
                         }`}
                       title="View day-by-day trend graph"
                     >
-                      <LineChart className="w-3 h-3 text-indigo-500" />
+                      <LineChart className="w-3.5 h-3.5" />
                       <span>{t('dashboard.trend', 'Trend')}</span>
                     </button>
-
                   </div>
 
-                  {/* Date Filter Dropdown */}
-                  <div className="relative">
+                  {/* Actions Right: Date Filter + Report */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {/* Date Filter Dropdown */}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setShowPeriodFilter(!showPeriodFilter)}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-xl border transition-all cursor-pointer shadow-xs active:scale-95 ${showPeriodFilter
+                          ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800'
+                          : 'text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 bg-slate-100/90 dark:bg-slate-800 hover:bg-slate-200/70 dark:hover:bg-slate-700/70 border-slate-200/60 dark:border-slate-700/60'
+                          }`}
+                        title={t('selectTimeframeTitle')}
+                      >
+                        <Filter className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                        <span className="font-extrabold text-[10.5px] sm:text-xs">
+                          {timePeriod === 'today' ? t('dashboard.today', 'Today') : timePeriod === 'weekly' ? '7D' : timePeriod === 'monthly' ? '30D' : '1Y'}
+                        </span>
+                        <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform duration-200 ${showPeriodFilter ? 'rotate-180' : ''}`} />
+                      </button>
+
+                      {/* Dropdown Menu */}
+                      {showPeriodFilter && (
+                        <>
+                          <div
+                            className="fixed inset-0 z-40"
+                            onClick={() => setShowPeriodFilter(false)}
+                          />
+                          <div className="absolute right-0 top-full mt-1.5 w-44 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200/80 dark:border-slate-800 p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+                            <div className="px-2.5 py-1 text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800/80 mb-1">
+                              {t('common.filter', 'Filter Time Range')}
+                            </div>
+                            {[
+                              { id: 'today', label: t('dashboard.today', 'Today'), desc: 'Live daily balance' },
+                              { id: 'weekly', label: t('reports.last7Days', '7 Days'), desc: 'Weekly trend analysis' },
+                              { id: 'monthly', label: t('reports.last30Days', '30 Days'), desc: 'Monthly cellular health' },
+                              { id: 'yearly', label: t('reports.allTime', '1 Year'), desc: 'Annual cellular history' },
+                            ].map((item) => {
+                              const active = timePeriod === item.id;
+                              return (
+                                <button
+                                  key={item.id}
+                                  type="button"
+                                  onClick={() => {
+                                    const p = item.id as any;
+                                    setTimePeriod(p);
+                                    setShowPeriodFilter(false);
+                                  }}
+                                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-left transition-all cursor-pointer ${active
+                                    ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold'
+                                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium'
+                                    }`}
+                                >
+                                  <div>
+                                    <div className="text-xs">{item.label}</div>
+                                    <div className="text-[9px] text-slate-400 dark:text-slate-500">{item.desc}</div>
+                                  </div>
+                                  {active && <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 dark:bg-indigo-400 shrink-0" />}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Download / Report Button */}
                     <button
                       type="button"
-                      onClick={() => setShowPeriodFilter(!showPeriodFilter)}
-                      className={`inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 text-xs font-bold rounded-xl border transition-all cursor-pointer shadow-xs active:scale-95 ${showPeriodFilter
-                        ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800'
-                        : 'text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/70 dark:hover:bg-slate-700/70 border-slate-200/60 dark:border-slate-700/60'
-                        }`}
-                      title={t('selectTimeframeTitle')}
+                      disabled={isDownloadingReport}
+                      onClick={downloadDocumentedReport}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 bg-slate-100/90 dark:bg-slate-800 hover:bg-slate-200/70 dark:hover:bg-slate-700/70 rounded-xl border border-slate-200/60 dark:border-slate-700/60 transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
+                      title={t('downloadDocumentedReportTitle')}
                     >
-                      <Filter className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                      <span className="font-extrabold text-[10.5px] sm:text-xs">
-                        {timePeriod === 'today' ? t('dashboard.today', 'Today') : timePeriod === 'weekly' ? '7D' : timePeriod === 'monthly' ? '30D' : '1Y'}
-                      </span>
-                      <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform duration-200 ${showPeriodFilter ? 'rotate-180' : ''}`} />
+                      {isDownloadingReport ? (
+                        <Loader2 className="w-3.5 h-3.5 text-indigo-500 animate-spin shrink-0" />
+                      ) : (
+                        <DownloadCloud className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                      )}
+                      <span>{isDownloadingReport ? t('dashboard.preparing', 'Preparing...') : t('dashboard.reportButton', 'Report')}</span>
                     </button>
-
-                    {/* Dropdown Menu */}
-                    {showPeriodFilter && (
-                      <>
-                        <div
-                          className="fixed inset-0 z-40"
-                          onClick={() => setShowPeriodFilter(false)}
-                        />
-                        <div className="absolute right-0 top-full mt-1.5 w-44 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200/80 dark:border-slate-800 p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
-                          <div className="px-2.5 py-1 text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800/80 mb-1">
-                            {t('common.filter', 'Filter Time Range')}
-                          </div>
-                          {[
-                            { id: 'today', label: t('dashboard.today', 'Today'), desc: 'Live daily balance' },
-                            { id: 'weekly', label: t('reports.last7Days', '7 Days'), desc: 'Weekly trend analysis' },
-                            { id: 'monthly', label: t('reports.last30Days', '30 Days'), desc: 'Monthly cellular health' },
-                            { id: 'yearly', label: t('reports.allTime', '1 Year'), desc: 'Annual cellular history' },
-                          ].map((item) => {
-                            const active = timePeriod === item.id;
-                            return (
-                              <button
-                                key={item.id}
-                                type="button"
-                                onClick={() => {
-                                  const p = item.id as any;
-                                  setTimePeriod(p);
-                                  setShowPeriodFilter(false);
-                                }}
-                                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-left transition-all cursor-pointer ${active
-                                  ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold'
-                                  : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium'
-                                  }`}
-                              >
-                                <div>
-                                  <div className="text-xs">{item.label}</div>
-                                  <div className="text-[9px] text-slate-400 dark:text-slate-500">{item.desc}</div>
-                                </div>
-                                {active && <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 dark:bg-indigo-400 shrink-0" />}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </>
-                    )}
                   </div>
-
-                  {/* Download / Report Button */}
-                  <button
-                    type="button"
-                    disabled={isDownloadingReport}
-                    onClick={downloadDocumentedReport}
-                    className="inline-flex items-center gap-1 p-1.5 sm:px-2.5 sm:py-1 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/70 dark:hover:bg-slate-700/70 rounded-xl border border-slate-200/60 dark:border-slate-700/60 transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
-                    title={t('downloadDocumentedReportTitle')}
-                  >
-                    {isDownloadingReport ? (
-                      <Loader2 className="w-3.5 h-3.5 text-indigo-500 animate-spin shrink-0" />
-                    ) : (
-                      <DownloadCloud className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                    )}
-                    <span className="hidden sm:inline">{isDownloadingReport ? t('dashboard.preparing', 'Preparing...') : t('dashboard.reportButton', 'Report')}</span>
-                  </button>
                 </div>
               </div>
 
@@ -2511,126 +2524,203 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                   </div>
                 </div>
               ) : (
-                /* === CIRCULAR GAUGE & TUG-OF-WAR BALANCE BAR === */
-                <div className="flex items-center gap-3.5 sm:gap-5">
-                  {/* LEFT: Compact Circular Ring Tracker (Explicit fixed size so it never expands!) */}
-                  <div className="shrink-0" style={{ width: '84px', height: '84px' }}>
-                    <div className="relative w-full h-full flex items-center justify-center">
-                      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 84 84">
-                        {/* Damage / Stress Base Circle */}
-                        <circle
-                          cx="42"
-                          cy="42"
-                          r="34"
-                          stroke="#f43f5e"
-                          strokeWidth="6.5"
-                          className="opacity-80"
-                          fill="none"
-                        />
-                        {/* Active Repair Arc */}
-                        <circle
-                          cx="42"
-                          cy="42"
-                          r="34"
-                          stroke="#10b981"
-                          strokeWidth="6.5"
-                          strokeDasharray={213.63}
-                          strokeDashoffset={213.63 * (1 - (totalForces === 0 ? 0.5 : repairPct / 100))}
-                          strokeLinecap="round"
-                          className="transition-all duration-700"
-                          fill="none"
-                        />
-                      </svg>
-                      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
-                        <span className="text-xl font-black text-slate-900 dark:text-white leading-none tracking-tight">
-                          {totalForces === 0 ? '50%' : `${repairPct}%`}
+                /* === ULTRA-CLEAN MODERN CELLULAR BALANCE SUITE === */
+                <div className="space-y-2.5 sm:space-y-3.5">
+                  {/* TOP ROW: Dual Circular Gauges Side-by-Side */}
+                  <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                    {/* 1. DAMAGE / STRESS CARD */}
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-b from-rose-50/90 via-white to-white dark:from-rose-950/30 dark:via-slate-900/60 dark:to-slate-900/90 border border-rose-200/70 dark:border-rose-900/40 p-2.5 sm:p-3.5 flex flex-col items-center text-center shadow-xs">
+                      {/* Top Label & Pill */}
+                      <div className="w-full flex items-center justify-between gap-1 mb-1.5">
+                        <span className="flex items-center gap-1 text-[11px] sm:text-xs font-bold text-rose-700 dark:text-rose-400">
+                          <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-rose-500 shrink-0" />
+                          <span className="truncate">{t('dashboard.damage', 'Damage')}</span>
                         </span>
-                        <span className="text-[8px] font-extrabold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mt-0.5">
-                          {t('dashboard.repairLabel', 'Repair')}
+                        <span className="text-[9px] sm:text-[10px] font-extrabold px-1.5 sm:px-2 py-0.5 rounded-full bg-rose-100/90 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60 shrink-0">
+                          {displayDamagePct}%
                         </span>
                       </div>
+
+                      {/* SVG Gauge */}
+                      <div className="relative w-16 h-16 sm:w-20 sm:h-20 my-1 flex items-center justify-center">
+                        <svg className="w-full h-full transform -rotate-90 drop-shadow-xs" viewBox="0 0 72 72">
+                          <circle
+                            cx="36"
+                            cy="36"
+                            r="28"
+                            stroke="currentColor"
+                            strokeWidth="5.5"
+                            className="text-rose-100 dark:text-rose-950/40"
+                            fill="none"
+                          />
+                          <circle
+                            cx="36"
+                            cy="36"
+                            r="28"
+                            stroke="#f43f5e"
+                            strokeWidth="5.5"
+                            strokeDasharray={175.93}
+                            strokeDashoffset={175.93 * (1 - damageArcRatio)}
+                            strokeLinecap="round"
+                            className="transition-all duration-700"
+                            fill="none"
+                          />
+                        </svg>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+                          <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white leading-none tracking-tight">
+                            {displayDamage}
+                          </span>
+                          <span className="text-[7.5px] sm:text-[8.5px] font-extrabold uppercase tracking-wider text-rose-600 dark:text-rose-400 mt-0.5">
+                            {t('dashboard.damage', 'Damage')}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Sub-caption */}
+                      <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">
+                        {timePeriod === 'today' ? `${displayDamage} ${t('dashboard.active', 'active')}` : `${displayDamage} ${t('dashboard.indicatorsDayAvg', 'avg / day')}`}
+                      </span>
+                    </div>
+
+                    {/* 2. REPAIR / RESTORATIVE DEFENSE CARD */}
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-b from-emerald-50/90 via-white to-white dark:from-emerald-950/30 dark:via-slate-900/60 dark:to-slate-900/90 border border-emerald-200/70 dark:border-emerald-900/40 p-2.5 sm:p-3.5 flex flex-col items-center text-center shadow-xs">
+                      {/* Top Label & Pill */}
+                      <div className="w-full flex items-center justify-between gap-1 mb-1.5">
+                        <span className="flex items-center gap-1 text-[11px] sm:text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                          <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-500 shrink-0" />
+                          <span className="truncate">{t('dashboard.repairLabel', 'Repair')}</span>
+                        </span>
+                        <span className="text-[9px] sm:text-[10px] font-extrabold px-1.5 sm:px-2 py-0.5 rounded-full bg-emerald-100/90 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 shrink-0">
+                          {displayRepairPct}%
+                        </span>
+                      </div>
+
+                      {/* SVG Gauge */}
+                      <div className="relative w-16 h-16 sm:w-20 sm:h-20 my-1 flex items-center justify-center">
+                        <svg className="w-full h-full transform -rotate-90 drop-shadow-xs" viewBox="0 0 72 72">
+                          <circle
+                            cx="36"
+                            cy="36"
+                            r="28"
+                            stroke="currentColor"
+                            strokeWidth="5.5"
+                            className="text-emerald-100 dark:text-emerald-950/40"
+                            fill="none"
+                          />
+                          <circle
+                            cx="36"
+                            cy="36"
+                            r="28"
+                            stroke="#10b981"
+                            strokeWidth="5.5"
+                            strokeDasharray={175.93}
+                            strokeDashoffset={175.93 * (1 - repairArcRatio)}
+                            strokeLinecap="round"
+                            className="transition-all duration-700"
+                            fill="none"
+                          />
+                        </svg>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+                          <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white leading-none tracking-tight">
+                            {displayRepair}
+                          </span>
+                          <span className="text-[7.5px] sm:text-[8.5px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mt-0.5">
+                            {t('dashboard.repairLabel', 'Repair')}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Sub-caption */}
+                      <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">
+                        {timePeriod === 'today' ? `${displayRepair} ${t('dashboard.active', 'active')}` : `${displayRepair} ${t('dashboard.habitsDayAvg', 'avg / day')}`}
+                      </span>
                     </div>
                   </div>
 
-                  {/* RIGHT: Tracker Details + Tug-of-War Balance Bar */}
-                  <div className="flex-1 min-w-0 space-y-1.5">
-                    {/* Status Verdict & Dynamic Pill */}
+                  {/* BOTTOM PANEL: Cellular Balance & Ratio Bar */}
+                  <div className="rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800/80 p-3 sm:p-3.5 space-y-2">
+                    {/* Header: Period & Dynamic Status Verdict Pill */}
                     <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
-                        {timePeriod === 'today'
-                          ? t('dashboard.dailyState', 'Daily State')
-                          : timePeriod === 'weekly'
-                            ? t('dashboard.weeklyDailyAverage', '7-Day Daily Average')
-                            : timePeriod === 'monthly'
-                              ? t('dashboard.monthlyDailyAverage', '30-Day Daily Average')
-                              : t('dashboard.yearlyDailyAverage', '1-Year Daily Average')}
-                      </span>
-                      {netBalance > 0 ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 shadow-2xs shrink-0">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <Scale className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                        <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                          {timePeriod === 'today'
+                            ? t('dashboard.dailyState', 'Daily State')
+                            : timePeriod === 'weekly'
+                              ? t('dashboard.weeklyDailyAverage', '7-Day Daily Average')
+                              : timePeriod === 'monthly'
+                                ? t('dashboard.monthlyDailyAverage', '30-Day Daily Average')
+                                : t('dashboard.yearlyDailyAverage', '1-Year Daily Average')}
+                        </span>
+                      </div>
+
+                      {displayNet > 0 ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25 shadow-2xs shrink-0">
                           <Sparkles className="w-3 h-3 text-emerald-500" />
                           {timePeriod === 'today'
-                            ? t('dashboard.netRepair', { count: netBalance }, `+${netBalance} Net Repair`)
-                            : `+${cellularTrendData.avgNet} Net Repair/day`}
+                            ? t('dashboard.netRepair', { count: displayNet }, `+${displayNet} Net Repair`)
+                            : `+${displayNet} Net Repair/day`}
                         </span>
-                      ) : netBalance < 0 ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20 shadow-2xs shrink-0">
+                      ) : displayNet < 0 ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/25 shadow-2xs shrink-0">
                           <Skull className="w-3 h-3 text-rose-500" />
                           {timePeriod === 'today'
-                            ? t('dashboard.netStress', { count: Math.abs(netBalance) }, `+${Math.abs(netBalance)} Net Stress`)
-                            : `${cellularTrendData.avgNet} Net Stress/day`}
+                            ? t('dashboard.netStress', { count: Math.abs(displayNet) }, `+${Math.abs(displayNet)} Net Stress`)
+                            : `${Math.abs(displayNet)} Net Stress/day`}
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-200/60 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 shrink-0">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-200/80 dark:bg-slate-700/80 text-slate-700 dark:text-slate-300 shrink-0">
                           {t('dashboard.equilibrium', 'Equilibrium')}
                         </span>
                       )}
                     </div>
 
-                    {/* Tug-of-War Balance Bar */}
-                    <div className="space-y-1">
-                      {/* Force Numbers Line */}
-                      <div className="flex justify-between items-center text-[9.5px] sm:text-[10.5px] font-bold">
-                        <span className="text-rose-600 dark:text-rose-400 flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
-                          <span>
-                            {timePeriod === 'today' ? damageCount : `${cellularTrendData.avgDamage} avg`} {t('dashboard.stressLabel', 'Stress')} ({damagePct}%)
-                          </span>
+                    {/* Force Numbers Line */}
+                    <div className="flex justify-between items-center text-[10px] sm:text-[11px] font-bold">
+                      <span className="text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                        <span>
+                          {displayDamage} {timePeriod === 'today' ? '' : 'avg'} {t('dashboard.stressLabel', 'Stress')} ({displayDamagePct}%)
                         </span>
-                        <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                          <span>
-                            {timePeriod === 'today' ? repairCount : `${cellularTrendData.avgRepair} avg`} {t('dashboard.repairLabel', 'Repair')} ({repairPct}%)
-                          </span>
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                      </span>
+                      <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                        <span>
+                          {displayRepair} {timePeriod === 'today' ? '' : 'avg'} {t('dashboard.repairLabel', 'Repair')} ({displayRepairPct}%)
                         </span>
-                      </div>
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                      </span>
+                    </div>
 
-                      {/* Dual Progress Track with Interactive Puck */}
-                      <div className="relative w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full flex shadow-inner border border-slate-200/60 dark:border-slate-700/60">
-                        <div
-                          className="h-full bg-gradient-to-r from-rose-500 to-rose-400 transition-all duration-700 rounded-l-full"
-                          style={{ width: `${damagePct}%` }}
-                        />
-                        <div
-                          className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all duration-700 rounded-r-full"
-                          style={{ width: `${repairPct}%` }}
-                        />
+                    {/* Dual Progress Track with Interactive Puck */}
+                    <div className="relative w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full flex shadow-inner border border-slate-200/70 dark:border-slate-700/70">
+                      <div
+                        className="h-full bg-gradient-to-r from-rose-500 to-rose-400 transition-all duration-700 rounded-l-full"
+                        style={{ width: `${displayDamagePct}%` }}
+                      />
+                      <div
+                        className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all duration-700 rounded-r-full"
+                        style={{ width: `${displayRepairPct}%` }}
+                      />
 
-                        {/* Puck Indicator */}
-                        <div
-                          className="absolute top-1/2 -translate-y-1/2 w-4.5 h-4.5 rounded-full bg-white dark:bg-slate-900 border-2 border-indigo-500 shadow-md flex items-center justify-center -ml-2.25 transition-all duration-700 z-10"
-                          style={{ left: `${damagePct}%` }}
-                        >
-                          <Activity className="h-2.5 w-2.5 text-indigo-600 dark:text-indigo-400 animate-pulse" />
-                        </div>
+                      {/* Puck Indicator */}
+                      <div
+                        className="absolute top-1/2 -translate-y-1/2 w-4.5 h-4.5 rounded-full bg-white dark:bg-slate-900 border-2 border-indigo-500 shadow-md flex items-center justify-center -ml-2.25 transition-all duration-700 z-10"
+                        style={{ left: `${displayDamagePct}%` }}
+                      >
+                        <Activity className="h-2.5 w-2.5 text-indigo-600 dark:text-indigo-400 animate-pulse" />
                       </div>
                     </div>
 
                     {/* Actionable Subtext */}
-                    <p className="text-[10px] sm:text-[10.5px] text-slate-400 dark:text-slate-500 leading-tight truncate">
-                      {netBalance > 0
-                        ? t('dashboard.restorativeOutpaces', 'Restorative defense habits outpace daily stress.')
-                        : netBalance < 0
-                          ? t('dashboard.stressOutweighs', 'Active stress factors outweigh restorative habits.')
+                    <p className="text-[10px] sm:text-[10.5px] text-slate-500 dark:text-slate-400 leading-tight">
+                      {displayNet > 0
+                        ? (timePeriod === 'today'
+                            ? t('dashboard.restorativeOutpaces', 'Restorative defense habits outpace daily stress.')
+                            : `Restorative defense habits consistently outpace daily stress (+${displayNet} net/day).`)
+                        : displayNet < 0
+                          ? (timePeriod === 'today'
+                              ? t('dashboard.stressOutweighs', 'Active stress factors outweigh restorative habits.')
+                              : `Lifestyle stress factors exceed restorative defense (+${Math.abs(displayNet)} stress/day).`)
                           : t('dashboard.forcesEquilibrium', 'Cellular forces in dynamic equilibrium.')}
                     </p>
                   </div>
@@ -2668,7 +2758,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                     : 'text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40'
                     }`}
                 >
-                  {t('dashboard.damage', 'Damage')} ({damageCount})
+                  {t('dashboard.damage', 'Damage')} ({timePeriod === 'today' ? damageCount : displayDamage})
                 </button>
                 <button
                   type="button"
@@ -2678,7 +2768,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                     : 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
                     }`}
                 >
-                  {t('dashboard.repairLabel', 'Repair')} ({repairCount})
+                  {t('dashboard.repairLabel', 'Repair')} ({timePeriod === 'today' ? repairCount : displayRepair})
                 </button>
               </div>
             </div>
@@ -2696,7 +2786,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                     <p className="text-[7px] sm:text-[8px] text-slate-400 font-bold uppercase tracking-widest">{t('dashboard.reduceLoad', 'Reduce the load')}</p>
                   </div>
                   <span className="text-[8px] sm:text-[9px] font-extrabold text-rose-500 bg-rose-50 dark:bg-rose-950/40 px-1.5 sm:px-2 py-0.5 rounded-full border border-rose-200/50 dark:border-rose-900/40 shrink-0">
-                    {damageCount} {t('dashboard.active', 'active')}
+                    {timePeriod === 'today' ? damageCount : displayDamage} {t('dashboard.active', 'active')}
                   </span>
                 </div>
 
@@ -2728,7 +2818,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                       <p className="text-[7px] sm:text-[8px] text-slate-400 font-bold uppercase tracking-widest">{t('dashboard.buildDefence', 'Build the defence')}</p>
                     </div>
                     <span className="text-[8px] sm:text-[9px] font-extrabold text-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 sm:px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-900/40 shrink-0">
-                      {repairCount} {t('dashboard.active', 'active')}
+                      {timePeriod === 'today' ? repairCount : displayRepair} {t('dashboard.active', 'active')}
                     </span>
                   </div>
                 )}
@@ -2800,7 +2890,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                     })()}
                   </div>
                   <p className="text-[9px] text-slate-500 dark:text-slate-400 leading-snug mt-1">
-                    {t('dashboard.symptomCheckDesc', 'Early warning check across 11 key symptoms · If Yes to any, consult specialist')}
+                    {t('dashboard.symptomCheckDesc', 'Early warning check across 12 key symptoms · If Yes to any, consult specialist')}
                   </p>
                 </div>
                 <ArrowRight className="h-4 w-4 text-slate-300 shrink-0" />

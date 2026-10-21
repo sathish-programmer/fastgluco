@@ -24,7 +24,8 @@ export const SYMPTOM_QUESTIONS: SymptomQuestion[] = [
   { id: "bh", t: "Change in bowel habit", h: "New constipation, diarrhoea or a feeling of incomplete emptying", red: 0 },
   { id: "ab", t: "Abdominal fullness", h: "Persistent bloating or a feeling of fullness or swelling", red: 0 },
   { id: "vg", t: "Abnormal bleeding or vaginal discharge", h: "Bleeding between periods, after sex or after menopause; unusual discharge", red: 1, na: true },
-  { id: "br", t: "Lump in the breast", h: "A new lump, thickening or change in the breast or underarm", red: 1, na: true }
+  { id: "br", t: "Lump in the breast", h: "A new lump, thickening or change in the breast or underarm", red: 1, na: true },
+  { id: "ha", t: "Persistent headache beyond 2 weeks", h: "New or unusual headache lasting longer than 2 weeks that doesn't go away", red: 1 }
 ];
 
 export const SPECIALIST_MAP: Record<string, string> = {
@@ -38,7 +39,8 @@ export const SPECIALIST_MAP: Record<string, string> = {
   bh: "Gastroenterologist or colorectal specialist",
   ab: "Gastroenterologist",
   vg: "Gynaecologist",
-  br: "Breast specialist"
+  br: "Breast specialist",
+  ha: "Neurologist"
 };
 
 export interface CheckinHistoryItem {
@@ -381,7 +383,7 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({
                 <Award className="h-6 w-6 shrink-0 text-emerald-500" />
                 <div>
                   <h3 className="text-sm font-extrabold text-emerald-900 dark:text-emerald-100">
-                    {t('symptomCheck.scoreZero', 'Score 0 of 11: All Clear')}
+                    {t('symptomCheck.scoreZero', 'Score 0 of 12: All Clear')}
                   </h3>
                   <p className="text-xs text-emerald-700 dark:text-emerald-300 font-normal mt-0.5">
                     {t('symptomCheck.msgZero', "No symptoms reported. We'll remind you again in 3 weeks.")}
@@ -394,8 +396,8 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({
                 <div className="flex-1">
                   <h3 className="text-sm font-extrabold text-rose-900 dark:text-rose-100">
                     {result.red || result.score >= 2 
-                      ? t('symptomCheck.scoreDoctorSoon', { score: result.score }, 'Score {{score}} of 11: Please see a doctor soon')
-                      : t('symptomCheck.scoreWatching', 'Score 1 of 11: Keep watching')
+                      ? t('symptomCheck.scoreDoctorSoon', { score: result.score }, 'Score {{score}} of 12: Please see a doctor soon')
+                      : t('symptomCheck.scoreWatching', 'Score 1 of 12: Keep watching')
                     }
                   </h3>
                   <p className="text-xs text-rose-700 dark:text-rose-300 font-normal mt-0.5 leading-relaxed">
@@ -536,7 +538,7 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({
               {t('symptomCheck.cardHeaderTag', 'Clinical Red Flag & Early Detection')}
             </span>
             <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100 mt-0.5">
-              {t('symptomCheck.cardHeaderTitle', '11 Early Warning Symptom Questions')}
+              {t('symptomCheck.cardHeaderTitle', '12 Early Warning Symptom Questions')}
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
               {t('symptomCheck.subtitle', 'Answer Yes or No for the last 3 weeks. It takes about a minute.')}
@@ -691,7 +693,7 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({
                             ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-800/50'
                             : 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200/50 dark:border-rose-800/50'
                         }`}>
-                          {item.score} / 11
+                          {item.score} / {SYMPTOM_QUESTIONS.length}
                         </span>
                         <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180 text-emerald-600' : ''}`} />
                       </div>
@@ -702,7 +704,7 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({
                       <div className="mt-3 p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/60 rounded-2xl space-y-2.5 animate-in fade-in duration-200">
                         <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                           {item.score === 0 
-                            ? t('symptomCheck.allClearNoSymptoms', "All 11 questions answered 'No' (All Clear)")
+                            ? t('symptomCheck.allClearNoSymptoms', "All 12 questions answered 'No' (All Clear)")
                             : t('symptomCheck.reportedCount', { count: item.score }, `${item.score} symptoms reported lasting 3+ weeks`)}
                         </p>
 

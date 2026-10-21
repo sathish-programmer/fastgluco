@@ -294,6 +294,25 @@ export const SymptomCheckAIChatModal: React.FC<SymptomCheckAIChatModalProps> = (
       };
     }
 
+    // 5. Persistent headache
+    if (
+      qLower.includes('headache') ||
+      qLower.includes('head ache') ||
+      qLower.includes('தலைவலி') ||
+      qLower.includes('सिरदर्द') ||
+      qLower.includes('ತಲೆನೋವು') ||
+      qLower.includes('తలనొప్పి')
+    ) {
+      return {
+        reply: t('symptomCheck.aiAnsHeadache'),
+        showActions: true,
+        options: [
+          t('symptomCheck.aiQWhichSpec', 'Which specialist should I consult?'),
+          t('symptomCheck.aiQWhatToTell', 'What should I tell my doctor?')
+        ]
+      };
+    }
+
     // Default medical AI screening response
     return {
       reply: t('symptomCheck.aiAnsDefault'),
@@ -553,7 +572,7 @@ export const SymptomCheckAIChatModal: React.FC<SymptomCheckAIChatModalProps> = (
               type="text"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder={t('symptomCheck.aiInputPlaceholder', 'Ask anything about these 11 symptoms or specialists...')}
+              placeholder={t('symptomCheck.aiInputPlaceholder', 'Ask anything about these 12 symptoms or specialists...')}
               className="flex-1 text-xs sm:text-sm px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
             <button
