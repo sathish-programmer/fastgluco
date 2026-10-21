@@ -628,7 +628,7 @@ export const ShopOrdersHistoryScreen: React.FC<ShopOrdersHistoryScreenProps> = (
           ) : (
             <div className="space-y-4">
               {filteredOrders.map(order => {
-                const currencySymbol = order.currency === 'USD' ? '$' : '₹';
+                const currencySymbol = '₹';
                 const hasRated = userReviews.some(r => r.orderId === order._id);
                 const isDelivered = order.deliveryStatus === 'delivered';
                 const isFullyRefunded = (order.totalRefundedAmount || 0) >= order.totalAmount && order.totalAmount > 0;

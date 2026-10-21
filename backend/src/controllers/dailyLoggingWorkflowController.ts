@@ -64,9 +64,9 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
   {
     stepId: 'kitchen',
     title: 'Safe Kitchen Audit',
-    questionPrompt: 'Is your kitchen free of heated plastic containers, synthetic non-stick teflon pans, and plastic drinking water cans?',
+    questionPrompt: 'Is your kitchen free of heated plastic containers, synthetic non-stick pans, and plastic drinking water cans?',
     inputType: 'YES_NO',
-    options: ['Yes (Safe / Non-Plastic)', 'No (Plastic / Teflon Risk)'],
+    options: ['Yes (Safe / Non-Plastic)', 'No (Plastic / Non-Stick Risk)'],
     order: 7,
     isEnabled: true
   },
@@ -272,7 +272,7 @@ const DEFAULT_TREATMENT_STEPS: IWorkflowStep[] = [
     title: 'Safe Kitchen Audit',
     questionPrompt: 'Is your food cooked and stored in safe, non-toxic cookware (glass, steel, clay) free of heated plastics and synthetic non-stick pans?',
     inputType: 'YES_NO',
-    options: ['Yes (Safe / Non-Toxic)', 'No (Plastic / Teflon Risk)'],
+    options: ['Yes (Safe / Non-Toxic)', 'No (Plastic / Non-Stick Risk)'],
     order: 10,
     isEnabled: true
   },
@@ -420,9 +420,9 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
   {
     stepId: 'kitchen',
     title: 'Safe Kitchen Audit',
-    questionPrompt: 'Is your kitchen free of heated plastic containers, synthetic non-stick teflon pans, and plastic drinking water cans?',
+    questionPrompt: 'Is your kitchen free of heated plastic containers, synthetic non-stick pans, and plastic drinking water cans?',
     inputType: 'YES_NO',
-    options: ['Yes (Safe / Non-Plastic)', 'No (Plastic / Teflon Risk)'],
+    options: ['Yes (Safe / Non-Plastic)', 'No (Plastic / Non-Stick Risk)'],
     order: 15,
     isEnabled: true
   },

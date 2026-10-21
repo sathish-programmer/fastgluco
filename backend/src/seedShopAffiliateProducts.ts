@@ -312,7 +312,7 @@ export const AFFILIATE_PRODUCTS = [
     stock: 60,
     isActive: true,
     doctorRecommended: false,
-    keyBenefits: ['Zero toxic Teflon, PFAS, or lead coatings', 'Naturally adds dietary iron to foods', 'Induction and gas stove compatible']
+    keyBenefits: ['Zero toxic non-stick, PFAS, or lead coatings', 'Naturally adds dietary iron to foods', 'Induction and gas stove compatible']
   },
   {
     name: 'The Indus Valley Super Smooth Cast Iron Cookware Set + Free Tadka Pan | Tawa (30.5 cm)+Kadai (25.4cm/2.5L) +Fry pan (25.4cm/1.7L) | Kitchen Cooking Combo Pots and Pans Set of 4Pcs | Naturally Nonstick',

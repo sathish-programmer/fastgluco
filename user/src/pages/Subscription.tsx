@@ -766,7 +766,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
             const isActivePlan = isPaidActive;
             const price = plan.yearlyPrice;
             const color = plan.color || '#4F46E5';
-            const currencySymbol = user?.currency === 'USD' ? '$' : '₹';
+            const currencySymbol = '₹';
 
             // Calculate coupon discount
             let discount = 0;

@@ -282,7 +282,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
     // Kitchen Audit
     const kitchenVal = getAnswer(['kitchen', 'kitchen_audit', 'env_kitchen']).toLowerCase();
     if (kitchenVal) {
-      if (kitchenVal.includes('plastic') || kitchenVal.includes('teflon') || kitchenVal.includes('non-stick') || kitchenVal.includes('risk') || kitchenVal.includes('no')) {
+      if (kitchenVal.includes('plastic') || kitchenVal.includes('non-stick') || kitchenVal.includes('risk') || kitchenVal.includes('no')) {
         damageCount += 1;
         damageHighlights.push('Kitchen Plastic & Cookware Risk');
         damageActionHints.push('Replace plastic water cans and synthetic non-stick pans with stainless steel, glass, or natural cookware.');
@@ -467,7 +467,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
     }
 
     const kitchenAnswer = getAnswer(["kitchen", "kitchen_audit", "env_kitchen"]).toLowerCase();
-    if (kitchenAnswer && (kitchenAnswer.includes("plastic") || kitchenAnswer.includes("teflon") || kitchenAnswer.includes("non-stick") || kitchenAnswer.includes("risk"))) {
+    if (kitchenAnswer && (kitchenAnswer.includes("plastic") || kitchenAnswer.includes("non-stick") || kitchenAnswer.includes("risk"))) {
       tipsToReduceDamage.push({
         title: "Microplastic & Cookware Detox",
         desc: "Switch to glass or stainless steel food containers and avoid non-stick cookware to minimize synthetic plasticizer exposure.",

@@ -807,7 +807,7 @@ export const createOrder = async (req: Request, res: Response) => {
     }
 
     const user = await User.findById(userId);
-    const currency = user?.currency || 'INR';
+    const currency = 'INR';
     const config = await PaymentGatewayConfig.findOne();
 
     // 1. INVENTORY STOCK VALIDATION & SERVER-SIDE PRICE ENFORCEMENT

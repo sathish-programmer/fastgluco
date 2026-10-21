@@ -58,9 +58,9 @@ const PREVENTION_STEPS = [
   },
   {
     stepId: 'kitchen', title: 'Check Your Kitchen Audit',
-    questionPrompt: 'Is your kitchen free of heated plastic containers, synthetic non-stick teflon pans, and plastic drinking water cans?',
+    questionPrompt: 'Is your kitchen free of heated plastic containers, synthetic non-stick pans, and plastic drinking water cans?',
     inputType: 'YES_NO' as const,
-    options: ['Yes (Safe / Non-Plastic)', 'No (Plastic / Teflon Risk)'],
+    options: ['Yes (Safe / Non-Plastic)', 'No (Plastic / Non-Stick Risk)'],
     order: 7, isEnabled: true
   },
   {

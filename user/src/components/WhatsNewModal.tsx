@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import type { SupportedLanguage } from '../i18n/types';
 
-export const CURRENT_APP_VERSION = 'v6.0.2';
+export const CURRENT_APP_VERSION = 'v6.0.3';
 
 interface WhatsNewModalProps {
   isOpen?: boolean;
@@ -64,7 +64,7 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
     {
       key: 'environmental',
       title: t('whatsNew.environmental.title', 'Environmental Carcinogen & Cookware Hub'),
-      description: t('whatsNew.environmental.desc', 'Comprehensive audit for PM2.5 air toxins, water contaminants, microplastics, and teflon cookware.'),
+      description: t('whatsNew.environmental.desc', 'Comprehensive audit for PM2.5 air toxins, water contaminants, microplastics, and non-stick cookware.'),
       icon: <AlertCircle className="h-5 w-5 text-emerald-500" />,
       bg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
     },

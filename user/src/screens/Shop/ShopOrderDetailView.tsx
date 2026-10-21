@@ -111,7 +111,7 @@ export const ShopOrderDetailView: React.FC<ShopOrderDetailViewProps> = ({
     setTimeout(() => setCopiedTrackingId(false), 2000);
   };
 
-  const currencySymbol = order.currency === 'USD' ? '$' : '₹';
+  const currencySymbol = '₹';
   const isDelivered = order.deliveryStatus === 'delivered';
   const isFullyRefunded = (order.totalRefundedAmount || 0) >= order.totalAmount && order.totalAmount > 0;
   const isCancelled = order.deliveryStatus === 'cancelled' || (isFullyRefunded && !isDelivered);

@@ -950,7 +950,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
       }
     }
     const optStr = (typeof val === 'object' ? (val.option || val.notes || '') : `${val}`).toLowerCase();
-    if (optStr.includes('risk') || optStr.includes('plastic') || optStr.includes('non-stick') || optStr.includes('teflon')) return -1;
+    if (optStr.includes('risk') || optStr.includes('plastic') || optStr.includes('non-stick')) return -1;
     if (optStr.includes('safe') || optStr.includes('clean') || optStr.includes('natural')) return 0;
     return null;
   };
@@ -1273,7 +1273,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
         if (typeof val.score === 'number') return val.score < 0 ? -1 : (val.score === 0 ? 0 : null);
       }
       const optStr = (typeof val === 'object' ? (val.option || val.notes || '') : `${val}`).toLowerCase();
-      if (optStr.includes('risk') || optStr.includes('plastic') || optStr.includes('non-stick') || optStr.includes('teflon')) return -1;
+      if (optStr.includes('risk') || optStr.includes('plastic') || optStr.includes('non-stick')) return -1;
       if (optStr.includes('safe') || optStr.includes('clean') || optStr.includes('natural')) return 0;
       return null;
     };

@@ -66,7 +66,7 @@ export class ProfileController {
       if (goal !== undefined) user.goal = goal;
       if (fcmToken !== undefined) user.fcmToken = fcmToken;
       if (spikeThreshold !== undefined) user.spikeThreshold = spikeThreshold;
-      if (currency !== undefined) user.currency = currency;
+      if (currency !== undefined) user.currency = 'INR';
 
       if (cancerJourney !== undefined) {
         if ((cancerJourney === 'TREATMENT' || cancerJourney === 'SECONDARY_PREVENTION') && !cancerDisclaimerAccepted && !user.cancerDisclaimerAccepted) {

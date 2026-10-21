@@ -135,7 +135,7 @@ export const BasketScreen: React.FC<BasketScreenProps> = ({ onBack, basket, setB
     setError(null);
   };
 
-  const curr = user?.currency === 'INR' ? '₹' : '$';
+  const curr = '₹';
   
   // Calculate subtotal with variant prices
   const subtotal = basket.reduce((sum, p) => {

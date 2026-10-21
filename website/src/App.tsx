@@ -1183,7 +1183,7 @@ export default function App() {
               <div className="h-12 w-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center font-black">
                 <Flame className="h-6 w-6" />
               </div>
-              <h3 className="text-base font-extrabold text-slate-900">Teflon & PFAS Cookware</h3>
+              <h3 className="text-base font-extrabold text-slate-900">Non-Stick & PFAS Cookware</h3>
               <p className="text-xs text-slate-600 leading-relaxed font-medium">
                 Eliminate forever chemicals from scratched non-stick pans. Swap to 304 food-grade stainless steel, cast iron, and 100% pure ceramic.
               </p>
@@ -1361,7 +1361,7 @@ export default function App() {
               <span className="text-[10px] font-bold uppercase text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full">Environmental Safety</span>
               <h3 className="text-lg font-bold text-slate-900">Zero-PFAS Titanium Cookware</h3>
               <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                100% heavy-metal-free, scratch-resistant cookware crafted for oil-free cooking without teflon fumes.
+                100% heavy-metal-free, scratch-resistant cookware crafted for oil-free cooking without toxic non-stick fumes.
               </p>
             </div>
             <div className="pt-2 border-t border-slate-200/70 flex justify-between items-center text-xs font-bold">

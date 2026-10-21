@@ -79,7 +79,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
   const [gender, setGender] = useState<'Male' | 'Female' | 'Other'>(user?.gender || 'Male');
   const [activityLevel, setActivityLevel] = useState(user?.activityLevel || 'Moderately active');
   const [spikeThreshold, setSpikeThreshold] = useState<string>(user?.spikeThreshold?.toString() || '140');
-  const [currency, setCurrency] = useState<'INR' | 'USD'>((user?.currency as 'INR' | 'USD') || 'INR');
+  const [currency] = useState<'INR'>('INR');
   const [addressLine1, setAddressLine1] = useState(user?.addressLine1 || '');
   const [addressCity, setAddressCity] = useState(user?.addressCity || '');
   const [addressState, setAddressState] = useState(user?.addressState || '');
@@ -1148,14 +1148,10 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
 
           <div>
             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('profile.currencyPreference', 'Currency Preference')}</label>
-            <select
-              value={currency}
-              onChange={(e: any) => setCurrency(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 cursor-pointer transition-all"
-            >
-              <option value="INR">{t('currencyInr')}</option>
-              <option value="USD">{t('currencyUsd')}</option>
-            </select>
+            <div className="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-xs font-semibold text-slate-700 dark:text-slate-200 flex items-center justify-between">
+              <span>{t('currencyInr', 'Indian Rupee (₹ INR)')}</span>
+              <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800/40">Standard</span>
+            </div>
           </div>
 
           {cancerJourney === 'PREVENTION' && (

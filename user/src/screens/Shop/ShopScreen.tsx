@@ -160,7 +160,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onOpenOrders, ty
   const { t } = useLanguage();
   const { apiUrl, token, user, branding } = useAuth();
   const { showToast } = useToast();
-  const curr = user?.currency === 'INR' ? '₹' : '$';
+  const curr = '₹';
 
   const [basket, setBasket] = useState<{ item: ShopItem; variantName?: string; qty: number }[]>(() => {
     try {

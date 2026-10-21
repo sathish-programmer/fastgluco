@@ -1,12 +1,12 @@
 <en-US>
-• Seamless Mobile Sign-In: Optimized secure Firebase phone authentication with instant backup OTP verification.
-• Doctor Profile & Contact: Added specialist contact email directly on consultation profiles.
-• Sign Out Confirmation: Added confirmation safeguard before logging out of user profiles.
-• Performance & Stability: Enhanced APNs configuration, updated version build targets, and general optimizations.
+• Standardized Store Currency: Fixed shop catalog, cart, and payment checkout strictly to Indian Rupee (₹ INR).
+• Kitchen & Environmental Audit: Refined kitchen toxicology guidelines and daily checks to eliminate non-stick cookware risks.
+• Doctor Profile & Contact: Added specialist contact email directly on consultation booking profiles.
+• Performance & Stability: Enhanced account sign-out security safeguards, APNs configuration, and mobile app optimizations.
 </en-US>
 <en-IN>
-• Seamless Mobile Sign-In: Optimized secure Firebase phone authentication with instant backup OTP verification.
-• Doctor Profile & Contact: Added specialist contact email directly on consultation profiles.
-• Sign Out Confirmation: Added confirmation safeguard before logging out of user profiles.
-• Performance & Stability: Enhanced APNs configuration, updated version build targets, and general optimizations.
+• Standardized Store Currency: Fixed shop catalog, cart, and payment checkout strictly to Indian Rupee (₹ INR).
+• Kitchen & Environmental Audit: Refined kitchen toxicology guidelines and daily checks to eliminate non-stick cookware risks.
+• Doctor Profile & Contact: Added specialist contact email directly on consultation booking profiles.
+• Performance & Stability: Enhanced account sign-out security safeguards, APNs configuration, and mobile app optimizations.
 </en-IN>
