@@ -28,7 +28,6 @@ import {
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, ReferenceArea, CartesianGrid } from 'recharts';
 import { motion } from 'framer-motion';
 import { DailyLoggingChatbotModal } from '../components/DailyLoggingChatbotModal';
-import { AiDailyCheckinFloatingNudge } from '../components/AiDailyCheckinFloatingNudge';
 import { AskMitoDrawer } from '../components/AskMitoDrawer';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -151,7 +150,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
   const [isApptDismissed, setIsApptDismissed] = useState<boolean>(false);
   const [showChatbotModal, setShowChatbotModal] = useState<boolean>(false);
   const [showAskMito, setShowAskMito] = useState<boolean>(false);
-  const [pendingHabitsCount, setPendingHabitsCount] = useState<number>(0);
+  const [, setPendingHabitsCount] = useState<number>(0);
 
   useEffect(() => {
     const handleOpen = () => setShowChatbotModal(true);
@@ -2354,13 +2353,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
           </span>
         </button>
       </div>
-
-      {/* AI Daily Check-in Modern Floating Pop-up Nudge (Only if habits are pending) */}
-      <AiDailyCheckinFloatingNudge
-        pendingHabitsCount={pendingHabitsCount}
-        onOpenCheckin={() => setShowChatbotModal(true)}
-        userMode={activeMode}
-      />
 
       {/* AI Daily Logging Chatbot Modal */}
       <DailyLoggingChatbotModal

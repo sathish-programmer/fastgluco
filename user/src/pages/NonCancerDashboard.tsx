@@ -57,7 +57,6 @@ import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { DailyLoggingChatbotModal } from '../components/DailyLoggingChatbotModal';
 import { SymptomCheckAIChatModal } from '../components/SymptomCheckAIChatModal';
-import { AiDailyCheckinFloatingNudge } from '../components/AiDailyCheckinFloatingNudge';
 import { AiBannerQuickNudge } from '../components/AiBannerQuickNudge';
 import { useConsultation } from '../context/ConsultationContext';
 import { StressLogScreen } from '../screens/HabitScreens/StressLogScreen';
@@ -182,7 +181,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
   const [showAskMito, setShowAskMito] = useState<boolean>(false);
   const [showChatbotModal, setShowChatbotModal] = useState<boolean>(false);
   const [showSymptomAiModal, setShowSymptomAiModal] = useState<boolean>(false);
-  const [pendingHabitsCount, setPendingHabitsCount] = useState<number>(0);
+  const [, setPendingHabitsCount] = useState<number>(0);
 
   useEffect(() => {
     const handleOpen = () => setShowChatbotModal(true);
@@ -3056,15 +3055,6 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
           </span>
         </button>
       </div>
-
-      {/* AI Daily Check-in Modern Floating Pop-up Nudge (Only if habits are pending on home) */}
-      {activeScreen === null && (
-        <AiDailyCheckinFloatingNudge
-          pendingHabitsCount={pendingHabitsCount}
-          onOpenCheckin={() => setShowChatbotModal(true)}
-          userMode={activeMode}
-        />
-      )}
 
       {/* AI Daily Logging Chatbot Modal */}
       <DailyLoggingChatbotModal
