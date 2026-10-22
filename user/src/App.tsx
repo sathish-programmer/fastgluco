@@ -787,11 +787,21 @@ const MainAppContent: React.FC = () => {
             {/* Ask Mito Button */}
             <button
               onClick={() => setShowAskMitoDrawer(true)}
-              className="px-2 py-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:opacity-95 active:scale-95 text-white rounded-xl text-[10px] sm:text-xs font-bold transition-all flex items-center gap-1 shadow-xs border border-white/20 cursor-pointer shrink-0"
-              title={`${t('nav.askMito', 'Ask Mito')} • ${t('nav.consultation', 'Doctor Consultation')}`}
+              className="px-2.5 py-1 sm:py-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:opacity-95 active:scale-95 text-white rounded-xl transition-all flex items-center gap-1.5 shadow-sm border border-white/20 cursor-pointer shrink-0"
+              title="Ask expert your medical query at 100 rupees"
             >
-              <Sparkles className="h-3 w-3 text-amber-300 fill-amber-300 shrink-0" />
-              <span className="max-w-[60px] min-[390px]:max-w-[90px] sm:max-w-none truncate">{t('nav.askMito', 'Ask Mito')}</span>
+              <Sparkles className="h-3.5 w-3.5 text-amber-300 fill-amber-300 shrink-0 animate-pulse" />
+              <div className="flex flex-col items-start leading-tight text-left">
+                <div className="flex items-center gap-1">
+                  <span className="text-[10.5px] sm:text-xs font-black tracking-tight">{t('nav.askMito', 'Ask Expert')}</span>
+                  <span className="text-[8px] font-black px-1.5 py-0.2 bg-amber-400 text-slate-950 rounded font-mono shadow-2xs">
+                    ₹100
+                  </span>
+                </div>
+                <span className="text-[7.5px] text-blue-100 font-semibold tracking-tight hidden min-[390px]:inline">
+                  Ask expert @ ₹100
+                </span>
+              </div>
             </button>
 
             {/* Support / Help */}

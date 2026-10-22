@@ -4,7 +4,7 @@ import {
   X, Send, Loader2,
   Stethoscope, Clock, CheckCircle2, Plus, RefreshCw,
   MessageSquare, ChevronDown, Sparkles, User, ShieldCheck, CreditCard,
-  AlertTriangle, UploadCloud
+  AlertTriangle, UploadCloud, ArrowRight
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -332,11 +332,12 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
               </div>
 
               <div>
-                <h3 className="text-base font-extrabold text-slate-900 dark:text-white leading-tight">
-                  {t('askMito.doctorConsultation', 'Doctor Consultation')}
+                <h3 className="text-base font-extrabold text-slate-900 dark:text-white leading-tight flex items-center gap-1.5">
+                  <span>{t('askMito.doctorConsultation', 'Ask Expert • Doctor Consultation')}</span>
                 </h3>
-                <div className="text-xs text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">
-                  <span>{t('clinicalTeamActive')}</span>
+                <div className="text-[11px] text-blue-600 dark:text-blue-400 font-extrabold mt-0.5 flex items-center gap-1">
+                  <Sparkles className="h-3 w-3 text-amber-500 fill-amber-500 shrink-0" />
+                  <span>Ask expert your medical query at 100 rupees</span>
                 </div>
               </div>
             </div>
@@ -366,6 +367,49 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
         {/* TIMELINE CONSULTATIONS STREAM                                             */}
         {/* ========================================================================= */}
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+          {/* Ask Expert Modern Hero Card */}
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 p-4 text-white shadow-xl shadow-blue-500/20 border border-white/20">
+            <div className="absolute -right-6 -bottom-6 w-28 h-28 bg-white/10 rounded-full blur-xl pointer-events-none" />
+            <div className="relative z-10 flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className="h-10 w-10 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center shrink-0 shadow-xs">
+                  <Stethoscope className="h-5 w-5 text-amber-300" />
+                </div>
+                <div>
+                  <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[9px] font-black uppercase tracking-wider mb-1.5 shadow-xs">
+                    <Sparkles className="h-2.5 w-2.5 fill-current" />
+                    <span>Clinical Specialist</span>
+                  </div>
+                  <h4 className="text-sm sm:text-base font-black tracking-tight leading-snug">
+                    Ask expert your medical query at 100 rupees
+                  </h4>
+                  <p className="text-[11px] text-blue-100 font-medium mt-1 leading-relaxed">
+                    Get certified medical specialists to review your CGMs, blood reports, symptoms & medications with detailed clinical advice.
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-col items-center justify-center px-2.5 py-1.5 rounded-xl bg-white/20 backdrop-blur-md border border-white/30 text-center shrink-0">
+                <span className="text-sm font-black text-amber-300 font-mono">₹100</span>
+                <span className="text-[8px] uppercase font-bold text-white/90 tracking-wider">Per query</span>
+              </div>
+            </div>
+
+            <div className="mt-3.5 pt-3 border-t border-white/15 flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-[10.5px] text-blue-100 font-semibold">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Specialists online • 48h SLA</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowNewQuestionModal(true)}
+                className="px-3 py-1.5 bg-white text-blue-700 hover:bg-blue-50 active:scale-95 text-xs font-black rounded-xl shadow-xs transition-all flex items-center gap-1 cursor-pointer"
+              >
+                <span>Ask Query Now</span>
+                <ArrowRight className="h-3 w-3" />
+              </button>
+            </div>
+          </div>
+
           {/* Plan Quota or Per-Question Fee Banner */}
           {quotaStatus && (
             hasFreeQuota ? (
@@ -398,7 +442,7 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                   </div>
                   <div>
                     <p className="text-[11.5px] font-black text-blue-950 dark:text-blue-200">
-                      {t('askMito.consultationFeePerQuestion', { fee: questionFee }, `Doctor Consultation: ₹${questionFee} / Question`)}
+                      Ask expert your medical query at 100 rupees
                     </p>
                     <p className="text-[10px] text-blue-700/80 dark:text-blue-400/80 font-semibold">
                       {t('askMito.verifiedClinicalReview', 'Verified Clinical Review within 48 hours')}
@@ -608,7 +652,7 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                     </div>
                     <div>
                       <h4 className="text-base font-black text-slate-900 dark:text-white">{t('askMito.doctor', 'Ask Doctor')}</h4>
-                      <p className="text-xs text-slate-400">{t('askMito.clinicalReply48h', 'Guaranteed clinical reply within 48 hours')}</p>
+                      <p className="text-xs text-blue-600 dark:text-blue-400 font-extrabold">Ask expert your medical query at 100 rupees</p>
                     </div>
                   </div>
                   <button

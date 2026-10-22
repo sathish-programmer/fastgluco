@@ -3030,15 +3030,42 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
         </>
       )}
 
-      {/* ── Floating AI Check-in FAB Trigger Button ── */}
-      <div className="fixed bottom-20 right-5 z-40">
+      {/* ── Floating AI Check-in FAB Trigger Button & Callout ── */}
+      <div className="fixed bottom-20 right-3.5 sm:right-6 z-40 flex items-center gap-2 select-none pointer-events-auto">
+        {/* Floating Speech Callout beside Robo */}
+        <div
+          onClick={() => setShowChatbotModal(true)}
+          className="group relative flex items-center gap-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-2xl shadow-[0_8px_30px_rgb(37,99,235,0.18)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.5)] border border-blue-200/90 dark:border-blue-800/80 hover:border-blue-400 dark:hover:border-blue-600 transition-all cursor-pointer active:scale-95 animate-in fade-in slide-in-from-right-4 duration-300"
+          title="Too tired to log ? Let the robo do"
+        >
+          <div className="h-6 w-6 rounded-lg bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white shrink-0 shadow-xs">
+            <Sparkles className="h-3.5 w-3.5 fill-current animate-pulse" />
+          </div>
+          <div className="flex flex-col text-left leading-tight">
+            <span className="text-[9.5px] sm:text-[10px] font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">
+              Too tired to log ?
+            </span>
+            <span className="text-[11px] sm:text-xs font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 dark:from-blue-400 dark:to-indigo-300 whitespace-nowrap">
+              Let the robo do
+            </span>
+          </div>
+
+          {/* Right-pointing bubble tail */}
+          <div className="hidden sm:block absolute -right-1 top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-white dark:bg-slate-900 rotate-45 border-t border-r border-blue-200/90 dark:border-blue-800/80" />
+        </div>
+
+        {/* Robo FAB Button */}
         <button
           onClick={() => setShowChatbotModal(true)}
-          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white p-3.5 rounded-full shadow-2xl flex items-center gap-2 border-2 border-white/80 active:scale-95 transition-all cursor-pointer"
-          title={t('openDailyCheckinTitle')}
+          className="relative bg-gradient-to-tr from-blue-600 via-indigo-600 to-violet-600 hover:from-blue-700 hover:to-indigo-700 text-white p-3 sm:p-3.5 rounded-full shadow-[0_10px_25px_-5px_rgba(37,99,235,0.45)] flex items-center justify-center border-2 border-white dark:border-slate-800 active:scale-95 transition-all cursor-pointer group shrink-0"
+          title="Too tired to log ? Let the robo do"
+          aria-label="Open AI Daily Check-in Assistant"
         >
-          <Bot className="h-6 w-6 text-white" />
-          <span className="text-xs font-black tracking-wide pr-1 hidden sm:inline">{t('dash.aiCheckIn', 'AI Check-in')}</span>
+          <Bot className="h-5 w-5 sm:h-6 sm:w-6 text-white group-hover:rotate-12 transition-transform duration-300" />
+          <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500 border-2 border-white dark:border-slate-900"></span>
+          </span>
         </button>
       </div>
 

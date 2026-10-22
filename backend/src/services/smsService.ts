@@ -89,11 +89,17 @@ export class SMSService {
 
   /**
    * Sends an SMS to a normalized recipient number using Fast2SMS.
-   * STRICT POLICY: Fast2SMS is exclusively reserved for rare emergency OTP login/signup fallback when Firebase fails.
-   * All non-OTP SMS notifications (daily check-ins, appointments, orders, alerts) are strictly blocked to prevent credit deductions.
+   * STRICT POLICY: Fast2SMS is exclusively reserved for rare emergency OTP login/signup fallback on iOS devices ONLY.
+   * Android, Web, and all other non-iOS platforms or non-OTP SMS are strictly blocked.
    */
-  public static async sendSMS(to: string, message: string, otpCode?: string): Promise<boolean> {
+  public static async sendSMS(to: string, message: string, otpCode?: string, platform?: string): Promise<boolean> {
     try {
+      const normalizedPlatform = (platform || '').toString().toLowerCase().trim();
+      if (normalizedPlatform !== 'ios') {
+        console.log(`[SMS Service] BLOCKED Fast2SMS delivery to ${to}. Fast2SMS is strictly restricted to iOS devices only (current platform: "${platform || 'unknown'}").`);
+        return false;
+      }
+
       const normalizedTo = this.normalizePhoneNumber(to);
       if (!normalizedTo) {
         console.error('[SMS Service] Recipient phone number is empty or invalid.');
@@ -103,16 +109,17 @@ export class SMSService {
       // Check if this is an OTP message
       const code = otpCode || message.match(/\b\d{6}\b/)?.[0] || '';
       if (!code) {
-        console.log(`[SMS Service] BLOCKED non-OTP SMS to ${normalizedTo}. Fast2SMS is strictly restricted to emergency OTP login fallback.`);
+        console.log(`[SMS Service] BLOCKED non-OTP SMS to ${normalizedTo}. Fast2SMS is strictly restricted to iOS emergency OTP login fallback.`);
         return false;
       }
 
       const isMockMode = process.env.OTP_MOCK_MODE === 'true';
       if (isMockMode) {
         console.log(`\n--- [SMS MOCK SEND] ---`);
-        console.log(`To      : ${normalizedTo}`);
-        console.log(`Code    : ${code}`);
-        console.log(`Reason  : OTP_MOCK_MODE is enabled`);
+        console.log(`To        : ${normalizedTo}`);
+        console.log(`Code      : ${code}`);
+        console.log(`Platform  : ${normalizedPlatform}`);
+        console.log(`Reason    : OTP_MOCK_MODE is enabled`);
         console.log(`------------------------\n`);
         return true;
       }
@@ -125,7 +132,7 @@ export class SMSService {
       // Send via Fast2SMS OTP route
       const sent = await this.sendFast2SmsOtp(normalizedTo, code);
       if (sent) {
-        console.log(`[SMS Service] Fast2SMS OTP delivered to ${normalizedTo}`);
+        console.log(`[SMS Service] Fast2SMS OTP successfully delivered to iOS device (${normalizedTo})`);
         return true;
       }
 

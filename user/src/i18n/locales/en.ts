@@ -9,7 +9,7 @@ export const en = {
     "shop": "Shop",
     "myOrders": "My Orders",
     "profile": "Profile",
-    "askMito": "Ask Mito",
+    "askMito": "Ask Expert",
     "consultation": "Doctor Consultation",
     "back": "Back",
     "backToProfile": "Back to Profile",

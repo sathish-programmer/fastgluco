@@ -287,6 +287,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const sendOtp = async (mobileNumber: string, email: string, sendSms: boolean = true): Promise<{ success: boolean; message?: string }> => {
     try {
       const meta = await telemetryService.getTelemetryMeta();
+      // Fast2SMS is STRICTLY reserved for iOS login/signup fallback only. Never Android, never Web.
+      const isIOS = (meta.platform || '').toLowerCase() === 'ios';
+      const shouldRequestSms = sendSms && isIOS;
+
       const response = await fetch(`${apiUrl}/auth/send-otp`, {
         method: 'POST',
         headers: {
@@ -296,7 +300,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         body: JSON.stringify({
           mobileNumber,
           email,
-          sendSms,
+          sendSms: shouldRequestSms,
           platform: meta.platform,
           appVersion: meta.appVersion,
           buildNumber: meta.buildNumber,

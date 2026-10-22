@@ -178,14 +178,22 @@ export class AuthController {
         console.log(`[MOCK OTP] OTP for ${cleanPhone} / ${cleanEmail} is: ${plainOtp}`);
         methodUsed = 'mock';
       } else {
-        const shouldSendSms = req.body.sendSms !== false;
+        const clientPlatform = (req.body.platform || req.headers['x-platform'] || '').toString().toLowerCase().trim();
+        const isIOS = clientPlatform === 'ios';
+
+        // STRICT POLICY: Fast2SMS fallback is exclusively allowed for iOS login/signup.
+        // Android, Web, and other platforms NEVER receive SMS via Fast2SMS.
+        const shouldSendSms = req.body.sendSms !== false && isIOS;
         if (shouldSendSms) {
-          // 1. Send SMS via Fast2SMS
-          SMSService.sendSMS(cleanPhone, `Your Mito Reboot verification code is: ${plainOtp}. Valid for 10 minutes.`, plainOtp).catch(err => {
+          // 1. Send SMS via Fast2SMS (iOS only)
+          SMSService.sendSMS(cleanPhone, `Your Mito Reboot verification code is: ${plainOtp}. Valid for 10 minutes.`, plainOtp, clientPlatform).catch(err => {
             console.error('[SMS Service] Failed to send SMS via Fast2SMS:', err);
           });
         } else {
           methodUsed = 'email';
+          if (req.body.sendSms !== false && !isIOS) {
+            console.log(`[SMS Service] Fast2SMS explicitly BLOCKED for non-iOS platform ("${clientPlatform || 'unknown'}"). Fast2SMS fallback is strictly restricted to iOS login/signup.`);
+          }
         }
 
         // 2. ALWAYS send Email via Brevo SMTP / configured email service

@@ -147,6 +147,7 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
   const screenRef = useRef<'phone' | 'otp'>(screen);
   const otpProviderRef = useRef<'FIREBASE' | 'FAST2SMS' | null>(null);
   const codeSentRef = useRef<boolean>(false);
+  const userInitiatedSendRef = useRef<boolean>(false);
 
   useEffect(() => { mobileNumberRef.current = mobileNumber; }, [mobileNumber]);
   useEffect(() => { emailRef.current = email; }, [email]);
@@ -166,6 +167,7 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
       if (!isMounted) return;
       window.verificationId = event.verificationId;
       codeSentRef.current = true;
+      userInitiatedSendRef.current = false;
       otpProviderRef.current = 'FIREBASE';
       setOtpProvider('FIREBASE');
       setDeliveryMethod('sms');
@@ -181,6 +183,7 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
       if (!isMounted) return;
       setIsAutoVerifying(true);
       setLoading(true);
+      userInitiatedSendRef.current = false;
       try {
         // Give the user a moment to see the SMS auto-detected animation
         await new Promise(r => setTimeout(r, 700));
@@ -205,13 +208,29 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
       console.warn('[Firebase Auth] Native Firebase phoneVerificationFailed:', errorMsg);
       if (!isMounted) return;
 
+      // CRITICAL GUARD 1: Only handle if user actually initiated send OTP
+      if (!userInitiatedSendRef.current) {
+        console.warn('[Firebase Auth] Ignoring unsolicited phoneVerificationFailed event (user did not trigger send).');
+        return;
+      }
+
       if (codeSentRef.current || screenRef.current === 'otp') {
         console.warn('[Firebase Auth] Code was already sent by Firebase.');
         return;
       }
 
-      // Seamless fallback to Backend Dual-Channel OTP (Fast2SMS & Email) so user is never blocked
-      console.log('[Firebase Auth] Triggering backup OTP (Fast2SMS + Email) fallback...');
+      // CRITICAL GUARD 2: Fast2SMS is STRICTLY FOR iOS ONLY. NEVER Android.
+      const isIOS = Capacitor.getPlatform() === 'ios';
+      if (!isIOS) {
+        console.warn('[Firebase Auth] phoneVerificationFailed on Android. Fast2SMS fallback is completely blocked for Android (iOS only).');
+        setLoading(false);
+        userInitiatedSendRef.current = false;
+        setPhoneError(cleanErrorMessage(errorMsg, t('auth.sendOtpFailed', 'Failed to send verification code via Firebase. Please try again.')));
+        return;
+      }
+
+      // Seamless fallback to Backend Dual-Channel OTP (Fast2SMS & Email) for iOS ONLY
+      console.log('[Firebase Auth] iOS phoneVerificationFailed: Triggering backup OTP (Fast2SMS + Email) fallback...');
       try {
         const e164 = buildE164(mobileNumberRef.current);
         if (e164 && emailRef.current) {
@@ -220,6 +239,7 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
           const sendRes = await sendOtp(e164, emailRef.current, true);
           if (sendRes.success) {
             codeSentRef.current = true;
+            userInitiatedSendRef.current = false;
             setDeliveryMethod('sms_and_email');
             setScreen('otp');
             setTimer(60);
@@ -234,6 +254,7 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
       }
 
       setLoading(false);
+      userInitiatedSendRef.current = false;
       setPhoneError(cleanErrorMessage(errorMsg, t('auth.sendOtpFailed', 'Failed to send verification code via Firebase. Please try again.')));
     });
 
@@ -321,9 +342,11 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
     setOtpProvider(null);
     setIsAutoVerifying(false);
     setLoading(true);
+    userInitiatedSendRef.current = true;
 
-    // 1. Native Mobile (iOS & Android): Native Firebase Phone Auth with automatic fallback
+    // 1. Native Mobile (iOS & Android): Native Firebase Phone Auth with iOS-only fallback
     if (Capacitor.isNativePlatform()) {
+      const isIOS = Capacitor.getPlatform() === 'ios';
       try {
         console.log(`[Firebase Auth] Attempting Native Firebase Phone Auth (${Capacitor.getPlatform()}) for:`, e164);
         otpProviderRef.current = 'FIREBASE';
@@ -331,37 +354,51 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
         await FirebaseAuthentication.signInWithPhoneNumber({ phoneNumber: e164 });
         // Native phoneCodeSent listener will transition screen to 'otp' and set codeSentRef.current = true
       } catch (nativeErr: any) {
-        console.warn(`[Firebase Auth] Native Firebase Phone Auth (${Capacitor.getPlatform()}) error, seamlessly falling back to backend OTP:`, nativeErr);
-        try {
-          otpProviderRef.current = 'FAST2SMS';
-          setOtpProvider('FAST2SMS');
-          const sendRes = await sendOtp(e164, email, true);
-          if (sendRes.success) {
-            codeSentRef.current = true;
-            setDeliveryMethod('sms_and_email');
-            setScreen('otp');
-            setTimer(60);
-            showToast(t('auth.codeSentToMobileAndEmail', 'Verification code sent to your mobile and email'), 'success');
-            setTimeout(() => otpInputRef.current?.focus(), 150);
-          } else {
-            setPhoneError(sendRes.message || cleanErrorMessage(nativeErr?.message, t('auth.sendOtpFailed', 'Unable to send verification code. Please try again.')));
+        console.warn(`[Firebase Auth] Native Firebase Phone Auth (${Capacitor.getPlatform()}) error:`, nativeErr);
+        
+        // Fast2SMS is STRICTLY for iOS devices only
+        if (isIOS) {
+          console.log('[Firebase Auth] iOS Native Firebase error, seamlessly falling back to Fast2SMS backup OTP...');
+          try {
+            otpProviderRef.current = 'FAST2SMS';
+            setOtpProvider('FAST2SMS');
+            const sendRes = await sendOtp(e164, email, true);
+            if (sendRes.success) {
+              codeSentRef.current = true;
+              userInitiatedSendRef.current = false;
+              setDeliveryMethod('sms_and_email');
+              setScreen('otp');
+              setTimer(60);
+              showToast(t('auth.codeSentToMobileAndEmail', 'Verification code sent to your mobile and email'), 'success');
+              setTimeout(() => otpInputRef.current?.focus(), 150);
+            } else {
+              setPhoneError(sendRes.message || cleanErrorMessage(nativeErr?.message, t('auth.sendOtpFailed', 'Unable to send verification code. Please try again.')));
+            }
+          } catch (fallbackErr: any) {
+            setPhoneError(cleanErrorMessage(fallbackErr?.message, t('auth.sendOtpFailed', 'Unable to send verification code. Please try again.')));
+          } finally {
+            setLoading(false);
+            userInitiatedSendRef.current = false;
           }
-        } catch (fallbackErr: any) {
-          setPhoneError(cleanErrorMessage(fallbackErr?.message, t('auth.sendOtpFailed', 'Unable to send verification code. Please try again.')));
-        } finally {
+        } else {
+          // Android: First priority is Firebase. Fast2SMS is completely disabled on Android.
+          console.warn('[Firebase Auth] Android Firebase Phone Auth failed. Fast2SMS fallback is disabled for Android.');
           setLoading(false);
+          userInitiatedSendRef.current = false;
+          setPhoneError(cleanErrorMessage(nativeErr?.message, t('auth.sendOtpFailed', 'Unable to send verification code via Firebase. Please try again.')));
         }
       }
       return;
     }
 
-    // 2. Web: Web Firebase Phone Auth with automatic fallback
+    // 2. Web: Web Firebase Phone Auth (Email-only fallback, never Fast2SMS)
     try {
       console.log('[Firebase Auth] Attempting Web Firebase Phone Auth for:', e164);
       const verifier = getRecaptchaVerifier();
       const confirmation = await signInWithPhoneNumber(auth, e164, verifier);
 
       codeSentRef.current = true;
+      userInitiatedSendRef.current = false;
       otpProviderRef.current = 'FIREBASE';
       setOtpProvider('FIREBASE');
       setConfirmationResult(confirmation);
@@ -372,19 +409,18 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
       showToast(t('auth.codeSentToMobile', { mobileNumber: e164 }, `Verification code sent to ${e164}`), 'success');
       setTimeout(() => otpInputRef.current?.focus(), 100);
     } catch (firebaseErr: any) {
-      console.warn('[Firebase Auth] Web Firebase initiation error, falling back to backend OTP:', firebaseErr);
+      console.warn('[Firebase Auth] Web Firebase initiation error, falling back to Email OTP (no SMS on web):', firebaseErr);
       setConfirmationResult(null);
       window.confirmationResult = null;
       try {
-        otpProviderRef.current = 'FAST2SMS';
-        setOtpProvider('FAST2SMS');
-        const sendRes = await sendOtp(e164, email, true);
+        const sendRes = await sendOtp(e164, email, false);
         if (sendRes.success) {
           codeSentRef.current = true;
-          setDeliveryMethod('sms_and_email');
+          userInitiatedSendRef.current = false;
+          setDeliveryMethod('email');
           setScreen('otp');
           setTimer(60);
-          showToast(t('auth.codeSentToMobileAndEmail', 'Verification code sent to your mobile and email'), 'success');
+          showToast(t('auth.codeSentToEmail', 'Verification code sent to your email'), 'success');
           setTimeout(() => otpInputRef.current?.focus(), 150);
         } else {
           setPhoneError(sendRes.message || cleanErrorMessage(firebaseErr?.message, t('auth.sendOtpFailed', 'Unable to send verification code. Please try again.')));
@@ -394,6 +430,7 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
       }
     } finally {
       setLoading(false);
+      userInitiatedSendRef.current = false;
     }
   };
 
