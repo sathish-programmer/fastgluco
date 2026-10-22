@@ -1,12 +1,12 @@
 <en-US>
-• Ask Expert Tele-Consultation: Get your medical queries and lab reports reviewed by certified clinical specialists at ₹100.
-• Smart AI Check-in Robo: Instant one-tap habit logging and daily check-ins directly from your dashboard.
-• Enhanced Authentication Security: Streamlined Firebase phone verification with robust fallback delivery.
-• UI & Performance Enhancements: Modernized dashboard aesthetics, smoother interactions, and overall app stability improvements.
+• Streamlined Dashboard: Removed redundant focus cards to bring your core Cellular Balance tracking directly into view.
+• Unobstructed AI Logging: Cleaner bottom navigation with the AI Robo assistant always within reach ("Too tired to log ? Let the robo do").
+• Doctor Review Accuracy: Resolved consultation statuses so completed medical opinions and doctor replies display promptly with verified badges.
+• Performance & Stability: Enhanced responsiveness and smoother app navigation across devices.
 </en-US>
 <en-IN>
-• Ask Expert Tele-Consultation: Get your medical queries and lab reports reviewed by certified clinical specialists at ₹100.
-• Smart AI Check-in Robo: Instant one-tap habit logging and daily check-ins directly from your dashboard.
-• Enhanced Authentication Security: Streamlined Firebase phone verification with robust fallback delivery.
-• UI & Performance Enhancements: Modernized dashboard aesthetics, smoother interactions, and overall app stability improvements.
+• Streamlined Dashboard: Removed redundant focus cards to bring your core Cellular Balance tracking directly into view.
+• Unobstructed AI Logging: Cleaner bottom navigation with the AI Robo assistant always within reach ("Too tired to log ? Let the robo do").
+• Doctor Review Accuracy: Resolved consultation statuses so completed medical opinions and doctor replies display promptly with verified badges.
+• Performance & Stability: Enhanced responsiveness and smoother app navigation across devices.
 </en-IN>
