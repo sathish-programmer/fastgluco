@@ -1,12 +1,12 @@
 <en-US>
-• Standardized Store Currency: Fixed shop catalog, cart, and payment checkout strictly to Indian Rupee (₹ INR).
-• Kitchen & Environmental Audit: Refined kitchen toxicology guidelines and daily checks to eliminate non-stick cookware risks.
-• Doctor Profile & Contact: Added specialist contact email directly on consultation booking profiles.
-• Performance & Stability: Enhanced account sign-out security safeguards, APNs configuration, and mobile app optimizations.
+• Ask Expert Tele-Consultation: Get your medical queries and lab reports reviewed by certified clinical specialists at ₹100.
+• Smart AI Check-in Robo: Instant one-tap habit logging and daily check-ins directly from your dashboard.
+• Enhanced Authentication Security: Streamlined Firebase phone verification with robust fallback delivery.
+• UI & Performance Enhancements: Modernized dashboard aesthetics, smoother interactions, and overall app stability improvements.
 </en-US>
 <en-IN>
-• Standardized Store Currency: Fixed shop catalog, cart, and payment checkout strictly to Indian Rupee (₹ INR).
-• Kitchen & Environmental Audit: Refined kitchen toxicology guidelines and daily checks to eliminate non-stick cookware risks.
-• Doctor Profile & Contact: Added specialist contact email directly on consultation booking profiles.
-• Performance & Stability: Enhanced account sign-out security safeguards, APNs configuration, and mobile app optimizations.
+• Ask Expert Tele-Consultation: Get your medical queries and lab reports reviewed by certified clinical specialists at ₹100.
+• Smart AI Check-in Robo: Instant one-tap habit logging and daily check-ins directly from your dashboard.
+• Enhanced Authentication Security: Streamlined Firebase phone verification with robust fallback delivery.
+• UI & Performance Enhancements: Modernized dashboard aesthetics, smoother interactions, and overall app stability improvements.
 </en-IN>
