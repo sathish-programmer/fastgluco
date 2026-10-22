@@ -498,8 +498,10 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
             /* Modern Conversational Thread Cards */
             <div className="space-y-4">
               {queries.map(q => {
-                const isAnswered = q.status === 'answered';
+                const hasDoctorReply = Boolean(q.adminReply && q.adminReply.trim());
+                const isAnswered = q.status?.toLowerCase() === 'answered' || hasDoctorReply;
                 const createdDate = new Date(q.createdAt);
+                const hoursElapsed = (Date.now() - createdDate.getTime()) / (1000 * 60 * 60);
 
                 return (
                   <div 
@@ -571,7 +573,7 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                     </div>
 
                     {/* Doctor Clinical Response */}
-                    {isAnswered && q.adminReply ? (
+                    {hasDoctorReply ? (
                       <div className="flex items-start gap-2.5 pt-1">
                         <div className="h-7 w-7 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-600 text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5">
                           <Stethoscope className="h-4 w-4" />
@@ -580,7 +582,7 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                           <div className="flex items-center justify-between border-b border-emerald-500/15 dark:border-emerald-800/40 pb-1.5">
                             <div className="flex items-center gap-1.5">
                               <span className="font-extrabold text-emerald-950 dark:text-emerald-200 text-xs">
-                                {t('askMito.clinicalTeamResponse', 'Clinical Team Response')}
+                                {q.repliedBy || t('askMito.clinicalTeamResponse', 'Clinical Team Response')}
                               </span>
                               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                             </div>
@@ -595,10 +597,19 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                           </p>
                         </div>
                       </div>
+                    ) : isAnswered ? (
+                      <div className="flex items-center gap-2.5 text-xs text-emerald-800 dark:text-emerald-300 font-semibold bg-emerald-50/80 dark:bg-emerald-950/30 p-3.5 rounded-2xl border border-emerald-200/80 dark:border-emerald-900/50">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                        <span>{t('askMito.consultationResolved', 'Clinical consultation reviewed and resolved.')}</span>
+                      </div>
                     ) : (
                       <div className="flex items-center gap-3 text-xs text-amber-800 dark:text-amber-300 font-semibold bg-amber-50/80 dark:bg-amber-950/30 p-3.5 rounded-2xl border border-amber-200/80 dark:border-amber-900/50">
                         <Clock className="h-4 w-4 text-amber-600 shrink-0" />
-                        <span>{t('doctorReviewingParams')}</span>
+                        <span>
+                          {hoursElapsed > 48
+                            ? t('askMito.reviewInProgressPriority', 'Under priority clinical review. Our medical team is finalizing your response.')
+                            : t('doctorReviewingParams', 'Doctor is reviewing your health parameters. Reply will appear here within 48 hours.')}
+                        </span>
                       </div>
                     )}
                   </div>
