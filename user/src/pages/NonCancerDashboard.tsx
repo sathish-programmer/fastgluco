@@ -85,7 +85,6 @@ import { KitchenLogScreen } from '../screens/HabitScreens/KitchenLogScreen';
 import { DietLogScreen } from '../screens/HabitScreens/DietLogScreen';
 import { ModeSwitcher } from '../components/ModeSwitcher';
 import { Dashboard } from './Dashboard';
-import { TodaysFocusCard } from '../components/TodaysFocusCard';
 import { AgeingModule } from '../modules/AgeingModule';
 import { PCODModule } from '../modules/PCODModule';
 import { DiabetesModule } from '../modules/DiabetesModule';
@@ -207,7 +206,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
   const [showFastingDisclaimer, setShowFastingDisclaimer] = useState<boolean>(false);
   const [fastingStep, setFastingStep] = useState<number>(1);
 
-  const [hasCGMData, setHasCGMData] = useState<boolean>(() => {
+  const [, setHasCGMData] = useState<boolean>(() => {
     return localStorage.getItem('mito_has_cgm_reports') === 'true';
   });
 
@@ -1997,17 +1996,6 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
       {/* RENDER CANCER PREVENTION/RECURRENCE DASHBOARD ONLY WHEN IN CANCER MODES */}
       {!['AGEING', 'PCOD', 'DIABETES', 'HYPERTENSION', 'PARKINSON', 'CARDIAC'].includes(activeMode) && (
         <>
-          {/* PRIMARY DASHBOARD SECTION: Today's Focus */}
-          <div className="mb-4">
-            <TodaysFocusCard
-              activeMode={activeMode as any}
-              habits={habits}
-              hasCGMData={hasCGMData}
-              upcomingAppt={upcomingAppt}
-              onTakeAction={(actionKey) => handleActionKey(actionKey)}
-            />
-          </div>
-
           {/* SECONDARY DASHBOARD SECTION: Continue Where You Left Off (Hidden for future implementation) */}
           {/* 
       <ContinueWhereLeftOff
