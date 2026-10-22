@@ -2336,7 +2336,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
           </div>
 
           {/* Right-pointing bubble tail */}
-          <div className="hidden sm:block absolute -right-1 top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-white dark:bg-slate-900 rotate-45 border-t border-r border-blue-200/90 dark:border-blue-800/80" />
+          <div className="absolute -right-1 top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-white dark:bg-slate-900 rotate-45 border-t border-r border-blue-200/90 dark:border-blue-800/80 pointer-events-none" />
         </div>
 
         {/* Robo FAB Button */}
