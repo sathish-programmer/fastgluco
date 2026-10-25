@@ -14,9 +14,9 @@ export const KitchenLogScreen: React.FC<KitchenLogScreenProps> = ({ onBack, onNa
   const { t } = useLanguage();
   
   // 3 Audit Questions
-  const [kitchenQ1, setKitchenQ1] = useState<boolean | null>(null); // Water NOT stored in plastic can (true = Yes, false = No)
-  const [kitchenQ2, setKitchenQ2] = useState<boolean | null>(null); // Utensils (Tava, pan) made of natural substances like iron/brass/aluminum (true = Yes, false = No)
-  const [kitchenQ3, setKitchenQ3] = useState<boolean | null>(null); // Commodities stored in non-plastic containers (true = Yes, false = No)
+  const [kitchenQ1, setKitchenQ1] = useState<boolean | null>(null); // Non-stick with scratches/PTFE (true = Yes Risk -1, false = No Safe 0)
+  const [kitchenQ2, setKitchenQ2] = useState<boolean | null>(null); // Store/microwave hot food in plastic (true = Yes Risk -1, false = No Safe 0)
+  const [kitchenQ3, setKitchenQ3] = useState<boolean | null>(null); // Plastic cutting boards or synthetic utensils (true = Yes Risk -1, false = No Safe 0)
 
   const [loading, setLoading] = useState(false);
   const [todayLogId, setTodayLogId] = useState<string | null>(null);
@@ -73,9 +73,9 @@ export const KitchenLogScreen: React.FC<KitchenLogScreenProps> = ({ onBack, onNa
   const calculateScore = () => {
     if (kitchenQ1 === null && kitchenQ2 === null && kitchenQ3 === null) return null;
     let score = 0;
-    if (kitchenQ1 === false) score -= 1;
-    if (kitchenQ2 === false) score -= 1;
-    if (kitchenQ3 === false) score -= 1;
+    if (kitchenQ1 === true) score -= 1;
+    if (kitchenQ2 === true) score -= 1;
+    if (kitchenQ3 === true) score -= 1;
     return score;
   };
 
@@ -229,7 +229,9 @@ export const KitchenLogScreen: React.FC<KitchenLogScreenProps> = ({ onBack, onNa
             ) : (
               <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-100 dark:border-rose-900/40 text-rose-700 dark:text-rose-300 text-xs p-4 rounded-2xl font-bold flex items-center gap-2.5">
                 <ShieldAlert className="h-5 w-5 shrink-0 text-rose-500" />
-                <span>{t('kitchen.riskFlagged', 'Kitchen risk flagged ({score}). Storing water in plastic cans or heating synthetic non-stick pans releases microplastics and toxic chemical vapors.').replace('{score}', String(kitchenScore))}</span>
+                <span>
+                  <strong>{t('kitchen.riskFlagged', 'Risk Flagged')} ({kitchenScore}):</strong> {t('kitchen.riskDescription', 'Using scratched non-stick cookware, microwaving hot food in plastic, or using synthetic utensils releases microplastics and toxic chemicals.')}
+                </span>
               </div>
             )}
           </div>
@@ -240,22 +242,22 @@ export const KitchenLogScreen: React.FC<KitchenLogScreenProps> = ({ onBack, onNa
           <div>
             <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-2">{t('kitchen.question1', 'Question 1')}</p>
             <p className="text-sm font-semibold text-slate-850 dark:text-slate-100 leading-relaxed mb-3.5">
-              1. {t('kitchen.q1Text', 'Is your drinking water NOT stored in a plastic can?')}
+              1. {t('kitchen.q1Text', 'Do you use non-stick cookware with scratches or PTFE coatings?')}
             </p>
             <div className="flex gap-3">
               <button 
                 type="button"
                 onClick={() => handleAnswerQ1(true)}
-                className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border cursor-pointer ${kitchenQ1 === true ? 'bg-emerald-500 border-emerald-500 text-white shadow-xs' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+                className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border cursor-pointer ${kitchenQ1 === true ? 'bg-rose-500 border-rose-500 text-white shadow-xs' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
               >
-                {t('common.yesSafeZero', 'Yes (Safe 0)')}
+                {t('common.yesRiskMinus1', 'Yes (Risk -1)')}
               </button>
               <button 
                 type="button"
                 onClick={() => handleAnswerQ1(false)}
-                className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border cursor-pointer ${kitchenQ1 === false ? 'bg-rose-500 border-rose-500 text-white shadow-xs' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+                className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border cursor-pointer ${kitchenQ1 === false ? 'bg-emerald-500 border-emerald-500 text-white shadow-xs' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
               >
-                {t('common.noRiskMinus1', 'No (Risk -1)')}
+                {t('common.noSafeZero', 'No (Safe 0)')}
               </button>
             </div>
           </div>
@@ -264,22 +266,22 @@ export const KitchenLogScreen: React.FC<KitchenLogScreenProps> = ({ onBack, onNa
           <div className="pt-5 border-t border-slate-100 dark:border-slate-800">
             <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-2">{t('kitchen.question2', 'Question 2')}</p>
             <p className="text-sm font-semibold text-slate-850 dark:text-slate-100 leading-relaxed mb-3.5">
-              2. {t('kitchen.q2Text', 'Are utensils like Tava and pan made of natural substances like iron, brass, or clay (avoiding synthetic non-stick coatings)?')}
+              2. {t('kitchen.q2Text', 'Do you store or microwave hot food in plastic containers?')}
             </p>
             <div className="flex gap-3">
               <button 
                 type="button"
                 onClick={() => handleAnswerQ2(true)}
-                className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border cursor-pointer ${kitchenQ2 === true ? 'bg-emerald-500 border-emerald-500 text-white shadow-xs' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+                className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border cursor-pointer ${kitchenQ2 === true ? 'bg-rose-500 border-rose-500 text-white shadow-xs' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
               >
-                {t('common.yesSafeZero', 'Yes (Safe 0)')}
+                {t('common.yesRiskMinus1', 'Yes (Risk -1)')}
               </button>
               <button 
                 type="button"
                 onClick={() => handleAnswerQ2(false)}
-                className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border cursor-pointer ${kitchenQ2 === false ? 'bg-rose-500 border-rose-500 text-white shadow-xs' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+                className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border cursor-pointer ${kitchenQ2 === false ? 'bg-emerald-500 border-emerald-500 text-white shadow-xs' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
               >
-                {t('common.noRiskMinus1', 'No (Risk -1)')}
+                {t('common.noSafeZero', 'No (Safe 0)')}
               </button>
             </div>
           </div>
@@ -288,22 +290,22 @@ export const KitchenLogScreen: React.FC<KitchenLogScreenProps> = ({ onBack, onNa
           <div className="pt-5 border-t border-slate-100 dark:border-slate-800">
             <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-2">{t('kitchen.question3', 'Question 3')}</p>
             <p className="text-sm font-semibold text-slate-850 dark:text-slate-100 leading-relaxed mb-3.5">
-              3. {t('kitchen.q3Text', 'Are commodities and ingredients stored in non-plastic containers (e.g. glass, stainless steel, ceramic)?')}
+              3. {t('kitchen.q3Text', 'Do you use plastic cutting boards or synthetic cooking utensils?')}
             </p>
             <div className="flex gap-3">
               <button 
                 type="button"
                 onClick={() => handleAnswerQ3(true)}
-                className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border cursor-pointer ${kitchenQ3 === true ? 'bg-emerald-500 border-emerald-500 text-white shadow-xs' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+                className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border cursor-pointer ${kitchenQ3 === true ? 'bg-rose-500 border-rose-500 text-white shadow-xs' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
               >
-                {t('common.yesSafeZero', 'Yes (Safe 0)')}
+                {t('common.yesRiskMinus1', 'Yes (Risk -1)')}
               </button>
               <button 
                 type="button"
                 onClick={() => handleAnswerQ3(false)}
-                className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border cursor-pointer ${kitchenQ3 === false ? 'bg-rose-500 border-rose-500 text-white shadow-xs' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+                className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border cursor-pointer ${kitchenQ3 === false ? 'bg-emerald-500 border-emerald-500 text-white shadow-xs' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
               >
-                {t('common.noRiskMinus1', 'No (Risk -1)')}
+                {t('common.noSafeZero', 'No (Safe 0)')}
               </button>
             </div>
           </div>

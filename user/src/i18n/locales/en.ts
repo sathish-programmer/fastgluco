@@ -75,7 +75,9 @@ export const en = {
     "yesMinus1": "Yes (-1)",
     "noZero": "No (0)",
     "yesSafeZero": "Yes (Safe - 0)",
-    "noRiskMinus1": "No (Risk -1)"
+    "noRiskMinus1": "No (Risk -1)",
+    "yesRiskMinus1": "Yes (Risk -1)",
+    "noSafeZero": "No (Safe 0)"
   },
   "auth": {
     "signIn": "Sign In",
@@ -2071,6 +2073,7 @@ export const en = {
   "kitchen.damageKitchenAudit": "Kitchen Microplastics & Utensils Audit",
   "kitchen.checkYourKitchen": "Audit Your Kitchen Utensils",
   "kitchen.riskFlagged": "Risk Flagged",
+  "kitchen.riskDescription": "Using scratched non-stick cookware, microwaving hot food in plastic, or using synthetic utensils releases microplastics and toxic chemicals.",
   "kitchen.q1Text": "Do you use non-stick cookware with scratches or PTFE coatings?",
   "kitchen.q2Text": "Do you store or microwave hot food in plastic containers?",
   "kitchen.q3Text": "Do you use plastic cutting boards or synthetic cooking utensils?",
