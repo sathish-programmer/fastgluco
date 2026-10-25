@@ -48,6 +48,11 @@ export interface IUser extends Document {
   notificationPreferences?: any;
   checkinReminderTime?: string;
   lastCheckinReminderSentAt?: Date;
+  dailyMotivationTime?: string;
+  dailyMotivationEnabled?: boolean;
+  lastDailyMotivationSentAt?: Date;
+  lastDailyMotivationViewedAt?: Date;
+  dailyMotivationDayOffset?: number;
   language?: 'en' | 'ta' | 'kn' | 'hi' | 'te';
   lastActiveAt?: Date;
   lastPlatform?: 'android' | 'ios' | 'web';
@@ -116,6 +121,11 @@ const userSchema = new Schema<IUser>(
     notificationPreferences: { type: Object, default: {} },
     checkinReminderTime: { type: String, default: '20:00' },
     lastCheckinReminderSentAt: { type: Date },
+    dailyMotivationTime: { type: String, default: '08:00' },
+    dailyMotivationEnabled: { type: Boolean, default: true },
+    lastDailyMotivationSentAt: { type: Date },
+    lastDailyMotivationViewedAt: { type: Date },
+    dailyMotivationDayOffset: { type: Number, default: 0 },
     language: { type: String, enum: ['en', 'ta', 'kn', 'hi', 'te'], default: 'en' },
     lastActiveAt: { type: Date, index: true },
     lastPlatform: { type: String, enum: ['android', 'ios', 'web'] },

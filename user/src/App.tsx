@@ -48,6 +48,8 @@ import { TermsAndConditionsAcceptancePage, CURRENT_TERMS_VERSION } from './compo
 import { DeleteAccount } from './pages/DeleteAccount';
 import { OfflineScreen } from './components/OfflineScreen';
 import { WhatsNewModal } from './components/WhatsNewModal';
+import { DailyMotivationModal } from './components/DailyMotivationModal';
+import { MotivationService } from './services/motivationService';
 import { initNotificationScheduler } from './utils/notificationScheduler';
 
 const MainAppContent: React.FC = () => {
@@ -226,7 +228,37 @@ const MainAppContent: React.FC = () => {
   const [showHelpModal, setShowHelpModal] = useState<boolean>(false);
   const [showAskMitoDrawer, setShowAskMitoDrawer] = useState<boolean>(false);
   const [showWhatsNew, setShowWhatsNew] = useState<boolean>(false);
+  const [showDailyMotivation, setShowDailyMotivation] = useState<boolean>(false);
+  const [dailyMotivationData, setDailyMotivationData] = useState<{ dayNumber: number; message: string }>({ dayNumber: 1, message: '' });
   const [inAppReminder, setInAppReminder] = useState<{ title: string; body: string; type?: string } | null>(null);
+
+  // Daily Motivation: check if viewed today on app launch / login
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id) return;
+
+    let isMounted = true;
+    const checkDailyMotivation = async () => {
+      const todayStr = new Date().toDateString();
+      const lastViewed = localStorage.getItem('mito_last_daily_motivation_viewed_date');
+
+      // If user hasn't viewed today's motivation yet, show popup and notify backend to suppress push notification
+      if (lastViewed !== todayStr) {
+        const data = await MotivationService.getTodayMotivation(apiUrl, token, (user as any)?.createdAt);
+        if (isMounted && !data.hasViewedToday) {
+          setDailyMotivationData({ dayNumber: data.dayNumber, message: data.message });
+          setShowDailyMotivation(true);
+          // Mark viewed on backend immediately to suppress today's push notification
+          MotivationService.markMotivationViewed(apiUrl, token);
+        }
+      }
+    };
+
+    const timer = setTimeout(checkDailyMotivation, 1200);
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [isAuthenticated, user?.id]);
 
   useEffect(() => {
     const handleTriggered = (e: any) => {
@@ -297,6 +329,21 @@ const MainAppContent: React.FC = () => {
         setActiveTab('Food Log');
       } else if (route === 'Reports') {
         setActiveTab('Reports');
+      } else if (route === 'DailyMotivation' || notificationType === 'DailyMotivation') {
+        const data = (e.detail && e.detail.data) || {};
+        const day = data.dayNumber ? parseInt(data.dayNumber, 10) : undefined;
+        const msg = data.message;
+        if (day && msg) {
+          setDailyMotivationData({ dayNumber: day, message: msg });
+          setShowDailyMotivation(true);
+          MotivationService.markMotivationViewed(apiUrl, token);
+        } else {
+          MotivationService.getTodayMotivation(apiUrl, token, (user as any)?.createdAt).then((res) => {
+            setDailyMotivationData({ dayNumber: res.dayNumber, message: res.message });
+            setShowDailyMotivation(true);
+            MotivationService.markMotivationViewed(apiUrl, token);
+          });
+        }
       }
     };
     window.addEventListener('subScreenChange', handleSubScreen);
@@ -344,6 +391,9 @@ const MainAppContent: React.FC = () => {
   const showOnboardingRef = useRef(showOnboarding);
   showOnboardingRef.current = showOnboarding;
 
+  const showDailyMotivationRef = useRef(showDailyMotivation);
+  showDailyMotivationRef.current = showDailyMotivation;
+
   // Reset back press timer when user navigates to a different tab
   useEffect(() => {
     setIsSubScreenActive(false);
@@ -368,6 +418,10 @@ const MainAppContent: React.FC = () => {
           if (!active) return;
 
           // 1. If any modal or drawer is open, dismiss it first
+          if (showDailyMotivationRef.current) {
+            setShowDailyMotivation(false);
+            return;
+          }
           if (showWhatsNewRef.current) {
             setShowWhatsNew(false);
             return;
@@ -730,6 +784,16 @@ const MainAppContent: React.FC = () => {
           } else if (featureKey === 'shop') {
             setActiveTab('Store');
           }
+        }}
+      />
+
+      <DailyMotivationModal
+        isOpen={showDailyMotivation}
+        dayNumber={dailyMotivationData.dayNumber}
+        message={dailyMotivationData.message}
+        onClose={() => {
+          setShowDailyMotivation(false);
+          MotivationService.markMotivationViewed(apiUrl, token);
         }}
       />
       {/* Dynamic Header with safe area padding for mobile notches */}

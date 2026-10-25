@@ -16,6 +16,7 @@ export type FocusModeType =
 
 export interface NotificationChannelPreferences {
   dailyCheckin: boolean;
+  dailyMotivation?: boolean;
   habitReminders: boolean;
   healthInsights: boolean;
   reportUpload: boolean;
@@ -60,6 +61,11 @@ export interface UserProfile {
   addressPinCode?: string;
   notificationPreferences?: UserNotificationPreferences;
   checkinReminderTime?: string;
+  dailyMotivationTime?: string;
+  dailyMotivationEnabled?: boolean;
+  lastDailyMotivationSentAt?: string;
+  lastDailyMotivationViewedAt?: string;
+  dailyMotivationDayOffset?: number;
   language?: SupportedLanguage;
 }
 

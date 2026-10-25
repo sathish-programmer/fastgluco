@@ -19,7 +19,8 @@ export type NotificationType =
   | 'OrderShipped'
   | 'OrderDelivered'
   | 'OrderCancelled'
-  | 'DoctorConsultation';
+  | 'DoctorConsultation'
+  | 'DailyMotivation';
 
 export interface INotificationMetadata {
   appointmentId?: string;
@@ -57,7 +58,7 @@ const notificationSchema = new Schema<INotification>(
         'AppointmentBooked', 'AppointmentConfirmed', 'AppointmentRescheduled', 
         'AppointmentCancelled', 'AppointmentReminder',
         'OrderPlaced', 'OrderPaid', 'OrderProcessing', 'OrderShipped', 
-        'OrderDelivered', 'OrderCancelled', 'DoctorConsultation'
+        'OrderDelivered', 'OrderCancelled', 'DoctorConsultation', 'DailyMotivation'
       ], 
       required: true 
     },

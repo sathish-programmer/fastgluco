@@ -41,6 +41,7 @@ import * as AskMitoController from '../controllers/askMitoController';
 import { AiChatController } from '../controllers/aiChatController';
 import { AppHealthController } from '../controllers/appHealthController';
 import { OrderManagementController } from '../controllers/orderManagementController';
+import { MotivationController } from '../controllers/motivationController';
 
 const router = Router();
 
@@ -347,6 +348,12 @@ router.post('/notifications/fcm-token', NotificationController.registerFCMToken)
 router.delete('/notifications/fcm-token', NotificationController.removeFCMToken);
 router.delete('/notifications/:id', NotificationController.deleteNotification);
 router.delete('/notifications', NotificationController.clearAll);
+
+// ─── Daily Motivation 365 ─────────────────────────────────────────────────────
+router.get('/motivation/today', authenticateToken, MotivationController.getToday);
+router.post('/motivation/viewed', authenticateToken, MotivationController.markViewed);
+router.put('/motivation/preferences', authenticateToken, MotivationController.updatePreferences);
+router.get('/motivation/day/:dayNumber', authenticateToken, MotivationController.getByDay);
 
 // Public Educational & Support content fetches
 router.get('/guides', EducationalController.getGuides);

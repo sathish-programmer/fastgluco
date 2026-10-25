@@ -14,6 +14,7 @@ import { LibreSyncService } from './services/libreSyncService';
 import { FoodSyncService } from './services/foodSyncService';
 import { VendorOrderStatusCron } from './cron/vendorOrderStatusCron';
 import { DailyCheckinReminderCron } from './cron/dailyCheckinReminderCron';
+import { DailyMotivationCron } from './cron/dailyMotivationCron';
 import { seedWorkflows } from './utils/seedWorkflows';
 import { seedAskMitoTopics } from './utils/seedAskMitoTopics';
 import { AppHealthSyncService } from './services/appHealthSyncService';
@@ -76,6 +77,12 @@ const bootstrap = async () => {
       cron.schedule('0 * * * *', async () => {
         await DailyCheckinReminderCron.sendDailyCheckinReminders();
       });
+
+      // Daily Motivation 365 Cron — runs every 15 mins to check user preferred motivation time in IST
+      // Evaluates suppression: if user already opened app and viewed popup, push is suppressed.
+      cron.schedule('*/15 * * * *', async () => {
+        await DailyMotivationCron.sendDailyMotivationPush();
+      }, { timezone: 'Asia/Kolkata' });
 
       // Vendor orders status tracking cron (Arivu Foods)
       // Arivu confirmed requirement: Polling at 9 AM and 10 PM IST fetches shipments processed during the day.

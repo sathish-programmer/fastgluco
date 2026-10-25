@@ -38,6 +38,7 @@ import { triggerTestNotification, scheduleDailyCheckinReminder, cancelDailyCheck
 const defaultNotifPrefs: UserNotificationPreferences = {
   push: {
     dailyCheckin: true,
+    dailyMotivation: true,
     habitReminders: true,
     healthInsights: true,
     reportUpload: false,
@@ -45,6 +46,7 @@ const defaultNotifPrefs: UserNotificationPreferences = {
   },
   email: {
     dailyCheckin: false,
+    dailyMotivation: false,
     habitReminders: false,
     healthInsights: true,
     reportUpload: true,
@@ -52,6 +54,7 @@ const defaultNotifPrefs: UserNotificationPreferences = {
   },
   sms: {
     dailyCheckin: false,
+    dailyMotivation: false,
     habitReminders: false,
     healthInsights: false,
     reportUpload: false,
@@ -111,6 +114,9 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
   const [checkinReminderTime, setCheckinReminderTime] = useState<string>(() => {
     return (user as any)?.checkinReminderTime || (user?.notificationPreferences as any)?.checkinReminderTime || localStorage.getItem('mito_checkin_reminder_time') || '20:00';
   });
+  const [dailyMotivationTime, setDailyMotivationTime] = useState<string>(() => {
+    return (user as any)?.dailyMotivationTime || (user?.notificationPreferences as any)?.dailyMotivationTime || localStorage.getItem('mito_daily_motivation_time') || '08:00';
+  });
   const [isTestingNotif, setIsTestingNotif] = useState(false);
 
   // Sync notification preferences whenever user profile updates/loads
@@ -125,6 +131,10 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
     const userReminderTime = (user as any)?.checkinReminderTime || (user?.notificationPreferences as any)?.checkinReminderTime;
     if (userReminderTime) {
       setCheckinReminderTime(userReminderTime);
+    }
+    const userMotivationTime = (user as any)?.dailyMotivationTime || (user?.notificationPreferences as any)?.dailyMotivationTime;
+    if (userMotivationTime) {
+      setDailyMotivationTime(userMotivationTime);
     }
   }, [user]);
 
@@ -602,6 +612,51 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
               </div>
             </div>
 
+            {/* Row: Daily Motivation (365 Days) */}
+            <div className="grid grid-cols-12 gap-2 items-center py-2.5 border-t border-slate-200/50 dark:border-slate-700/50">
+              <div className="col-span-6 sm:col-span-6 pr-2">
+                <p className="font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm flex items-center gap-1.5">
+                  <span>Daily Motivation (365 Days)</span>
+                </p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
+                  Sequential daily health guidance one-liners (suppressed if viewed in app)
+                </p>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">{t('profile.timeLabel', 'Time:')}</span>
+                  <input
+                    type="time"
+                    value={dailyMotivationTime}
+                    onChange={(e) => setDailyMotivationTime(e.target.value)}
+                    className="px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-primary focus:outline-none"
+                  />
+                </div>
+              </div>
+              <div className="col-span-2 sm:col-span-2 flex justify-center">
+                <input
+                  type="checkbox"
+                  checked={notifPrefs.push.dailyMotivation !== false}
+                  onChange={() => toggleChannelPref('push', 'dailyMotivation')}
+                  className="w-5 h-5 rounded-lg text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+                />
+              </div>
+              <div className="col-span-2 sm:col-span-2 flex justify-center">
+                <input
+                  type="checkbox"
+                  checked={notifPrefs.email.dailyMotivation === true}
+                  onChange={() => toggleChannelPref('email', 'dailyMotivation')}
+                  className="w-5 h-5 rounded-lg text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+                />
+              </div>
+              <div className="col-span-2 sm:col-span-2 flex justify-center">
+                <input
+                  type="checkbox"
+                  checked={notifPrefs.sms.dailyMotivation === true}
+                  onChange={() => toggleChannelPref('sms', 'dailyMotivation')}
+                  className="w-5 h-5 rounded-lg text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+                />
+              </div>
+            </div>
+
             {/* Row 2: Preventive Habits & Breathwork */}
             <div className="grid grid-cols-12 gap-2 items-center py-2.5 border-t border-slate-200/50 dark:border-slate-700/50">
               <div className="col-span-6 sm:col-span-6 pr-2">
@@ -755,6 +810,7 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
               localStorage.setItem('mito_notification_preferences', JSON.stringify(notifPrefs));
               localStorage.setItem('mito_checkin_reminder_enabled', notifPrefs.push.dailyCheckin ? 'true' : 'false');
               localStorage.setItem('mito_checkin_reminder_time', checkinReminderTime);
+              localStorage.setItem('mito_daily_motivation_time', dailyMotivationTime);
               localStorage.setItem('mito_report_reminder_enabled', notifPrefs.push.reportUpload ? 'true' : 'false');
 
               if (notifPrefs.push.dailyCheckin) {
@@ -769,9 +825,12 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
               const success = await updateProfile({
                 notificationPreferences: {
                   ...notifPrefs,
-                  checkinReminderTime
+                  checkinReminderTime,
+                  dailyMotivationTime
                 },
-                checkinReminderTime
+                checkinReminderTime,
+                dailyMotivationTime,
+                dailyMotivationEnabled: notifPrefs.push.dailyMotivation !== false
               } as any);
 
               if (success) {

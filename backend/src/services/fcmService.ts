@@ -60,6 +60,10 @@ export class FCMService {
           console.log(`[FCM] Suppressed ReportProcessed push for user ${userId} per notification preferences.`);
           return false;
         }
+        if (type === 'DailyMotivation' && (pushPrefs.dailyMotivation === false || user.dailyMotivationEnabled === false)) {
+          console.log(`[FCM] Suppressed DailyMotivation push for user ${userId} per notification preferences.`);
+          return false;
+        }
         if (
           ['OrderPlaced', 'OrderPaid', 'OrderProcessing', 'OrderShipped', 'OrderDelivered', 'OrderCancelled'].includes(type) &&
           pushPrefs.orderUpdates === false
