@@ -482,7 +482,24 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
         // --- 1. FIREBASE AUTHENTICATION FLOW (PRIMARY) ---
         let idToken: string | null = null;
 
-        if (Capacitor.getPlatform() === 'android' && window.verificationId) {
+        if (confirmationResult) {
+          // 1. Web Firebase Phone Auth (Used on iOS and Web via reCAPTCHA inside WebView)
+          try {
+            console.log('[Auth] Verifying Firebase OTP (confirmationResult)...');
+            const userCredential = await confirmationResult.confirm(code);
+            idToken = await userCredential.user.getIdToken();
+          } catch (fbErr: any) {
+            console.warn('[Auth] Firebase confirmation failed, checking backup verification:', fbErr);
+            const ok = await verifyOtp(e164, code, email);
+            if (ok) {
+              showToast(t('auth.authSuccessWelcome', 'Authenticated successfully! Welcome.'), 'success');
+              return;
+            }
+            setOtpError(t('auth.invalidOtp', 'Invalid or expired verification code. Please check your SMS or Email and try again.'));
+            return;
+          }
+        } else if (Capacitor.isNativePlatform() && window.verificationId) {
+          // 2. Native Firebase Plugin (Used on Android, or iOS if sent via native plugin)
           try {
             console.log(`[Auth] Verifying Native Firebase OTP (${Capacitor.getPlatform()}) with verificationId:`, window.verificationId);
             await FirebaseAuthentication.confirmVerificationCode({
@@ -494,21 +511,6 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
           } catch (fbErr: any) {
             console.warn('[Auth] Native Firebase confirmation failed, checking backup verification:', fbErr);
             // Check if code verifies with backend OTP before failing
-            const ok = await verifyOtp(e164, code, email);
-            if (ok) {
-              showToast(t('auth.authSuccessWelcome', 'Authenticated successfully! Welcome.'), 'success');
-              return;
-            }
-            setOtpError(t('auth.invalidOtp', 'Invalid or expired verification code. Please check your SMS or Email and try again.'));
-            return;
-          }
-        } else if (confirmationResult) {
-          try {
-            console.log('[Auth] Verifying Firebase OTP...');
-            const userCredential = await confirmationResult.confirm(code);
-            idToken = await userCredential.user.getIdToken();
-          } catch (fbErr: any) {
-            console.warn('[Auth] Firebase confirmation failed, checking backup verification:', fbErr);
             const ok = await verifyOtp(e164, code, email);
             if (ok) {
               showToast(t('auth.authSuccessWelcome', 'Authenticated successfully! Welcome.'), 'success');
