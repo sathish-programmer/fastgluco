@@ -347,6 +347,9 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
     }
 
     codeSentRef.current = false;
+    window.verificationId = null;
+    window.confirmationResult = null;
+    setConfirmationResult(null);
     otpProviderRef.current = null;
     setOtpProvider(null);
     setIsAutoVerifying(false);
@@ -479,7 +482,7 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
         // --- 1. FIREBASE AUTHENTICATION FLOW (PRIMARY) ---
         let idToken: string | null = null;
 
-        if (Capacitor.isNativePlatform() && window.verificationId) {
+        if (Capacitor.getPlatform() === 'android' && window.verificationId) {
           try {
             console.log(`[Auth] Verifying Native Firebase OTP (${Capacitor.getPlatform()}) with verificationId:`, window.verificationId);
             await FirebaseAuthentication.confirmVerificationCode({
