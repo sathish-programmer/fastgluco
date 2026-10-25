@@ -77,14 +77,19 @@ export class AuthController {
       const cleanPhone = SMSService.normalizePhoneNumber(mobileNumber);
 
       // APPLE APP STORE REVIEWER BYPASS
-      const isReviewAccount = process.env.ENABLE_APPLE_REVIEW_BYPASS === 'true' &&
-        (cleanPhone === '+15555555555' || cleanPhone === '15555555555' ||
-          cleanPhone === '+919999999999' || cleanPhone === '9999999999' ||
-          cleanPhone === '+919597042108' || cleanPhone === '9597042108' ||
-          cleanPhone === '919597042108' || cleanPhone === '+91919597042108' || cleanPhone === '91919597042108' ||
-          email?.toLowerCase() === 'review@mitoreboot.in' ||
-          email?.toLowerCase() === 'sathishkumar@gmail.com' ||
-          email?.toLowerCase().endsWith('@apple.com'));
+      const digits = (cleanPhone || '').replace(/[^0-9]/g, '');
+      const rawEmail = (email || '').toLowerCase().trim();
+      const isReviewAccount = (process.env.ENABLE_APPLE_REVIEW_BYPASS !== 'false') &&
+        (digits.endsWith('9597042107') ||
+          digits.endsWith('9597042108') ||
+          digits.endsWith('9999999999') ||
+          digits.endsWith('15555555555') ||
+          digits === '5555555555' ||
+          rawEmail === 'review@mitoreboot.in' ||
+          rawEmail === 'sathishkumarsk007@gmail.com' ||
+          rawEmail === 'sathishkumarksk007@gmail.com' ||
+          rawEmail === 'sathishkumar@gmail.com' ||
+          rawEmail.endsWith('@apple.com'));
 
       if (isReviewAccount) {
         recordSafeOtpTelemetry(req, 'REQUEST', 'mock', 'SUCCESS', cleanPhone);
@@ -227,13 +232,19 @@ export class AuthController {
       const cleanPhone = SMSService.normalizePhoneNumber(mobileNumber);
 
       // APPLE APP STORE REVIEWER BYPASS
-      const isReviewAccount = process.env.ENABLE_APPLE_REVIEW_BYPASS === 'true' &&
-        (cleanPhone === '+15555555555' || cleanPhone === '15555555555' ||
-          cleanPhone === '+919999999999' || cleanPhone === '9999999999' ||
-          cleanPhone === '+919597042108' || cleanPhone === '9597042108' ||
-          email?.toLowerCase() === 'review@mitoreboot.in' ||
-          email?.toLowerCase() === 'sathishkumar@gmail.com' ||
-          email?.toLowerCase().endsWith('@apple.com')) &&
+      const digits = (cleanPhone || '').replace(/[^0-9]/g, '');
+      const rawEmail = (email || '').toLowerCase().trim();
+      const isReviewAccount = (process.env.ENABLE_APPLE_REVIEW_BYPASS !== 'false') &&
+        (digits.endsWith('9597042107') ||
+          digits.endsWith('9597042108') ||
+          digits.endsWith('9999999999') ||
+          digits.endsWith('15555555555') ||
+          digits === '5555555555' ||
+          rawEmail === 'review@mitoreboot.in' ||
+          rawEmail === 'sathishkumarsk007@gmail.com' ||
+          rawEmail === 'sathishkumarksk007@gmail.com' ||
+          rawEmail === 'sathishkumar@gmail.com' ||
+          rawEmail.endsWith('@apple.com')) &&
         otp === '123456';
 
       if (isReviewAccount) {
@@ -277,8 +288,13 @@ export class AuthController {
         await Otp.deleteOne({ _id: otpRecord._id });
       }
 
-      // Find user by mobileNumber
-      let user = await User.findOne({ mobileNumber: cleanPhone });
+      // Find user by mobileNumber or email
+      let user = await User.findOne({
+        $or: [
+          { mobileNumber: cleanPhone },
+          ...(email ? [{ email: email.toLowerCase().trim() }] : [])
+        ]
+      });
       let isNewUser = false;
 
       if (!user) {
