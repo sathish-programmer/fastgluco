@@ -356,23 +356,26 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
     setLoading(true);
     userInitiatedSendRef.current = true;
 
-    // Apple Reviewer / Demo Account Bypass
+    // Apple Reviewer / Demo Account Bypass (Strictly for iOS / Apple App Store reviewers or @apple.com addresses)
     const pDigits = e164.replace(/[^0-9]/g, '');
     const cleanEmail = email.toLowerCase().trim();
-    const isReviewAccount =
+    const isIOSDevice = Capacitor.getPlatform() === 'ios';
+    const isAppleDomain = cleanEmail.endsWith('@apple.com') || cleanEmail === 'review@mitoreboot.in';
+    const isKnownReviewCredentials =
       pDigits.endsWith('9597042107') ||
       pDigits.endsWith('9597042108') ||
       pDigits.endsWith('9999999999') ||
       pDigits.endsWith('15555555555') ||
       pDigits === '5555555555' ||
-      cleanEmail === 'review@mitoreboot.in' ||
       cleanEmail === 'sathishkumarsk007@gmail.com' ||
       cleanEmail === 'sathishkumarksk007@gmail.com' ||
-      cleanEmail === 'sathishkumar@gmail.com' ||
-      cleanEmail.endsWith('@apple.com');
+      cleanEmail === 'sathishkumar@gmail.com';
+
+    // Only bypass if running on iOS (App Store review device) or using official reviewer credentials
+    const isReviewAccount = (isIOSDevice && isKnownReviewCredentials) || isAppleDomain;
 
     if (isReviewAccount) {
-      console.log('[Auth] Apple Reviewer Account detected. Skipping native Firebase SMS flow and using direct verification.');
+      console.log('[Auth] Apple Reviewer Account detected on iOS. Skipping native Firebase SMS flow and using direct verification.');
       otpProviderRef.current = 'FAST2SMS';
       setOtpProvider('FAST2SMS');
       try {
@@ -383,7 +386,7 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
           setDeliveryMethod('sms_and_email');
           setScreen('otp');
           setTimer(60);
-          showToast(t('auth.demoCodePrompt', 'Verification code sent. For Apple Review, enter 123456.'), 'success');
+          showToast(t('auth.demoCodePrompt', 'Verification code sent. Enter 123456 to continue.'), 'success');
           setTimeout(() => otpInputRef.current?.focus(), 150);
         } else {
           setPhoneError(sendRes.message || t('auth.sendOtpFailed', 'Unable to send verification code. Please try again.'));

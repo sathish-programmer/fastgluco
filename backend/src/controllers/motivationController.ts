@@ -23,8 +23,14 @@ export class MotivationController {
       const now = new Date();
       const istTime = new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
 
+      // If user hasn't started daily motivation yet, initialize their start date to today (so both old and new users start on Day 1)
+      if (!user.dailyMotivationStartDate) {
+        user.dailyMotivationStartDate = now;
+        await user.save();
+      }
+
       const { dayNumber, text } = getDailyMotivationForUser(
-        user.createdAt,
+        user.dailyMotivationStartDate,
         user.dailyMotivationDayOffset || 0
       );
 

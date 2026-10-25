@@ -1,12 +1,14 @@
 <en-US>
-• Streamlined Dashboard: Removed redundant focus cards to bring your core Cellular Balance tracking directly into view.
-• Unobstructed AI Logging: Cleaner bottom navigation with the AI Robo assistant always within reach ("Too tired to log ? Let the robo do").
-• Doctor Review Accuracy: Resolved consultation statuses so completed medical opinions and doctor replies display promptly with verified badges.
-• Performance & Stability: Enhanced responsiveness and smoother app navigation across devices.
+• Authentication & Login Improvements: Enhanced verification code delivery, resilient login fallback, and optimized sign-in flow across iPad and iOS devices.
+• 365 Days of Daily Motivation: Kickstart your morning with curated daily motivation one-liners for healthy living, cellular balance, and habit consistency.
+• Smart Motivation Reminders: View your daily inspirational quote upon opening the app or receive timely morning push notifications at your preferred time.
+• Habit Audit Accuracy: Refined Kitchen Audit scoring to accurately assess safe cooking practices and healthy kitchen choices.
+• Performance & Stability: General reliability optimizations and smoother navigation across your wellness dashboard.
 </en-US>
 <en-IN>
-• Streamlined Dashboard: Removed redundant focus cards to bring your core Cellular Balance tracking directly into view.
-• Unobstructed AI Logging: Cleaner bottom navigation with the AI Robo assistant always within reach ("Too tired to log ? Let the robo do").
-• Doctor Review Accuracy: Resolved consultation statuses so completed medical opinions and doctor replies display promptly with verified badges.
-• Performance & Stability: Enhanced responsiveness and smoother app navigation across devices.
+• Authentication & Login Improvements: Enhanced verification code delivery, resilient login fallback, and optimized sign-in flow across iPad and iOS devices.
+• 365 Days of Daily Motivation: Kickstart your morning with curated daily motivation one-liners for healthy living, cellular balance, and habit consistency.
+• Smart Motivation Reminders: View your daily inspirational quote upon opening the app or receive timely morning push notifications at your preferred time.
+• Habit Audit Accuracy: Refined Kitchen Audit scoring to accurately assess safe cooking practices and healthy kitchen choices.
+• Performance & Stability: General reliability optimizations and smoother navigation across your wellness dashboard.
 </en-IN>

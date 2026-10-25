@@ -371,29 +371,26 @@ export const DAILY_MOTIVATION_MESSAGES: string[] = [
  * Returns the 1-based day index (1 to 365) and text for a given user.
  * Calculates progression starting from user registration date (or day-of-year as fallback).
  */
-export function getDailyMotivationForUser(createdAt?: Date | string | null, offsetDays: number = 0): { dayNumber: number; text: string } {
+export function getDailyMotivationForUser(startDate?: Date | string | null, offsetDays: number = 0): { dayNumber: number; text: string } {
   const now = new Date();
   // Compute in Indian Standard Time (UTC + 5.5 hours)
   const istNow = new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
 
   let dayNumber = 1;
 
-  if (createdAt) {
-    const createdDate = new Date(createdAt);
-    const istCreated = new Date(createdDate.getTime() + 5.5 * 60 * 60 * 1000);
-    
-    // Normalize both to midnight IST
-    const midnightCreated = Date.UTC(istCreated.getUTCFullYear(), istCreated.getUTCMonth(), istCreated.getUTCDate());
-    const midnightNow = Date.UTC(istNow.getUTCFullYear(), istNow.getUTCMonth(), istNow.getUTCDate());
-    
-    const diffDays = Math.max(0, Math.floor((midnightNow - midnightCreated) / (24 * 60 * 60 * 1000)));
-    dayNumber = ((diffDays + offsetDays) % 365) + 1;
+  if (startDate) {
+    const sDate = new Date(startDate);
+    if (!isNaN(sDate.getTime())) {
+      const istStart = new Date(sDate.getTime() + 5.5 * 60 * 60 * 1000);
+      // Normalize both to midnight IST
+      const midnightStart = Date.UTC(istStart.getUTCFullYear(), istStart.getUTCMonth(), istStart.getUTCDate());
+      const midnightNow = Date.UTC(istNow.getUTCFullYear(), istNow.getUTCMonth(), istNow.getUTCDate());
+      const diffDays = Math.max(0, Math.floor((midnightNow - midnightStart) / (24 * 60 * 60 * 1000)));
+      dayNumber = ((diffDays + offsetDays) % 365) + 1;
+    }
   } else {
-    // Fallback: day of year (1-365)
-    const startOfYear = Date.UTC(istNow.getUTCFullYear(), 0, 1);
-    const midnightNow = Date.UTC(istNow.getUTCFullYear(), istNow.getUTCMonth(), istNow.getUTCDate());
-    const diffDays = Math.max(0, Math.floor((midnightNow - startOfYear) / (24 * 60 * 60 * 1000)));
-    dayNumber = ((diffDays + offsetDays) % 365) + 1;
+    // When no start date is recorded yet, begin from Day 1 (never jump to day-of-year)
+    dayNumber = ((offsetDays) % 365) + 1;
   }
 
   const text = DAILY_MOTIVATION_MESSAGES[dayNumber - 1] || DAILY_MOTIVATION_MESSAGES[0];

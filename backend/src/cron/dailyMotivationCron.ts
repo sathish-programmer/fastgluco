@@ -27,7 +27,7 @@ export class DailyMotivationCron {
         dailyMotivationEnabled: { $ne: false }
       }).select(
         '_id name createdAt notificationPreferences dailyMotivationTime dailyMotivationEnabled ' +
-        'lastDailyMotivationSentAt lastDailyMotivationViewedAt dailyMotivationDayOffset'
+        'lastDailyMotivationSentAt lastDailyMotivationViewedAt dailyMotivationDayOffset dailyMotivationStartDate'
       );
 
       for (const user of users) {
@@ -77,8 +77,12 @@ export class DailyMotivationCron {
           }
 
           // 3. Calculate user's 365-day sequential message
+          if (!user.dailyMotivationStartDate) {
+            user.dailyMotivationStartDate = now;
+            await user.save();
+          }
           const { dayNumber, text } = getDailyMotivationForUser(
-            user.createdAt,
+            user.dailyMotivationStartDate,
             user.dailyMotivationDayOffset || 0
           );
 

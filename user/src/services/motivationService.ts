@@ -39,8 +39,16 @@ export class MotivationService {
       }
     }
 
-    // Local calculation fallback
-    const { dayNumber, text } = getDailyMotivationForUser(userCreatedAt);
+    // Local calculation fallback: Ensure Day 1 starts on feature adoption / registration
+    let userStartDate = userCreatedAt;
+    if (!userStartDate) {
+      userStartDate = localStorage.getItem('mito_daily_motivation_start_date');
+      if (!userStartDate) {
+        userStartDate = new Date().toISOString();
+        localStorage.setItem('mito_daily_motivation_start_date', userStartDate);
+      }
+    }
+    const { dayNumber, text } = getDailyMotivationForUser(userStartDate);
     const todayStr = new Date().toDateString();
     const lastViewed = localStorage.getItem('mito_last_daily_motivation_viewed_date');
     const hasViewedToday = lastViewed === todayStr;

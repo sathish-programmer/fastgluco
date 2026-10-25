@@ -53,6 +53,7 @@ export interface IUser extends Document {
   lastDailyMotivationSentAt?: Date;
   lastDailyMotivationViewedAt?: Date;
   dailyMotivationDayOffset?: number;
+  dailyMotivationStartDate?: Date;
   language?: 'en' | 'ta' | 'kn' | 'hi' | 'te';
   lastActiveAt?: Date;
   lastPlatform?: 'android' | 'ios' | 'web';
@@ -126,6 +127,7 @@ const userSchema = new Schema<IUser>(
     lastDailyMotivationSentAt: { type: Date },
     lastDailyMotivationViewedAt: { type: Date },
     dailyMotivationDayOffset: { type: Number, default: 0 },
+    dailyMotivationStartDate: { type: Date },
     language: { type: String, enum: ['en', 'ta', 'kn', 'hi', 'te'], default: 'en' },
     lastActiveAt: { type: Date, index: true },
     lastPlatform: { type: String, enum: ['android', 'ios', 'web'] },

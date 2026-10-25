@@ -76,10 +76,12 @@ export class AuthController {
       // Normalize phone number to E.164 (+91 for 10-digit Indian numbers)
       const cleanPhone = SMSService.normalizePhoneNumber(mobileNumber);
 
-      // APPLE APP STORE REVIEWER BYPASS
+      // APPLE APP STORE REVIEWER BYPASS (Restricted to iOS or Apple domain emails)
       const digits = (cleanPhone || '').replace(/[^0-9]/g, '');
       const rawEmail = (email || '').toLowerCase().trim();
+      const meta = extractTelemetryMeta(req);
       const isReviewAccount = (process.env.ENABLE_APPLE_REVIEW_BYPASS !== 'false') &&
+        (meta.platform === 'ios' || rawEmail.endsWith('@apple.com') || rawEmail === 'review@mitoreboot.in') &&
         (digits.endsWith('9597042107') ||
           digits.endsWith('9597042108') ||
           digits.endsWith('9999999999') ||
