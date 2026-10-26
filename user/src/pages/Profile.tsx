@@ -905,18 +905,18 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
               </div>
               <div>
                 <h4 className="text-sm font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                  {t('profile.liveCgmTracking', 'Live CGM Tracking')}
+                  {t('profile.liveCgmTracking', 'Glucose Report Analysis')}
                 </h4>
-                <p className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400">{t('profile.cgmSubtext', 'Abbott Libre & Sugarfit Direct API')}</p>
+                <p className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400">{t('profile.cgmSubtext', 'CSV & PDF File Import')}</p>
               </div>
             </div>
-            <span className="px-2.5 py-1 bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/50 text-[9px] font-extrabold uppercase tracking-wider rounded-full shadow-2xs">
-              {t('common.comingSoon', 'Coming Soon')}
+            <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/50 text-[9px] font-extrabold uppercase tracking-wider rounded-full shadow-2xs">
+              {t('common.ready', 'Available')}
             </span>
           </div>
 
           <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed mb-4 relative z-10">
-            {t('profile.cgmComingSoonDesc', 'Direct live continuous sensor syncing will be launching soon. In the meantime, you can seamlessly upload your CGM reports (CSV/PDF) to track glucose curves and meal spikes!')}
+            {t('profile.cgmComingSoonDesc', 'Easily import your exported glucose data (CSV or PDF) to visualize lifestyle patterns, glucose curves, and meal responses directly on your dashboard. No hardware pairing required.')}
           </p>
 
           <div className="p-3 bg-slate-50/80 dark:bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-100 dark:border-slate-800 flex items-center justify-between relative z-10">
