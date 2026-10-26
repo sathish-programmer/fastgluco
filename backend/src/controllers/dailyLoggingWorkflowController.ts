@@ -55,7 +55,7 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
   {
     stepId: 'environmental',
     title: 'Environmental Toxins & Air Quality',
-    questionPrompt: 'Did you encounter heavy traffic air pollution, smog, passive smoke, microplastics, or pesticides today?',
+    questionPrompt: 'Did you encounter heavy traffic air pollution, smog, smoke, fumes, or fog today?',
     inputType: 'YES_NO',
     options: ['No (Clean Environment)', 'Yes (Pollution / Smog / Toxins)'],
     order: 6,

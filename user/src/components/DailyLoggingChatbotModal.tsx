@@ -1748,10 +1748,11 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       } else if (stepId.startsWith('env_') || stepId === 'environmental' || stepId === 'environment') {
         habitType = 'Environmental';
         if (stepId === 'environmental' || stepId === 'environment') {
-          const isPolluted = lowerVal.includes('yes') || lowerVal.includes('pollution') || lowerVal.includes('smog') || lowerVal.includes('toxin');
+          const isPolluted = lowerVal.includes('yes') || lowerVal.includes('pollution') || lowerVal.includes('smog') || lowerVal.includes('toxin') || lowerVal.includes('smoke') || lowerVal.includes('fumes') || lowerVal.includes('fog');
           habitValue = {
             score: isPolluted ? -1 : 0,
             isExposure: isPolluted,
+            answers: { airQ1: isPolluted, airQ2: isPolluted, airQ3: isPolluted },
             option: valueStr
           };
         } else {
@@ -2056,10 +2057,15 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
     }
 
     // Movement / Walking
-    const walkMatch = text.match(/(\d+)\s*(mins?|minutes?)\s*(walk|run|workout|exercise|jog)/) || text.match(/walk(ed)?\s*(for\s*)?(\d+)?/);
-    if (walkMatch || text.includes('yoga') || text.includes('exercise') || text.includes('workout') || text.includes('gym')) {
-      const mins = walkMatch?.[1] || walkMatch?.[3] || '30';
-      detected.push({ stepId: 'movement', valueStr: `${mins}+ min Walk`, name: `Movement (${mins} mins)` });
+    const isNoMovement = text.includes('no movement') || text.includes('no exercise') || text.includes('no walk') || text.includes('didnt walk') || text.includes("didn't walk") || text.includes('rest day') || text.includes('bed rest') || text.includes('not today') || text.includes('no physical');
+    if (isNoMovement) {
+      detected.push({ stepId: 'movement', valueStr: 'No Movement Today', name: 'Movement (No Movement)' });
+    } else {
+      const walkMatch = text.match(/(\d+)\s*(mins?|minutes?)\s*(walk|run|workout|exercise|jog)/) || text.match(/walk(ed)?\s*(for\s*)?(\d+)?/);
+      if (walkMatch || text.includes('yoga') || text.includes('exercise') || text.includes('workout') || text.includes('gym')) {
+        const mins = walkMatch?.[1] || walkMatch?.[3] || '30';
+        detected.push({ stepId: 'movement', valueStr: `${mins}+ min Walk`, name: `Movement (${mins} mins)` });
+      }
     }
 
     // Fasting

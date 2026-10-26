@@ -51,7 +51,7 @@ const PREVENTION_STEPS = [
   },
   {
     stepId: 'environmental', title: 'Environmental Toxins & Air Quality',
-    questionPrompt: 'Did you encounter heavy traffic air pollution, smog, passive smoke, microplastics, or pesticides today?',
+    questionPrompt: 'Did you encounter heavy traffic air pollution, smog, smoke, fumes, or fog today?',
     inputType: 'YES_NO' as const,
     options: ['No (Clean Environment)', 'Yes (Pollution / Smog / Toxins)'],
     order: 6, isEnabled: true
