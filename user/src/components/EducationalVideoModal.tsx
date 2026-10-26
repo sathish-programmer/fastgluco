@@ -24,7 +24,7 @@ export const getYouTubeThumbnailUrl = (url?: string): string => {
   if (!url) return '';
   const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
   if (match && match[1]) {
-    return `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg`;
+    return `https://img.youtube.com/vi/${match[1]}/mqdefault.jpg`;
   }
   return '';
 };

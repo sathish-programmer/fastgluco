@@ -8,7 +8,7 @@ import { BookingSlotScreen } from '../Diagnostics/BookingSlotScreen';
 import { PaymentScreen } from '../Diagnostics/PaymentScreen';
 import { BookingTrackingScreen } from '../Diagnostics/BookingTrackingScreen';
 import { ReportViewerScreen } from '../Diagnostics/ReportViewerScreen';
-import { EducationalVideoModal } from '../../components/EducationalVideoModal';
+import { EducationalVideoModal, getYouTubeThumbnailUrl } from '../../components/EducationalVideoModal';
 
 export const HCG_HOSPITALS_URL = '';
 
@@ -603,15 +603,28 @@ const TestRowItem: React.FC<{
 
       {/* Animated Video Guide Card */}
       {((test.video && test.video.url) || (isBreastSelfExam && breastVideoConfig?.isActive && breastVideoConfig?.youtubeUrl)) && activeVideoUrl && (
-        <div className="mt-2.5 p-2.5 sm:p-3 rounded-2xl bg-linear-to-r from-rose-50/90 via-pink-50/60 to-rose-50/40 dark:from-rose-950/40 dark:via-pink-950/20 dark:to-slate-900 border border-rose-200/80 dark:border-rose-900/50 flex items-center justify-between gap-3 shadow-2xs">
+        <div className="mt-2.5 p-2.5 sm:p-3 rounded-2xl bg-gradient-to-r from-rose-50/90 via-pink-50/60 to-rose-50/40 dark:from-rose-950/40 dark:via-pink-950/20 dark:to-slate-900 border border-rose-200/80 dark:border-rose-900/50 flex items-center justify-between gap-3 shadow-2xs">
           <div className="flex items-center gap-2.5 min-w-0">
-            <button
-              type="button"
+            <div
               onClick={() => onOpenVideo?.(activeVideoUrl, activeVideoLabel)}
-              className="w-9 h-9 rounded-xl bg-linear-to-tr from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 active:scale-95 text-white flex items-center justify-center shrink-0 shadow-sm shadow-rose-500/20 cursor-pointer transition-all"
+              className="relative w-16 h-11 sm:w-20 sm:h-13 rounded-xl overflow-hidden bg-slate-900 border border-rose-200/60 dark:border-rose-900/40 shrink-0 shadow-sm cursor-pointer group"
             >
-              <Play className="w-3.5 h-3.5 fill-white ml-0.5" />
-            </button>
+              {getYouTubeThumbnailUrl(activeVideoUrl) ? (
+                <img
+                  src={getYouTubeThumbnailUrl(activeVideoUrl)}
+                  alt="Thumbnail"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLElement).style.display = 'none';
+                  }}
+                />
+              ) : null}
+              <div className="absolute inset-0 bg-black/25 group-hover:bg-black/15 flex items-center justify-center transition-colors">
+                <div className="w-6 h-6 rounded-full bg-rose-600/90 text-white flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                  <Play className="w-3 h-3 fill-white ml-0.5" />
+                </div>
+              </div>
+            </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="text-[9px] font-black uppercase tracking-wider text-rose-600 dark:text-rose-400 bg-rose-100/70 dark:bg-rose-900/50 px-1.5 py-0.5 rounded">
