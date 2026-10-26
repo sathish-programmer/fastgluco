@@ -1,0 +1,17 @@
+Mito_Reboot is a smart glucose and metabolic health tracking app designed to help users monitor, analyze, and improve their blood sugar patterns.
+
+Features:
+
+• Upload CGM reports and analyze glucose trends
+• Track meals and understand food impact on glucose
+• Detect glucose spikes and patterns
+• Monitor fasting and post-meal glucose levels
+• View daily, weekly, and monthly insights
+• Get better visibility into metabolic health
+• Food logging with nutritional insights
+• Easy-to-use dashboard for glucose monitoring
+
+Mito_Reboot helps users make informed decisions about food, lifestyle, and health using real glucose data.
+
+DISCLAIMER:
+Mito_Reboot is designed strictly for personal wellness, fitness, and lifestyle habit tracking purposes. This app does not provide medical diagnoses, treatment plans, clinical advice, or prescribe medications. The insights, scores, and food/fasting analytics provided are for educational and informational purposes only. Always seek the advice of a qualified physician or healthcare provider with any questions you may have regarding a medical condition and before making any medical decisions or lifestyle changes.

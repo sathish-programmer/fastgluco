@@ -1,14 +1,14 @@
 <en-US>
-• Kitchen Audit Enhancements: Added high-temperature cooking and smoked fish checks to both manual and AI check-in workflows with real-time scoring.
-• 365 Days of Daily Motivation: Curated daily motivation one-liners for healthy living, cellular balance, and habit consistency.
-• Smart Motivation Reminders: View your daily inspirational quote upon opening the app or receive timely morning push notifications.
-• Habit & Dashboard Sync: Immediate cellular score updates and comprehensive habit tracking across prevention and wellness dashboards.
-• Stability & Performance: General bug fixes, smoother habit logging, and responsiveness optimizations.
+• 365 Days of Daily Motivation: Kickstart your morning with curated daily motivation one-liners for healthy living, cellular balance, and habit consistency.
+• Smart Motivation Reminders: View your daily inspirational quote upon opening the app or receive timely morning push notifications at your preferred time.
+• Habit Audit Accuracy: Refined Kitchen Audit scoring to accurately assess safe cooking practices and healthy kitchen choices.
+• Authentication & Device Reliability: Enhanced verification code delivery and smoother login experience across iPhone and iPad devices.
+• Performance Improvements: General stability optimizations and faster navigation across your wellness dashboard.
 </en-US>
 <en-IN>
-• Kitchen Audit Enhancements: Added high-temperature cooking and smoked fish checks to both manual and AI check-in workflows with real-time scoring.
-• 365 Days of Daily Motivation: Curated daily motivation one-liners for healthy living, cellular balance, and habit consistency.
-• Smart Motivation Reminders: View your daily inspirational quote upon opening the app or receive timely morning push notifications.
-• Habit & Dashboard Sync: Immediate cellular score updates and comprehensive habit tracking across prevention and wellness dashboards.
-• Stability & Performance: General bug fixes, smoother habit logging, and responsiveness optimizations.
+• 365 Days of Daily Motivation: Kickstart your morning with curated daily motivation one-liners for healthy living, cellular balance, and habit consistency.
+• Smart Motivation Reminders: View your daily inspirational quote upon opening the app or receive timely morning push notifications at your preferred time.
+• Habit Audit Accuracy: Refined Kitchen Audit scoring to accurately assess safe cooking practices and healthy kitchen choices.
+• Authentication & Device Reliability: Enhanced verification code delivery and smoother login experience across iPhone and iPad devices.
+• Performance Improvements: General stability optimizations and faster navigation across your wellness dashboard.
 </en-IN>
