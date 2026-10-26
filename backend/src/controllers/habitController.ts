@@ -12,6 +12,29 @@ export const logHabit = async (req: Request, res: Response) => {
 
     const logDate = timestamp ? new Date(timestamp) : new Date();
 
+    // Prevent duplicate entries for the exact same calendar day and habit type
+    const startOfDay = new Date(logDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(logDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const existingLog = await HabitLog.findOne({
+      userId,
+      type: { $regex: new RegExp(`^${type}$`, 'i') },
+      $or: [
+        { timestamp: { $gte: startOfDay, $lte: endOfDay } },
+        { createdAt: { $gte: startOfDay, $lte: endOfDay } }
+      ]
+    });
+
+    if (existingLog) {
+      existingLog.value = value;
+      existingLog.source = source || existingLog.source;
+      existingLog.timestamp = logDate;
+      await existingLog.save();
+      return res.status(200).json(existingLog);
+    }
+
     const newLog = new HabitLog({
       userId,
       type,
@@ -101,7 +124,16 @@ export const getRecentHabits = async (req: Request, res: Response) => {
 
     const logs = await HabitLog.find({ $and: andConditions }).sort({ timestamp: -1, createdAt: -1 });
 
-    res.json(logs);
+    // Deduplicate by day string (keep latest log per day for clean history)
+    const seenDays = new Set<string>();
+    const deduplicatedLogs = logs.filter(log => {
+      const dateKey = `${(log.type || '').toUpperCase()}_${new Date(log.timestamp || (log as any).createdAt).toDateString()}`;
+      if (seenDays.has(dateKey)) return false;
+      seenDays.add(dateKey);
+      return true;
+    });
+
+    res.json(deduplicatedLogs);
   } catch (error) {
     console.error('Error fetching habits:', error);
     res.status(500).json({ message: 'Error fetching habits' });

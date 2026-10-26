@@ -46,7 +46,12 @@ export const StillnessLogScreen: React.FC<StillnessLogScreenProps> = ({ onBack, 
     try {
       setLoadingHistory(true);
       const logs = await HabitsService.getRecentHabits(apiUrl, token, 'Stillness', days);
-      setHistory(logs);
+      // Strictly show actual completed stillness / meditation sessions
+      const practicedSessions = (logs || []).filter(h => {
+        const val = h.value || {};
+        return val.sat === true || val === 1 || val?.score > 0;
+      });
+      setHistory(practicedSessions);
     } catch (err) {
       console.error(err);
     } finally {

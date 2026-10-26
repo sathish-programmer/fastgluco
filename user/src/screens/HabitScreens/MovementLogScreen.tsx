@@ -45,7 +45,15 @@ export const MovementLogScreen: React.FC<MovementLogScreenProps> = ({ onBack, in
     try {
       setLoadingHistory(true);
       const logs = await HabitsService.getRecentHabits(apiUrl, token, 'Movement', days);
-      setHistory(logs);
+      // Strictly show actual completed movement / exercise sessions (filter out "No Movement Today" / 0 mins)
+      const exercisedSessions = (logs || []).filter(h => {
+        const val = h.value || {};
+        const mins = typeof val === 'number' ? val : (val.minutes ?? 0);
+        const optStr = (typeof val === 'object' ? (val.option || val.notes || val.activity || '') : '').toLowerCase();
+        const isRest = optStr.includes('no movement') || optStr.includes('rest day') || optStr.includes('not today') || val.done === false || val.isCompleted === false || mins === 0;
+        return !isRest && mins > 0;
+      });
+      setHistory(exercisedSessions);
     } catch (err) {
       console.error(err);
     } finally {

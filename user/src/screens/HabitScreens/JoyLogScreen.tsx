@@ -46,7 +46,12 @@ export const JoyLogScreen: React.FC<JoyLogScreenProps> = ({ onBack, initialFilte
     try {
       setLoadingHistory(true);
       const logs = await HabitsService.getRecentHabits(apiUrl, token, 'Joy', days);
-      setHistory(logs);
+      // Strictly show actual completed joy sessions
+      const completedSessions = (logs || []).filter(h => {
+        const val = h.value || {};
+        return val.done === true || val === 1 || val?.score > 0;
+      });
+      setHistory(completedSessions);
     } catch (err) {
       console.error(err);
     } finally {

@@ -208,7 +208,14 @@ export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack, initia
     try {
       setLoadingHistory(true);
       const logs = await HabitsService.getRecentHabits(apiUrl, token, 'Breath', days);
-      setHistory(logs);
+      // Strictly show actual practiced breath sessions (filter out "Not Today" check-ins)
+      const practicedSessions = (logs || []).filter(item => {
+        const v = (item.value || {}) as any;
+        const mins = v.minutes !== undefined ? v.minutes : (v.duration !== undefined ? v.duration : 0);
+        const isNotPracticed = v.done === false || v.isCompleted === false || mins === 0 || (typeof v.option === 'string' && v.option.toLowerCase().includes('not today'));
+        return !isNotPracticed && mins > 0;
+      });
+      setHistory(practicedSessions);
     } catch (err) {
       console.error('Failed to load breath history:', err);
     } finally {
@@ -781,7 +788,7 @@ export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack, initia
                 month: 'short', 
                 day: 'numeric' 
               });
-              const mins = (item.value as any)?.minutes || (item.value as any)?.duration || 5;
+              const mins = (item.value as any)?.minutes !== undefined ? (item.value as any).minutes : ((item.value as any)?.duration ?? 0);
               const tech = (item.value as any)?.technique || t('dashboard.breathPractice', 'Breath Practice');
 
               const logId = item.id || (item as any)._id || `${item.timestamp}-${mins}`;

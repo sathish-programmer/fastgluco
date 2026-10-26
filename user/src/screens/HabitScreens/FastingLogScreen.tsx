@@ -44,7 +44,12 @@ export const FastingLogScreen: React.FC<FastingLogScreenProps> = ({ onBack, init
     try {
       setLoadingHistory(true);
       const logs = await HabitsService.getRecentHabits(apiUrl, token, 'Fasting', days);
-      setHistory(logs);
+      // Strictly show actual completed intermittent fasts
+      const completedFasts = (logs || []).filter(h => {
+        const val = h.value || {};
+        return val.completed === true || val.hours >= 12 || val === 1 || val?.score > 0;
+      });
+      setHistory(completedFasts);
     } catch (err) {
       console.error(err);
     } finally {
