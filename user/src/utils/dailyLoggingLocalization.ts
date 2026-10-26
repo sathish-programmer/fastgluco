@@ -113,11 +113,11 @@ export const TITLES_MAP: Record<string, Record<SupportedLanguage, string>> = {
     te: 'యాంటీఆక్సిడెంట్ & పునరుద్ధరణ పోషణ'
   },
   env_air: {
-    en: 'Air Pollution & Passive Smoke',
-    ta: 'காற்று மாசுபாடு & புகை வெளிப்பாடு',
-    kn: 'ವಾಯು ಮಾಲಿನ್ಯ ಮತ್ತು ಧೂಮಪಾನದ ಹೊಗೆ',
-    hi: 'वायु प्रदूषण और निष्क्रिय धुआं',
-    te: 'వాయు కాలుష్యం & నిష్క్రియ పొగ'
+    en: 'Air Pollution, Smoke, Fumes & Fog',
+    ta: 'காற்று மாசுபாடு, புகை & நச்சு வாயுக்கள்',
+    kn: 'ವಾಯು ಮಾಲಿನ್ಯ, ಹೊಗೆ, ಧೂಮ & ಮಂಜು',
+    hi: 'वायु प्रदूषण, धुआं, वाष्प (Fumes) और कोहरा',
+    te: 'వాయు కాలుష్యం, పొగ, ఫ్యూమ్స్ & పొగమంచు'
   },
   env_water: {
     en: 'Water Carcinogens Check',
@@ -218,11 +218,11 @@ export const TITLES_MAP: Record<string, Record<SupportedLanguage, string>> = {
     te: 'వంటగది విషతుల్య తనిఖీ'
   },
   environmental: {
-    en: 'Environmental Toxins & Air Quality',
-    ta: 'சுற்றுச்சூழல் நச்சு & காற்றுத் தரம்',
-    kn: 'ಪರಿಸರ ಮಾಲಿನ್ಯ ಮತ್ತು ವಾಯು ಗುಣಮಟ್ಟ',
-    hi: 'पर्यावरण विषैले तत्व और वायु गुणवत्ता',
-    te: 'పర్యావరణ విషతుల్యాలు & గాలి నాణ్యత'
+    en: 'Air Pollution, Smoke, Fumes & Fog',
+    ta: 'காற்று மாசுபாடு, புகை & நச்சு வாயுக்கள்',
+    kn: 'ವಾಯು ಮಾಲಿನ್ಯ, ಹೊಗೆ, ಧೂಮ & ಮಂಜು',
+    hi: 'वायु प्रदूषण, धुआं, वाष्प (Fumes) और कोहरा',
+    te: 'వాయు కాలుష్యం, పొగ, ఫ్యూమ్స్ & పొగమంచు'
   },
   obesity: {
     en: 'Obesity & Weight Check',
@@ -380,11 +380,11 @@ export const QUESTIONS_MAP: Record<string, Record<SupportedLanguage, string>> = 
     te: 'ఈరోజు మీరు సెల్యులార్ రిపేర్ ఆహారాలను (బ్రోకలీ/క్యాబేజీ, బెర్రీలు, పసుపు, ఒమేగా-3) చేర్చుకున్నారా?'
   },
   env_air: {
-    en: 'Did you commute in heavy traffic (>30 min), encounter passive smoking, or experience indoor smoke/incense exposure today?',
-    ta: 'இன்று அதிக போக்குவரத்து புகை (>30 நிமிடம்), பிறர் புகைபிடித்தலின் புகை, அல்லது வீட்டினுள் தூப/சாம்பிராணி புகையை எதிர்கொண்டீர்களா?',
-    kn: 'ಇಂದು ನೀವು ಭಾರೀ ಸಂಚಾರದಲ್ಲಿ (>30 ನಿಮಿಷ), ಇತರರ ಧೂಮಪಾನದ ಹೊಗೆ ಅಥವಾ ಒಳಾಂಗಣ ಹೊಗೆ/ಧೂಪದ್ರವ್ಯಕ್ಕೆ ಒಳಗಾಗಿದ್ದೀರಾ?',
-    hi: 'क्या आज आपको भारी ट्रैफिक (>30 मिनट), दूसरों के धूम्रपान के धुएं या घर के अंदर धुएं/अगरबत्ती का सामना करना पड़ा?',
-    te: 'ఈరోజు మీరు భారీ ట్రాఫిక్‌లో ప్రయాణించారా (>30 నిమిషాలు), ఇతరుల పొగ లేదా ఇంట్లో ధూపం/అగర్‌బత్తీ పొగను ఎదుర్కొన్నారా?'
+    en: 'Did you encounter air pollution, smoke, fumes, or fog today?',
+    ta: 'இன்று காற்று மாசுபாடு, புகை, நச்சு வாயுக்கள் அல்லது மூடுபனியை எதிர்கொண்டீர்களா?',
+    kn: 'ಇಂದು ನೀವು ವಾಯು ಮಾಲಿನ್ಯ, ಹೊಗೆ, ಧೂಮ ಅಥವಾ ಮಂಜನ್ನು ಎದುರಿಸಿದ್ದೀರಾ?',
+    hi: 'क्या आज आपको वायु प्रदूषण, धुआं, वाष्प (fumes) या कोहरे का सामना करना पड़ा?',
+    te: 'ఈరోజు మీరు వాయు కాలుష్యం, పొగ, ఫ్యూమ్స్ లేదా పొగమంచును ఎదుర్కొన్నారా?'
   },
   env_water: {
     en: 'Do you use safe filtered drinking water (RO / carbon filtered, free of heavy metals, chlorine byproducts, and PFAS)?',
@@ -520,11 +520,11 @@ export const QUESTIONS_MAP: Record<string, Record<SupportedLanguage, string>> = 
     te: 'మీ వంటగదిలో విషరహిత పాత్రలు (ఇనుము, స్టీల్, మట్టి) మరియు ప్లాస్టిక్ రహిత నీటి కంటైనర్లను ఉపయోగిస్తున్నారా?'
   },
   environmental: {
-    en: 'Did you encounter heavy traffic air pollution, smog, smoke, fumes, or fog today?',
-    ta: 'இன்று அதிக போக்குவரத்து காற்று மாசுபாடு, புகைமூட்டம், புகை அல்லது நச்சு வாயுக்களை எதிர்கொண்டீர்களா?',
-    kn: 'ಇಂದು ನೀವು ಭಾರೀ ವಾಯು ಮಾಲಿನ್ಯ, ಹೊಗೆ, ಧೂಮ ಅಥವಾ ಮಂಜು-ಹೊಗೆಯ ಸಂಪರ್ಕಕ್ಕೆ ಬಂದಿದ್ದೀರಾ?',
-    hi: 'क्या आज आपको भारी ट्रैफिक वायु प्रदूषण, स्मॉग, धुआं, वाष्प (fumes) या कोहरे का सामना करना पड़ा?',
-    te: 'ఈరోజు మీరు భారీ ట్రాఫిక్ వాయు కాలుష్యం, పొగ, ఫ్యూమ్స్ లేదా పొగమంచు బారిన పడ్డారా?'
+    en: 'Did you encounter air pollution, smoke, fumes, or fog today?',
+    ta: 'இன்று காற்று மாசுபாடு, புகை, நச்சு வாயுக்கள் அல்லது மூடுபனியை எதிர்கொண்டீர்களா?',
+    kn: 'ಇಂದು ನೀವು ವಾಯು ಮಾಲಿನ್ಯ, ಹೊಗೆ, ಧೂಮ ಅಥವಾ ಮಂಜನ್ನು ಎದುರಿಸಿದ್ದೀರಾ?',
+    hi: 'क्या आज आपको वायु प्रदूषण, धुआं, वाष्प (fumes) या कोहरे का सामना करना पड़ा?',
+    te: 'ఈరోజు మీరు వాయు కాలుష్యం, పొగ, ఫ్యూమ్స్ లేదా పొగమంచును ఎదుర్కొన్నారా?'
   },
   obesity: {
     en: 'Do you face difficulty managing weight, high visceral fat, or elevated BMI today?',
@@ -873,7 +873,8 @@ export const OPTIONS_MAP: Record<string, Record<SupportedLanguage, string>> = {
 
   // Environment Air
   'no (clean air)': { en: 'No (Clean Air)', ta: 'இல்லை (சுத்தமான காற்று)', kn: 'ಇಲ್ಲ (ಸ್ವಚ್ಛ ಗಾಳಿ)', hi: 'नहीं (स्वच्छ हवा)', te: 'లేదు (స్వచ్ఛమైన గాలి)' },
-  'yes (smog / smoke / passive smoke)': { en: 'Yes (Smog / Smoke / Passive Smoke)', ta: 'ஆம் (புகை / காற்று மாசுபாடு)', kn: 'ಹೌದು (ಹೊಗೆ / ಮಾಲಿನ್ಯ)', hi: 'हाँ (धुआं / प्रदूषण)', te: 'అవును (పొగ / కాలుష్యం)' },
+  'yes (pollution / smoke / fumes / fog)': { en: 'Yes (Pollution / Smoke / Fumes / Fog)', ta: 'ஆம் (மாசுபாடு / புகை / நச்சு வாயுக்கள் / மூடுபனி)', kn: 'ಹೌದು (ಮಾಲಿನ್ಯ / ಹೊಗೆ / ಧೂಮ / ಮಂಜು)', hi: 'हाँ (प्रदूषण / धुआं / वाष्प / कोहरा)', te: 'అవును (కాలుష్యం / పొగ / ఫ్యూమ్స్ / పొగమంచు)' },
+  'yes (smog / smoke / passive smoke)': { en: 'Yes (Pollution / Smoke / Fumes / Fog)', ta: 'ஆம் (மாசுபாடு / புகை / நச்சு வாயுக்கள் / மூடுபனி)', kn: 'ಹೌದು (ಮಾಲಿನ್ಯ / ಹೊಗೆ / ಧೂಮ / ಮಂಜು)', hi: 'हाँ (प्रदूषण / धुआं / वाष्प / कोहरा)', te: 'అవును (కాలుష్యం / పొగ / ఫ్యూమ్స్ / పొగమంచు)' },
 
   // Environment Water
   'yes (safe filtered)': { en: 'Yes (Safe Filtered)', ta: 'ஆம் (வடிகட்டிய பாதுகாப்பான நீர்)', kn: 'ಹೌದು (ಸುರಕ್ಷಿತ ಫಿಲ್ಟರ್ ನೀರು)', hi: 'हाँ (सुरक्षित फिल्टर पानी)', te: 'అవును (సురక్షిత ఫిల్టర్ నీరు)' },

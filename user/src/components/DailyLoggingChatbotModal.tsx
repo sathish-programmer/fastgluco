@@ -1673,16 +1673,10 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
             if (envHabits.length === 0) return false;
 
             if (s === 'env_air') {
-              return envHabits.some(h => h.value?.stepId === 'env_air' || h.value?.answers?.airQ1 !== undefined || h.value?.answers?.airQ3 !== undefined || (h.value?.option && (h.value.option.toLowerCase().includes('air') || h.value.option.toLowerCase().includes('smog') || h.value.option.toLowerCase().includes('smoke') || h.value.option.toLowerCase().includes('clean'))));
+              return envHabits.some(h => h.value?.stepId === 'env_air' || h.value?.answers?.airQ1 !== undefined || h.value?.answers?.airQ3 !== undefined || (h.value?.option && (h.value.option.toLowerCase().includes('air') || h.value.option.toLowerCase().includes('pollution') || h.value.option.toLowerCase().includes('smog') || h.value.option.toLowerCase().includes('smoke') || h.value.option.toLowerCase().includes('fume') || h.value.option.toLowerCase().includes('fog') || h.value.option.toLowerCase().includes('clean'))));
             }
             if (s === 'env_water') {
               return envHabits.some(h => h.value?.stepId === 'env_water' || h.value?.answers?.waterQ1 !== undefined || (h.value?.option && (h.value.option.toLowerCase().includes('water') || h.value.option.toLowerCase().includes('tap') || h.value.option.toLowerCase().includes('filter'))));
-            }
-            if (s === 'env_pesticides') {
-              return envHabits.some(h => h.value?.stepId === 'env_pesticides' || h.value?.answers?.pesticidesQ1 !== undefined || (h.value?.option && (h.value.option.toLowerCase().includes('pesticide') || h.value.option.toLowerCase().includes('organic'))));
-            }
-            if (s === 'env_microplastics') {
-              return envHabits.some(h => h.value?.stepId === 'env_microplastics' || h.value?.answers?.microplasticsQ1 !== undefined || (h.value?.option && (h.value.option.toLowerCase().includes('plastic'))));
             }
             return true;
           }
@@ -2051,8 +2045,8 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
         habitValue = { consumed: isYes, option: valueStr };
       } else if (stepId.startsWith('env_') || stepId === 'environmental' || stepId === 'environment') {
         habitType = 'Environmental';
-        if (stepId === 'environmental' || stepId === 'environment') {
-          const isPolluted = lowerVal.includes('yes') || lowerVal.includes('pollution') || lowerVal.includes('smog') || lowerVal.includes('toxin') || lowerVal.includes('smoke') || lowerVal.includes('fumes') || lowerVal.includes('fog');
+        if (stepId === 'environmental' || stepId === 'environment' || stepId === 'env_air') {
+          const isPolluted = lowerVal.includes('yes') || lowerVal.includes('pollution') || lowerVal.includes('smog') || lowerVal.includes('toxin') || lowerVal.includes('smoke') || lowerVal.includes('fume') || lowerVal.includes('fumes') || lowerVal.includes('fog');
           habitValue = {
             score: isPolluted ? -1 : 0,
             isExposure: isPolluted,
@@ -2069,26 +2063,13 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
         const prevAnswers = existingEnv?.value?.answers || {};
         const updatedAnswers = { ...prevAnswers };
 
-        if (stepId === 'env_air') {
-          const isClean = lowerVal.includes('no') || lowerVal.includes('clean');
-          updatedAnswers.airQ1 = !isClean;
-          updatedAnswers.airQ2 = !isClean;
-          updatedAnswers.airQ3 = !isClean;
-        } else if (stepId === 'env_water') {
+        if (stepId === 'env_water') {
           updatedAnswers.waterQ1 = lowerVal.includes('yes') || lowerVal.includes('safe') || lowerVal.includes('filtered');
-        } else if (stepId === 'env_pesticides') {
-          const isClean = lowerVal.includes('no') || lowerVal.includes('clean') || lowerVal.includes('organic');
-          updatedAnswers.pesticidesQ1 = !isClean;
-        } else if (stepId === 'env_microplastics') {
-          const isClean = lowerVal.includes('no') || lowerVal.includes('plastic-free') || lowerVal.includes('avoid');
-          updatedAnswers.microplasticsQ1 = !isClean;
         }
 
         let calcScore = 0;
         if (updatedAnswers.airQ1 === true || updatedAnswers.airQ2 === true || updatedAnswers.airQ3 === true) calcScore -= 1;
         if (updatedAnswers.waterQ1 === false) calcScore -= 1;
-        if (updatedAnswers.pesticidesQ1 === true) calcScore -= 1;
-        if (updatedAnswers.microplasticsQ1 === true) calcScore -= 1;
 
           habitValue = {
             score: calcScore,
@@ -2412,14 +2393,15 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
     }
 
     // Environment
-    if (text.includes('clean air') || text.includes('no traffic') || text.includes('no pollution')) {
-      detected.push({ stepId: 'env_air', valueStr: 'No (Clean Air)', name: 'Air Pollution (Clean)' });
+    if (text.includes('clean air') || text.includes('no pollution') || text.includes('no smoke') || text.includes('no fume') || text.includes('no fumes') || text.includes('no fog')) {
+      detected.push({ stepId: 'env_air', valueStr: 'No (Clean Air)', name: 'Air Pollution, Smoke, Fumes & Fog (Clean)' });
+      detected.push({ stepId: 'environmental', valueStr: 'No (Clean Air)', name: 'Air Pollution, Smoke, Fumes & Fog (Clean)' });
+    } else if (text.includes('pollution') || text.includes('smoke') || text.includes('fume') || text.includes('fumes') || text.includes('fog')) {
+      detected.push({ stepId: 'env_air', valueStr: 'Yes (Pollution / Smoke / Fumes / Fog)', name: 'Air Pollution, Smoke, Fumes & Fog' });
+      detected.push({ stepId: 'environmental', valueStr: 'Yes (Pollution / Smoke / Fumes / Fog)', name: 'Air Pollution, Smoke, Fumes & Fog' });
     }
     if (text.includes('filtered water') || text.includes('ro water') || text.includes('safe water') || text.includes('clean drinking water')) {
       detected.push({ stepId: 'env_water', valueStr: 'Yes (Safe Filtered)', name: 'Water Filter (Safe RO)' });
-    }
-    if (text.includes('no plastic') || text.includes('plastic free') || text.includes('avoided plastic')) {
-      detected.push({ stepId: 'env_microplastics', valueStr: 'No (Plastic-Free)', name: 'Microplastics (Clean)' });
     }
     if (text.includes('kitchen') || text.includes('utensils') || text.includes('water container') || text.includes('iron pan') || text.includes('brass pan')) {
       detected.push({ stepId: 'kitchen', valueStr: 'Yes (Plastic-Free Safe Kitchen)', name: 'Check Your Kitchen (Safe)' });

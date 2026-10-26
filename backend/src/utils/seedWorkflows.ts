@@ -71,10 +71,10 @@ const PREVENTION_STEPS = [
     order: 8, isEnabled: true
   },
   {
-    stepId: 'environmental', title: 'Environmental Toxins & Air Quality',
-    questionPrompt: 'Did you encounter heavy traffic air pollution, smog, smoke, fumes, or fog today?',
+    stepId: 'environmental', title: 'Air Pollution, Smoke, Fumes & Fog',
+    questionPrompt: 'Did you encounter air pollution, smoke, fumes, or fog today?',
     inputType: 'YES_NO' as const,
-    options: ['No (Clean Environment)', 'Yes (Pollution / Smog / Toxins)'],
+    options: ['No (Clean Air)', 'Yes (Pollution / Smoke / Fumes / Fog)'],
     order: 9, isEnabled: true
   },
   {
@@ -352,10 +352,10 @@ const SECONDARY_PREVENTION_STEPS = [
     order: 12, isEnabled: true
   },
   {
-    stepId: 'env_air', title: 'Air Pollution & Passive Smoke',
-    questionPrompt: 'Did you commute in heavy traffic (>30 min), encounter passive smoking (second-hand smoke), or experience indoor smoke/incense/mosquito coil exposure today?',
+    stepId: 'env_air', title: 'Air Pollution, Smoke, Fumes & Fog',
+    questionPrompt: 'Did you encounter air pollution, smoke, fumes, or fog today?',
     inputType: 'YES_NO' as const,
-    options: ['No (Clean Air)', 'Yes (Smog / Smoke / Passive Smoke)'],
+    options: ['No (Clean Air)', 'Yes (Pollution / Smoke / Fumes / Fog)'],
     order: 13, isEnabled: true
   },
   {
@@ -366,53 +366,39 @@ const SECONDARY_PREVENTION_STEPS = [
     order: 14, isEnabled: true
   },
   {
-    stepId: 'env_pesticides', title: 'Pesticides Exposure',
-    questionPrompt: 'Did you consume unwashed non-organic high-pesticide produce (Dirty Dozen) or use chemical bug sprays today?',
-    inputType: 'YES_NO' as const,
-    options: ['No (Clean / Organic)', 'Yes (Pesticide Exposure)'],
-    order: 15, isEnabled: true
-  },
-  {
-    stepId: 'env_microplastics', title: 'Microplastics Exposure',
-    questionPrompt: 'Did you drink from heated plastic bottles, microwave food in plastic containers, or drink hot beverages from paper/plastic cups today?',
-    inputType: 'YES_NO' as const,
-    options: ['No (Plastic-Free)', 'Yes (Plastic / Hot Cup Exposure)'],
-    order: 16, isEnabled: true
-  },
-  {
     stepId: 'kitchen', title: 'Safe Kitchen Audit',
     questionPrompt: 'Is your kitchen free of heated plastic containers, synthetic non-stick pans, and plastic drinking water cans?',
     inputType: 'YES_NO' as const,
     options: ['Yes (Safe / Non-Plastic)', 'No (Plastic / Non-Stick Risk)'],
-    order: 17, isEnabled: true
+    order: 15, isEnabled: true
   },
   {
     stepId: 'dental', title: 'Dental Health Check',
     questionPrompt: 'Do you have any sharp tooth, bleeding gums, non-healing oral ulcers, or oral discomfort?',
     inputType: 'YES_NO' as const,
     options: ['No Issues (Healthy)', 'Yes (Dental Discomfort / Sharp Tooth)'],
-    order: 18, isEnabled: true
+    order: 16, isEnabled: true
   },
   {
     stepId: 'genetics', title: 'Family History & Genetic Risk',
     questionPrompt: 'Do you have a family history of cancer or chronic health risks in immediate family members?',
     inputType: 'YES_NO' as const,
     options: ['No Family History', 'Yes (Family History Present)'],
-    order: 19, isEnabled: true
+    order: 17, isEnabled: true
   },
   {
     stepId: 'screening', title: 'Screening & Follow-up Compliance',
     questionPrompt: 'Did you have any follow-up appointment, imaging, or blood work today? Are your next screenings scheduled?',
     inputType: 'OPTIONS' as const,
     options: ['Appointment Today (Done)', 'Upcoming Scheduled', 'Need to Schedule', 'No Follow-up Required'],
-    order: 20, isEnabled: true
+    order: 18, isEnabled: true
   },
   {
     stepId: 'report_upload', title: 'Follow-up Report Upload',
     questionPrompt: 'Do you have new follow-up labs, imaging reports (PET/CT/MRI), or tumor markers to upload? I will process and update your dashboard.',
     inputType: 'FILE' as const,
     options: ['Skip for Now'],
-    order: 21, isEnabled: true
+    order: 19, isEnabled: true
   }
 ];
 

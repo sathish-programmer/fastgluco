@@ -81,10 +81,10 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
   },
   {
     stepId: 'environmental',
-    title: 'Environmental Toxins & Air Quality',
-    questionPrompt: 'Did you encounter heavy traffic air pollution, smog, smoke, fumes, or fog today?',
+    title: 'Air Pollution, Smoke, Fumes & Fog',
+    questionPrompt: 'Did you encounter air pollution, smoke, fumes, or fog today?',
     inputType: 'YES_NO',
-    options: ['No (Clean Environment)', 'Yes (Pollution / Smog / Toxins)'],
+    options: ['No (Clean Air)', 'Yes (Pollution / Smoke / Fumes / Fog)'],
     order: 9,
     isEnabled: true
   },
@@ -446,10 +446,10 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
   },
   {
     stepId: 'env_air',
-    title: 'Air Pollution & Passive Smoke',
-    questionPrompt: 'Did you commute in heavy traffic (>30 min), encounter passive smoking (second-hand smoke), or experience indoor smoke/incense/mosquito coil exposure today?',
+    title: 'Air Pollution, Smoke, Fumes & Fog',
+    questionPrompt: 'Did you encounter air pollution, smoke, fumes, or fog today?',
     inputType: 'YES_NO',
-    options: ['No (Clean Air)', 'Yes (Smog / Smoke / Passive Smoke)'],
+    options: ['No (Clean Air)', 'Yes (Pollution / Smoke / Fumes / Fog)'],
     order: 13,
     isEnabled: true
   },
@@ -463,30 +463,12 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     isEnabled: true
   },
   {
-    stepId: 'env_pesticides',
-    title: 'Pesticides Exposure',
-    questionPrompt: 'Did you consume unwashed non-organic high-pesticide produce (Dirty Dozen) or use chemical bug sprays today?',
-    inputType: 'YES_NO',
-    options: ['No (Clean / Organic)', 'Yes (Pesticide Exposure)'],
-    order: 15,
-    isEnabled: true
-  },
-  {
-    stepId: 'env_microplastics',
-    title: 'Microplastics Exposure',
-    questionPrompt: 'Did you drink from heated plastic bottles, microwave food in plastic containers, or drink hot beverages from paper/plastic cups today?',
-    inputType: 'YES_NO',
-    options: ['No (Plastic-Free)', 'Yes (Plastic / Hot Cup Exposure)'],
-    order: 16,
-    isEnabled: true
-  },
-  {
     stepId: 'kitchen',
     title: 'Safe Kitchen Audit',
     questionPrompt: 'Is your kitchen free of heated plastic containers, synthetic non-stick pans, and plastic drinking water cans?',
     inputType: 'YES_NO',
     options: ['Yes (Safe / Non-Plastic)', 'No (Plastic / Non-Stick Risk)'],
-    order: 17,
+    order: 15,
     isEnabled: true
   },
   {
@@ -495,7 +477,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Do you have any sharp tooth, bleeding gums, non-healing oral ulcers, or oral discomfort?',
     inputType: 'YES_NO',
     options: ['No Issues (Healthy)', 'Yes (Dental Discomfort / Sharp Tooth)'],
-    order: 18,
+    order: 16,
     isEnabled: true
   },
   {
@@ -504,7 +486,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Do you have a family history of cancer or chronic health risks in immediate family members?',
     inputType: 'YES_NO',
     options: ['No Family History', 'Yes (Family History Present)'],
-    order: 19,
+    order: 17,
     isEnabled: true
   },
   {
@@ -513,7 +495,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you have any follow-up appointment, imaging, or blood work today? Are your next screenings scheduled?',
     inputType: 'OPTIONS',
     options: ['Appointment Today (Done)', 'Upcoming Scheduled', 'Need to Schedule', 'No Follow-up Required'],
-    order: 20,
+    order: 18,
     isEnabled: true
   },
   {
@@ -522,7 +504,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Do you have new follow-up labs, imaging reports (PET/CT/MRI), or tumor markers to upload? I will process and update your dashboard.',
     inputType: 'FILE',
     options: ['Skip for Now'],
-    order: 21,
+    order: 19,
     isEnabled: true
   }
 ];
@@ -574,6 +556,10 @@ export const getActiveWorkflow = async (req: Request, res: Response) => {
     } else {
       const defaultStepMap = new Map(defaultSteps.map(s => [s.stepId, s]));
       let hasChanges = false;
+      if (workflow.steps.some(s => s.stepId === 'env_pesticides' || s.stepId === 'env_microplastics')) {
+        workflow.steps = workflow.steps.filter(s => s.stepId !== 'env_pesticides' && s.stepId !== 'env_microplastics');
+        hasChanges = true;
+      }
 
       if (workflow.steps.length !== defaultSteps.length) {
         // Sync workflow steps if DB has stale step count
