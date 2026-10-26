@@ -1867,7 +1867,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
             if (v?.snoring !== undefined) {
               valStr = v.snoring ? 'Yes (Snoring / Airway Gasps)' : 'No (Quiet Peaceful Sleep)';
             }
-          if (s === 'kitchen' || s === 'env_kitchen') {
+          } else if (s === 'kitchen' || s === 'env_kitchen') {
             const ans = habit?.value?.answers || (typeof habit?.value === 'object' ? habit?.value : {});
             if (ans && (ans.kitchenQ1 !== undefined || ans.kitchenQ2 !== undefined || ans.kitchenQ3 !== undefined)) {
               const isSafe = ans.kitchenQ1 === false && ans.kitchenQ2 === false && ans.kitchenQ3 === false;
