@@ -17,12 +17,39 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
     isEnabled: true
   },
   {
+    stepId: 'stress_breath_rate',
+    title: 'Resting Breath Rate & Stress Check',
+    questionPrompt: 'What is your resting breath rate right now (inhalations per minute)? More than 12 breaths per minute indicates elevated sympathetic stress.',
+    inputType: 'OPTIONS',
+    options: ['Calm (≤12 / min)', 'Elevated (>12 / min)'],
+    order: 2,
+    isEnabled: true
+  },
+  {
     stepId: 'sleep',
     title: 'Sleep Duration & Debt',
     questionPrompt: 'How many hours of quality sleep did you get last night? (Enter number, e.g., 7.5)',
     inputType: 'NUMBER',
     options: [],
-    order: 2,
+    order: 3,
+    isEnabled: true
+  },
+  {
+    stepId: 'sleep_latency',
+    title: 'Sleep Latency Check',
+    questionPrompt: 'Did you have difficulty beginning to fall asleep (taking 30+ minutes) last night?',
+    inputType: 'YES_NO',
+    options: ['No (Fall Asleep Easily)', 'Yes (Takes 30+ mins)'],
+    order: 4,
+    isEnabled: true
+  },
+  {
+    stepId: 'snoring',
+    title: 'Sleep Snoring & Airway Check',
+    questionPrompt: 'Do you snore loudly during sleep, gasp for breath, or wake up unrefreshed?',
+    inputType: 'YES_NO',
+    options: ['No (Quiet Peaceful Sleep)', 'Yes (Snoring / Airway Gasps)'],
+    order: 5,
     isEnabled: true
   },
   {
@@ -31,7 +58,7 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you smoke cigarettes/bidis or chew tobacco (gutkha, khaini, paan with tobacco) today?',
     inputType: 'YES_NO',
     options: ['No (Clean Day)', 'Yes (Smoked / Chewed Tobacco)'],
-    order: 3,
+    order: 6,
     isEnabled: true
   },
   {
@@ -40,7 +67,7 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you consume any alcoholic beverages today?',
     inputType: 'OPTIONS',
     options: ['No Alcohol (Clean Day)', '1-2 Drinks', '3+ Drinks (Heavy)'],
-    order: 4,
+    order: 7,
     isEnabled: true
   },
   {
@@ -49,7 +76,7 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Were you exposed to harmful industrial chemicals, asbestos, or hazardous substances today?',
     inputType: 'YES_NO',
     options: ['No (Clean Day)', 'Yes (Chemical Exposure)'],
-    order: 5,
+    order: 8,
     isEnabled: true
   },
   {
@@ -58,7 +85,7 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you encounter heavy traffic air pollution, smog, smoke, fumes, or fog today?',
     inputType: 'YES_NO',
     options: ['No (Clean Environment)', 'Yes (Pollution / Smog / Toxins)'],
-    order: 6,
+    order: 9,
     isEnabled: true
   },
   {
@@ -67,7 +94,7 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Is your kitchen free of heated plastic containers, synthetic non-stick pans, and plastic drinking water cans?',
     inputType: 'YES_NO',
     options: ['Yes (Safe / Non-Plastic)', 'No (Plastic / Non-Stick Risk)'],
-    order: 7,
+    order: 10,
     isEnabled: true
   },
   {
@@ -76,7 +103,7 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Do you face difficulty managing weight, high visceral fat, or BMI above healthy range?',
     inputType: 'YES_NO',
     options: ['No (Healthy Weight)', 'Yes (Weight Difficulty / Elevated BMI)'],
-    order: 8,
+    order: 11,
     isEnabled: true
   },
   {
@@ -85,7 +112,7 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Do you have any persistent sharp tooth, bleeding gums, non-healing oral ulcers, or oral discomfort?',
     inputType: 'YES_NO',
     options: ['No Issues (Healthy)', 'Yes (Dental Discomfort / Sharp Tooth)'],
-    order: 9,
+    order: 12,
     isEnabled: true
   },
   {
@@ -94,7 +121,7 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you experience acidity, heartburn, acid reflux, or gastritis discomfort today?',
     inputType: 'YES_NO',
     options: ['No Issues (Healthy)', 'Yes (Gastritis / Acidity Discomfort)'],
-    order: 10,
+    order: 13,
     isEnabled: true
   },
   {
@@ -103,7 +130,7 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Do you have a family history of cancer or chronic health risks in immediate family members?',
     inputType: 'YES_NO',
     options: ['No Family History', 'Yes (Family History Present)'],
-    order: 11,
+    order: 14,
     isEnabled: true
   },
 
@@ -114,7 +141,7 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you complete your intermittent fasting window today? (e.g., 14-16h overnight fast)',
     inputType: 'OPTIONS',
     options: ['Yes (16+ hrs)', 'Yes (12-16 hrs)', 'Partial (<12 hrs)', 'No (Skipped)'],
-    order: 12,
+    order: 15,
     isEnabled: true
   },
   {
@@ -123,7 +150,7 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you follow a balanced clean diet (vegetables, clean protein, complex carbs) and avoid ultra-processed junk food today?',
     inputType: 'OPTIONS',
     options: ['Balanced Clean Diet (+1)', 'Clean Meals (No Junk)', 'Junk Food / Ultra-Processed (-1)', 'Both Balanced & Junk'],
-    order: 13,
+    order: 16,
     isEnabled: true
   },
   {
@@ -132,7 +159,7 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you consume antioxidant-rich foods (berries, greens, amla, turmeric) or repair supplements today?',
     inputType: 'YES_NO',
     options: ['Yes (Consumed)', 'Not Today'],
-    order: 14,
+    order: 17,
     isEnabled: true
   },
   {
@@ -141,7 +168,7 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you complete any physical movement, walking, or exercise today?',
     inputType: 'OPTIONS',
     options: ['30+ min Walk / Run', 'Yoga / Stretching (20+ min)', 'Strength Training', 'Light Activity (<20 min)', 'No Movement Today'],
-    order: 15,
+    order: 18,
     isEnabled: true
   },
   {
@@ -150,7 +177,7 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you practice stillness, quiet meditation, or mindfulness for at least 10 minutes today?',
     inputType: 'YES_NO',
     options: ['Yes (10+ min)', 'Not Today'],
-    order: 16,
+    order: 19,
     isEnabled: true
   },
   {
@@ -159,7 +186,7 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you practice 5 to 10 minutes of conscious breathwork (box breathing, 4-7-8, or pranayama) today to restore cellular oxygenation?',
     inputType: 'YES_NO',
     options: ['Yes (Practiced 5-10 min)', 'Not Today'],
-    order: 17,
+    order: 20,
     isEnabled: true
   },
   {
@@ -168,7 +195,7 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you spend time doing something you love today (hobbies, music, family, art, gratitude)?',
     inputType: 'YES_NO',
     options: ['Yes (Done)', 'Not Today'],
-    order: 18,
+    order: 21,
     isEnabled: true
   },
   {
@@ -177,7 +204,7 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you use paraben-free, sulfate-free, and phthalate-free personal care / household products today?',
     inputType: 'YES_NO',
     options: ['Yes (Safe Products Used)', 'Not Today'],
-    order: 19,
+    order: 22,
     isEnabled: true
   }
 ];
@@ -250,12 +277,30 @@ const DEFAULT_TREATMENT_STEPS: IWorkflowStep[] = [
     isEnabled: true
   },
   {
+    stepId: 'stress_breath_rate',
+    title: 'Resting Breath Rate & Stress Check',
+    questionPrompt: 'What is your resting breath rate right now (inhalations per minute)? More than 12 breaths per minute indicates elevated sympathetic stress.',
+    inputType: 'OPTIONS',
+    options: ['Calm (≤12 / min)', 'Elevated (>12 / min)'],
+    order: 8,
+    isEnabled: true
+  },
+  {
     stepId: 'sleep',
     title: 'Rest & Recovery Sleep',
     questionPrompt: 'How many hours of restful sleep did you get last night?',
     inputType: 'NUMBER',
     options: [],
-    order: 8,
+    order: 9,
+    isEnabled: true
+  },
+  {
+    stepId: 'sleep_latency',
+    title: 'Sleep Latency Check',
+    questionPrompt: 'Did you have difficulty beginning to fall asleep (taking 30+ minutes) last night?',
+    inputType: 'YES_NO',
+    options: ['No (Fall Asleep Easily)', 'Yes (Takes 30+ mins)'],
+    order: 10,
     isEnabled: true
   },
   {
@@ -264,7 +309,7 @@ const DEFAULT_TREATMENT_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Do you snore loudly during sleep, gasp for breath, or wake up unrefreshed?',
     inputType: 'YES_NO',
     options: ['No (Quiet Sleep)', 'Yes (Snoring / Airway Gasps)'],
-    order: 9,
+    order: 11,
     isEnabled: true
   },
   {
@@ -273,7 +318,7 @@ const DEFAULT_TREATMENT_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Is your food cooked and stored in safe, non-toxic cookware (glass, steel, clay) free of heated plastics and synthetic non-stick pans?',
     inputType: 'YES_NO',
     options: ['Yes (Safe / Non-Toxic)', 'No (Plastic / Non-Stick Risk)'],
-    order: 10,
+    order: 12,
     isEnabled: true
   },
   {
@@ -282,7 +327,7 @@ const DEFAULT_TREATMENT_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Do you have new lab reports, tumor markers (CEA / CA-125), chemo reports, or CGM data to upload? I will process and load them into your dashboard.',
     inputType: 'FILE',
     options: ['Skip for Now'],
-    order: 11,
+    order: 13,
     isEnabled: true
   }
 ];
@@ -301,12 +346,30 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     isEnabled: true
   },
   {
+    stepId: 'stress_breath_rate',
+    title: 'Resting Breath Rate & Stress Check',
+    questionPrompt: 'What is your resting breath rate right now (inhalations per minute)? More than 12 breaths per minute indicates elevated sympathetic stress.',
+    inputType: 'OPTIONS',
+    options: ['Calm (≤12 / min)', 'Elevated (>12 / min)'],
+    order: 2,
+    isEnabled: true
+  },
+  {
     stepId: 'sleep',
     title: 'Recovery Sleep Quality',
     questionPrompt: 'How many hours of restorative sleep did you get last night?',
     inputType: 'NUMBER',
     options: [],
-    order: 2,
+    order: 3,
+    isEnabled: true
+  },
+  {
+    stepId: 'sleep_latency',
+    title: 'Sleep Latency Check',
+    questionPrompt: 'Did you have difficulty beginning to fall asleep (taking 30+ minutes) last night?',
+    inputType: 'YES_NO',
+    options: ['No (Fall Asleep Easily)', 'Yes (Takes 30+ mins)'],
+    order: 4,
     isEnabled: true
   },
   {
@@ -315,7 +378,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Do you snore loudly during sleep, gasp for breath, or wake up unrefreshed?',
     inputType: 'YES_NO',
     options: ['No (Quiet Sleep)', 'Yes (Snoring / Airway Gasps)'],
-    order: 3,
+    order: 5,
     isEnabled: true
   },
   {
@@ -324,7 +387,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you complete your metabolic fasting window today? Fasting supports cellular autophagy and metabolic vitality.',
     inputType: 'OPTIONS',
     options: ['Yes (16+ hours)', 'Yes (12-16 hours)', 'Partial (Under 12h)', 'No (Skipped)'],
-    order: 4,
+    order: 6,
     isEnabled: true
   },
   {
@@ -333,7 +396,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you follow a balanced diet (50% vegetables, clean protein, complex carbs) or consume junk/ultra-processed foods today?',
     inputType: 'OPTIONS',
     options: ['Balanced Clean Diet (+1)', 'Clean Meals (No Junk)', 'Junk Food / Ultra-Processed (-1)', 'Both Balanced & Junk'],
-    order: 5,
+    order: 7,
     isEnabled: true
   },
   {
@@ -342,7 +405,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'What physical activity did you complete today? Daily movement strengthens cellular immunity and stamina.',
     inputType: 'OPTIONS',
     options: ['30+ min Walk / Jog', 'Yoga / Tai Chi', 'Strength Training', 'Swimming / Cycling', 'Light Stretching', 'No Movement Today'],
-    order: 6,
+    order: 8,
     isEnabled: true
   },
   {
@@ -351,7 +414,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you practice stillness, meditation, or mindfulness today?',
     inputType: 'YES_NO',
     options: ['Yes (Practiced)', 'Not Today'],
-    order: 7,
+    order: 9,
     isEnabled: true
   },
   {
@@ -360,7 +423,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you practice 5 to 10 minutes of conscious breathwork (box breathing, 4-7-8, or pranayama) today?',
     inputType: 'YES_NO',
     options: ['Yes (Practiced 5-10 min)', 'Not Today'],
-    order: 8,
+    order: 10,
     isEnabled: true
   },
   {
@@ -369,7 +432,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you practice gratitude or engage in activities that bring you joy today?',
     inputType: 'YES_NO',
     options: ['Yes (Done)', 'Not Today'],
-    order: 9,
+    order: 11,
     isEnabled: true
   },
   {
@@ -378,7 +441,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you include antioxidant-rich repair foods today (cruciferous vegetables, berries, turmeric, omega-3s)?',
     inputType: 'OPTIONS',
     options: ['Yes (Antioxidant-Rich Meal)', 'Partial (1-2 items)', 'Hydration Goal Met', 'Supplements Taken', 'No Specific Nutrition'],
-    order: 10,
+    order: 12,
     isEnabled: true
   },
   {
@@ -387,7 +450,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you commute in heavy traffic (>30 min), encounter passive smoking (second-hand smoke), or experience indoor smoke/incense/mosquito coil exposure today?',
     inputType: 'YES_NO',
     options: ['No (Clean Air)', 'Yes (Smog / Smoke / Passive Smoke)'],
-    order: 11,
+    order: 13,
     isEnabled: true
   },
   {
@@ -396,7 +459,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Do you use safe filtered drinking water (RO / carbon filtered, free of heavy metals, chlorine byproducts, and PFAS)?',
     inputType: 'YES_NO',
     options: ['Yes (Safe Filtered)', 'No / Unfiltered Tap'],
-    order: 12,
+    order: 14,
     isEnabled: true
   },
   {
@@ -405,7 +468,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you consume unwashed non-organic high-pesticide produce (Dirty Dozen) or use chemical bug sprays today?',
     inputType: 'YES_NO',
     options: ['No (Clean / Organic)', 'Yes (Pesticide Exposure)'],
-    order: 13,
+    order: 15,
     isEnabled: true
   },
   {
@@ -414,7 +477,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you drink from heated plastic bottles, microwave food in plastic containers, or drink hot beverages from paper/plastic cups today?',
     inputType: 'YES_NO',
     options: ['No (Plastic-Free)', 'Yes (Plastic / Hot Cup Exposure)'],
-    order: 14,
+    order: 16,
     isEnabled: true
   },
   {
@@ -423,7 +486,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Is your kitchen free of heated plastic containers, synthetic non-stick pans, and plastic drinking water cans?',
     inputType: 'YES_NO',
     options: ['Yes (Safe / Non-Plastic)', 'No (Plastic / Non-Stick Risk)'],
-    order: 15,
+    order: 17,
     isEnabled: true
   },
   {
@@ -432,7 +495,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Do you have any sharp tooth, bleeding gums, non-healing oral ulcers, or oral discomfort?',
     inputType: 'YES_NO',
     options: ['No Issues (Healthy)', 'Yes (Dental Discomfort / Sharp Tooth)'],
-    order: 16,
+    order: 18,
     isEnabled: true
   },
   {
@@ -441,7 +504,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Do you have a family history of cancer or chronic health risks in immediate family members?',
     inputType: 'YES_NO',
     options: ['No Family History', 'Yes (Family History Present)'],
-    order: 17,
+    order: 19,
     isEnabled: true
   },
   {
@@ -450,7 +513,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you have any follow-up appointment, imaging, or blood work today? Are your next screenings scheduled?',
     inputType: 'OPTIONS',
     options: ['Appointment Today (Done)', 'Upcoming Scheduled', 'Need to Schedule', 'No Follow-up Required'],
-    order: 18,
+    order: 20,
     isEnabled: true
   },
   {
@@ -459,7 +522,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Do you have new follow-up labs, imaging reports (PET/CT/MRI), or tumor markers to upload? I will process and update your dashboard.',
     inputType: 'FILE',
     options: ['Skip for Now'],
-    order: 19,
+    order: 21,
     isEnabled: true
   }
 ];

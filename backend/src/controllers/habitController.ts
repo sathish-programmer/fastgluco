@@ -28,7 +28,14 @@ export const logHabit = async (req: Request, res: Response) => {
     });
 
     if (existingLog) {
-      existingLog.value = value;
+      if (
+        typeof existingLog.value === 'object' && existingLog.value !== null && !Array.isArray(existingLog.value) &&
+        typeof value === 'object' && value !== null && !Array.isArray(value)
+      ) {
+        existingLog.value = { ...existingLog.value, ...value };
+      } else {
+        existingLog.value = value;
+      }
       existingLog.source = source || existingLog.source;
       existingLog.timestamp = logDate;
       await existingLog.save();

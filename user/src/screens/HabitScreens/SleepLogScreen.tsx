@@ -282,9 +282,34 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
                 </button>
               </div>
 
-              {/* If NO to stopping screens: Advisory & Habit Change Prompt + Connect to Expert */}
+              {/* If YES to stopping screens 2h prior, but still taking 30+ mins: Clinical Latency -> Connect to Expert */}
+              {stoppedScreenTime === true && (
+                <div className="p-3.5 bg-indigo-50/90 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 rounded-xl space-y-2.5 animate-in fade-in duration-200">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
+                    <div className="text-xs text-indigo-950 dark:text-indigo-200 leading-relaxed font-medium">
+                      <span className="font-bold">{t('habits.clinicalLatencyTitle', 'Persistent Sleep Latency Check:')}</span>{' '}
+                      {t('habits.clinicalLatencyDesc', 'Taking 30+ minutes to fall asleep despite adhering to a 2-hour pre-bed screen curfew indicates physiological sleep latency. Connecting with a specialist can help evaluate circadian rhythm and sleep architecture.')}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between pt-1 border-t border-indigo-200/60 dark:border-indigo-800/40">
+                    <span className="text-[10px] text-indigo-800 dark:text-indigo-300 font-semibold">
+                      {t('habits.consultSleepSpecialist', 'Consult a sleep specialist:')}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => onBookAppointment?.('pending_Sleep Specialist')}
+                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white rounded-lg text-xs font-bold shadow-xs transition-all flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>🩺</span> {t('habits.connectToExpert', 'Connect to Expert')}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* If NO to stopping screens: Advisory & Habit Change Prompt + Connect to Expert if doesn't improve */}
               {stoppedScreenTime === false && (
-                <div className="p-3.5 bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl space-y-2.5">
+                <div className="p-3.5 bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl space-y-2.5 animate-in fade-in duration-200">
                   <div className="flex items-start gap-2">
                     <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                     <div className="text-xs text-amber-900 dark:text-amber-200 leading-relaxed font-medium">
@@ -294,7 +319,7 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
                   </div>
                   <div className="flex items-center justify-between pt-1 border-t border-amber-200/60 dark:border-amber-800/40">
                     <span className="text-[10px] text-amber-800 dark:text-amber-300 font-semibold">
-                      {t('habits.ifNoSleepPersists', 'If sleep difficulty persists:')}
+                      {t('habits.connectIfNoImprove', "Connect to expert if doesn't improve:")}
                     </span>
                     <button
                       type="button"
@@ -348,10 +373,27 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
             </button>
           </div>
           {snoring && (
-            <p className="text-[11px] text-rose-600 dark:text-rose-400 font-medium px-1 mt-1.5 flex items-center gap-1">
-              <AlertCircle className="h-3 w-3 shrink-0" />
-              {t('habits.snoringWarning', 'Airway resistance reduces nighttime oxygen saturation. Consider elevating your pillow and discussing with an expert.')}
-            </p>
+            <div className="mt-3 p-3.5 bg-rose-50/90 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 rounded-xl space-y-2.5 animate-in fade-in duration-200">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                <div className="text-xs text-rose-950 dark:text-rose-200 leading-relaxed font-medium">
+                  <span className="font-bold">{t('habits.airwayWarningTitle', 'Airway Resistance & Oxygen Alert:')}</span>{' '}
+                  {t('habits.snoringWarning', 'Airway resistance, loud snoring, or gasping reduces nighttime blood oxygen saturation and strains cardiovascular recovery.')}
+                </div>
+              </div>
+              <div className="flex items-center justify-between pt-1 border-t border-rose-200/60 dark:border-rose-800/40">
+                <span className="text-[10px] text-rose-800 dark:text-rose-300 font-semibold">
+                  {t('habits.consultEntSleep', 'Clinical airway evaluation:')}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onBookAppointment?.('pending_Sleep Specialist')}
+                  className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white rounded-lg text-xs font-bold shadow-xs transition-all flex items-center gap-1 cursor-pointer"
+                >
+                  <span>🩺</span> {t('habits.connectToExpert', 'Connect to Expert')}
+                </button>
+              </div>
+            </div>
           )}
         </div>
 

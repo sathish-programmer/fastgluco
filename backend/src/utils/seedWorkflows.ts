@@ -23,73 +23,94 @@ const PREVENTION_STEPS = [
     order: 1, isEnabled: true
   },
   {
+    stepId: 'stress_breath_rate', title: 'Resting Breath Rate & Stress Check',
+    questionPrompt: 'What is your resting breath rate right now (inhalations per minute)? More than 12 breaths per minute indicates elevated sympathetic stress.',
+    inputType: 'OPTIONS' as const,
+    options: ['Calm (≤12 / min)', 'Elevated (>12 / min)'],
+    order: 2, isEnabled: true
+  },
+  {
     stepId: 'sleep', title: 'Sleep Duration & Debt',
     questionPrompt: 'How many hours of quality sleep did you get last night? (Enter number, e.g., 7.5)',
     inputType: 'NUMBER' as const, options: [],
-    order: 2, isEnabled: true
+    order: 3, isEnabled: true
+  },
+  {
+    stepId: 'sleep_latency', title: 'Sleep Latency Check',
+    questionPrompt: 'Did you have difficulty beginning to fall asleep (taking 30+ minutes) last night?',
+    inputType: 'YES_NO' as const,
+    options: ['No (Fall Asleep Easily)', 'Yes (Takes 30+ mins)'],
+    order: 4, isEnabled: true
+  },
+  {
+    stepId: 'snoring', title: 'Sleep Snoring & Airway Check',
+    questionPrompt: 'Do you snore loudly during sleep, gasp for breath, or wake up unrefreshed?',
+    inputType: 'YES_NO' as const,
+    options: ['No (Quiet Peaceful Sleep)', 'Yes (Snoring / Airway Gasps)'],
+    order: 5, isEnabled: true
   },
   {
     stepId: 'smoking', title: 'Smoking & Chewing Tobacco',
     questionPrompt: 'Did you smoke cigarettes/bidis or chew tobacco (gutkha, khaini, paan with tobacco) today?',
     inputType: 'YES_NO' as const,
     options: ['No (Clean Day)', 'Yes (Smoked / Chewed Tobacco)'],
-    order: 3, isEnabled: true
+    order: 6, isEnabled: true
   },
   {
     stepId: 'alcohol', title: 'Alcohol Intake Check',
     questionPrompt: 'Did you consume any alcoholic beverages today?',
     inputType: 'OPTIONS' as const,
     options: ['No Alcohol (Clean Day)', '1-2 Drinks', '3+ Drinks (Heavy)'],
-    order: 4, isEnabled: true
+    order: 7, isEnabled: true
   },
   {
     stepId: 'substances', title: 'Chemical & Industrial Substances',
     questionPrompt: 'Were you exposed to harmful industrial chemicals, asbestos, or hazardous substances today?',
     inputType: 'YES_NO' as const,
     options: ['No (Clean Day)', 'Yes (Chemical Exposure)'],
-    order: 5, isEnabled: true
+    order: 8, isEnabled: true
   },
   {
     stepId: 'environmental', title: 'Environmental Toxins & Air Quality',
     questionPrompt: 'Did you encounter heavy traffic air pollution, smog, smoke, fumes, or fog today?',
     inputType: 'YES_NO' as const,
     options: ['No (Clean Environment)', 'Yes (Pollution / Smog / Toxins)'],
-    order: 6, isEnabled: true
+    order: 9, isEnabled: true
   },
   {
     stepId: 'kitchen', title: 'Check Your Kitchen Audit',
     questionPrompt: 'Is your kitchen free of heated plastic containers, synthetic non-stick pans, and plastic drinking water cans?',
     inputType: 'YES_NO' as const,
     options: ['Yes (Safe / Non-Plastic)', 'No (Plastic / Non-Stick Risk)'],
-    order: 7, isEnabled: true
+    order: 10, isEnabled: true
   },
   {
     stepId: 'obesity', title: 'Obesity & Weight Check',
     questionPrompt: 'Do you face difficulty managing weight, high visceral fat, or BMI above healthy range?',
     inputType: 'YES_NO' as const,
     options: ['No (Healthy Weight)', 'Yes (Weight Difficulty / Elevated BMI)'],
-    order: 8, isEnabled: true
+    order: 11, isEnabled: true
   },
   {
     stepId: 'dental', title: 'Dental & Oral Health Check',
     questionPrompt: 'Do you have any sharp tooth, bleeding gums, non-healing oral ulcers, or oral discomfort?',
     inputType: 'YES_NO' as const,
     options: ['No Issues (Healthy)', 'Yes (Dental Discomfort / Sharp Tooth)'],
-    order: 9, isEnabled: true
+    order: 12, isEnabled: true
   },
   {
     stepId: 'gastritis', title: 'Gastritis & Gut Health Check',
     questionPrompt: 'Did you experience acidity, heartburn, acid reflux, or gastritis discomfort today?',
     inputType: 'YES_NO' as const,
     options: ['No Issues (Healthy)', 'Yes (Gastritis / Acidity Discomfort)'],
-    order: 10, isEnabled: true
+    order: 13, isEnabled: true
   },
   {
     stepId: 'genetic', title: 'Genetic Risk & Family History',
     questionPrompt: 'Do you have a family history of cancer or chronic health risks in immediate family members?',
     inputType: 'YES_NO' as const,
     options: ['No Family History', 'Yes (Family History Present)'],
-    order: 11, isEnabled: true
+    order: 14, isEnabled: true
   },
 
   // ── 8 Repair Habits ──
@@ -98,56 +119,56 @@ const PREVENTION_STEPS = [
     questionPrompt: 'Did you complete your intermittent fasting window today? (e.g., 14-16h overnight fast)',
     inputType: 'OPTIONS' as const,
     options: ['Yes (16+ hrs)', 'Yes (12-16 hrs)', 'Partial (<12 hrs)', 'No (Skipped)'],
-    order: 12, isEnabled: true
+    order: 15, isEnabled: true
   },
   {
     stepId: 'diet', title: 'Diet & Nutrition Check',
     questionPrompt: 'Did you follow a balanced clean diet (vegetables, clean protein, complex carbs) and avoid ultra-processed junk food today?',
     inputType: 'OPTIONS' as const,
     options: ['Balanced Clean Diet (+1)', 'Clean Meals (No Junk)', 'Junk Food / Ultra-Processed (-1)', 'Both Balanced & Junk'],
-    order: 13, isEnabled: true
+    order: 16, isEnabled: true
   },
   {
     stepId: 'antioxidants', title: 'Antioxidants & Repair Foods',
     questionPrompt: 'Did you consume antioxidant-rich foods (berries, greens, amla, turmeric) or repair supplements today?',
     inputType: 'YES_NO' as const,
     options: ['Yes (Consumed)', 'Not Today'],
-    order: 14, isEnabled: true
+    order: 17, isEnabled: true
   },
   {
     stepId: 'movement', title: 'Exercise & Movement',
     questionPrompt: 'Did you complete any physical movement, walking, or exercise today?',
     inputType: 'OPTIONS' as const,
     options: ['30+ min Walk / Run', 'Yoga / Stretching (20+ min)', 'Strength Training', 'Light Activity (<20 min)', 'No Movement Today'],
-    order: 15, isEnabled: true
+    order: 18, isEnabled: true
   },
   {
     stepId: 'stillness', title: 'Stillness & Meditation',
     questionPrompt: 'Did you practice stillness, quiet meditation, or mindfulness for at least 10 minutes today?',
     inputType: 'YES_NO' as const,
     options: ['Yes (10+ min)', 'Not Today'],
-    order: 16, isEnabled: true
+    order: 19, isEnabled: true
   },
   {
     stepId: 'breath', title: 'Power of Breath',
     questionPrompt: 'Did you practice 5 to 10 minutes of conscious breathwork (box breathing, 4-7-8, or pranayama) today?',
     inputType: 'YES_NO' as const,
     options: ['Yes (Practiced 5-10 min)', 'Not Today'],
-    order: 17, isEnabled: true
+    order: 20, isEnabled: true
   },
   {
     stepId: 'joy', title: 'Things You Love',
     questionPrompt: 'Did you spend time doing something you love today (hobbies, music, family, art, gratitude)?',
     inputType: 'YES_NO' as const,
     options: ['Yes (Done)', 'Not Today'],
-    order: 18, isEnabled: true
+    order: 21, isEnabled: true
   },
   {
     stepId: 'safer_products', title: 'Safer Personal Care Products',
     questionPrompt: 'Did you use paraben-free, sulfate-free, and phthalate-free personal care / household products today?',
     inputType: 'YES_NO' as const,
     options: ['Yes (Safe Products Used)', 'Not Today'],
-    order: 19, isEnabled: true
+    order: 22, isEnabled: true
   }
 ];
 
@@ -189,17 +210,38 @@ const TREATMENT_STEPS = [
     order: 5, isEnabled: true
   },
   {
+    stepId: 'stress_breath_rate', title: 'Resting Breath Rate & Stress Check',
+    questionPrompt: 'What is your resting breath rate right now (inhalations per minute)? More than 12 breaths per minute indicates elevated sympathetic stress.',
+    inputType: 'OPTIONS' as const,
+    options: ['Calm (≤12 / min)', 'Elevated (>12 / min)'],
+    order: 6, isEnabled: true
+  },
+  {
     stepId: 'sleep', title: 'Rest & Recovery Sleep',
     questionPrompt: 'How many hours of restful sleep did you get last night? Sleep is critical for cellular repair during treatment.',
     inputType: 'NUMBER' as const, options: [],
-    order: 6, isEnabled: true
+    order: 7, isEnabled: true
+  },
+  {
+    stepId: 'sleep_latency', title: 'Sleep Latency Check',
+    questionPrompt: 'Did you have difficulty beginning to fall asleep (taking 30+ minutes) last night?',
+    inputType: 'YES_NO' as const,
+    options: ['No (Fall Asleep Easily)', 'Yes (Takes 30+ mins)'],
+    order: 8, isEnabled: true
+  },
+  {
+    stepId: 'snoring', title: 'Sleep Snoring & Airway Check',
+    questionPrompt: 'Do you snore loudly during sleep, gasp for breath, or wake up unrefreshed?',
+    inputType: 'YES_NO' as const,
+    options: ['No (Quiet Sleep)', 'Yes (Snoring / Airway Gasps)'],
+    order: 9, isEnabled: true
   },
   {
     stepId: 'report_upload', title: 'Oncology & Lab Report Upload',
     questionPrompt: 'Do you have new lab reports, tumor markers (CEA / CA-125), chemo reports, or CGM data to upload today?',
     inputType: 'FILE' as const,
     options: ['No New Reports Today', 'Upload Report (PDF / CSV)'],
-    order: 7, isEnabled: true
+    order: 10, isEnabled: true
   }
 ];
 
@@ -213,94 +255,114 @@ const SECONDARY_PREVENTION_STEPS = [
     order: 1, isEnabled: true
   },
   {
+    stepId: 'stress_breath_rate', title: 'Resting Breath Rate & Stress Check',
+    questionPrompt: 'What is your resting breath rate right now (inhalations per minute)? More than 12 breaths per minute indicates elevated sympathetic stress.',
+    inputType: 'OPTIONS' as const,
+    options: ['Calm (≤12 / min)', 'Elevated (>12 / min)'],
+    order: 2, isEnabled: true
+  },
+  {
     stepId: 'sleep', title: 'Recovery Sleep Quality',
     questionPrompt: 'How many hours of restorative sleep did you get last night?',
     inputType: 'NUMBER' as const, options: [],
-    order: 2, isEnabled: true
+    order: 3, isEnabled: true
+  },
+  {
+    stepId: 'sleep_latency', title: 'Sleep Latency Check',
+    questionPrompt: 'Did you have difficulty beginning to fall asleep (taking 30+ minutes) last night?',
+    inputType: 'YES_NO' as const,
+    options: ['No (Fall Asleep Easily)', 'Yes (Takes 30+ mins)'],
+    order: 4, isEnabled: true
+  },
+  {
+    stepId: 'snoring', title: 'Sleep Snoring & Airway Check',
+    questionPrompt: 'Do you snore loudly during sleep, gasp for breath, or wake up unrefreshed?',
+    inputType: 'YES_NO' as const,
+    options: ['No (Quiet Sleep)', 'Yes (Snoring / Airway Gasps)'],
+    order: 5, isEnabled: true
   },
   {
     stepId: 'fasting', title: 'Metabolic Fasting Window',
     questionPrompt: 'Did you complete your metabolic fasting window today? Fasting supports cellular autophagy and metabolic vitality.',
     inputType: 'OPTIONS' as const,
     options: ['Yes (16+ hrs)', 'Yes (12-16 hrs)', 'Partial (<12 hrs)', 'No (Skipped)'],
-    order: 3, isEnabled: true
+    order: 6, isEnabled: true
   },
   {
     stepId: 'movement', title: 'Active Movement & Exercise',
     questionPrompt: 'What physical activity did you complete today? Daily movement strengthens cellular immunity and stamina.',
     inputType: 'OPTIONS' as const,
     options: ['30+ min Walk / Jog', 'Yoga / Tai Chi', 'Strength Training', 'Swimming / Cycling', 'Light Stretching', 'No Movement Today'],
-    order: 4, isEnabled: true
+    order: 7, isEnabled: true
   },
   {
     stepId: 'stillness', title: 'Stillness & Meditation',
     questionPrompt: 'Did you practice stillness, meditation, or deep breathing today?',
     inputType: 'YES_NO' as const,
     options: ['Yes (Practiced)', 'Not Today'],
-    order: 5, isEnabled: true
+    order: 8, isEnabled: true
   },
   {
     stepId: 'joy', title: 'Joy & Gratitude',
     questionPrompt: 'Did you practice gratitude or engage in activities that bring you joy today?',
     inputType: 'YES_NO' as const,
     options: ['Yes (Done)', 'Not Today'],
-    order: 6, isEnabled: true
+    order: 9, isEnabled: true
   },
   {
     stepId: 'repair_habits', title: 'Antioxidant & Cellular Repair Nutrition',
     questionPrompt: 'Did you include cellular repair foods today (cruciferous vegetables, berries, turmeric, omega-3s)?',
     inputType: 'OPTIONS' as const,
     options: ['Yes (Cellular Repair Meal)', 'Partial (1-2 items)', 'Hydration Goal Met', 'Supplements Taken', 'No Specific Nutrition'],
-    order: 7, isEnabled: true
+    order: 10, isEnabled: true
   },
   {
     stepId: 'env_air', title: 'Air Pollution & Passive Smoke',
     questionPrompt: 'Did you commute in heavy traffic (>30 min), encounter passive smoking (second-hand smoke), or experience indoor smoke/incense/mosquito coil exposure today?',
     inputType: 'YES_NO' as const,
     options: ['No (Clean Air)', 'Yes (Smog / Smoke / Passive Smoke)'],
-    order: 8, isEnabled: true
+    order: 11, isEnabled: true
   },
   {
     stepId: 'env_water', title: 'Water Carcinogens Check',
     questionPrompt: 'Do you use safe filtered drinking water (RO / carbon filtered, free of heavy metals, chlorine byproducts, and PFAS)?',
     inputType: 'YES_NO' as const,
     options: ['Yes (Safe Filtered)', 'No / Unfiltered Tap'],
-    order: 9, isEnabled: true
+    order: 12, isEnabled: true
   },
   {
     stepId: 'env_pesticides', title: 'Pesticides Exposure',
     questionPrompt: 'Did you consume unwashed non-organic high-pesticide produce (Dirty Dozen) or use chemical bug sprays today?',
     inputType: 'YES_NO' as const,
     options: ['No (Clean / Organic)', 'Yes (Pesticide Exposure)'],
-    order: 10, isEnabled: true
+    order: 13, isEnabled: true
   },
   {
     stepId: 'env_microplastics', title: 'Microplastics Exposure',
     questionPrompt: 'Did you drink from heated plastic bottles, microwave food in plastic containers, or drink hot beverages from paper/plastic cups today?',
     inputType: 'YES_NO' as const,
     options: ['No (Plastic-Free)', 'Yes (Plastic / Hot Cup Exposure)'],
-    order: 11, isEnabled: true
+    order: 14, isEnabled: true
   },
   {
     stepId: 'genetics', title: 'Family History & Genetic Risk',
     questionPrompt: 'Do you have a family history of cancer or chronic health risks in immediate family members?',
     inputType: 'YES_NO' as const,
     options: ['No Family History', 'Yes (Family History Present)'],
-    order: 12, isEnabled: true
+    order: 15, isEnabled: true
   },
   {
     stepId: 'screening', title: 'Screening & Follow-up Compliance',
     questionPrompt: 'Did you have any follow-up appointment, imaging, or blood work today? Are your next screenings scheduled?',
     inputType: 'OPTIONS' as const,
     options: ['Appointment Today (Done)', 'Upcoming Scheduled', 'Need to Schedule', 'No Follow-up Required'],
-    order: 13, isEnabled: true
+    order: 16, isEnabled: true
   },
   {
     stepId: 'report_upload', title: 'Follow-up Report Upload',
     questionPrompt: 'Do you have new follow-up labs, imaging reports (PET/CT/MRI), or tumor markers to upload? I will process and update your dashboard.',
     inputType: 'FILE' as const,
     options: ['Skip for Now'],
-    order: 14, isEnabled: true
   }
 ];
 

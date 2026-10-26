@@ -212,6 +212,18 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       }
     }
 
+    const breathRateVal = getAnswer(['stress_breath_rate', 'breath_rate']).toLowerCase();
+    if (breathRateVal) {
+      if (breathRateVal.includes('elevated') || breathRateVal.includes('>12') || breathRateVal.includes('high')) {
+        damageCount += 1;
+        damageHighlights.push('Elevated Resting Breath Rate (>12/min)');
+        damageActionHints.push('Resting breath rate > 12 indicates sympathetic stress activation. Practice slow nasal exhalations.');
+      } else if (breathRateVal.includes('calm') || breathRateVal.includes('≤12') || breathRateVal.includes('<=12') || breathRateVal.includes('normal')) {
+        repairCount += 1;
+        repairHighlights.push('Calm Resting Breath Rate (≤12/min)');
+      }
+    }
+
     // 2. Sleep & Snoring
     const sleepVal = getAnswer(['sleep', 'sleep_duration', 'sleep_hours']).toLowerCase();
     if (sleepVal) {
@@ -226,7 +238,19 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       }
     }
 
-    const snoringVal = getAnswer(['snoring', 'sleep_apnea']).toLowerCase();
+    const latencyVal = getAnswer(['sleep_latency', 'sleep_onset']).toLowerCase();
+    if (latencyVal) {
+      if (latencyVal.includes('yes') || latencyVal.includes('30+') || latencyVal.includes('difficulty')) {
+        damageCount += 1;
+        damageHighlights.push('Sleep Latency (>30 mins)');
+        damageActionHints.push('Difficulty falling asleep delays sleep cycles. Dim screen lights 2 hours before bed.');
+      } else if (latencyVal.includes('no') || latencyVal.includes('easily') || latencyVal.includes('fall asleep')) {
+        repairCount += 1;
+        repairHighlights.push('Rapid Sleep Onset');
+      }
+    }
+
+    const snoringVal = getAnswer(['snoring', 'sleep_snoring', 'sleep_apnea']).toLowerCase();
     if (snoringVal) {
       if (snoringVal.includes('yes') || snoringVal.includes('snore') || snoringVal.includes('gasp')) {
         damageCount += 1;
@@ -1413,13 +1437,22 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
           );
           // Stress / StressLog screen → saves type: 'Stress'
           if (s === 'stress' || s === 'caregiver_stress') return todaysHabits.some(h =>
-            h.type === 'Stress' || h.type?.toUpperCase() === 'STRESS'
+            (h.type === 'Stress' || h.type?.toUpperCase() === 'STRESS') && (h.value?.faceId !== undefined || h.value?.stressScore !== undefined || h.value?.option !== undefined)
+          );
+          if (s === 'stress_breath_rate') return todaysHabits.some(h =>
+            (h.type === 'Stress' || h.type?.toUpperCase() === 'STRESS') && (h.value?.breathCount !== undefined || h.value?.breathRate !== undefined)
           );
 
           // ── Cancer Prevention / Secondary Prevention steps ──
           // Sleep screen → saves type: 'Sleep'
           if (s === 'sleep') return todaysHabits.some(h =>
-            h.type === 'Sleep' || h.type?.toUpperCase() === 'SLEEP'
+            (h.type === 'Sleep' || h.type?.toUpperCase() === 'SLEEP') && h.value?.hours !== undefined
+          );
+          if (s === 'sleep_latency') return todaysHabits.some(h =>
+            (h.type === 'Sleep' || h.type?.toUpperCase() === 'SLEEP') && h.value?.difficultyFallingAsleep !== undefined
+          );
+          if (s === 'snoring' || s === 'sleep_snoring') return todaysHabits.some(h =>
+            (h.type || '').toUpperCase() === 'SLEEP' && h.value?.snoring !== undefined
           );
           // Smoking screen → saves type: 'Smoking'
           if (s === 'smoking') return todaysHabits.some(h =>
@@ -1524,9 +1557,11 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
           const habit = habitsList.find(h => {
             const t = (h.type || '').toLowerCase();
             if (s === 'fasting') return t === 'fasting';
-            if (s === 'stress' || s === 'caregiver_stress') return t === 'stress';
-            if (s === 'sleep') return t === 'sleep';
-            if (s === 'snoring') return t === 'sleep' && h.value?.snoring !== undefined;
+            if (s === 'stress' || s === 'caregiver_stress') return t === 'stress' && (h.value?.faceId !== undefined || h.value?.stressScore !== undefined || h.value?.option !== undefined);
+            if (s === 'stress_breath_rate') return t === 'stress' && (h.value?.breathCount !== undefined || h.value?.breathRate !== undefined);
+            if (s === 'sleep') return t === 'sleep' && h.value?.hours !== undefined;
+            if (s === 'sleep_latency') return t === 'sleep' && h.value?.difficultyFallingAsleep !== undefined;
+            if (s === 'snoring' || s === 'sleep_snoring') return t === 'sleep' && h.value?.snoring !== undefined;
             if (s === 'diet' || s === 'balanced_diet' || s === 'junk_food') return t.includes('diet');
             if (s === 'breath' || s === 'power_of_breath' || s === 'breathwork') return t.includes('breath');
             if (s === 'dental' || s === 'dental_health') return t.includes('dental');
@@ -1584,7 +1619,18 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
               (v.value !== undefined ? (typeof v.value === 'object' ? '' : `${v.value}`) : '');
           }
 
-          if (s.includes('sleep') && valStr && !isNaN(Number(valStr.trim()))) {
+          if (s === 'stress_breath_rate') {
+            const br = v?.breathCount ?? v?.breathRate;
+            valStr = br !== undefined ? `${br} / min` : (v?.option || '');
+          } else if (s === 'sleep_latency') {
+            if (v?.difficultyFallingAsleep !== undefined) {
+              valStr = v.difficultyFallingAsleep ? 'Yes (Takes 30+ mins)' : 'No (Fall Asleep Easily)';
+            }
+          } else if (s === 'snoring' || s === 'sleep_snoring') {
+            if (v?.snoring !== undefined) {
+              valStr = v.snoring ? 'Yes (Snoring / Airway Gasps)' : 'No (Quiet Peaceful Sleep)';
+            }
+          } else if (s.includes('sleep') && valStr && !isNaN(Number(valStr.trim()))) {
             valStr = `${valStr.trim()} hrs`;
           }
 
@@ -1687,10 +1733,41 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       if (stepId === 'stress' || stepId === 'caregiver_stress') {
         habitType = 'Stress';
         habitValue = { faceId: (lowerVal.includes('high') || lowerVal.includes('strain') || lowerVal.includes('severe') || lowerVal.includes('drained')) ? 'stressed' : 'calm' };
+      } else if (stepId === 'stress_breath_rate') {
+        habitType = 'Stress';
+        const isElevated = lowerVal.includes('elevated') || lowerVal.includes('>12') || lowerVal.includes('high');
+        const count = isElevated ? 16 : 10;
+        habitValue = {
+          breathCount: count,
+          breathRate: count,
+          isElevated,
+          option: valueStr,
+          score: isElevated ? -1 : 0
+        };
       } else if (stepId === 'sleep') {
         habitType = 'Sleep';
         const h = parseFloat(valueStr) || 7;
         habitValue = { hours: h, quality: h >= 6 ? 'good' : 'poor' };
+      } else if (stepId === 'sleep_latency') {
+        habitType = 'Sleep';
+        const hasDifficulty = lowerVal.includes('yes') || lowerVal.includes('30+') || lowerVal.includes('difficulty');
+        habitValue = {
+          difficultyFallingAsleep: hasDifficulty,
+          option: valueStr,
+          score: hasDifficulty ? -1 : 0
+        };
+      } else if (stepId === 'snoring' || stepId === 'sleep_snoring') {
+        habitType = 'Sleep';
+        const hasSnoring = lowerVal.includes('yes') || lowerVal.includes('snore') || lowerVal.includes('gasp');
+        const todayStr = new Date().toDateString();
+        const existingSleep = loggedHabits.find(h => (h.type === 'Sleep' || h.type?.toUpperCase() === 'SLEEP') && new Date(h.timestamp || h.createdAt).toDateString() === todayStr);
+        const prevVal = existingSleep?.value || {};
+        habitValue = {
+          ...prevVal,
+          snoring: hasSnoring,
+          option: valueStr,
+          score: hasSnoring ? -1 : (prevVal.score !== undefined ? prevVal.score : 0)
+        };
       } else if (stepId === 'fasting') {
         habitType = 'Fasting';
         habitValue = { completed: isYes, hours: lowerVal.includes('16') ? 16 : lowerVal.includes('12') ? 12 : isYes ? 14 : 0 };
