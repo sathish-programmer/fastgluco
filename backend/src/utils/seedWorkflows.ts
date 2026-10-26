@@ -85,32 +85,46 @@ const PREVENTION_STEPS = [
     order: 10, isEnabled: true
   },
   {
+    stepId: 'kitchen_high_temp', title: 'High-Temp Meat & Deep-Fried Food',
+    questionPrompt: 'Did you eat high temperature cooked meat (pan frying or grilling) or heavily browned food (darkly toasted bread, deeply fried vegetables or chips)?',
+    inputType: 'YES_NO' as const,
+    options: ['No (Safe / Gentle Cooking)', 'Yes (High Temp / Fried / Charred)'],
+    order: 11, isEnabled: true
+  },
+  {
+    stepId: 'kitchen_smoked_fish', title: 'Smoked or Salted Fish',
+    questionPrompt: 'Did you cook or consume smoked or salted fish (high in nitrosamines) today?',
+    inputType: 'YES_NO' as const,
+    options: ['No (Clean Day)', 'Yes (Smoked / Salted Fish)'],
+    order: 12, isEnabled: true
+  },
+  {
     stepId: 'obesity', title: 'Obesity & Weight Check',
     questionPrompt: 'Do you face difficulty managing weight, high visceral fat, or BMI above healthy range?',
     inputType: 'YES_NO' as const,
     options: ['No (Healthy Weight)', 'Yes (Weight Difficulty / Elevated BMI)'],
-    order: 11, isEnabled: true
+    order: 13, isEnabled: true
   },
   {
     stepId: 'dental', title: 'Dental & Oral Health Check',
     questionPrompt: 'Do you have any sharp tooth, bleeding gums, non-healing oral ulcers, or oral discomfort?',
     inputType: 'YES_NO' as const,
     options: ['No Issues (Healthy)', 'Yes (Dental Discomfort / Sharp Tooth)'],
-    order: 12, isEnabled: true
+    order: 14, isEnabled: true
   },
   {
     stepId: 'gastritis', title: 'Gastritis & Gut Health Check',
     questionPrompt: 'Did you experience acidity, heartburn, acid reflux, or gastritis discomfort today?',
     inputType: 'YES_NO' as const,
     options: ['No Issues (Healthy)', 'Yes (Gastritis / Acidity Discomfort)'],
-    order: 13, isEnabled: true
+    order: 15, isEnabled: true
   },
   {
     stepId: 'genetic', title: 'Genetic Risk & Family History',
     questionPrompt: 'Do you have a family history of cancer or chronic health risks in immediate family members?',
     inputType: 'YES_NO' as const,
     options: ['No Family History', 'Yes (Family History Present)'],
-    order: 14, isEnabled: true
+    order: 16, isEnabled: true
   },
 
   // ── 8 Repair Habits ──
@@ -119,56 +133,56 @@ const PREVENTION_STEPS = [
     questionPrompt: 'Did you complete your intermittent fasting window today? (e.g., 14-16h overnight fast)',
     inputType: 'OPTIONS' as const,
     options: ['Yes (16+ hrs)', 'Yes (12-16 hrs)', 'Partial (<12 hrs)', 'No (Skipped)'],
-    order: 15, isEnabled: true
+    order: 17, isEnabled: true
   },
   {
     stepId: 'diet', title: 'Diet & Nutrition Check',
     questionPrompt: 'Did you follow a balanced clean diet (vegetables, clean protein, complex carbs) and avoid ultra-processed junk food today?',
     inputType: 'OPTIONS' as const,
     options: ['Balanced Clean Diet (+1)', 'Clean Meals (No Junk)', 'Junk Food / Ultra-Processed (-1)', 'Both Balanced & Junk'],
-    order: 16, isEnabled: true
+    order: 18, isEnabled: true
   },
   {
     stepId: 'antioxidants', title: 'Antioxidants & Repair Foods',
     questionPrompt: 'Did you consume antioxidant-rich foods (berries, greens, amla, turmeric) or repair supplements today?',
     inputType: 'YES_NO' as const,
     options: ['Yes (Consumed)', 'Not Today'],
-    order: 17, isEnabled: true
+    order: 19, isEnabled: true
   },
   {
     stepId: 'movement', title: 'Exercise & Movement',
     questionPrompt: 'Did you complete any physical movement, walking, or exercise today?',
     inputType: 'OPTIONS' as const,
     options: ['30+ min Walk / Run', 'Yoga / Stretching (20+ min)', 'Strength Training', 'Light Activity (<20 min)', 'No Movement Today'],
-    order: 18, isEnabled: true
+    order: 20, isEnabled: true
   },
   {
     stepId: 'stillness', title: 'Stillness & Meditation',
     questionPrompt: 'Did you practice stillness, quiet meditation, or mindfulness for at least 10 minutes today?',
     inputType: 'YES_NO' as const,
     options: ['Yes (10+ min)', 'Not Today'],
-    order: 19, isEnabled: true
+    order: 21, isEnabled: true
   },
   {
     stepId: 'breath', title: 'Power of Breath',
     questionPrompt: 'Did you practice 5 to 10 minutes of conscious breathwork (box breathing, 4-7-8, or pranayama) today?',
     inputType: 'YES_NO' as const,
     options: ['Yes (Practiced 5-10 min)', 'Not Today'],
-    order: 20, isEnabled: true
+    order: 22, isEnabled: true
   },
   {
     stepId: 'joy', title: 'Things You Love',
     questionPrompt: 'Did you spend time doing something you love today (hobbies, music, family, art, gratitude)?',
     inputType: 'YES_NO' as const,
     options: ['Yes (Done)', 'Not Today'],
-    order: 21, isEnabled: true
+    order: 23, isEnabled: true
   },
   {
     stepId: 'safer_products', title: 'Safer Personal Care Products',
     questionPrompt: 'Did you use paraben-free, sulfate-free, and phthalate-free personal care / household products today?',
     inputType: 'YES_NO' as const,
     options: ['Yes (Safe Products Used)', 'Not Today'],
-    order: 22, isEnabled: true
+    order: 24, isEnabled: true
   }
 ];
 
@@ -258,11 +272,25 @@ const TREATMENT_STEPS = [
     order: 12, isEnabled: true
   },
   {
+    stepId: 'kitchen_high_temp', title: 'High-Temp Meat & Deep-Fried Food',
+    questionPrompt: 'Did you eat high temperature cooked meat (pan frying or grilling) or heavily browned food (darkly toasted bread, deeply fried vegetables or chips)?',
+    inputType: 'YES_NO' as const,
+    options: ['No (Safe / Gentle Cooking)', 'Yes (High Temp / Fried / Charred)'],
+    order: 13, isEnabled: true
+  },
+  {
+    stepId: 'kitchen_smoked_fish', title: 'Smoked or Salted Fish',
+    questionPrompt: 'Did you cook or consume smoked or salted fish (high in nitrosamines) today?',
+    inputType: 'YES_NO' as const,
+    options: ['No (Clean Day)', 'Yes (Smoked / Salted Fish)'],
+    order: 14, isEnabled: true
+  },
+  {
     stepId: 'report_upload', title: 'Oncology / CGM Report Upload',
     questionPrompt: 'Do you have new lab reports, tumor markers (CEA / CA-125), chemo reports, or CGM data to upload? I will process and load them into your dashboard.',
     inputType: 'FILE' as const,
     options: ['Skip for Now'],
-    order: 13, isEnabled: true
+    order: 15, isEnabled: true
   }
 ];
 
@@ -373,32 +401,46 @@ const SECONDARY_PREVENTION_STEPS = [
     order: 15, isEnabled: true
   },
   {
+    stepId: 'kitchen_high_temp', title: 'High-Temp Meat & Deep-Fried Food',
+    questionPrompt: 'Did you eat high temperature cooked meat (pan frying or grilling) or heavily browned food (darkly toasted bread, deeply fried vegetables or chips)?',
+    inputType: 'YES_NO' as const,
+    options: ['No (Safe / Gentle Cooking)', 'Yes (High Temp / Fried / Charred)'],
+    order: 16, isEnabled: true
+  },
+  {
+    stepId: 'kitchen_smoked_fish', title: 'Smoked or Salted Fish',
+    questionPrompt: 'Did you cook or consume smoked or salted fish (high in nitrosamines) today?',
+    inputType: 'YES_NO' as const,
+    options: ['No (Clean Day)', 'Yes (Smoked / Salted Fish)'],
+    order: 17, isEnabled: true
+  },
+  {
     stepId: 'dental', title: 'Dental Health Check',
     questionPrompt: 'Do you have any sharp tooth, bleeding gums, non-healing oral ulcers, or oral discomfort?',
     inputType: 'YES_NO' as const,
     options: ['No Issues (Healthy)', 'Yes (Dental Discomfort / Sharp Tooth)'],
-    order: 16, isEnabled: true
+    order: 18, isEnabled: true
   },
   {
     stepId: 'genetics', title: 'Family History & Genetic Risk',
     questionPrompt: 'Do you have a family history of cancer or chronic health risks in immediate family members?',
     inputType: 'YES_NO' as const,
     options: ['No Family History', 'Yes (Family History Present)'],
-    order: 17, isEnabled: true
+    order: 19, isEnabled: true
   },
   {
     stepId: 'screening', title: 'Screening & Follow-up Compliance',
     questionPrompt: 'Did you have any follow-up appointment, imaging, or blood work today? Are your next screenings scheduled?',
     inputType: 'OPTIONS' as const,
     options: ['Appointment Today (Done)', 'Upcoming Scheduled', 'Need to Schedule', 'No Follow-up Required'],
-    order: 18, isEnabled: true
+    order: 20, isEnabled: true
   },
   {
     stepId: 'report_upload', title: 'Follow-up Report Upload',
     questionPrompt: 'Do you have new follow-up labs, imaging reports (PET/CT/MRI), or tumor markers to upload? I will process and update your dashboard.',
     inputType: 'FILE' as const,
     options: ['Skip for Now'],
-    order: 19, isEnabled: true
+    order: 21, isEnabled: true
   }
 ];
 

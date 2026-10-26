@@ -642,7 +642,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
             if (s === 'alcohol') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('ALCOHOL'));
             if (s === 'substances') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('SUBSTANCE'));
             if (s === 'antioxidants') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('ANTIOXIDANT') || (h.type || '').toUpperCase() === 'REPAIR_HABIT');
-            if (s === 'kitchen' || s === 'env_kitchen') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('KITCHEN') || envAnswers.kitchenQ1 !== undefined);
+            if (s === 'kitchen' || s === 'env_kitchen') return todayLogs.some((h: any) => ((h.type || '').toUpperCase().includes('KITCHEN') && (h.value?.answers?.kitchenQ1 !== undefined || (typeof h.value === 'object' && h.value?.score !== undefined && !h.value?.answers?.kitchenQ4 && !h.value?.answers?.kitchenQ5))) || envAnswers.kitchenQ1 !== undefined);
+            if (s === 'kitchen_high_temp' || s === 'cooking_temp') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('KITCHEN') && h.value?.answers?.kitchenQ4 !== undefined);
+            if (s === 'kitchen_smoked_fish' || s === 'smoked_fish') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('KITCHEN') && h.value?.answers?.kitchenQ5 !== undefined);
             if (s === 'gut_health') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('GASTRIC') || (h.type || '').toUpperCase().includes('DENTAL'));
             if (s === 'genetics' || s === 'genetics_substances') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('GENETIC'));
             if (s === 'damage_habits') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('DAMAGE'));

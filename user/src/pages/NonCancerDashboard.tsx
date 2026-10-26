@@ -253,7 +253,9 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
             return t.includes('ENVIRONMENT') || t.includes('DAMAGE') || h.value?.stepId?.startsWith('env_');
           });
         }
-        if (s === 'kitchen' || s === 'env_kitchen') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('KITCHEN') || envAnswers.kitchenQ1 !== undefined);
+        if (s === 'kitchen' || s === 'env_kitchen') return todayLogs.some((h: any) => ((h.type || '').toUpperCase().includes('KITCHEN') && (h.value?.answers?.kitchenQ1 !== undefined || (typeof h.value === 'object' && h.value?.score !== undefined && !h.value?.answers?.kitchenQ4 && !h.value?.answers?.kitchenQ5))) || envAnswers.kitchenQ1 !== undefined);
+        if (s === 'kitchen_high_temp' || s === 'cooking_temp') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('KITCHEN') && h.value?.answers?.kitchenQ4 !== undefined);
+        if (s === 'kitchen_smoked_fish' || s === 'smoked_fish') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('KITCHEN') && h.value?.answers?.kitchenQ5 !== undefined);
         if (s === 'obesity' || s === 'weight') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('OBESITY') || (h.type || '').toUpperCase().includes('WEIGHT'));
         if (s === 'dental') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('DENTAL'));
         if (s === 'gastritis' || s === 'gut_health') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('GASTR'));
@@ -358,7 +360,9 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
           return t.includes('ENVIRONMENT') || t.includes('DAMAGE') || h.value?.stepId?.startsWith('env_');
         });
       }
-      if (s === 'kitchen' || s === 'env_kitchen') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('KITCHEN') || h.value?.answers?.kitchenQ1 !== undefined);
+      if (s === 'kitchen' || s === 'env_kitchen') return todayLogs.some((h: any) => ((h.type || '').toUpperCase().includes('KITCHEN') && (h.value?.answers?.kitchenQ1 !== undefined || (typeof h.value === 'object' && h.value?.score !== undefined && !h.value?.answers?.kitchenQ4 && !h.value?.answers?.kitchenQ5))) || h.value?.answers?.kitchenQ1 !== undefined);
+      if (s === 'kitchen_high_temp' || s === 'cooking_temp') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('KITCHEN') && h.value?.answers?.kitchenQ4 !== undefined);
+      if (s === 'kitchen_smoked_fish' || s === 'smoked_fish') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('KITCHEN') && h.value?.answers?.kitchenQ5 !== undefined);
       if (s === 'obesity' || s === 'weight') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('OBESITY') || (h.type || '').toUpperCase().includes('WEIGHT'));
       if (s === 'dental') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('DENTAL'));
       if (s === 'gastritis' || s === 'gut_health') return todayLogs.some((h: any) => (h.type || '').toUpperCase().includes('GASTR'));
@@ -481,13 +485,13 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
 
     if (typeUpper.includes('KITCHEN')) {
       title = t('dashboard.kitchenAuditTitle', 'Check Your Kitchen Audit');
-      const answers = val?.answers || {};
+      const answers = val?.answers || (typeof val === 'object' ? val : {});
       const score = typeof val?.score === 'number' ? val.score : null;
       const isRisk = score !== null
         ? score < 0
-        : (answers.kitchenQ1 === true || answers.kitchenQ2 === true || answers.kitchenQ3 === true || answers.kitchenQ1 === 'yes' || answers.kitchenQ2 === 'yes' || answers.kitchenQ3 === 'yes');
+        : (answers.kitchenQ1 === true || answers.kitchenQ2 === true || answers.kitchenQ3 === true || answers.kitchenQ4 === true || answers.kitchenQ5 === true || answers.kitchenQ1 === 'yes' || answers.kitchenQ2 === 'yes' || answers.kitchenQ3 === 'yes' || answers.kitchenQ4 === 'yes' || answers.kitchenQ5 === 'yes');
       const isSafe = !isRisk;
-      subtitle = isSafe ? t('dashboard.kitchenSafe', 'Non-plastic water, natural utensils & glass storage') : t('dashboard.kitchenRisk', 'Plastic container / synthetic non-stick cookware risk flagged');
+      subtitle = isSafe ? t('dashboard.kitchenSafe', 'Non-plastic water, gentle cooking & glass storage') : t('dashboard.kitchenRisk', 'Plastic container, high-temp fry, or synthetic non-stick cookware risk flagged');
       isRepair = isSafe;
       category = 'microplastics';
     } else if (typeUpper.includes('ENVIRONMENT')) {
@@ -512,14 +516,14 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
         subtitle = answers.microplasticsQ1 === 0 ? t('dashboard.microplasticsSafe', 'Glass / Stainless Steel Storage') : t('dashboard.microplasticsRisk', 'Plastic Water Bottle Exposure');
         isRepair = answers.microplasticsQ1 === 0;
         category = 'microplastics';
-      } else if (answers.kitchenQ1 !== undefined || answers.kitchenQ2 !== undefined || answers.kitchenQ3 !== undefined) {
+      } else if (answers.kitchenQ1 !== undefined || answers.kitchenQ2 !== undefined || answers.kitchenQ3 !== undefined || answers.kitchenQ4 !== undefined || answers.kitchenQ5 !== undefined) {
         title = t('dashboard.kitchenAuditTitle', 'Check Your Kitchen Audit');
         const score = typeof val?.score === 'number' ? val.score : null;
         const isRisk = score !== null
           ? score < 0
-          : (answers.kitchenQ1 === true || answers.kitchenQ2 === true || answers.kitchenQ3 === true || answers.kitchenQ1 === 'yes' || answers.kitchenQ2 === 'yes' || answers.kitchenQ3 === 'yes');
+          : (answers.kitchenQ1 === true || answers.kitchenQ2 === true || answers.kitchenQ3 === true || answers.kitchenQ4 === true || answers.kitchenQ5 === true || answers.kitchenQ1 === 'yes' || answers.kitchenQ2 === 'yes' || answers.kitchenQ3 === 'yes' || answers.kitchenQ4 === 'yes' || answers.kitchenQ5 === 'yes');
         const isSafe = !isRisk;
-        subtitle = isSafe ? t('dashboard.kitchenSafe', 'Non-plastic water, natural utensils & glass storage') : t('dashboard.kitchenRisk', 'Plastic container / synthetic non-stick cookware risk flagged');
+        subtitle = isSafe ? t('dashboard.kitchenSafe', 'Non-plastic water, gentle cooking & glass storage') : t('dashboard.kitchenRisk', 'Plastic container, high-temp fry, or synthetic non-stick cookware risk flagged');
         isRepair = isSafe;
         category = 'microplastics';
       } else {
@@ -926,7 +930,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
       if (t.includes('KITCHEN')) return true;
       if (t.includes('ENVIRONMENT') || t.includes('DAMAGE')) {
         const ans = h.value?.answers || h.value;
-        return ans && (ans.kitchenQ1 !== undefined || ans.kitchenQ2 !== undefined || ans.kitchenQ3 !== undefined);
+        return ans && (ans.kitchenQ1 !== undefined || ans.kitchenQ2 !== undefined || ans.kitchenQ3 !== undefined || ans.kitchenQ4 !== undefined || ans.kitchenQ5 !== undefined);
       }
       return false;
     });

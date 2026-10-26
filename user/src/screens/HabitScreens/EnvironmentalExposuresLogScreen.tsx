@@ -34,6 +34,8 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
   const [kitchenQ1, setKitchenQ1] = useState<boolean | null>(null); // Drinking water NOT stored in plastic can (true = Yes, false = No)
   const [kitchenQ2, setKitchenQ2] = useState<boolean | null>(null); // Utensils (Tava, pan) made of natural substances like iron, brass, aluminum (true = Yes, false = No)
   const [kitchenQ3, setKitchenQ3] = useState<boolean | null>(null); // Commodities stored preferably in non-plastic containers (true = Yes, false = No)
+  const [kitchenQ4, setKitchenQ4] = useState<boolean | null>(null); // High-temp meat / fried foods (false = Safe 0, true = Risk -1)
+  const [kitchenQ5, setKitchenQ5] = useState<boolean | null>(null); // Smoked / salted fish (false = Safe 0, true = Risk -1)
 
   const [showWaterInfo, setShowWaterInfo] = useState(true);
   const [showAirModal, setShowAirModal] = useState(false);
@@ -120,6 +122,8 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
         setKitchenQ1(ans.kitchenQ1 ?? null);
         setKitchenQ2(ans.kitchenQ2 ?? null);
         setKitchenQ3(ans.kitchenQ3 ?? null);
+        setKitchenQ4(ans.kitchenQ4 ?? null);
+        setKitchenQ5(ans.kitchenQ5 ?? null);
       } else {
         // Daily reset: Nothing logged today yet!
         setTodayLogId(null);
@@ -132,6 +136,8 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
         setKitchenQ1(null);
         setKitchenQ2(null);
         setKitchenQ3(null);
+        setKitchenQ4(null);
+        setKitchenQ5(null);
       }
     } catch (err) {
       console.error(err);
@@ -166,11 +172,13 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
   };
 
   const getKitchenScore = () => {
-    if (kitchenQ1 === null && kitchenQ2 === null && kitchenQ3 === null) return null;
+    if (kitchenQ1 === null && kitchenQ2 === null && kitchenQ3 === null && kitchenQ4 === null && kitchenQ5 === null) return null;
     let score = 0;
     if (kitchenQ1 === false) score -= 1;
     if (kitchenQ2 === false) score -= 1;
     if (kitchenQ3 === false) score -= 1;
+    if (kitchenQ4 === true) score -= 1;
+    if (kitchenQ5 === true) score -= 1;
     return score;
   };
 
@@ -181,7 +189,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
   const microplasticsScore = getMicroplasticsScore();
   const kitchenScore = getKitchenScore();
 
-  const hasAnyAnswer = airQ1 !== null || airQ2 !== null || airQ3 !== null || waterQ1 !== null || pesticidesQ1 !== null || microplasticsQ1 !== null || kitchenQ1 !== null || kitchenQ2 !== null || kitchenQ3 !== null;
+  const hasAnyAnswer = airQ1 !== null || airQ2 !== null || airQ3 !== null || waterQ1 !== null || pesticidesQ1 !== null || microplasticsQ1 !== null || kitchenQ1 !== null || kitchenQ2 !== null || kitchenQ3 !== null || kitchenQ4 !== null || kitchenQ5 !== null;
 
   const getOverallScore = () => {
     let score = 0;
@@ -212,13 +220,15 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
           microplasticsQ1,
           kitchenQ1,
           kitchenQ2,
-          kitchenQ3
+          kitchenQ3,
+          kitchenQ4,
+          kitchenQ5
         }
       })
         .then(() => fetchHistoryList(historyFilter === '30' ? 30 : historyFilter === '365' ? 365 : 7))
         .catch(err => console.error('Environmental habit auto-save error', err));
     }
-  }, [airQ1, airQ2, airQ3, waterQ1, pesticidesQ1, microplasticsQ1, kitchenQ1, kitchenQ2, kitchenQ3, overallScore, hasAnyAnswer, apiUrl, token, user?.id, historyFilter]);
+  }, [airQ1, airQ2, airQ3, waterQ1, pesticidesQ1, microplasticsQ1, kitchenQ1, kitchenQ2, kitchenQ3, kitchenQ4, kitchenQ5, overallScore, hasAnyAnswer, apiUrl, token, user?.id, historyFilter]);
 
   const handleResetLog = async () => {
     isUserInteractingRef.current = false;
@@ -231,6 +241,8 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
     setKitchenQ1(null);
     setKitchenQ2(null);
     setKitchenQ3(null);
+    setKitchenQ4(null);
+    setKitchenQ5(null);
     if (todayLogId && token) {
       setLoading(true);
       try {
@@ -254,6 +266,8 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
   const handleAnswerKitchenQ1 = (val: boolean) => { isUserInteractingRef.current = true; setKitchenQ1(val); };
   const handleAnswerKitchenQ2 = (val: boolean) => { isUserInteractingRef.current = true; setKitchenQ2(val); };
   const handleAnswerKitchenQ3 = (val: boolean) => { isUserInteractingRef.current = true; setKitchenQ3(val); };
+  const handleAnswerKitchenQ4 = (val: boolean) => { isUserInteractingRef.current = true; setKitchenQ4(val); };
+  const handleAnswerKitchenQ5 = (val: boolean) => { isUserInteractingRef.current = true; setKitchenQ5(val); };
 
   const handleSaveLogs = async () => {
     if (!user?.id) return;
@@ -270,7 +284,9 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
           microplasticsQ1,
           kitchenQ1,
           kitchenQ2,
-          kitchenQ3
+          kitchenQ3,
+          kitchenQ4,
+          kitchenQ5
         }
       });
       onBack(); // Go back to dashboard immediately to trigger re-fetch of logs
@@ -561,8 +577,8 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
                   const hasPlastics = ans.microplasticsQ1 !== undefined;
                   const plasticRisk = ans.microplasticsQ1 === true;
 
-                  const hasKitchen = ans.kitchenQ1 !== undefined || ans.kitchenQ2 !== undefined || ans.kitchenQ3 !== undefined;
-                  const kitchenRisk = ans.kitchenQ1 === true || ans.kitchenQ2 === true || ans.kitchenQ3 === true;
+                  const hasKitchen = ans.kitchenQ1 !== undefined || ans.kitchenQ2 !== undefined || ans.kitchenQ3 !== undefined || ans.kitchenQ4 !== undefined || ans.kitchenQ5 !== undefined;
+                  const kitchenRisk = ans.kitchenQ1 === false || ans.kitchenQ2 === false || ans.kitchenQ3 === false || ans.kitchenQ4 === true || ans.kitchenQ5 === true;
                   const hasAnySubTags = hasAir || hasWater || hasPesticides || hasPlastics || hasKitchen;
 
                   return (
@@ -1097,6 +1113,50 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
                   className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${kitchenQ3 === false ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
                 >
                   {t('habits.noRiskMinus1', 'No (Risk -1)')}
+                </button>
+              </div>
+            </div>
+
+            {/* Question 4 */}
+            <div className="pt-5 border-t border-slate-100 dark:border-slate-800">
+              <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-2">{t('env.questionNum', 'Question')} 4</p>
+              <p className="text-sm font-semibold text-slate-850 dark:text-slate-100 leading-relaxed mb-3.5">
+                {t('kitchen.q4Text', 'Did you eat high temperature cooked meat (pan frying or grilling) or heavily browned foods like darkly toasted bread, deep brown/black deeply fried vegetables or chips?')}
+              </p>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => handleAnswerKitchenQ4(false)}
+                  className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${kitchenQ4 === false ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+                >
+                  {t('habits.noSafeZero', 'No (Safe - 0)')}
+                </button>
+                <button 
+                  onClick={() => handleAnswerKitchenQ4(true)}
+                  className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${kitchenQ4 === true ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+                >
+                  {t('habits.yesRiskMinus1', 'Yes (Risk -1)')}
+                </button>
+              </div>
+            </div>
+
+            {/* Question 5 */}
+            <div className="pt-5 border-t border-slate-100 dark:border-slate-800">
+              <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-2">{t('env.questionNum', 'Question')} 5</p>
+              <p className="text-sm font-semibold text-slate-850 dark:text-slate-100 leading-relaxed mb-3.5">
+                {t('kitchen.q5Text', 'Did you cook or consume smoked or salted fish (high nitrosamines)?')}
+              </p>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => handleAnswerKitchenQ5(false)}
+                  className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${kitchenQ5 === false ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+                >
+                  {t('habits.noSafeZero', 'No (Safe - 0)')}
+                </button>
+                <button 
+                  onClick={() => handleAnswerKitchenQ5(true)}
+                  className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border ${kitchenQ5 === true ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+                >
+                  {t('habits.yesRiskMinus1', 'Yes (Risk -1)')}
                 </button>
               </div>
             </div>

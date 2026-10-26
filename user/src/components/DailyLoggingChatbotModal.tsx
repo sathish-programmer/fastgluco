@@ -192,6 +192,16 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
         const val = match.value;
         if (val == null) return '';
         if (typeof val === 'object') {
+          if (keys.some(k => k.includes('high_temp') || k.includes('cooking_temp')) && val.answers?.kitchenQ4 !== undefined) {
+            return val.answers.kitchenQ4 === false ? 'No (Safe / Gentle Cooking)' : 'Yes (High Temp / Fried / Charred)';
+          }
+          if (keys.some(k => k.includes('smoked_fish') || k.includes('smoked')) && val.answers?.kitchenQ5 !== undefined) {
+            return val.answers.kitchenQ5 === false ? 'No (Clean Day)' : 'Yes (Smoked / Salted Fish)';
+          }
+          if (keys.some(k => k === 'kitchen' || k === 'kitchen_audit' || k === 'env_kitchen') && (val.answers?.kitchenQ1 !== undefined || val.answers?.kitchenQ2 !== undefined || val.answers?.kitchenQ3 !== undefined)) {
+            const isSafe = val.answers.kitchenQ1 === false && val.answers.kitchenQ2 === false && val.answers.kitchenQ3 === false;
+            return isSafe ? 'Yes (Safe / Non-Plastic)' : 'No (Plastic / Non-Stick Risk)';
+          }
           return (val.option || val.notes || val.faceId || val.activity || (val.hours != null ? `${val.hours}` : '') || (val.minutes != null ? `${val.minutes}` : '') || JSON.stringify(val));
         }
         return `${val}`;
@@ -313,6 +323,30 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       } else if (kitchenVal.includes('yes') || kitchenVal.includes('safe') || kitchenVal.includes('clean') || kitchenVal.includes('non-plastic')) {
         repairCount += 1;
         repairHighlights.push('Safe Plastic-Free Kitchen');
+      }
+    }
+
+    const highTempVal = getAnswer(['kitchen_high_temp', 'cooking_temp']).toLowerCase();
+    if (highTempVal) {
+      if (highTempVal.includes('yes') || highTempVal.includes('fried') || highTempVal.includes('charred') || highTempVal.includes('high temp')) {
+        damageCount += 1;
+        damageHighlights.push('High-Temp Fried / Charred Food');
+        damageActionHints.push('Avoid high-temp pan-frying or heavily browned/charred foods to minimize HCAs, PAHs, and acrylamide.');
+      } else if (highTempVal.includes('no') || highTempVal.includes('safe') || highTempVal.includes('gentle')) {
+        repairCount += 1;
+        repairHighlights.push('Gentle & Clean Cooking');
+      }
+    }
+
+    const smokedFishVal = getAnswer(['kitchen_smoked_fish', 'smoked_fish']).toLowerCase();
+    if (smokedFishVal) {
+      if (smokedFishVal.includes('yes') || smokedFishVal.includes('smoked') || smokedFishVal.includes('salted')) {
+        damageCount += 1;
+        damageHighlights.push('Smoked / Salted Fish (Nitrosamines)');
+        damageActionHints.push('Avoid smoked or salt-cured fish containing high nitrosamines.');
+      } else if (smokedFishVal.includes('no') || smokedFishVal.includes('clean')) {
+        repairCount += 1;
+        repairHighlights.push('Low Nitrosamine Diet');
       }
     }
 
@@ -1682,7 +1716,13 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
           }
           // Check Your Kitchen Audit
           if (s === 'kitchen' || s === 'env_kitchen') return todaysHabits.some(h =>
-            h.type === 'Kitchen' || h.type?.toUpperCase().includes('KITCHEN') || h.value?.answers?.kitchenQ1 !== undefined
+            (h.type === 'Kitchen' || h.type?.toUpperCase().includes('KITCHEN')) && (h.value?.answers?.kitchenQ1 !== undefined || (typeof h.value === 'object' && h.value?.score !== undefined && !h.value?.answers?.kitchenQ4 && !h.value?.answers?.kitchenQ5))
+          );
+          if (s === 'kitchen_high_temp' || s === 'cooking_temp') return todaysHabits.some(h =>
+            (h.type === 'Kitchen' || h.type?.toUpperCase().includes('KITCHEN')) && h.value?.answers?.kitchenQ4 !== undefined
+          );
+          if (s === 'kitchen_smoked_fish' || s === 'smoked_fish') return todaysHabits.some(h =>
+            (h.type === 'Kitchen' || h.type?.toUpperCase().includes('KITCHEN')) && h.value?.answers?.kitchenQ5 !== undefined
           );
           // Obesity & Weight Check
           if (s === 'obesity' || s === 'weight') return todaysHabits.some(h =>
@@ -1764,7 +1804,9 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
             if (s === 'stillness') return t === 'stillness';
             if (s === 'joy') return t === 'joy';
             if (s === 'antioxidants') return t === 'antioxidants';
-            if (s === 'kitchen' || s === 'env_kitchen') return t.includes('kitchen');
+            if (s === 'kitchen' || s === 'env_kitchen') return (t === 'kitchen' || t.includes('kitchen')) && (h.value?.answers?.kitchenQ1 !== undefined || (!h.value?.answers?.kitchenQ4 && !h.value?.answers?.kitchenQ5));
+            if (s === 'kitchen_high_temp' || s === 'cooking_temp') return (t === 'kitchen' || t.includes('kitchen')) && h.value?.answers?.kitchenQ4 !== undefined;
+            if (s === 'kitchen_smoked_fish' || s === 'smoked_fish') return (t === 'kitchen' || t.includes('kitchen')) && h.value?.answers?.kitchenQ5 !== undefined;
             if (s === 'obesity' || s === 'weight') return t.includes('obesity') || t.includes('weight');
             if (s === 'gastritis' || s === 'gut_health') return t.includes('gastr');
             if (s === 'safer_products' || s === 'saferproducts') return t.includes('saferproduct');
@@ -1824,6 +1866,28 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
           } else if (s === 'snoring' || s === 'sleep_snoring') {
             if (v?.snoring !== undefined) {
               valStr = v.snoring ? 'Yes (Snoring / Airway Gasps)' : 'No (Quiet Peaceful Sleep)';
+            }
+          if (s === 'kitchen' || s === 'env_kitchen') {
+            const ans = habit?.value?.answers || (typeof habit?.value === 'object' ? habit?.value : {});
+            if (ans && (ans.kitchenQ1 !== undefined || ans.kitchenQ2 !== undefined || ans.kitchenQ3 !== undefined)) {
+              const isSafe = ans.kitchenQ1 === false && ans.kitchenQ2 === false && ans.kitchenQ3 === false;
+              valStr = isSafe ? 'Yes (Safe / Non-Plastic)' : 'No (Plastic / Non-Stick Risk)';
+            } else if (habit?.value?.option) {
+              valStr = habit.value.option;
+            }
+          } else if (s === 'kitchen_high_temp' || s === 'cooking_temp') {
+            const ans = habit?.value?.answers || (typeof habit?.value === 'object' ? habit?.value : {});
+            if (ans && ans.kitchenQ4 !== undefined) {
+              valStr = ans.kitchenQ4 === false ? 'No (Safe / Gentle Cooking)' : 'Yes (High Temp / Fried / Charred)';
+            } else if (habit?.value?.option) {
+              valStr = habit.value.option;
+            }
+          } else if (s === 'kitchen_smoked_fish' || s === 'smoked_fish') {
+            const ans = habit?.value?.answers || (typeof habit?.value === 'object' ? habit?.value : {});
+            if (ans && ans.kitchenQ5 !== undefined) {
+              valStr = ans.kitchenQ5 === false ? 'No (Clean Day)' : 'Yes (Smoked / Salted Fish)';
+            } else if (habit?.value?.option) {
+              valStr = habit.value.option;
             }
           } else if (s.includes('sleep') && valStr && !isNaN(Number(valStr.trim()))) {
             valStr = `${valStr.trim()} hrs`;
@@ -2077,16 +2141,41 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
             option: valueStr
           };
         }
-      } else if (stepId === 'kitchen' || stepId === 'env_kitchen') {
+      } else if (stepId === 'kitchen' || stepId === 'env_kitchen' || stepId === 'kitchen_high_temp' || stepId === 'cooking_temp' || stepId === 'kitchen_smoked_fish' || stepId === 'smoked_fish') {
         habitType = 'Kitchen';
-        const isSafe = isYes || lowerVal.includes('safe') || lowerVal.includes('no plastic') || lowerVal.includes('clean');
+        const todayStr = new Date().toDateString();
+        const existingKitchen = loggedHabits.find((h: any) => 
+          (h.type === 'Kitchen' || h.type?.toUpperCase() === 'KITCHEN') &&
+          new Date(h.timestamp || h.createdAt).toDateString() === todayStr
+        );
+        const prevAnswers = existingKitchen?.value?.answers || (typeof existingKitchen?.value === 'object' ? existingKitchen.value : {}) || {};
+        const updatedAnswers = { ...prevAnswers };
+
+        if (stepId === 'kitchen' || stepId === 'env_kitchen') {
+          const isSafe = isYes || lowerVal.includes('safe') || lowerVal.includes('no plastic') || lowerVal.includes('clean') || lowerVal.includes('non-toxic');
+          updatedAnswers.kitchenQ1 = !isSafe;
+          updatedAnswers.kitchenQ2 = !isSafe;
+          updatedAnswers.kitchenQ3 = !isSafe;
+        } else if (stepId === 'kitchen_high_temp' || stepId === 'cooking_temp') {
+          const hasRisk = isYes || lowerVal.includes('yes') || lowerVal.includes('fried') || lowerVal.includes('charred') || lowerVal.includes('high temp');
+          const isSafe = !hasRisk && (lowerVal.includes('no') || lowerVal.includes('safe') || lowerVal.includes('gentle'));
+          updatedAnswers.kitchenQ4 = isSafe ? false : true;
+        } else if (stepId === 'kitchen_smoked_fish' || stepId === 'smoked_fish') {
+          const hasRisk = isYes || lowerVal.includes('yes') || lowerVal.includes('smoked') || lowerVal.includes('salted');
+          const isSafe = !hasRisk && (lowerVal.includes('no') || lowerVal.includes('clean'));
+          updatedAnswers.kitchenQ5 = isSafe ? false : true;
+        }
+
+        let calcScore = 0;
+        if (updatedAnswers.kitchenQ1 === true) calcScore -= 1;
+        if (updatedAnswers.kitchenQ2 === true) calcScore -= 1;
+        if (updatedAnswers.kitchenQ3 === true) calcScore -= 1;
+        if (updatedAnswers.kitchenQ4 === true) calcScore -= 1;
+        if (updatedAnswers.kitchenQ5 === true) calcScore -= 1;
+
         habitValue = {
-          score: isSafe ? 0 : -1,
-          answers: {
-            kitchenQ1: isSafe,
-            kitchenQ2: isSafe,
-            kitchenQ3: isSafe
-          },
+          score: calcScore,
+          answers: updatedAnswers,
           option: valueStr
         };
       } else if (stepId === 'diet' || stepId === 'balanced_diet' || stepId === 'junk_food') {
@@ -2263,8 +2352,16 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       const todayStr = new Date().toDateString();
       setLoggedHabits(prev => {
         const existing = prev.find(h => h.type === habitType && new Date(h.timestamp || (h as any).createdAt).toDateString() === todayStr);
+        const mergedAnswers = (existing?.value?.answers || habitValue?.answers) ? {
+          ...(existing?.value?.answers || {}),
+          ...(habitValue?.answers || {})
+        } : undefined;
         const mergedValue = existing?.value && typeof existing.value === 'object' && typeof habitValue === 'object'
-          ? { ...existing.value, ...habitValue }
+          ? { 
+              ...existing.value, 
+              ...habitValue,
+              ...(mergedAnswers ? { answers: mergedAnswers } : {})
+            }
           : habitValue;
         return [
           {
@@ -2404,7 +2501,17 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       detected.push({ stepId: 'env_water', valueStr: 'Yes (Safe Filtered)', name: 'Water Filter (Safe RO)' });
     }
     if (text.includes('kitchen') || text.includes('utensils') || text.includes('water container') || text.includes('iron pan') || text.includes('brass pan')) {
-      detected.push({ stepId: 'kitchen', valueStr: 'Yes (Plastic-Free Safe Kitchen)', name: 'Check Your Kitchen (Safe)' });
+      detected.push({ stepId: 'kitchen', valueStr: 'Yes (Safe / Non-Plastic)', name: 'Check Your Kitchen (Safe)' });
+    }
+    if (text.includes('fried meat') || text.includes('grilled meat') || text.includes('high temp') || text.includes('deep fried') || text.includes('charred') || text.includes('burnt toast')) {
+      detected.push({ stepId: 'kitchen_high_temp', valueStr: 'Yes (High Temp / Fried / Charred)', name: 'High-Temp / Fried Food' });
+    } else if (text.includes('gentle cook') || text.includes('boiled') || text.includes('steamed') || text.includes('no fried food')) {
+      detected.push({ stepId: 'kitchen_high_temp', valueStr: 'No (Safe / Gentle Cooking)', name: 'Gentle Cooking (Safe)' });
+    }
+    if (text.includes('smoked fish') || text.includes('salted fish') || text.includes('dry fish') || text.includes('karuvadu')) {
+      detected.push({ stepId: 'kitchen_smoked_fish', valueStr: 'Yes (Smoked / Salted Fish)', name: 'Smoked / Salted Fish' });
+    } else if (text.includes('no smoked fish') || text.includes('fresh fish') || text.includes('clean fish')) {
+      detected.push({ stepId: 'kitchen_smoked_fish', valueStr: 'No (Clean Day)', name: 'Clean Day (No Smoked Fish)' });
     }
 
     return detected;

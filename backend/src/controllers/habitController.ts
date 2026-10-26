@@ -32,7 +32,15 @@ export const logHabit = async (req: Request, res: Response) => {
         typeof existingLog.value === 'object' && existingLog.value !== null && !Array.isArray(existingLog.value) &&
         typeof value === 'object' && value !== null && !Array.isArray(value)
       ) {
-        existingLog.value = { ...existingLog.value, ...value };
+        const mergedAnswers = (existingLog.value.answers || value.answers) ? {
+          ...(existingLog.value.answers || {}),
+          ...(value.answers || {})
+        } : undefined;
+        existingLog.value = {
+          ...existingLog.value,
+          ...value,
+          ...(mergedAnswers ? { answers: mergedAnswers } : {})
+        };
       } else {
         existingLog.value = value;
       }
@@ -91,6 +99,8 @@ export const getRecentHabits = async (req: Request, res: Response) => {
           $or: [
             { type: { $regex: /^kitchen/i } },
             { type: { $regex: /^environment/i }, 'value.answers.kitchenQ1': { $exists: true } },
+            { type: { $regex: /^environment/i }, 'value.answers.kitchenQ4': { $exists: true } },
+            { type: { $regex: /^environment/i }, 'value.answers.kitchenQ5': { $exists: true } },
             { type: { $regex: /^environment/i }, 'value.kitchenQ1': { $exists: true } },
             { type: { $regex: /^damage/i }, 'value.stepId': { $regex: /kitchen/i } }
           ]

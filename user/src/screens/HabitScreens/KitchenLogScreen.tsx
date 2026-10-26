@@ -293,7 +293,10 @@ export const KitchenLogScreen: React.FC<KitchenLogScreenProps> = ({ onBack, onNa
               <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-100 dark:border-rose-900/40 text-rose-700 dark:text-rose-300 text-xs p-4 rounded-2xl font-bold flex items-center gap-2.5">
                 <ShieldAlert className="h-5 w-5 shrink-0 text-rose-500" />
                 <span>
-                  <strong>{t('kitchen.riskFlagged', 'Risk Flagged')} ({kitchenScore}):</strong> {t('kitchen.riskDescription', 'Using scratched non-stick cookware, microwaving hot food in plastic, or using synthetic utensils releases microplastics and toxic chemicals.')}
+                  <strong>{t('kitchen.riskFlagged', 'Risk Flagged')} ({kitchenScore}):</strong>{' '}
+                  {kitchenQ4 === true || kitchenQ5 === true
+                    ? t('kitchen.riskExtendedDesc', 'Using scratched non-stick cookware, microwaving hot food in plastic, eating high-temp charred foods, or consuming smoked/salted fish increases toxic chemical exposures.')
+                    : t('kitchen.riskDescription', 'Using scratched non-stick cookware, microwaving hot food in plastic, or using synthetic utensils releases microplastics and toxic chemicals.')}
                 </span>
               </div>
             )}
