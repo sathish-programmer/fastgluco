@@ -16,10 +16,12 @@ export const KitchenLogScreen: React.FC<KitchenLogScreenProps> = ({ onBack, onNa
   const { t } = useLanguage();
   const { showToast } = useToast();
   
-  // 3 Audit Questions
+  // 5 Audit Questions
   const [kitchenQ1, setKitchenQ1] = useState<boolean | null>(null); // Non-stick with scratches/PTFE (true = Yes Risk -1, false = No Safe 0)
   const [kitchenQ2, setKitchenQ2] = useState<boolean | null>(null); // Store/microwave hot food in plastic (true = Yes Risk -1, false = No Safe 0)
   const [kitchenQ3, setKitchenQ3] = useState<boolean | null>(null); // Plastic cutting boards or synthetic utensils (true = Yes Risk -1, false = No Safe 0)
+  const [kitchenQ4, setKitchenQ4] = useState<boolean | null>(null); // High-temp cooked meat / deeply browned/fried (true = Yes Risk -1, false = No Safe 0)
+  const [kitchenQ5, setKitchenQ5] = useState<boolean | null>(null); // Smoked or salted fish (high nitrosamines) (true = Yes Risk -1, false = No Safe 0)
 
   const [loading, setLoading] = useState(false);
   const [todayLogId, setTodayLogId] = useState<string | null>(null);
@@ -79,12 +81,16 @@ export const KitchenLogScreen: React.FC<KitchenLogScreenProps> = ({ onBack, onNa
         setKitchenQ1(answers.kitchenQ1 ?? null);
         setKitchenQ2(answers.kitchenQ2 ?? null);
         setKitchenQ3(answers.kitchenQ3 ?? null);
+        setKitchenQ4(answers.kitchenQ4 ?? null);
+        setKitchenQ5(answers.kitchenQ5 ?? null);
       } else {
         // Fresh daily state for new day
         setTodayLogId(null);
         setKitchenQ1(null);
         setKitchenQ2(null);
         setKitchenQ3(null);
+        setKitchenQ4(null);
+        setKitchenQ5(null);
       }
     } catch (err) {
       console.error(err);
@@ -94,13 +100,18 @@ export const KitchenLogScreen: React.FC<KitchenLogScreenProps> = ({ onBack, onNa
   };
 
   const calculateScore = () => {
-    if (kitchenQ1 === null && kitchenQ2 === null && kitchenQ3 === null) return null;
-    const hasRisk = kitchenQ1 === true || kitchenQ2 === true || kitchenQ3 === true;
-    return hasRisk ? -1 : 0;
+    if (kitchenQ1 === null && kitchenQ2 === null && kitchenQ3 === null && kitchenQ4 === null && kitchenQ5 === null) return null;
+    let score = 0;
+    if (kitchenQ1 === true) score -= 1;
+    if (kitchenQ2 === true) score -= 1;
+    if (kitchenQ3 === true) score -= 1;
+    if (kitchenQ4 === true) score -= 1;
+    if (kitchenQ5 === true) score -= 1;
+    return score;
   };
 
   const kitchenScore = calculateScore();
-  const hasAnyAnswer = kitchenQ1 !== null || kitchenQ2 !== null || kitchenQ3 !== null;
+  const hasAnyAnswer = kitchenQ1 !== null || kitchenQ2 !== null || kitchenQ3 !== null || kitchenQ4 !== null || kitchenQ5 !== null;
 
   // Auto-save ONLY when user actively changes answers (never during initial data load)
   useEffect(() => {
@@ -113,13 +124,15 @@ export const KitchenLogScreen: React.FC<KitchenLogScreenProps> = ({ onBack, onNa
         answers: {
           kitchenQ1,
           kitchenQ2,
-          kitchenQ3
+          kitchenQ3,
+          kitchenQ4,
+          kitchenQ5
         }
       })
         .then(() => fetchHistoryList(Number(historyFilter)))
         .catch(err => console.error('Kitchen habit auto-save error', err));
     }
-  }, [kitchenQ1, kitchenQ2, kitchenQ3, kitchenScore, hasAnyAnswer, apiUrl, token, user?.id]);
+  }, [kitchenQ1, kitchenQ2, kitchenQ3, kitchenQ4, kitchenQ5, kitchenScore, hasAnyAnswer, apiUrl, token, user?.id]);
 
   const handleAnswerQ1 = (val: boolean) => {
     isUserInteractingRef.current = true;
@@ -136,11 +149,23 @@ export const KitchenLogScreen: React.FC<KitchenLogScreenProps> = ({ onBack, onNa
     setKitchenQ3(val);
   };
 
+  const handleAnswerQ4 = (val: boolean) => {
+    isUserInteractingRef.current = true;
+    setKitchenQ4(val);
+  };
+
+  const handleAnswerQ5 = (val: boolean) => {
+    isUserInteractingRef.current = true;
+    setKitchenQ5(val);
+  };
+
   const handleResetLog = async () => {
     isUserInteractingRef.current = false;
     setKitchenQ1(null);
     setKitchenQ2(null);
     setKitchenQ3(null);
+    setKitchenQ4(null);
+    setKitchenQ5(null);
     setLoading(true);
     try {
       if (todayLogId && token) {
@@ -192,7 +217,9 @@ export const KitchenLogScreen: React.FC<KitchenLogScreenProps> = ({ onBack, onNa
         answers: {
           kitchenQ1,
           kitchenQ2,
-          kitchenQ3
+          kitchenQ3,
+          kitchenQ4,
+          kitchenQ5
         }
       });
       onBack();
@@ -345,6 +372,54 @@ export const KitchenLogScreen: React.FC<KitchenLogScreenProps> = ({ onBack, onNa
               </button>
             </div>
           </div>
+
+          {/* Question 4 */}
+          <div className="pt-5 border-t border-slate-100 dark:border-slate-800">
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-2">{t('kitchen.question4', 'Question 4')}</p>
+            <p className="text-sm font-semibold text-slate-850 dark:text-slate-100 leading-relaxed mb-3.5">
+              4. {t('kitchen.q4Text', 'Did you eat high temperature cooked meat (pan frying or grilling) or heavily browned foods like darkly toasted bread, deep brown/black deeply fried vegetables or chips?')}
+            </p>
+            <div className="flex gap-3">
+              <button 
+                type="button"
+                onClick={() => handleAnswerQ4(true)}
+                className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border cursor-pointer ${kitchenQ4 === true ? 'bg-rose-500 border-rose-500 text-white shadow-xs' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+              >
+                {t('common.yesRiskMinus1', 'Yes (Risk -1)')}
+              </button>
+              <button 
+                type="button"
+                onClick={() => handleAnswerQ4(false)}
+                className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border cursor-pointer ${kitchenQ4 === false ? 'bg-emerald-500 border-emerald-500 text-white shadow-xs' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+              >
+                {t('common.noSafeZero', 'No (Safe 0)')}
+              </button>
+            </div>
+          </div>
+
+          {/* Question 5 */}
+          <div className="pt-5 border-t border-slate-100 dark:border-slate-800">
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-2">{t('kitchen.question5', 'Question 5')}</p>
+            <p className="text-sm font-semibold text-slate-850 dark:text-slate-100 leading-relaxed mb-3.5">
+              5. {t('kitchen.q5Text', 'Did you cook or consume smoked or salted fish (high nitrosamines)?')}
+            </p>
+            <div className="flex gap-3">
+              <button 
+                type="button"
+                onClick={() => handleAnswerQ5(true)}
+                className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border cursor-pointer ${kitchenQ5 === true ? 'bg-rose-500 border-rose-500 text-white shadow-xs' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+              >
+                {t('common.yesRiskMinus1', 'Yes (Risk -1)')}
+              </button>
+              <button 
+                type="button"
+                onClick={() => handleAnswerQ5(false)}
+                className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-xs transition-all border cursor-pointer ${kitchenQ5 === false ? 'bg-emerald-500 border-emerald-500 text-white shadow-xs' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+              >
+                {t('common.noSafeZero', 'No (Safe 0)')}
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Natural Kitchen Guidelines Card */}
@@ -451,9 +526,14 @@ export const KitchenLogScreen: React.FC<KitchenLogScreenProps> = ({ onBack, onNa
               const val = h.value;
               const ans = val?.answers || (typeof val === 'object' ? val : {});
               let logScore = typeof val?.score === 'number' ? val.score : null;
-              if (logScore === null && (ans.kitchenQ1 !== undefined || ans.kitchenQ2 !== undefined || ans.kitchenQ3 !== undefined)) {
-                const hasRisk = ans.kitchenQ1 === true || ans.kitchenQ2 === true || ans.kitchenQ3 === true;
-                logScore = hasRisk ? -1 : 0;
+              if (logScore === null && (ans.kitchenQ1 !== undefined || ans.kitchenQ2 !== undefined || ans.kitchenQ3 !== undefined || ans.kitchenQ4 !== undefined || ans.kitchenQ5 !== undefined)) {
+                let risks = 0;
+                if (ans.kitchenQ1 === true) risks -= 1;
+                if (ans.kitchenQ2 === true) risks -= 1;
+                if (ans.kitchenQ3 === true) risks -= 1;
+                if (ans.kitchenQ4 === true) risks -= 1;
+                if (ans.kitchenQ5 === true) risks -= 1;
+                logScore = risks;
               }
               const isSafe = logScore === 0;
               const isAi = h.source === 'chatbot' || val?.source === 'ai_mia';
@@ -486,7 +566,7 @@ export const KitchenLogScreen: React.FC<KitchenLogScreenProps> = ({ onBack, onNa
                       ) : (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-black bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
                           <ShieldAlert className="w-3.5 h-3.5 text-rose-500" />
-                          {t('kitchenRisk', 'Risk Flagged (-1)')}
+                          {t('kitchenRisk', 'Risk Flagged')} ({logScore})
                         </span>
                       )}
                       <button
@@ -501,23 +581,35 @@ export const KitchenLogScreen: React.FC<KitchenLogScreenProps> = ({ onBack, onNa
                   </div>
 
                   {/* Summary of answers */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5 pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px]">
-                    <div className="flex items-center justify-between sm:justify-start gap-1.5 text-slate-600 dark:text-slate-300">
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px]">
+                    <div className="flex items-center justify-between sm:justify-start gap-1 text-slate-600 dark:text-slate-300">
                       <span className="text-slate-400">Non-stick:</span>
                       <span className={`font-bold ${ans.kitchenQ1 === true ? 'text-rose-600 dark:text-rose-400' : ans.kitchenQ1 === false ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`}>
                         {ans.kitchenQ1 === true ? 'Risk (-1)' : ans.kitchenQ1 === false ? 'Safe (0)' : '—'}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between sm:justify-start gap-1.5 text-slate-600 dark:text-slate-300">
+                    <div className="flex items-center justify-between sm:justify-start gap-1 text-slate-600 dark:text-slate-300">
                       <span className="text-slate-400">Plastics:</span>
                       <span className={`font-bold ${ans.kitchenQ2 === true ? 'text-rose-600 dark:text-rose-400' : ans.kitchenQ2 === false ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`}>
                         {ans.kitchenQ2 === true ? 'Risk (-1)' : ans.kitchenQ2 === false ? 'Safe (0)' : '—'}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between sm:justify-start gap-1.5 text-slate-600 dark:text-slate-300">
+                    <div className="flex items-center justify-between sm:justify-start gap-1 text-slate-600 dark:text-slate-300">
                       <span className="text-slate-400">Utensils:</span>
                       <span className={`font-bold ${ans.kitchenQ3 === true ? 'text-rose-600 dark:text-rose-400' : ans.kitchenQ3 === false ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`}>
                         {ans.kitchenQ3 === true ? 'Risk (-1)' : ans.kitchenQ3 === false ? 'Safe (0)' : '—'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between sm:justify-start gap-1 text-slate-600 dark:text-slate-300">
+                      <span className="text-slate-400">High-Temp:</span>
+                      <span className={`font-bold ${ans.kitchenQ4 === true ? 'text-rose-600 dark:text-rose-400' : ans.kitchenQ4 === false ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`}>
+                        {ans.kitchenQ4 === true ? 'Risk (-1)' : ans.kitchenQ4 === false ? 'Safe (0)' : '—'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between sm:justify-start gap-1 text-slate-600 dark:text-slate-300">
+                      <span className="text-slate-400">Smoked:</span>
+                      <span className={`font-bold ${ans.kitchenQ5 === true ? 'text-rose-600 dark:text-rose-400' : ans.kitchenQ5 === false ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`}>
+                        {ans.kitchenQ5 === true ? 'Risk (-1)' : ans.kitchenQ5 === false ? 'Safe (0)' : '—'}
                       </span>
                     </div>
                   </div>

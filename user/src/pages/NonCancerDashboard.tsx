@@ -949,26 +949,32 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
       const hasQ1 = ans.kitchenQ1 !== undefined && ans.kitchenQ1 !== null;
       const hasQ2 = ans.kitchenQ2 !== undefined && ans.kitchenQ2 !== null;
       const hasQ3 = ans.kitchenQ3 !== undefined && ans.kitchenQ3 !== null;
+      const hasQ4 = ans.kitchenQ4 !== undefined && ans.kitchenQ4 !== null;
+      const hasQ5 = ans.kitchenQ5 !== undefined && ans.kitchenQ5 !== null;
 
-      if (hasQ1 || hasQ2 || hasQ3) {
+      if (hasQ1 || hasQ2 || hasQ3 || hasQ4 || hasQ5) {
         // In KitchenLogScreen: true = Risk (-1), false = Safe (0)
         let riskCount = 0;
         if (ans.kitchenQ1 === true || ans.kitchenQ1 === 'yes') riskCount += 1;
         if (ans.kitchenQ2 === true || ans.kitchenQ2 === 'yes') riskCount += 1;
         if (ans.kitchenQ3 === true || ans.kitchenQ3 === 'yes') riskCount += 1;
+        if (ans.kitchenQ4 === true || ans.kitchenQ4 === 'yes') riskCount += 1;
+        if (ans.kitchenQ5 === true || ans.kitchenQ5 === 'yes') riskCount += 1;
 
         if (riskCount > 0) {
           return -1;
         }
 
         if (ans.kitchenQ1 === false || ans.kitchenQ2 === false || ans.kitchenQ3 === false ||
-          ans.kitchenQ1 === 'no' || ans.kitchenQ2 === 'no' || ans.kitchenQ3 === 'no') {
+          ans.kitchenQ4 === false || ans.kitchenQ5 === false ||
+          ans.kitchenQ1 === 'no' || ans.kitchenQ2 === 'no' || ans.kitchenQ3 === 'no' ||
+          ans.kitchenQ4 === 'no' || ans.kitchenQ5 === 'no') {
           return 0;
         }
       }
 
       // If all questions are explicitly null, user has not answered / has reset
-      if (ans.kitchenQ1 === null && ans.kitchenQ2 === null && ans.kitchenQ3 === null) {
+      if (ans.kitchenQ1 === null && ans.kitchenQ2 === null && ans.kitchenQ3 === null && ans.kitchenQ4 === null && ans.kitchenQ5 === null) {
         return null;
       }
     }
@@ -1288,16 +1294,22 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
         const hasQ1 = ans.kitchenQ1 !== undefined && ans.kitchenQ1 !== null;
         const hasQ2 = ans.kitchenQ2 !== undefined && ans.kitchenQ2 !== null;
         const hasQ3 = ans.kitchenQ3 !== undefined && ans.kitchenQ3 !== null;
-        if (hasQ1 || hasQ2 || hasQ3) {
+        const hasQ4 = ans.kitchenQ4 !== undefined && ans.kitchenQ4 !== null;
+        const hasQ5 = ans.kitchenQ5 !== undefined && ans.kitchenQ5 !== null;
+        if (hasQ1 || hasQ2 || hasQ3 || hasQ4 || hasQ5) {
           let riskCount = 0;
           if (ans.kitchenQ1 === true || ans.kitchenQ1 === 'yes') riskCount += 1;
           if (ans.kitchenQ2 === true || ans.kitchenQ2 === 'yes') riskCount += 1;
           if (ans.kitchenQ3 === true || ans.kitchenQ3 === 'yes') riskCount += 1;
+          if (ans.kitchenQ4 === true || ans.kitchenQ4 === 'yes') riskCount += 1;
+          if (ans.kitchenQ5 === true || ans.kitchenQ5 === 'yes') riskCount += 1;
           if (riskCount > 0) return -1;
           if (ans.kitchenQ1 === false || ans.kitchenQ2 === false || ans.kitchenQ3 === false ||
-            ans.kitchenQ1 === 'no' || ans.kitchenQ2 === 'no' || ans.kitchenQ3 === 'no') return 0;
+            ans.kitchenQ4 === false || ans.kitchenQ5 === false ||
+            ans.kitchenQ1 === 'no' || ans.kitchenQ2 === 'no' || ans.kitchenQ3 === 'no' ||
+            ans.kitchenQ4 === 'no' || ans.kitchenQ5 === 'no') return 0;
         }
-        if (ans.kitchenQ1 === null && ans.kitchenQ2 === null && ans.kitchenQ3 === null) return null;
+        if (ans.kitchenQ1 === null && ans.kitchenQ2 === null && ans.kitchenQ3 === null && ans.kitchenQ4 === null && ans.kitchenQ5 === null) return null;
       }
       const optStr = (typeof val === 'object' ? (val.option || val.notes || '') : `${val}`).toLowerCase();
       if (optStr.includes('risk') || optStr.includes('plastic') || optStr.includes('non-stick')) return -1;
