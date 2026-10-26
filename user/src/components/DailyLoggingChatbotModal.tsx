@@ -898,7 +898,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
 
       // Step-specific smart semantic matching
       // STRESS
-      if (s === 'stress' || s === 'caregiver_stress') {
+      if (s === 'stress' || s === 'caregiver_stress' || s === 'found_stress' || s === 'pcod_stress' || s === 'diab_stress' || s === 'htn_stress' || s === 'cardiac_stress') {
         if (['calm', 'no stress', 'zero', 'peaceful', 'none', 'good', 'fine', 'relaxed', 'normal', 'low stress', 'அமைதி', 'शांत', 'ಶಾಂತ', 'శాంత'].some(w => clean.includes(w))) {
           return { valid: true, mappedValue: options.find(o => o.toLowerCase().includes('calm') || o.toLowerCase().includes('no stress')) || options[0] };
         }
@@ -908,8 +908,47 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
         if (['moderate', 'medium', 'average', 'some', 'okay', 'மிதமான', 'मध्यम', 'ಮಧ್ಯಮ', 'మితమైన'].some(w => clean.includes(w))) {
           return { valid: true, mappedValue: options.find(o => o.toLowerCase().includes('moderate')) || options[2] || options[1] };
         }
-        if (['high', 'severe', 'lot of stress', 'heavy', 'extreme', 'overwhelmed', 'drained', 'very stressed', 'அதிக', 'अत्यधिक', 'ಹೆಚ್ಚಿನ', 'అధిక'].some(w => clean.includes(w))) {
+        if (['high', 'severe', 'lot of stress', 'heavy', 'extreme', 'overwhelmed', 'drained', 'very stressed', 'அதிக', 'அத்தியாவசிய', 'अत्यधिक', 'ಹೆಚ್ಚಿನ', 'అధిక'].some(w => clean.includes(w))) {
           return { valid: true, mappedValue: options.find(o => o.toLowerCase().includes('high')) || options[options.length - 1] };
+        }
+      }
+
+      // RESTING BREATH RATE & STRESS ASSESSMENT
+      if (s === 'stress_breath_rate') {
+        const numMatch = clean.match(/(\d+)/);
+        if (numMatch) {
+          const count = parseInt(numMatch[1], 10);
+          if (count <= 12) {
+            return { valid: true, mappedValue: options.find(o => o.includes('≤12') || o.toLowerCase().includes('calm')) || options[0] };
+          } else {
+            return { valid: true, mappedValue: options.find(o => o.includes('>12') || o.toLowerCase().includes('elevated')) || options[options.length - 1] };
+          }
+        }
+        if (['calm', 'low', 'normal', 'slow', 'peaceful', 'good', 'fine', 'steady', '<=12', '≤12', 'அமைதி', 'சாதாரண', 'மெதுவான', 'शांत', 'सामान्य', 'धीमी', 'ಶಾಂತ', 'ಸಾಮಾನ್ಯ', 'ప్రశాంతం', 'సాధారణ'].some(w => clean.includes(w))) {
+          return { valid: true, mappedValue: options.find(o => o.includes('≤12') || o.toLowerCase().includes('calm')) || options[0] };
+        }
+        if (['elevated', 'high', 'fast', 'rapid', 'tense', 'stressed', 'gasp', 'heavy', '>12', 'அதிக', 'அதிவேக', 'கூடுதல்', 'अत्यधिक', 'तेज', 'बढ़ा', 'ಹೆಚ್ಚು', 'ವೇಗ', 'అధిక', 'వేగంగా'].some(w => clean.includes(w))) {
+          return { valid: true, mappedValue: options.find(o => o.includes('>12') || o.toLowerCase().includes('elevated')) || options[options.length - 1] };
+        }
+      }
+
+      // SLEEP LATENCY CHECK
+      if (s === 'sleep_latency') {
+        if (['no', 'easily', 'fast', 'quick', 'easy', 'immediate', 'sound', 'good', 'இல்லை', 'எளிதாக', 'नहीं', 'आसानी', 'ಇಲ್ಲ', 'ಸುಲಭ', 'లేదు', 'సులభ'].some(w => clean.includes(w))) {
+          return { valid: true, mappedValue: options.find(o => o.toLowerCase().startsWith('no') || o.toLowerCase().includes('easily')) || options[0] };
+        }
+        if (['yes', 'takes', '30', 'hard', 'difficult', 'insomnia', 'delay', 'trouble', 'long', 'late', 'struggle', 'ஆம்', 'சிரமம்', 'हाँ', 'कठिनाई', 'हौదు', 'ಕಷ್ಟ', 'అవును', 'ఇబ్బంది'].some(w => clean.includes(w))) {
+          return { valid: true, mappedValue: options.find(o => o.toLowerCase().startsWith('yes') || o.toLowerCase().includes('30+')) || options[options.length - 1] };
+        }
+      }
+
+      // SLEEP SNORING CHECK
+      if (s === 'snoring' || s === 'sleep_snoring') {
+        if (['no', 'quiet', 'peaceful', 'silent', 'clean', 'none', 'never', 'sound', 'இல்லை', 'அமைதி', 'नहीं', 'शांत', 'ಇಲ್ಲ', 'ಶಾಂತ', 'లేదు', 'ప్రశాంత'].some(w => clean.includes(w))) {
+          return { valid: true, mappedValue: options.find(o => o.toLowerCase().startsWith('no') || o.toLowerCase().includes('quiet')) || options[0] };
+        }
+        if (['yes', 'snore', 'snoring', 'gasp', 'airway', 'loud', 'apnea', 'choke', 'dry mouth', 'ஆம்', 'குறட்டை', 'हाँ', 'खर्राटे', 'ಹೌದು', 'ಗೊರಕೆ', 'అవును', 'గురక'].some(w => clean.includes(w))) {
+          return { valid: true, mappedValue: options.find(o => o.toLowerCase().startsWith('yes') || o.toLowerCase().includes('snoring') || o.toLowerCase().includes('airway')) || options[options.length - 1] };
         }
       }
 
@@ -1063,12 +1102,30 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
             isEnabled: true
           },
           {
+            stepId: 'sleep_latency',
+            title: 'Sleep Latency Check',
+            questionPrompt: 'Did you have difficulty beginning to fall asleep (taking 30+ minutes) last night?',
+            inputType: 'YES_NO',
+            options: ['No (Fall Asleep Easily)', 'Yes (Takes 30+ mins)'],
+            order: 3,
+            isEnabled: true
+          },
+          {
+            stepId: 'snoring',
+            title: 'Sleep Snoring & Airway Check',
+            questionPrompt: 'Do you snore loudly during sleep, gasp for breath, or wake up unrefreshed?',
+            inputType: 'YES_NO',
+            options: ['No (Quiet Peaceful Sleep)', 'Yes (Snoring / Airway Gasps)'],
+            order: 4,
+            isEnabled: true
+          },
+          {
             stepId: 'found_diet',
             title: 'Whole-Food Diet',
             questionPrompt: 'Did you eat a balanced, whole-food diet with minimal processed foods today?',
             inputType: 'YES_NO',
             options: ['Yes', 'No'],
-            order: 3,
+            order: 5,
             isEnabled: true
           },
           {
@@ -1077,7 +1134,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
             questionPrompt: 'Did you adhere to your intermittent circadian fasting window today?',
             inputType: 'YES_NO',
             options: ['Yes', 'No'],
-            order: 4,
+            order: 6,
             isEnabled: true
           },
           {
@@ -1086,7 +1143,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
             questionPrompt: 'Did you include antioxidant-rich vegetables, berries, or greens today?',
             inputType: 'YES_NO',
             options: ['Yes', 'No'],
-            order: 5,
+            order: 7,
             isEnabled: true
           },
           {
@@ -1094,7 +1151,16 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
             title: 'Stress Level',
             questionPrompt: 'On a scale from 1 (Calm) to 10 (High), what was your stress level today?',
             inputType: 'NUMBER',
-            order: 6,
+            order: 8,
+            isEnabled: true
+          },
+          {
+            stepId: 'stress_breath_rate',
+            title: 'Resting Breath Rate & Stress Check',
+            questionPrompt: 'What is your resting breath rate right now (inhalations per minute)? More than 12 breaths per minute indicates elevated sympathetic stress.',
+            inputType: 'OPTIONS',
+            options: ['Calm (≤12 / min)', 'Elevated (>12 / min)'],
+            order: 9,
             isEnabled: true
           }
         ]
@@ -1133,11 +1199,38 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
             isEnabled: true
           },
           {
+            stepId: 'sleep_latency',
+            title: 'Sleep Latency Check',
+            questionPrompt: 'Did you have difficulty beginning to fall asleep (taking 30+ minutes) last night?',
+            inputType: 'YES_NO',
+            options: ['No (Fall Asleep Easily)', 'Yes (Takes 30+ mins)'],
+            order: 4,
+            isEnabled: true
+          },
+          {
+            stepId: 'snoring',
+            title: 'Sleep Snoring & Airway Check',
+            questionPrompt: 'Do you snore loudly during sleep, gasp for breath, or wake up unrefreshed?',
+            inputType: 'YES_NO',
+            options: ['No (Quiet Peaceful Sleep)', 'Yes (Snoring / Airway Gasps)'],
+            order: 5,
+            isEnabled: true
+          },
+          {
             stepId: 'pcod_stress',
             title: 'Stress Scale',
             questionPrompt: 'On a scale from 1 to 10, how stressed did you feel today?',
             inputType: 'NUMBER',
-            order: 4,
+            order: 6,
+            isEnabled: true
+          },
+          {
+            stepId: 'stress_breath_rate',
+            title: 'Resting Breath Rate & Stress Check',
+            questionPrompt: 'What is your resting breath rate right now (inhalations per minute)? More than 12 breaths per minute indicates elevated sympathetic stress.',
+            inputType: 'OPTIONS',
+            options: ['Calm (≤12 / min)', 'Elevated (>12 / min)'],
+            order: 7,
             isEnabled: true
           },
           {
@@ -1146,7 +1239,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
             questionPrompt: 'Are you noticing any excess facial/body hair growth (hirsutism) or hormonal breakouts?',
             inputType: 'YES_NO',
             options: ['Yes', 'No'],
-            order: 5,
+            order: 8,
             isEnabled: true
           }
         ]
@@ -1194,11 +1287,38 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
             isEnabled: true
           },
           {
+            stepId: 'sleep_latency',
+            title: 'Sleep Latency Check',
+            questionPrompt: 'Did you have difficulty beginning to fall asleep (taking 30+ minutes) last night?',
+            inputType: 'YES_NO',
+            options: ['No (Fall Asleep Easily)', 'Yes (Takes 30+ mins)'],
+            order: 5,
+            isEnabled: true
+          },
+          {
+            stepId: 'snoring',
+            title: 'Sleep Snoring & Airway Check',
+            questionPrompt: 'Do you snore loudly during sleep, gasp for breath, or wake up unrefreshed?',
+            inputType: 'YES_NO',
+            options: ['No (Quiet Peaceful Sleep)', 'Yes (Snoring / Airway Gasps)'],
+            order: 6,
+            isEnabled: true
+          },
+          {
             stepId: 'diab_stress',
             title: 'Stress Level',
             questionPrompt: 'On a scale from 1 (Calm) to 10 (High), what was your stress level today?',
             inputType: 'NUMBER',
-            order: 5,
+            order: 7,
+            isEnabled: true
+          },
+          {
+            stepId: 'stress_breath_rate',
+            title: 'Resting Breath Rate & Stress Check',
+            questionPrompt: 'What is your resting breath rate right now (inhalations per minute)? More than 12 breaths per minute indicates elevated sympathetic stress.',
+            inputType: 'OPTIONS',
+            options: ['Calm (≤12 / min)', 'Elevated (>12 / min)'],
+            order: 8,
             isEnabled: true
           }
         ]
@@ -1246,11 +1366,38 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
             isEnabled: true
           },
           {
+            stepId: 'sleep_latency',
+            title: 'Sleep Latency Check',
+            questionPrompt: 'Did you have difficulty beginning to fall asleep (taking 30+ minutes) last night?',
+            inputType: 'YES_NO',
+            options: ['No (Fall Asleep Easily)', 'Yes (Takes 30+ mins)'],
+            order: 5,
+            isEnabled: true
+          },
+          {
+            stepId: 'snoring',
+            title: 'Sleep Snoring & Airway Check',
+            questionPrompt: 'Do you snore loudly during sleep, gasp for breath, or wake up unrefreshed?',
+            inputType: 'YES_NO',
+            options: ['No (Quiet Peaceful Sleep)', 'Yes (Snoring / Airway Gasps)'],
+            order: 6,
+            isEnabled: true
+          },
+          {
             stepId: 'htn_stress',
             title: 'Stress Level',
             questionPrompt: 'On a scale from 1 to 10, how was your stress and vascular tension today?',
             inputType: 'NUMBER',
-            order: 5,
+            order: 7,
+            isEnabled: true
+          },
+          {
+            stepId: 'stress_breath_rate',
+            title: 'Resting Breath Rate & Stress Check',
+            questionPrompt: 'What is your resting breath rate right now (inhalations per minute)? More than 12 breaths per minute indicates elevated sympathetic stress.',
+            inputType: 'OPTIONS',
+            options: ['Calm (≤12 / min)', 'Elevated (>12 / min)'],
+            order: 8,
             isEnabled: true
           }
         ]
@@ -1295,12 +1442,39 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
             isEnabled: true
           },
           {
+            stepId: 'sleep_latency',
+            title: 'Sleep Latency Check',
+            questionPrompt: 'Did you have difficulty beginning to fall asleep (taking 30+ minutes) last night?',
+            inputType: 'YES_NO',
+            options: ['No (Fall Asleep Easily)', 'Yes (Takes 30+ mins)'],
+            order: 5,
+            isEnabled: true
+          },
+          {
+            stepId: 'snoring',
+            title: 'Sleep Snoring & Airway Check',
+            questionPrompt: 'Do you snore loudly during sleep, gasp for breath, or wake up unrefreshed?',
+            inputType: 'YES_NO',
+            options: ['No (Quiet Peaceful Sleep)', 'Yes (Snoring / Airway Gasps)'],
+            order: 6,
+            isEnabled: true
+          },
+          {
+            stepId: 'stress_breath_rate',
+            title: 'Resting Breath Rate & Stress Check',
+            questionPrompt: 'What is your resting breath rate right now (inhalations per minute)? More than 12 breaths per minute indicates elevated sympathetic stress.',
+            inputType: 'OPTIONS',
+            options: ['Calm (≤12 / min)', 'Elevated (>12 / min)'],
+            order: 7,
+            isEnabled: true
+          },
+          {
             stepId: 'pd_loved',
             title: 'Dopamine Booster',
             questionPrompt: 'Did you engage in an activity you love, spend time in sunlight, or enjoy dark chocolate today?',
             inputType: 'YES_NO',
             options: ['Yes', 'No'],
-            order: 5,
+            order: 8,
             isEnabled: true
           }
         ]
@@ -1357,11 +1531,38 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
             isEnabled: true
           },
           {
+            stepId: 'sleep_latency',
+            title: 'Sleep Latency Check',
+            questionPrompt: 'Did you have difficulty beginning to fall asleep (taking 30+ minutes) last night?',
+            inputType: 'YES_NO',
+            options: ['No (Fall Asleep Easily)', 'Yes (Takes 30+ mins)'],
+            order: 6,
+            isEnabled: true
+          },
+          {
+            stepId: 'snoring',
+            title: 'Sleep Snoring & Airway Check',
+            questionPrompt: 'Do you snore loudly during sleep, gasp for breath, or wake up unrefreshed?',
+            inputType: 'YES_NO',
+            options: ['No (Quiet Peaceful Sleep)', 'Yes (Snoring / Airway Gasps)'],
+            order: 7,
+            isEnabled: true
+          },
+          {
             stepId: 'cardiac_stress',
             title: 'Stress Level',
             questionPrompt: 'On a scale from 1 (Calm) to 10 (High), what was your stress level today?',
             inputType: 'NUMBER',
-            order: 6,
+            order: 8,
+            isEnabled: true
+          },
+          {
+            stepId: 'stress_breath_rate',
+            title: 'Resting Breath Rate & Stress Check',
+            questionPrompt: 'What is your resting breath rate right now (inhalations per minute)? More than 12 breaths per minute indicates elevated sympathetic stress.',
+            inputType: 'OPTIONS',
+            options: ['Calm (≤12 / min)', 'Elevated (>12 / min)'],
+            order: 9,
             isEnabled: true
           }
         ]
@@ -1440,7 +1641,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
             (h.type === 'Stress' || h.type?.toUpperCase() === 'STRESS') && (h.value?.faceId !== undefined || h.value?.stressScore !== undefined || h.value?.option !== undefined)
           );
           if (s === 'stress_breath_rate') return todaysHabits.some(h =>
-            (h.type === 'Stress' || h.type?.toUpperCase() === 'STRESS') && (h.value?.breathCount !== undefined || h.value?.breathRate !== undefined)
+            h.value?.stepId === 'stress_breath_rate' || (h.source === 'chatbot' && (h.value?.breathCount !== undefined || h.value?.breathRate !== undefined))
           );
 
           // ── Cancer Prevention / Secondary Prevention steps ──
@@ -1449,10 +1650,10 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
             (h.type === 'Sleep' || h.type?.toUpperCase() === 'SLEEP') && h.value?.hours !== undefined
           );
           if (s === 'sleep_latency') return todaysHabits.some(h =>
-            (h.type === 'Sleep' || h.type?.toUpperCase() === 'SLEEP') && h.value?.difficultyFallingAsleep !== undefined
+            h.value?.stepId === 'sleep_latency' || (h.source === 'chatbot' && h.value?.difficultyFallingAsleep !== undefined)
           );
           if (s === 'snoring' || s === 'sleep_snoring') return todaysHabits.some(h =>
-            (h.type || '').toUpperCase() === 'SLEEP' && h.value?.snoring !== undefined
+            h.value?.stepId === 'snoring' || h.value?.stepId === 'sleep_snoring' || (h.source === 'chatbot' && h.value?.snoring !== undefined)
           );
           // Smoking screen → saves type: 'Smoking'
           if (s === 'smoking') return todaysHabits.some(h =>
@@ -1503,8 +1704,8 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
             h.type?.toUpperCase().includes('GASTR') || h.type?.toUpperCase().includes('DENTAL')
           );
           // Snoring check
-          if (s === 'snoring') return todaysHabits.some(h =>
-            (h.type || '').toUpperCase() === 'SLEEP' && h.value?.snoring !== undefined
+          if (s === 'snoring' || s === 'sleep_snoring') return todaysHabits.some(h =>
+            h.value?.stepId === 'snoring' || h.value?.stepId === 'sleep_snoring' || (h.source === 'chatbot' && h.value?.snoring !== undefined)
           );
           // Diet & Nutrition check
           if (s === 'diet' || s === 'balanced_diet' || s === 'junk_food') return todaysHabits.some(h =>
@@ -1558,10 +1759,10 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
             const t = (h.type || '').toLowerCase();
             if (s === 'fasting') return t === 'fasting';
             if (s === 'stress' || s === 'caregiver_stress') return t === 'stress' && (h.value?.faceId !== undefined || h.value?.stressScore !== undefined || h.value?.option !== undefined);
-            if (s === 'stress_breath_rate') return t === 'stress' && (h.value?.breathCount !== undefined || h.value?.breathRate !== undefined);
+            if (s === 'stress_breath_rate') return h.value?.stepId === 'stress_breath_rate' || (h.source === 'chatbot' && (h.value?.breathCount !== undefined || h.value?.breathRate !== undefined));
             if (s === 'sleep') return t === 'sleep' && h.value?.hours !== undefined;
-            if (s === 'sleep_latency') return t === 'sleep' && h.value?.difficultyFallingAsleep !== undefined;
-            if (s === 'snoring' || s === 'sleep_snoring') return t === 'sleep' && h.value?.snoring !== undefined;
+            if (s === 'sleep_latency') return h.value?.stepId === 'sleep_latency' || (h.source === 'chatbot' && h.value?.difficultyFallingAsleep !== undefined);
+            if (s === 'snoring' || s === 'sleep_snoring') return h.value?.stepId === 'snoring' || h.value?.stepId === 'sleep_snoring' || (h.source === 'chatbot' && h.value?.snoring !== undefined);
             if (s === 'diet' || s === 'balanced_diet' || s === 'junk_food') return t.includes('diet');
             if (s === 'breath' || s === 'power_of_breath' || s === 'breathwork') return t.includes('breath');
             if (s === 'dental' || s === 'dental_health') return t.includes('dental');
@@ -1732,36 +1933,62 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
 
       if (stepId === 'stress' || stepId === 'caregiver_stress') {
         habitType = 'Stress';
-        habitValue = { faceId: (lowerVal.includes('high') || lowerVal.includes('strain') || lowerVal.includes('severe') || lowerVal.includes('drained')) ? 'stressed' : 'calm' };
+        const todayStr = new Date().toDateString();
+        const existingStress = loggedHabits.find(h => (h.type === 'Stress' || h.type?.toUpperCase() === 'STRESS') && new Date(h.timestamp || h.createdAt).toDateString() === todayStr);
+        const prevVal = existingStress?.value || {};
+        habitValue = {
+          ...prevVal,
+          faceId: (lowerVal.includes('high') || lowerVal.includes('strain') || lowerVal.includes('severe') || lowerVal.includes('drained')) ? 'stressed' : 'calm'
+        };
       } else if (stepId === 'stress_breath_rate') {
         habitType = 'Stress';
-        const isElevated = lowerVal.includes('elevated') || lowerVal.includes('>12') || lowerVal.includes('high');
-        const count = isElevated ? 16 : 10;
+        const todayStr = new Date().toDateString();
+        const existingStress = loggedHabits.find(h => (h.type === 'Stress' || h.type?.toUpperCase() === 'STRESS') && new Date(h.timestamp || h.createdAt).toDateString() === todayStr);
+        const prevVal = existingStress?.value || {};
+        const isElevated = lowerVal.includes('elevated') || lowerVal.includes('>12') || lowerVal.includes('high') || lowerVal.includes('fast');
+        const numMatch = lowerVal.match(/(\d+)/);
+        let count = isElevated ? 16 : 10;
+        if (numMatch) {
+          const parsed = parseInt(numMatch[1], 10);
+          if (!isNaN(parsed) && parsed > 0 && parsed <= 60) count = parsed;
+        }
         habitValue = {
+          ...prevVal,
           breathCount: count,
           breathRate: count,
-          isElevated,
+          isElevated: count > 12,
           option: valueStr,
-          score: isElevated ? -1 : 0
+          score: count > 12 ? -1 : 0
         };
       } else if (stepId === 'sleep') {
         habitType = 'Sleep';
+        const todayStr = new Date().toDateString();
+        const existingSleep = loggedHabits.find(h => (h.type === 'Sleep' || h.type?.toUpperCase() === 'SLEEP') && new Date(h.timestamp || h.createdAt).toDateString() === todayStr);
+        const prevVal = existingSleep?.value || {};
         const h = parseFloat(valueStr) || 7;
-        habitValue = { hours: h, quality: h >= 6 ? 'good' : 'poor' };
+        habitValue = {
+          ...prevVal,
+          hours: h,
+          quality: h >= 6 ? 'good' : 'poor'
+        };
       } else if (stepId === 'sleep_latency') {
         habitType = 'Sleep';
-        const hasDifficulty = lowerVal.includes('yes') || lowerVal.includes('30+') || lowerVal.includes('difficulty');
+        const todayStr = new Date().toDateString();
+        const existingSleep = loggedHabits.find(h => (h.type === 'Sleep' || h.type?.toUpperCase() === 'SLEEP') && new Date(h.timestamp || h.createdAt).toDateString() === todayStr);
+        const prevVal = existingSleep?.value || {};
+        const hasDifficulty = lowerVal.includes('yes') || lowerVal.includes('30+') || lowerVal.includes('difficulty') || lowerVal.includes('insomnia');
         habitValue = {
+          ...prevVal,
           difficultyFallingAsleep: hasDifficulty,
           option: valueStr,
           score: hasDifficulty ? -1 : 0
         };
       } else if (stepId === 'snoring' || stepId === 'sleep_snoring') {
         habitType = 'Sleep';
-        const hasSnoring = lowerVal.includes('yes') || lowerVal.includes('snore') || lowerVal.includes('gasp');
         const todayStr = new Date().toDateString();
         const existingSleep = loggedHabits.find(h => (h.type === 'Sleep' || h.type?.toUpperCase() === 'SLEEP') && new Date(h.timestamp || h.createdAt).toDateString() === todayStr);
         const prevVal = existingSleep?.value || {};
+        const hasSnoring = lowerVal.includes('yes') || lowerVal.includes('snore') || lowerVal.includes('gasp') || lowerVal.includes('apnea');
         habitValue = {
           ...prevVal,
           snoring: hasSnoring,
@@ -1880,18 +2107,6 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
             kitchenQ3: isSafe
           },
           option: valueStr
-        };
-      } else if (stepId === 'snoring') {
-        habitType = 'Sleep';
-        const hasSnoring = lowerVal.includes('yes') || lowerVal.includes('snore') || lowerVal.includes('gasp');
-        const todayStr = new Date().toDateString();
-        const existingSleep = loggedHabits.find(h => (h.type === 'Sleep' || h.type?.toUpperCase() === 'SLEEP') && new Date(h.timestamp || h.createdAt).toDateString() === todayStr);
-        const prevVal = existingSleep?.value || {};
-        habitValue = {
-          ...prevVal,
-          snoring: hasSnoring,
-          option: valueStr,
-          score: hasSnoring ? -1 : (prevVal.score !== undefined ? prevVal.score : 0)
         };
       } else if (stepId === 'diet' || stepId === 'balanced_diet' || stepId === 'junk_food') {
         habitType = 'Diet';
@@ -2065,15 +2280,21 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
 
       // Update in-memory state so subsequent checks in the same session immediately know it is logged
       const todayStr = new Date().toDateString();
-      setLoggedHabits(prev => [
-        {
-          type: habitType,
-          value: habitValue,
-          source: 'chatbot',
-          timestamp: new Date().toISOString()
-        },
-        ...prev.filter(h => !(h.type === habitType && new Date(h.timestamp || (h as any).createdAt).toDateString() === todayStr))
-      ]);
+      setLoggedHabits(prev => {
+        const existing = prev.find(h => h.type === habitType && new Date(h.timestamp || (h as any).createdAt).toDateString() === todayStr);
+        const mergedValue = existing?.value && typeof existing.value === 'object' && typeof habitValue === 'object'
+          ? { ...existing.value, ...habitValue }
+          : habitValue;
+        return [
+          {
+            type: habitType,
+            value: mergedValue,
+            source: 'chatbot',
+            timestamp: new Date().toISOString()
+          },
+          ...prev.filter(h => !(h.type === habitType && new Date(h.timestamp || (h as any).createdAt).toDateString() === todayStr))
+        ];
+      });
 
       if (onRefreshDashboard) onRefreshDashboard();
     } catch (e) { console.error('Error saving habit:', e); }

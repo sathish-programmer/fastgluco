@@ -629,7 +629,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
               return true;
             }
             if (s === 'stress' || s === 'caregiver_stress') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'STRESS');
+            if (s === 'stress_breath_rate') return todayLogs.some((h: any) => h.value?.stepId === 'stress_breath_rate' || (h.source === 'chatbot' && (h.value?.breathCount !== undefined || h.value?.breathRate !== undefined)));
             if (s === 'sleep') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'SLEEP');
+            if (s === 'sleep_latency') return todayLogs.some((h: any) => h.value?.stepId === 'sleep_latency' || (h.source === 'chatbot' && h.value?.difficultyFallingAsleep !== undefined));
+            if (s === 'snoring' || s === 'sleep_snoring') return todayLogs.some((h: any) => h.value?.stepId === 'snoring' || h.value?.stepId === 'sleep_snoring' || (h.source === 'chatbot' && h.value?.snoring !== undefined));
             if (s === 'fasting') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'FASTING');
             if (s === 'movement') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'MOVEMENT');
             if (s === 'stillness') return todayLogs.some((h: any) => (h.type || '').toUpperCase() === 'STILLNESS');
