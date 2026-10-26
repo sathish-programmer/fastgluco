@@ -11,6 +11,7 @@ interface AntioxidantLogScreenProps {
   onNavigateToDiagnostics?: () => void;
   onNavigateToShopCategory?: (category: string, subcategory?: string) => void;
   onBookAppointment?: (reason: string) => void;
+  initialFilter?: '7' | '30' | '365';
 }
 
 const ANTIOXIDANT_FOODS = [
@@ -81,7 +82,8 @@ export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({
   onViewShop,
   onNavigateToDiagnostics: _onNavigateToDiagnostics,
   onNavigateToShopCategory,
-  onBookAppointment
+  onBookAppointment,
+  initialFilter = '7'
 }) => {
   const { user, token, apiUrl } = useAuth();
   const { t, language } = useLanguage();
@@ -97,19 +99,26 @@ export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({
   const [answer, setAnswer] = useState<'yes' | 'no' | null>(null);
   const [showVitaminModal, setShowVitaminModal] = useState<boolean>(false);
   const [history, setHistory] = useState<HabitLog[]>([]);
+  const [historyFilter, setHistoryFilter] = useState<'7' | '30' | '365'>(initialFilter || '7');
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [loading, setLoading] = useState(false);
   const [showFoodTable, setShowFoodTable] = useState(false);
 
   useEffect(() => {
-    if (user?.id) loadHistory();
-  }, [user]);
+    if (initialFilter) {
+      setHistoryFilter(initialFilter);
+    }
+  }, [initialFilter]);
 
-  const loadHistory = async () => {
+  useEffect(() => {
+    if (user?.id) loadHistory(Number(historyFilter));
+  }, [user, historyFilter]);
+
+  const loadHistory = async (days = Number(historyFilter)) => {
     if (!user?.id) return;
     try {
       setLoadingHistory(true);
-      const logs = await HabitsService.getRecentHabits(apiUrl, token, 'Antioxidants', 7);
+      const logs = await HabitsService.getRecentHabits(apiUrl, token, 'Antioxidants', days);
       setHistory(logs);
     } catch (err) {
       console.error(err);
@@ -298,9 +307,45 @@ export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({
         )}
       </div>
 
-      {/* 7-Day History */}
+      {/* History */}
       <div>
-        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-widest uppercase block mb-3">{t('sevenDayTrend', '7-Day Trend')}</span>
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-widest uppercase">
+            {historyFilter === '365' ? t('oneYearTrend', '1-Year Trend') : historyFilter === '30' ? t('thirtyDayTrend', '30-Day Trend') : t('sevenDayTrend', '7-Day Trend')}
+          </span>
+          <div className="inline-flex rounded-lg bg-slate-100 dark:bg-slate-800 p-0.5 border border-slate-200 dark:border-slate-700">
+            <button
+              onClick={() => setHistoryFilter('7')}
+              className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all cursor-pointer ${
+                historyFilter === '7'
+                  ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
+              }`}
+            >
+              7D
+            </button>
+            <button
+              onClick={() => setHistoryFilter('30')}
+              className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all cursor-pointer ${
+                historyFilter === '30'
+                  ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
+              }`}
+            >
+              30D
+            </button>
+            <button
+              onClick={() => setHistoryFilter('365')}
+              className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all cursor-pointer ${
+                historyFilter === '365'
+                  ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
+              }`}
+            >
+              1Y
+            </button>
+          </div>
+        </div>
         {loadingHistory ? (
           <div className="text-center py-8">
             <div className="w-6 h-6 border-2 border-slate-200 border-t-emerald-500 rounded-full animate-spin mx-auto mb-3" />
@@ -314,7 +359,7 @@ export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({
             {history.map((h) => {
               const consumed = h.value?.consumed === true;
               return (
-                <div key={h.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm rounded-xl p-3 flex justify-between items-center">
+                <div key={h.id || (h as any)._id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm rounded-xl p-3 flex justify-between items-center">
                   <div className="flex items-center gap-3">
                     <div className={`h-9 w-9 rounded-xl flex items-center justify-center text-lg ${consumed ? 'bg-emerald-50 dark:bg-emerald-950/40' : 'bg-rose-50 dark:bg-rose-950/40'}`}>
                       {consumed ? '🫐' : '⭕'}
@@ -324,7 +369,7 @@ export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({
                         {consumed ? t('consumedAntioxidants', 'Consumed antioxidants') : t('notConsumed', 'Not consumed')}
                       </span>
                       <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 block">
-                        {new Date(h.timestamp).toLocaleDateString(activeLocale, { weekday: 'short', month: 'short', day: 'numeric' })}
+                        {new Date(h.timestamp || (h as any).createdAt).toLocaleDateString(activeLocale, { weekday: 'short', month: 'short', day: 'numeric' })} · {new Date(h.timestamp || (h as any).createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
                   </div>
@@ -334,8 +379,8 @@ export const AntioxidantLogScreen: React.FC<AntioxidantLogScreenProps> = ({
                       : <X className="h-4 w-4 text-rose-400" />
                     }
                     <button
-                      onClick={() => handleDelete(h.id)}
-                      className="p-1.5 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-slate-300 hover:text-rose-500 rounded-lg transition-colors"
+                      onClick={() => handleDelete(h.id || (h as any)._id)}
+                      className="p-1.5 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-slate-300 hover:text-rose-500 rounded-lg transition-colors cursor-pointer"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>

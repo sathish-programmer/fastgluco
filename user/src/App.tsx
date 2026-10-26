@@ -243,7 +243,7 @@ const MainAppContent: React.FC = () => {
 
       // If user hasn't viewed today's motivation yet, show popup and notify backend to suppress push notification
       if (lastViewed !== todayStr) {
-        const data = await MotivationService.getTodayMotivation(apiUrl, token, (user as any)?.createdAt);
+        const data = await MotivationService.getTodayMotivation(apiUrl, token);
         if (isMounted && !data.hasViewedToday) {
           setDailyMotivationData({ dayNumber: data.dayNumber, message: data.message });
           setShowDailyMotivation(true);
@@ -338,7 +338,7 @@ const MainAppContent: React.FC = () => {
           setShowDailyMotivation(true);
           MotivationService.markMotivationViewed(apiUrl, token);
         } else {
-          MotivationService.getTodayMotivation(apiUrl, token, (user as any)?.createdAt).then((res) => {
+          MotivationService.getTodayMotivation(apiUrl, token).then((res) => {
             setDailyMotivationData({ dayNumber: res.dayNumber, message: res.message });
             setShowDailyMotivation(true);
             MotivationService.markMotivationViewed(apiUrl, token);

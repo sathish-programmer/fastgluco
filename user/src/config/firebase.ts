@@ -1,6 +1,5 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check';
 import { Capacitor } from '@capacitor/core';
 
 const firebaseConfig = {
@@ -16,17 +15,5 @@ const firebaseConfig = {
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const isNativePlatform = Capacitor.isNativePlatform();
-
-// Initialize reCAPTCHA Enterprise App Check for Web Phone Auth
-if (typeof window !== 'undefined' && !isNativePlatform) {
-  try {
-    initializeAppCheck(app, {
-      provider: new ReCaptchaEnterpriseProvider('6LfUzUMtAAAAADNMO4uoNoNqpQK_rkRwgvyapQKC'),
-      isTokenAutoRefreshEnabled: true
-    });
-  } catch (err) {
-    console.warn('[Firebase AppCheck]', err);
-  }
-}
 
 export default app;

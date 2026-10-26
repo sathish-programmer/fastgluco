@@ -23,8 +23,11 @@ export class MotivationController {
       const now = new Date();
       const istTime = new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
 
-      // If user hasn't started daily motivation yet, initialize their start date to today (so both old and new users start on Day 1)
-      if (!user.dailyMotivationStartDate) {
+      // Feature launch date: October 26, 2026.
+      // For old users (registered before feature launch) or anyone with uninitialized/stale start dates,
+      // initialize dailyMotivationStartDate to today so they begin from Day 1 today.
+      const FEATURE_LAUNCH_DATE = new Date('2026-10-26T00:00:00.000Z');
+      if (!user.dailyMotivationStartDate || new Date(user.dailyMotivationStartDate) < FEATURE_LAUNCH_DATE) {
         user.dailyMotivationStartDate = now;
         await user.save();
       }

@@ -11,25 +11,6 @@ export const logHabit = async (req: Request, res: Response) => {
     }
 
     const logDate = timestamp ? new Date(timestamp) : new Date();
-    const startOfDay = new Date(logDate);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(logDate);
-    endOfDay.setHours(23, 59, 59, 999);
-
-    // Upsert or update existing log for the same user, habit type and day to prevent duplicate logs
-    const existingLog = await HabitLog.findOne({
-      userId,
-      type: { $regex: new RegExp(`^${type}$`, 'i') },
-      timestamp: { $gte: startOfDay, $lte: endOfDay }
-    });
-
-    if (existingLog) {
-      existingLog.value = value;
-      existingLog.source = source || existingLog.source || 'manual';
-      existingLog.timestamp = logDate;
-      await existingLog.save();
-      return res.status(200).json(existingLog);
-    }
 
     const newLog = new HabitLog({
       userId,
@@ -59,16 +40,66 @@ export const getRecentHabits = async (req: Request, res: Response) => {
     const limitDays = days ? parseInt(days as string, 10) : 7;
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - limitDays);
+    startDate.setHours(0, 0, 0, 0);
 
-    const query: any = {
-      userId,
-      timestamp: { $gte: startDate }
-    };
-    if (type !== 'all') {
-      query.type = { $regex: new RegExp(`^${type}$`, 'i') };
+    const andConditions: any[] = [{ userId }];
+
+    // Add date filter
+    if (limitDays > 0) {
+      andConditions.push({
+        $or: [
+          { timestamp: { $gte: startDate } },
+          { createdAt: { $gte: startDate } }
+        ]
+      });
     }
 
-    const logs = await HabitLog.find(query).sort({ timestamp: -1 });
+    if (type !== 'all') {
+      const typeStr = String(type).trim().toLowerCase();
+      if (typeStr === 'kitchen') {
+        andConditions.push({
+          $or: [
+            { type: { $regex: /^kitchen/i } },
+            { type: { $regex: /^environment/i }, 'value.answers.kitchenQ1': { $exists: true } },
+            { type: { $regex: /^environment/i }, 'value.kitchenQ1': { $exists: true } },
+            { type: { $regex: /^damage/i }, 'value.stepId': { $regex: /kitchen/i } }
+          ]
+        });
+      } else if (typeStr === 'environmental' || typeStr === 'environment') {
+        andConditions.push({
+          $or: [
+            { type: { $regex: /^environment/i } },
+            { type: { $regex: /^kitchen/i } },
+            { type: { $regex: /^damage/i } }
+          ]
+        });
+      } else if (typeStr === 'substance' || typeStr === 'substances') {
+        andConditions.push({ type: { $regex: /^substances?$/i } });
+      } else if (typeStr === 'movement' || typeStr === 'exercise') {
+        andConditions.push({ type: { $regex: /^(movement|exercise)$/i } });
+      } else if (typeStr === 'breath' || typeStr === 'power_of_breath' || typeStr === 'breathwork') {
+        andConditions.push({ type: { $regex: /^(breath|power_of_breath|breathwork)$/i } });
+      } else if (typeStr === 'saferproducts' || typeStr === 'safer_products') {
+        andConditions.push({ type: { $regex: /^safer_?products?$/i } });
+      } else if (typeStr === 'genetic' || typeStr === 'genetics') {
+        andConditions.push({ type: { $regex: /^genetics?$/i } });
+      } else if (typeStr === 'antioxidant' || typeStr === 'antioxidants') {
+        andConditions.push({
+          $or: [
+            { type: { $regex: /^antioxidants?$/i } },
+            { type: { $regex: /^repair_habit$/i } }
+          ]
+        });
+      } else if (typeStr === 'gastritis') {
+        andConditions.push({ type: { $regex: /^(gastritis|gut_health)$/i } });
+      } else if (typeStr === 'obesity' || typeStr === 'weight') {
+        andConditions.push({ type: { $regex: /^(obesity|weight)$/i } });
+      } else {
+        andConditions.push({ type: { $regex: new RegExp(`^${type}$`, 'i') } });
+      }
+    }
+
+    const logs = await HabitLog.find({ $and: andConditions }).sort({ timestamp: -1, createdAt: -1 });
 
     res.json(logs);
   } catch (error) {
@@ -88,17 +119,7 @@ export const deleteHabit = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Habit log not found or unauthorized' });
     }
 
-    const startOfDay = new Date(log.timestamp);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(log.timestamp);
-    endOfDay.setHours(23, 59, 59, 999);
-
-    await HabitLog.deleteMany({
-      userId,
-      type: { $regex: new RegExp(`^${log.type}$`, 'i') },
-      timestamp: { $gte: startOfDay, $lte: endOfDay }
-    });
-
+    await HabitLog.findByIdAndDelete(id);
     res.json({ message: 'Habit log deleted successfully' });
   } catch (error) {
     console.error('Error deleting habit:', error);

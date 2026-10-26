@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Moon, Check } from 'lucide-react';
+import { ArrowLeft, Moon, Check, Trash2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { HabitsService, type HabitLog } from '../../services/habitsService';
 
 interface FastingLogScreenProps {
   onBack: () => void;
+  initialFilter?: '7' | '30' | '365';
 }
 
-export const FastingLogScreen: React.FC<FastingLogScreenProps> = ({ onBack }) => {
+export const FastingLogScreen: React.FC<FastingLogScreenProps> = ({ onBack, initialFilter }) => {
   const { user, token, apiUrl } = useAuth();
   const { t, language } = useLanguage();
 
@@ -24,23 +25,40 @@ export const FastingLogScreen: React.FC<FastingLogScreenProps> = ({ onBack }) =>
   const [started, setStarted] = useState('2026-07-01T20:20');
   const [ended, setEnded] = useState('2026-07-01T20:20');
   const [loading, setLoading] = useState(false);
+  const [historyFilter, setHistoryFilter] = useState<'7' | '30' | '365'>(initialFilter || '7');
   const [history, setHistory] = useState<HabitLog[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
 
   useEffect(() => {
-    if (user?.id) loadHistory();
-  }, [user]);
+    if (initialFilter) {
+      setHistoryFilter(initialFilter);
+    }
+  }, [initialFilter]);
 
-  const loadHistory = async () => {
-    if (!user?.id) return;
+  useEffect(() => {
+    if (user?.id && token) loadHistory(Number(historyFilter));
+  }, [user?.id, token, historyFilter]);
+
+  const loadHistory = async (days: number = Number(historyFilter)) => {
+    if (!user?.id || !token) return;
     try {
       setLoadingHistory(true);
-      const logs = await HabitsService.getRecentHabits(apiUrl, token, 'Fasting', 7);
+      const logs = await HabitsService.getRecentHabits(apiUrl, token, 'Fasting', days);
       setHistory(logs);
     } catch (err) {
       console.error(err);
     } finally {
       setLoadingHistory(false);
+    }
+  };
+
+  const handleDeleteLog = async (id: string) => {
+    if (!token) return;
+    try {
+      await HabitsService.deleteHabit(apiUrl, token, id);
+      await loadHistory();
+    } catch (err) {
+      console.error('Failed to delete fasting log', err);
     }
   };
   const handleLog = async () => {
@@ -124,7 +142,46 @@ export const FastingLogScreen: React.FC<FastingLogScreenProps> = ({ onBack }) =>
       </div>
 
       <div>
-        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-3">{t('fasting.recentFasts', 'Recent Fasts')}</span>
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block">
+            {historyFilter === '365' ? t('fasting.recentFasts365', 'Fasting History (1 Year)') : historyFilter === '30' ? t('fasting.recentFasts30', 'Fasting History (30 Days)') : t('fasting.recentFasts', 'Recent Fasts (7 Days)')}
+          </span>
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+            <button
+              type="button"
+              onClick={() => setHistoryFilter('7')}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                historyFilter === '7'
+                  ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+              }`}
+            >
+              7D
+            </button>
+            <button
+              type="button"
+              onClick={() => setHistoryFilter('30')}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                historyFilter === '30'
+                  ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+              }`}
+            >
+              30D
+            </button>
+            <button
+              type="button"
+              onClick={() => setHistoryFilter('365')}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                historyFilter === '365'
+                  ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+              }`}
+            >
+              1Y
+            </button>
+          </div>
+        </div>
         {loadingHistory ? (
           <div className="text-center py-8">
             <div className="w-6 h-6 border-2 border-slate-200 border-t-slate-400 rounded-full animate-spin mx-auto mb-3"></div>
@@ -136,15 +193,23 @@ export const FastingLogScreen: React.FC<FastingLogScreenProps> = ({ onBack }) =>
         ) : (
           <div className="flex flex-col gap-2">
             {history.map((h) => (
-              <div key={h.id} className="bg-white border border-slate-200 shadow-sm rounded-xl p-3 flex justify-between items-center">
+              <div key={h.id || (h as any)._id} className="bg-white border border-slate-200 shadow-sm rounded-xl p-3 flex justify-between items-center">
                 <div>
                   <span className="text-sm font-bold text-slate-700 flex items-center gap-2">
                     <Check className="h-4 w-4 text-emerald-500" /> {t('common.completed')}
                   </span>
                   <span className="text-[10px] text-slate-400 mt-1 block">
-                    {new Date(h.timestamp).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric' })}
+                    {new Date(h.timestamp || (h as any).createdAt).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric' })} · {new Date(h.timestamp || (h as any).createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteLog(h.id || (h as any)._id)}
+                  className="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg transition-colors cursor-pointer"
+                  title={t('common.delete', 'Delete')}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
               </div>
             ))}
           </div>

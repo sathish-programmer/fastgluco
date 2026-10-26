@@ -7,6 +7,7 @@ import { HabitsService, type HabitLog } from '../../services/habitsService';
 
 interface MovementLogScreenProps {
   onBack: () => void;
+  initialFilter?: '7' | '30' | '365';
 }
 
 const LOCALE_MAP: Record<string, string> = {
@@ -17,11 +18,12 @@ const LOCALE_MAP: Record<string, string> = {
   hi: 'hi-IN'
 };
 
-export const MovementLogScreen: React.FC<MovementLogScreenProps> = ({ onBack }) => {
+export const MovementLogScreen: React.FC<MovementLogScreenProps> = ({ onBack, initialFilter }) => {
   const { user, token, apiUrl } = useAuth();
   const { t, language } = useLanguage();
   const { showToast } = useToast();
   const [minutes, setMinutes] = useState(30);
+  const [historyFilter, setHistoryFilter] = useState<'7' | '30' | '365'>(initialFilter || '7');
   const [history, setHistory] = useState<HabitLog[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -29,14 +31,20 @@ export const MovementLogScreen: React.FC<MovementLogScreenProps> = ({ onBack }) 
   const activeLocale = LOCALE_MAP[language] || 'en-US';
 
   useEffect(() => {
-    if (user?.id) loadHistory();
-  }, [user]);
+    if (initialFilter) {
+      setHistoryFilter(initialFilter);
+    }
+  }, [initialFilter]);
 
-  const loadHistory = async () => {
-    if (!user?.id) return;
+  useEffect(() => {
+    if (user?.id && token) loadHistory(Number(historyFilter));
+  }, [user?.id, token, historyFilter]);
+
+  const loadHistory = async (days: number = Number(historyFilter)) => {
+    if (!user?.id || !token) return;
     try {
       setLoadingHistory(true);
-      const logs = await HabitsService.getRecentHabits(apiUrl, token, 'Movement', 7);
+      const logs = await HabitsService.getRecentHabits(apiUrl, token, 'Movement', days);
       setHistory(logs);
     } catch (err) {
       console.error(err);
@@ -131,7 +139,46 @@ export const MovementLogScreen: React.FC<MovementLogScreenProps> = ({ onBack }) 
       </div>
 
       <div>
-        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-3">{t('habits.sevenDayTrend', '7-Day Trend')}</span>
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block">
+            {historyFilter === '365' ? t('habits.oneYearTrend', '1-Year Trend') : historyFilter === '30' ? t('habits.thirtyDayTrend', '30-Day Trend') : t('habits.sevenDayTrend', '7-Day Trend')}
+          </span>
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+            <button
+              type="button"
+              onClick={() => setHistoryFilter('7')}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                historyFilter === '7'
+                  ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+              }`}
+            >
+              7D
+            </button>
+            <button
+              type="button"
+              onClick={() => setHistoryFilter('30')}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                historyFilter === '30'
+                  ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+              }`}
+            >
+              30D
+            </button>
+            <button
+              type="button"
+              onClick={() => setHistoryFilter('365')}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                historyFilter === '365'
+                  ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+              }`}
+            >
+              1Y
+            </button>
+          </div>
+        </div>
         {loadingHistory ? (
           <div className="text-center py-8">
             <div className="w-6 h-6 border-2 border-slate-200 border-t-slate-400 rounded-full animate-spin mx-auto mb-3"></div>
@@ -143,21 +190,23 @@ export const MovementLogScreen: React.FC<MovementLogScreenProps> = ({ onBack }) 
         ) : (
           <div className="flex flex-col gap-2">
             {history.map((h) => (
-              <div key={h.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-xl p-3 flex justify-between items-center">
+              <div key={h.id || (h as any)._id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-xl p-3 flex justify-between items-center">
                 <div>
                   <span className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
-                    {h.value.minutes >= 30 ? '🏃‍♂️' : '🚶‍♂️'} {t('habits.minutesCount', { count: h.value.minutes }, `${h.value.minutes} minutes`)}
+                    {h.value?.minutes >= 30 ? '🏃‍♂️' : '🚶‍♂️'} {t('habits.minutesCount', { count: h.value?.minutes }, `${h.value?.minutes} minutes`)}
                   </span>
                   <span className="text-[10px] text-slate-400 mt-1 block">
-                    {new Date(h.timestamp).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric' })}
+                    {new Date(h.timestamp).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric' })} · {new Date(h.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
-                {h.value.minutes >= 30 ? (
-                  <Check className="h-4 w-4 text-emerald-500" />
-                ) : (
-                  <Check className="h-4 w-4 text-slate-300" />
-                )}
-                <button onClick={() => handleDelete(h.id)} className="ml-3 p-1.5 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-300 hover:text-rose-500 rounded-lg transition-colors cursor-pointer"><Trash2 className="h-4 w-4" /></button>
+                <div className="flex items-center gap-2">
+                  {h.value?.minutes >= 30 ? (
+                    <Check className="h-4 w-4 text-emerald-500" />
+                  ) : (
+                    <Check className="h-4 w-4 text-slate-300" />
+                  )}
+                  <button onClick={() => handleDelete(h.id || (h as any)._id)} className="p-1.5 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-300 hover:text-rose-500 rounded-lg transition-colors cursor-pointer"><Trash2 className="h-4 w-4" /></button>
+                </div>
               </div>
             ))}
           </div>

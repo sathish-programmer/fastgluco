@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, BrainCircuit, MessageSquare, Sparkles, CheckCircle2, AlertTriangle, ShieldCheck, Wind } from 'lucide-react';
+import { ArrowLeft, BrainCircuit, MessageSquare, Sparkles, CheckCircle2, AlertTriangle, ShieldCheck, Wind, Trash2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useToast } from '../../context/ToastContext';
@@ -12,6 +12,7 @@ interface StressLogScreenProps {
   onBookAppointment?: (reason: string) => void;
   onNavigateToIntimacy?: () => void;
   onNavigateToBreath?: () => void;
+  initialFilter?: '7' | '30' | '365';
 }
 
 const faces = [
@@ -31,7 +32,7 @@ const STRESS_SUB_OPTIONS = [
   { id: 'others', label: 'Financial or other concerns' }
 ];
 
-export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBookAppointment, onNavigateToIntimacy, onNavigateToBreath }) => {
+export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBookAppointment, onNavigateToIntimacy, onNavigateToBreath, initialFilter }) => {
   const { t, language } = useLanguage();
   const { showToast } = useToast();
 
@@ -46,6 +47,7 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
 
   const { user, token, apiUrl } = useAuth();
   const [selectedFace, setSelectedFace] = useState<string | null>(null);
+  const [historyFilter, setHistoryFilter] = useState<'7' | '30' | '365'>(initialFilter || '7');
   const [history, setHistory] = useState<HabitLog[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -66,28 +68,24 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
   const [initialCategory, setInitialCategory] = useState('general');
 
   useEffect(() => {
-    if (user?.id) loadHistory();
-  }, [user]);
+    if (initialFilter) {
+      setHistoryFilter(initialFilter);
+    }
+  }, [initialFilter]);
 
-  const loadHistory = async () => {
-    if (!user?.id) return;
+  useEffect(() => {
+    if (user?.id && token) loadHistory(Number(historyFilter));
+  }, [user?.id, token, historyFilter]);
+
+  const loadHistory = async (days: number = Number(historyFilter)) => {
+    if (!user?.id || !token) return;
     try {
       setLoadingHistory(true);
-      const rawLogs = await HabitsService.getRecentHabits(apiUrl, token, 'Stress', 7);
-      
-      const uniqueMap = new Map<string, HabitLog>();
-      rawLogs.forEach(log => {
-        const dateKey = new Date(log.timestamp).toDateString();
-        if (!uniqueMap.has(dateKey)) {
-          uniqueMap.set(dateKey, log);
-        }
-      });
-
-      const deduplicated = Array.from(uniqueMap.values());
-      setHistory(deduplicated);
+      const rawLogs = await HabitsService.getRecentHabits(apiUrl, token, 'Stress', days);
+      setHistory(rawLogs);
 
       const todayStr = new Date().toDateString();
-      const todayLog = deduplicated.find(l => new Date(l.timestamp).toDateString() === todayStr);
+      const todayLog = rawLogs.find(l => new Date(l.timestamp).toDateString() === todayStr);
       if (todayLog && todayLog.value) {
         if (todayLog.value.faceId) setSelectedFace(todayLog.value.faceId);
         
@@ -114,6 +112,18 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
       console.error(err);
     } finally {
       setLoadingHistory(false);
+    }
+  };
+
+  const handleDeleteLog = async (id: string) => {
+    if (!token) return;
+    try {
+      await HabitsService.deleteHabit(apiUrl, token, id);
+      showToast(t('habits.habitDeleted', 'Log deleted'), 'info');
+      await loadHistory();
+    } catch (err) {
+      console.error('Failed to delete stress log', err);
+      showToast(t('habits.habitDeleteFailed', 'Failed to delete log'), 'error');
     }
   };
 
@@ -542,9 +552,48 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
         </div>
       )}
 
-      {/* Past 7 Days History */}
+      {/* Past History */}
       <div>
-        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-3">{t('common.last7Days', 'Last 7 Days History')}</span>
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block">
+            {historyFilter === '30' ? t('common.last30Days', 'Last 30 Days History') : t('common.last7Days', 'Last 7 Days History')}
+          </span>
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+            <button
+              type="button"
+              onClick={() => setHistoryFilter('7')}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                historyFilter === '7'
+                  ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+              }`}
+            >
+              7D
+            </button>
+            <button
+              type="button"
+              onClick={() => setHistoryFilter('30')}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                historyFilter === '30'
+                  ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+              }`}
+            >
+              30D
+            </button>
+            <button
+              type="button"
+              onClick={() => setHistoryFilter('365')}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                historyFilter === '365'
+                  ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+              }`}
+            >
+              1Y
+            </button>
+          </div>
+        </div>
         
         <div className="flex flex-col gap-2">
           {loadingHistory ? (
@@ -553,7 +602,11 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
             </div>
           ) : history.length === 0 ? (
             <div className="text-center py-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
-              <p className="text-xs text-slate-400">{t('common.noDaysLogged', 'No stress entries logged in the last 7 days')}</p>
+              <p className="text-xs text-slate-400">
+                {historyFilter === '30'
+                  ? t('common.noDaysLogged30', 'No stress entries logged in the last 30 days')
+                  : t('common.noDaysLogged', 'No stress entries logged in the last 7 days')}
+              </p>
             </div>
           ) : (
             history.map((h) => {
@@ -565,7 +618,7 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
               const isAi = h.value?.source === 'ai_mia';
 
               return (
-                <div key={h.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs rounded-xl p-3 flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+                <div key={h.id || (h as any)._id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs rounded-xl p-3 flex flex-col sm:flex-row justify-between sm:items-center gap-2">
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-base">{displayEmoji}</span>
@@ -591,9 +644,9 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
                     </span>
                   </div>
 
-                  {/* Breath Count Column */}
-                  {breathVal !== null ? (
-                    <div className="shrink-0">
+                  {/* Breath Count & Delete Button */}
+                  <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                    {breathVal !== null && (
                       <span className={`text-[10.5px] font-bold px-2.5 py-1 rounded-xl border inline-flex items-center gap-1.5 ${
                         breathVal > 12
                           ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300 border-rose-200 dark:border-rose-800'
@@ -603,8 +656,16 @@ export const StressLogScreen: React.FC<StressLogScreenProps> = ({ onBack, onBook
                         <span>{breathVal} {t('stress.inhalationsShort', 'inhalations/m')}</span>
                         <span className="opacity-80">· {breathVal > 12 ? t('stress.needCalmShort', 'Calm down') : t('stress.calmState', 'Calm')}</span>
                       </span>
-                    </div>
-                  ) : null}
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteLog(h.id || (h as any)._id)}
+                      className="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg transition-colors cursor-pointer"
+                      title={t('common.delete', 'Delete')}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </div>
               );
             })

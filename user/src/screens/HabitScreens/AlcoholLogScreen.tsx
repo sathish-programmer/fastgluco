@@ -8,9 +8,10 @@ import { ConsultationBanner } from '../../components/ConsultationBanner';
 interface AlcoholLogScreenProps {
   onBack: () => void;
   onBookAppointment?: (reason: string) => void;
+  initialFilter?: '7' | '30' | '365';
 }
 
-export const AlcoholLogScreen: React.FC<AlcoholLogScreenProps> = ({ onBack, onBookAppointment }) => {
+export const AlcoholLogScreen: React.FC<AlcoholLogScreenProps> = ({ onBack, onBookAppointment, initialFilter = '7' }) => {
   const { user, token, apiUrl } = useAuth();
   const { t, language } = useLanguage();
 
@@ -25,18 +26,25 @@ export const AlcoholLogScreen: React.FC<AlcoholLogScreenProps> = ({ onBack, onBo
 
   const [drinks, setDrinks] = useState<number>(0);
   const [history, setHistory] = useState<HabitLog[]>([]);
+  const [historyFilter, setHistoryFilter] = useState<'7' | '30' | '365'>(initialFilter || '7');
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (user?.id) loadHistory();
-  }, [user]);
+    if (initialFilter) {
+      setHistoryFilter(initialFilter);
+    }
+  }, [initialFilter]);
 
-  const loadHistory = async () => {
+  useEffect(() => {
+    if (user?.id) loadHistory(Number(historyFilter));
+  }, [user, historyFilter]);
+
+  const loadHistory = async (days = Number(historyFilter)) => {
     if (!user?.id) return;
     try {
       setLoadingHistory(true);
-      const logs = await HabitsService.getRecentHabits(apiUrl, token, 'Alcohol', 14);
+      const logs = await HabitsService.getRecentHabits(apiUrl, token, 'Alcohol', days);
       setHistory(logs);
     } catch (err) {
       console.error(err);
@@ -127,7 +135,43 @@ export const AlcoholLogScreen: React.FC<AlcoholLogScreenProps> = ({ onBack, onBo
       </div>
 
       <div>
-        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-3">{t('habits.fourteenDayTrend', '14-Day Trend')}</span>
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">
+            {historyFilter === '365' ? t('habits.oneYearTrend', '1-Year Trend') : historyFilter === '30' ? t('habits.thirtyDayTrend', '30-Day Trend') : t('habits.sevenDayTrend', '7-Day Trend')}
+          </span>
+          <div className="inline-flex rounded-lg bg-slate-100 dark:bg-slate-800 p-0.5 border border-slate-200 dark:border-slate-700">
+            <button
+              onClick={() => setHistoryFilter('7')}
+              className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all cursor-pointer ${
+                historyFilter === '7'
+                  ? 'bg-white dark:bg-slate-700 text-rose-600 dark:text-rose-400 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
+              }`}
+            >
+              7D
+            </button>
+            <button
+              onClick={() => setHistoryFilter('30')}
+              className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all cursor-pointer ${
+                historyFilter === '30'
+                  ? 'bg-white dark:bg-slate-700 text-rose-600 dark:text-rose-400 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
+              }`}
+            >
+              30D
+            </button>
+            <button
+              onClick={() => setHistoryFilter('365')}
+              className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all cursor-pointer ${
+                historyFilter === '365'
+                  ? 'bg-white dark:bg-slate-700 text-rose-600 dark:text-rose-400 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
+              }`}
+            >
+              1Y
+            </button>
+          </div>
+        </div>
         {loadingHistory ? (
           <div className="text-center py-8">
             <div className="w-6 h-6 border-2 border-slate-200 border-t-slate-400 rounded-full animate-spin mx-auto mb-3"></div>
@@ -139,21 +183,23 @@ export const AlcoholLogScreen: React.FC<AlcoholLogScreenProps> = ({ onBack, onBo
         ) : (
           <div className="flex flex-col gap-2">
             {history.map((h) => (
-              <div key={h.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-xl p-3 flex justify-between items-center">
+              <div key={h.id || (h as any)._id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-xl p-3 flex justify-between items-center">
                 <div>
                   <span className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
                     {h.value.drinks === 0 ? '🎉' : '🍷'} {h.value.drinks === 0 ? t('habits.zeroDrinksClean', '0 drinks (Clean day)') : t('habits.drinksCount', { count: h.value.drinks }, `${h.value.drinks} drinks`)}
                   </span>
                   <span className="text-[10px] text-slate-400 mt-1 block">
-                    {new Date(h.timestamp).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric' })}
+                    {new Date(h.timestamp).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric' })} · {new Date(h.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
-                {h.value.drinks === 0 ? (
-                  <Check className="h-4 w-4 text-emerald-500" />
-                ) : (
-                  <Minus className="h-4 w-4 text-rose-500" />
-                )}
-                <button onClick={() => handleDelete(h.id)} className="ml-3 p-1.5 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-300 hover:text-rose-500 rounded-lg transition-colors cursor-pointer"><Trash2 className="h-4 w-4" /></button>
+                <div className="flex items-center gap-2">
+                  {h.value.drinks === 0 ? (
+                    <Check className="h-4 w-4 text-emerald-500" />
+                  ) : (
+                    <Minus className="h-4 w-4 text-rose-500" />
+                  )}
+                  <button onClick={() => handleDelete(h.id || (h as any)._id)} className="p-1.5 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-300 hover:text-rose-500 rounded-lg transition-colors cursor-pointer"><Trash2 className="h-4 w-4" /></button>
+                </div>
               </div>
             ))}
           </div>

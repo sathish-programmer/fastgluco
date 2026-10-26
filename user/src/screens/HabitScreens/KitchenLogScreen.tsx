@@ -1,17 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, ShieldAlert, Award, ShoppingBag, Utensils, RotateCcw } from 'lucide-react';
+import { ArrowLeft, ShieldAlert, Award, ShoppingBag, Utensils, RotateCcw, Calendar, CheckCircle2, Clock, Trash2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { useToast } from '../../context/ToastContext';
 import { HabitsService } from '../../services/habitsService';
 
 interface KitchenLogScreenProps {
   onBack: () => void;
   onNavigateToShop?: (query: string) => void;
+  initialFilter?: '7' | '30' | '365';
 }
 
-export const KitchenLogScreen: React.FC<KitchenLogScreenProps> = ({ onBack, onNavigateToShop }) => {
+export const KitchenLogScreen: React.FC<KitchenLogScreenProps> = ({ onBack, onNavigateToShop, initialFilter }) => {
   const { user, token, apiUrl } = useAuth();
   const { t } = useLanguage();
+  const { showToast } = useToast();
   
   // 3 Audit Questions
   const [kitchenQ1, setKitchenQ1] = useState<boolean | null>(null); // Non-stick with scratches/PTFE (true = Yes Risk -1, false = No Safe 0)
@@ -20,16 +23,46 @@ export const KitchenLogScreen: React.FC<KitchenLogScreenProps> = ({ onBack, onNa
 
   const [loading, setLoading] = useState(false);
   const [todayLogId, setTodayLogId] = useState<string | null>(null);
-  const hasLoadedRef = useRef(false);
+  const [historyFilter, setHistoryFilter] = useState<'7' | '30' | '365'>(initialFilter || '7');
+  const [historyLogs, setHistoryLogs] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const isLoadedRef = useRef(false);
   const isUserInteractingRef = useRef(false);
 
   useEffect(() => {
-    if (user?.id && !hasLoadedRef.current) {
-      hasLoadedRef.current = true;
-      loadHistory();
+    if (initialFilter) {
+      setHistoryFilter(initialFilter);
     }
-  }, [user]);
+  }, [initialFilter]);
+
+  useEffect(() => {
+    if (user?.id && token) {
+      loadHistory();
+      const days = historyFilter === '30' ? 30 : historyFilter === '365' ? 365 : 7;
+      fetchHistoryList(days);
+    }
+  }, [user?.id, token, historyFilter]);
+
+  const fetchHistoryList = async (days: number = historyFilter === '30' ? 30 : historyFilter === '365' ? 365 : 7) => {
+    if (!user?.id || !token) return;
+    setLoadingHistory(true);
+    try {
+      const logs = await HabitsService.getRecentHabits(apiUrl, token, 'Kitchen', days);
+      const sorted = (logs || []).sort((a: any, b: any) => 
+        new Date(b.timestamp || (b as any).createdAt).getTime() - new Date(a.timestamp || (a as any).createdAt).getTime()
+      );
+      setHistoryLogs(sorted);
+    } catch (err) {
+      console.error('Error fetching kitchen history:', err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const handleFilterChange = (filter: '7' | '30' | '365') => {
+    setHistoryFilter(filter);
+    fetchHistoryList(filter === '30' ? 30 : filter === '365' ? 365 : 7);
+  };
 
   const loadHistory = async () => {
     if (!user?.id) return;
@@ -47,21 +80,11 @@ export const KitchenLogScreen: React.FC<KitchenLogScreenProps> = ({ onBack, onNa
         setKitchenQ2(answers.kitchenQ2 ?? null);
         setKitchenQ3(answers.kitchenQ3 ?? null);
       } else {
-        // Check today's Environmental logs as fallback
-        const envLogs = await HabitsService.getRecentHabits(apiUrl, token, 'Environmental', 7);
-        const todayEnv = envLogs.find(l => new Date(l.timestamp || (l as any).createdAt).toDateString() === todayStr);
-        if (todayEnv && todayEnv.value && todayEnv.value.answers) {
-          setTodayLogId(todayEnv.id || (todayEnv as any)._id || null);
-          setKitchenQ1(todayEnv.value.answers.kitchenQ1 ?? null);
-          setKitchenQ2(todayEnv.value.answers.kitchenQ2 ?? null);
-          setKitchenQ3(todayEnv.value.answers.kitchenQ3 ?? null);
-        } else {
-          // Fresh daily state for new day
-          setTodayLogId(null);
-          setKitchenQ1(null);
-          setKitchenQ2(null);
-          setKitchenQ3(null);
-        }
+        // Fresh daily state for new day
+        setTodayLogId(null);
+        setKitchenQ1(null);
+        setKitchenQ2(null);
+        setKitchenQ3(null);
       }
     } catch (err) {
       console.error(err);
@@ -72,11 +95,8 @@ export const KitchenLogScreen: React.FC<KitchenLogScreenProps> = ({ onBack, onNa
 
   const calculateScore = () => {
     if (kitchenQ1 === null && kitchenQ2 === null && kitchenQ3 === null) return null;
-    let score = 0;
-    if (kitchenQ1 === true) score -= 1;
-    if (kitchenQ2 === true) score -= 1;
-    if (kitchenQ3 === true) score -= 1;
-    return score;
+    const hasRisk = kitchenQ1 === true || kitchenQ2 === true || kitchenQ3 === true;
+    return hasRisk ? -1 : 0;
   };
 
   const kitchenScore = calculateScore();
@@ -95,7 +115,9 @@ export const KitchenLogScreen: React.FC<KitchenLogScreenProps> = ({ onBack, onNa
           kitchenQ2,
           kitchenQ3
         }
-      }).catch(err => console.error('Kitchen habit auto-save error', err));
+      })
+        .then(() => fetchHistoryList(Number(historyFilter)))
+        .catch(err => console.error('Kitchen habit auto-save error', err));
     }
   }, [kitchenQ1, kitchenQ2, kitchenQ3, kitchenScore, hasAnyAnswer, apiUrl, token, user?.id]);
 
@@ -144,6 +166,20 @@ export const KitchenLogScreen: React.FC<KitchenLogScreenProps> = ({ onBack, onNa
       console.error('Failed to reset kitchen habit', err);
     } finally {
       setLoading(false);
+      fetchHistoryList(Number(historyFilter));
+    }
+  };
+
+  const handleDeleteLog = async (id: string) => {
+    if (!token) return;
+    try {
+      await HabitsService.deleteHabit(apiUrl, token, id);
+      showToast(t('habits.habitDeleted', 'Log deleted'), 'info');
+      await fetchHistoryList(Number(historyFilter));
+      await loadHistory();
+    } catch (err) {
+      console.error('Failed to delete kitchen log', err);
+      showToast(t('habits.habitDeleteFailed', 'Failed to delete log'), 'error');
     }
   };
 
@@ -347,6 +383,149 @@ export const KitchenLogScreen: React.FC<KitchenLogScreenProps> = ({ onBack, onNa
         >
           {loading ? t('common.saving') : t('kitchen.saveKitchenLog', 'Save Kitchen Audit Log')}
         </button>
+      </div>
+
+      {/* Past History with 7D / 30D Filter */}
+      <div className="space-y-3 pt-2">
+        <div className="flex items-center justify-between px-1">
+          <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase flex items-center gap-1.5">
+            <Calendar className="w-3.5 h-3.5 text-indigo-500" />
+            {historyFilter === '365' ? t('common.last1Year', '1-Year Kitchen History') : historyFilter === '30' ? t('common.last30Days', 'Last 30 Days History') : t('common.last7Days', 'Last 7 Days History')}
+          </span>
+
+          {/* 7D / 30D / 1Y Filter Pill Toggle */}
+          <div className="inline-flex p-0.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+            <button
+              type="button"
+              onClick={() => handleFilterChange('7')}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                historyFilter === '7'
+                  ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+              }`}
+            >
+              7D
+            </button>
+            <button
+              type="button"
+              onClick={() => handleFilterChange('30')}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                historyFilter === '30'
+                  ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+              }`}
+            >
+              30D
+            </button>
+            <button
+              type="button"
+              onClick={() => handleFilterChange('365')}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                historyFilter === '365'
+                  ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+              }`}
+            >
+              1Y
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          {loadingHistory ? (
+            <div className="text-center py-8">
+              <div className="w-6 h-6 border-2 border-slate-200 border-t-indigo-500 rounded-full animate-spin mx-auto mb-2" />
+              <p className="text-xs text-slate-400 font-medium">{t('common.loading', 'Loading history...')}</p>
+            </div>
+          ) : historyLogs.length === 0 ? (
+            <div className="text-center py-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6">
+              <Utensils className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold">
+                {historyFilter === '7'
+                  ? t('kitchen.noEntries7d', 'No kitchen audit entries logged in the last 7 days')
+                  : t('kitchen.noEntries30d', 'No kitchen audit entries logged in the last 30 days')}
+              </p>
+            </div>
+          ) : (
+            historyLogs.map((h: any) => {
+              const val = h.value;
+              const ans = val?.answers || (typeof val === 'object' ? val : {});
+              let logScore = typeof val?.score === 'number' ? val.score : null;
+              if (logScore === null && (ans.kitchenQ1 !== undefined || ans.kitchenQ2 !== undefined || ans.kitchenQ3 !== undefined)) {
+                const hasRisk = ans.kitchenQ1 === true || ans.kitchenQ2 === true || ans.kitchenQ3 === true;
+                logScore = hasRisk ? -1 : 0;
+              }
+              const isSafe = logScore === 0;
+              const isAi = h.source === 'chatbot' || val?.source === 'ai_mia';
+              const logDate = new Date(h.timestamp || h.createdAt);
+
+              return (
+                <div 
+                  key={h.id || h._id} 
+                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs rounded-2xl p-4 flex flex-col gap-2.5 transition-all hover:border-slate-300 dark:hover:border-slate-700"
+                >
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-slate-400" />
+                        {logDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      {isAi && (
+                        <span className="text-[9px] bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-300 font-black px-2 py-0.5 rounded-full border border-indigo-100 dark:border-indigo-900/50 uppercase tracking-wider">
+                          AI Log
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      {isSafe ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-black bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                          {t('kitchenSafe', 'Safe (0)')}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-black bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                          <ShieldAlert className="w-3.5 h-3.5 text-rose-500" />
+                          {t('kitchenRisk', 'Risk Flagged (-1)')}
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteLog(h.id || h._id)}
+                        className="p-1 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-300 hover:text-rose-500 rounded-lg transition-colors cursor-pointer"
+                        title={t('common.delete', 'Delete log')}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Summary of answers */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5 pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px]">
+                    <div className="flex items-center justify-between sm:justify-start gap-1.5 text-slate-600 dark:text-slate-300">
+                      <span className="text-slate-400">Non-stick:</span>
+                      <span className={`font-bold ${ans.kitchenQ1 === true ? 'text-rose-600 dark:text-rose-400' : ans.kitchenQ1 === false ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`}>
+                        {ans.kitchenQ1 === true ? 'Risk (-1)' : ans.kitchenQ1 === false ? 'Safe (0)' : '—'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between sm:justify-start gap-1.5 text-slate-600 dark:text-slate-300">
+                      <span className="text-slate-400">Plastics:</span>
+                      <span className={`font-bold ${ans.kitchenQ2 === true ? 'text-rose-600 dark:text-rose-400' : ans.kitchenQ2 === false ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`}>
+                        {ans.kitchenQ2 === true ? 'Risk (-1)' : ans.kitchenQ2 === false ? 'Safe (0)' : '—'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between sm:justify-start gap-1.5 text-slate-600 dark:text-slate-300">
+                      <span className="text-slate-400">Utensils:</span>
+                      <span className={`font-bold ${ans.kitchenQ3 === true ? 'text-rose-600 dark:text-rose-400' : ans.kitchenQ3 === false ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`}>
+                        {ans.kitchenQ3 === true ? 'Risk (-1)' : ans.kitchenQ3 === false ? 'Safe (0)' : '—'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
       </div>
     </div>
   );

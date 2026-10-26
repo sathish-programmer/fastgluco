@@ -482,7 +482,11 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     if (typeUpper.includes('KITCHEN')) {
       title = t('dashboard.kitchenAuditTitle', 'Check Your Kitchen Audit');
       const answers = val?.answers || {};
-      const isSafe = (val?.score === 0) || (answers.kitchenQ1 === true && answers.kitchenQ2 === true && answers.kitchenQ3 === true);
+      const score = typeof val?.score === 'number' ? val.score : null;
+      const isRisk = score !== null
+        ? score < 0
+        : (answers.kitchenQ1 === true || answers.kitchenQ2 === true || answers.kitchenQ3 === true || answers.kitchenQ1 === 'yes' || answers.kitchenQ2 === 'yes' || answers.kitchenQ3 === 'yes');
+      const isSafe = !isRisk;
       subtitle = isSafe ? t('dashboard.kitchenSafe', 'Non-plastic water, natural utensils & glass storage') : t('dashboard.kitchenRisk', 'Plastic container / synthetic non-stick cookware risk flagged');
       isRepair = isSafe;
       category = 'microplastics';
@@ -510,7 +514,11 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
         category = 'microplastics';
       } else if (answers.kitchenQ1 !== undefined || answers.kitchenQ2 !== undefined || answers.kitchenQ3 !== undefined) {
         title = t('dashboard.kitchenAuditTitle', 'Check Your Kitchen Audit');
-        const isSafe = answers.kitchenQ1 === true && answers.kitchenQ2 === true && answers.kitchenQ3 === true;
+        const score = typeof val?.score === 'number' ? val.score : null;
+        const isRisk = score !== null
+          ? score < 0
+          : (answers.kitchenQ1 === true || answers.kitchenQ2 === true || answers.kitchenQ3 === true || answers.kitchenQ1 === 'yes' || answers.kitchenQ2 === 'yes' || answers.kitchenQ3 === 'yes');
+        const isSafe = !isRisk;
         subtitle = isSafe ? t('dashboard.kitchenSafe', 'Non-plastic water, natural utensils & glass storage') : t('dashboard.kitchenRisk', 'Plastic container / synthetic non-stick cookware risk flagged');
         isRepair = isSafe;
         category = 'microplastics';
@@ -912,8 +920,18 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
   };
 
   const getKitchenScore = () => {
-    const latest = getLatestLogForTypes('KITCHEN');
-    if (!latest) return null;
+    // 1. Direct Kitchen logs or Environmental/Damage logs containing kitchen questions
+    const matching = periodHabits.filter(h => {
+      const t = (h.type || '').toUpperCase();
+      if (t.includes('KITCHEN')) return true;
+      if (t.includes('ENVIRONMENT') || t.includes('DAMAGE')) {
+        const ans = h.value?.answers || h.value;
+        return ans && (ans.kitchenQ1 !== undefined || ans.kitchenQ2 !== undefined || ans.kitchenQ3 !== undefined);
+      }
+      return false;
+    });
+    if (matching.length === 0) return null;
+    const latest = matching.sort((a, b) => new Date(b.timestamp || (b as any).createdAt || 0).getTime() - new Date(a.timestamp || (a as any).createdAt || 0).getTime())[0];
     const val = latest.value;
     if (val === undefined || val === null) return null;
 
@@ -922,18 +940,29 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     }
 
     if (typeof val === 'object') {
+      // 1. Direct score from KitchenLogScreen (score: -1 or 0)
+      if (typeof val.score === 'number') {
+        return val.score < 0 ? -1 : (val.score === 0 ? 0 : null);
+      }
+
       const ans = val.answers || val;
       const hasQ1 = ans.kitchenQ1 !== undefined && ans.kitchenQ1 !== null;
       const hasQ2 = ans.kitchenQ2 !== undefined && ans.kitchenQ2 !== null;
       const hasQ3 = ans.kitchenQ3 !== undefined && ans.kitchenQ3 !== null;
 
       if (hasQ1 || hasQ2 || hasQ3) {
-        if (ans.kitchenQ1 === false || ans.kitchenQ2 === false || ans.kitchenQ3 === false ||
-          ans.kitchenQ1 === 'no' || ans.kitchenQ2 === 'no' || ans.kitchenQ3 === 'no') {
+        // In KitchenLogScreen: true = Risk (-1), false = Safe (0)
+        let riskCount = 0;
+        if (ans.kitchenQ1 === true || ans.kitchenQ1 === 'yes') riskCount += 1;
+        if (ans.kitchenQ2 === true || ans.kitchenQ2 === 'yes') riskCount += 1;
+        if (ans.kitchenQ3 === true || ans.kitchenQ3 === 'yes') riskCount += 1;
+
+        if (riskCount > 0) {
           return -1;
         }
-        if (ans.kitchenQ1 === true || ans.kitchenQ2 === true || ans.kitchenQ3 === true ||
-          ans.kitchenQ1 === 'yes' || ans.kitchenQ2 === 'yes' || ans.kitchenQ3 === 'yes') {
+
+        if (ans.kitchenQ1 === false || ans.kitchenQ2 === false || ans.kitchenQ3 === false ||
+          ans.kitchenQ1 === 'no' || ans.kitchenQ2 === 'no' || ans.kitchenQ3 === 'no') {
           return 0;
         }
       }
@@ -941,10 +970,6 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
       // If all questions are explicitly null, user has not answered / has reset
       if (ans.kitchenQ1 === null && ans.kitchenQ2 === null && ans.kitchenQ3 === null) {
         return null;
-      }
-
-      if (typeof val.score === 'number') {
-        return val.score < 0 ? -1 : (val.score === 0 ? 0 : null);
       }
     }
     const optStr = (typeof val === 'object' ? (val.option || val.notes || '') : `${val}`).toLowerCase();
@@ -968,109 +993,6 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     }
     return null;
   };
-
-  const calculateDamageCount = () => {
-    let count = 0;
-    const categories = ['STRESS', 'SLEEP', 'SMOKING', 'ALCOHOL', 'SUBSTANCES', 'INTIMACY', 'DENTAL', 'GASTRITIS', 'GENETIC', 'ENVIRONMENT', 'KITCHEN', 'DIET'];
-    categories.forEach(cat => {
-      const latest = getLatestLogForTypes(cat);
-      if (!latest) return;
-      const typeUpper = (latest.type || '').toUpperCase();
-      const val = latest.value;
-      const optStr = (typeof val === 'object' ? (val.option || val.notes || val.faceId || '') : `${val}`).toLowerCase();
-
-      if (typeUpper.includes('STRESS') && (optStr.includes('tense') || optStr.includes('high') || optStr.includes('stressed') || optStr.includes('maxed') || val === 3 || val?.faceId === 'tense' || val?.faceId === 'stressed' || val?.faceId === 'maxed')) count += 1;
-      if (typeUpper.includes('SLEEP') && ((typeof val === 'number' && val < 6) || val?.hours < 6 || val?.quality === 'poor' || val?.snoring === true || (val?.difficultyFallingAsleep === true && val?.stoppedScreenTime === false) || optStr.includes('poor') || optStr.includes('snore'))) count += 1;
-      if ((typeUpper.includes('SMOKING') || typeUpper.includes('ALCOHOL')) && ((typeof val === 'number' && val > 0) || val?.count > 0 || val?.chewingCount > 0 || val?.drinks > 0 || optStr.includes('smoke') || optStr.includes('chew') || optStr.includes('tobacco') || optStr.includes('gutkha') || optStr.includes('khaini') || optStr.includes('drink') || optStr.includes('both'))) count += 1;
-      if (typeUpper.includes('SUBSTANCES') && (val === 1 || val?.used === true || optStr.includes('exposure') || optStr.includes('exposed'))) count += 1;
-      if (typeUpper.includes('INTIMACY') && (val?.happy === false)) count += 1;
-      if (typeUpper.includes('DENTAL') && (val?.sharpTooth === true || val?.tobacco === true || val?.illFittingDenture === true || optStr.includes('discomfort'))) count += 1;
-      if (typeUpper.includes('GASTRITIS') && (val?.gastritis === true || optStr.includes('gastritis') || optStr.includes('acidity'))) count += 1;
-      if (typeUpper.includes('GENETIC') && (val?.geneticLink === true || optStr.includes('family'))) count += 1;
-      if ((typeUpper.includes('ENVIRONMENT') || typeUpper.includes('DAMAGE')) && (val === 1 || val?.score < 0 || val?.isExposure === true || optStr.includes('chemical') || optStr.includes('junk'))) count += 1;
-      if (typeUpper.includes('KITCHEN')) {
-        const kScore = getKitchenScore();
-        if (kScore !== null && kScore < 0) count += 1;
-      }
-      if (typeUpper.includes('DIET') && (val?.junkFood === true || val?.score < 0 || val?.netScore < 0 || val === -1)) count += 1;
-    });
-    const obScore = getObesityScore();
-    if (obScore !== null && obScore < 0) count += 1;
-    return count;
-  };
-
-  const calculateRepairCount = () => {
-    let count = 0;
-    const categories = ['STRESS', 'SLEEP', 'SMOKING', 'ALCOHOL', 'SUBSTANCES', 'FASTING', 'ANTIOXIDANTS', 'MOVEMENT', 'STILLNESS', 'BREATH', 'JOY', 'SAFERPRODUCTS', 'CANCERSCREENING', 'INTIMACY', 'ENVIRONMENT', 'KITCHEN', 'GENETIC', 'DENTAL', 'DIET'];
-    categories.forEach(cat => {
-      const latest = getLatestLogForTypes(cat);
-      if (!latest) return;
-      const typeUpper = (latest.type || '').toUpperCase();
-      const val = latest.value;
-      const optStr = (typeof val === 'object' ? (val.option || val.notes || val.faceId || val.technique || '') : `${val}`).toLowerCase();
-
-      if (typeUpper.includes('STRESS') && (optStr.includes('calm') || optStr.includes('steady') || optStr.includes('no stress') || val === 1 || val?.faceId === 'calm')) count += 1;
-      if (typeUpper.includes('SLEEP') && ((typeof val === 'number' && val >= 6) || (val?.hours >= 6 && val?.quality !== 'poor' && !val?.snoring && !(val?.difficultyFallingAsleep === true && val?.stoppedScreenTime === false)))) count += 1;
-      if ((typeUpper.includes('SMOKING') || typeUpper.includes('ALCOHOL')) && ((typeof val === 'number' && val === 0) || ((val?.count === 0 || val?.count === undefined) && (val?.chewingCount === 0 || val?.chewingCount === undefined)) || val?.drinks === 0 || optStr.includes('clean') || optStr.includes('no alcohol') || optStr.includes('no (clean'))) count += 1;
-      if (typeUpper.includes('SUBSTANCES') && (val === 0 || val?.used === false || optStr.includes('clean') || optStr.includes('no'))) count += 1;
-      if (typeUpper.includes('FASTING') && (val === 1 || (val?.hours && val.hours >= 12) || val?.completed === true || optStr.includes('yes') || optStr.includes('16') || optStr.includes('12') || (val?.started && val?.ended))) count += 1;
-      if (typeUpper.includes('GENETIC') && (val === 0 || val?.geneticLink === false || optStr.includes('no family') || optStr.includes('none') || optStr.includes('clean'))) count += 1;
-      if (typeUpper.includes('ANTIOXIDANTS') && (val === 1 || val?.consumed === true || optStr.includes('yes') || optStr.includes('consumed'))) count += 1;
-      if (typeUpper.includes('MOVEMENT') && (val === 1 || val?.minutes >= 20 || typeof val === 'number' || optStr.includes('walk') || optStr.includes('run') || optStr.includes('30+') || optStr.includes('yoga'))) count += 1;
-      if (typeUpper.includes('STILLNESS') && (val === 1 || val?.sat === true || optStr.includes('yes') || optStr.includes('practiced'))) count += 1;
-      if (typeUpper.includes('BREATH') && (val === 1 || val?.minutes > 0 || val?.isCompleted === true || val?.done !== false || optStr.includes('yes') || optStr.includes('practiced') || optStr.includes('box') || optStr.includes('breath'))) count += 1;
-      if ((typeUpper.includes('JOY') || typeUpper.includes('REPAIR')) && (val === 1 || val?.done !== false || val?.isCompleted === true || optStr.includes('yes'))) count += 1;
-      if (typeUpper.includes('SAFERPRODUCTS') && (val === 1 || typeof val === 'object')) count += 1;
-      if (typeUpper.includes('CANCERSCREENING') && (val === 1 || typeof val === 'object')) count += 1;
-      if (typeUpper.includes('INTIMACY') && (val?.happy === true)) count += 1;
-      if (typeUpper.includes('ENVIRONMENT') && (val?.score === 0 || val === 0 || val?.isExposure === false)) count += 1;
-      if (typeUpper.includes('KITCHEN')) {
-        const kScore = getKitchenScore();
-        if (kScore !== null && kScore === 0) count += 1;
-      }
-      if (typeUpper.includes('DENTAL') && (val?.sharpTooth === false || val?.score === 0 || optStr.includes('healthy') || optStr.includes('clean') || optStr.includes('none'))) count += 1;
-      if (typeUpper.includes('DIET') && (val?.balancedDiet === true || val?.score > 0 || val?.netScore > 0 || val === 1)) count += 1;
-    });
-    return count;
-  };
-
-  const damageCount = calculateDamageCount();
-  const repairCount = calculateRepairCount();
-
-  // Calculate Streak
-  let streak = 0;
-  const uniqueDates = [...new Set(habits.map(h => new Date(h.timestamp).toDateString()))];
-  const sortedDates = uniqueDates
-    .map((d: any) => new Date(d))
-    .sort((a, b) => b.getTime() - a.getTime());
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  let currentCheckDate = new Date(today);
-
-  if (sortedDates.length > 0) {
-    if (sortedDates[0].getTime() !== today.getTime()) {
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-      if (sortedDates[0].getTime() === yesterday.getTime()) {
-        currentCheckDate = new Date(yesterday);
-      } else {
-        streak = 0;
-      }
-    }
-
-    if (streak !== 0 || sortedDates[0].getTime() === today.getTime() || sortedDates[0].getTime() === currentCheckDate.getTime()) {
-      for (let i = 0; i < sortedDates.length; i++) {
-        if (sortedDates[i].getTime() === currentCheckDate.getTime()) {
-          streak++;
-          currentCheckDate.setDate(currentCheckDate.getDate() - 1);
-        } else {
-          break;
-        }
-      }
-    }
-  }
 
   const getDentalScore = () => {
     const latest = getLatestLogForTypes('DENTAL');
@@ -1156,7 +1078,9 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     if (!latest) return null;
     const val = latest.value;
     const optStr = (typeof val === 'object' ? (val.option || val.notes || '') : `${val}`).toLowerCase();
-    if (val === 1 || val?.hours >= 12 || typeof val === 'object' || optStr.includes('yes') || optStr.includes('16') || optStr.includes('12')) return 1;
+    const isExplicitNo = optStr.includes('no') || optStr.includes('skip') || optStr.includes('not today') || val?.completed === false || (typeof val?.hours === 'number' && val.hours < 12 && !val?.completed);
+    if (isExplicitNo) return 0;
+    if (val === 1 || (typeof val?.hours === 'number' && val.hours >= 12) || val?.completed === true || optStr.includes('yes') || optStr.includes('16') || optStr.includes('12') || (val?.started && val?.ended)) return 1;
     return 0;
   };
 
@@ -1165,7 +1089,9 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     if (!latest) return null;
     const val = latest.value;
     const optStr = (typeof val === 'object' ? (val.option || val.notes || '') : `${val}`).toLowerCase();
-    if (val === 1 || val?.consumed === true || optStr.includes('yes') || optStr.includes('consumed')) return 1;
+    const isExplicitNo = optStr.includes('not today') || optStr.includes('no') || optStr.includes('none') || optStr.includes('skip') || val?.consumed === false || val?.score === 0;
+    if (isExplicitNo) return 0;
+    if (val === 1 || val?.score > 0 || val?.consumed === true || optStr.includes('yes') || optStr.includes('consumed')) return 1;
     return 0;
   };
 
@@ -1173,8 +1099,11 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     const latest = getLatestLogForTypes('MOVEMENT');
     if (!latest) return null;
     const val = latest.value;
-    const optStr = (typeof val === 'object' ? (val.option || val.notes || '') : `${val}`).toLowerCase();
-    if (val === 1 || val?.minutes >= 20 || typeof val === 'number' || optStr.includes('walk') || optStr.includes('run') || optStr.includes('30+') || optStr.includes('yoga')) return 1;
+    const optStr = (typeof val === 'object' ? (val.option || val.notes || val.activity || '') : `${val}`).toLowerCase();
+    const isExplicitNo = optStr.includes('no movement') || optStr.includes('not today') || optStr.includes('none') || optStr.includes('rest day') || optStr.includes('bed rest') || optStr.includes('did not') || optStr.includes("didn't") || val?.done === false || val?.isCompleted === false || val?.minutes === 0 || val?.score === 0;
+    if (isExplicitNo) return 0;
+    if (val === 1 || (typeof val === 'number' && val >= 20) || val?.score > 0 || (typeof val?.minutes === 'number' && val.minutes >= 20) || val?.done === true || val?.isCompleted === true) return 1;
+    if ((optStr.includes('walk') || optStr.includes('run') || optStr.includes('30+') || optStr.includes('yoga') || optStr.includes('strength')) && !optStr.includes('no')) return 1;
     return 0;
   };
 
@@ -1183,7 +1112,9 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     if (!latest) return null;
     const val = latest.value;
     const optStr = (typeof val === 'object' ? (val.option || val.notes || '') : `${val}`).toLowerCase();
-    if (val === 1 || val?.sat === true || optStr.includes('yes') || optStr.includes('practiced')) return 1;
+    const isExplicitNo = optStr.includes('not today') || optStr.includes('no') || optStr.includes('skip') || val?.sat === false || val?.done === false || val?.score === 0;
+    if (isExplicitNo) return 0;
+    if (val === 1 || val?.score > 0 || val?.sat === true || val?.isCompleted === true || optStr.includes('yes') || optStr.includes('practiced')) return 1;
     return 0;
   };
 
@@ -1191,8 +1122,10 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     const latest = getLatestLogForTypes('BREATH');
     if (!latest) return null;
     const val = latest.value;
-    const optStr = (typeof val === 'object' ? (val.option || val.notes || val.technique || '') : `${val}`).toLowerCase();
-    if (val === 1 || val?.minutes > 0 || val?.isCompleted === true || val?.done !== false || optStr.includes('yes') || optStr.includes('practiced') || optStr.includes('box') || optStr.includes('breath')) return 1;
+    const optStr = (typeof val === 'object' ? (val.option || val.notes || '') : `${val}`).toLowerCase();
+    const isExplicitNo = optStr.includes('not today') || optStr.includes('no') || optStr.includes('skip') || val?.done === false || val?.isCompleted === false || val?.minutes === 0 || val?.score === 0;
+    if (isExplicitNo) return 0;
+    if (val === 1 || val?.score > 0 || val?.minutes >= 5 || val?.isCompleted === true || val?.done === true || optStr.includes('yes') || optStr.includes('practiced')) return 1;
     return 0;
   };
 
@@ -1201,14 +1134,21 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     if (!latest) return null;
     const val = latest.value;
     const optStr = (typeof val === 'object' ? (val.option || val.notes || '') : `${val}`).toLowerCase();
-    if (val === 1 || val?.done !== false || val?.isCompleted === true || optStr.includes('yes')) return 1;
+    const isExplicitNo = optStr.includes('not today') || optStr.includes('no') || optStr.includes('skip') || val?.done === false || val?.isCompleted === false || val?.score === 0;
+    if (isExplicitNo) return 0;
+    if (val === 1 || val?.score > 0 || val?.done === true || val?.isCompleted === true || optStr.includes('yes') || optStr.includes('done')) return 1;
     return 0;
   };
 
   const getSaferProductsScore = () => {
     const latest = getLatestLogForTypes('SAFERPRODUCT');
     if (!latest) return null;
-    return 1;
+    const val = latest.value;
+    const optStr = (typeof val === 'object' ? (val.option || val.notes || '') : `${val}`).toLowerCase();
+    const isExplicitNo = optStr.includes('not today') || optStr.includes('no') || optStr.includes('skip') || val?.saferProductsUsed === false || val?.score === 0;
+    if (isExplicitNo) return 0;
+    if (val === 1 || val?.score > 0 || val?.saferProductsUsed === true || optStr.includes('yes') || optStr.includes('safe')) return 1;
+    return 0;
   };
 
   const getDietScore = () => {
@@ -1224,12 +1164,89 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
   };
 
   const getEnvironmentalScore = () => {
-    const latest = getLatestLogForTypes('ENVIRONMENT', 'DAMAGE');
-    if (!latest) return null;
+    const matching = periodHabits.filter(h => {
+      const t = (h.type || '').toUpperCase();
+      if (t.includes('ENVIRONMENT')) return true;
+      if (t.includes('DAMAGE') && (h.value?.stepId?.startsWith('env_') || h.value?.isExposure !== undefined)) return true;
+      return false;
+    });
+    if (matching.length === 0) return null;
+    const latest = matching.sort((a, b) => new Date(b.timestamp || (b as any).createdAt || 0).getTime() - new Date(a.timestamp || (a as any).createdAt || 0).getTime())[0];
     const val = latest.value;
+    if (val === undefined || val === null) return null;
+    if (typeof val.score === 'number') {
+      return val.score < 0 ? -1 : 0;
+    }
     const optStr = (typeof val === 'object' ? (val.option || val.notes || '') : `${val}`).toLowerCase();
-    if (val === 1 || val?.score < 0 || val?.isExposure === true || optStr.includes('chemical') || optStr.includes('junk')) return -1;
+    if (val === 1 || val?.score < 0 || val?.isExposure === true || optStr.includes('chemical') || optStr.includes('junk') || optStr.includes('smog') || optStr.includes('toxin')) return -1;
     return 0;
+  };
+
+  const calculateDamageCount = () => {
+    let count = 0;
+    if (getStressScore() === -1) count++;
+    if (getSleepScore() === -1) count++;
+    if (getSmokingScore() === -1) count++;
+    if (getAlcoholScore() === -1) count++;
+    if (getSubstancesScore() === -1) count++;
+    if (getEnvironmentalScore() === -1) count++;
+    if (getKitchenScore() === -1) count++;
+    if (getObesityScore() === -1) count++;
+    if (getDentalScore() === -1) count++;
+    if (getGastritisScore() === -1) count++;
+    if (getGeneticScore() === -1) count++;
+    return count;
+  };
+
+  const calculateRepairCount = () => {
+    let count = 0;
+    if (getFastingScore() === 1) count++;
+    if (getDietScore() === 1) count++;
+    if (getAntioxidantsScore() === 1) count++;
+    if (getMovementScore() === 1) count++;
+    if (getStillnessScore() === 1) count++;
+    if (getBreathScore() === 1) count++;
+    if (getJoyScore() === 1) count++;
+    if (getSaferProductsScore() === 1) count++;
+    return count;
+  };
+
+  const damageCount = calculateDamageCount();
+  const repairCount = calculateRepairCount();
+
+  // Calculate Streak
+  let streak = 0;
+  const uniqueDates = [...new Set(habits.map(h => new Date(h.timestamp).toDateString()))];
+  const sortedDates = uniqueDates
+    .map((d: any) => new Date(d))
+    .sort((a, b) => b.getTime() - a.getTime());
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  let currentCheckDate = new Date(today);
+
+  if (sortedDates.length > 0) {
+    if (sortedDates[0].getTime() !== today.getTime()) {
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      if (sortedDates[0].getTime() === yesterday.getTime()) {
+        currentCheckDate = new Date(yesterday);
+      } else {
+        streak = 0;
+      }
+    }
+
+    if (streak !== 0 || sortedDates[0].getTime() === today.getTime() || sortedDates[0].getTime() === currentCheckDate.getTime()) {
+      for (let i = 0; i < sortedDates.length; i++) {
+        if (sortedDates[i].getTime() === currentCheckDate.getTime()) {
+          streak++;
+          currentCheckDate.setDate(currentCheckDate.getDate() - 1);
+        } else {
+          break;
+        }
+      }
+    }
   };
 
   // Percentages for cellular report generation
@@ -1256,18 +1273,21 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
       if (val === undefined || val === null) return null;
       if (typeof val === 'number') return val < 0 ? -1 : (val === 0 ? 0 : null);
       if (typeof val === 'object') {
+        if (typeof val.score === 'number') return val.score < 0 ? -1 : (val.score === 0 ? 0 : null);
         const ans = val.answers || val;
         const hasQ1 = ans.kitchenQ1 !== undefined && ans.kitchenQ1 !== null;
         const hasQ2 = ans.kitchenQ2 !== undefined && ans.kitchenQ2 !== null;
         const hasQ3 = ans.kitchenQ3 !== undefined && ans.kitchenQ3 !== null;
         if (hasQ1 || hasQ2 || hasQ3) {
+          let riskCount = 0;
+          if (ans.kitchenQ1 === true || ans.kitchenQ1 === 'yes') riskCount += 1;
+          if (ans.kitchenQ2 === true || ans.kitchenQ2 === 'yes') riskCount += 1;
+          if (ans.kitchenQ3 === true || ans.kitchenQ3 === 'yes') riskCount += 1;
+          if (riskCount > 0) return -1;
           if (ans.kitchenQ1 === false || ans.kitchenQ2 === false || ans.kitchenQ3 === false ||
-            ans.kitchenQ1 === 'no' || ans.kitchenQ2 === 'no' || ans.kitchenQ3 === 'no') return -1;
-          if (ans.kitchenQ1 === true || ans.kitchenQ2 === true || ans.kitchenQ3 === true ||
-            ans.kitchenQ1 === 'yes' || ans.kitchenQ2 === 'yes' || ans.kitchenQ3 === 'yes') return 0;
+            ans.kitchenQ1 === 'no' || ans.kitchenQ2 === 'no' || ans.kitchenQ3 === 'no') return 0;
         }
         if (ans.kitchenQ1 === null && ans.kitchenQ2 === null && ans.kitchenQ3 === null) return null;
-        if (typeof val.score === 'number') return val.score < 0 ? -1 : (val.score === 0 ? 0 : null);
       }
       const optStr = (typeof val === 'object' ? (val.option || val.notes || '') : `${val}`).toLowerCase();
       if (optStr.includes('risk') || optStr.includes('plastic') || optStr.includes('non-stick')) return -1;
@@ -1292,7 +1312,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     };
 
     let damage = 0;
-    const dmgCats = ['STRESS', 'SLEEP', 'SMOKING', 'ALCOHOL', 'SUBSTANCES', 'INTIMACY', 'DENTAL', 'GASTRITIS', 'GENETIC', 'ENVIRONMENT', 'KITCHEN', 'DIET'];
+    const dmgCats = ['STRESS', 'SLEEP', 'SMOKING', 'ALCOHOL', 'SUBSTANCES', 'ENVIRONMENT', 'KITCHEN', 'DENTAL', 'GASTRITIS', 'GENETIC'];
     dmgCats.forEach(cat => {
       const latest = getLatest(cat);
       if (!latest) return;
@@ -1304,7 +1324,6 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
       if (typeUpper.includes('SLEEP') && ((typeof val === 'number' && val < 6) || val?.hours < 6 || val?.quality === 'poor' || val?.snoring === true || (val?.difficultyFallingAsleep === true && val?.stoppedScreenTime === false) || optStr.includes('poor') || optStr.includes('snore'))) damage += 1;
       if ((typeUpper.includes('SMOKING') || typeUpper.includes('ALCOHOL')) && ((typeof val === 'number' && val > 0) || val?.count > 0 || val?.chewingCount > 0 || val?.drinks > 0 || optStr.includes('smoke') || optStr.includes('chew') || optStr.includes('tobacco') || optStr.includes('gutkha') || optStr.includes('khaini') || optStr.includes('drink') || optStr.includes('both'))) damage += 1;
       if (typeUpper.includes('SUBSTANCES') && (val === 1 || val?.used === true || optStr.includes('exposure') || optStr.includes('exposed'))) damage += 1;
-      if (typeUpper.includes('INTIMACY') && (val?.happy === false)) damage += 1;
       if (typeUpper.includes('DENTAL') && (val?.sharpTooth === true || val?.tobacco === true || val?.illFittingDenture === true || optStr.includes('discomfort'))) damage += 1;
       if (typeUpper.includes('GASTRITIS') && (val?.gastritis === true || optStr.includes('gastritis') || optStr.includes('acidity'))) damage += 1;
       if (typeUpper.includes('GENETIC') && (val?.geneticLink === true || optStr.includes('family'))) damage += 1;
@@ -1313,7 +1332,6 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
         const kScore = evalKitchen();
         if (kScore !== null && kScore < 0) damage += 1;
       }
-      if (typeUpper.includes('DIET') && (val?.junkFood === true || val?.score < 0 || val?.netScore < 0 || val === -1)) damage += 1;
     });
     const obScore = evalObesity();
     if (obScore !== null && obScore < 0) damage += 1;
@@ -1331,22 +1349,57 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
       if (typeUpper.includes('SLEEP') && ((typeof val === 'number' && val >= 6) || (val?.hours >= 6 && val?.quality !== 'poor' && !val?.snoring && !(val?.difficultyFallingAsleep === true && val?.stoppedScreenTime === false)))) repair += 1;
       if ((typeUpper.includes('SMOKING') || typeUpper.includes('ALCOHOL')) && ((typeof val === 'number' && val === 0) || ((val?.count === 0 || val?.count === undefined) && (val?.chewingCount === 0 || val?.chewingCount === undefined)) || val?.drinks === 0 || optStr.includes('clean') || optStr.includes('no alcohol') || optStr.includes('no (clean'))) repair += 1;
       if (typeUpper.includes('SUBSTANCES') && (val === 0 || val?.used === false || optStr.includes('clean') || optStr.includes('no'))) repair += 1;
-      if (typeUpper.includes('FASTING') && (val === 1 || (val?.hours && val.hours >= 12) || val?.completed === true || optStr.includes('yes') || optStr.includes('16') || optStr.includes('12') || (val?.started && val?.ended))) repair += 1;
+      if (typeUpper.includes('FASTING')) {
+        const isExplicitNo = optStr.includes('no') || optStr.includes('skip') || optStr.includes('not today') || val?.completed === false || (typeof val?.hours === 'number' && val.hours < 12 && !val?.completed);
+        if (!isExplicitNo && (val === 1 || (typeof val?.hours === 'number' && val.hours >= 12) || val?.completed === true || optStr.includes('yes') || optStr.includes('16') || optStr.includes('12') || (val?.started && val?.ended))) {
+          repair += 1;
+        }
+      }
       if (typeUpper.includes('GENETIC') && (val === 0 || val?.geneticLink === false || optStr.includes('no family') || optStr.includes('none') || optStr.includes('clean'))) repair += 1;
-      if (typeUpper.includes('ANTIOXIDANTS') && (val === 1 || val?.consumed === true || optStr.includes('yes') || optStr.includes('consumed'))) repair += 1;
-      if (typeUpper.includes('MOVEMENT') && (val === 1 || val?.minutes >= 20 || typeof val === 'number' || optStr.includes('walk') || optStr.includes('run') || optStr.includes('30+') || optStr.includes('yoga'))) repair += 1;
-      if (typeUpper.includes('STILLNESS') && (val === 1 || val?.sat === true || optStr.includes('yes') || optStr.includes('practiced'))) repair += 1;
-      if (typeUpper.includes('BREATH') && (val === 1 || val?.minutes > 0 || val?.isCompleted === true || val?.done !== false || optStr.includes('yes') || optStr.includes('practiced') || optStr.includes('box') || optStr.includes('breath'))) repair += 1;
-      if ((typeUpper.includes('JOY') || typeUpper.includes('REPAIR')) && (val === 1 || val?.done !== false || val?.isCompleted === true || optStr.includes('yes'))) repair += 1;
-      if (typeUpper.includes('SAFERPRODUCTS') && (val === 1 || typeof val === 'object')) repair += 1;
-      if (typeUpper.includes('CANCERSCREENING') && (val === 1 || typeof val === 'object')) repair += 1;
+      if (typeUpper.includes('ANTIOXIDANTS')) {
+        const isExplicitNo = optStr.includes('not today') || optStr.includes('no') || optStr.includes('none') || optStr.includes('skip') || val?.consumed === false || val?.score === 0;
+        if (!isExplicitNo && (val === 1 || val?.score > 0 || val?.consumed === true || optStr.includes('yes') || optStr.includes('consumed'))) {
+          repair += 1;
+        }
+      }
+      if (typeUpper.includes('MOVEMENT')) {
+        const isExplicitNo = optStr.includes('no movement') || optStr.includes('not today') || optStr.includes('none') || optStr.includes('rest day') || optStr.includes('bed rest') || optStr.includes('did not') || optStr.includes("didn't") || val?.done === false || val?.isCompleted === false || val?.minutes === 0 || val?.score === 0;
+        if (!isExplicitNo && (val === 1 || (typeof val === 'number' && val >= 20) || val?.score > 0 || (typeof val?.minutes === 'number' && val.minutes >= 20) || val?.done === true || val?.isCompleted === true || ((optStr.includes('walk') || optStr.includes('run') || optStr.includes('30+') || optStr.includes('yoga')) && !optStr.includes('no')))) {
+          repair += 1;
+        }
+      }
+      if (typeUpper.includes('STILLNESS')) {
+        const isExplicitNo = optStr.includes('not today') || optStr.includes('no') || optStr.includes('skip') || val?.sat === false || val?.done === false || val?.score === 0;
+        if (!isExplicitNo && (val === 1 || val?.score > 0 || val?.sat === true || val?.isCompleted === true || optStr.includes('yes') || optStr.includes('practiced'))) {
+          repair += 1;
+        }
+      }
+      if (typeUpper.includes('BREATH')) {
+        const isExplicitNo = optStr.includes('not today') || optStr.includes('no') || optStr.includes('skip') || val?.done === false || val?.isCompleted === false || val?.minutes === 0 || val?.score === 0;
+        if (!isExplicitNo && (val === 1 || val?.score > 0 || val?.minutes >= 5 || val?.isCompleted === true || val?.done === true || optStr.includes('yes') || optStr.includes('practiced'))) {
+          repair += 1;
+        }
+      }
+      if (typeUpper.includes('JOY') || typeUpper.includes('REPAIR')) {
+        const isExplicitNo = optStr.includes('not today') || optStr.includes('no') || optStr.includes('skip') || val?.done === false || val?.isCompleted === false || val?.score === 0;
+        if (!isExplicitNo && (val === 1 || val?.score > 0 || val?.done === true || val?.isCompleted === true || optStr.includes('yes') || optStr.includes('done'))) {
+          repair += 1;
+        }
+      }
+      if (typeUpper.includes('SAFERPRODUCTS')) {
+        const isExplicitNo = optStr.includes('not today') || optStr.includes('no') || optStr.includes('skip') || val?.saferProductsUsed === false || val?.score === 0;
+        if (!isExplicitNo && (val === 1 || val?.score > 0 || val?.saferProductsUsed === true || optStr.includes('yes') || optStr.includes('safe'))) {
+          repair += 1;
+        }
+      }
+      if (typeUpper.includes('CANCERSCREENING') && (val === 1 || val?.done === true || val?.completed === true || optStr.includes('done') || optStr.includes('yes'))) repair += 1;
       if (typeUpper.includes('INTIMACY') && (val?.happy === true)) repair += 1;
       if (typeUpper.includes('ENVIRONMENT') && (val?.score === 0 || val === 0 || val?.isExposure === false)) repair += 1;
       if (typeUpper.includes('KITCHEN')) {
         const kScore = evalKitchen();
         if (kScore !== null && kScore === 0) repair += 1;
       }
-      if (typeUpper.includes('DENTAL') && (val?.sharpTooth === false || val?.score === 0 || optStr.includes('healthy') || optStr.includes('clean') || optStr.includes('none'))) repair += 1;
+      if (typeUpper.includes('DENTAL') && ((val?.sharpTooth === false && !val?.tobacco && !val?.illFittingDenture) || val?.score === 0 || optStr.includes('healthy') || optStr.includes('clean') || optStr.includes('none'))) repair += 1;
       if (typeUpper.includes('DIET') && (val?.balancedDiet === true || val?.score > 0 || val?.netScore > 0 || val === 1)) repair += 1;
     });
 
@@ -1501,8 +1554,8 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
         let rep = monthForces.repair;
         if (!hasMultipleLogDates && monthLogs.length === 0) {
           const progress = (12 - i) / 12;
-          dmg = Math.max(0, Math.round(damageCount + (1 - progress) * 2));
-          rep = Math.max(0, Math.round(repairCount * progress));
+          dmg = Math.round(damageCount * progress);
+          rep = Math.round(repairCount * progress);
         }
         const tot = dmg + rep;
         const repPct = tot === 0 ? 50 : Math.round((rep / tot) * 100);
@@ -1522,12 +1575,6 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
         const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
         const dayEnd = new Date(d);
         dayEnd.setHours(23, 59, 59, 999);
-
-        const exactDayLogs = habits.filter(h => {
-          const t = new Date(h.timestamp || (h as any).createdAt);
-          return t.toDateString() === d.toDateString();
-        });
-
         const logsUpToDay = habits.filter(h => {
           const t = new Date(h.timestamp || (h as any).createdAt).getTime();
           return t <= dayEnd.getTime();
@@ -1537,20 +1584,10 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
         let dmg = dayForces.damage;
         let rep = dayForces.repair;
 
-        // If the user has only 1 logged date in the database (e.g. today), synthesize a realistic trajectory leading to current values so the graph is not an empty flatline
         if (!hasMultipleLogDates && logsUpToDay.length === 0) {
           const progress = (numPoints - i) / numPoints;
-          dmg = Math.max(1, Math.round(damageCount + (1 - progress) * 2));
-          rep = Math.max(0, Math.round(repairCount * (0.3 + 0.7 * progress)));
-        }
-
-        // Add subtle organic metabolic variance for days without unique logs, avoiding artificial flat plateaus
-        if (exactDayLogs.length === 0 && (dmg > 0 || rep > 0)) {
-          const dayMod = (d.getDate() * 7 + i * 11) % 13;
-          const repVariance = Math.sin((i / (numPoints || 1)) * Math.PI * 3.14 + dayMod * 0.4) * 0.6;
-          const dmgVariance = Math.cos((i / (numPoints || 1)) * Math.PI * 2.7 + dayMod * 0.5) * 0.5;
-          rep = Math.max(0, Math.round(rep + repVariance));
-          dmg = Math.max(0, Math.round(dmg + dmgVariance));
+          dmg = Math.round(damageCount * progress);
+          rep = Math.round(repairCount * progress);
         }
 
         const cleanDmg = Math.round(dmg);
@@ -1577,11 +1614,12 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
       }
     }
 
-    const n = chartData.length;
-    const totalRepair = chartData.reduce((acc, c) => acc + c.repair, 0);
-    const totalDamage = chartData.reduce((acc, c) => acc + c.damage, 0);
-    const avgRepair = n > 0 ? String(Math.round(totalRepair / n)) : '0';
-    const avgDamage = n > 0 ? String(Math.round(totalDamage / n)) : '0';
+    const activePoints = chartData.filter(c => c.damage > 0 || c.repair > 0);
+    const n = activePoints.length > 0 ? activePoints.length : (chartData.length || 1);
+    const totalRepair = (activePoints.length > 0 ? activePoints : chartData).reduce((acc, c) => acc + c.repair, 0);
+    const totalDamage = (activePoints.length > 0 ? activePoints : chartData).reduce((acc, c) => acc + c.damage, 0);
+    const avgRepair = String(Math.round(totalRepair / n));
+    const avgDamage = String(Math.round(totalDamage / n));
     const avgNet = String(Number(avgRepair) - Number(avgDamage));
 
     const half = Math.floor(n / 2);
@@ -1648,14 +1686,17 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
   };
 
   const renderActiveScreen = () => {
-    if (activeScreen === 'Stress') return <StressLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} onNavigateToIntimacy={() => setActiveScreen('Intimacy')} onNavigateToBreath={() => setActiveScreen('Breath')} />;
-    if (activeScreen === 'Smoking') return <SmokingLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} />;
-    if (activeScreen === 'Substances') return <SubstancesLogScreen onBack={handleCloseActiveScreen} />;
+    const dashboardPeriodFilter: '7' | '30' | '365' = timePeriod === 'monthly' ? '30' : timePeriod === 'yearly' ? '365' : '7';
+
+    if (activeScreen === 'Stress') return <StressLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} onNavigateToIntimacy={() => setActiveScreen('Intimacy')} onNavigateToBreath={() => setActiveScreen('Breath')} initialFilter={dashboardPeriodFilter} />;
+    if (activeScreen === 'Smoking') return <SmokingLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} initialFilter={dashboardPeriodFilter} />;
+    if (activeScreen === 'Substances') return <SubstancesLogScreen onBack={handleCloseActiveScreen} initialFilter={dashboardPeriodFilter} />;
     if (activeScreen === 'Intimacy') return <IntimacyCheckScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} />;
     if (activeScreen === 'Environmental') return (
       <EnvironmentalExposuresLogScreen
         onBack={handleCloseActiveScreen}
         onBookAppointment={handleBookAppt}
+        initialFilter={dashboardPeriodFilter}
         onNavigateToShop={(query) => {
           if (query === 'Pesticide free food' || query === 'Organic') {
             setShopCategory('Pesticide free food');
@@ -1683,6 +1724,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     if (activeScreen === 'Kitchen') return (
       <KitchenLogScreen
         onBack={handleCloseActiveScreen}
+        initialFilter={dashboardPeriodFilter}
         onNavigateToShop={(query) => {
           setShopCategory('Safe kitchen');
           setShopQuery(query && query !== 'Safe kitchen' ? query : '');
@@ -1693,16 +1735,17 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     if (activeScreen === 'EnvironmentalShop') {
       return <ShopScreen type={shopCategory !== 'All' ? shopCategory : 'Environment safe products'} defaultSearch={shopQuery} onBack={() => setActiveScreen('Environmental')} />;
     }
-    if (activeScreen === 'Sleep') return <SleepLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} />;
-    if (activeScreen === 'Movement') return <MovementLogScreen onBack={handleCloseActiveScreen} />;
-    if (activeScreen === 'Alcohol') return <AlcoholLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} />;
-    if (activeScreen === 'Fasting') return <FastingLogScreen onBack={handleCloseActiveScreen} />;
-    if (activeScreen === 'Stillness') return <StillnessLogScreen onBack={handleCloseActiveScreen} />;
-    if (activeScreen === 'Breath') return <BreathLogScreen onBack={handleCloseActiveScreen} />;
-    if (activeScreen === 'Joy') return <JoyLogScreen onBack={handleCloseActiveScreen} />;
+    if (activeScreen === 'Sleep') return <SleepLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} initialFilter={dashboardPeriodFilter} />;
+    if (activeScreen === 'Movement') return <MovementLogScreen onBack={handleCloseActiveScreen} initialFilter={dashboardPeriodFilter} />;
+    if (activeScreen === 'Alcohol') return <AlcoholLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} initialFilter={dashboardPeriodFilter} />;
+    if (activeScreen === 'Fasting') return <FastingLogScreen onBack={handleCloseActiveScreen} initialFilter={dashboardPeriodFilter} />;
+    if (activeScreen === 'Stillness') return <StillnessLogScreen onBack={handleCloseActiveScreen} initialFilter={dashboardPeriodFilter} />;
+    if (activeScreen === 'Breath') return <BreathLogScreen onBack={handleCloseActiveScreen} initialFilter={dashboardPeriodFilter} />;
+    if (activeScreen === 'Joy') return <JoyLogScreen onBack={handleCloseActiveScreen} initialFilter={dashboardPeriodFilter} />;
     if (activeScreen === 'Antioxidants') return (
       <AntioxidantLogScreen
         onBack={handleCloseActiveScreen}
+        initialFilter={dashboardPeriodFilter}
         onViewShop={() => {
           setShopCategory('Antioxidants');
           setShopQuery('');
@@ -1721,6 +1764,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
       return (
         <DietLogScreen
           onBack={handleCloseActiveScreen}
+          initialFilter={dashboardPeriodFilter}
           onNavigateToFoodLog={() => onNavigateToTab('Food Log')}
         />
       );
@@ -1736,7 +1780,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     );
     if (activeScreen === 'CancerScreening') return <CancerScreeningScreen onBack={handleCloseActiveScreen} />;
     if (activeScreen === 'IndianCancers') return <IndianCancersScreen onBack={handleCloseActiveScreen} />;
-    if (activeScreen === 'Obesity') return <ObesityLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} />;
+    if (activeScreen === 'Obesity') return <ObesityLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} initialFilter={dashboardPeriodFilter} />;
     if (activeScreen === 'Dental') return (
       <DentalLogScreen
         onBack={handleCloseActiveScreen}
@@ -1748,9 +1792,9 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
         }}
       />
     );
-    if (activeScreen === 'Gastritis') return <GastritisLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} onNavigateToShop={() => { setShopCategory('Arivu in nutrition'); setShopQuery(''); setActiveScreen('Shop'); }} />;
+    if (activeScreen === 'Gastritis') return <GastritisLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} initialFilter={dashboardPeriodFilter} onNavigateToShop={() => { setShopCategory('Arivu in nutrition'); setShopQuery(''); setActiveScreen('Shop'); }} />;
     if (activeScreen === 'GastritisShop') return <ShopScreen type="Arivu in nutrition" defaultSearch="" onBack={() => setActiveScreen('Gastritis')} />;
-    if (activeScreen === 'Genetic') return <GeneticLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} onNavigateToShop={() => { setShopCategory('Antioxidants'); setShopQuery(''); setActiveScreen('Shop'); }} />;
+    if (activeScreen === 'Genetic') return <GeneticLogScreen onBack={handleCloseActiveScreen} onBookAppointment={handleBookAppt} initialFilter={dashboardPeriodFilter} onNavigateToShop={() => { setShopCategory('Antioxidants'); setShopQuery(''); setActiveScreen('Shop'); }} />;
     if (activeScreen === 'GeneticShop') return <ShopScreen type="Antioxidants" defaultSearch="" onBack={() => setActiveScreen('Genetic')} />;
     if (activeScreen === 'WigShop') return <ShopScreen type="Cancer support wig" onBack={handleCloseActiveScreen} />;
     if (activeScreen === 'Shop') return <ShopScreen type={shopCategory} defaultSearch={shopQuery} onBack={handleCloseActiveScreen} onOpenOrders={() => onNavigateToTab?.('Shop Orders')} />;
@@ -2721,7 +2765,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
               <div className="flex items-center gap-2">
                 <span className="text-xs text-slate-400 font-mono font-bold">01</span>
                 <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">
-                  {t('dashboard.trackTwoForces', { period: timePeriod === 'today' ? t('dashboard.today', 'Today') : timePeriod === 'weekly' ? t('dashboard.thisWeek', 'This Week') : t('dashboard.thisMonth', 'This Month') }, `Track the two forces (${timePeriod === 'today' ? 'Today' : timePeriod === 'weekly' ? 'This Week' : 'This Month'})`)}
+                  {t('dashboard.trackTwoForces', { period: timePeriod === 'today' ? t('dashboard.today', 'Today') : timePeriod === 'weekly' ? t('dashboard.thisWeek', 'This Week') : timePeriod === 'monthly' ? t('dashboard.thisMonth', 'This Month') : t('dashboard.thisYear', 'This Year') }, `Track the two forces (${timePeriod === 'today' ? 'Today' : timePeriod === 'weekly' ? 'This Week' : timePeriod === 'monthly' ? 'This Month' : 'This Year'})`)}
                 </span>
               </div>
 
@@ -2745,7 +2789,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                     : 'text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40'
                     }`}
                 >
-                  {t('dashboard.damage', 'Damage')} ({timePeriod === 'today' ? damageCount : displayDamage})
+                  {t('dashboard.damage', 'Damage')} ({damageCount})
                 </button>
                 <button
                   type="button"
@@ -2755,7 +2799,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                     : 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
                     }`}
                 >
-                  {t('dashboard.repairLabel', 'Repair')} ({timePeriod === 'today' ? repairCount : displayRepair})
+                  {t('dashboard.repairLabel', 'Repair')} ({repairCount})
                 </button>
               </div>
             </div>
@@ -2773,7 +2817,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                     <p className="text-[7px] sm:text-[8px] text-slate-400 font-bold uppercase tracking-widest">{t('dashboard.reduceLoad', 'Reduce the load')}</p>
                   </div>
                   <span className="text-[8px] sm:text-[9px] font-extrabold text-rose-500 bg-rose-50 dark:bg-rose-950/40 px-1.5 sm:px-2 py-0.5 rounded-full border border-rose-200/50 dark:border-rose-900/40 shrink-0">
-                    {timePeriod === 'today' ? damageCount : displayDamage} {t('dashboard.active', 'active')}
+                    {damageCount} {t('dashboard.active', 'active')}
                   </span>
                 </div>
 
@@ -2805,7 +2849,7 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
                       <p className="text-[7px] sm:text-[8px] text-slate-400 font-bold uppercase tracking-widest">{t('dashboard.buildDefence', 'Build the defence')}</p>
                     </div>
                     <span className="text-[8px] sm:text-[9px] font-extrabold text-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 sm:px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-900/40 shrink-0">
-                      {timePeriod === 'today' ? repairCount : displayRepair} {t('dashboard.active', 'active')}
+                      {repairCount} {t('dashboard.active', 'active')}
                     </span>
                   </div>
                 )}

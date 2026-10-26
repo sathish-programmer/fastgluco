@@ -18,7 +18,7 @@ export class MotivationService {
   public static async getTodayMotivation(
     apiUrl: string,
     token?: string | null,
-    userCreatedAt?: string | Date | null
+    _userCreatedAt?: string | Date | null
   ): Promise<DailyMotivationResponse> {
     if (apiUrl && token) {
       try {
@@ -39,14 +39,12 @@ export class MotivationService {
       }
     }
 
-    // Local calculation fallback: Ensure Day 1 starts on feature adoption / registration
-    let userStartDate = userCreatedAt;
-    if (!userStartDate) {
-      userStartDate = localStorage.getItem('mito_daily_motivation_start_date');
-      if (!userStartDate) {
-        userStartDate = new Date().toISOString();
-        localStorage.setItem('mito_daily_motivation_start_date', userStartDate);
-      }
+    // Local calculation fallback: Ensure Day 1 starts from today for old users, and on first adoption for new users
+    const FEATURE_LAUNCH_DATE_STR = '2026-10-26T00:00:00.000Z';
+    let userStartDate = localStorage.getItem('mito_daily_motivation_start_date');
+    if (!userStartDate || new Date(userStartDate) < new Date(FEATURE_LAUNCH_DATE_STR)) {
+      userStartDate = new Date().toISOString();
+      localStorage.setItem('mito_daily_motivation_start_date', userStartDate);
     }
     const { dayNumber, text } = getDailyMotivationForUser(userStartDate);
     const todayStr = new Date().toDateString();

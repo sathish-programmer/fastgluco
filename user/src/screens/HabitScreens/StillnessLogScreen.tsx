@@ -8,6 +8,7 @@ import { scheduleHabitReminder, STILLNESS_NOTIFICATION_ID } from '../../utils/no
 
 interface StillnessLogScreenProps {
   onBack: () => void;
+  initialFilter?: '7' | '30' | '365';
 }
 
 const LOCALE_MAP: Record<string, string> = {
@@ -18,7 +19,7 @@ const LOCALE_MAP: Record<string, string> = {
   hi: 'hi-IN'
 };
 
-export const StillnessLogScreen: React.FC<StillnessLogScreenProps> = ({ onBack }) => {
+export const StillnessLogScreen: React.FC<StillnessLogScreenProps> = ({ onBack, initialFilter }) => {
   const { user, token, apiUrl } = useAuth();
   const { t, language } = useLanguage();
   const { showToast } = useToast();
@@ -26,18 +27,25 @@ export const StillnessLogScreen: React.FC<StillnessLogScreenProps> = ({ onBack }
   const [didSit, setDidSit] = useState<boolean | null>(null);
   const [reminderTime, setReminderTime] = useState('06:30');
   const [loading, setLoading] = useState(false);
+  const [historyFilter, setHistoryFilter] = useState<'7' | '30' | '365'>(initialFilter || '7');
   const [history, setHistory] = useState<HabitLog[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
 
   useEffect(() => {
-    if (user?.id) loadHistory();
-  }, [user]);
+    if (initialFilter) {
+      setHistoryFilter(initialFilter);
+    }
+  }, [initialFilter]);
 
-  const loadHistory = async () => {
-    if (!user?.id) return;
+  useEffect(() => {
+    if (user?.id && token) loadHistory(Number(historyFilter));
+  }, [user?.id, token, historyFilter]);
+
+  const loadHistory = async (days: number = Number(historyFilter)) => {
+    if (!user?.id || !token) return;
     try {
       setLoadingHistory(true);
-      const logs = await HabitsService.getRecentHabits(apiUrl, token, 'Stillness', 7);
+      const logs = await HabitsService.getRecentHabits(apiUrl, token, 'Stillness', days);
       setHistory(logs);
     } catch (err) {
       console.error(err);
@@ -157,7 +165,46 @@ export const StillnessLogScreen: React.FC<StillnessLogScreenProps> = ({ onBack }
       </div>
 
       <div>
-        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-3">{t('habits.last7Days', 'Last 7 Days')}</span>
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block">
+            {historyFilter === '365' ? t('habits.last1Year', 'Last 1 Year') : historyFilter === '30' ? t('habits.last30Days', 'Last 30 Days') : t('habits.last7Days', 'Last 7 Days')}
+          </span>
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+            <button
+              type="button"
+              onClick={() => setHistoryFilter('7')}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                historyFilter === '7'
+                  ? 'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-300 shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+              }`}
+            >
+              7D
+            </button>
+            <button
+              type="button"
+              onClick={() => setHistoryFilter('30')}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                historyFilter === '30'
+                  ? 'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-300 shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+              }`}
+            >
+              30D
+            </button>
+            <button
+              type="button"
+              onClick={() => setHistoryFilter('365')}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                historyFilter === '365'
+                  ? 'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-300 shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+              }`}
+            >
+              1Y
+            </button>
+          </div>
+        </div>
         {loadingHistory ? (
           <div className="text-center py-8">
             <div className="w-6 h-6 border-2 border-slate-200 border-t-slate-400 rounded-full animate-spin mx-auto mb-3"></div>
@@ -169,13 +216,13 @@ export const StillnessLogScreen: React.FC<StillnessLogScreenProps> = ({ onBack }
         ) : (
           <div className="flex flex-col gap-2">
             {history.map((h) => (
-              <div key={h.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-xl p-3 flex justify-between items-center">
+              <div key={h.id || (h as any)._id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-xl p-3 flex justify-between items-center">
                 <div>
                   <span className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
                     {h.value.sat ? '🧘' : '☁️'} {h.value.sat ? t('habits.meditatedOver10', 'Meditated (>=10 min)') : t('common.no', 'No')}
                   </span>
                   <span className="text-[10px] text-slate-400 mt-1 block">
-                    {new Date(h.timestamp).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric' })}
+                    {new Date(h.timestamp).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric' })} · {new Date(h.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
                 {h.value.sat ? (
@@ -183,7 +230,7 @@ export const StillnessLogScreen: React.FC<StillnessLogScreenProps> = ({ onBack }
                 ) : (
                   <Minus className="h-4 w-4 text-slate-300" />
                 )}
-                <button onClick={() => handleDelete(h.id)} className="ml-3 p-1.5 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-300 hover:text-rose-500 rounded-lg transition-colors cursor-pointer"><Trash2 className="h-4 w-4" /></button>
+                <button onClick={() => handleDelete(h.id || (h as any)._id)} className="ml-3 p-1.5 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-300 hover:text-rose-500 rounded-lg transition-colors cursor-pointer"><Trash2 className="h-4 w-4" /></button>
               </div>
             ))}
           </div>

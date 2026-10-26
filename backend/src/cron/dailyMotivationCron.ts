@@ -77,7 +77,8 @@ export class DailyMotivationCron {
           }
 
           // 3. Calculate user's 365-day sequential message
-          if (!user.dailyMotivationStartDate) {
+          const FEATURE_LAUNCH_DATE = new Date('2026-10-26T00:00:00.000Z');
+          if (!user.dailyMotivationStartDate || new Date(user.dailyMotivationStartDate) < FEATURE_LAUNCH_DATE) {
             user.dailyMotivationStartDate = now;
             await user.save();
           }

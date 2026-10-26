@@ -994,7 +994,7 @@ export const DentalLogScreen: React.FC<DentalLogScreenProps> = ({ onBack, onBook
                               <div className="flex items-center gap-2.5">
                                 <Calendar className="h-4 w-4 text-slate-400" />
                                 <div>
-                                  <p className="text-xs font-bold text-slate-700">{logDate.toLocaleDateString(activeLocale, { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                                  <p className="text-xs font-bold text-slate-700">{logDate.toLocaleDateString(activeLocale, { month: 'short', day: 'numeric', year: 'numeric' })} · {logDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                                   <p className="text-[10px] text-slate-400">{t('dental.scoreLabel', 'Score:')} {logScore}</p>
                                 </div>
                               </div>

@@ -88,10 +88,6 @@ export const DailyMotivationModal: React.FC<DailyMotivationModalProps> = ({
                   {t('motivation.dayTracker', `Day ${dayNumber} of 365`)}
                 </span>
               </div>
-
-              <div className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-                {t('motivation.dailySequence', 'Daily Sequence')}
-              </div>
             </div>
 
             {/* Central Inspiring Quote Card */}

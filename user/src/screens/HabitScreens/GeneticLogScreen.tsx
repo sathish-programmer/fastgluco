@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Dna, Sparkles, AlertTriangle, ShieldAlert, ShieldCheck, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Dna, Sparkles, AlertTriangle, ShieldAlert, ShieldCheck, ArrowRight, Trash2 } from 'lucide-react';
 import { ConsultationBanner } from '../../components/ConsultationBanner';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -11,6 +11,7 @@ interface GeneticLogScreenProps {
   onBack: () => void;
   onBookAppointment?: (reason: string) => void;
   onNavigateToShop?: (query: string) => void;
+  initialFilter?: '7' | '30' | '365';
 }
 
 const CANCER_TYPES_LIST = [
@@ -22,7 +23,7 @@ const CANCER_TYPES_LIST = [
   { id: 'other', label: 'Other Cancers', icon: '⚕️', points: 1 },
 ];
 
-export const GeneticLogScreen: React.FC<GeneticLogScreenProps> = ({ onBack, onBookAppointment, onNavigateToShop }) => {
+export const GeneticLogScreen: React.FC<GeneticLogScreenProps> = ({ onBack, onBookAppointment, onNavigateToShop, initialFilter }) => {
   const { user, token, apiUrl } = useAuth();
   const { t, language } = useLanguage();
   const { showToast } = useToast();
@@ -43,6 +44,7 @@ export const GeneticLogScreen: React.FC<GeneticLogScreenProps> = ({ onBack, onBo
   const [multipleOrRare, setMultipleOrRare] = useState<'no' | 'yes'>('no');
   const [knownMutation, setKnownMutation] = useState<'no' | 'yes' | 'not_tested'>('no');
 
+  const [historyFilter, setHistoryFilter] = useState<'7' | '30' | '365'>(initialFilter || '7');
   const [history, setHistory] = useState<HabitLog[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -51,14 +53,20 @@ export const GeneticLogScreen: React.FC<GeneticLogScreenProps> = ({ onBack, onBo
   const [showGeneAIModal, setShowGeneAIModal] = useState<boolean>(false);
 
   useEffect(() => {
-    if (user?.id) loadGeneticHistory();
-  }, [user]);
+    if (initialFilter) {
+      setHistoryFilter(initialFilter);
+    }
+  }, [initialFilter]);
 
-  const loadGeneticHistory = async () => {
+  useEffect(() => {
+    if (user?.id) loadGeneticHistory(Number(historyFilter));
+  }, [user, historyFilter]);
+
+  const loadGeneticHistory = async (days: number = Number(historyFilter)) => {
     if (!user?.id) return;
     try {
       setLoadingHistory(true);
-      const logs = await HabitsService.getRecentHabits(apiUrl, token, 'Genetic', 7);
+      const logs = await HabitsService.getRecentHabits(apiUrl, token, 'Genetic', days);
       setHistory(logs || []);
       if (logs && logs.length > 0) {
         const latest = logs[0];
@@ -74,6 +82,18 @@ export const GeneticLogScreen: React.FC<GeneticLogScreenProps> = ({ onBack, onBo
       console.error(e);
     } finally {
       setLoadingHistory(false);
+    }
+  };
+
+  const handleDeleteLog = async (id: string) => {
+    if (!token) return;
+    try {
+      await HabitsService.deleteHabit(apiUrl, token, id);
+      showToast(t('habits.habitDeleted', 'Log deleted'), 'info');
+      await loadGeneticHistory();
+    } catch (err) {
+      console.error('Failed to delete genetic log', err);
+      showToast(t('habits.habitDeleteFailed', 'Failed to delete log'), 'error');
     }
   };
 
@@ -474,9 +494,50 @@ export const GeneticLogScreen: React.FC<GeneticLogScreenProps> = ({ onBack, onBo
 
         {/* Past Genetic Assessment History */}
         <div>
-          <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-3">
-            {t('genetic.assessmentHistory', 'Assessment History')}
-          </span>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block">
+              {historyFilter === '365'
+                ? t('genetic.assessmentHistory365', 'Assessment History (1 Year)')
+                : historyFilter === '30'
+                ? t('genetic.assessmentHistory30', 'Assessment History (30 Days)')
+                : t('genetic.assessmentHistory', 'Assessment History (7 Days)')}
+            </span>
+            <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+              <button
+                type="button"
+                onClick={() => setHistoryFilter('7')}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                  historyFilter === '7'
+                    ? 'bg-white dark:bg-slate-700 text-purple-600 dark:text-purple-300 shadow-2xs'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+                }`}
+              >
+                7D
+              </button>
+              <button
+                type="button"
+                onClick={() => setHistoryFilter('30')}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                  historyFilter === '30'
+                    ? 'bg-white dark:bg-slate-700 text-purple-600 dark:text-purple-300 shadow-2xs'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+                }`}
+              >
+                30D
+              </button>
+              <button
+                type="button"
+                onClick={() => setHistoryFilter('365')}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                  historyFilter === '365'
+                    ? 'bg-white dark:bg-slate-700 text-purple-600 dark:text-purple-300 shadow-2xs'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+                }`}
+              >
+                1Y
+              </button>
+            </div>
+          </div>
           
           <div className="flex flex-col gap-2">
             {loadingHistory ? (
@@ -491,7 +552,7 @@ export const GeneticLogScreen: React.FC<GeneticLogScreenProps> = ({ onBack, onBo
               history.map((h) => {
                 const isElevated = h.value?.geneticLink === true || h.value?.riskLevel === 'high';
                 return (
-                  <div key={h.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs rounded-xl p-3.5 flex justify-between items-center">
+                  <div key={h.id || (h as any)._id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs rounded-xl p-3.5 flex justify-between items-center">
                     <div>
                       <div className="flex items-center gap-2">
                         <Dna className={`h-4 w-4 ${isElevated ? 'text-rose-500' : 'text-emerald-500'}`} />
@@ -505,9 +566,17 @@ export const GeneticLogScreen: React.FC<GeneticLogScreenProps> = ({ onBack, onBo
                         )}
                       </div>
                       <span className="text-[10px] text-slate-400 mt-1 block font-medium">
-                        {new Date(h.timestamp).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric', year: 'numeric' })}
+                        {new Date(h.timestamp || (h as any).createdAt).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric', year: 'numeric' })} · {new Date(h.timestamp || (h as any).createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteLog(h.id || (h as any)._id)}
+                      className="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg transition-colors cursor-pointer"
+                      title={t('common.delete', 'Delete')}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
                   </div>
                 );
               })

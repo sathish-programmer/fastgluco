@@ -12,7 +12,7 @@
     "seed:terms": "ts-node src/updateTermsDoc.ts",
     "seed:founders": "ts-node src/seedFounders.ts",
     "sync": "ts-node src/runSync.ts",
-    "test": "jest --runInBand --detectOpenHandles"
+    "test": "node -r ts-node/register --test src/__tests__/*.test.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

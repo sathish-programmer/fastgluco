@@ -1,14 +1,14 @@
 <en-US>
-• Authentication & Login Improvements: Enhanced verification code delivery, resilient login fallback, and optimized sign-in flow across iPad and iOS devices.
-• 365 Days of Daily Motivation: Kickstart your morning with curated daily motivation one-liners for healthy living, cellular balance, and habit consistency.
-• Smart Motivation Reminders: View your daily inspirational quote upon opening the app or receive timely morning push notifications at your preferred time.
-• Habit Audit Accuracy: Refined Kitchen Audit scoring to accurately assess safe cooking practices and healthy kitchen choices.
-• Performance & Stability: General reliability optimizations and smoother navigation across your wellness dashboard.
+• Habit History & Multi-entry Logging: Habit check-ins now preserve full chronological history with exact timestamps instead of overwriting same-day entries.
+• Granular Habit Log Management: Delete individual entries directly from your habit history logs across stress, gut health, fasting, movement, obesity, and more.
+• Resilient Authentication: Faster login and verification code delivery with instant SMS fallback across iOS, Android, and Web.
+• Dashboard Sync & Scoring: Accurate 7-day, 30-day, and yearly trend tracking with unified damage and repair counts.
+• Performance & Stability: Enhanced overall app responsiveness and smoother navigation.
 </en-US>
 <en-IN>
-• Authentication & Login Improvements: Enhanced verification code delivery, resilient login fallback, and optimized sign-in flow across iPad and iOS devices.
-• 365 Days of Daily Motivation: Kickstart your morning with curated daily motivation one-liners for healthy living, cellular balance, and habit consistency.
-• Smart Motivation Reminders: View your daily inspirational quote upon opening the app or receive timely morning push notifications at your preferred time.
-• Habit Audit Accuracy: Refined Kitchen Audit scoring to accurately assess safe cooking practices and healthy kitchen choices.
-• Performance & Stability: General reliability optimizations and smoother navigation across your wellness dashboard.
+• Habit History & Multi-entry Logging: Habit check-ins now preserve full chronological history with exact timestamps instead of overwriting same-day entries.
+• Granular Habit Log Management: Delete individual entries directly from your habit history logs across stress, gut health, fasting, movement, obesity, and more.
+• Resilient Authentication: Faster login and verification code delivery with instant SMS fallback across iOS, Android, and Web.
+• Dashboard Sync & Scoring: Accurate 7-day, 30-day, and yearly trend tracking with unified damage and repair counts.
+• Performance & Stability: Enhanced overall app responsiveness and smoother navigation.
 </en-IN>

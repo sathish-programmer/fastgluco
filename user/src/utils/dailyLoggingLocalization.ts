@@ -15,18 +15,18 @@ export const normalizeLang = (lang?: string): SupportedLanguage => {
 // ─────────────────────────────────────────────────────────────────────────────
 export const TITLES_MAP: Record<string, Record<SupportedLanguage, string>> = {
   stress: {
-    en: 'Survivor Stress & Emotional Health',
-    ta: 'உயிர் பிழைத்தோர் மனநல பரிசோதனை',
-    kn: 'ಸರ್ವೈವರ್ ಒತ್ತಡ ಮತ್ತು ಭಾವನಾತ್ಮಕ ಆರೋಗ್ಯ',
-    hi: 'सर्वाइवर तनाव एवं भावनात्मक स्वास्थ्य',
-    te: 'సర్వైవర్ ఒత్తిడి & భావోద్వేగ ఆరోగ్యం'
+    en: 'Stress & Emotional Wellbeing',
+    ta: 'மன அழுத்தம் & மனநல ஆரோக்கியம்',
+    kn: 'ಒತ್ತಡ ಮತ್ತು ಭಾವನಾತ್ಮಕ ಆರೋಗ್ಯ',
+    hi: 'तनाव एवं भावनात्मक स्वास्थ्य',
+    te: 'ఒత్తిడి & భావోద్వేగ ఆరోగ్యం'
   },
   caregiver_stress: {
-    en: 'Caregiver Stress Check',
-    ta: 'பராமரிப்பாளர் மன அழுத்த சோதனை',
-    kn: 'ಆರೈಕೆದಾರರ ಒತ್ತಡ ತಪಾಸಣೆ',
-    hi: 'देखभालकर्ता तनाव जांच',
-    te: 'సంరక్షకుల ఒత్తిడి తనిఖీ'
+    en: 'Stress & Emotional Wellbeing',
+    ta: 'மன அழுத்தம் & மனநல ஆரோக்கியம்',
+    kn: 'ಒತ್ತಡ ಮತ್ತು ಭಾವನಾತ್ಮಕ ಆರೋಗ್ಯ',
+    hi: 'तनाव एवं भावनात्मक स्वास्थ्य',
+    te: 'ఒత్తిడి & భావోద్వేగ ఆరోగ్యం'
   },
   sleep: {
     en: 'Sleep Duration & Quality',
@@ -127,11 +127,11 @@ export const TITLES_MAP: Record<string, Record<SupportedLanguage, string>> = {
     te: 'జీర్ణకోశ & నోటి ఆరోగ్యం'
   },
   genetics: {
-    en: 'Family History of Cancer',
-    ta: 'குடும்ப புற்றுநோய் வரலாறு',
-    kn: 'ಕ್ಯಾನ್ಸರ್‌ನ ಕುಟುಂಬ ಇತಿಹಾಸ',
-    hi: 'कैंसर का पारिवारिक इतिहास',
-    te: 'కుటుంబ క్యాన్సర్ చరిత్ర'
+    en: 'Family History & Genetic Risk',
+    ta: 'குடும்ப வரலாறு & மரபணு ஆபத்து',
+    kn: 'ಕುಟುಂಬ ಇತಿಹಾಸ ಮತ್ತು ಆನುವಂಶಿಕ ಅಪಾಯ',
+    hi: 'पारिवारिक इतिहास और आनुवंशिक जोखिम',
+    te: 'కుటుంబ చరిత్ర & జన్యుపరమైన ముప్పు'
   },
   substances: {
     en: 'Chemical & Industrial Substances',
@@ -282,18 +282,18 @@ export const localizeStepTitle = (stepId?: string, lang: SupportedLanguage = 'en
 // ─────────────────────────────────────────────────────────────────────────────
 export const QUESTIONS_MAP: Record<string, Record<SupportedLanguage, string>> = {
   stress: {
-    en: 'How is your emotional wellbeing today? Post-cancer anxiety, fear of recurrence, or caregiver stress?',
-    ta: 'இன்று உங்கள் மனநிலை மற்றும் உணர்ச்சி நல்வாழ்வு எவ்வாறு உள்ளது? புற்றுநோய் பயம், மறுநிகழ்வு பற்றிய கவலை அல்லது பராமரிப்பாளர் அழுத்தமா?',
-    kn: 'ಇಂದು ನಿಮ್ಮ ಭಾವನಾತ್ಮಕ ಆರೋಗ್ಯ ಹೇಗಿದೆ? ಕ್ಯಾನ್ಸರ್ ನಂತರದ ಆತಂಕ, ಮರುಕಳಿಸುವ ಭಯ ಅಥವಾ ಆರೈಕೆದಾರರ ಒತ್ತಡವೇ?',
-    hi: 'आज आपकी भावनात्मक स्थिति कैसी है? कैंसर के बाद की चिंता, दोबारा होने का डर या देखभालकर्ता का तनाव?',
-    te: 'ఈరోజు మీ భావోద్వేగ శ్రేయస్సు ఎలా ఉంది? క్యాన్సర్ అనంతర ఆందోళన, పునరావృత భయం లేదా సంరక్షకుల ఒత్తిడి ఉందా?'
+    en: 'How are you feeling emotionally today? Are you experiencing stress, worry, or feeling overwhelmed?',
+    ta: 'இன்று உங்கள் மனநிலை எவ்வாறு உள்ளது? மன அழுத்தம், கவலை அல்லது அதிக சுமையை உணர்கிறீர்களா?',
+    kn: 'ಇಂದು ನಿಮ್ಮ ಮಾನಸಿಕ ಭಾವನೆ ಹೇಗಿದೆ? ಒತ್ತಡ, ಆತಂಕ ಅಥವಾ ಅತಿಯಾದ ಚಿಂತೆಯನ್ನು ಅನುಭವಿಸುತ್ತಿದ್ದೀರಾ?',
+    hi: 'आज आप भावनात्मक रूप से कैसा महसूस कर रहे हैं? क्या आप तनाव, चिंता या अत्यधिक दबाव महसूस कर रहे हैं?',
+    te: 'ఈరోజు మీ భావోద్వేగ స్థితి ఎలా ఉంది? మీరు ఒత్తిడి, ఆందోళన లేదా అధిక భారాన్ని ఎదుర్కొంటున్నారా?'
   },
   caregiver_stress: {
-    en: 'How was your emotional wellbeing today? Post-cancer anxiety, fear of recurrence, or caregiver stress?',
-    ta: 'இன்று உங்கள் மனநிலை மற்றும் உணர்ச்சி நல்வாழ்வு எவ்வாறு உள்ளது? புற்றுநோய் பயம், மறுநிகழ்வு பற்றிய கவலை அல்லது பராமரிப்பாளர் அழுத்தமா?',
-    kn: 'ಇಂದು ನಿಮ್ಮ ಭಾವನಾತ್ಮಕ ಆರೋಗ್ಯ ಹೇಗಿದೆ? ಕ್ಯಾನ್ಸರ್ ನಂತರದ ಆತಂಕ, ಮರುಕಳಿಸುವ ಭಯ ಅಥವಾ ಆರೈಕೆದಾರರ ಒತ್ತಡವೇ?',
-    hi: 'आज आपकी भावनात्मक स्थिति कैसी है? कैंसर के बाद की चिंता, दोबारा होने का डर या देखभालकर्ता का तनाव?',
-    te: 'ఈరోజు మీ భావోద్వేగ శ్రేయస్సు ఎలా ఉంది? క్యాన్సర్ అనంతర ఆందోళన, పునరావృత భయం లేదా సంరక్షకుల ఒత్తిడి ఉందా?'
+    en: 'How are you feeling emotionally today? Are you experiencing stress, worry, or feeling overwhelmed?',
+    ta: 'இன்று உங்கள் மனநிலை எவ்வாறு உள்ளது? மன அழுத்தம், கவலை அல்லது அதிக சுமையை உணர்கிறீர்களா?',
+    kn: 'ಇಂದು ನಿಮ್ಮ ಮಾನಸಿಕ ಭಾವನೆ ಹೇಗಿದೆ? ಒತ್ತಡ, ಆತಂಕ ಅಥವಾ ಅತಿಯಾದ ಚಿಂತೆಯನ್ನು ಅನುಭವಿಸುತ್ತಿದ್ದೀರಾ?',
+    hi: 'आज आप भावनात्मक रूप से कैसा महसूस कर रहे हैं? क्या आप तनाव, चिंता या अत्यधिक दबाव महसूस कर रहे हैं?',
+    te: 'ఈరోజు మీ భావోద్వేగ స్థితి ఎలా ఉంది? మీరు ఒత్తిడి, ఆందోళన లేదా అధిక భారాన్ని ఎదుర్కొంటున్నారా?'
   },
   sleep: {
     en: 'How many hours of quality, restorative sleep did you get last night? (Enter number, e.g., 7.5)',
@@ -352,11 +352,11 @@ export const QUESTIONS_MAP: Record<string, Record<SupportedLanguage, string>> = 
     te: 'ఈరోజు మీరు యాంటీఆక్సిడెంట్ అధికంగా ఉండే ఆహారాలు (ఉసిరి, పసుపు, ఆకుకూరలు, బెర్రీలు) లేదా సప్లిమెంట్లు తీసుకున్నారా?'
   },
   repair_habits: {
-    en: 'Did you include anti-cancer repair foods today (cruciferous vegetables, berries, turmeric, omega-3s)?',
-    ta: 'இன்று புற்றுநோய் எதிர்ப்பு உணவுகள் (முட்டைக்கோஸ் குடும்ப காய்கறிகள், பெர்ரி, மஞ்சள், ஒமேகா-3) சேர்த்துக் கொண்டீர்களா?',
-    kn: 'ಇಂದು ನೀವು ಕ್ಯಾನ್ಸರ್ ವಿರೋಧಿ ಪುನಶ್ಚೇತನ ಆಹಾರಗಳನ್ನು (ತರಕಾರಿಗಳು, ಬೆರ್ರಿಗಳು, ಅರಿಶಿನ, ಒಮೆಗಾ-3) ಸೇವಿಸಿದ್ದೀರಾ?',
-    hi: 'क्या आपने आज कैंसर-रोधी आहार (हरी सब्जियां, बेरीज, हल्दी, ओमेगा-3) शामिल किया?',
-    te: 'ఈరోజు మీరు క్యాన్సర్ నిరోధక పునరుద్ధరణ ఆహారాలను (బ్రోకలీ/క్యాబేజీ, బెర్రీలు, పసుపు, ఒమేగా-3) చేర్చుకున్నారా?'
+    en: 'Did you include cellular repair foods today (cruciferous vegetables, berries, turmeric, omega-3s)?',
+    ta: 'இன்று செல்லுலார் பழுதுபார்க்கும் உணவுகள் (முட்டைக்கோஸ் குடும்ப காய்கறிகள், பெர்ரி, மஞ்சள், ஒமேகா-3) சேர்த்துக் கொண்டீர்களா?',
+    kn: 'ಇಂದು ನೀವು ಜೀವಕೋಶ ಪುನಶ್ಚೇತನ ಆಹಾರಗಳನ್ನು (ತರಕಾರಿಗಳು, ಬೆರ್ರಿಗಳು, ಅರಿಶಿನ, ಒಮೆಗಾ-3) ಸೇವಿಸಿದ್ದೀರಾ?',
+    hi: 'क्या आपने आज सेलुलर मरम्मत और पोषण आहार (हरी सब्जियां, बेरीज, हल्दी, ओमेगा-3) शामिल किया?',
+    te: 'ఈరోజు మీరు సెల్యులార్ రిపేర్ ఆహారాలను (బ్రోకలీ/క్యాబేజీ, బెర్రీలు, పసుపు, ఒమేగా-3) చేర్చుకున్నారా?'
   },
   env_air: {
     en: 'Did you commute in heavy traffic (>30 min), encounter passive smoking, or experience indoor smoke/incense exposure today?',
@@ -408,11 +408,11 @@ export const QUESTIONS_MAP: Record<string, Record<SupportedLanguage, string>> = 
     te: 'ఈరోజు మీకు అసిడిటీ/గ్యాస్ట్రిటిస్ లేదా నోటి/పంటి సమస్య ఏదైనా ఎదురైందా?'
   },
   genetics: {
-    en: 'Do you have anybody in your family with cancer, or a self-diagnosis of cancer?',
-    ta: 'உங்கள் குடும்பத்தில் யாருக்காவது புற்றுநோய் வரலாறு உள்ளதா அல்லது உங்களுக்கு புற்றுநோய் கண்டறியப்பட்டுள்ளதா?',
-    kn: 'ನಿಮ್ಮ ಕುಟುಂಬದಲ್ಲಿ ಯಾರಿಗಾದರೂ ಕ್ಯಾನ್ಸರ್ ಇತಿಹಾಸವಿದೆಯೇ ಅಥವಾ ನಿಮಗೆ ಕ್ಯಾನ್ಸರ್ ಇರುವುದು ಪತ್ತೆಯಾಗಿದೆಯೇ?',
-    hi: 'क्या आपके परिवार में किसी को कैंसर का इतिहास है, या आपका खुद का कैंसर निदान हुआ है?',
-    te: 'మీ కుటుంబంలో ఎవరికైనా క్యాన్సర్ చరిత్ర ఉందా లేదా మీకు క్యాన్సర్ నిర్ధారణ అయిందా?'
+    en: 'Do you have a family history of cancer or chronic health risks in immediate family members?',
+    ta: 'உங்கள் குடும்பத்தில் யாருக்காவது புற்றுநோய் அல்லது கடுமையான நாள்பட்ட நோய் வரலாறு உள்ளதா?',
+    kn: 'ನಿಮ್ಮ ಹತ್ತಿರದ ಕುಟುಂಬದ ಸದಸ್ಯರಲ್ಲಿ ಕ್ಯಾನ್ಸರ್ ಅಥವಾ ದೀರ್ಘಕಾಲದ ಆರೋಗ್ಯ ಸಮಸ್ಯೆಗಳ ಇತಿಹಾಸವಿದೆಯೇ?',
+    hi: 'क्या आपके निकटतम परिवार में कैंसर या गंभीर पुरानी बीमारियों का पारिवारिक इतिहास है?',
+    te: 'మీ కుటుంబ సభ్యులలో ఎవరికైనా క్యాన్సర్ లేదా దీర్ఘకాలిక ఆరోగ్య సమస్యల చరిత్ర ఉందా?'
   },
   substances: {
     en: 'Were you exposed to harmful industrial chemicals, asbestos, or hazardous substances today?',
@@ -429,7 +429,7 @@ export const QUESTIONS_MAP: Record<string, Record<SupportedLanguage, string>> = 
     te: 'ఈరోజు మీరు ఏదైనా ఫాలో-అప్ చెకప్, స్కాన్ లేదా రక్త పరీక్ష చేయించుకున్నారా? తదుపరి స్క్రీనింగ్ ప్లాన్ చేయబడిందా?'
   },
   report_upload: {
-    en: 'Do you have a new CGM report, HbA1c, or cancer screening result to upload today? Tap below to upload.',
+    en: 'Do you have a new CGM report, HbA1c, or lab screening result to upload today? Tap below to upload.',
     ta: 'இன்று பதிவேற்ற புதிய CGM அறிக்கை, HbA1c அல்லது மருத்துவ பரிசோதனை முடிவுகள் உள்ளதா? பதிவேற்ற கீழே தட்டவும்.',
     kn: 'ಇಂದು ಅಪ್‌ಲೋಡ್ ಮಾಡಲು ಹೊಸ CGM ವರದಿ, HbA1c ಅಥವಾ ತಪಾಸಣೆ ಫಲಿತಾಂಶವಿದೆಯೇ? ಅಪ್‌ಲೋಡ್ ಮಾಡಲು ಕೆಳಗೆ ಟ್ಯಾಪ್ ಮಾಡಿ.',
     hi: 'क्या आज आपके पास अपलोड करने के लिए नई CGM रिपोर्ट, HbA1c या टेस्ट परिणाम हैं? अपलोड करने के लिए नीचे टैप करें।',
@@ -499,11 +499,11 @@ export const QUESTIONS_MAP: Record<string, Record<SupportedLanguage, string>> = 
     te: 'ఈరోజు మీరు ఎసిడిటీ, గుండెల్లో మంట లేదా గ్యాస్ట్రిక్ అసౌకర్యాన్ని అనుభవించారా?'
   },
   genetic: {
-    en: 'Do you have anybody in your immediate family with cancer, or a personal history of cancer?',
-    ta: 'உங்கள் குடும்பத்தில் யாருக்கேனும் புற்றுநோய் வரலாறு அல்லது உங்களுக்கு புற்றுநோய் பாதிப்பு இருந்ததா?',
-    kn: 'ನಿಮ್ಮ ಕುಟುಂಬದಲ್ಲಿ ಯಾರಿಗಾದರೂ ಕ್ಯಾನ್ಸರ್ ಇತಿಹಾಸವಿದೆಯೇ ಅಥವಾ ನಿಮಗೆ ಕ್ಯಾನ್ಸರ್ ಇತಿಹಾಸವಿದೆಯೇ?',
-    hi: 'क्या आपके परिवार में किसी को कैंसर का इतिहास है या आपका व्यक्तिगत इतिहास रहा है?',
-    te: 'మీ కుటుంబంలో ఎవరికైనా క్యాన్సర్ చరిత్ర ఉందా లేదా మీకు గతంలో క్యాన్సర్ వచ్చిందా?'
+    en: 'Do you have a family history of cancer or chronic health risks in immediate family members?',
+    ta: 'உங்கள் குடும்பத்தில் யாருக்காவது புற்றுநோய் அல்லது கடுமையான நாள்பட்ட நோய் வரலாறு உள்ளதா?',
+    kn: 'ನಿಮ್ಮ ಹತ್ತಿರದ ಕುಟುಂಬದ ಸದಸ್ಯರಲ್ಲಿ ಕ್ಯಾನ್ಸರ್ ಅಥವಾ ದೀರ್ಘಕಾಲದ ಆರೋಗ್ಯ ಸಮಸ್ಯೆಗಳ ಇತಿಹಾಸವಿದೆಯೇ?',
+    hi: 'क्या आपके निकटतम परिवार में कैंसर या गंभीर पुरानी बीमारियों का पारिवारिक इतिहास है?',
+    te: 'మీ కుటుంబ సభ్యులలో ఎవరికైనా క్యాన్సర్ లేదా దీర్ఘకాలిక ఆరోగ్య సమస్యల చరిత్ర ఉందా?'
   },
   safer_products: {
     en: 'Did you use paraben-free, sulfate-free, and phthalate-free personal care / household products today?',
@@ -845,7 +845,8 @@ export const OPTIONS_MAP: Record<string, Record<SupportedLanguage, string>> = {
 
   // Genetics & Substances
   'no family history': { en: 'No Family History', ta: 'குடும்ப வரலாறு இல்லை', kn: 'ಯಾವುದೇ ಕುಟುಂಬ ಇತಿಹಾಸವಿಲ್ಲ', hi: 'कोई पारिवारिक इतिहास नहीं', te: 'కుటుంబ చరిత్ర లేదు' },
-  'yes (family history of cancer)': { en: 'Yes (Family History of Cancer)', ta: 'ஆம் (குடும்ப புற்றுநோய் வரலாறு)', kn: 'ಹೌದು (ಕುಟುಂಬದಲ್ಲಿ ಕ್ಯಾನ್ಸರ್ ಇತಿಹಾಸ)', hi: 'हाँ (परिवार में कैंसर इतिहास)', te: 'అవును (కుటుంబ క్యాన్సర్ చరిత్ర)' },
+  'yes (family history present)': { en: 'Yes (Family History Present)', ta: 'ஆம் (குடும்ப வரலாறு உள்ளது)', kn: 'ಹೌದು (ಕುಟುಂಬ ಇತಿಹಾಸವಿದೆ)', hi: 'हाँ (पारिवारिक इतिहास मौजूद है)', te: 'అవును (కుటుంబ చరిత్ర ఉంది)' },
+  'yes (family history of cancer)': { en: 'Yes (Family History Present)', ta: 'ஆம் (குடும்ப வரலாறு உள்ளது)', kn: 'ಹೌದು (ಕುಟುಂಬ ಇತಿಹಾಸವಿದೆ)', hi: 'हाँ (पारिवारिक इतिहास मौजूद है)', te: 'అవును (కుటుంబ చరిత్ర ఉంది)' },
   'yes (chemical exposure)': { en: 'Yes (Chemical Exposure)', ta: 'ஆம் (வேதியியல் வெளிப்பாடு)', kn: 'ಹೌದು (ರಾಸಾಯನಿಕ ಒಡ್ಡಿಕೆ)', hi: 'हाँ (रासायनिक जोखिम)', te: 'అవును (రసాయన ప్రభావం)' },
 
   // Screening

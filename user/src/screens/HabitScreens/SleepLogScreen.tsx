@@ -10,6 +10,7 @@ import { DeStressAIChatModal } from '../../components/DeStressAIChatModal';
 interface SleepLogScreenProps {
   onBack: () => void;
   onBookAppointment?: (recommendationId: string) => void;
+  initialFilter?: '7' | '30' | '365';
 }
 
 const LOCALE_MAP: Record<string, string> = {
@@ -20,7 +21,7 @@ const LOCALE_MAP: Record<string, string> = {
   hi: 'hi-IN'
 };
 
-export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAppointment }) => {
+export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAppointment, initialFilter }) => {
   const { t, language } = useLanguage();
   const { user, token, apiUrl } = useAuth();
   const { showToast } = useToast();
@@ -31,6 +32,7 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
   const [snoring, setSnoring] = useState<boolean>(false);
   const [showSleepPopup, setShowSleepPopup] = useState<boolean>(false);
   const [showMiaSleepModal, setShowMiaSleepModal] = useState<boolean>(false);
+  const [historyFilter, setHistoryFilter] = useState<'7' | '30' | '365'>(initialFilter || '7');
   const [history, setHistory] = useState<HabitLog[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -38,14 +40,20 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
   const activeLocale = LOCALE_MAP[language] || 'en-US';
 
   useEffect(() => {
-    if (user?.id) loadHistory();
-  }, [user]);
+    if (initialFilter) {
+      setHistoryFilter(initialFilter);
+    }
+  }, [initialFilter]);
 
-  const loadHistory = async () => {
-    if (!user?.id) return;
+  useEffect(() => {
+    if (user?.id && token) loadHistory(Number(historyFilter));
+  }, [user?.id, token, historyFilter]);
+
+  const loadHistory = async (days: number = Number(historyFilter)) => {
+    if (!user?.id || !token) return;
     try {
       setLoadingHistory(true);
-      const logs = await HabitsService.getRecentHabits(apiUrl, token, 'Sleep', 7);
+      const logs = await HabitsService.getRecentHabits(apiUrl, token, 'Sleep', days);
       setHistory(logs);
       if (logs.length > 0) {
         const todayStr = new Date().toDateString();
@@ -357,7 +365,46 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
       </div>
 
       <div>
-        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-3">{t('habits.sevenDayTrend', '7-Day Trend')}</span>
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block">
+            {historyFilter === '365' ? t('habits.oneYearTrend', '1-Year Trend') : historyFilter === '30' ? t('habits.thirtyDayTrend', '30-Day Trend') : t('habits.sevenDayTrend', '7-Day Trend')}
+          </span>
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+            <button
+              type="button"
+              onClick={() => setHistoryFilter('7')}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                historyFilter === '7'
+                  ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+              }`}
+            >
+              7D
+            </button>
+            <button
+              type="button"
+              onClick={() => setHistoryFilter('30')}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                historyFilter === '30'
+                  ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+              }`}
+            >
+              30D
+            </button>
+            <button
+              type="button"
+              onClick={() => setHistoryFilter('365')}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                historyFilter === '365'
+                  ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+              }`}
+            >
+              1Y
+            </button>
+          </div>
+        </div>
         {loadingHistory ? (
           <div className="text-center py-8">
             <div className="w-6 h-6 border-2 border-slate-200 border-t-slate-400 rounded-full animate-spin mx-auto mb-3"></div>
@@ -369,7 +416,7 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
         ) : (
           <div className="flex flex-col gap-2">
             {history.map((h) => (
-              <div key={h.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-xl p-3 flex justify-between items-center">
+              <div key={h.id || (h as any)._id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-xl p-3 flex justify-between items-center">
                 <div>
                   <span className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
                     {h.value.hours >= 7 && !h.value.snoring ? '🌟' : '🥱'} {h.value.hours ?? 0} {t('habits.hoursWord', 'hours')}
@@ -385,7 +432,7 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
                     )}
                   </span>
                   <span className="text-[10px] text-slate-400 mt-1 block">
-                    {new Date(h.timestamp).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric' })}
+                    {new Date(h.timestamp || (h as any).createdAt).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric' })} · {new Date(h.timestamp || (h as any).createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     {h.value.quality && ` · ${t('habits.quality', 'Quality')}: ${t('habits.quality_' + h.value.quality, h.value.quality.charAt(0).toUpperCase() + h.value.quality.slice(1))}`}
                     {h.value.stoppedScreenTime === false && ` · ${t('habits.screensUsed', 'Screens used before bed')}`}
                   </span>
@@ -395,7 +442,7 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
                 ) : (
                   <Minus className="h-4 w-4 text-amber-500" />
                 )}
-                <button onClick={() => handleDelete(h.id)} className="ml-3 p-1.5 hover:bg-rose-50 text-slate-300 hover:text-rose-500 rounded-lg transition-colors"><Trash2 className="h-4 w-4" /></button>
+                <button onClick={() => handleDelete(h.id || (h as any)._id)} className="ml-3 p-1.5 hover:bg-rose-50 text-slate-300 hover:text-rose-500 rounded-lg transition-colors cursor-pointer"><Trash2 className="h-4 w-4" /></button>
               </div>
             ))}
           </div>

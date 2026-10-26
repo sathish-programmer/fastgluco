@@ -30,7 +30,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 
-const CURRENT_APP_VERSION = 'v6.0.8';
+const CURRENT_APP_VERSION = 'v6.0.9';
 
 const getEmbedUrl = (url: string) => {
   if (!url) return '';

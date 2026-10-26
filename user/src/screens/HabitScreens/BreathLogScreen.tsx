@@ -22,6 +22,7 @@ import { scheduleHabitReminder, BREATHWORK_NOTIFICATION_ID, playNotificationChim
 
 interface BreathLogScreenProps {
   onBack: () => void;
+  initialFilter?: '7' | '30' | '365';
 }
 
 type TechniqueId = 'box' | 'relax478' | 'coherent' | 'energizing';
@@ -37,7 +38,7 @@ interface Technique {
   recommendedMinutes: number;
 }
 
-export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack }) => {
+export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack, initialFilter }) => {
   const { user, token, apiUrl } = useAuth();
   const { showToast } = useToast();
   const { t, language } = useLanguage();
@@ -119,6 +120,7 @@ export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack }) => {
 
   const [customMinutes, setCustomMinutes] = useState<number>(5);
   const [logging, setLogging] = useState(false);
+  const [historyFilter, setHistoryFilter] = useState<'7' | '30' | '365'>(initialFilter || '7');
   const [history, setHistory] = useState<HabitLog[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [reminderTime, setReminderTime] = useState('08:00');
@@ -131,10 +133,16 @@ export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack }) => {
   const timerRef = useRef<any>(null);
 
   useEffect(() => {
-    if (user?.id) {
-      loadHistory();
+    if (initialFilter) {
+      setHistoryFilter(initialFilter);
     }
-  }, [user]);
+  }, [initialFilter]);
+
+  useEffect(() => {
+    if (user?.id && token) {
+      loadHistory(Number(historyFilter));
+    }
+  }, [user?.id, token, historyFilter]);
 
   // Reset pacer when technique changes
   useEffect(() => {
@@ -195,11 +203,11 @@ export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack }) => {
     setTotalSecondsTrained(0);
   };
 
-  const loadHistory = async () => {
-    if (!user?.id) return;
+  const loadHistory = async (days: number = Number(historyFilter)) => {
+    if (!user?.id || !token) return;
     try {
       setLoadingHistory(true);
-      const logs = await HabitsService.getRecentHabits(apiUrl, token, 'Breath', 7);
+      const logs = await HabitsService.getRecentHabits(apiUrl, token, 'Breath', days);
       setHistory(logs);
     } catch (err) {
       console.error('Failed to load breath history:', err);
@@ -720,19 +728,55 @@ export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack }) => {
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl p-4 transition-colors">
         <div className="flex items-center justify-between mb-3">
           <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">{t('breath.recentSessions', 'Recent Breath Sessions')}</span>
-          <span className="text-[11px] font-bold text-cyan-600 dark:text-cyan-400">{t('breath.last7Days', 'Last 7 Days')}</span>
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+            <button
+              type="button"
+              onClick={() => setHistoryFilter('7')}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                historyFilter === '7'
+                  ? 'bg-white dark:bg-slate-700 text-cyan-600 dark:text-cyan-300 shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+              }`}
+            >
+              7D
+            </button>
+            <button
+              type="button"
+              onClick={() => setHistoryFilter('30')}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                historyFilter === '30'
+                  ? 'bg-white dark:bg-slate-700 text-cyan-600 dark:text-cyan-300 shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+              }`}
+            >
+              30D
+            </button>
+            <button
+              type="button"
+              onClick={() => setHistoryFilter('365')}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                historyFilter === '365'
+                  ? 'bg-white dark:bg-slate-700 text-cyan-600 dark:text-cyan-300 shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+              }`}
+            >
+              1Y
+            </button>
+          </div>
         </div>
 
         {loadingHistory ? (
           <div className="py-6 text-center text-xs text-slate-400">{t('common.loading')}</div>
         ) : history.length === 0 ? (
           <div className="py-6 text-center text-xs text-slate-400">
-            {t('breath.noSessionsDesc', 'No breath sessions logged in the last 7 days. Start your first session above!')}
+            {historyFilter === '30'
+              ? t('breath.noSessionsDesc30', 'No breath sessions logged in the last 30 days. Start your first session above!')
+              : t('breath.noSessionsDesc', 'No breath sessions logged in the last 7 days. Start your first session above!')}
           </div>
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
             {history.map((item) => {
-              const dateStr = new Date(item.timestamp).toLocaleDateString(activeLocale, { 
+              const dateStr = new Date(item.timestamp || (item as any).createdAt).toLocaleDateString(activeLocale, { 
                 weekday: 'short', 
                 month: 'short', 
                 day: 'numeric' 
@@ -750,7 +794,7 @@ export const BreathLogScreen: React.FC<BreathLogScreenProps> = ({ onBack }) => {
                     </div>
                     <div>
                       <span className="font-bold text-slate-700 dark:text-slate-200 block">{tech}</span>
-                      <span className="text-[10px] text-slate-400">{dateStr} · {mins} {t('common.minutes', 'minutes')}</span>
+                      <span className="text-[10px] text-slate-400">{dateStr} · {new Date(item.timestamp || (item as any).createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · {mins} {t('common.minutes', 'minutes')}</span>
                     </div>
                   </div>
 

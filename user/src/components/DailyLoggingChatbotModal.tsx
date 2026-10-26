@@ -349,8 +349,9 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
     // 8. Movement / Physical Activity
     const movementVal = getAnswer(['movement', 'movement_mins', 'exercise']).toLowerCase();
     if (movementVal) {
+      const isNoMovement = movementVal.includes('no movement') || movementVal.includes('no exercise') || movementVal.includes('rest day') || movementVal.includes('bed rest') || movementVal.includes('not today') || movementVal.includes('none') || movementVal.startsWith('0 min') || movementVal.includes(' 0 min') || movementVal.includes('zero min') || movementVal.includes('did not') || movementVal.includes("didn't") || movementVal.trim() === 'no';
       const numM = parseFloat(movementVal);
-      if (movementVal.includes('yes') || movementVal.includes('walk') || movementVal.includes('run') || movementVal.includes('20') || movementVal.includes('30') || movementVal.includes('exercise') || (!isNaN(numM) && numM >= 20)) {
+      if (!isNoMovement && (movementVal.includes('walk') || movementVal.includes('run') || movementVal.includes('30+') || movementVal.includes('yoga') || movementVal.includes('strength') || (!isNaN(numM) && numM >= 20) || (movementVal.includes('yes') && !movementVal.includes('no')))) {
         repairCount += 1;
         repairHighlights.push('20+ Mins Aerobic Movement');
       } else {
@@ -363,7 +364,8 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
     // 9. Antioxidants & Phytonutrients
     const antioxVal = getAnswer(['antioxidants', 'repair_habits']).toLowerCase();
     if (antioxVal) {
-      if (antioxVal.includes('yes') || antioxVal.includes('consumed') || antioxVal.includes('berries') || antioxVal.includes('vegetables') || antioxVal.includes('greens') || antioxVal.includes('turmeric')) {
+      const isNoAntiox = antioxVal.includes('not today') || antioxVal.includes('no') || antioxVal.includes('none') || antioxVal.includes('skip');
+      if (!isNoAntiox && (antioxVal.includes('yes') || antioxVal.includes('consumed') || antioxVal.includes('berries') || antioxVal.includes('vegetables') || antioxVal.includes('greens') || antioxVal.includes('turmeric'))) {
         repairCount += 1;
         repairHighlights.push('Antioxidant Cellular Protection');
       } else {
@@ -376,7 +378,8 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
     // 10. Power of Breath
     const breathVal = getAnswer(['breath', 'power_of_breath', 'breathwork']).toLowerCase();
     if (breathVal) {
-      if (breathVal.includes('yes') || breathVal.includes('practiced') || breathVal.includes('box') || breathVal.includes('pranayama') || breathVal.includes('5') || breathVal.includes('10')) {
+      const isNoBreath = breathVal.includes('not today') || breathVal.includes('no') || breathVal.includes('skip') || breathVal.includes('none');
+      if (!isNoBreath && (breathVal.includes('yes') || breathVal.includes('practiced') || breathVal.includes('box') || breathVal.includes('pranayama') || breathVal.includes('5') || breathVal.includes('10'))) {
         repairCount += 1;
         repairHighlights.push('Power of Breath Reset');
       } else {
@@ -384,12 +387,33 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       }
     }
 
-    // 11. Joy & Stillness
-    const joyVal = getAnswer(['joy', 'stillness', 'loved', 'gratitude']).toLowerCase();
-    if (joyVal) {
-      if (joyVal.includes('yes') || joyVal.includes('done') || joyVal.includes('sat') || joyVal.includes('loved') || joyVal.includes('mindful')) {
+    // 11. Stillness & Meditation
+    const stillnessVal = getAnswer(['stillness']).toLowerCase();
+    if (stillnessVal) {
+      const isNoStillness = stillnessVal.includes('not today') || stillnessVal.includes('no') || stillnessVal.includes('skip') || stillnessVal.includes('none');
+      if (!isNoStillness && (stillnessVal.includes('yes') || stillnessVal.includes('sat') || stillnessVal.includes('practiced') || stillnessVal.includes('10+'))) {
         repairCount += 1;
-        repairHighlights.push('Joy & Mindful Stillness');
+        repairHighlights.push('Stillness & Meditation');
+      }
+    }
+
+    // 12. Things You Love (Joy)
+    const joyVal = getAnswer(['joy', 'loved', 'gratitude']).toLowerCase();
+    if (joyVal) {
+      const isNoJoy = joyVal.includes('not today') || joyVal.includes('no') || joyVal.includes('skip') || joyVal.includes('none');
+      if (!isNoJoy && (joyVal.includes('yes') || joyVal.includes('done') || joyVal.includes('loved'))) {
+        repairCount += 1;
+        repairHighlights.push('Things You Love & Joy');
+      }
+    }
+
+    // 13. Safer Personal Care Products
+    const saferVal = getAnswer(['safer_products', 'saferproducts']).toLowerCase();
+    if (saferVal) {
+      const isNoSafer = saferVal.includes('not today') || saferVal.includes('no') || saferVal.includes('none') || saferVal.includes('skip') || saferVal.includes('synthetic');
+      if (!isNoSafer && (saferVal.includes('yes') || saferVal.includes('safe') || saferVal.includes('clean'))) {
+        repairCount += 1;
+        repairHighlights.push('Safer Personal Care Products');
       }
     }
 
@@ -1671,13 +1695,22 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
         habitType = 'Fasting';
         habitValue = { completed: isYes, hours: lowerVal.includes('16') ? 16 : lowerVal.includes('12') ? 12 : isYes ? 14 : 0 };
       } else if (stepId === 'movement') {
-        // Movement screen saves type: 'Movement', value: { minutes: N }
         habitType = 'Movement';
-        const mins = lowerVal.includes('30+') || lowerVal.includes('30 min') ? 30
-          : lowerVal.includes('20') ? 20
-          : lowerVal.includes('light') ? 15
-          : lowerVal.includes('bed') || lowerVal.includes('rest') ? 0 : 20;
-        habitValue = { minutes: mins, done: mins >= 20, activity: valueStr };
+        const isNoMovement = lowerVal.includes('no movement') || lowerVal.includes('no exercise') || lowerVal.includes('rest day') || lowerVal.includes('bed rest') || lowerVal.includes('not today') || lowerVal.includes('none') || lowerVal.startsWith('0 min') || lowerVal.includes(' 0 min') || lowerVal.includes('zero min') || lowerVal.includes('did not') || lowerVal.includes("didn't") || lowerVal.trim() === 'no';
+        let mins = 0;
+        if (!isNoMovement) {
+          if (lowerVal.includes('30+') || lowerVal.includes('30 min') || lowerVal.includes('45 min') || lowerVal.includes('60 min') || lowerVal.includes('1 hour') || lowerVal.includes('strength training') || lowerVal.includes('walk / run') || lowerVal.includes('jog') || lowerVal.includes('gym')) {
+            mins = 30;
+          } else if (lowerVal.includes('<20') || lowerVal.includes('light') || lowerVal.includes('stretch') || lowerVal.includes('15') || lowerVal.includes('10')) {
+            mins = 15;
+          } else if (lowerVal.includes('20+') || lowerVal.includes('20 min') || lowerVal.includes('20')) {
+            mins = 20;
+          } else if (isYes || lowerVal.includes('walk') || lowerVal.includes('yoga') || lowerVal.includes('exercise') || lowerVal.includes('workout') || lowerVal.includes('cycling') || lowerVal.includes('swimming')) {
+            mins = 30;
+          }
+        }
+        const isCompleted = mins >= 20;
+        habitValue = { minutes: mins, done: isCompleted, isCompleted, score: isCompleted ? 1 : 0, activity: valueStr, option: valueStr };
       } else if (stepId === 'smoking') {
         habitType = 'Smoking';
         const isClean = lowerVal.includes('no') || lowerVal.includes('clean');
@@ -1798,11 +1831,14 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
         };
       } else if (stepId === 'breath' || stepId === 'power_of_breath' || stepId === 'breathwork') {
         habitType = 'Breath';
+        const isNotToday = lowerVal.includes('not today') || lowerVal.includes('no') || lowerVal.includes('skip') || lowerVal.includes('none');
+        const isPracticed = !isNotToday && (isYes || lowerVal.includes('yes') || lowerVal.includes('practiced') || lowerVal.includes('5-10') || lowerVal.includes('box') || lowerVal.includes('pranayama'));
         habitValue = {
-          minutes: isYes ? 10 : 0,
+          minutes: isPracticed ? 10 : 0,
           technique: 'Box Breathing / Pranayama',
-          done: isYes,
-          isCompleted: isYes,
+          done: isPracticed,
+          isCompleted: isPracticed,
+          score: isPracticed ? 1 : 0,
           option: valueStr
         };
       } else if (stepId === 'dental' || stepId === 'dental_health') {
@@ -1835,7 +1871,8 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
         habitValue = { difficultyLosing: hasDifficulty, score: hasDifficulty ? -1 : 0, option: valueStr };
       } else if (stepId === 'safer_products' || stepId === 'saferproducts') {
         habitType = 'SaferProducts';
-        const isSafe = isYes || lowerVal.includes('yes') || lowerVal.includes('safe') || lowerVal.includes('clean');
+        const isNotToday = lowerVal.includes('not today') || lowerVal.includes('no') || lowerVal.includes('none') || lowerVal.includes('skip') || lowerVal.includes('synthetic');
+        const isSafe = !isNotToday && (isYes || lowerVal.includes('yes') || lowerVal.includes('safe') || lowerVal.includes('clean'));
         habitValue = { saferProductsUsed: isSafe, score: isSafe ? 1 : 0, option: valueStr };
       } else if (stepId === 'gastritis') {
         habitType = 'Gastritis';
@@ -1862,15 +1899,21 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       } else if (stepId === 'joy') {
         // Joy / Things You Love screen saves type: 'Joy', value: { done: true/false }
         habitType = 'Joy';
-        habitValue = { done: isYes };
+        const isNotToday = lowerVal.includes('not today') || lowerVal.includes('no') || lowerVal.includes('none') || lowerVal.includes('skip');
+        const isDone = !isNotToday && (isYes || lowerVal.includes('yes') || lowerVal.includes('done'));
+        habitValue = { done: isDone, isCompleted: isDone, score: isDone ? 1 : 0, option: valueStr };
       } else if (stepId === 'stillness') {
         // Stillness screen saves type: 'Stillness', value: { sat: true/false }
         habitType = 'Stillness';
-        habitValue = { sat: isYes };
+        const isNotToday = lowerVal.includes('not today') || lowerVal.includes('no') || lowerVal.includes('none') || lowerVal.includes('skip');
+        const isSat = !isNotToday && (isYes || lowerVal.includes('yes') || lowerVal.includes('practiced') || lowerVal.includes('10+'));
+        habitValue = { sat: isSat, isCompleted: isSat, done: isSat, score: isSat ? 1 : 0, option: valueStr };
       } else if (stepId === 'joy_stillness') {
         // Combined legacy step
         habitType = 'Joy';
-        habitValue = { done: isYes };
+        const isNotToday = lowerVal.includes('not today') || lowerVal.includes('no') || lowerVal.includes('none') || lowerVal.includes('skip');
+        const isDone = !isNotToday && (isYes || lowerVal.includes('yes') || lowerVal.includes('done'));
+        habitValue = { done: isDone, isCompleted: isDone, score: isDone ? 1 : 0, option: valueStr };
       // ── Condition-specific steps sync to localStorage and backend ──
       } else if (stepId.startsWith('found_')) {
         habitType = stepId === 'found_exercise' ? 'Movement' : stepId === 'found_sleep' ? 'Sleep' : stepId === 'found_fasting' ? 'Fasting' : stepId === 'found_antioxidants' ? 'Antioxidants' : stepId === 'found_stress' ? 'Stress' : 'Food';
@@ -1943,6 +1986,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
       });
 
       // Update in-memory state so subsequent checks in the same session immediately know it is logged
+      const todayStr = new Date().toDateString();
       setLoggedHabits(prev => [
         {
           type: habitType,
@@ -1950,7 +1994,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
           source: 'chatbot',
           timestamp: new Date().toISOString()
         },
-        ...prev
+        ...prev.filter(h => !(h.type === habitType && new Date(h.timestamp || (h as any).createdAt).toDateString() === todayStr))
       ]);
 
       if (onRefreshDashboard) onRefreshDashboard();
@@ -2246,6 +2290,13 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
     const canonicalValue = validation.valid ? validation.mappedValue : editInputText.trim();
     await saveHabitToBackend(msg.stepId, canonicalValue);
     const displayVal = localizeOptionText(canonicalValue);
+
+    // Update in-memory session answers and recalculate score summary
+    sessionAnswersRef.current = { ...sessionAnswersRef.current, [msg.stepId]: canonicalValue };
+    setSessionAnswers(prev => ({ ...prev, [msg.stepId!]: canonicalValue }));
+    const updatedSummary = computeSessionScoreSummary(sessionAnswersRef.current);
+    setSessionSummary(updatedSummary);
+
     setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, text: displayVal } : m));
     setEditingMessageId(null);
     if (onRefreshDashboard) onRefreshDashboard();

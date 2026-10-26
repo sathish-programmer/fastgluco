@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Cigarette, Flame, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, Cigarette, Flame, CheckCircle2, ShieldAlert, Trash2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { HabitsService, type HabitLog } from '../../services/habitsService';
@@ -11,9 +11,10 @@ interface SmokingLogScreenProps {
   onBack: () => void;
   onBookAppointment?: (reason: string) => void;
   onOpenAiCheckin?: () => void;
+  initialFilter?: '7' | '30' | '365';
 }
 
-export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBookAppointment, onOpenAiCheckin }) => {
+export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBookAppointment, onOpenAiCheckin, initialFilter }) => {
   const { user, token, apiUrl } = useAuth();
   const { t, language } = useLanguage();
 
@@ -28,18 +29,25 @@ export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBo
 
   const [count, setCount] = useState<number>(0); // Cigarettes / Bidis
   const [chewingCount, setChewingCount] = useState<number>(0); // Chewing tobacco / Gutkha / Khaini
+  const [historyFilter, setHistoryFilter] = useState<'7' | '30' | '365'>(initialFilter || '7');
   const [history, setHistory] = useState<HabitLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
-    if (user?.id) loadHistory();
-  }, [user]);
+    if (initialFilter) {
+      setHistoryFilter(initialFilter);
+    }
+  }, [initialFilter]);
 
-  const loadHistory = async () => {
-    if (!user?.id) return;
+  useEffect(() => {
+    if (user?.id && token) loadHistory(Number(historyFilter));
+  }, [user?.id, token, historyFilter]);
+
+  const loadHistory = async (days: number = Number(historyFilter)) => {
+    if (!user?.id || !token) return;
     try {
-      const logs = await HabitsService.getRecentHabits(apiUrl, token, 'Smoking', 14);
+      const logs = await HabitsService.getRecentHabits(apiUrl, token, 'Smoking', days);
       const sorted = logs.reverse(); // for chart
       setHistory(sorted);
 
@@ -59,6 +67,16 @@ export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBo
       }
     } catch (err) {
       console.error('Failed to load smoking history', err);
+    }
+  };
+
+  const handleDeleteLog = async (id: string) => {
+    if (!token) return;
+    try {
+      await HabitsService.deleteHabit(apiUrl, token, id);
+      await loadHistory();
+    } catch (err) {
+      console.error('Failed to delete smoking log', err);
     }
   };
 
@@ -96,7 +114,13 @@ export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBo
       const sticks = val.cigarettesCount ?? (val.chewingCount === undefined ? (val.count ?? 0) : 0);
       const chewing = val.chewingCount ?? 0;
       const total = val.count ?? (sticks + chewing);
-      daysMap[dStr] = { total, sticks, chewing };
+      if (!daysMap[dStr]) {
+        daysMap[dStr] = { total, sticks, chewing };
+      } else {
+        daysMap[dStr].total += total;
+        daysMap[dStr].sticks += sticks;
+        daysMap[dStr].chewing += chewing;
+      }
     });
 
     const result = [];
@@ -289,14 +313,54 @@ export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBo
       {/* 14-Day Trend Section */}
       <div className="mb-8">
         <div className="flex justify-between items-center mb-3">
-          <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 tracking-widest uppercase">
-            {t('habits.fourteenDayTrendTapering', '14-Day Tapering Trend')}
-          </span>
-          {tobaccoFreeDays > 0 && (
-            <span className="text-[10px] font-extrabold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800/40">
-              {t('habits.tobaccoFreeDaysCount', { count: tobaccoFreeDays }, `${tobaccoFreeDays} Tobacco-Free Days`)}
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 tracking-widest uppercase">
+              {historyFilter === '365' ? t('habits.oneYearTrendTapering', '1-Year Tapering Trend') : historyFilter === '30' ? t('habits.thirtyDayTrendTapering', '30-Day Tapering Trend') : t('habits.sevenDayTrendTapering', '7-Day Tapering Trend')}
             </span>
-          )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+              <button
+                type="button"
+                onClick={() => setHistoryFilter('7')}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                  historyFilter === '7'
+                    ? 'bg-white dark:bg-slate-700 text-rose-600 dark:text-rose-400 shadow-2xs'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+                }`}
+              >
+                7D
+              </button>
+              <button
+                type="button"
+                onClick={() => setHistoryFilter('30')}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                  historyFilter === '30'
+                    ? 'bg-white dark:bg-slate-700 text-rose-600 dark:text-rose-400 shadow-2xs'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+                }`}
+              >
+                30D
+              </button>
+              <button
+                type="button"
+                onClick={() => setHistoryFilter('365')}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                  historyFilter === '365'
+                    ? 'bg-white dark:bg-slate-700 text-rose-600 dark:text-rose-400 shadow-2xs'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+                }`}
+              >
+                1Y
+              </button>
+            </div>
+            {tobaccoFreeDays > 0 && (
+              <span className="text-[10px] font-extrabold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800/40">
+                {t('habits.tobaccoFreeDaysCount', { count: tobaccoFreeDays }, `${tobaccoFreeDays} Tobacco-Free Days`)}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Quick Stats Grid */}
@@ -373,6 +437,54 @@ export const SmokingLogScreen: React.FC<SmokingLogScreenProps> = ({ onBack, onBo
             </ResponsiveContainer>
           </div>
         </div>
+
+        {/* History List */}
+        {history.length > 0 && (
+          <div className="mt-6">
+            <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-3">
+              {t('habits.recentLogs', 'Recent Logs')}
+            </span>
+            <div className="flex flex-col gap-2">
+              {history.map((h) => {
+                const val = h.value || {};
+                const sticks = val.cigarettesCount ?? (val.chewingCount === undefined ? (val.count ?? 0) : 0);
+                const chewing = val.chewingCount ?? 0;
+                const total = val.count ?? (sticks + chewing);
+                const isClean = total === 0;
+
+                return (
+                  <div key={h.id || (h as any)._id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-xl p-3 flex justify-between items-center">
+                    <div>
+                      <span className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                        {isClean ? '🎉' : '🚬'} {isClean ? t('habits.zeroTobaccoClean', '0 tobacco (Clean day)') : `${sticks} smoked · ${chewing} chewed`}
+                      </span>
+                      <span className="text-[10px] text-slate-400 mt-1 block">
+                        {new Date(h.timestamp || (h as any).createdAt).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric' })} · {new Date(h.timestamp || (h as any).createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {isClean ? (
+                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                      ) : (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300">
+                          Risk -1
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteLog(h.id || (h as any)._id)}
+                        className="p-1.5 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-300 hover:text-rose-500 rounded-lg transition-colors cursor-pointer"
+                        title={t('common.delete', 'Delete')}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {history.some(h => (h.value?.count > 0 || (h.value?.cigarettesCount ?? 0) > 0 || (h.value?.chewingCount ?? 0) > 0)) && (

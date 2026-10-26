@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Calendar, Save, Beaker, Building2 } from 'lucide-react';
+import { ArrowLeft, Calendar, Save, Beaker, Building2, Trash2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { HabitsService, type HabitLog } from '../../services/habitsService';
@@ -267,6 +267,16 @@ export const CancerScreeningScreen: React.FC<CancerScreeningScreenProps> = ({ on
     }
   };
 
+  const handleDelete = async (id: string) => {
+    if (!token) return;
+    try {
+      await HabitsService.deleteHabit(apiUrl, token, id);
+      await loadHistory();
+    } catch (err) {
+      console.error('Failed to delete cancer screening log', err);
+    }
+  };
+
   const handleSave = async () => {
     if (!user?.id || !testName || !date || !result) return;
     setLoading(true);
@@ -482,18 +492,28 @@ export const CancerScreeningScreen: React.FC<CancerScreeningScreenProps> = ({ on
           <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-3">{t('cancerScreen.previousResults', 'Previous Results')}</span>
           <div className="flex flex-col gap-2">
             {history.map((h) => (
-              <div key={h.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 shadow-sm flex justify-between items-center">
+              <div key={h.id || (h as any)._id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 shadow-sm flex justify-between items-center">
                 <div>
                   <span className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
                     <Beaker className="h-4 w-4 text-slate-450" /> {h.value.testName}
                   </span>
                   <span className="text-[10px] text-slate-500 dark:text-slate-450 mt-1 flex items-center gap-1">
-                    <Calendar className="h-3 w-3" /> {h.value.date ? new Date(h.value.date).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric', year: 'numeric' }) : ''}
+                    <Calendar className="h-3 w-3" /> {h.value.date ? new Date(h.value.date).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric', year: 'numeric' }) : ''} · {new Date(h.timestamp || (h as any).createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
-                <div className="text-right">
-                  <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400 block">{h.value.result}</span>
-                  {h.value.note && <span className="text-[9px] text-slate-400 dark:text-slate-500 block max-w-[120px] truncate">{h.value.note}</span>}
+                <div className="flex items-center gap-2">
+                  <div className="text-right">
+                    <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400 block">{h.value.result}</span>
+                    {h.value.note && <span className="text-[9px] text-slate-400 dark:text-slate-500 block max-w-[120px] truncate">{h.value.note}</span>}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(h.id || (h as any)._id)}
+                    className="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg transition-colors cursor-pointer"
+                    title={t('common.delete', 'Delete')}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
                 </div>
               </div>
             ))}

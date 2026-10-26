@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Info, ShieldAlert, Award, ShoppingBag, ExternalLink, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Info, ShieldAlert, Award, ShoppingBag, ExternalLink, RotateCcw, CheckCircle2, Clock, Calendar, Trash2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { useToast } from '../../context/ToastContext';
 import { HabitsService } from '../../services/habitsService';
 import { ConsultationBanner } from '../../components/ConsultationBanner';
 import { LiveAQIWidget } from '../../components/LiveAQIWidget';
@@ -10,11 +11,13 @@ interface EnvironmentalExposuresLogScreenProps {
   onBack: () => void;
   onBookAppointment?: (reason: string) => void;
   onNavigateToShop?: (query: string) => void;
+  initialFilter?: '7' | '30' | '365';
 }
 
-export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLogScreenProps> = ({ onBack, onBookAppointment, onNavigateToShop }) => {
+export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLogScreenProps> = ({ onBack, onBookAppointment, onNavigateToShop, initialFilter }) => {
   const { user, token, apiUrl } = useAuth();
   const { t } = useLanguage();
+  const { showToast } = useToast();
   
   // Sub-screens: 'hub' | 'air' | 'water' | 'pesticides' | 'microplastics' | 'kitchen'
   const [currentView, setCurrentView] = useState<'hub' | 'air' | 'water' | 'pesticides' | 'microplastics' | 'kitchen'>('hub');
@@ -36,18 +39,60 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
   const [showAirModal, setShowAirModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [todayLogId, setTodayLogId] = useState<string | null>(null);
+  const [historyFilter, setHistoryFilter] = useState<'7' | '30' | '365'>(initialFilter || '7');
+  const [historyLogs, setHistoryLogs] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
-  const hasLoadedRef = useRef(false);
   const isLoadedRef = useRef(false);
   const isUserInteractingRef = useRef(false);
 
-  // Restore from localStorage or load latest habit log once
   useEffect(() => {
-    if (user?.id && !hasLoadedRef.current) {
-      hasLoadedRef.current = true;
-      loadHistory();
+    if (initialFilter) {
+      setHistoryFilter(initialFilter);
     }
-  }, [user]);
+  }, [initialFilter]);
+
+  useEffect(() => {
+    if (user?.id && token) {
+      loadHistory();
+      const days = historyFilter === '30' ? 30 : historyFilter === '365' ? 365 : 7;
+      fetchHistoryList(days);
+    }
+  }, [user?.id, token, historyFilter]);
+
+  const fetchHistoryList = async (days: number = historyFilter === '30' ? 30 : historyFilter === '365' ? 365 : 7) => {
+    if (!user?.id || !token) return;
+    setLoadingHistory(true);
+    try {
+      const logs = await HabitsService.getRecentHabits(apiUrl, token, 'Environmental', days);
+      const sorted = (logs || []).sort((a: any, b: any) => 
+        new Date(b.timestamp || (b as any).createdAt).getTime() - new Date(a.timestamp || (a as any).createdAt).getTime()
+      );
+      setHistoryLogs(sorted);
+    } catch (err) {
+      console.error('Error fetching environmental history:', err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const handleFilterChange = (filter: '7' | '30' | '365') => {
+    setHistoryFilter(filter);
+    fetchHistoryList(filter === '30' ? 30 : filter === '365' ? 365 : 7);
+  };
+
+  const handleDeleteLog = async (id: string) => {
+    if (!token) return;
+    try {
+      await HabitsService.deleteHabit(apiUrl, token, id);
+      showToast(t('habits.habitDeleted', 'Log deleted'), 'info');
+      await fetchHistoryList(historyFilter === '30' ? 30 : historyFilter === '365' ? 365 : 7);
+      await loadHistory();
+    } catch (err) {
+      console.error('Failed to delete environmental log', err);
+      showToast(t('habits.habitDeleteFailed', 'Failed to delete log'), 'error');
+    }
+  };
 
   useEffect(() => {
     if ((airQ1 === true || airQ2 === true || airQ3 === true) && currentView === 'air' && isUserInteractingRef.current) {
@@ -169,9 +214,11 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
           kitchenQ2,
           kitchenQ3
         }
-      }).catch(err => console.error('Environmental habit auto-save error', err));
+      })
+        .then(() => fetchHistoryList(historyFilter === '30' ? 30 : historyFilter === '365' ? 365 : 7))
+        .catch(err => console.error('Environmental habit auto-save error', err));
     }
-  }, [airQ1, airQ2, airQ3, waterQ1, pesticidesQ1, microplasticsQ1, kitchenQ1, kitchenQ2, kitchenQ3, overallScore, hasAnyAnswer, apiUrl, token, user?.id]);
+  }, [airQ1, airQ2, airQ3, waterQ1, pesticidesQ1, microplasticsQ1, kitchenQ1, kitchenQ2, kitchenQ3, overallScore, hasAnyAnswer, apiUrl, token, user?.id, historyFilter]);
 
   const handleResetLog = async () => {
     isUserInteractingRef.current = false;
@@ -193,6 +240,7 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
         console.error('Failed to reset environmental habit', err);
       } finally {
         setLoading(false);
+        fetchHistoryList(historyFilter === '30' ? 30 : historyFilter === '365' ? 365 : 7);
       }
     }
   };
@@ -423,6 +471,181 @@ export const EnvironmentalExposuresLogScreen: React.FC<EnvironmentalExposuresLog
             {!hasAnyAnswer && (
               <p className="text-[10px] text-center text-slate-450 mt-2.5 font-bold uppercase tracking-wider">{t('env.answerAtLeastOne', 'Please answer at least one category to save.')}</p>
             )}
+          </div>
+
+          {/* ─── ENVIRONMENTAL AUDIT HISTORY SECTION ─── */}
+          <div className="mt-8 space-y-3 pt-6 border-t border-slate-200 dark:border-slate-800">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-indigo-500" />
+                <span className="text-[11px] font-black tracking-widest uppercase text-slate-500 dark:text-slate-400">
+                  {historyFilter === '365'
+                    ? t('environmental.last1Year', '1-Year Environmental History')
+                    : historyFilter === '30'
+                    ? t('environmental.last30Days', 'Last 30 Days History')
+                    : t('environmental.last7Days', 'Last 7 Days History')}
+                </span>
+              </div>
+
+              <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+                <button
+                  type="button"
+                  onClick={() => handleFilterChange('7')}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                    historyFilter === '7'
+                      ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-2xs'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+                  }`}
+                >
+                  7D
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleFilterChange('30')}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                    historyFilter === '30'
+                      ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-2xs'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+                  }`}
+                >
+                  30D
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleFilterChange('365')}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                    historyFilter === '365'
+                      ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-2xs'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+                  }`}
+                >
+                  1Y
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {loadingHistory ? (
+                <div className="text-center py-8">
+                  <div className="w-6 h-6 border-2 border-slate-200 border-t-indigo-500 rounded-full animate-spin mx-auto mb-2" />
+                  <p className="text-xs text-slate-400 font-medium">{t('common.loading', 'Loading history...')}</p>
+                </div>
+              ) : historyLogs.length === 0 ? (
+                <div className="text-center py-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6">
+                  <ShieldAlert className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold">
+                    {historyFilter === '365'
+                      ? t('environmental.noEntries365d', 'No environmental audit entries logged in the last 1 year')
+                      : historyFilter === '30'
+                      ? t('environmental.noEntries30d', 'No environmental audit entries logged in the last 30 days')
+                      : t('environmental.noEntries7d', 'No environmental audit entries logged in the last 7 days')}
+                  </p>
+                </div>
+              ) : (
+                historyLogs.map((h: any) => {
+                  const val = h.value;
+                  const ans = val?.answers || (typeof val === 'object' ? val : {});
+                  const score = typeof val?.score === 'number' ? val.score : 0;
+                  const isSafe = score === 0;
+                  const logDate = new Date(h.timestamp || h.createdAt);
+
+                  const hasAir = ans.airQ1 !== undefined || ans.airQ2 !== undefined || ans.airQ3 !== undefined;
+                  const airRisk = ans.airQ1 === true || ans.airQ2 === true || ans.airQ3 === true;
+
+                  const hasWater = ans.waterQ1 !== undefined;
+                  const waterRisk = ans.waterQ1 === false;
+
+                  const hasPesticides = ans.pesticidesQ1 !== undefined;
+                  const pesticideRisk = ans.pesticidesQ1 === true;
+
+                  const hasPlastics = ans.microplasticsQ1 !== undefined;
+                  const plasticRisk = ans.microplasticsQ1 === true;
+
+                  const hasKitchen = ans.kitchenQ1 !== undefined || ans.kitchenQ2 !== undefined || ans.kitchenQ3 !== undefined;
+                  const kitchenRisk = ans.kitchenQ1 === true || ans.kitchenQ2 === true || ans.kitchenQ3 === true;
+                  const hasAnySubTags = hasAir || hasWater || hasPesticides || hasPlastics || hasKitchen;
+
+                  return (
+                    <div
+                      key={h.id || h._id}
+                      className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs rounded-2xl p-4 flex flex-col gap-2.5 transition-all hover:border-slate-300 dark:hover:border-slate-700"
+                    >
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5 text-slate-400" />
+                            {logDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          {h.source === 'chatbot' && (
+                            <span className="text-[9px] bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-300 font-black px-2 py-0.5 rounded-full border border-indigo-100 dark:border-indigo-900/50 uppercase tracking-wider">
+                              AI Log
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          {isSafe ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-black bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                              {t('environmental.safe', 'Safe (0)')}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-black bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                              <ShieldAlert className="w-3.5 h-3.5 text-rose-500" />
+                              {t('environmental.riskFlagged', `Risk (${score})`)}
+                            </span>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteLog(h.id || h._id)}
+                            className="p-1 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-300 hover:text-rose-500 rounded-lg transition-colors cursor-pointer"
+                            title={t('common.delete', 'Delete log')}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Sub-category breakdown tags or fallback notes */}
+                      {hasAnySubTags ? (
+                        <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100 dark:border-slate-800 text-[10.5px]">
+                          {hasAir && (
+                            <span className={`px-2 py-0.5 rounded-md font-semibold border ${airRisk ? 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800' : 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'}`}>
+                              Air: {airRisk ? 'Risk (-1)' : 'Clean'}
+                            </span>
+                          )}
+                          {hasWater && (
+                            <span className={`px-2 py-0.5 rounded-md font-semibold border ${waterRisk ? 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800' : 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'}`}>
+                              Water: {waterRisk ? 'Unfiltered (-1)' : 'Filtered'}
+                            </span>
+                          )}
+                          {hasPesticides && (
+                            <span className={`px-2 py-0.5 rounded-md font-semibold border ${pesticideRisk ? 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800' : 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'}`}>
+                              Pesticides: {pesticideRisk ? 'Risk (-1)' : 'Safe'}
+                            </span>
+                          )}
+                          {hasPlastics && (
+                            <span className={`px-2 py-0.5 rounded-md font-semibold border ${plasticRisk ? 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800' : 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'}`}>
+                              Plastics: {plasticRisk ? 'Risk (-1)' : 'Plastic-Free'}
+                            </span>
+                          )}
+                          {hasKitchen && (
+                            <span className={`px-2 py-0.5 rounded-md font-semibold border ${kitchenRisk ? 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800' : 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'}`}>
+                              Kitchen: {kitchenRisk ? 'Risk (-1)' : 'Safe'}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400">
+                          {val?.option || val?.notes || (isSafe ? 'Clean environment, no toxic exposures flagged' : 'Environmental risk flagged')}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
         </div>
       )}

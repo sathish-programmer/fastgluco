@@ -1,22 +1,75 @@
-import React, { useState } from 'react';
-import { ArrowLeft, Flame, ShoppingBag } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Flame, ShoppingBag, Trash2 } from 'lucide-react';
 import { ConsultationBanner } from '../../components/ConsultationBanner';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { HabitsService } from '../../services/habitsService';
+import { HabitsService, type HabitLog } from '../../services/habitsService';
 
 interface GastritisLogScreenProps {
   onBack: () => void;
   onBookAppointment?: (recommendationId: string) => void;
   onNavigateToShop?: (query: string) => void;
+  initialFilter?: '7' | '30' | '365';
 }
 
-export const GastritisLogScreen: React.FC<GastritisLogScreenProps> = ({ onBack, onBookAppointment, onNavigateToShop }) => {
+export const GastritisLogScreen: React.FC<GastritisLogScreenProps> = ({ onBack, onBookAppointment, onNavigateToShop, initialFilter }) => {
   const { user, token, apiUrl } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const LOCALE_MAP: Record<string, string> = {
+    en: 'en-US',
+    ta: 'ta-IN',
+    te: 'te-IN',
+    kn: 'kn-IN',
+    hi: 'hi-IN'
+  };
+  const activeLocale = LOCALE_MAP[language] || 'en-US';
+
   const [gastritis, setGastritis] = useState<boolean | null>(null);
   const [showHpyPopup, setShowHpyPopup] = useState<boolean>(false);
   const [loading, setLoading] = useState(false);
+  const [historyFilter, setHistoryFilter] = useState<'7' | '30' | '365'>(initialFilter || '7');
+  const [history, setHistory] = useState<HabitLog[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(true);
+
+  useEffect(() => {
+    if (initialFilter) {
+      setHistoryFilter(initialFilter);
+    }
+  }, [initialFilter]);
+
+  useEffect(() => {
+    if (user?.id) loadHistory(Number(historyFilter));
+  }, [user, historyFilter]);
+
+  const loadHistory = async (days: number = Number(historyFilter)) => {
+    if (!user?.id) return;
+    try {
+      setLoadingHistory(true);
+      const logs = await HabitsService.getRecentHabits(apiUrl, token, 'Gastritis', days);
+      setHistory(logs || []);
+      if (logs && logs.length > 0) {
+        const todayStr = new Date().toDateString();
+        const todayLog = logs.find(l => new Date(l.timestamp || (l as any).createdAt).toDateString() === todayStr);
+        if (todayLog?.value?.gastritis !== undefined) {
+          setGastritis(todayLog.value.gastritis);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load gastritis history', err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const handleDeleteLog = async (id: string) => {
+    if (!token) return;
+    try {
+      await HabitsService.deleteHabit(apiUrl, token, id);
+      await loadHistory();
+    } catch (err) {
+      console.error('Failed to delete gastritis log', err);
+    }
+  };
 
   const handleSelectGastritis = async (val: boolean) => {
     setGastritis(val);
@@ -24,6 +77,7 @@ export const GastritisLogScreen: React.FC<GastritisLogScreenProps> = ({ onBack, 
     setLoading(true);
     try {
       await HabitsService.logHabit(apiUrl, token, 'Gastritis', { gastritis: val });
+      await loadHistory();
     } catch (err) {
       console.error('Failed to log gastritis log', err);
     } finally {
@@ -124,6 +178,107 @@ export const GastritisLogScreen: React.FC<GastritisLogScreenProps> = ({ onBack, 
           <div className="mt-4 p-4 bg-emerald-50 rounded-xl border border-emerald-100 animate-in fade-in duration-300">
             <p className="text-emerald-700 text-sm font-bold mb-1">{t('gastritis.thatsGreat', "That's great!")}</p>
             <p className="text-emerald-600/90 text-xs font-medium">{t('gastritis.thatsGreatDesc', 'Maintain a healthy diet to keep your gut happy and inflammation low.')}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Gastritis History Section */}
+      <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-5 mb-8">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block">
+            {historyFilter === '365'
+              ? t('gastritis.recentHistory365', 'Gut Health History (1 Year)')
+              : historyFilter === '30'
+              ? t('gastritis.recentHistory30', 'Gut Health History (30 Days)')
+              : t('gastritis.recentHistory', 'Gut Health History (7 Days)')}
+          </span>
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+            <button
+              type="button"
+              onClick={() => setHistoryFilter('7')}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                historyFilter === '7'
+                  ? 'bg-white dark:bg-slate-700 text-orange-600 dark:text-orange-400 shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+              }`}
+            >
+              7D
+            </button>
+            <button
+              type="button"
+              onClick={() => setHistoryFilter('30')}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                historyFilter === '30'
+                  ? 'bg-white dark:bg-slate-700 text-orange-600 dark:text-orange-400 shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+              }`}
+            >
+              30D
+            </button>
+            <button
+              type="button"
+              onClick={() => setHistoryFilter('365')}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                historyFilter === '365'
+                  ? 'bg-white dark:bg-slate-700 text-orange-600 dark:text-orange-400 shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+              }`}
+            >
+              1Y
+            </button>
+          </div>
+        </div>
+
+        {loadingHistory ? (
+          <div className="text-center py-6">
+            <div className="w-5 h-5 border-2 border-slate-200 border-t-orange-500 rounded-full animate-spin mx-auto mb-2" />
+            <span className="text-xs text-slate-400">{t('common.loading', 'Loading history...')}</span>
+          </div>
+        ) : history.length === 0 ? (
+          <div className="text-center py-6 text-slate-400 text-xs">
+            {t('gastritis.noHistoryYet', 'No gut health logs yet. Complete the check above!')}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {history.map((h) => {
+              const hasGas = h.value?.gastritis === true;
+              return (
+                <div key={h.id || (h as any)._id} className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className={`h-8 w-8 rounded-lg flex items-center justify-center text-sm ${hasGas ? 'bg-orange-100 text-orange-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                      {hasGas ? '🔥' : '🌿'}
+                    </div>
+                    <div>
+                      <span className="text-sm font-bold text-slate-800 block">
+                        {hasGas ? t('gastritis.frequentAcidity', 'Frequent Gastritis / Acidity') : t('gastritis.noAcidity', 'No Gastritis')}
+                      </span>
+                      <span className="text-[10px] text-slate-400 block mt-0.5">
+                        {new Date(h.timestamp || (h as any).createdAt).toLocaleDateString(activeLocale, { month: 'short', day: 'numeric', year: 'numeric' })} · {new Date(h.timestamp || (h as any).createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {hasGas ? (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">
+                        Risk -1
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                        Safe 0
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteLog(h.id || (h as any)._id)}
+                      className="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg transition-colors cursor-pointer"
+                      title={t('common.delete', 'Delete')}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

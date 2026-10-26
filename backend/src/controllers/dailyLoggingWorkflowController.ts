@@ -9,8 +9,8 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
   // ── 11 Damage Habits ──
   {
     stepId: 'stress',
-    title: 'Metabolic Stress Check',
-    questionPrompt: 'How was your stress level today? Managing stress lowers cortisol, supporting immune balance and overall longevity.',
+    title: 'Stress & Emotional Wellbeing',
+    questionPrompt: 'How are you feeling emotionally today? Are you experiencing stress, worry, or feeling overwhelmed?',
     inputType: 'OPTIONS',
     options: ['No Stress (Calm)', 'Mild Stress', 'Moderate Stress', 'High Stress'],
     order: 1,
@@ -100,9 +100,9 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
   {
     stepId: 'genetic',
     title: 'Genetic Risk & Family History',
-    questionPrompt: 'Do you have anybody in your immediate family with cancer, or a personal history of cancer?',
+    questionPrompt: 'Do you have a family history of cancer or chronic health risks in immediate family members?',
     inputType: 'YES_NO',
-    options: ['No Family History', 'Yes (Family History of Cancer)'],
+    options: ['No Family History', 'Yes (Family History Present)'],
     order: 11,
     isEnabled: true
   },
@@ -293,10 +293,10 @@ const DEFAULT_TREATMENT_STEPS: IWorkflowStep[] = [
 const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
   {
     stepId: 'stress',
-    title: 'Survivor Stress & Emotional Health',
-    questionPrompt: 'How is your emotional wellbeing today? Post-cancer anxiety, fear of recurrence, or caregiver stress?',
+    title: 'Stress & Emotional Wellbeing',
+    questionPrompt: 'How are you feeling emotionally today? Are you experiencing stress, worry, or feeling overwhelmed?',
     inputType: 'OPTIONS',
-    options: ['Positive / Calm', 'Mild Anxiety', 'Fear of Recurrence', 'Caregiver Stress', 'Emotionally Drained'],
+    options: ['No Stress (Calm)', 'Mild Stress', 'Moderate Stress', 'High Stress'],
     order: 1,
     isEnabled: true
   },
@@ -321,7 +321,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
   {
     stepId: 'fasting',
     title: 'Metabolic Fasting Window',
-    questionPrompt: 'Did you complete your metabolic fasting window today? Fasting helps suppress recurrence risk.',
+    questionPrompt: 'Did you complete your metabolic fasting window today? Fasting supports cellular autophagy and metabolic vitality.',
     inputType: 'OPTIONS',
     options: ['Yes (16+ hours)', 'Yes (12-16 hours)', 'Partial (Under 12h)', 'No (Skipped)'],
     order: 4,
@@ -329,7 +329,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
   },
   {
     stepId: 'diet',
-    title: 'Diet & Anti-Cancer Nutrition',
+    title: 'Diet & Cellular Nutrition',
     questionPrompt: 'Did you follow a balanced diet (50% vegetables, clean protein, complex carbs) or consume junk/ultra-processed foods today?',
     inputType: 'OPTIONS',
     options: ['Balanced Clean Diet (+1)', 'Clean Meals (No Junk)', 'Junk Food / Ultra-Processed (-1)', 'Both Balanced & Junk'],
@@ -338,10 +338,10 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
   },
   {
     stepId: 'movement',
-    title: 'Active Recovery Movement',
-    questionPrompt: 'What physical activity did you complete today? Exercise is a proven recurrence-risk reducer.',
+    title: 'Active Movement & Exercise',
+    questionPrompt: 'What physical activity did you complete today? Daily movement strengthens cellular immunity and stamina.',
     inputType: 'OPTIONS',
-    options: ['30+ min Walk / Jog', 'Yoga / Tai Chi', 'Strength Training', 'Swimming / Cycling', 'Light Stretching', 'Rest Day'],
+    options: ['30+ min Walk / Jog', 'Yoga / Tai Chi', 'Strength Training', 'Swimming / Cycling', 'Light Stretching', 'No Movement Today'],
     order: 6,
     isEnabled: true
   },
@@ -375,9 +375,9 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
   {
     stepId: 'repair_habits',
     title: 'Antioxidant & Repair Nutrition',
-    questionPrompt: 'Did you include anti-cancer repair foods today (cruciferous vegetables, berries, turmeric, omega-3s)?',
+    questionPrompt: 'Did you include antioxidant-rich repair foods today (cruciferous vegetables, berries, turmeric, omega-3s)?',
     inputType: 'OPTIONS',
-    options: ['Yes (Anti-cancer Meal)', 'Partial (1-2 items)', 'Hydration Goal Met', 'Supplements Taken', 'No Specific Nutrition'],
+    options: ['Yes (Antioxidant-Rich Meal)', 'Partial (1-2 items)', 'Hydration Goal Met', 'Supplements Taken', 'No Specific Nutrition'],
     order: 10,
     isEnabled: true
   },
@@ -437,10 +437,10 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
   },
   {
     stepId: 'genetics',
-    title: 'Family History of Cancer',
-    questionPrompt: 'Do you have anybody in your family with cancer, or a self-diagnosis of cancer?',
+    title: 'Family History & Genetic Risk',
+    questionPrompt: 'Do you have a family history of cancer or chronic health risks in immediate family members?',
     inputType: 'YES_NO',
-    options: ['No Family History', 'Yes (Family History of Cancer)'],
+    options: ['No Family History', 'Yes (Family History Present)'],
     order: 17,
     isEnabled: true
   },
@@ -508,22 +508,38 @@ export const getActiveWorkflow = async (req: Request, res: Response) => {
         isActive: true,
         steps: defaultSteps
       });
-    } else if (workflow.steps.length !== defaultSteps.length) {
-      // Sync workflow steps if DB has stale step count
-      workflow.steps = defaultSteps as any;
-      workflow.name = workflowName;
-      await workflow.save();
     } else {
-      // Auto-merge any newly added default steps into existing workflow in DB
-      const existingStepIds = new Set((workflow.steps || []).map(s => s.stepId));
-      let hasNewSteps = false;
-      defaultSteps.forEach(ds => {
-        if (!existingStepIds.has(ds.stepId)) {
-          workflow!.steps.push({ ...ds, order: workflow!.steps.length + 1 });
-          hasNewSteps = true;
-        }
-      });
-      if (hasNewSteps) {
+      const defaultStepMap = new Map(defaultSteps.map(s => [s.stepId, s]));
+      let hasChanges = false;
+
+      if (workflow.steps.length !== defaultSteps.length) {
+        // Sync workflow steps if DB has stale step count
+        workflow.steps = defaultSteps as any;
+        workflow.name = workflowName;
+        hasChanges = true;
+      } else {
+        // Always synchronize step prompts, titles, and options with clean defaultSteps
+        workflow.steps = workflow.steps.map(step => {
+          const def = defaultStepMap.get(step.stepId);
+          if (def) {
+            if (
+              step.questionPrompt !== def.questionPrompt ||
+              step.title !== def.title ||
+              JSON.stringify(step.options) !== JSON.stringify(def.options)
+            ) {
+              step.questionPrompt = def.questionPrompt;
+              step.title = def.title;
+              step.options = def.options;
+              step.inputType = def.inputType;
+              hasChanges = true;
+            }
+          }
+          return step;
+        });
+      }
+
+      if (hasChanges) {
+        workflow.markModified('steps');
         await workflow.save();
       }
     }

@@ -20,11 +20,13 @@ import { HabitsService, type HabitLog } from '../../services/habitsService';
 interface DietLogScreenProps {
   onBack: () => void;
   onNavigateToFoodLog?: () => void;
+  initialFilter?: '7' | '30' | '365';
 }
 
 export const DietLogScreen: React.FC<DietLogScreenProps> = ({ 
   onBack, 
-  onNavigateToFoodLog 
+  onNavigateToFoodLog,
+  initialFilter
 }) => {
   const { user, token, apiUrl } = useAuth();
   const { t, language } = useLanguage();
@@ -43,6 +45,7 @@ export const DietLogScreen: React.FC<DietLogScreenProps> = ({
   const [notes, setNotes] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [historyFilter, setHistoryFilter] = useState<'7' | '30' | '365'>(initialFilter || '7');
   const [history, setHistory] = useState<HabitLog[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
 
@@ -52,16 +55,22 @@ export const DietLogScreen: React.FC<DietLogScreenProps> = ({
   const netScore = balancedScore + junkScore;
 
   useEffect(() => {
-    if (user?.id) {
-      loadHistory();
+    if (initialFilter) {
+      setHistoryFilter(initialFilter);
     }
-  }, [user]);
+  }, [initialFilter]);
 
-  const loadHistory = async () => {
-    if (!user?.id) return;
+  useEffect(() => {
+    if (user?.id && token) {
+      loadHistory(Number(historyFilter));
+    }
+  }, [user?.id, token, historyFilter]);
+
+  const loadHistory = async (days: number = Number(historyFilter)) => {
+    if (!user?.id || !token) return;
     try {
       setLoadingHistory(true);
-      const logs = await HabitsService.getRecentHabits(apiUrl, token, 'Diet', 7);
+      const logs = await HabitsService.getRecentHabits(apiUrl, token, 'Diet', days);
       setHistory(logs);
 
       // Pre-populate if already logged today
@@ -436,9 +445,50 @@ export const DietLogScreen: React.FC<DietLogScreenProps> = ({
 
       {/* 7-Day History */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs rounded-3xl p-5">
-        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block mb-3">
-          {t('diet.recentDietHistory', 'Past 7 Days Diet Check-ins')}
-        </span>
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase block">
+            {historyFilter === '365'
+              ? t('diet.recentDietHistory365', 'Past 1 Year Diet Check-ins')
+              : historyFilter === '30'
+              ? t('diet.recentDietHistory30', 'Past 30 Days Diet Check-ins')
+              : t('diet.recentDietHistory', 'Past 7 Days Diet Check-ins')}
+          </span>
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+            <button
+              type="button"
+              onClick={() => setHistoryFilter('7')}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                historyFilter === '7'
+                  ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+              }`}
+            >
+              7D
+            </button>
+            <button
+              type="button"
+              onClick={() => setHistoryFilter('30')}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                historyFilter === '30'
+                  ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+              }`}
+            >
+              30D
+            </button>
+            <button
+              type="button"
+              onClick={() => setHistoryFilter('365')}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                historyFilter === '365'
+                  ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+              }`}
+            >
+              1Y
+            </button>
+          </div>
+        </div>
 
         {loadingHistory ? (
           <div className="text-center py-6">
@@ -459,7 +509,7 @@ export const DietLogScreen: React.FC<DietLogScreenProps> = ({
 
               return (
                 <div 
-                  key={h.id} 
+                  key={h.id || (h as any)._id} 
                   className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/50 flex items-center justify-between gap-3"
                 >
                   <div className="flex items-center gap-3">
@@ -475,7 +525,7 @@ export const DietLogScreen: React.FC<DietLogScreenProps> = ({
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
-                          {new Date(h.timestamp || (h as any).createdAt).toLocaleDateString(activeLocale, { weekday: 'short', month: 'short', day: 'numeric' })}
+                          {new Date(h.timestamp || (h as any).createdAt).toLocaleDateString(activeLocale, { weekday: 'short', month: 'short', day: 'numeric' })} · {new Date(h.timestamp || (h as any).createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
                         {isBalanced && (
                           <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
@@ -503,7 +553,7 @@ export const DietLogScreen: React.FC<DietLogScreenProps> = ({
 
                   <button
                     type="button"
-                    onClick={() => handleDelete(h.id)}
+                    onClick={() => handleDelete(h.id || (h as any)._id)}
                     className="p-1.5 text-slate-400 hover:text-rose-500 transition-colors"
                     title={t('common.delete', 'Delete')}
                   >

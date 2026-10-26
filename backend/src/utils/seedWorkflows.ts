@@ -16,8 +16,8 @@ import DailyLoggingWorkflow from '../models/DailyLoggingWorkflow';
 const PREVENTION_STEPS = [
   // ── 11 Damage Habits ──
   {
-    stepId: 'stress', title: 'Metabolic Stress Check',
-    questionPrompt: 'How was your stress level today? Managing stress lowers cortisol, supporting immune balance and overall longevity.',
+    stepId: 'stress', title: 'Stress & Emotional Wellbeing',
+    questionPrompt: 'How are you feeling emotionally today? Are you experiencing stress, worry, or feeling overwhelmed?',
     inputType: 'OPTIONS' as const,
     options: ['No Stress (Calm)', 'Mild Stress', 'Moderate Stress', 'High Stress'],
     order: 1, isEnabled: true
@@ -86,9 +86,9 @@ const PREVENTION_STEPS = [
   },
   {
     stepId: 'genetic', title: 'Genetic Risk & Family History',
-    questionPrompt: 'Do you have anybody in your immediate family with cancer, or a personal history of cancer?',
+    questionPrompt: 'Do you have a family history of cancer or chronic health risks in immediate family members?',
     inputType: 'YES_NO' as const,
-    options: ['No Family History', 'Yes (Family History of Cancer)'],
+    options: ['No Family History', 'Yes (Family History Present)'],
     order: 11, isEnabled: true
   },
 
@@ -206,10 +206,10 @@ const TREATMENT_STEPS = [
 // Secondary Prevention (Survivor) — same manual items as cancer prevention + recurrence tracking
 const SECONDARY_PREVENTION_STEPS = [
   {
-    stepId: 'stress', title: 'Survivor Stress & Emotional Health',
-    questionPrompt: 'How is your emotional wellbeing today? Post-cancer anxiety, fear of recurrence, or caregiver stress?',
+    stepId: 'stress', title: 'Stress & Emotional Wellbeing',
+    questionPrompt: 'How are you feeling emotionally today? Are you experiencing stress, worry, or feeling overwhelmed?',
     inputType: 'OPTIONS' as const,
-    options: ['Positive / Calm', 'Mild Anxiety', 'Fear of Recurrence', 'Caregiver Stress', 'Emotionally Drained'],
+    options: ['No Stress (Calm)', 'Mild Stress', 'Moderate Stress', 'High Stress'],
     order: 1, isEnabled: true
   },
   {
@@ -220,16 +220,16 @@ const SECONDARY_PREVENTION_STEPS = [
   },
   {
     stepId: 'fasting', title: 'Metabolic Fasting Window',
-    questionPrompt: 'Did you complete your metabolic fasting window today? Fasting helps suppress recurrence risk.',
+    questionPrompt: 'Did you complete your metabolic fasting window today? Fasting supports cellular autophagy and metabolic vitality.',
     inputType: 'OPTIONS' as const,
     options: ['Yes (16+ hrs)', 'Yes (12-16 hrs)', 'Partial (<12 hrs)', 'No (Skipped)'],
     order: 3, isEnabled: true
   },
   {
-    stepId: 'movement', title: 'Active Recovery Movement',
-    questionPrompt: 'What physical activity did you complete today? Exercise is a proven recurrence-risk reducer.',
+    stepId: 'movement', title: 'Active Movement & Exercise',
+    questionPrompt: 'What physical activity did you complete today? Daily movement strengthens cellular immunity and stamina.',
     inputType: 'OPTIONS' as const,
-    options: ['30+ min Walk / Jog', 'Yoga / Tai Chi', 'Strength Training', 'Swimming / Cycling', 'Light Stretching', 'Rest Day'],
+    options: ['30+ min Walk / Jog', 'Yoga / Tai Chi', 'Strength Training', 'Swimming / Cycling', 'Light Stretching', 'No Movement Today'],
     order: 4, isEnabled: true
   },
   {
@@ -247,10 +247,10 @@ const SECONDARY_PREVENTION_STEPS = [
     order: 6, isEnabled: true
   },
   {
-    stepId: 'repair_habits', title: 'Antioxidant & Repair Nutrition',
-    questionPrompt: 'Did you include anti-cancer repair foods today (cruciferous vegetables, berries, turmeric, omega-3s)?',
+    stepId: 'repair_habits', title: 'Antioxidant & Cellular Repair Nutrition',
+    questionPrompt: 'Did you include cellular repair foods today (cruciferous vegetables, berries, turmeric, omega-3s)?',
     inputType: 'OPTIONS' as const,
-    options: ['Yes (Anti-cancer Meal)', 'Partial (1-2 items)', 'Hydration Goal Met', 'Supplements Taken', 'No Specific Nutrition'],
+    options: ['Yes (Cellular Repair Meal)', 'Partial (1-2 items)', 'Hydration Goal Met', 'Supplements Taken', 'No Specific Nutrition'],
     order: 7, isEnabled: true
   },
   {
@@ -282,10 +282,10 @@ const SECONDARY_PREVENTION_STEPS = [
     order: 11, isEnabled: true
   },
   {
-    stepId: 'genetics', title: 'Family History of Cancer',
-    questionPrompt: 'Do you have anybody in your family with cancer, or a self-diagnosis of cancer?',
+    stepId: 'genetics', title: 'Family History & Genetic Risk',
+    questionPrompt: 'Do you have a family history of cancer or chronic health risks in immediate family members?',
     inputType: 'YES_NO' as const,
-    options: ['No Family History', 'Yes (Family History of Cancer)'],
+    options: ['No Family History', 'Yes (Family History Present)'],
     order: 12, isEnabled: true
   },
   {
