@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Calendar, Save, Beaker, Building2, Trash2 } from 'lucide-react';
+import { ArrowLeft, Calendar, Save, Beaker, Building2, Trash2, Play, ExternalLink } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { HabitsService, type HabitLog } from '../../services/habitsService';
@@ -8,6 +8,7 @@ import { BookingSlotScreen } from '../Diagnostics/BookingSlotScreen';
 import { PaymentScreen } from '../Diagnostics/PaymentScreen';
 import { BookingTrackingScreen } from '../Diagnostics/BookingTrackingScreen';
 import { ReportViewerScreen } from '../Diagnostics/ReportViewerScreen';
+import { EducationalVideoModal } from '../../components/EducationalVideoModal';
 
 export const HCG_HOSPITALS_URL = '';
 
@@ -44,7 +45,7 @@ const GROUPS = [
         note: "Get familiar with how your breasts normally look and feel, on the same days each cycle. Report any new lump, skin change, or discharge promptly.",
         evidenceKey: "testEvidence.breastSelfExam",
         evidence: "Trial data hasn't shown formal monthly self-exam reduces breast cancer deaths, and it can lead to extra biopsies — most guidelines now favour general breast awareness over a rigid technique. In India, where most breast cancers are still caught late, many clinicians still teach it as a low-cost early-detection habit.",
-        video: { labelKey: "testVideo.nhsBreast", label: "NHS — How to check your breasts or chest", url: "https://www.youtube.com/watch?v=xcg7jWrlLJ8" },
+        video: { labelKey: "testVideo.breastSelfExam", label: "Animated Self Breast Examination Guide", url: "https://youtu.be/hymu-0jWtdM?si=n8pz91JRuhK4opin" },
       },
       {
         nameKey: "testName.papSmear",
@@ -77,7 +78,8 @@ const GROUPS = [
         freqKey: "testFreq.monthly",
         freq: "Monthly",
         noteKey: "testNote.breastSelfExamOver40",
-        note: "As above — continue alongside clinical exam and mammogram."
+        note: "As above — continue alongside clinical exam and mammogram.",
+        video: { labelKey: "testVideo.breastSelfExam", label: "Animated Self Breast Examination Guide", url: "https://youtu.be/hymu-0jWtdM?si=n8pz91JRuhK4opin" }
       },
       {
         nameKey: "testName.mammogram",
@@ -222,6 +224,45 @@ export const CancerScreeningScreen: React.FC<CancerScreeningScreenProps> = ({ on
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState<HabitLog[]>([]);
+
+  // Educational Breast Video Config
+  const [breastVideoConfig, setBreastVideoConfig] = useState<{
+    youtubeUrl: string;
+    title: string;
+    description: string;
+    isActive: boolean;
+  }>({
+    youtubeUrl: 'https://youtu.be/hymu-0jWtdM?si=n8pz91JRuhK4opin',
+    title: 'Animated Self Breast Examination Guide',
+    description: 'Step-by-step visual animation for monthly breast self-examination and awareness',
+    isActive: true
+  });
+  const [activeVideoModal, setActiveVideoModal] = useState<{ isOpen: boolean; url: string; title?: string }>({
+    isOpen: false,
+    url: ''
+  });
+
+  useEffect(() => {
+    const fetchVideoConfig = async () => {
+      try {
+        const res = await fetch(`${apiUrl}/content/educational-videos/breast_self_exam`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.data) {
+            setBreastVideoConfig({
+              youtubeUrl: json.data.youtubeUrl || '',
+              title: json.data.title || 'Animated Self Breast Examination Guide',
+              description: json.data.description || 'Step-by-step visual animation for monthly breast self-examination and awareness',
+              isActive: json.data.isActive !== false
+            });
+          }
+        }
+      } catch (e) {
+        // Fallback to default state
+      }
+    };
+    fetchVideoConfig();
+  }, [apiUrl]);
 
   useEffect(() => {
     if (user?.id) {
@@ -406,6 +447,8 @@ export const CancerScreeningScreen: React.FC<CancerScreeningScreenProps> = ({ on
                   key={idx}
                   test={test}
                   matchedDbTest={matchedDbTest}
+                  breastVideoConfig={breastVideoConfig}
+                  onOpenVideo={(url, title) => setActiveVideoModal({ isOpen: true, url, title })}
                   onBook={() => {
                     if (matchedDbTest) {
                       setSelectedTest(matchedDbTest);
@@ -520,6 +563,14 @@ export const CancerScreeningScreen: React.FC<CancerScreeningScreenProps> = ({ on
           </div>
         </div>
       )}
+
+      {/* Educational Video Modal */}
+      <EducationalVideoModal
+        isOpen={activeVideoModal.isOpen}
+        onClose={() => setActiveVideoModal({ isOpen: false, url: '' })}
+        videoUrl={activeVideoModal.url}
+        title={activeVideoModal.title}
+      />
     </div>
   );
 };
@@ -527,10 +578,20 @@ export const CancerScreeningScreen: React.FC<CancerScreeningScreenProps> = ({ on
 const TestRowItem: React.FC<{
   test: any;
   matchedDbTest: any;
+  breastVideoConfig?: any;
+  onOpenVideo?: (url: string, title?: string) => void;
   onBook: () => void;
-}> = ({ test, matchedDbTest, onBook }) => {
+}> = ({ test, matchedDbTest, breastVideoConfig, onOpenVideo, onBook }) => {
   const { t } = useLanguage();
   const [showEvidence, setShowEvidence] = useState(false);
+
+  const isBreastSelfExam = test.nameKey === 'testName.breastSelfExam' || (test.name && test.name.toLowerCase().includes('breast self-exam'));
+  const activeVideoUrl = isBreastSelfExam && breastVideoConfig?.isActive && breastVideoConfig?.youtubeUrl
+    ? breastVideoConfig.youtubeUrl
+    : (test.video?.url || '');
+  const activeVideoLabel = isBreastSelfExam && breastVideoConfig?.title
+    ? breastVideoConfig.title
+    : (test.video ? t(test.video.labelKey, test.video.label) : t('video.breastExamTitle', 'Animated Self Breast Examination Guide'));
 
   return (
     <div className="py-4 border-b border-slate-100 dark:border-slate-800 last:border-0 animate-in fade-in duration-200">
@@ -540,15 +601,49 @@ const TestRowItem: React.FC<{
       </div>
       <p className="text-xs text-slate-600 dark:text-slate-350 mt-1 leading-relaxed">{t(test.noteKey, test.note)}</p>
 
-      {test.video && (
-        <a
-          href={test.video.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 mt-2 text-xs text-teal-800 dark:text-teal-400 font-bold hover:underline"
-        >
-          ▶️ {t(test.video.labelKey, test.video.label)}
-        </a>
+      {/* Animated Video Guide Card */}
+      {((test.video && test.video.url) || (isBreastSelfExam && breastVideoConfig?.isActive && breastVideoConfig?.youtubeUrl)) && activeVideoUrl && (
+        <div className="mt-2.5 p-2.5 sm:p-3 rounded-2xl bg-linear-to-r from-rose-50/90 via-pink-50/60 to-rose-50/40 dark:from-rose-950/40 dark:via-pink-950/20 dark:to-slate-900 border border-rose-200/80 dark:border-rose-900/50 flex items-center justify-between gap-3 shadow-2xs">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <button
+              type="button"
+              onClick={() => onOpenVideo?.(activeVideoUrl, activeVideoLabel)}
+              className="w-9 h-9 rounded-xl bg-linear-to-tr from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 active:scale-95 text-white flex items-center justify-center shrink-0 shadow-sm shadow-rose-500/20 cursor-pointer transition-all"
+            >
+              <Play className="w-3.5 h-3.5 fill-white ml-0.5" />
+            </button>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[9px] font-black uppercase tracking-wider text-rose-600 dark:text-rose-400 bg-rose-100/70 dark:bg-rose-900/50 px-1.5 py-0.5 rounded">
+                  {t('video.animationBadge', 'Animated Video')}
+                </span>
+                <span className="text-[10px] text-slate-400 font-medium">· Awareness</span>
+              </div>
+              <p className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate mt-0.5">
+                {activeVideoLabel}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={() => onOpenVideo?.(activeVideoUrl, activeVideoLabel)}
+              className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 hover:bg-rose-50 dark:hover:bg-slate-750 transition-colors cursor-pointer shadow-2xs flex items-center gap-1"
+            >
+              <Play className="w-3 h-3 fill-rose-600 dark:fill-rose-400" />
+              <span>{t('watch', 'Watch')}</span>
+            </button>
+            <a
+              href={activeVideoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-1.5 text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
+              title="Open in YouTube"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          </div>
+        </div>
       )}
 
       {test.evidence && (

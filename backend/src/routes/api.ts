@@ -42,6 +42,7 @@ import { AiChatController } from '../controllers/aiChatController';
 import { AppHealthController } from '../controllers/appHealthController';
 import { OrderManagementController } from '../controllers/orderManagementController';
 import { MotivationController } from '../controllers/motivationController';
+import * as EducationalVideoController from '../controllers/educationalVideoController';
 
 const router = Router();
 
@@ -393,6 +394,7 @@ router.get('/screening/tests', authenticateToken, requireRole(['User']), Screeni
 router.get('/cancer-screening/indian-cancers', authenticateToken, requireRole(['User']), IndianCancerController.getIndianCancers);
 router.get('/workflow-config/:type', authenticateToken, requireRole(['User']), ScreeningController.getWorkflowConfig);
 router.get('/patient/deaddiction-number', authenticateToken, requireRole(['User']), DoctorController.getDeaddictionNumber);
+router.get('/content/educational-videos/:key', EducationalVideoController.getEducationalVideoByKey);
 
 router.use('/habits', authenticateToken, requireRole(['User']));
 router.post('/habits/upload', uploadImage.single('image'), (req: any, res) => {
@@ -595,6 +597,11 @@ router.get('/admin/global-search', authenticateToken, requireRole(['SuperAdmin',
 
 router.get('/admin/workflow-config/:type', ScreeningController.getAdminWorkflowConfig);
 router.put('/admin/workflow-config/:type', ScreeningController.updateAdminWorkflowConfig);
+
+// Educational Videos (Admin CRUD)
+router.get('/admin/educational-videos', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), EducationalVideoController.getAllEducationalVideosAdmin);
+router.put('/admin/educational-videos/:key', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), EducationalVideoController.updateEducationalVideoAdmin);
+router.delete('/admin/educational-videos/:key', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor']), EducationalVideoController.removeEducationalVideoAdmin);
 
 // --- DAILY LOGGING WORKFLOW ROUTES ---
 router.get('/daily-logging-workflows/active', authenticateToken, DailyLoggingWorkflowController.getActiveWorkflow);

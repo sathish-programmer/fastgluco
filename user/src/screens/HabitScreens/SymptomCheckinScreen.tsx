@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Award, Clock, Calendar, RotateCcw, Stethoscope, ChevronRight, ChevronDown, ShieldAlert, Sparkles, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Award, Clock, Calendar, RotateCcw, Stethoscope, ChevronRight, ChevronDown, ShieldAlert, Sparkles, CheckCircle2, Play, ExternalLink } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { HabitsService } from '../../services/habitsService';
 import { scheduleSymptomCheckinReminder } from '../../utils/notificationScheduler';
+import { EducationalVideoModal } from '../../components/EducationalVideoModal';
 
 export interface SymptomQuestion {
   id: string;
@@ -160,6 +161,42 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({
     yesItems: SymptomQuestion[];
     specialties: string[];
   } | null>(null);
+
+  // Animated Breast Self-Examination Video
+  const [breastVideoConfig, setBreastVideoConfig] = useState<{
+    youtubeUrl: string;
+    title: string;
+    description: string;
+    isActive: boolean;
+  }>({
+    youtubeUrl: 'https://youtu.be/hymu-0jWtdM?si=n8pz91JRuhK4opin',
+    title: 'Animated Self Breast Examination Guide',
+    description: 'Step-by-step visual animation for monthly breast self-examination and awareness',
+    isActive: true
+  });
+  const [showVideoModal, setShowVideoModal] = useState<boolean>(false);
+
+  useEffect(() => {
+    const fetchVideoConfig = async () => {
+      try {
+        const res = await fetch(`${apiUrl}/content/educational-videos/breast_self_exam`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.data) {
+            setBreastVideoConfig({
+              youtubeUrl: json.data.youtubeUrl || '',
+              title: json.data.title || 'Animated Self Breast Examination Guide',
+              description: json.data.description || 'Step-by-step visual animation for monthly breast self-examination and awareness',
+              isActive: json.data.isActive !== false
+            });
+          }
+        }
+      } catch (e) {
+        // Fallback to default state
+      }
+    };
+    fetchVideoConfig();
+  }, [apiUrl]);
 
   useEffect(() => {
     const loaded = getStoredSymptomCheckins();
@@ -434,6 +471,36 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({
                       </div>
                     ))}
                   </div>
+
+                  {result.yesItems.some(q => q.id === 'br') && breastVideoConfig.isActive && breastVideoConfig.youtubeUrl && (
+                    <div className="mt-3 p-3 rounded-2xl bg-linear-to-r from-rose-50/90 via-pink-50/60 to-rose-50/40 dark:from-rose-950/40 dark:via-pink-950/20 dark:to-slate-900 border border-rose-200/80 dark:border-rose-900/50 shadow-xs flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <button
+                          type="button"
+                          onClick={() => setShowVideoModal(true)}
+                          className="w-9 h-9 rounded-xl bg-linear-to-tr from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 active:scale-95 text-white flex items-center justify-center shrink-0 shadow-md shadow-rose-500/20 cursor-pointer"
+                        >
+                          <Play className="w-3.5 h-3.5 fill-white ml-0.5" />
+                        </button>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
+                            {breastVideoConfig.title || t('video.breastExamTitle', 'Animated Self Breast Examination Guide')}
+                          </p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                            {t('video.watchPrompt', 'Visual guide on checking for lumps, dimpling, or changes')}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowVideoModal(true)}
+                        className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 hover:bg-rose-50 dark:hover:bg-slate-750 transition-colors cursor-pointer shadow-2xs flex items-center gap-1 shrink-0"
+                      >
+                        <Play className="w-3 h-3 fill-rose-600 dark:fill-rose-400" />
+                        <span>{t('watch', 'Watch')}</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Suggested Specialists */}
@@ -568,6 +635,55 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({
                   <p className="text-xs text-slate-500 dark:text-slate-400 mb-3.5 leading-relaxed">
                     {t(`symptomCheck.q_${q.id}_desc`, q.h)}
                   </p>
+
+                  {/* Animated Breast Exam Video Banner for Breast Lump Question */}
+                  {q.id === 'br' && breastVideoConfig.isActive && breastVideoConfig.youtubeUrl && (
+                    <div className="mb-3.5 p-3 sm:p-3.5 rounded-2xl bg-linear-to-r from-rose-50/90 via-pink-50/60 to-rose-50/40 dark:from-rose-950/40 dark:via-pink-950/20 dark:to-slate-900 border border-rose-200/80 dark:border-rose-900/50 shadow-xs flex items-center justify-between gap-3 animate-in fade-in duration-200">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <button
+                          type="button"
+                          onClick={() => setShowVideoModal(true)}
+                          className="w-10 h-10 rounded-xl bg-linear-to-tr from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 active:scale-95 text-white flex items-center justify-center shrink-0 shadow-md shadow-rose-500/20 cursor-pointer transition-all"
+                          title="Play animated self breast exam video"
+                        >
+                          <Play className="w-4 h-4 fill-white ml-0.5" />
+                        </button>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[9px] font-black uppercase tracking-wider text-rose-600 dark:text-rose-400 bg-rose-100/70 dark:bg-rose-900/50 px-1.5 py-0.5 rounded">
+                              {t('video.animationBadge', 'Animated Video')}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-medium">· Self Exam</span>
+                          </div>
+                          <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate mt-0.5">
+                            {breastVideoConfig.title || t('video.breastExamTitle', 'Animated Self Breast Examination Guide')}
+                          </p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                            {t('video.watchPrompt', 'Visual guide on checking for lumps, dimpling, or changes')}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setShowVideoModal(true)}
+                          className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 hover:bg-rose-50 dark:hover:bg-slate-750 transition-colors cursor-pointer shadow-2xs flex items-center gap-1"
+                        >
+                          <Play className="w-3 h-3 fill-rose-600 dark:fill-rose-400" />
+                          <span>{t('watch', 'Watch')}</span>
+                        </button>
+                        <a
+                          href={breastVideoConfig.youtubeUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1.5 text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
+                          title="Open in YouTube"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Option Buttons */}
                   <div className="flex gap-2.5 sm:gap-3">
@@ -770,6 +886,15 @@ export const SymptomCheckinScreen: React.FC<SymptomCheckinScreenProps> = ({
       <p className="text-[11px] text-slate-400 leading-relaxed px-2 text-center">
         {t('symptomCheck.disclaimer', "This check-in is a screening reminder, not a diagnosis. Many of these symptoms have common, harmless causes, but any that last more than 3 weeks deserve a doctor's review.")}
       </p>
+
+      {/* Educational Video Modal */}
+      <EducationalVideoModal
+        isOpen={showVideoModal}
+        onClose={() => setShowVideoModal(false)}
+        videoUrl={breastVideoConfig.youtubeUrl}
+        title={breastVideoConfig.title}
+        description={breastVideoConfig.description}
+      />
     </div>
   );
 };
