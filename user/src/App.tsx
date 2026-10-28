@@ -775,7 +775,21 @@ const MainAppContent: React.FC = () => {
         isOpen={showWhatsNew}
         onClose={() => setShowWhatsNew(false)}
         onExploreFeature={(featureKey) => {
-          if (featureKey === 'cancer_care') {
+          if (featureKey === 'motivation') {
+            MotivationService.getTodayMotivation(apiUrl, token).then((res) => {
+              setDailyMotivationData({ dayNumber: res.dayNumber, message: res.message });
+              setShowDailyMotivation(true);
+              MotivationService.markMotivationViewed(apiUrl, token);
+            }).catch(() => {
+              setShowDailyMotivation(true);
+            });
+          } else if (featureKey === 'kitchen') {
+            window.dispatchEvent(new CustomEvent('navigateToHabitScreen', { detail: 'Kitchen' }));
+          } else if (featureKey === 'checkin') {
+            window.dispatchEvent(new CustomEvent('openDailyCheckinChatbot'));
+          } else if (featureKey === 'screening') {
+            window.dispatchEvent(new CustomEvent('openSymptomCheckin'));
+          } else if (featureKey === 'cancer_care') {
             setActiveTab('Home');
           } else if (featureKey === 'breath') {
             window.dispatchEvent(new CustomEvent('navigateToHabitScreen', { detail: 'Breath' }));

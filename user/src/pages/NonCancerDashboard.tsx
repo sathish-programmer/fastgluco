@@ -200,6 +200,14 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     window.addEventListener('openSymptomCheckin', handleOpenCheckin);
     return () => window.removeEventListener('openSymptomCheckin', handleOpenCheckin);
   }, []);
+
+  useEffect(() => {
+    const handleHabitNav = (e: any) => {
+      if (e.detail) setActiveScreen(e.detail);
+    };
+    window.addEventListener('navigateToHabitScreen', handleHabitNav);
+    return () => window.removeEventListener('navigateToHabitScreen', handleHabitNav);
+  }, []);
   const [pendingManualAction, setPendingManualAction] = useState<{ key: string; params?: any } | null>(null);
   const [showAiNudgeModal, setShowAiNudgeModal] = useState<boolean>(false);
   const [showFastingDisclaimer, setShowFastingDisclaimer] = useState<boolean>(false);
