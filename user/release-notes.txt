@@ -1,16 +1,14 @@
 <en-US>
-• Interactive Daily AI Check-in: Enhanced conversational check-in bot with streamlined sleep latency assessment, resting breath rate, and habit audit flows.
-• Safe Kitchen & Cooking Audit: Comprehensive screening for high-temperature frying, charred & smoked foods, heated plastics, and toxic cookware defense.
-• 365 Days of Daily Motivation: Kickstart your day with curated cellular wellness one-liners and timely daily inspiration reminders.
-• Clinical Self-Exam Video Guides: Added step-by-step animated breast self-examination tutorials and clinical symptom screening.
-• Multilingual Experience: Full in-depth localized check-ins and dashboard support across English, Tamil, Telugu, Kannada, and Hindi.
-• Performance & Stability: Resolved question sequencing redundancies, improved daily logging sync, and optimized dashboard navigation.
+• Daily AI Check-in: Smarter conversational bot tracking sleep latency, breath rate, and habit recovery.
+• Safe Kitchen Audit: Screen for high-heat frying, charred foods, heated plastics, and cookware safety.
+• 365 Daily Motivation: Morning cellular health quotes and timely inspiration reminders.
+• Self-Exam Video Guides: Animated breast self-examination tutorials and symptom screening.
+• Performance: Faster navigation and general stability improvements.
 </en-US>
 <en-IN>
-• Interactive Daily AI Check-in: Enhanced conversational check-in bot with streamlined sleep latency assessment, resting breath rate, and habit audit flows.
-• Safe Kitchen & Cooking Audit: Comprehensive screening for high-temperature frying, charred & smoked foods, heated plastics, and toxic cookware defense.
-• 365 Days of Daily Motivation: Kickstart your day with curated cellular wellness one-liners and timely daily inspiration reminders.
-• Clinical Self-Exam Video Guides: Added step-by-step animated breast self-examination tutorials and clinical symptom screening.
-• Multilingual Experience: Full in-depth localized check-ins and dashboard support across English, Tamil, Telugu, Kannada, and Hindi.
-• Performance & Stability: Resolved question sequencing redundancies, improved daily logging sync, and optimized dashboard navigation.
+• Daily AI Check-in: Smarter conversational bot tracking sleep latency, breath rate, and habit recovery.
+• Safe Kitchen Audit: Screen for high-heat frying, charred foods, heated plastics, and cookware safety.
+• 365 Daily Motivation: Morning cellular health quotes and timely inspiration reminders.
+• Self-Exam Video Guides: Animated breast self-examination tutorials and symptom screening.
+• Performance: Faster navigation and general stability improvements.
 </en-IN>
