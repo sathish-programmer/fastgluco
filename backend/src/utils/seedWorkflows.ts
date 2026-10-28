@@ -37,7 +37,7 @@ const PREVENTION_STEPS = [
   },
   {
     stepId: 'sleep_latency', title: 'Sleep Latency Check',
-    questionPrompt: 'Did you have difficulty beginning to fall asleep (taking 30+ minutes) last night?',
+    questionPrompt: 'Did you have difficulty in beginning to fall asleep?',
     inputType: 'YES_NO' as const,
     options: ['No (Fall Asleep Easily)', 'Yes (Takes 30+ mins)'],
     order: 4, isEnabled: true
@@ -164,25 +164,18 @@ const PREVENTION_STEPS = [
     order: 21, isEnabled: true
   },
   {
-    stepId: 'breath', title: 'Power of Breath',
-    questionPrompt: 'Did you practice 5 to 10 minutes of conscious breathwork (box breathing, 4-7-8, or pranayama) today?',
-    inputType: 'YES_NO' as const,
-    options: ['Yes (Practiced 5-10 min)', 'Not Today'],
-    order: 22, isEnabled: true
-  },
-  {
     stepId: 'joy', title: 'Things You Love',
     questionPrompt: 'Did you spend time doing something you love today (hobbies, music, family, art, gratitude)?',
     inputType: 'YES_NO' as const,
     options: ['Yes (Done)', 'Not Today'],
-    order: 23, isEnabled: true
+    order: 22, isEnabled: true
   },
   {
     stepId: 'safer_products', title: 'Safer Personal Care Products',
     questionPrompt: 'Did you use paraben-free, sulfate-free, and phthalate-free personal care / household products today?',
     inputType: 'YES_NO' as const,
     options: ['Yes (Safe Products Used)', 'Not Today'],
-    order: 24, isEnabled: true
+    order: 23, isEnabled: true
   }
 ];
 
@@ -252,7 +245,7 @@ const TREATMENT_STEPS = [
   },
   {
     stepId: 'sleep_latency', title: 'Sleep Latency Check',
-    questionPrompt: 'Did you have difficulty beginning to fall asleep (taking 30+ minutes) last night?',
+    questionPrompt: 'Did you have difficulty in beginning to fall asleep?',
     inputType: 'YES_NO' as const,
     options: ['No (Fall Asleep Easily)', 'Yes (Takes 30+ mins)'],
     order: 10, isEnabled: true
@@ -318,7 +311,7 @@ const SECONDARY_PREVENTION_STEPS = [
   },
   {
     stepId: 'sleep_latency', title: 'Sleep Latency Check',
-    questionPrompt: 'Did you have difficulty beginning to fall asleep (taking 30+ minutes) last night?',
+    questionPrompt: 'Did you have difficulty in beginning to fall asleep?',
     inputType: 'YES_NO' as const,
     options: ['No (Fall Asleep Easily)', 'Yes (Takes 30+ mins)'],
     order: 4, isEnabled: true
@@ -359,18 +352,11 @@ const SECONDARY_PREVENTION_STEPS = [
     order: 9, isEnabled: true
   },
   {
-    stepId: 'breath', title: 'Power of Breath',
-    questionPrompt: 'Did you practice 5 to 10 minutes of conscious breathwork (box breathing, 4-7-8, or pranayama) today?',
-    inputType: 'YES_NO' as const,
-    options: ['Yes (Practiced 5-10 min)', 'Not Today'],
-    order: 10, isEnabled: true
-  },
-  {
     stepId: 'joy', title: 'Joy & Gratitude',
     questionPrompt: 'Did you practice gratitude or engage in activities that bring you joy today?',
     inputType: 'YES_NO' as const,
     options: ['Yes (Done)', 'Not Today'],
-    order: 11, isEnabled: true
+    order: 10, isEnabled: true
   },
   {
     stepId: 'repair_habits', title: 'Antioxidant & Repair Nutrition',

@@ -304,8 +304,15 @@ export const TITLES_MAP: Record<string, Record<SupportedLanguage, string>> = {
 export const localizeStepTitle = (stepId?: string, lang: SupportedLanguage = 'en', fallbackTitle?: string): string => {
   if (!stepId) return fallbackTitle || '';
   const s = stepId.toLowerCase();
-  for (const key in TITLES_MAP) {
-    if (s === key || s.includes(key) || key.includes(s)) {
+  if (TITLES_MAP[s]) {
+    return TITLES_MAP[s][lang] || TITLES_MAP[s].en;
+  }
+  const sortedKeys = Object.keys(TITLES_MAP).sort((a, b) => b.length - a.length);
+  for (const key of sortedKeys) {
+    if (s === key) {
+      return TITLES_MAP[key][lang] || TITLES_MAP[key].en;
+    }
+    if (s.startsWith(key + '_') || key.startsWith(s + '_')) {
       return TITLES_MAP[key][lang] || TITLES_MAP[key].en;
     }
   }
@@ -478,11 +485,11 @@ export const QUESTIONS_MAP: Record<string, Record<SupportedLanguage, string>> = 
     te: 'ప్రస్తుతం మీ విశ్రాంతి శ్వాస రేటు (నిమిషానికి) ఎంత? నిమిషానికి 12 కంటే ఎక్కువ ఉండటం పెరిగిన ఒత్తిడిని సూచిస్తుంది.'
   },
   sleep_latency: {
-    en: 'Did you have difficulty beginning to fall asleep (taking 30+ minutes) last night?',
-    ta: 'நேற்று இரவு தூங்குவதற்கு தொடங்குவதில் சிரமம் (30 நிமிடங்களுக்கு மேல்) ஏற்பட்டதா?',
-    kn: 'ನಿನ್ನೆ ರಾತ್ರಿ ನಿದ್ರೆಗೆ ಜಾರಲು ಕಷ್ಟವಾಯಿತೇ (30+ ನಿಮಿಷಗಳಿಗಿಂತ ಹೆಚ್ಚು ಸಮಯ)?',
-    hi: 'क्या कल रात आपको सोने में कठिनाई हुई (30+ मिनट से अधिक समय लगा)?',
-    te: 'నిన్న రాత్రి నిద్రపోవడానికి ఇబ్బంది పడ్డారా (30+ నిమిషాల కంటే ఎక్కువ సమయం పట్టిందా)?'
+    en: 'Did you have difficulty in beginning to fall asleep?',
+    ta: 'நேற்று இரவு தூங்குவதற்கு தொடங்குவதில் சிரமம் ஏற்பட்டதா?',
+    kn: 'ನಿನ್ನೆ ರಾತ್ರಿ ನಿದ್ರೆಗೆ ಜಾರಲು ಕಷ್ಟವಾಯಿತೇ?',
+    hi: 'क्या कल रात आपको सोने में कठिनाई हुई?',
+    te: 'నిన్న రాత్రి నిద్రపోవడానికి ఇబ్బంది పడ్డారా?'
   },
   sleep_snoring: {
     en: 'Do you snore loudly during sleep, gasp for breath, or wake up unrefreshed?',
@@ -812,8 +819,18 @@ export const QUESTIONS_MAP: Record<string, Record<SupportedLanguage, string>> = 
 export const localizeStepQuestion = (stepId?: string, fallbackPrompt?: string, lang: SupportedLanguage = 'en'): string => {
   if (!stepId) return fallbackPrompt || '';
   const s = stepId.toLowerCase();
-  for (const key in QUESTIONS_MAP) {
-    if (s === key || s.includes(key) || key.includes(s)) {
+  // 1. Exact match first
+  if (QUESTIONS_MAP[s]) {
+    return QUESTIONS_MAP[s][lang] || QUESTIONS_MAP[s].en;
+  }
+  // 2. Prefix match — only allow if separated by '_' boundary to prevent
+  //    'sleep' from matching 'sleep_latency' (s.startsWith(key) was too broad)
+  const sortedKeys = Object.keys(QUESTIONS_MAP).sort((a, b) => b.length - a.length);
+  for (const key of sortedKeys) {
+    if (s === key) {
+      return QUESTIONS_MAP[key][lang] || QUESTIONS_MAP[key].en;
+    }
+    if (s.startsWith(key + '_') || key.startsWith(s + '_')) {
       return QUESTIONS_MAP[key][lang] || QUESTIONS_MAP[key].en;
     }
   }

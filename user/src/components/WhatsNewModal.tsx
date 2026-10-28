@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import type { SupportedLanguage } from '../i18n/types';
 
-export const CURRENT_APP_VERSION = 'v6.1.0';
+export const CURRENT_APP_VERSION = 'v6.1.1';
 
 interface WhatsNewModalProps {
   isOpen?: boolean;

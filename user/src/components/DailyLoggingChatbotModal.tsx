@@ -1138,7 +1138,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
           {
             stepId: 'sleep_latency',
             title: 'Sleep Latency Check',
-            questionPrompt: 'Did you have difficulty beginning to fall asleep (taking 30+ minutes) last night?',
+            questionPrompt: 'Did you have difficulty in beginning to fall asleep?',
             inputType: 'YES_NO',
             options: ['No (Fall Asleep Easily)', 'Yes (Takes 30+ mins)'],
             order: 3,
@@ -1235,7 +1235,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
           {
             stepId: 'sleep_latency',
             title: 'Sleep Latency Check',
-            questionPrompt: 'Did you have difficulty beginning to fall asleep (taking 30+ minutes) last night?',
+            questionPrompt: 'Did you have difficulty in beginning to fall asleep?',
             inputType: 'YES_NO',
             options: ['No (Fall Asleep Easily)', 'Yes (Takes 30+ mins)'],
             order: 4,
@@ -1323,7 +1323,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
           {
             stepId: 'sleep_latency',
             title: 'Sleep Latency Check',
-            questionPrompt: 'Did you have difficulty beginning to fall asleep (taking 30+ minutes) last night?',
+            questionPrompt: 'Did you have difficulty in beginning to fall asleep?',
             inputType: 'YES_NO',
             options: ['No (Fall Asleep Easily)', 'Yes (Takes 30+ mins)'],
             order: 5,
@@ -1402,7 +1402,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
           {
             stepId: 'sleep_latency',
             title: 'Sleep Latency Check',
-            questionPrompt: 'Did you have difficulty beginning to fall asleep (taking 30+ minutes) last night?',
+            questionPrompt: 'Did you have difficulty in beginning to fall asleep?',
             inputType: 'YES_NO',
             options: ['No (Fall Asleep Easily)', 'Yes (Takes 30+ mins)'],
             order: 5,
@@ -1478,7 +1478,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
           {
             stepId: 'sleep_latency',
             title: 'Sleep Latency Check',
-            questionPrompt: 'Did you have difficulty beginning to fall asleep (taking 30+ minutes) last night?',
+            questionPrompt: 'Did you have difficulty in beginning to fall asleep?',
             inputType: 'YES_NO',
             options: ['No (Fall Asleep Easily)', 'Yes (Takes 30+ mins)'],
             order: 5,
@@ -1567,7 +1567,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
           {
             stepId: 'sleep_latency',
             title: 'Sleep Latency Check',
-            questionPrompt: 'Did you have difficulty beginning to fall asleep (taking 30+ minutes) last night?',
+            questionPrompt: 'Did you have difficulty in beginning to fall asleep?',
             inputType: 'YES_NO',
             options: ['No (Fall Asleep Easily)', 'Yes (Takes 30+ mins)'],
             order: 6,
@@ -1675,7 +1675,7 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
             (h.type === 'Stress' || h.type?.toUpperCase() === 'STRESS') && (h.value?.faceId !== undefined || h.value?.stressScore !== undefined || h.value?.option !== undefined)
           );
           if (s === 'stress_breath_rate') return todaysHabits.some(h =>
-            h.value?.stepId === 'stress_breath_rate' || (h.source === 'chatbot' && (h.value?.breathCount !== undefined || h.value?.breathRate !== undefined))
+            h.value?.stepId === 'stress_breath_rate' || h.value?.breathCount !== undefined || h.value?.breathRate !== undefined
           );
 
           // ── Cancer Prevention / Secondary Prevention steps ──
@@ -1684,10 +1684,10 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
             (h.type === 'Sleep' || h.type?.toUpperCase() === 'SLEEP') && h.value?.hours !== undefined
           );
           if (s === 'sleep_latency') return todaysHabits.some(h =>
-            h.value?.stepId === 'sleep_latency' || (h.source === 'chatbot' && h.value?.difficultyFallingAsleep !== undefined)
+            h.value?.stepId === 'sleep_latency' || (h.value?.difficultyFallingAsleep !== undefined && h.value?.difficultyFallingAsleep !== null)
           );
           if (s === 'snoring' || s === 'sleep_snoring') return todaysHabits.some(h =>
-            h.value?.stepId === 'snoring' || h.value?.stepId === 'sleep_snoring' || (h.source === 'chatbot' && h.value?.snoring !== undefined)
+            h.value?.stepId === 'snoring' || h.value?.stepId === 'sleep_snoring' || (h.value?.snoring !== undefined && h.value?.snoring !== null)
           );
           // Smoking screen → saves type: 'Smoking'
           if (s === 'smoking') return todaysHabits.some(h =>
@@ -1793,10 +1793,10 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
             const t = (h.type || '').toLowerCase();
             if (s === 'fasting') return t === 'fasting';
             if (s === 'stress' || s === 'caregiver_stress') return t === 'stress' && (h.value?.faceId !== undefined || h.value?.stressScore !== undefined || h.value?.option !== undefined);
-            if (s === 'stress_breath_rate') return h.value?.stepId === 'stress_breath_rate' || (h.source === 'chatbot' && (h.value?.breathCount !== undefined || h.value?.breathRate !== undefined));
+            if (s === 'stress_breath_rate') return h.value?.stepId === 'stress_breath_rate' || h.value?.breathCount !== undefined || h.value?.breathRate !== undefined;
             if (s === 'sleep') return t === 'sleep' && h.value?.hours !== undefined;
-            if (s === 'sleep_latency') return h.value?.stepId === 'sleep_latency' || (h.source === 'chatbot' && h.value?.difficultyFallingAsleep !== undefined);
-            if (s === 'snoring' || s === 'sleep_snoring') return h.value?.stepId === 'snoring' || h.value?.stepId === 'sleep_snoring' || (h.source === 'chatbot' && h.value?.snoring !== undefined);
+            if (s === 'sleep_latency') return h.value?.stepId === 'sleep_latency' || (h.value?.difficultyFallingAsleep !== undefined && h.value?.difficultyFallingAsleep !== null);
+            if (s === 'snoring' || s === 'sleep_snoring') return h.value?.stepId === 'snoring' || h.value?.stepId === 'sleep_snoring' || (h.value?.snoring !== undefined && h.value?.snoring !== null);
             if (s === 'diet' || s === 'balanced_diet' || s === 'junk_food') return t.includes('diet');
             if (s === 'breath' || s === 'power_of_breath' || s === 'breathwork') return t.includes('breath');
             if (s === 'dental' || s === 'dental_health') return t.includes('dental');

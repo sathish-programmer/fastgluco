@@ -37,7 +37,7 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
   {
     stepId: 'sleep_latency',
     title: 'Sleep Latency Check',
-    questionPrompt: 'Did you have difficulty beginning to fall asleep (taking 30+ minutes) last night?',
+    questionPrompt: 'Did you have difficulty in beginning to fall asleep?',
     inputType: 'YES_NO',
     options: ['No (Fall Asleep Easily)', 'Yes (Takes 30+ mins)'],
     order: 4,
@@ -98,12 +98,30 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
     isEnabled: true
   },
   {
+    stepId: 'kitchen_high_temp',
+    title: 'High-Temp Meat & Deep-Fried Food',
+    questionPrompt: 'Did you eat high temperature cooked meat (pan frying or grilling) or heavily browned food (darkly toasted bread, deeply fried vegetables or chips)?',
+    inputType: 'YES_NO',
+    options: ['No (Safe / Gentle Cooking)', 'Yes (High Temp / Fried / Charred)'],
+    order: 11,
+    isEnabled: true
+  },
+  {
+    stepId: 'kitchen_smoked_fish',
+    title: 'Smoked or Salted Fish',
+    questionPrompt: 'Did you cook or consume smoked or salted fish (high in nitrosamines) today?',
+    inputType: 'YES_NO',
+    options: ['No (Clean Day)', 'Yes (Smoked / Salted Fish)'],
+    order: 12,
+    isEnabled: true
+  },
+  {
     stepId: 'obesity',
     title: 'Obesity & Weight Check',
     questionPrompt: 'Do you face difficulty managing weight, high visceral fat, or BMI above healthy range?',
     inputType: 'YES_NO',
     options: ['No (Healthy Weight)', 'Yes (Weight Difficulty / Elevated BMI)'],
-    order: 11,
+    order: 13,
     isEnabled: true
   },
   {
@@ -112,7 +130,7 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Do you have any persistent sharp tooth, bleeding gums, non-healing oral ulcers, or oral discomfort?',
     inputType: 'YES_NO',
     options: ['No Issues (Healthy)', 'Yes (Dental Discomfort / Sharp Tooth)'],
-    order: 12,
+    order: 14,
     isEnabled: true
   },
   {
@@ -121,7 +139,7 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you experience acidity, heartburn, acid reflux, or gastritis discomfort today?',
     inputType: 'YES_NO',
     options: ['No Issues (Healthy)', 'Yes (Gastritis / Acidity Discomfort)'],
-    order: 13,
+    order: 15,
     isEnabled: true
   },
   {
@@ -130,7 +148,7 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Do you have a family history of cancer or chronic health risks in immediate family members?',
     inputType: 'YES_NO',
     options: ['No Family History', 'Yes (Family History Present)'],
-    order: 14,
+    order: 16,
     isEnabled: true
   },
 
@@ -141,7 +159,7 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you complete your intermittent fasting window today? (e.g., 14-16h overnight fast)',
     inputType: 'OPTIONS',
     options: ['Yes (16+ hrs)', 'Yes (12-16 hrs)', 'Partial (<12 hrs)', 'No (Skipped)'],
-    order: 15,
+    order: 17,
     isEnabled: true
   },
   {
@@ -150,7 +168,7 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you follow a balanced clean diet (vegetables, clean protein, complex carbs) and avoid ultra-processed junk food today?',
     inputType: 'OPTIONS',
     options: ['Balanced Clean Diet (+1)', 'Clean Meals (No Junk)', 'Junk Food / Ultra-Processed (-1)', 'Both Balanced & Junk'],
-    order: 16,
+    order: 18,
     isEnabled: true
   },
   {
@@ -159,7 +177,7 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you consume antioxidant-rich foods (berries, greens, amla, turmeric) or repair supplements today?',
     inputType: 'YES_NO',
     options: ['Yes (Consumed)', 'Not Today'],
-    order: 17,
+    order: 19,
     isEnabled: true
   },
   {
@@ -168,7 +186,7 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you complete any physical movement, walking, or exercise today?',
     inputType: 'OPTIONS',
     options: ['30+ min Walk / Run', 'Yoga / Stretching (20+ min)', 'Strength Training', 'Light Activity (<20 min)', 'No Movement Today'],
-    order: 18,
+    order: 20,
     isEnabled: true
   },
   {
@@ -177,16 +195,7 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you practice stillness, quiet meditation, or mindfulness for at least 10 minutes today?',
     inputType: 'YES_NO',
     options: ['Yes (10+ min)', 'Not Today'],
-    order: 19,
-    isEnabled: true
-  },
-  {
-    stepId: 'breath',
-    title: 'Power of Breath',
-    questionPrompt: 'Did you practice 5 to 10 minutes of conscious breathwork (box breathing, 4-7-8, or pranayama) today to restore cellular oxygenation?',
-    inputType: 'YES_NO',
-    options: ['Yes (Practiced 5-10 min)', 'Not Today'],
-    order: 20,
+    order: 21,
     isEnabled: true
   },
   {
@@ -195,7 +204,7 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you spend time doing something you love today (hobbies, music, family, art, gratitude)?',
     inputType: 'YES_NO',
     options: ['Yes (Done)', 'Not Today'],
-    order: 21,
+    order: 22,
     isEnabled: true
   },
   {
@@ -204,7 +213,7 @@ const DEFAULT_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you use paraben-free, sulfate-free, and phthalate-free personal care / household products today?',
     inputType: 'YES_NO',
     options: ['Yes (Safe Products Used)', 'Not Today'],
-    order: 22,
+    order: 23,
     isEnabled: true
   }
 ];
@@ -297,7 +306,7 @@ const DEFAULT_TREATMENT_STEPS: IWorkflowStep[] = [
   {
     stepId: 'sleep_latency',
     title: 'Sleep Latency Check',
-    questionPrompt: 'Did you have difficulty beginning to fall asleep (taking 30+ minutes) last night?',
+    questionPrompt: 'Did you have difficulty in beginning to fall asleep?',
     inputType: 'YES_NO',
     options: ['No (Fall Asleep Easily)', 'Yes (Takes 30+ mins)'],
     order: 10,
@@ -322,12 +331,30 @@ const DEFAULT_TREATMENT_STEPS: IWorkflowStep[] = [
     isEnabled: true
   },
   {
+    stepId: 'kitchen_high_temp',
+    title: 'High-Temp Meat & Deep-Fried Food',
+    questionPrompt: 'Did you eat high temperature cooked meat (pan frying or grilling) or heavily browned food (darkly toasted bread, deeply fried vegetables or chips)?',
+    inputType: 'YES_NO',
+    options: ['No (Safe / Gentle Cooking)', 'Yes (High Temp / Fried / Charred)'],
+    order: 13,
+    isEnabled: true
+  },
+  {
+    stepId: 'kitchen_smoked_fish',
+    title: 'Smoked or Salted Fish',
+    questionPrompt: 'Did you cook or consume smoked or salted fish (high in nitrosamines) today?',
+    inputType: 'YES_NO',
+    options: ['No (Clean Day)', 'Yes (Smoked / Salted Fish)'],
+    order: 14,
+    isEnabled: true
+  },
+  {
     stepId: 'report_upload',
     title: 'Oncology / CGM Report Upload',
     questionPrompt: 'Do you have new lab reports, tumor markers (CEA / CA-125), chemo reports, or CGM data to upload? I will process and load them into your dashboard.',
     inputType: 'FILE',
     options: ['Skip for Now'],
-    order: 13,
+    order: 15,
     isEnabled: true
   }
 ];
@@ -366,7 +393,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
   {
     stepId: 'sleep_latency',
     title: 'Sleep Latency Check',
-    questionPrompt: 'Did you have difficulty beginning to fall asleep (taking 30+ minutes) last night?',
+    questionPrompt: 'Did you have difficulty in beginning to fall asleep?',
     inputType: 'YES_NO',
     options: ['No (Fall Asleep Easily)', 'Yes (Takes 30+ mins)'],
     order: 4,
@@ -418,21 +445,12 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     isEnabled: true
   },
   {
-    stepId: 'breath',
-    title: 'Power of Breath',
-    questionPrompt: 'Did you practice 5 to 10 minutes of conscious breathwork (box breathing, 4-7-8, or pranayama) today?',
-    inputType: 'YES_NO',
-    options: ['Yes (Practiced 5-10 min)', 'Not Today'],
-    order: 10,
-    isEnabled: true
-  },
-  {
     stepId: 'joy',
     title: 'Joy & Gratitude',
     questionPrompt: 'Did you practice gratitude or engage in activities that bring you joy today?',
     inputType: 'YES_NO',
     options: ['Yes (Done)', 'Not Today'],
-    order: 11,
+    order: 10,
     isEnabled: true
   },
   {
@@ -441,7 +459,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you include antioxidant-rich repair foods today (cruciferous vegetables, berries, turmeric, omega-3s)?',
     inputType: 'OPTIONS',
     options: ['Yes (Antioxidant-Rich Meal)', 'Partial (1-2 items)', 'Hydration Goal Met', 'Supplements Taken', 'No Specific Nutrition'],
-    order: 12,
+    order: 11,
     isEnabled: true
   },
   {
@@ -450,7 +468,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you encounter air pollution, smoke, fumes, or fog today?',
     inputType: 'YES_NO',
     options: ['No (Clean Air)', 'Yes (Pollution / Smoke / Fumes / Fog)'],
-    order: 13,
+    order: 12,
     isEnabled: true
   },
   {
@@ -459,7 +477,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Do you use safe filtered drinking water (RO / carbon filtered, free of heavy metals, chlorine byproducts, and PFAS)?',
     inputType: 'YES_NO',
     options: ['Yes (Safe Filtered)', 'No / Unfiltered Tap'],
-    order: 14,
+    order: 13,
     isEnabled: true
   },
   {
@@ -468,7 +486,25 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Is your kitchen free of heated plastic containers, synthetic non-stick pans, and plastic drinking water cans?',
     inputType: 'YES_NO',
     options: ['Yes (Safe / Non-Plastic)', 'No (Plastic / Non-Stick Risk)'],
+    order: 14,
+    isEnabled: true
+  },
+  {
+    stepId: 'kitchen_high_temp',
+    title: 'High-Temp Meat & Deep-Fried Food',
+    questionPrompt: 'Did you eat high temperature cooked meat (pan frying or grilling) or heavily browned food (darkly toasted bread, deeply fried vegetables or chips)?',
+    inputType: 'YES_NO',
+    options: ['No (Safe / Gentle Cooking)', 'Yes (High Temp / Fried / Charred)'],
     order: 15,
+    isEnabled: true
+  },
+  {
+    stepId: 'kitchen_smoked_fish',
+    title: 'Smoked or Salted Fish',
+    questionPrompt: 'Did you cook or consume smoked or salted fish (high in nitrosamines) today?',
+    inputType: 'YES_NO',
+    options: ['No (Clean Day)', 'Yes (Smoked / Salted Fish)'],
+    order: 16,
     isEnabled: true
   },
   {
@@ -477,7 +513,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Do you have any sharp tooth, bleeding gums, non-healing oral ulcers, or oral discomfort?',
     inputType: 'YES_NO',
     options: ['No Issues (Healthy)', 'Yes (Dental Discomfort / Sharp Tooth)'],
-    order: 16,
+    order: 17,
     isEnabled: true
   },
   {
@@ -486,7 +522,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Do you have a family history of cancer or chronic health risks in immediate family members?',
     inputType: 'YES_NO',
     options: ['No Family History', 'Yes (Family History Present)'],
-    order: 17,
+    order: 18,
     isEnabled: true
   },
   {
@@ -495,7 +531,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Did you have any follow-up appointment, imaging, or blood work today? Are your next screenings scheduled?',
     inputType: 'OPTIONS',
     options: ['Appointment Today (Done)', 'Upcoming Scheduled', 'Need to Schedule', 'No Follow-up Required'],
-    order: 18,
+    order: 19,
     isEnabled: true
   },
   {
@@ -504,7 +540,7 @@ const DEFAULT_SECONDARY_PREVENTION_STEPS: IWorkflowStep[] = [
     questionPrompt: 'Do you have new follow-up labs, imaging reports (PET/CT/MRI), or tumor markers to upload? I will process and update your dashboard.',
     inputType: 'FILE',
     options: ['Skip for Now'],
-    order: 19,
+    order: 20,
     isEnabled: true
   }
 ];
@@ -554,20 +590,38 @@ export const getActiveWorkflow = async (req: Request, res: Response) => {
         steps: defaultSteps
       });
     } else {
-      const defaultStepMap = new Map(defaultSteps.map(s => [s.stepId, s]));
       let hasChanges = false;
-      if (workflow.steps.some(s => s.stepId === 'env_pesticides' || s.stepId === 'env_microplastics')) {
-        workflow.steps = workflow.steps.filter(s => s.stepId !== 'env_pesticides' && s.stepId !== 'env_microplastics');
+
+      // ── Step 1: Remove legacy/deprecated steps ──
+      const legacyIds = new Set(['breath', 'env_pesticides', 'env_microplastics']);
+      if (workflow.steps.some(s => legacyIds.has(s.stepId))) {
+        workflow.steps = workflow.steps.filter(s => !legacyIds.has(s.stepId));
         hasChanges = true;
       }
 
+      // ── Step 2: Remove duplicate stepIds (keep first occurrence only) ──
+      // Fixes: duplicate stress_breath_rate appearing near end of workflow (Red issue)
+      const seenStepIds = new Set<string>();
+      const dedupedSteps = workflow.steps.filter(s => {
+        if (seenStepIds.has(s.stepId)) return false;
+        seenStepIds.add(s.stepId);
+        return true;
+      });
+      if (dedupedSteps.length !== workflow.steps.length) {
+        workflow.steps = dedupedSteps;
+        hasChanges = true;
+      }
+
+      // ── Step 3: Always full-reset steps to canonical defaults ──
+      // This fixes stale questionPrompt text in DB (e.g. sleep_latency showing sleep question - Green issue)
+      // and also fixes any step count mismatches in one pass.
+      const defaultStepMap = new Map(defaultSteps.map(s => [s.stepId, s]));
       if (workflow.steps.length !== defaultSteps.length) {
-        // Sync workflow steps if DB has stale step count
         workflow.steps = defaultSteps as any;
         workflow.name = workflowName;
         hasChanges = true;
       } else {
-        // Always synchronize step prompts, titles, and options with clean defaultSteps
+        // Sync prompts, titles, options for every step to match canonical defaults
         workflow.steps = workflow.steps.map(step => {
           const def = defaultStepMap.get(step.stepId);
           if (def) {

@@ -215,7 +215,7 @@ export const SleepLogScreen: React.FC<SleepLogScreenProps> = ({ onBack, onBookAp
             </span>
           </div>
           <p className="text-xs font-bold text-slate-800 dark:text-slate-200 mb-3">
-            {t('habits.difficultyFallingAsleepPrompt', 'Is there difficulty in beginning to fall asleep?')}
+            {t('habits.difficultyFallingAsleepPrompt', 'Did you have difficulty in beginning to fall asleep?')}
           </p>
           <div className="grid grid-cols-2 gap-2 mb-3">
             <button
