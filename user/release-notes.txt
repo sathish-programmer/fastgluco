@@ -1,14 +1,16 @@
 <en-US>
-• 365 Days of Daily Motivation: Kickstart your morning with curated daily motivation one-liners for healthy living, cellular balance, and habit consistency.
-• Smart Motivation Reminders: View your daily inspirational quote upon opening the app or receive timely morning push notifications at your preferred time.
-• Habit Audit Accuracy: Refined Kitchen Audit scoring to accurately assess safe cooking practices and healthy kitchen choices.
-• Authentication & Device Reliability: Enhanced verification code delivery and smoother login experience across iPhone and iPad devices.
-• Performance Improvements: General stability optimizations and faster navigation across your wellness dashboard.
+• Interactive Daily AI Check-in: Enhanced conversational check-in bot with streamlined sleep latency assessment, resting breath rate, and habit audit flows.
+• Safe Kitchen & Cooking Audit: Comprehensive screening for high-temperature frying, charred & smoked foods, heated plastics, and toxic cookware defense.
+• 365 Days of Daily Motivation: Kickstart your day with curated cellular wellness one-liners and timely daily inspiration reminders.
+• Clinical Self-Exam Video Guides: Added step-by-step animated breast self-examination tutorials and clinical symptom screening.
+• Multilingual Experience: Full in-depth localized check-ins and dashboard support across English, Tamil, Telugu, Kannada, and Hindi.
+• Performance & Stability: Resolved question sequencing redundancies, improved daily logging sync, and optimized dashboard navigation.
 </en-US>
 <en-IN>
-• 365 Days of Daily Motivation: Kickstart your morning with curated daily motivation one-liners for healthy living, cellular balance, and habit consistency.
-• Smart Motivation Reminders: View your daily inspirational quote upon opening the app or receive timely morning push notifications at your preferred time.
-• Habit Audit Accuracy: Refined Kitchen Audit scoring to accurately assess safe cooking practices and healthy kitchen choices.
-• Authentication & Device Reliability: Enhanced verification code delivery and smoother login experience across iPhone and iPad devices.
-• Performance Improvements: General stability optimizations and faster navigation across your wellness dashboard.
+• Interactive Daily AI Check-in: Enhanced conversational check-in bot with streamlined sleep latency assessment, resting breath rate, and habit audit flows.
+• Safe Kitchen & Cooking Audit: Comprehensive screening for high-temperature frying, charred & smoked foods, heated plastics, and toxic cookware defense.
+• 365 Days of Daily Motivation: Kickstart your day with curated cellular wellness one-liners and timely daily inspiration reminders.
+• Clinical Self-Exam Video Guides: Added step-by-step animated breast self-examination tutorials and clinical symptom screening.
+• Multilingual Experience: Full in-depth localized check-ins and dashboard support across English, Tamil, Telugu, Kannada, and Hindi.
+• Performance & Stability: Resolved question sequencing redundancies, improved daily logging sync, and optimized dashboard navigation.
 </en-IN>
