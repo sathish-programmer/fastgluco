@@ -1,9 +1,11 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Heart, Activity, Sparkles, Plus, History, ChevronRight, X } from 'lucide-react';
-import { Card, SectionTitle, YesNoToggle, ModeTabs, StressTracker, TalkToDoctorCard } from './shared/ConditionUI';
+import { Card, SectionTitle, YesNoToggle, ModeTabs, StressTracker, TalkToDoctorCard, ConditionSaveButton, ConditionHistoryModal } from './shared/ConditionUI';
 import { triggerHealthInsightNotification } from '../utils/notificationScheduler';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
+import { HabitsService, type HabitLog } from '../services/habitsService';
 
 const LOCALE_MAP: Record<string, string> = {
   en: 'en-US',
@@ -16,8 +18,13 @@ const LOCALE_MAP: Record<string, string> = {
 export const HypertensionModule: React.FC = () => {
   const { t, language } = useLanguage();
   const activeLocale = LOCALE_MAP[language] || 'en-US';
+  const { apiUrl, token, user } = useAuth();
   const [mode, setMode] = useState<string>('Prevention');
   const [showBpHistoryModal, setShowBpHistoryModal] = useState<boolean>(false);
+  const [showHistoryModal, setShowHistoryModal] = useState<boolean>(false);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [historyLogs, setHistoryLogs] = useState<HabitLog[]>([]);
 
   // Prevention State
   const [exercised, setExercised] = useState<boolean | null>(() => {
@@ -72,6 +79,88 @@ export const HypertensionModule: React.FC = () => {
     return v === null ? null : v === 'true';
   });
   const [stressTx, setStressTx] = useState<number>(() => Number(localStorage.getItem('mito_htn_stress_tx')) || 5);
+
+  // Load from cloud on mount
+  const loadHistory = useCallback(async () => {
+    if (!token) return;
+    try {
+      const logs = await HabitsService.getRecentHabits(apiUrl, token, 'hypertension', 365);
+      setHistoryLogs(logs || []);
+      if (logs && logs.length > 0) {
+        const latest = logs[0]?.value;
+        if (latest) {
+          if (latest.mode) setMode(latest.mode);
+          if (latest.exercised !== undefined) setExercised(latest.exercised);
+          if (latest.meditated !== undefined) setMeditated(latest.meditated);
+          if (latest.lowSalt !== undefined) setLowSalt(latest.lowSalt);
+          if (latest.slept8 !== undefined) setSlept8(latest.slept8);
+          if (latest.stress !== undefined) setStress(Number(latest.stress));
+          if (latest.bpLog && Array.isArray(latest.bpLog)) {
+            setBpLog(prev => {
+              const map = new Map<string, any>();
+              latest.bpLog.forEach((item: any) => map.set(item.date, item));
+              prev.forEach(item => map.set(item.date, item));
+              return Array.from(map.values()).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+            });
+          }
+          if (latest.highSaltToday !== undefined) setHighSaltToday(latest.highSaltToday);
+          if (latest.exercisedTx !== undefined) setExercisedTx(latest.exercisedTx);
+          if (latest.meditatedTx !== undefined) setMeditatedTx(latest.meditatedTx);
+          if (latest.lovedActivity !== undefined) setLovedActivity(latest.lovedActivity);
+          if (latest.slept8Tx !== undefined) setSlept8Tx(latest.slept8Tx);
+          if (latest.stressTx !== undefined) setStressTx(Number(latest.stressTx));
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load hypertension history from cloud', e);
+    }
+  }, [apiUrl, token]);
+
+  useEffect(() => {
+    if (user?.id && token) {
+      loadHistory();
+    }
+  }, [user?.id, token, loadHistory]);
+
+  const handleSave = async () => {
+    if (!token) return;
+    try {
+      setIsSaving(true);
+      const payload = {
+        mode,
+        exercised,
+        meditated,
+        lowSalt,
+        slept8,
+        stress,
+        bpLog,
+        highSaltToday,
+        exercisedTx,
+        meditatedTx,
+        lovedActivity,
+        slept8Tx,
+        stressTx,
+        preventionScore
+      };
+      await HabitsService.logHabit(apiUrl, token, 'hypertension', payload);
+      setLastSaved(new Date());
+      await loadHistory();
+    } catch (err) {
+      console.error('Failed to save hypertension log', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteHistoryLog = async (id: string) => {
+    if (!token) return;
+    try {
+      await HabitsService.deleteHabit(apiUrl, token, id);
+      await loadHistory();
+    } catch (err) {
+      console.error('Failed to delete hypertension habit log', err);
+    }
+  };
 
   // Persist State
   useEffect(() => { if (exercised !== null) localStorage.setItem('mito_htn_exercised', String(exercised)); }, [exercised]);
@@ -176,6 +265,15 @@ export const HypertensionModule: React.FC = () => {
       </div>
 
       <ModeTabs modes={['Prevention', 'Treatment']} active={mode} onChange={setMode} />
+
+      <ConditionSaveButton
+        onSave={handleSave}
+        isSaving={isSaving}
+        lastSaved={lastSaved}
+        saveButtonText={t('protocols.saveHypertensionEntry', "Save Today's Entry")}
+        onViewHistory={() => setShowHistoryModal(true)}
+        historyCount={historyLogs.length}
+      />
 
       {mode === 'Prevention' && (
         <>
@@ -430,6 +528,63 @@ export const HypertensionModule: React.FC = () => {
           />
         </>
       )}
+
+      {/* Global Hypertension History Modal */}
+      <ConditionHistoryModal
+        title={t('protocols.hypertensionHistoryTitle', 'Hypertension & Blood Pressure History')}
+        isOpen={showHistoryModal}
+        onClose={() => setShowHistoryModal(false)}
+        logs={historyLogs}
+        onDelete={handleDeleteHistoryLog}
+        activeLocale={activeLocale}
+        renderLogDetails={(val) => {
+          if (!val) return null;
+          return (
+            <div className="space-y-1.5 mt-1 text-[11px] text-slate-600 dark:text-slate-300">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-extrabold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
+                  Mode: {val.mode || 'Prevention'}
+                </span>
+                {val.preventionScore !== undefined && (
+                  <span className="font-black px-2 py-0.5 rounded-md text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40">
+                    Score: {val.preventionScore > 0 ? `+${val.preventionScore}` : val.preventionScore}
+                  </span>
+                )}
+                {val.stress !== undefined && (
+                  <span className="px-2 py-0.5 rounded-md bg-rose-50 dark:bg-rose-950/40 text-rose-600">
+                    Stress: {val.stress}/10
+                  </span>
+                )}
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-1 text-[10.5px] pt-1">
+                {val.exercised !== undefined && (
+                  <span>Exercise: <b>{val.exercised ? 'Yes' : 'No'}</b></span>
+                )}
+                {val.meditated !== undefined && (
+                  <span>Meditated: <b>{val.meditated ? 'Yes' : 'No'}</b></span>
+                )}
+                {val.lowSalt !== undefined && (
+                  <span>Low Salt: <b>{val.lowSalt ? 'Yes' : 'No'}</b></span>
+                )}
+                {val.slept8 !== undefined && (
+                  <span>8h Sleep: <b>{val.slept8 ? 'Yes' : 'No'}</b></span>
+                )}
+                {val.highSaltToday !== undefined && (
+                  <span>High Salt Today: <b>{val.highSaltToday ? 'Yes' : 'No'}</b></span>
+                )}
+                {val.lovedActivity !== undefined && (
+                  <span>Loved Activity: <b>{val.lovedActivity ? 'Yes' : 'No'}</b></span>
+                )}
+              </div>
+              {Array.isArray(val.bpLog) && val.bpLog.length > 0 && (
+                <div className="pt-1.5 text-[10.5px] text-rose-600 dark:text-rose-400 font-bold border-t border-slate-100 dark:border-slate-800">
+                  BP Records: {val.bpLog.map((b: any) => `${b.date} (AM: ${b.amSys || '-'}/${b.amDia || '-'}, PM: ${b.pmSys || '-'}/${b.pmDia || '-'})`).join('; ')}
+                </div>
+              )}
+            </div>
+          );
+        }}
+      />
     </div>
   );
 };

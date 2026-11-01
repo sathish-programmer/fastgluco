@@ -8,6 +8,7 @@ import { UserSubscription } from '../models/UserSubscription';
 import { SubscriptionPlan } from '../models/SubscriptionPlan';
 import { PaymentGatewayConfig } from '../models/PaymentGatewayConfig';
 import { PaymentTransaction } from '../models/PaymentTransaction';
+import { User } from '../models/User';
 
 const SYSTEM_PROMPT = `You are Mito, an expert AI health companion for the Mito_Reboot app — a cancer prevention and metabolic health platform.
 
@@ -462,7 +463,28 @@ export const submitPatientQuery = async (req: any, res: Response) => {
 export const getMyQueries = async (req: any, res: Response) => {
   try {
     const userId = req.user?.id || req.user?._id;
-    const queries = await AskMitoQuery.find({ userId }).sort({ createdAt: -1 });
+    let userEmail = req.user?.email ? String(req.user.email).trim().toLowerCase() : undefined;
+
+    if (!userEmail && userId) {
+      const userDoc = await User.findById(userId).select('email');
+      if (userDoc?.email) {
+        userEmail = userDoc.email.trim().toLowerCase();
+      }
+    }
+
+    if (userEmail && userId) {
+      // Re-link any older questions associated with this user email to the active userId
+      await AskMitoQuery.updateMany(
+        { userEmail: new RegExp(`^${userEmail}$`, 'i'), userId: { $ne: userId } },
+        { $set: { userId } }
+      );
+    }
+
+    const queryFilter: any = userEmail
+      ? { $or: [{ userId }, { userEmail: new RegExp(`^${userEmail}$`, 'i') }] }
+      : { userId };
+
+    const queries = await AskMitoQuery.find(queryFilter).sort({ createdAt: -1 });
     return res.json(queries);
   } catch (err: any) {
     console.error('Error fetching patient questions:', err);

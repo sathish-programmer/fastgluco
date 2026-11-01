@@ -2226,8 +2226,9 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
         }
       } else if (stepId === 'genetics' || stepId === 'genetic') {
         habitType = 'Genetic';
-        const hasGeneticLink = (lowerVal.includes('yes') || lowerVal.includes('family') || lowerVal.includes('relative')) && !lowerVal.includes('no family') && !lowerVal.includes('none') && !lowerVal.includes('no (no');
-        habitValue = { geneticLink: hasGeneticLink, option: valueStr };
+        const isNeg = lowerVal.includes('no family') || lowerVal.includes('no history') || lowerVal.includes('none') || lowerVal.includes('no (no') || lowerVal.includes('clean') || lowerVal.includes('standard');
+        const hasGeneticLink = !isNeg && (lowerVal.includes('yes') || lowerVal.includes('family') || lowerVal.includes('relative') || lowerVal.includes('personal') || lowerVal.includes('cancer'));
+        habitValue = { geneticLink: hasGeneticLink, score: hasGeneticLink ? -1 : 0, option: valueStr };
       } else if (stepId === 'obesity' || stepId === 'weight') {
         habitType = 'Obesity';
         const hasDifficulty = lowerVal.includes('yes') || lowerVal.includes('difficulty') || lowerVal.includes('overweight') || lowerVal.includes('bmi') || lowerVal.includes('weight');
@@ -2250,7 +2251,9 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
         habitValue = { uploaded: true, option: valueStr };
       } else if (stepId === 'genetics_substances') {
         habitType = 'Genetic';
-        habitValue = { geneticLink: lowerVal.includes('family') || lowerVal.includes('both'), option: valueStr };
+        const isNoFam = lowerVal.includes('no family') || lowerVal.includes('no history') || lowerVal.includes('none') || lowerVal.includes('no (no');
+        const hasGenLink = !isNoFam && (lowerVal.includes('family') || lowerVal.includes('both') || lowerVal.includes('yes'));
+        habitValue = { geneticLink: hasGenLink, score: hasGenLink ? -1 : 0, option: valueStr };
         if (lowerVal.includes('substance') || lowerVal.includes('both')) {
           fetch(`${apiUrl}/habits`, {
             method: 'POST',

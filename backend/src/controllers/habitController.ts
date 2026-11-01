@@ -75,7 +75,7 @@ export const getRecentHabits = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Type is required' });
     }
 
-    const limitDays = days ? parseInt(days as string, 10) : 7;
+    const limitDays = (days && days !== 'all') ? parseInt(days as string, 10) : (days === 'all' ? 0 : 7);
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - limitDays);
     startDate.setHours(0, 0, 0, 0);
@@ -134,6 +134,18 @@ export const getRecentHabits = async (req: Request, res: Response) => {
         andConditions.push({ type: { $regex: /^(gastritis|gut_health)$/i } });
       } else if (typeStr === 'obesity' || typeStr === 'weight') {
         andConditions.push({ type: { $regex: /^(obesity|weight)$/i } });
+      } else if (typeStr === 'diabetes' || typeStr === 'glycemic') {
+        andConditions.push({ type: { $regex: /^(diabetes|glycemic)$/i } });
+      } else if (typeStr === 'hypertension' || typeStr === 'htn') {
+        andConditions.push({ type: { $regex: /^(hypertension|htn)$/i } });
+      } else if (typeStr === 'cardiac' || typeStr === 'heart') {
+        andConditions.push({ type: { $regex: /^(cardiac|heart)$/i } });
+      } else if (typeStr === 'pcod' || typeStr === 'pcos') {
+        andConditions.push({ type: { $regex: /^(pcod|pcos)$/i } });
+      } else if (typeStr === 'parkinson' || typeStr === 'parkinsons') {
+        andConditions.push({ type: { $regex: /^parkinsons?$/i } });
+      } else if (typeStr === 'ageing' || typeStr === 'aging') {
+        andConditions.push({ type: { $regex: /^ag(e)?ing$/i } });
       } else {
         andConditions.push({ type: { $regex: new RegExp(`^${type}$`, 'i') } });
       }

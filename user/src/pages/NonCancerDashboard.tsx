@@ -577,8 +577,9 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
       category = 'joy';
     } else if (typeUpper.includes('GENETIC')) {
       title = t('dashboard.geneticTitle', 'Genetic Risk Check (Gia)');
-      subtitle = optStr || t('dashboard.geneticCheckin', 'Pedigree & Panel Screening');
-      isRepair = val?.geneticLink === false;
+      const isClean = val?.geneticLink === false || val?.riskLevel === 'low' || val?.score === 0 || optStr.includes('no family') || optStr.includes('no history') || optStr.includes('none');
+      subtitle = optStr || (isClean ? t('dashboard.cleanExposure', 'Standard Population Risk') : t('dashboard.geneticCheckin', 'Hereditary Genetic Risk Flagged'));
+      isRepair = isClean;
       category = 'genetic';
     } else if (typeUpper.includes('SMOKING') || typeUpper.includes('ALCOHOL')) {
       title = typeUpper.includes('SMOKING') ? t('dashboard.tobaccoTitle', 'Tobacco Exposure') : t('dashboard.alcoholTitle', 'Alcohol Check');
@@ -1034,8 +1035,15 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
     const latest = getLatestLogForTypes('GENETIC');
     if (!latest) return null;
     const val = latest.value;
+    if (typeof val === 'object' && val !== null) {
+      if (typeof val.score === 'number') return val.score;
+      if (val.geneticLink === false || val.riskLevel === 'low') return 0;
+      if (val.geneticLink === true || val.riskLevel === 'high' || val.riskLevel === 'moderate') return -1;
+    }
     const optStr = (typeof val === 'object' ? (val.option || val.choice || val.notes || '') : `${val}`).toLowerCase();
-    if (val === 1 || val?.geneticLink === true || optStr.includes('family') || optStr.includes('personal') || optStr.includes('both') || optStr.includes('yes')) return -1;
+    const isNegative = optStr.includes('no family') || optStr.includes('no history') || optStr.includes('none') || optStr.includes('standard') || optStr.includes('low') || optStr.includes('no (no');
+    if (isNegative) return 0;
+    if (val === 1 || optStr.includes('family') || optStr.includes('personal') || optStr.includes('both') || optStr.includes('yes')) return -1;
     return 0;
   };
 
@@ -1359,9 +1367,10 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
       if ((typeUpper.includes('SMOKING') || typeUpper.includes('ALCOHOL')) && ((typeof val === 'number' && val > 0) || val?.count > 0 || val?.chewingCount > 0 || val?.drinks > 0 || optStr.includes('smoke') || optStr.includes('chew') || optStr.includes('tobacco') || optStr.includes('gutkha') || optStr.includes('khaini') || optStr.includes('drink') || optStr.includes('both'))) damage += 1;
       if (typeUpper.includes('SUBSTANCES') && (val === 1 || val?.used === true || optStr.includes('exposure') || optStr.includes('exposed'))) damage += 1;
       if (typeUpper.includes('DENTAL') && (val?.sharpTooth === true || val?.tobacco === true || val?.illFittingDenture === true || optStr.includes('discomfort'))) damage += 1;
-      if (typeUpper.includes('GASTRITIS') && (val?.gastritis === true || optStr.includes('gastritis') || optStr.includes('acidity'))) damage += 1;
-      if (typeUpper.includes('GENETIC') && (val?.geneticLink === true || optStr.includes('family'))) damage += 1;
-      if ((typeUpper.includes('ENVIRONMENT') || typeUpper.includes('DAMAGE')) && (val === 1 || val?.score < 0 || val?.isExposure === true || optStr.includes('chemical') || optStr.includes('junk'))) damage += 1;
+      if (typeUpper.includes('GENETIC')) {
+        const isNeg = optStr.includes('no family') || optStr.includes('no history') || optStr.includes('none') || val?.geneticLink === false || val?.riskLevel === 'low' || val?.score === 0;
+        if (!isNeg && (val?.geneticLink === true || val?.score === -1 || val?.riskLevel === 'high' || val?.riskLevel === 'moderate' || optStr.includes('family') || optStr.includes('personal') || optStr.includes('both') || optStr.includes('yes'))) damage += 1;
+      }
       if (typeUpper.includes('KITCHEN')) {
         const kScore = evalKitchen();
         if (kScore !== null && kScore < 0) damage += 1;

@@ -343,12 +343,16 @@ router.get('/activity-logs', ActivityController.getActivities);
 router.use('/notifications', authenticateToken, requireRole(['User']));
 router.get('/notifications/unread-count', NotificationController.getUnreadCount);
 router.get('/notifications', NotificationController.listRecent);
+router.put('/notifications/read-all', NotificationController.markAllAsRead);
 router.post('/notifications/read-all', NotificationController.markAllAsRead);
+router.put('/notifications/:id/read', NotificationController.markAsRead);
 router.post('/notifications/:id/read', NotificationController.markAsRead);
 router.post('/notifications/fcm-token', NotificationController.registerFCMToken);
 router.delete('/notifications/fcm-token', NotificationController.removeFCMToken);
-router.delete('/notifications/:id', NotificationController.deleteNotification);
+router.delete('/notifications/clear-all', NotificationController.clearAll);
+router.post('/notifications/clear-all', NotificationController.clearAll);
 router.delete('/notifications', NotificationController.clearAll);
+router.delete('/notifications/:id', NotificationController.deleteNotification);
 
 // ─── Daily Motivation 365 ─────────────────────────────────────────────────────
 router.get('/motivation/today', authenticateToken, MotivationController.getToday);

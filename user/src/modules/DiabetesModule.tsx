@@ -1,8 +1,10 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Activity, Sparkles, AlertTriangle, Check, Calendar, Plus, History, ChevronRight, X, FileText } from 'lucide-react';
-import { Card, SectionTitle, YesNoToggle, ModeTabs, StressTracker, TalkToDoctorCard } from './shared/ConditionUI';
+import { Card, SectionTitle, YesNoToggle, ModeTabs, StressTracker, TalkToDoctorCard, ConditionSaveButton, ConditionHistoryModal } from './shared/ConditionUI';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
+import { HabitsService, type HabitLog } from '../services/habitsService';
 
 const LOCALE_MAP: Record<string, string> = {
   en: 'en-US',
@@ -25,9 +27,15 @@ function daysSince(dateStr: string) {
 
 export const DiabetesModule: React.FC = () => {
   const { t, language } = useLanguage();
+  const { apiUrl, token, user } = useAuth();
   const activeLocale = LOCALE_MAP[language] || 'en-US';
   const [mode, setMode] = useState<string>('Prevention');
   const [showHba1cHistoryModal, setShowHba1cHistoryModal] = useState<boolean>(false);
+  const [showHistoryModal, setShowHistoryModal] = useState<boolean>(false);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [historyLogs, setHistoryLogs] = useState<HabitLog[]>([]);
+  const [, setIsLoadingCloud] = useState<boolean>(false);
 
   // Prevention State
   const [exercised, setExercised] = useState<boolean | null>(() => {
@@ -71,7 +79,53 @@ export const DiabetesModule: React.FC = () => {
     return v === null ? null : v === 'true';
   });
 
-  // Persist State
+  // Load from backend on mount so web & app remain in sync
+  const loadHistory = useCallback(async () => {
+    if (!token) return;
+    try {
+      setIsLoadingCloud(true);
+      const logs = await HabitsService.getRecentHabits(apiUrl, token, 'diabetes', 365);
+      setHistoryLogs(logs || []);
+      if (logs && logs.length > 0) {
+        const latest = logs[0]?.value;
+        if (latest) {
+          if (latest.mode) setMode(latest.mode);
+          if (latest.exercised !== undefined) setExercised(latest.exercised);
+          if (latest.tookAlcohol !== undefined) setTookAlcohol(latest.tookAlcohol);
+          if (latest.ateJunk !== undefined) setAteJunk(latest.ateJunk);
+          if (latest.slept8 !== undefined) setSlept8(latest.slept8);
+          if (latest.stress !== undefined) setStress(Number(latest.stress));
+          if (latest.lastFbsPpbs !== undefined) setLastFbsPpbs(latest.lastFbsPpbs);
+          if (latest.hba1cLog && Array.isArray(latest.hba1cLog)) {
+            setHba1cLog(prev => {
+              const map = new Map<string, number>();
+              latest.hba1cLog.forEach((item: any) => map.set(item.date, item.value));
+              prev.forEach(item => map.set(item.date, item.value));
+              return Array.from(map.entries())
+                .map(([date, value]) => ({ date, value }))
+                .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+            });
+          }
+          if (latest.yearlyChecks) {
+            setYearlyChecks(prev => ({ ...latest.yearlyChecks, ...prev }));
+          }
+          if (latest.ateHighCarb !== undefined) setAteHighCarb(latest.ateHighCarb);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load diabetes history from cloud', e);
+    } finally {
+      setIsLoadingCloud(false);
+    }
+  }, [apiUrl, token]);
+
+  useEffect(() => {
+    if (user?.id && token) {
+      loadHistory();
+    }
+  }, [user?.id, token, loadHistory]);
+
+  // Persist State to Local Storage as secondary cache
   useEffect(() => { if (exercised !== null) localStorage.setItem('mito_diab_exercised', String(exercised)); }, [exercised]);
   useEffect(() => { if (tookAlcohol !== null) localStorage.setItem('mito_diab_alcohol', String(tookAlcohol)); }, [tookAlcohol]);
   useEffect(() => { if (ateJunk !== null) localStorage.setItem('mito_diab_junk', String(ateJunk)); }, [ateJunk]);
@@ -99,21 +153,100 @@ export const DiabetesModule: React.FC = () => {
   const fbsDays = daysSince(lastFbsPpbs);
   const fbsDue = fbsDays == null ? null : fbsDays > 365;
 
-  const addHba1c = () => {
+  const handleSave = async () => {
+    if (!token) return;
+    try {
+      setIsSaving(true);
+      const payload = {
+        mode,
+        exercised,
+        tookAlcohol,
+        ateJunk,
+        slept8,
+        stress,
+        lastFbsPpbs,
+        hba1cLog,
+        yearlyChecks,
+        ateHighCarb,
+        preventionScore
+      };
+      await HabitsService.logHabit(apiUrl, token, 'diabetes', payload);
+      setLastSaved(new Date());
+      await loadHistory();
+    } catch (err) {
+      console.error('Failed to save diabetes log to cloud', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteHistoryLog = async (id: string) => {
+    if (!token) return;
+    try {
+      await HabitsService.deleteHabit(apiUrl, token, id);
+      await loadHistory();
+    } catch (err) {
+      console.error('Failed to delete diabetes habit log', err);
+    }
+  };
+
+  const addHba1c = async () => {
     if (!newHba1cDate || !newHba1cValue) return;
     const num = parseFloat(newHba1cValue);
     if (isNaN(num)) return;
-    setHba1cLog(prev =>
-      [...prev, { date: newHba1cDate, value: num }].sort(
-        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-      )
+    const updated = [...hba1cLog, { date: newHba1cDate, value: num }].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     );
+    setHba1cLog(updated);
     setNewHba1cDate('');
     setNewHba1cValue('');
+    if (token) {
+      try {
+        await HabitsService.logHabit(apiUrl, token, 'diabetes', {
+          mode,
+          exercised,
+          tookAlcohol,
+          ateJunk,
+          slept8,
+          stress,
+          lastFbsPpbs,
+          hba1cLog: updated,
+          yearlyChecks,
+          ateHighCarb,
+          preventionScore
+        });
+        setLastSaved(new Date());
+        loadHistory();
+      } catch (err) {
+        console.error('Auto-save hba1c error:', err);
+      }
+    }
   };
 
-  const removeHba1c = (dateStr: string) => {
-    setHba1cLog(prev => prev.filter(e => e.date !== dateStr));
+  const removeHba1c = async (dateStr: string) => {
+    const updated = hba1cLog.filter(e => e.date !== dateStr);
+    setHba1cLog(updated);
+    if (token) {
+      try {
+        await HabitsService.logHabit(apiUrl, token, 'diabetes', {
+          mode,
+          exercised,
+          tookAlcohol,
+          ateJunk,
+          slept8,
+          stress,
+          lastFbsPpbs,
+          hba1cLog: updated,
+          yearlyChecks,
+          ateHighCarb,
+          preventionScore
+        });
+        setLastSaved(new Date());
+        loadHistory();
+      } catch (err) {
+        console.error('Auto-save remove hba1c error:', err);
+      }
+    }
   };
 
   const hba1cStats = useMemo(() => {
@@ -146,6 +279,15 @@ export const DiabetesModule: React.FC = () => {
       </div>
 
       <ModeTabs modes={['Prevention', 'Treatment']} active={mode} onChange={setMode} />
+
+      <ConditionSaveButton
+        onSave={handleSave}
+        isSaving={isSaving}
+        lastSaved={lastSaved}
+        saveButtonText={t('protocols.saveDiabetesEntry', "Save Today's Entry")}
+        onViewHistory={() => setShowHistoryModal(true)}
+        historyCount={historyLogs.length}
+      />
 
       {mode === 'Prevention' && (
         <>
@@ -422,6 +564,63 @@ export const DiabetesModule: React.FC = () => {
           />
         </>
       )}
+
+      {/* Global Condition History Modal */}
+      <ConditionHistoryModal
+        title={t('protocols.diabetesHistoryTitle', 'Diabetes & Glycemic Tracking History')}
+        isOpen={showHistoryModal}
+        onClose={() => setShowHistoryModal(false)}
+        logs={historyLogs}
+        onDelete={handleDeleteHistoryLog}
+        activeLocale={activeLocale}
+        renderLogDetails={(val) => {
+          if (!val) return null;
+          return (
+            <div className="space-y-1.5 mt-1 text-[11px] text-slate-600 dark:text-slate-300">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-extrabold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
+                  Mode: {val.mode || 'Prevention'}
+                </span>
+                {val.preventionScore !== undefined && (
+                  <span className="font-black px-2 py-0.5 rounded-md text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40">
+                    Score: {val.preventionScore > 0 ? `+${val.preventionScore}` : val.preventionScore}
+                  </span>
+                )}
+                {val.stress !== undefined && (
+                  <span className="px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/40 text-blue-600">
+                    Stress: {val.stress}/10
+                  </span>
+                )}
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-1 text-[10.5px] pt-1">
+                {val.exercised !== undefined && (
+                  <span>Exercise: <b>{val.exercised ? 'Yes' : 'No'}</b></span>
+                )}
+                {val.tookAlcohol !== undefined && (
+                  <span>Alcohol: <b>{val.tookAlcohol ? 'Yes' : 'No'}</b></span>
+                )}
+                {val.ateJunk !== undefined && (
+                  <span>Junk Food: <b>{val.ateJunk ? 'Yes' : 'No'}</b></span>
+                )}
+                {val.slept8 !== undefined && (
+                  <span>8h Sleep: <b>{val.slept8 ? 'Yes' : 'No'}</b></span>
+                )}
+                {val.lastFbsPpbs && (
+                  <span>FBS/PPBS: <b>{val.lastFbsPpbs}</b></span>
+                )}
+                {val.ateHighCarb !== undefined && (
+                  <span>High Carb: <b>{val.ateHighCarb ? 'Yes' : 'No'}</b></span>
+                )}
+              </div>
+              {Array.isArray(val.hba1cLog) && val.hba1cLog.length > 0 && (
+                <div className="pt-1.5 text-[10.5px] text-emerald-600 dark:text-emerald-400 font-bold border-t border-slate-100 dark:border-slate-800">
+                  HbA1c: {val.hba1cLog.map((h: any) => `${h.date} (${h.value}%)`).join(', ')}
+                </div>
+              )}
+            </div>
+          );
+        }}
+      />
     </div>
   );
 };

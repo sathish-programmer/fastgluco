@@ -1,14 +1,12 @@
 <en-US>
-• Daily AI Check-in: Smarter conversational bot tracking sleep latency, breath rate, and habit recovery.
-• Safe Kitchen Audit: Screen for high-heat frying, charred foods, heated plastics, and cookware safety.
-• 365 Daily Motivation: Morning cellular health quotes and timely inspiration reminders.
-• Self-Exam Video Guides: Animated breast self-examination tutorials and symptom screening.
+• Health Modules: Cloud sync, history tracking & save options across condition modules.
+• Doctor Consultations: Improved query history syncing and enhanced image attachments.
+• Daily AI Check-in: Smarter conversational bot with safe kitchen & lifestyle audits.
 • Performance: Faster navigation and general stability improvements.
 </en-US>
 <en-IN>
-• Daily AI Check-in: Smarter conversational bot tracking sleep latency, breath rate, and habit recovery.
-• Safe Kitchen Audit: Screen for high-heat frying, charred foods, heated plastics, and cookware safety.
-• 365 Daily Motivation: Morning cellular health quotes and timely inspiration reminders.
-• Self-Exam Video Guides: Animated breast self-examination tutorials and symptom screening.
+• Health Modules: Cloud sync, history tracking & save options across condition modules.
+• Doctor Consultations: Improved query history syncing and enhanced image attachments.
+• Daily AI Check-in: Smarter conversational bot with safe kitchen & lifestyle audits.
 • Performance: Faster navigation and general stability improvements.
 </en-IN>

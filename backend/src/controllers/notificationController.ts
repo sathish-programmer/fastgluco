@@ -64,6 +64,12 @@ export class NotificationController {
   public static async deleteNotification(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
+      if (id === 'clear-all') {
+        return NotificationController.clearAll(req, res);
+      }
+      if (!id || id.length !== 24) {
+        return res.status(400).json({ message: 'Invalid notification id' });
+      }
       await Notification.updateOne(
         { _id: id, $or: [{ userId: req.user!.id }, { userId: null }, { userId: { $exists: false } }] },
         { $set: { isDeleted: true } }

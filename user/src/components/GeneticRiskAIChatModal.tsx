@@ -215,10 +215,12 @@ export const GeneticRiskAIChatModal: React.FC<GeneticRiskAIChatModalProps> = ({
     if (!collectedData.status && token && apiUrl) {
       try {
         const lowerText = text.toLowerCase();
-        const hasGeneticLink = lowerText.includes('personal') || lowerText.includes('family') || lowerText.includes('both') || lowerText.includes('breast') || lowerText.includes('ovarian') || lowerText.includes('colorectal') || lowerText.includes('cancer');
+        const isNeg = lowerText.includes('no family') || lowerText.includes('no history') || lowerText.includes('none') || lowerText.includes('no cancer') || lowerText.includes('neither') || lowerText.includes('negative') || lowerText.startsWith('no');
+        const hasGeneticLink = !isNeg && (lowerText.includes('personal') || lowerText.includes('family') || lowerText.includes('both') || lowerText.includes('breast') || lowerText.includes('ovarian') || lowerText.includes('colorectal') || lowerText.includes('cancer'));
         
         HabitsService.logHabit(apiUrl, token, 'Genetic', {
           geneticLink: hasGeneticLink,
+          score: hasGeneticLink ? -1 : 0,
           choice: text,
           source: 'ai_gia'
         }).catch(e => console.error('Error saving AI genetic habit log:', e));

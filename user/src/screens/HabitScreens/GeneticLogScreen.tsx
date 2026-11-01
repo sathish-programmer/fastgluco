@@ -178,6 +178,7 @@ export const GeneticLogScreen: React.FC<GeneticLogScreenProps> = ({ onBack, onBo
         geneticLink: hasElevatedRisk,
         riskScore,
         riskLevel: riskTier.level,
+        score: hasElevatedRisk ? -1 : 0,
         historyType,
         selectedCancers,
         earlyOnset,

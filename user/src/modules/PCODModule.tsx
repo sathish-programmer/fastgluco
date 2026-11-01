@@ -1,8 +1,10 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Sparkles, Calendar, Activity, Scale, AlertCircle, Plus, History, ChevronRight, X } from 'lucide-react';
-import { Card, SectionTitle, YesNoToggle, TalkToDoctorCard, StressTracker } from './shared/ConditionUI';
+import { Card, SectionTitle, YesNoToggle, TalkToDoctorCard, StressTracker, ConditionSaveButton, ConditionHistoryModal } from './shared/ConditionUI';
 import { triggerHealthInsightNotification } from '../utils/notificationScheduler';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
+import { HabitsService, type HabitLog } from '../services/habitsService';
 
 const LOCALE_MAP: Record<string, string> = {
   en: 'en-US',
@@ -14,8 +16,14 @@ const LOCALE_MAP: Record<string, string> = {
 
 export const PCODModule: React.FC = () => {
   const { t, language } = useLanguage();
+  const { apiUrl, token, user } = useAuth();
   const activeLocale = LOCALE_MAP[language] || 'en-US';
-  const [showHistoryModal, setShowHistoryModal] = useState<boolean>(false);
+  const [showPeriodHistoryModal, setShowPeriodHistoryModal] = useState<boolean>(false);
+  const [showDailyHistoryModal, setShowDailyHistoryModal] = useState<boolean>(false);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [historyLogs, setHistoryLogs] = useState<HabitLog[]>([]);
+
   const [height, setHeight] = useState<string>(() => localStorage.getItem('mito_pcod_height') || '');
   const [weight, setWeight] = useState<string>(() => localStorage.getItem('mito_pcod_weight') || '');
   const [exercised, setExercised] = useState<boolean | null>(() => {
@@ -44,7 +52,78 @@ export const PCODModule: React.FC = () => {
   });
   const [newPeriodDate, setNewPeriodDate] = useState<string>('');
 
-  // Persist state
+  // Load from backend on mount
+  const loadHistory = useCallback(async () => {
+    if (!token) return;
+    try {
+      const logs = await HabitsService.getRecentHabits(apiUrl, token, 'pcod', 365);
+      setHistoryLogs(logs || []);
+      if (logs && logs.length > 0) {
+        const latest = logs[0]?.value;
+        if (latest) {
+          if (latest.height && !height) setHeight(latest.height);
+          if (latest.weight && !weight) setWeight(latest.weight);
+          if (latest.exercised !== undefined) setExercised(latest.exercised);
+          if (latest.ateJunk !== undefined) setAteJunk(latest.ateJunk);
+          if (latest.slept8 !== undefined) setSlept8(latest.slept8);
+          if (latest.stress !== undefined) setStress(Number(latest.stress));
+          if (latest.hirsutism !== undefined) setHirsutism(latest.hirsutism);
+          if (latest.periodDates && Array.isArray(latest.periodDates)) {
+            setPeriodDates(prev => {
+              const set = new Set([...latest.periodDates, ...prev]);
+              return Array.from(set).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load PCOD history from cloud', e);
+    }
+  }, [apiUrl, token]);
+
+  useEffect(() => {
+    if (user?.id && token) {
+      loadHistory();
+    }
+  }, [user?.id, token, loadHistory]);
+
+  const handleSave = async () => {
+    if (!token) return;
+    try {
+      setIsSaving(true);
+      const payload = {
+        height,
+        weight,
+        exercised,
+        ateJunk,
+        slept8,
+        stress,
+        hirsutism,
+        periodDates,
+        dailyScore,
+        bmi
+      };
+      await HabitsService.logHabit(apiUrl, token, 'pcod', payload);
+      setLastSaved(new Date());
+      await loadHistory();
+    } catch (err) {
+      console.error('Failed to save PCOD log', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteHistoryLog = async (id: string) => {
+    if (!token) return;
+    try {
+      await HabitsService.deleteHabit(apiUrl, token, id);
+      await loadHistory();
+    } catch (err) {
+      console.error('Failed to delete PCOD habit log', err);
+    }
+  };
+
+  // Persist state to local cache
   useEffect(() => { localStorage.setItem('mito_pcod_height', height); }, [height]);
   useEffect(() => { localStorage.setItem('mito_pcod_weight', weight); }, [weight]);
   useEffect(() => { if (exercised !== null) localStorage.setItem('mito_pcod_exercised', String(exercised)); }, [exercised]);
@@ -145,6 +224,15 @@ export const PCODModule: React.FC = () => {
         </div>
       </div>
 
+      <ConditionSaveButton
+        onSave={handleSave}
+        isSaving={isSaving}
+        lastSaved={lastSaved}
+        saveButtonText={t('protocols.savePcodEntry', "Save Today's Entry")}
+        onViewHistory={() => setShowDailyHistoryModal(true)}
+        historyCount={historyLogs.length}
+      />
+
       {/* Height, Weight & BMI */}
       <Card>
         <SectionTitle icon={Scale}>{t('protocols.metabolicBMI')}</SectionTitle>
@@ -233,7 +321,7 @@ export const PCODModule: React.FC = () => {
         {periodDates.length > 0 && (
           <button
             type="button"
-            onClick={() => setShowHistoryModal(true)}
+            onClick={() => setShowPeriodHistoryModal(true)}
             className="w-full p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 hover:border-pink-300 dark:hover:border-pink-800 transition-all flex items-center justify-between gap-2 group cursor-pointer text-left"
           >
             <div className="flex items-center gap-2.5 min-w-0">
@@ -257,7 +345,7 @@ export const PCODModule: React.FC = () => {
       </Card>
 
       {/* Full Period History & Analytics Modal */}
-      {showHistoryModal && (
+      {showPeriodHistoryModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[999] flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200">
             {/* Modal Header */}
@@ -273,7 +361,7 @@ export const PCODModule: React.FC = () => {
               </div>
               <button
                 type="button"
-                onClick={() => setShowHistoryModal(false)}
+                onClick={() => setShowPeriodHistoryModal(false)}
                 className="h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer"
               >
                 <X className="h-4 w-4" />
@@ -360,7 +448,7 @@ export const PCODModule: React.FC = () => {
             <div className="pt-3 border-t border-slate-100 dark:border-slate-800 mt-2">
               <button
                 type="button"
-                onClick={() => setShowHistoryModal(false)}
+                onClick={() => setShowPeriodHistoryModal(false)}
                 className="w-full py-2.5 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-black rounded-xl cursor-pointer hover:opacity-95 transition-opacity"
               >
                 {t('protocols.closeHistory')}
@@ -386,6 +474,57 @@ export const PCODModule: React.FC = () => {
       <TalkToDoctorCard
         specialty={t('protocols.gynaecologist')}
         note={t('protocols.pcodDoctorNote')}
+      />
+
+      {/* Global PCOD Daily History Modal */}
+      <ConditionHistoryModal
+        title={t('protocols.pcodHistoryTitle', 'PCOD / PCOS Health Tracking History')}
+        isOpen={showDailyHistoryModal}
+        onClose={() => setShowDailyHistoryModal(false)}
+        logs={historyLogs}
+        onDelete={handleDeleteHistoryLog}
+        activeLocale={activeLocale}
+        renderLogDetails={(val) => {
+          if (!val) return null;
+          return (
+            <div className="space-y-1.5 mt-1 text-[11px] text-slate-600 dark:text-slate-300">
+              <div className="flex flex-wrap items-center gap-2">
+                {val.dailyScore !== undefined && (
+                  <span className="font-black px-2 py-0.5 rounded-md text-pink-600 bg-pink-50 dark:bg-pink-950/40">
+                    Daily Score: {val.dailyScore > 0 ? `+${val.dailyScore}` : val.dailyScore}
+                  </span>
+                )}
+                {val.stress !== undefined && (
+                  <span className="px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-950/40 text-purple-600">
+                    Stress: {val.stress}/10
+                  </span>
+                )}
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-1 text-[10.5px] pt-1">
+                {val.height && val.weight && (
+                  <span>Weight/Height: <b>{val.weight}kg / {val.height}cm</b></span>
+                )}
+                {val.exercised !== undefined && (
+                  <span>Exercise: <b>{val.exercised ? 'Yes' : 'No'}</b></span>
+                )}
+                {val.ateJunk !== undefined && (
+                  <span>Junk Food: <b>{val.ateJunk ? 'Yes' : 'No'}</b></span>
+                )}
+                {val.slept8 !== undefined && (
+                  <span>8h Sleep: <b>{val.slept8 ? 'Yes' : 'No'}</b></span>
+                )}
+                {val.hirsutism !== undefined && (
+                  <span>Excess Hair/Acne: <b>{val.hirsutism ? 'Yes' : 'No'}</b></span>
+                )}
+              </div>
+              {Array.isArray(val.periodDates) && val.periodDates.length > 0 && (
+                <div className="pt-1.5 text-[10.5px] text-pink-600 dark:text-pink-400 font-bold border-t border-slate-100 dark:border-slate-800">
+                  Logged Period Dates: {val.periodDates.slice(0, 4).join(', ')}
+                </div>
+              )}
+            </div>
+          );
+        }}
       />
     </div>
   );

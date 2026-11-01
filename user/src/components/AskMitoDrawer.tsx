@@ -92,22 +92,65 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 8 * 1024 * 1024) {
-      alert(t('fileSizeExceedsLimit'));
+    if (file.size > 15 * 1024 * 1024) {
+      alert(t('fileSizeExceedsLimit', 'File size exceeds 15MB limit.'));
       return;
     }
 
     setImageUploading(true);
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPatientImageUrl(reader.result as string);
-      setImageUploading(false);
-    };
-    reader.onerror = () => {
-      setImageUploading(false);
-      alert(t('failedToReadImage'));
-    };
-    reader.readAsDataURL(file);
+
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const maxDim = 1600;
+          let { width, height } = img;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            const compressed = canvas.toDataURL('image/jpeg', 0.82);
+            setPatientImageUrl(compressed);
+          } else {
+            setPatientImageUrl(event.target?.result as string);
+          }
+          setImageUploading(false);
+        };
+        img.onerror = () => {
+          setPatientImageUrl(event.target?.result as string);
+          setImageUploading(false);
+        };
+        img.src = event.target?.result as string;
+      };
+      reader.onerror = () => {
+        setImageUploading(false);
+        alert(t('failedToReadImage', 'Failed to read file. Please try another image.'));
+      };
+      reader.readAsDataURL(file);
+    } else {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPatientImageUrl(reader.result as string);
+        setImageUploading(false);
+      };
+      reader.onerror = () => {
+        setImageUploading(false);
+        alert(t('failedToReadImage', 'Failed to read file. Please try another image.'));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   // Fetch Patient's Consultations

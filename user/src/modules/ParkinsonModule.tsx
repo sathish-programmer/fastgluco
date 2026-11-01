@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Brain, Activity, Plus, Pill, Sparkles, Heart, History, ChevronRight, X, CheckCircle2 } from 'lucide-react';
-import { Card, SectionTitle, Slider1to10, YesNoToggle, TalkToDoctorCard } from './shared/ConditionUI';
+import { Card, SectionTitle, Slider1to10, YesNoToggle, TalkToDoctorCard, ConditionSaveButton, ConditionHistoryModal } from './shared/ConditionUI';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
+import { HabitsService, type HabitLog } from '../services/habitsService';
 
 const TIME_SLOTS = ['9:00 AM', '2:00 PM', '6:00 PM', '10:00 PM'];
 const SYMPTOMS = [
@@ -22,7 +24,12 @@ const DOPAMINE_BOOSTERS = [
 
 export const ParkinsonModule: React.FC = () => {
   const { t } = useLanguage();
+  const { apiUrl, token, user } = useAuth();
   const [showMedModal, setShowMedModal] = useState<boolean>(false);
+  const [showDailyHistoryModal, setShowDailyHistoryModal] = useState<boolean>(false);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [historyLogs, setHistoryLogs] = useState<HabitLog[]>([]);
   const [saveToast, setSaveToast] = useState<string | null>(null);
 
   const [symptomScores, setSymptomScores] = useState<Record<string, Record<string, number>>>(() => {
@@ -66,7 +73,47 @@ export const ParkinsonModule: React.FC = () => {
     }
   });
 
-  // Persist State
+  // Load from backend on mount
+  const loadHistory = useCallback(async () => {
+    if (!token) return;
+    try {
+      const logs = await HabitsService.getRecentHabits(apiUrl, token, 'parkinson', 365);
+      setHistoryLogs(logs || []);
+      if (logs && logs.length > 0) {
+        const latest = logs[0]?.value;
+        if (latest) {
+          if (latest.symptomScores) {
+            setSymptomScores(prev => ({ ...latest.symptomScores, ...prev }));
+          }
+          if (latest.drugLog && Array.isArray(latest.drugLog)) {
+            setDrugLog(prev => {
+              const map = new Map<number | string, any>();
+              latest.drugLog.forEach((d: any) => map.set(d.id || d.name, d));
+              prev.forEach(d => map.set(d.id || d.name, d));
+              return Array.from(map.values());
+            });
+          }
+          if (latest.slept8 !== undefined) setSlept8(latest.slept8);
+          if (latest.lovedActivity !== undefined) setLovedActivity(latest.lovedActivity);
+          if (latest.lovedActivityNote && !lovedActivityNote) setLovedActivityNote(latest.lovedActivityNote);
+          if (latest.darkChocolate !== undefined) setDarkChocolate(latest.darkChocolate);
+          if (latest.boosters) {
+            setBoosters(prev => ({ ...latest.boosters, ...prev }));
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load parkinson history from cloud', e);
+    }
+  }, [apiUrl, token]);
+
+  useEffect(() => {
+    if (user?.id && token) {
+      loadHistory();
+    }
+  }, [user?.id, token, loadHistory]);
+
+  // Persist State to Local Storage
   useEffect(() => { localStorage.setItem('mito_pd_symptom_scores', JSON.stringify(symptomScores)); }, [symptomScores]);
   useEffect(() => { localStorage.setItem('mito_pd_drug_log', JSON.stringify(drugLog)); }, [drugLog]);
   useEffect(() => { if (slept8 !== null) localStorage.setItem('mito_pd_slept8', String(slept8)); }, [slept8]);
@@ -173,6 +220,42 @@ export const ParkinsonModule: React.FC = () => {
     return drugLog.filter(d => d.taken !== false).length;
   }, [drugLog]);
 
+  const handleSave = async () => {
+    if (!token) return;
+    try {
+      setIsSaving(true);
+      const payload = {
+        symptomScores,
+        drugLog,
+        slept8,
+        lovedActivity,
+        lovedActivityNote,
+        darkChocolate,
+        boosters,
+        boosterCount,
+        loggedSlotsCount,
+        medsTakenCount
+      };
+      await HabitsService.logHabit(apiUrl, token, 'parkinson', payload);
+      setLastSaved(new Date());
+      await loadHistory();
+    } catch (err) {
+      console.error('Failed to save parkinson log', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteHistoryLog = async (id: string) => {
+    if (!token) return;
+    try {
+      await HabitsService.deleteHabit(apiUrl, token, id);
+      await loadHistory();
+    } catch (err) {
+      console.error('Failed to delete parkinson habit log', err);
+    }
+  };
+
   return (
     <div className="space-y-5 relative">
       {/* Toast Confirmation */}
@@ -218,6 +301,15 @@ export const ParkinsonModule: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <ConditionSaveButton
+        onSave={handleSave}
+        isSaving={isSaving}
+        lastSaved={lastSaved}
+        saveButtonText={t('protocols.saveParkinsonEntry', "Save Today's Entry")}
+        onViewHistory={() => setShowDailyHistoryModal(true)}
+        historyCount={historyLogs.length}
+      />
 
       {/* Symptom Severity by Time of Day */}
       <Card>
@@ -514,6 +606,55 @@ export const ParkinsonModule: React.FC = () => {
       <TalkToDoctorCard
         specialty={t('protocols.neurologist')}
         note={t('protocols.parkinsonDoctorNote')}
+      />
+
+      {/* Global Parkinson History Modal */}
+      <ConditionHistoryModal
+        title={t('protocols.parkinsonHistoryTitle', "Parkinson's Care & Dopamine Tracking History")}
+        isOpen={showDailyHistoryModal}
+        onClose={() => setShowDailyHistoryModal(false)}
+        logs={historyLogs}
+        onDelete={handleDeleteHistoryLog}
+        renderLogDetails={(val) => {
+          if (!val) return null;
+          return (
+            <div className="space-y-1.5 mt-1 text-[11px] text-slate-600 dark:text-slate-300">
+              <div className="flex flex-wrap items-center gap-2">
+                {val.boosterCount !== undefined && (
+                  <span className="font-black px-2 py-0.5 rounded-md text-violet-600 bg-violet-50 dark:bg-violet-950/40">
+                    Boosters: {val.boosterCount} active
+                  </span>
+                )}
+                {val.medsTakenCount !== undefined && (
+                  <span className="font-black px-2 py-0.5 rounded-md text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40">
+                    Meds: {val.medsTakenCount} doses
+                  </span>
+                )}
+                {val.loggedSlotsCount !== undefined && (
+                  <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
+                    Symptom Slots: {val.loggedSlotsCount}/4
+                  </span>
+                )}
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-1 text-[10.5px] pt-1">
+                {val.slept8 !== undefined && (
+                  <span>8h Sleep: <b>{val.slept8 ? 'Yes' : 'No'}</b></span>
+                )}
+                {val.lovedActivity !== undefined && (
+                  <span>Loved Activity: <b>{val.lovedActivity ? 'Yes' : 'No'}</b></span>
+                )}
+                {val.darkChocolate !== undefined && (
+                  <span>Dark Chocolate: <b>{val.darkChocolate ? 'Yes' : 'No'}</b></span>
+                )}
+              </div>
+              {Array.isArray(val.drugLog) && val.drugLog.length > 0 && (
+                <div className="pt-1 text-[10.5px] text-violet-600 dark:text-violet-400 font-bold border-t border-slate-100 dark:border-slate-800">
+                  Meds: {val.drugLog.map((d: any) => `${d.name} (${d.time || 'Daily'})`).join(', ')}
+                </div>
+              )}
+            </div>
+          );
+        }}
       />
     </div>
   );
