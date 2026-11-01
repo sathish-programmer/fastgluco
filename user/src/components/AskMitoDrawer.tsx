@@ -4,7 +4,7 @@ import {
   X, Send, Loader2,
   Stethoscope, Clock, CheckCircle2, Plus, RefreshCw,
   MessageSquare, ChevronDown, Sparkles, User, ShieldCheck, CreditCard,
-  AlertTriangle, UploadCloud, ArrowRight
+  AlertTriangle, UploadCloud, ArrowRight, Maximize2, ExternalLink, Download, Eye
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -87,6 +87,74 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
   const [submittingQuestion, setSubmittingQuestion] = useState<boolean>(false);
   const [submitSuccessMsg, setSubmitSuccessMsg] = useState<string | null>(null);
   const [questionError, setQuestionError] = useState<string | null>(null);
+  const [viewingImage, setViewingImage] = useState<string | null>(null);
+
+  // Helper to open images safely (including data URIs) without Chrome top-level block
+  const openImageSafely = (imageUrl: string | null) => {
+    if (!imageUrl) return;
+    if (imageUrl.startsWith('data:')) {
+      try {
+        const arr = imageUrl.split(',');
+        const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/png';
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) {
+          u8arr[n] = bstr.charCodeAt(n);
+        }
+        const blob = new Blob([u8arr], { type: mime });
+        const blobUrl = URL.createObjectURL(blob);
+        const win = window.open(blobUrl, '_blank', 'noopener,noreferrer');
+        if (!win) {
+          const a = document.createElement('a');
+          a.href = blobUrl;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        }
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 120000);
+        return;
+      } catch (e) {
+        console.error('Failed to convert data URL to blob:', e);
+      }
+    }
+    window.open(imageUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  // Helper to download diagnostic report safely
+  const downloadImageSafely = (imageUrl: string | null, filename = 'diagnostic-report.png') => {
+    if (!imageUrl) return;
+    try {
+      let downloadUrl = imageUrl;
+      let cleanup = false;
+      if (imageUrl.startsWith('data:')) {
+        const arr = imageUrl.split(',');
+        const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/png';
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) {
+          u8arr[n] = bstr.charCodeAt(n);
+        }
+        const blob = new Blob([u8arr], { type: mime });
+        downloadUrl = URL.createObjectURL(blob);
+        cleanup = true;
+      }
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      if (cleanup) {
+        setTimeout(() => URL.revokeObjectURL(downloadUrl), 60000);
+      }
+    } catch (e) {
+      console.error('Error downloading image:', e);
+    }
+  };
 
   const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -603,13 +671,21 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
                               {t('askMito.attachedDiagnosticReport', 'Attached Diagnostic Image / Report')}
                             </span>
-                            <a href={q.patientImageUrl} target="_blank" rel="noopener noreferrer">
+                            <div 
+                              onClick={() => setViewingImage(q.patientImageUrl!)}
+                              className="relative group inline-block cursor-pointer mt-1"
+                              title={t('clickToPreview', 'Click to Preview Full Image')}
+                            >
                               <img 
                                 src={q.patientImageUrl} 
-                                alt={t('attachedPatientReport')} 
-                                className="h-36 max-w-xs object-cover rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs hover:opacity-90 transition-opacity" 
+                                alt={t('attachedPatientReport', 'Attached Diagnostic Image')} 
+                                className="h-36 max-w-xs object-cover rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs group-hover:brightness-95 transition-all" 
                               />
-                            </a>
+                              <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center gap-1.5 text-white font-bold text-xs">
+                                <Maximize2 className="h-4 w-4" />
+                                <span>{t('preview', 'Click to Preview')}</span>
+                              </div>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -924,6 +1000,67 @@ export const AskMitoDrawer: React.FC<AskMitoDrawerProps> = ({ isOpen, onClose })
                   </button>
                 </div>
               </motion.form>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* ========================================================================= */}
+        {/* FULLSCREEN LIGHTBOX IMAGE PREVIEW MODAL                                   */}
+        {/* ========================================================================= */}
+        <AnimatePresence>
+          {viewingImage && (
+            <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 z-[9999] animate-in fade-in duration-200">
+              <motion.div 
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="relative max-w-3xl w-full flex flex-col items-center max-h-[92vh]"
+              >
+                {/* Top Control Bar */}
+                <div className="w-full flex items-center justify-between p-3 bg-slate-900/95 border border-slate-800 rounded-2xl mb-2.5 text-white shadow-2xl">
+                  <div className="flex items-center gap-2 text-xs font-bold">
+                    <Eye className="h-4 w-4 text-blue-400" />
+                    <span>{t('diagnosticImagePreview', 'Diagnostic Report Preview')}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => downloadImageSafely(viewingImage)}
+                      className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+                      title={t('downloadReport', 'Download Report')}
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">{t('download', 'Download')}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openImageSafely(viewingImage)}
+                      className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+                      title={t('openInNewWindow', 'Open Full Window')}
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">{t('fullWindow', 'Full Window')}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setViewingImage(null)}
+                      className="p-1.5 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors cursor-pointer"
+                      title={t('close', 'Close')}
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Image Content Container */}
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2 sm:p-3 overflow-hidden shadow-2xl flex items-center justify-center max-h-[82vh] w-full">
+                  <img 
+                    src={viewingImage} 
+                    alt="Patient Diagnostic Full View" 
+                    className="max-h-[76vh] max-w-full object-contain rounded-xl select-none"
+                  />
+                </div>
+              </motion.div>
             </div>
           )}
         </AnimatePresence>

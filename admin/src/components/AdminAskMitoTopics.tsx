@@ -66,31 +66,38 @@ export const AdminAskMitoTopics: React.FC<AdminAskMitoTopicsProps> = ({ apiUrl, 
   const [sendingReply, setSendingReply] = useState<boolean>(false);
   const [viewingFullImage, setViewingFullImage] = useState<string | null>(null);
 
-  // Helper to safely open images (including Data URIs) in a new tab
+  // Helper to safely open images (including Data URIs) in a new tab without Chrome block
   const openImageInNewTab = (imageUrl: string) => {
+    if (!imageUrl) return;
     if (imageUrl.startsWith('data:')) {
-      const win = window.open();
-      if (win) {
-        win.document.write(`
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <title>Patient Diagnostic Image View</title>
-              <style>
-                body { margin: 0; background: #0f172a; display: flex; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; }
-                img { max-width: 95%; max-height: 95vh; object-fit: contain; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); }
-              </style>
-            </head>
-            <body>
-              <img src="${imageUrl}" alt="Patient Diagnostic Image" />
-            </body>
-          </html>
-        `);
-        win.document.close();
+      try {
+        const arr = imageUrl.split(',');
+        const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/png';
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) {
+          u8arr[n] = bstr.charCodeAt(n);
+        }
+        const blob = new Blob([u8arr], { type: mime });
+        const blobUrl = URL.createObjectURL(blob);
+        const win = window.open(blobUrl, '_blank', 'noopener,noreferrer');
+        if (!win) {
+          const a = document.createElement('a');
+          a.href = blobUrl;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        }
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 120000);
+        return;
+      } catch (e) {
+        console.error('Failed to convert data URL to blob:', e);
       }
-    } else {
-      window.open(imageUrl, '_blank', 'noopener,noreferrer');
     }
+    window.open(imageUrl, '_blank', 'noopener,noreferrer');
   };
 
   // Fetch Patient Queries
