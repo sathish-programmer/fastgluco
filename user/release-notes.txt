@@ -1,12 +1,12 @@
 <en-US>
-• Health Modules: Cloud sync, history tracking & save options across condition modules.
-• Doctor Consultations: Improved query history syncing and enhanced image attachments.
-• Daily AI Check-in: Smarter conversational bot with safe kitchen & lifestyle audits.
-• Performance: Faster navigation and general stability improvements.
+• Seamless Authentication: Faster, more reliable login with dual SMS & Email OTP verification.
+• Dynamic OTP Screen: Clear real-time delivery status for codes sent to your mobile, email, or both.
+• Health Tracking & Insights: Smoother CGM report uploads and enhanced food logging stability.
+• Performance & Fixes: General stability improvements and faster app navigation.
 </en-US>
 <en-IN>
-• Health Modules: Cloud sync, history tracking & save options across condition modules.
-• Doctor Consultations: Improved query history syncing and enhanced image attachments.
-• Daily AI Check-in: Smarter conversational bot with safe kitchen & lifestyle audits.
-• Performance: Faster navigation and general stability improvements.
+• Seamless Authentication: Faster, more reliable login with dual SMS & Email OTP verification.
+• Dynamic OTP Screen: Clear real-time delivery status for codes sent to your mobile, email, or both.
+• Health Tracking & Insights: Smoother CGM report uploads and enhanced food logging stability.
+• Performance & Fixes: General stability improvements and faster app navigation.
 </en-IN>
