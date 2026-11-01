@@ -4,6 +4,7 @@ export interface IOtp extends Document {
   mobileNumber: string;
   email: string;
   otpHash: string;
+  encryptedOtp?: string | null;
   attemptCount: number;
   resendCount: number;
   lastSentAt: Date;
@@ -16,6 +17,7 @@ const otpSchema = new Schema<IOtp>(
     mobileNumber: { type: String, required: true, index: true, trim: true },
     email: { type: String, required: true, index: true, lowercase: true, trim: true },
     otpHash: { type: String, required: true },
+    encryptedOtp: { type: String, default: null },
     attemptCount: { type: Number, default: 0 },
     resendCount: { type: Number, default: 0 },
     lastSentAt: { type: Date, default: Date.now },

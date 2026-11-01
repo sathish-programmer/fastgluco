@@ -91,7 +91,7 @@ interface AuthContextType {
   isLoading: boolean;
   error: string | null;
   isOnline: boolean;
-  sendOtp: (mobileNumber: string, email: string, sendSms?: boolean) => Promise<{ success: boolean; message?: string }>;
+  sendOtp: (mobileNumber: string, email: string, sendSms?: boolean, fallbackReason?: string, failureCategory?: string, fallbackSms?: boolean) => Promise<{ success: boolean; message?: string; method?: string; smsDelivered?: boolean }>;
   verifyOtp: (mobileNumber: string, otp: string, email: string) => Promise<{ isNewUser: boolean } | null>;
   loginWithFirebaseToken: (idToken: string, email: string, mobileNumber: string) => Promise<{ isNewUser: boolean } | null>;
   completeOnboarding: (profileData: Partial<UserProfile>) => Promise<boolean>;
@@ -290,7 +290,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [token]);
 
-  const sendOtp = async (mobileNumber: string, email: string, sendSms: boolean = true): Promise<{ success: boolean; message?: string }> => {
+  const sendOtp = async (
+    mobileNumber: string,
+    email: string,
+    sendSms: boolean = true,
+    fallbackReason?: string,
+    failureCategory?: string,
+    fallbackSms: boolean = false
+  ): Promise<{ success: boolean; message?: string; method?: string; smsDelivered?: boolean }> => {
     try {
       const meta = await telemetryService.getTelemetryMeta();
       // Fast2SMS is STRICTLY reserved for iOS login/signup fallback only. Never Android, never Web.
@@ -307,6 +314,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           mobileNumber,
           email,
           sendSms: shouldRequestSms,
+          fallbackSms: !!fallbackSms,
+          fallbackReason: fallbackReason || 'DIRECT',
+          failureCategory: failureCategory || 'NONE',
           platform: meta.platform,
           appVersion: meta.appVersion,
           buildNumber: meta.buildNumber,
@@ -325,7 +335,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!response.ok) {
         return { success: false, message: data.message || 'Failed to send OTP.' };
       }
-      return { success: true, message: data.message };
+      return {
+        success: true,
+        message: data.message,
+        method: data.method,
+        smsDelivered: data.smsDelivered
+      };
     } catch (err: any) {
       return { success: false, message: err.message || 'Failed to send OTP.' };
     }

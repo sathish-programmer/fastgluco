@@ -25,6 +25,10 @@ function getRecaptchaVerifier(): RecaptchaVerifier {
     } catch (_) { }
     window.recaptchaVerifier = null;
   }
+  const container = document.getElementById('recaptcha-container');
+  if (container) {
+    container.innerHTML = '';
+  }
   window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
     size: 'invisible',
   });
@@ -147,6 +151,7 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
   const screenRef = useRef<'phone' | 'otp'>(screen);
   const otpProviderRef = useRef<'FIREBASE' | 'FAST2SMS' | null>(null);
   const codeSentRef = useRef<boolean>(false);
+  const fallbackTriggeredRef = useRef<boolean>(false);
   const userInitiatedSendRef = useRef<boolean>(false);
 
   useEffect(() => { mobileNumberRef.current = mobileNumber; }, [mobileNumber]);
@@ -165,16 +170,20 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
     const codeSentSub = FirebaseAuthentication.addListener('phoneCodeSent', (event) => {
       console.log('[Native Firebase] phoneCodeSent event received, verificationId:', event.verificationId);
       if (!isMounted) return;
+      if (fallbackTriggeredRef.current) {
+        console.warn('[Native Firebase] Ignoring late phoneCodeSent event because fallback OTP was already dispatched.');
+        return;
+      }
       window.verificationId = event.verificationId;
       codeSentRef.current = true;
       userInitiatedSendRef.current = false;
       otpProviderRef.current = 'FIREBASE';
       setOtpProvider('FIREBASE');
-      setDeliveryMethod('sms');
+      setDeliveryMethod('sms_and_email');
       setScreen('otp');
       setTimer(60);
       setLoading(false);
-      showToast(`Verification code sent to ${mobileNumberRef.current}`, 'success');
+      showToast(t('auth.codeSentToBoth', 'Verification code sent to your Mobile & Email'), 'success');
       setTimeout(() => otpInputRef.current?.focus(), 100);
     });
 
@@ -205,7 +214,8 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
 
     const failedSub = FirebaseAuthentication.addListener('phoneVerificationFailed', async (event) => {
       const errorMsg = event.message || 'Firebase phone verification failed.';
-      console.warn('[Firebase Auth] Native Firebase phoneVerificationFailed:', errorMsg);
+      const errorCode = (event as any).code || 'VERIFICATION_FAILED';
+      console.warn('[Firebase Auth] Native Firebase phoneVerificationFailed:', errorCode, errorMsg);
       if (!isMounted) return;
 
       // CRITICAL GUARD 1: Only handle if user actually initiated send OTP
@@ -214,12 +224,14 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
         return;
       }
 
-      if (codeSentRef.current || screenRef.current === 'otp') {
-        console.warn('[Firebase Auth] Code was already sent by Firebase.');
+      // CRITICAL GUARD 2: Prevent duplicate fallback if code was already sent or fallback already running
+      if (codeSentRef.current || screenRef.current === 'otp' || fallbackTriggeredRef.current) {
+        console.warn('[Firebase Auth] Code was already sent or fallback already dispatched. Skipping duplicate.');
         return;
       }
+      fallbackTriggeredRef.current = true;
 
-      // Seamless fallback to Backend OTP (Fast2SMS & Email on iOS, Email on Android)
+      // Seamless fallback to Backend OTP (Fast2SMS on iOS, Email on Android)
       const isIOS = Capacitor.getPlatform() === 'ios';
       console.log(`[Firebase Auth] ${isIOS ? 'iOS' : 'Android'} phoneVerificationFailed: Triggering backup OTP fallback...`);
       try {
@@ -227,15 +239,15 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
         if (e164 && emailRef.current) {
           otpProviderRef.current = 'FAST2SMS';
           setOtpProvider('FAST2SMS');
-          const sendRes = await sendOtp(e164, emailRef.current, isIOS);
+          const sendRes = await sendOtp(e164, emailRef.current, isIOS, 'FIREBASE_VERIFICATION_FAILED', errorCode, true);
           if (sendRes.success) {
             codeSentRef.current = true;
             userInitiatedSendRef.current = false;
-            setDeliveryMethod(isIOS ? 'sms_and_email' : 'email');
+            setDeliveryMethod(sendRes.smsDelivered ? 'sms_and_email' : 'email');
             setScreen('otp');
             setTimer(60);
             setLoading(false);
-            showToast(isIOS ? t('auth.codeSentToMobileAndEmail', 'Verification code sent to your mobile and email') : t('auth.codeSentToEmail', 'Verification code sent to your email'), 'success');
+            showToast(sendRes.message || (sendRes.smsDelivered ? t('auth.codeSentToMobileAndEmail', 'Verification code sent to your mobile and email') : t('auth.codeSentToEmail', { email: emailRef.current }, `Verification code sent to ${emailRef.current}`)), 'success');
             setTimeout(() => otpInputRef.current?.focus(), 150);
             return;
           } else {
@@ -338,6 +350,7 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
     }
 
     codeSentRef.current = false;
+    fallbackTriggeredRef.current = false;
     window.verificationId = null;
     window.confirmationResult = null;
     setConfirmationResult(null);
@@ -347,26 +360,21 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
     setLoading(true);
     userInitiatedSendRef.current = true;
 
-    // Apple Reviewer / Demo Account Bypass (Strictly for iOS / Apple App Store reviewers or @apple.com addresses)
+    // Apple Reviewer Account Bypass (Strictly for Apple App Store review credentials or @apple.com addresses)
     const pDigits = e164.replace(/[^0-9]/g, '');
     const cleanEmail = email.toLowerCase().trim();
-    const isIOSDevice = Capacitor.getPlatform() === 'ios';
     const isAppleDomain = cleanEmail.endsWith('@apple.com') || cleanEmail === 'review@mitoreboot.in';
     const isKnownReviewCredentials =
-      pDigits.endsWith('9597042107') ||
-      pDigits.endsWith('9597042108') ||
+      (pDigits.endsWith('9597042107') && cleanEmail === 'sathishkumarksk007@gmail.com') ||
       pDigits.endsWith('9999999999') ||
       pDigits.endsWith('15555555555') ||
-      pDigits === '5555555555' ||
-      cleanEmail === 'sathishkumarsk007@gmail.com' ||
-      cleanEmail === 'sathishkumarksk007@gmail.com' ||
-      cleanEmail === 'sathishkumar@gmail.com';
+      pDigits === '5555555555';
 
-    // Only bypass if running on iOS (App Store review device) or using official reviewer credentials
-    const isReviewAccount = (isIOSDevice && isKnownReviewCredentials) || isAppleDomain;
+    // Bypass if running with official reviewer credentials or Apple reviewer domain
+    const isReviewAccount = isKnownReviewCredentials || isAppleDomain;
 
     if (isReviewAccount) {
-      console.log('[Auth] Apple Reviewer Account detected on iOS. Skipping native Firebase SMS flow and using direct verification.');
+      console.log('[Auth] Reviewer / Demo Account detected. Skipping Firebase SMS flow and using direct verification.');
       otpProviderRef.current = 'FAST2SMS';
       setOtpProvider('FAST2SMS');
       try {
@@ -391,51 +399,104 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
       return;
     }
 
-    // 1. Android Native: Native Firebase Phone Auth with Google Play Services auto-detect
-    if (Capacitor.getPlatform() === 'android') {
+    // Helper to safely trigger iOS fallback without duplicate email
+    const triggerIosFallback = async (reason: string, failureCategory?: string) => {
       try {
-        console.log('[Firebase Auth] Attempting Android Native Firebase Phone Auth for:', e164);
+        otpProviderRef.current = 'FAST2SMS';
+        setOtpProvider('FAST2SMS');
+        const sendRes = await sendOtp(e164, email, true, reason, failureCategory, true);
+        if (sendRes.success) {
+          codeSentRef.current = true;
+          userInitiatedSendRef.current = false;
+          setDeliveryMethod(sendRes.smsDelivered ? 'sms_and_email' : 'email');
+          setScreen('otp');
+          setTimer(60);
+          showToast(
+            sendRes.message || (sendRes.smsDelivered ? t('auth.codeSentToMobileAndEmail', 'Verification code sent to your mobile and email') : t('auth.codeSentToEmail', { email }, `Verification code sent to ${email}`)),
+            'success'
+          );
+          setTimeout(() => otpInputRef.current?.focus(), 150);
+        } else {
+          setPhoneError(sendRes.message || t('auth.sendOtpFailed', 'Failed to send verification code. Please try again.'));
+        }
+      } catch (fallbackErr: any) {
+        setPhoneError(fallbackErr?.message || t('auth.sendOtpFailed', 'Failed to send verification code. Please try again.'));
+      } finally {
+        setLoading(false);
+        userInitiatedSendRef.current = false;
+      }
+    };
+
+    // Helper to safely trigger Android Email-only fallback
+    const triggerAndroidEmailFallback = async (nativeErr: any) => {
+      try {
+        otpProviderRef.current = 'FAST2SMS';
+        setOtpProvider('FAST2SMS');
+        setDeliveryMethod('email');
+        setScreen('otp');
+        setTimer(60);
+        showToast(t('auth.codeSentToEmail', { email }, `SMS delivery delayed. Please use the verification code sent to ${email}.`), 'info');
+        setTimeout(() => otpInputRef.current?.focus(), 150);
+        return;
+      } catch (_) { }
+      setLoading(false);
+      userInitiatedSendRef.current = false;
+      setPhoneError(cleanErrorMessage(nativeErr?.message, t('auth.sendOtpFailed', 'Unable to send verification code via Firebase. Please try again.')));
+    };
+
+    // ALWAYS dispatch Email OTP in parallel to registered email (Requirement 2)
+    console.log('[Auth] Dispatching Email OTP in parallel for:', email);
+    const emailOtpPromise = sendOtp(e164, email, false, 'INITIAL_DISPATCH', 'NONE', false).catch((err) => {
+      console.warn('[Auth] Background Email OTP dispatch notice:', err);
+      return null;
+    });
+
+    // 1. Native Mobile (iOS & Android): Native Firebase Phone Auth with Google Play Integrity / APNs
+    if (Capacitor.isNativePlatform()) {
+      const isIOS = Capacitor.getPlatform() === 'ios';
+      let iosTimeoutTimer: any = null;
+
+      if (isIOS) {
+        // Configurable safety timeout for iOS Native Firebase (15 seconds)
+        // If neither phoneCodeSent nor phoneVerificationFailed fired within 15s, seamlessly fallback.
+        iosTimeoutTimer = setTimeout(async () => {
+          if (!codeSentRef.current && screenRef.current !== 'otp' && !fallbackTriggeredRef.current) {
+            console.warn('[Firebase Auth] iOS Native Firebase timed out (15s). Triggering Fast2SMS fallback...');
+            fallbackTriggeredRef.current = true;
+            await triggerIosFallback('FIREBASE_NATIVE_TIMEOUT', 'TIMEOUT_15S');
+          }
+        }, 15000);
+      }
+
+      try {
+        console.log(`[Firebase Auth] Attempting Native Firebase Phone Auth (${Capacitor.getPlatform()}) for:`, e164);
         otpProviderRef.current = 'FIREBASE';
         setOtpProvider('FIREBASE');
         await FirebaseAuthentication.signInWithPhoneNumber({ phoneNumber: e164 });
         // Native phoneCodeSent listener will transition screen to 'otp' and set codeSentRef.current = true
       } catch (nativeErr: any) {
-        console.warn('[Firebase Auth] Android Firebase Phone Auth failed, attempting email OTP fallback:', nativeErr);
-        try {
-          otpProviderRef.current = 'FAST2SMS';
-          setOtpProvider('FAST2SMS');
-          const sendRes = await sendOtp(e164, email, false);
-          if (sendRes.success) {
-            codeSentRef.current = true;
-            userInitiatedSendRef.current = false;
-            setDeliveryMethod('email');
-            setScreen('otp');
-            setTimer(60);
-            setLoading(false);
-            showToast(t('auth.codeSentToEmail', 'Verification code sent to your email'), 'success');
-            setTimeout(() => otpInputRef.current?.focus(), 150);
-            return;
+        if (iosTimeoutTimer) clearTimeout(iosTimeoutTimer);
+        console.warn(`[Firebase Auth] Native Firebase Phone Auth (${Capacitor.getPlatform()}) error:`, nativeErr);
+
+        if (!codeSentRef.current && !fallbackTriggeredRef.current) {
+          fallbackTriggeredRef.current = true;
+          if (isIOS) {
+            console.log('[Firebase Auth] iOS Native Firebase error, triggering Fast2SMS backup OTP...');
+            await triggerIosFallback('FIREBASE_NATIVE_EXCEPTION', nativeErr?.code || nativeErr?.message);
+          } else {
+            console.warn('[Firebase Auth] Android Firebase Phone Auth failed, using parallel email OTP...');
+            await triggerAndroidEmailFallback(nativeErr);
           }
-        } catch (_) { }
-        setLoading(false);
-        userInitiatedSendRef.current = false;
-        setPhoneError(cleanErrorMessage(nativeErr?.message, t('auth.sendOtpFailed', 'Unable to send verification code via Firebase. Please try again.')));
+        }
       }
       return;
     }
 
-    // 2. iOS & Web: Firebase Phone Auth via Web SDK (Invisible reCAPTCHA inside WebView)
-    // Priority: Firebase SMS via Google (free). Fallback to Fast2SMS/Email quickly if Firebase hangs or fails.
+    // 2. Web: Web Firebase Phone Auth via Web SDK (Invisible reCAPTCHA)
     try {
-      console.log(`[Firebase Auth] Attempting Firebase Phone Auth (${Capacitor.getPlatform()}) for:`, e164);
+      console.log('[Firebase Auth] Attempting Web Firebase Phone Auth for:', e164);
       const verifier = getRecaptchaVerifier();
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Firebase verification timed out')), 4500)
-      );
-      const confirmation = await Promise.race([
-        signInWithPhoneNumber(auth, e164, verifier),
-        timeoutPromise
-      ]) as ConfirmationResult;
+      const confirmation = await signInWithPhoneNumber(auth, e164, verifier);
 
       codeSentRef.current = true;
       userInitiatedSendRef.current = false;
@@ -443,30 +504,42 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
       setOtpProvider('FIREBASE');
       setConfirmationResult(confirmation);
       window.confirmationResult = confirmation;
-      setDeliveryMethod('sms');
+      setDeliveryMethod('sms_and_email');
       setScreen('otp');
       setTimer(60);
-      showToast(t('auth.codeSentToMobile', { mobileNumber: e164 }, `Verification code sent to ${e164}`), 'success');
+      showToast(t('auth.codeSentToBoth', 'Verification code sent to your Mobile & Email'), 'success');
       setTimeout(() => otpInputRef.current?.focus(), 100);
-    } catch (firebaseErr: any) {
-      console.warn(`[Firebase Auth] Firebase Phone Auth (${Capacitor.getPlatform()}) failed, seamlessly falling back to backup OTP:`, firebaseErr);
+    } catch (webErr: any) {
+      console.warn('[Firebase Auth] Web Firebase initiation error, falling back to Email OTP:', webErr);
       setConfirmationResult(null);
       window.confirmationResult = null;
-      const isIOS = Capacitor.getPlatform() === 'ios';
       try {
         otpProviderRef.current = 'FAST2SMS';
         setOtpProvider('FAST2SMS');
-        const sendRes = await sendOtp(e164, email, isIOS);
-        if (sendRes.success) {
+        // Await the parallel email OTP that was already dispatched; avoid duplicate API request that triggers 429 rate limit
+        const sendRes = await emailOtpPromise;
+        if (sendRes && sendRes.success) {
           codeSentRef.current = true;
           userInitiatedSendRef.current = false;
-          setDeliveryMethod(isIOS ? 'sms_and_email' : 'email');
+          setDeliveryMethod('email');
           setScreen('otp');
           setTimer(60);
-          showToast(isIOS ? t('auth.codeSentToMobileAndEmail', 'Verification code sent to your mobile and email') : t('auth.codeSentToEmail', 'Verification code sent to your email'), 'success');
+          showToast(sendRes.message || t('auth.codeSentToEmail', { email }, `Verification code sent to ${email}`), 'success');
           setTimeout(() => otpInputRef.current?.focus(), 150);
         } else {
-          setPhoneError(sendRes.message || cleanErrorMessage(firebaseErr?.message, t('auth.sendOtpFailed', 'Unable to send verification code. Please try again.')));
+          // If the initial parallel send failed, attempt a fallback send
+          const fallbackRes = await sendOtp(e164, email, false, 'FIREBASE_WEB_ERROR', webErr?.code || webErr?.message);
+          if (fallbackRes.success) {
+            codeSentRef.current = true;
+            userInitiatedSendRef.current = false;
+            setDeliveryMethod('email');
+            setScreen('otp');
+            setTimer(60);
+            showToast(fallbackRes.message || t('auth.codeSentToEmail', { email }, `Verification code sent to ${email}`), 'success');
+            setTimeout(() => otpInputRef.current?.focus(), 150);
+          } else {
+            setPhoneError(fallbackRes.message || cleanErrorMessage(webErr?.message, t('auth.sendOtpFailed', 'Unable to send verification code. Please try again.')));
+          }
         }
       } catch (fallbackErr: any) {
         setPhoneError(cleanErrorMessage(fallbackErr?.message, t('auth.sendOtpFailed', 'Unable to send verification code. Please try again.')));
@@ -799,20 +872,79 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
               <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">{t('auth.verificationCode', 'Verification Code')}</h2>
 
               {/* Destination Pill */}
-              <div className="mt-2.5 p-3 bg-slate-50 rounded-2xl border border-slate-150 flex items-center justify-between">
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400">
-                    {deliveryMethod === 'sms' ? 'Sent code via SMS' : 'Sent verification code'}
-                  </p>
-                  <p className="text-sm font-extrabold text-slate-800 tracking-wide mt-0.5">{mobileNumber}</p>
-                </div>
-                <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                  <Smartphone className="h-4 w-4 text-primary" />
-                </div>
+              <div className="mt-2.5 p-3 bg-slate-50 rounded-2xl border border-slate-150 transition-all">
+                {deliveryMethod === 'sms_and_email' ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400">
+                        {t('auth.codeSentToBothDestinations', 'Sent code to Mobile & Email')}
+                      </p>
+                      <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                        Mobile & Email
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between bg-white px-3 py-2 rounded-xl border border-slate-100 shadow-2xs">
+                      <div className="flex items-center space-x-2.5 min-w-0">
+                        <div className="h-7 w-7 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+                          <Smartphone className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[9px] text-slate-400 font-bold uppercase leading-none mb-0.5">Mobile (SMS)</p>
+                          <p className="text-xs sm:text-sm font-extrabold text-slate-800 tracking-wide truncate">
+                            {country.code} {mobileNumber}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between bg-white px-3 py-2 rounded-xl border border-slate-100 shadow-2xs">
+                      <div className="flex items-center space-x-2.5 min-w-0">
+                        <div className="h-7 w-7 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
+                          <Mail className="h-4 w-4 text-emerald-600" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[9px] text-slate-400 font-bold uppercase leading-none mb-0.5">Email</p>
+                          <p className="text-xs sm:text-sm font-extrabold text-slate-800 tracking-wide truncate">
+                            {email}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : deliveryMethod === 'email' ? (
+                  <div className="flex items-center justify-between">
+                    <div className="min-w-0 flex-1 pr-3">
+                      <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400">
+                        {t('auth.sentViaEmail', 'Sent verification code via Email')}
+                      </p>
+                      <p className="text-xs sm:text-sm font-extrabold text-slate-800 tracking-wide mt-0.5 truncate">
+                        {email}
+                      </p>
+                    </div>
+                    <div className="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+                      <Mail className="h-4 w-4 text-emerald-600" />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <div className="min-w-0 flex-1 pr-3">
+                      <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400">
+                        {t('auth.sentViaSms', 'Sent verification code via SMS')}
+                      </p>
+                      <p className="text-xs sm:text-sm font-extrabold text-slate-800 tracking-wide mt-0.5 truncate">
+                        {country.code} {mobileNumber}
+                      </p>
+                    </div>
+                    <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                      <Smartphone className="h-4 w-4 text-primary" />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Live Auto-Reading SMS Animation Banner */}
+            {/* Live Auto-Reading SMS / Email Delivery Banner */}
             {isAutoVerifying ? (
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-2xl flex items-center space-x-3 text-slate-800 shadow-sm animate-pulse">
                 <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
@@ -823,6 +955,18 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
                   <p className="text-[11px] text-slate-600 font-medium">Verifying code and logging you in...</p>
                 </div>
                 <RefreshCw className="h-4 w-4 text-primary animate-spin shrink-0" />
+              </div>
+            ) : deliveryMethod === 'email' ? (
+              <div className="p-3 bg-emerald-50/70 border border-emerald-150 rounded-2xl flex items-center space-x-3 text-slate-700">
+                <div className="flex items-center justify-center h-8 w-8 rounded-xl bg-emerald-100 shrink-0">
+                  <Mail className="h-4 w-4 text-emerald-600" />
+                </div>
+                <div className="text-left flex-1 min-w-0">
+                  <p className="text-xs font-bold text-slate-800">Email Verification Code</p>
+                  <p className="text-[11px] text-slate-500 font-medium truncate">
+                    Check your inbox or spam folder for the 6-digit code
+                  </p>
+                </div>
               </div>
             ) : timer > 0 ? (
               <div className="p-3 bg-blue-50/70 border border-blue-150 rounded-2xl flex items-center space-x-3 text-slate-700">
@@ -873,9 +1017,11 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
               )}
 
               <p className="text-[11px] text-slate-400 mt-2 font-medium text-center">
-                {deliveryMethod === 'sms'
-                  ? t('auth.enterCodeDeliveredSms', 'Enter the 6-digit code delivered via SMS.')
-                  : t('auth.enterCodeDeliveredTo', 'Enter the 6-digit code delivered to your Email or SMS.')}
+                {deliveryMethod === 'email'
+                  ? t('auth.enterCodeDeliveredEmail', 'Enter the 6-digit code delivered to your Email.')
+                  : deliveryMethod === 'sms'
+                    ? t('auth.enterCodeDeliveredSms', 'Enter the 6-digit code delivered via SMS.')
+                    : t('auth.enterCodeDeliveredTo', 'Enter the 6-digit code delivered to your Email or SMS.')}
               </p>
             </div>
 

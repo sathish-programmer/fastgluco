@@ -64,6 +64,31 @@ const recordSafeOtpTelemetry = (
   }
 };
 
+const OTP_ENCRYPTION_KEY = crypto.createHash('sha256').update(process.env.JWT_SECRET || 'fallback_secret_key_12345!').digest();
+
+function encryptOtp(text: string): string {
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv('aes-256-cbc', OTP_ENCRYPTION_KEY, iv);
+  let encrypted = cipher.update(text, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  return iv.toString('hex') + ':' + encrypted;
+}
+
+function decryptOtp(text: string): string | null {
+  try {
+    const parts = text.split(':');
+    if (parts.length !== 2) return null;
+    const iv = Buffer.from(parts[0], 'hex');
+    const encryptedText = parts[1];
+    const decipher = crypto.createDecipheriv('aes-256-cbc', OTP_ENCRYPTION_KEY, iv);
+    let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+  } catch {
+    return null;
+  }
+}
+
 export class AuthController {
   public static async sendOtp(req: Request, res: Response) {
     try {
@@ -76,26 +101,29 @@ export class AuthController {
       // Normalize phone number to E.164 (+91 for 10-digit Indian numbers)
       const cleanPhone = SMSService.normalizePhoneNumber(mobileNumber);
 
-      // APPLE APP STORE REVIEWER BYPASS (Restricted to iOS or Apple domain emails)
+      // APPLE APP STORE OFFICIAL REVIEWER ACCOUNT BYPASS (Matches App Store Review Notes)
       const digits = (cleanPhone || '').replace(/[^0-9]/g, '');
       const rawEmail = (email || '').toLowerCase().trim();
-      const meta = extractTelemetryMeta(req);
-      const isReviewAccount = (process.env.ENABLE_APPLE_REVIEW_BYPASS !== 'false') &&
-        (meta.platform === 'ios' || rawEmail.endsWith('@apple.com') || rawEmail === 'review@mitoreboot.in') &&
-        (digits.endsWith('9597042107') ||
-          digits.endsWith('9597042108') ||
+      const isOfficialReviewer = (process.env.ENABLE_APPLE_REVIEW_BYPASS !== 'false') &&
+        ((digits.endsWith('9597042107') && rawEmail === 'sathishkumarksk007@gmail.com') ||
           digits.endsWith('9999999999') ||
           digits.endsWith('15555555555') ||
           digits === '5555555555' ||
           rawEmail === 'review@mitoreboot.in' ||
-          rawEmail === 'sathishkumarsk007@gmail.com' ||
-          rawEmail === 'sathishkumarksk007@gmail.com' ||
-          rawEmail === 'sathishkumar@gmail.com' ||
           rawEmail.endsWith('@apple.com'));
 
-      if (isReviewAccount) {
+      if (isOfficialReviewer) {
         recordSafeOtpTelemetry(req, 'REQUEST', 'mock', 'SUCCESS', cleanPhone);
-        return res.status(200).json({ success: true, message: 'OTP sent successfully (Apple Reviewer Account)' });
+        // Also deliver code via email if Brevo is available
+        EmailService.sendOtpEmail(rawEmail, '123456').catch(err => {
+          console.warn('[Background] Reviewer OTP email dispatch notice:', err?.message || err);
+        });
+        return res.status(200).json({
+          success: true,
+          message: `Verification code sent to ${rawEmail}.`,
+          method: 'both',
+          smsDelivered: true
+        });
       }
 
       if (!/^\+[1-9]\d{1,14}$/.test(cleanPhone)) {
@@ -127,6 +155,35 @@ export class AuthController {
       });
       const now = new Date();
 
+      const clientPlatform = (req.body.platform || req.headers['x-platform'] || '').toString().toLowerCase().trim();
+      const isIOS = clientPlatform === 'ios';
+      const fallbackReason = (req.body.fallbackReason || 'DIRECT').toString().slice(0, 50);
+      const failureCategory = (req.body.failureCategory || 'NONE').toString().slice(0, 50);
+      const isFallbackSms = req.body.fallbackSms === true;
+
+      // ─── SPECIAL CASE: iOS Fast2SMS Fallback (Reuse existing active OTP without duplicate email) ───
+      if (isFallbackSms && isIOS && otpRecord && otpRecord.encryptedOtp) {
+        const existingPlainOtp = decryptOtp(otpRecord.encryptedOtp);
+        const isNotExpired = (now.getTime() - otpRecord.createdAt.getTime()) < 10 * 60 * 1000;
+
+        if (existingPlainOtp && isNotExpired) {
+          console.log(`[Auth /send-otp] iOS Fast2SMS fallback triggered | Reason: "${fallbackReason}" | Failure: "${failureCategory}" | Reusing active OTP (suppressing duplicate email)`);
+          const smsResult = await SMSService.sendSMS(cleanPhone, existingPlainOtp, clientPlatform);
+          const channelUsed: OtpChannel = smsResult.success ? 'both' : 'email';
+          recordSafeOtpTelemetry(req, 'REQUEST', channelUsed, smsResult.success ? 'SUCCESS' : 'FAILED', cleanPhone, smsResult.reason);
+
+          return res.status(200).json({
+            success: true,
+            message: smsResult.success
+              ? 'Verification code sent via SMS fallback.'
+              : 'SMS delivery unavailable (DLT template required). Please use the verification code sent to your email.',
+            method: channelUsed,
+            smsDelivered: smsResult.success,
+            duplicateEmailSuppressed: true
+          });
+        }
+      }
+
       if (otpRecord) {
         if (otpRecord.blockedUntil && otpRecord.blockedUntil > now) {
           recordSafeOtpTelemetry(req, 'REQUEST', 'both', 'RATE_LIMITED', cleanPhone, 'ACCOUNT_COOLDOWN_BLOCKED');
@@ -156,12 +213,14 @@ export class AuthController {
       // Generate random 6-digit OTP
       const plainOtp = crypto.randomInt(100000, 999999).toString();
       const otpHash = crypto.createHash('sha256').update(plainOtp).digest('hex');
+      const encryptedOtp = encryptOtp(plainOtp);
 
       if (!otpRecord) {
         otpRecord = new Otp({
           mobileNumber: cleanPhone,
           email: cleanEmail,
           otpHash,
+          encryptedOtp,
           attemptCount: 0,
           resendCount: 1,
           lastSentAt: now,
@@ -171,6 +230,7 @@ export class AuthController {
         otpRecord.mobileNumber = cleanPhone;
         otpRecord.email = cleanEmail;
         otpRecord.otpHash = otpHash;
+        otpRecord.encryptedOtp = encryptedOtp;
         otpRecord.attemptCount = 0;
         otpRecord.resendCount += 1;
         otpRecord.lastSentAt = now;
@@ -178,39 +238,53 @@ export class AuthController {
       }
       await otpRecord.save();
 
-      let methodUsed: OtpChannel = 'both';
+      let methodUsed: OtpChannel = 'email';
 
-      // Check mock mode
-      if (process.env.OTP_MOCK_MODE === 'true') {
-        console.log(`[MOCK OTP] OTP for ${cleanPhone} / ${cleanEmail} is: ${plainOtp}`);
-        methodUsed = 'mock';
-      } else {
-        const clientPlatform = (req.body.platform || req.headers['x-platform'] || '').toString().toLowerCase().trim();
-        const isIOS = clientPlatform === 'ios';
-
-        // STRICT POLICY: Fast2SMS fallback is exclusively allowed for iOS login/signup.
-        // Android, Web, and other platforms NEVER receive SMS via Fast2SMS.
-        const shouldSendSms = req.body.sendSms !== false && isIOS;
-        if (shouldSendSms) {
-          // 1. Send SMS via Fast2SMS (iOS only)
-          SMSService.sendSMS(cleanPhone, `Your Mito Reboot verification code is: ${plainOtp}. Valid for 10 minutes.`, plainOtp, clientPlatform).catch(err => {
-            console.error('[SMS Service] Failed to send SMS via Fast2SMS:', err);
-          });
-        } else {
-          methodUsed = 'email';
-          if (req.body.sendSms !== false && !isIOS) {
-            console.log(`[SMS Service] Fast2SMS explicitly BLOCKED for non-iOS platform ("${clientPlatform || 'unknown'}"). Fast2SMS fallback is strictly restricted to iOS login/signup.`);
-          }
-        }
-
-        // 2. ALWAYS send Email via Brevo SMTP / configured email service
-        EmailService.sendOtpEmail(cleanEmail, plainOtp).catch(err => {
-          console.error('[Background] Failed to send OTP email:', err);
-        });
+      // Always log in development or mock mode for easy debugging
+      if (process.env.OTP_MOCK_MODE === 'true' || process.env.NODE_ENV !== 'production') {
+        console.log(`[DEV OTP] OTP for ${cleanPhone} / ${cleanEmail} is: ${plainOtp}`);
       }
 
+      console.log(`[Auth /send-otp] Provider selection request | Platform: "${clientPlatform || 'unknown'}" | Fallback Reason: "${fallbackReason}" | Failure Category: "${failureCategory}"`);
+
+      // STRICT POLICY: Fast2SMS fallback is exclusively allowed for iOS login/signup.
+      // Android, Web, and other platforms NEVER receive SMS via Fast2SMS.
+      const shouldSendSms = req.body.sendSms !== false && isIOS;
+      let smsResult: { success: boolean; routeUsed?: string; reason?: string } = { success: false, reason: 'NOT_ATTEMPTED' };
+
+      if (shouldSendSms) {
+        console.log(`[Auth /send-otp] Triggering iOS Fast2SMS fallback | Provider: Fast2SMS (low-cost route only)`);
+        smsResult = await SMSService.sendSMS(cleanPhone, plainOtp, clientPlatform);
+        if (smsResult.success) {
+          methodUsed = 'both';
+          console.log(`[Auth /send-otp] Fast2SMS OTP delivered via route "${smsResult.routeUsed || 'otp'}"`);
+        } else {
+          methodUsed = 'email';
+          console.log(`[Auth /send-otp] Fast2SMS low-cost OTP route failed/rejected (${smsResult.reason}). Quick route (₹7) permanently disabled. Fallback to Email OTP.`);
+        }
+      } else {
+        methodUsed = 'email';
+        if (req.body.sendSms !== false && !isIOS) {
+          console.log(`[SMS Service] Fast2SMS explicitly BLOCKED for non-iOS platform ("${clientPlatform || 'unknown'}"). Fast2SMS fallback is strictly restricted to iOS login/signup.`);
+        }
+      }
+
+      // 2. ALWAYS send Email via Brevo SMTP / configured email service (Requirement 2)
+      EmailService.sendOtpEmail(cleanEmail, plainOtp).catch(err => {
+        console.error('[Background] Failed to send OTP email via Brevo SMTP:', err);
+      });
+
       recordSafeOtpTelemetry(req, 'REQUEST', methodUsed, 'SUCCESS', cleanPhone);
-      return res.status(200).json({ success: true, message: 'OTP sent successfully', method: methodUsed });
+      const userMessage = methodUsed === 'both'
+        ? `Verification code sent to your mobile and ${cleanEmail}.`
+        : `Verification code sent to ${cleanEmail}.`;
+
+      return res.status(200).json({
+        success: true,
+        message: userMessage,
+        method: methodUsed,
+        smsDelivered: methodUsed === 'both'
+      });
     } catch (error: any) {
       recordSafeOtpTelemetry(req, 'REQUEST', 'both', 'FAILED', req.body?.mobileNumber || 'unknown', 'INTERNAL_SERVER_ERROR');
       if (error.code === 11000) {
@@ -299,20 +373,33 @@ export class AuthController {
       });
       let isNewUser = false;
 
+      const isAppleReviewer = rawEmail.endsWith('@apple.com') || rawEmail === 'review@mitoreboot.in';
+
       if (!user) {
-        // Brand new user — create minimal record
+        // Brand new user — create record (auto-populate for Apple reviewers to bypass onboarding steps)
         user = new User({
           mobileNumber: cleanPhone,
           email: email.toLowerCase().trim(),
+          name: isAppleReviewer ? 'Apple Reviewer' : undefined,
           isPhoneVerified: true,
           spikeThreshold: 90,
-          currency: 'INR'
+          currency: 'INR',
+          gender: isAppleReviewer ? 'Other' : undefined,
+          age: isAppleReviewer ? 30 : undefined,
+          height: isAppleReviewer ? 170 : undefined,
+          weight: isAppleReviewer ? 70 : undefined,
+          activityLevel: isAppleReviewer ? 'Moderately active' : undefined,
+          goal: isAppleReviewer ? 'Maintain weight' : undefined,
+          cancerJourney: isAppleReviewer ? 'PREVENTION' : undefined,
+          cancerDisclaimerAccepted: isAppleReviewer ? true : false,
+          termsAccepted: isAppleReviewer ? true : false,
+          termsAcceptedAt: isAppleReviewer ? new Date() : undefined
         });
         await user.save();
-        isNewUser = true;
+        isNewUser = isAppleReviewer ? false : true;
       } else {
-        // Existing user — if profile is incomplete send back to onboarding
-        if (!user.name) {
+        // Existing user — if profile is incomplete send back to onboarding unless reviewer
+        if (!user.name && !isAppleReviewer) {
           isNewUser = true;
         }
         user.isPhoneVerified = true;
