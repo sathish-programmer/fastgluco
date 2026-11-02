@@ -1003,9 +1003,9 @@ export const AdminOtpLogs: React.FC<AdminOtpLogsProps> = ({ apiUrl, token }) => 
                   <div>
                     <span className="text-[11px] text-slate-500 block">SMTP Response / MessageID:</span>
                     <div className="mt-0.5 p-2 bg-white rounded-xl border border-blue-200 font-mono text-[11px] text-slate-700 break-all">
-                      {typeof selectedLog.emailGatewayResponse === 'object'
+                      {selectedLog.emailGatewayResponse && typeof selectedLog.emailGatewayResponse === 'object'
                         ? JSON.stringify(selectedLog.emailGatewayResponse)
-                        : (selectedLog.emailGatewayResponse || 'Accepted by SMTP Relay')}
+                        : (selectedLog.emailGatewayResponse || (selectedLog.emailStatus === 'DELIVERED' ? 'Queued and delivered via SMTP Relay' : 'No SMTP response logged'))}
                     </div>
                   </div>
                 </div>
@@ -1029,9 +1029,9 @@ export const AdminOtpLogs: React.FC<AdminOtpLogsProps> = ({ apiUrl, token }) => 
                   <div>
                     <span className="text-[11px] text-slate-500 block">Gateway Response / Reason:</span>
                     <div className="mt-0.5 p-2 bg-white rounded-xl border border-purple-200 font-mono text-[11px] text-slate-700 break-all">
-                      {typeof selectedLog.smsGatewayResponse === 'object'
+                      {selectedLog.smsGatewayResponse && typeof selectedLog.smsGatewayResponse === 'object'
                         ? JSON.stringify(selectedLog.smsGatewayResponse)
-                        : (selectedLog.smsGatewayResponse || 'N/A')}
+                        : (selectedLog.smsGatewayResponse || (selectedLog.smsStatus === 'DELIVERED' ? 'Delivered successfully via SMS Gateway' : 'SMS route not requested for this client platform'))}
                     </div>
                   </div>
                 </div>

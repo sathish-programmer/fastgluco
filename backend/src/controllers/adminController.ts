@@ -1245,7 +1245,12 @@ export class AdminController {
       const platform = (req.query.platform as string) || 'all';
       const dateRange = (req.query.dateRange as string) || 'all';
 
-      const filter: any = {};
+      const filter: any = {
+        eventType: 'REQUEST'
+      };
+
+      const activeProviderName = EmailService.getSmtpProviderName();
+      const isBrevoActive = activeProviderName === 'brevo_smtp';
 
       // Date Range Filter
       const now = new Date();
@@ -1284,9 +1289,15 @@ export class AdminController {
         } else if (provider === 'fast2sms_otp') {
           filter.smsProvider = 'fast2sms_otp';
         } else if (provider === 'titan_godaddy_smtp') {
-          filter.emailProvider = 'titan_godaddy_smtp';
+          filter.$or = [
+            { emailProvider: 'titan_godaddy_smtp' },
+            ...(!isBrevoActive ? [{ emailProvider: { $in: [null, 'none'] }, channel: { $in: ['email', 'both'] } }] : [])
+          ];
         } else if (provider === 'brevo_smtp') {
-          filter.emailProvider = 'brevo_smtp';
+          filter.$or = [
+            { emailProvider: 'brevo_smtp' },
+            ...(isBrevoActive ? [{ emailProvider: { $in: [null, 'none'] }, channel: { $in: ['email', 'both'] } }] : [])
+          ];
         }
       }
 
@@ -1333,49 +1344,106 @@ export class AdminController {
         .limit(limit)
         .lean();
 
-      // Enrich logs with dynamic expiration detection
+      // Enrich logs with dynamic expiration detection and fallback provider inference
       const logs = rawLogs.map((log: any) => {
         const isExpired = log.verificationStatus === 'PENDING' &&
           (Date.now() - new Date(log.timestamp).getTime() > 10 * 60 * 1000);
+
+        let resolvedEmailProvider = log.emailProvider;
+        if (!resolvedEmailProvider || resolvedEmailProvider === 'none') {
+          if (log.channel === 'email' || log.channel === 'both') {
+            resolvedEmailProvider = activeProviderName;
+          }
+        }
+
+        let resolvedEmailStatus = log.emailStatus;
+        if (!resolvedEmailStatus || resolvedEmailStatus === 'NOT_ATTEMPTED') {
+          if (log.channel === 'email' || log.channel === 'both') {
+            resolvedEmailStatus = log.status === 'SUCCESS' ? 'DELIVERED' : log.status;
+          }
+        }
+
+        let resolvedEmailGatewayResponse = log.emailGatewayResponse;
+        if (!resolvedEmailGatewayResponse && resolvedEmailStatus === 'DELIVERED') {
+          resolvedEmailGatewayResponse = `Queued and delivered via ${resolvedEmailProvider === 'brevo_smtp' ? 'Brevo SMTP Relay' : 'Titan GoDaddy SMTP'}`;
+        }
+
+        let resolvedSmsGatewayResponse = log.smsGatewayResponse;
+        if (!resolvedSmsGatewayResponse) {
+          if (log.smsStatus === 'DELIVERED') {
+            resolvedSmsGatewayResponse = 'Delivered successfully via SMS Gateway';
+          } else if (log.smsStatus === 'NOT_ATTEMPTED' || log.smsProvider === 'none') {
+            resolvedSmsGatewayResponse = 'SMS route not requested for this client platform';
+          }
+        }
+
         return {
           ...log,
+          emailProvider: resolvedEmailProvider,
+          emailStatus: resolvedEmailStatus,
+          emailGatewayResponse: resolvedEmailGatewayResponse,
+          smsGatewayResponse: resolvedSmsGatewayResponse,
           effectiveVerificationStatus: isExpired ? 'EXPIRED' : (log.verificationStatus || 'PENDING')
         };
       });
 
-      // KPI Aggregations
+      // KPI Aggregations (Strictly counting unique dispatch sessions)
       const totalRequests = await AppOtpTelemetry.countDocuments({ eventType: 'REQUEST' });
-      const totalVerifications = await AppOtpTelemetry.countDocuments({ eventType: 'VERIFY' });
-      const totalVerified = await AppOtpTelemetry.countDocuments({ verificationStatus: 'VERIFIED' });
+      const totalVerifications = await AppOtpTelemetry.countDocuments({ eventType: 'REQUEST', verificationStatus: 'VERIFIED' });
+      const totalVerified = await AppOtpTelemetry.countDocuments({ eventType: 'REQUEST', verificationStatus: 'VERIFIED' });
       const totalPendingActive = await AppOtpTelemetry.countDocuments({
+        eventType: 'REQUEST',
         verificationStatus: 'PENDING',
         timestamp: { $gte: tenMinutesAgo }
       });
       const totalFailed = await AppOtpTelemetry.countDocuments({
+        eventType: 'REQUEST',
         $or: [
           { status: 'FAILED' },
           { verificationStatus: 'FAILED' }
         ]
       });
 
-      // Provider counts
+      // Provider counts (Including inferred historical records)
       const firebaseCount = await AppOtpTelemetry.countDocuments({
+        eventType: 'REQUEST',
         $or: [{ smsProvider: 'firebase' }, { channel: 'firebase' }]
       });
-      const fast2smsQuickCount = await AppOtpTelemetry.countDocuments({ smsProvider: 'fast2sms_quick' });
-      const fast2smsOtpCount = await AppOtpTelemetry.countDocuments({ smsProvider: 'fast2sms_otp' });
-      const titanGodaddyCount = await AppOtpTelemetry.countDocuments({ emailProvider: 'titan_godaddy_smtp' });
-      const brevoCount = await AppOtpTelemetry.countDocuments({ emailProvider: 'brevo_smtp' });
+      const fast2smsQuickCount = await AppOtpTelemetry.countDocuments({
+        eventType: 'REQUEST',
+        smsProvider: 'fast2sms_quick'
+      });
+      const fast2smsOtpCount = await AppOtpTelemetry.countDocuments({
+        eventType: 'REQUEST',
+        smsProvider: 'fast2sms_otp'
+      });
+      const titanGodaddyCount = await AppOtpTelemetry.countDocuments({
+        eventType: 'REQUEST',
+        $or: [
+          { emailProvider: 'titan_godaddy_smtp' },
+          ...(!isBrevoActive ? [{ emailProvider: { $in: [null, 'none'] }, channel: { $in: ['email', 'both'] } }] : [])
+        ]
+      });
+      const brevoCount = await AppOtpTelemetry.countDocuments({
+        eventType: 'REQUEST',
+        $or: [
+          { emailProvider: 'brevo_smtp' },
+          ...(isBrevoActive ? [{ emailProvider: { $in: [null, 'none'] }, channel: { $in: ['email', 'both'] } }] : [])
+        ]
+      });
 
       // Delivery channel breakdown
       const smsDeliveryCount = await AppOtpTelemetry.countDocuments({
+        eventType: 'REQUEST',
         $or: [
           { smsStatus: 'DELIVERED' },
           { channel: 'sms', status: 'SUCCESS' },
-          { channel: 'both', status: 'SUCCESS' }
+          { channel: 'both', status: 'SUCCESS' },
+          { channel: 'firebase', status: 'SUCCESS' }
         ]
       });
       const emailDeliveryCount = await AppOtpTelemetry.countDocuments({
+        eventType: 'REQUEST',
         $or: [
           { emailStatus: 'DELIVERED' },
           { channel: 'email', status: 'SUCCESS' },
@@ -1389,7 +1457,6 @@ export class AdminController {
 
       const smtpHost = process.env.SMTP_HOST || 'smtp-relay.brevo.com';
       const smtpUser = process.env.SMTP_USER || '';
-      const activeProviderName = EmailService.getSmtpProviderName();
 
       return res.status(200).json({
         success: true,

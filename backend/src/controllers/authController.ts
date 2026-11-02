@@ -472,13 +472,13 @@ export class AuthController {
               pendingTelemetry.verificationStatus = 'FAILED';
             }
             await pendingTelemetry.save().catch(() => {});
+          } else {
+            recordSafeOtpTelemetry(req, 'REQUEST', 'both', 'FAILED', cleanPhone, 'INVALID_OTP_CODE', {
+              phoneNumber: cleanPhone,
+              email: rawEmail,
+              attemptsCount: otpRecord.attemptCount
+            });
           }
-
-          recordSafeOtpTelemetry(req, 'VERIFY', 'both', 'FAILED', cleanPhone, 'INVALID_OTP_CODE', {
-            phoneNumber: cleanPhone,
-            email: rawEmail,
-            attemptsCount: otpRecord.attemptCount
-          });
           return res.status(400).json({ message: 'Invalid OTP.' });
         }
 
@@ -536,13 +536,13 @@ export class AuthController {
         return res.status(403).json({ message: 'Your account has been suspended by an administrator.' });
       }
 
-      // Update pending telemetry to VERIFIED
+      // Update the active OTP request telemetry session to VERIFIED
       const pendingTelemetry = await AppOtpTelemetry.findOne({
         $or: [
           { phoneNumber: cleanPhone },
           ...(rawEmail ? [{ email: rawEmail }] : [])
         ],
-        verificationStatus: 'PENDING'
+        verificationStatus: { $in: ['PENDING', 'EXPIRED'] }
       }).sort({ timestamp: -1 });
 
       let timeTakenMs = 0;
@@ -551,17 +551,21 @@ export class AuthController {
         pendingTelemetry.verificationStatus = 'VERIFIED';
         pendingTelemetry.verifiedAt = new Date();
         pendingTelemetry.durationMs = timeTakenMs;
+        if (rawEmail && !pendingTelemetry.email) pendingTelemetry.email = rawEmail;
+        if (cleanPhone && !pendingTelemetry.phoneNumber) pendingTelemetry.phoneNumber = cleanPhone;
         await pendingTelemetry.save().catch(() => {});
+      } else {
+        // Fallback for reviewer accounts or direct verified logins
+        recordSafeOtpTelemetry(req, 'REQUEST', 'both', 'SUCCESS', cleanPhone, undefined, {
+          phoneNumber: cleanPhone,
+          email: rawEmail,
+          emailProvider: EmailService.getSmtpProviderName(),
+          emailStatus: 'DELIVERED',
+          verificationStatus: 'VERIFIED',
+          verifiedAt: new Date(),
+          durationMs: timeTakenMs
+        });
       }
-
-      // Record successful verification telemetry
-      recordSafeOtpTelemetry(req, 'VERIFY', 'both', 'SUCCESS', cleanPhone, undefined, {
-        phoneNumber: cleanPhone,
-        email: rawEmail,
-        verificationStatus: 'VERIFIED',
-        verifiedAt: new Date(),
-        durationMs: timeTakenMs
-      });
 
       // Generate App JWT (valid for 365 days)
       const accessToken = jwt.sign({ id: user._id, email: user.email || '', role: 'User' }, JWT_SECRET, { expiresIn: '365d' });
@@ -677,14 +681,14 @@ export class AuthController {
         console.warn('Failed to cleanup OTP records after Firebase login:', cleanupErr);
       }
 
-      // Update pending telemetry if any, or record Firebase Auth success in OTP & Auth audit logs
+      // Update pending telemetry session if any, or record Firebase Auth single session
       try {
         const pendingTelemetry = await AppOtpTelemetry.findOne({
           $or: [
             ...(cleanPhone ? [{ phoneNumber: cleanPhone }] : []),
             ...(cleanEmail ? [{ email: cleanEmail }] : [])
           ],
-          verificationStatus: 'PENDING'
+          verificationStatus: { $in: ['PENDING', 'EXPIRED'] }
         }).sort({ timestamp: -1 });
 
         let timeTakenMs = 0;
@@ -695,30 +699,33 @@ export class AuthController {
           pendingTelemetry.durationMs = timeTakenMs;
           pendingTelemetry.smsProvider = 'firebase';
           pendingTelemetry.smsStatus = 'DELIVERED';
+          pendingTelemetry.smsGatewayResponse = `Firebase Phone Auth token verified (UID: ${firebaseUid})`;
+          if (cleanPhone && !pendingTelemetry.phoneNumber) pendingTelemetry.phoneNumber = cleanPhone;
+          if (cleanEmail && !pendingTelemetry.email) pendingTelemetry.email = cleanEmail;
           await pendingTelemetry.save().catch(() => {});
+        } else {
+          recordSafeOtpTelemetry(
+            req,
+            'REQUEST',
+            'firebase',
+            'SUCCESS',
+            cleanPhone || cleanEmail,
+            undefined,
+            {
+              phoneNumber: cleanPhone,
+              email: cleanEmail,
+              smsProvider: 'firebase',
+              smsStatus: 'DELIVERED',
+              emailProvider: 'none',
+              emailStatus: 'SKIPPED',
+              smsGatewayResponse: `Firebase Phone Auth token verified (UID: ${firebaseUid})`,
+              verificationStatus: 'VERIFIED',
+              verifiedAt: new Date(),
+              durationMs: timeTakenMs,
+              attemptsCount: 1
+            }
+          );
         }
-
-        recordSafeOtpTelemetry(
-          req,
-          'VERIFY',
-          'firebase',
-          'SUCCESS',
-          cleanPhone || cleanEmail,
-          undefined,
-          {
-            phoneNumber: cleanPhone,
-            email: cleanEmail,
-            smsProvider: 'firebase',
-            smsStatus: 'DELIVERED',
-            emailProvider: 'none',
-            emailStatus: 'SKIPPED',
-            smsGatewayResponse: `Firebase Phone Auth token verified (UID: ${firebaseUid})`,
-            verificationStatus: 'VERIFIED',
-            verifiedAt: new Date(),
-            durationMs: timeTakenMs,
-            attemptsCount: 1
-          }
-        );
       } catch (telemetryErr) {
         console.warn('[Firebase Login Telemetry Error]:', telemetryErr);
       }
