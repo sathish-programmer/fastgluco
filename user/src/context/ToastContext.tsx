@@ -20,7 +20,15 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const showToast = useCallback((message: string, type: ToastType = 'success', durationMs: number = 4000) => {
     const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
-    setToasts((prev) => [...prev, { id, message, type }]);
+    setToasts((prev) => {
+      // Prevent duplicate identical toasts from stacking
+      if (prev.some((t) => t.message === message)) {
+        return prev;
+      }
+      // Limit to at most 3 visible toasts on screen
+      const trimmed = prev.slice(-2);
+      return [...trimmed, { id, message, type }];
+    });
 
     // Auto dismiss after duration
     setTimeout(() => {

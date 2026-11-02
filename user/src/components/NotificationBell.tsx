@@ -23,12 +23,13 @@ export const NotificationBell: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notifiedIdsRef = useRef<Set<string>>(new Set());
+  const isInitializedRef = useRef<boolean>(false);
 
-  // Initialize notifiedIds with existing unread notification IDs on mount
+  // Initialize and poll notifications
   useEffect(() => {
     if (!token) return;
 
-    const initNotifiedIds = async () => {
+    const fetchNotificationsData = async (isPolling: boolean = false) => {
       try {
         const res = await fetch(`${apiUrl}/notifications`, {
           headers: { 'Authorization': `Bearer ${token}` }
@@ -36,63 +37,61 @@ export const NotificationBell: React.FC = () => {
         if (res.ok) {
           const data = await res.json();
           const unread = data.filter((n: any) => !n.isRead);
-          unread.forEach((n: any) => notifiedIdsRef.current.add(n._id));
-          setUnreadCount(unread.length);
-          setNotifications(data);
-        }
-      } catch (e) {
-        console.error('Error initializing notifications:', e);
-      }
-    };
 
-    initNotifiedIds();
-  }, [token]);
-
-  // Poll for notifications and show toast if a new unread notification arrives
-  useEffect(() => {
-    if (!token) return;
-
-    const pollNotifications = async () => {
-      try {
-        const res = await fetch(`${apiUrl}/notifications`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const unread = data.filter((n: any) => !n.isRead);
-          
-          // Trigger toast alert for any unread notification that we haven't seen yet
-          unread.forEach((n: any) => {
-            if (!notifiedIdsRef.current.has(n._id)) {
-              notifiedIdsRef.current.add(n._id);
-              showToast(`Notification: ${n.title} - ${n.body}`, 'info');
+          if (!isInitializedRef.current) {
+            // First successful load (or first reconnect after being offline):
+            // Mark all existing unread notifications as seen so we DO NOT flood the user with old toasts!
+            unread.forEach((n: any) => notifiedIdsRef.current.add(n._id));
+            isInitializedRef.current = true;
+          } else if (isPolling) {
+            // Only alert for genuinely NEW notifications that arrived while actively using the app
+            const newUnread = unread.filter((n: any) => !notifiedIdsRef.current.has(n._id));
+            if (newUnread.length > 0) {
+              newUnread.forEach((n: any) => notifiedIdsRef.current.add(n._id));
+              if (newUnread.length === 1) {
+                showToast(`Notification: ${newUnread[0].title} - ${newUnread[0].body}`, 'info');
+              } else {
+                showToast(`You have ${newUnread.length} new notifications`, 'info');
+              }
             }
-          });
+          }
 
           setUnreadCount(unread.length);
           setNotifications(data);
         }
       } catch (e) {
-        console.error('Error polling notifications:', e);
+        // Network offline or failed - don't mark as initialized until first successful fetch
       }
     };
 
-    const interval = setInterval(pollNotifications, 15000); // Poll every 15s
+    // Initial load
+    fetchNotificationsData(false);
+
+    // Poll every 30s instead of aggressive 15s
+    const interval = setInterval(() => fetchNotificationsData(true), 30000);
 
     const handleFCMReceived = (e: any) => {
       const notif = e.detail || {};
       if (notif.title) {
         showToast(`${notif.title}: ${notif.body || ''}`, 'info');
       }
-      pollNotifications();
+      fetchNotificationsData(true);
     };
+
+    const handleOnline = () => {
+      // Reconnected to internet: fetch cleanly without toast spam
+      fetchNotificationsData(false);
+    };
+
     window.addEventListener('fcm_notification_received', handleFCMReceived);
+    window.addEventListener('online', handleOnline);
 
     return () => {
       clearInterval(interval);
       window.removeEventListener('fcm_notification_received', handleFCMReceived);
+      window.removeEventListener('online', handleOnline);
     };
-  }, [token, showToast]);
+  }, [token, apiUrl, showToast]);
 
   // Handle click outside to close dropdown
   useEffect(() => {
