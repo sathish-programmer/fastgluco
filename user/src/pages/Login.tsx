@@ -153,6 +153,7 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
   const codeSentRef = useRef<boolean>(false);
   const fallbackTriggeredRef = useRef<boolean>(false);
   const userInitiatedSendRef = useRef<boolean>(false);
+  const iosTimeoutTimerRef = useRef<any>(null);
 
   useEffect(() => { mobileNumberRef.current = mobileNumber; }, [mobileNumber]);
   useEffect(() => { emailRef.current = email; }, [email]);
@@ -169,6 +170,10 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
 
     const codeSentSub = FirebaseAuthentication.addListener('phoneCodeSent', (event) => {
       console.log('[Native Firebase] phoneCodeSent event received, verificationId:', event.verificationId);
+      if (iosTimeoutTimerRef.current) {
+        clearTimeout(iosTimeoutTimerRef.current);
+        iosTimeoutTimerRef.current = null;
+      }
       if (!isMounted) return;
       if (fallbackTriggeredRef.current) {
         console.warn('[Native Firebase] Ignoring late phoneCodeSent event because fallback OTP was already dispatched.');
@@ -213,6 +218,10 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
     });
 
     const failedSub = FirebaseAuthentication.addListener('phoneVerificationFailed', async (event) => {
+      if (iosTimeoutTimerRef.current) {
+        clearTimeout(iosTimeoutTimerRef.current);
+        iosTimeoutTimerRef.current = null;
+      }
       const errorMsg = event.message || 'Firebase phone verification failed.';
       const errorCode = (event as any).code || 'VERIFICATION_FAILED';
       console.warn('[Firebase Auth] Native Firebase phoneVerificationFailed:', errorCode, errorMsg);
@@ -454,18 +463,18 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
     // 1. Native Mobile (iOS & Android): Native Firebase Phone Auth with Google Play Integrity / APNs
     if (Capacitor.isNativePlatform()) {
       const isIOS = Capacitor.getPlatform() === 'ios';
-      let iosTimeoutTimer: any = null;
 
       if (isIOS) {
-        // Configurable safety timeout for iOS Native Firebase (15 seconds)
-        // If neither phoneCodeSent nor phoneVerificationFailed fired within 15s, seamlessly fallback.
-        iosTimeoutTimer = setTimeout(async () => {
+        // Safety timeout for iOS Native Firebase (35 seconds)
+        // Gives ample time for silent APNs delivery or user reCAPTCHA challenge.
+        if (iosTimeoutTimerRef.current) clearTimeout(iosTimeoutTimerRef.current);
+        iosTimeoutTimerRef.current = setTimeout(async () => {
           if (!codeSentRef.current && screenRef.current !== 'otp' && !fallbackTriggeredRef.current) {
-            console.warn('[Firebase Auth] iOS Native Firebase timed out (15s). Triggering Fast2SMS fallback...');
+            console.warn('[Firebase Auth] iOS Native Firebase timed out (35s). Triggering fallback OTP...');
             fallbackTriggeredRef.current = true;
-            await triggerIosFallback('FIREBASE_NATIVE_TIMEOUT', 'TIMEOUT_15S');
+            await triggerIosFallback('FIREBASE_NATIVE_TIMEOUT', 'TIMEOUT_35S');
           }
-        }, 15000);
+        }, 35000);
       }
 
       try {
@@ -475,7 +484,10 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
         await FirebaseAuthentication.signInWithPhoneNumber({ phoneNumber: e164 });
         // Native phoneCodeSent listener will transition screen to 'otp' and set codeSentRef.current = true
       } catch (nativeErr: any) {
-        if (iosTimeoutTimer) clearTimeout(iosTimeoutTimer);
+        if (iosTimeoutTimerRef.current) {
+          clearTimeout(iosTimeoutTimerRef.current);
+          iosTimeoutTimerRef.current = null;
+        }
         console.warn(`[Firebase Auth] Native Firebase Phone Auth (${Capacitor.getPlatform()}) error:`, nativeErr);
 
         if (!codeSentRef.current && !fallbackTriggeredRef.current) {

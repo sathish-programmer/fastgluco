@@ -253,14 +253,14 @@ export class AuthController {
       let smsResult: { success: boolean; routeUsed?: string; reason?: string } = { success: false, reason: 'NOT_ATTEMPTED' };
 
       if (shouldSendSms) {
-        console.log(`[Auth /send-otp] Triggering iOS Fast2SMS fallback | Provider: Fast2SMS (low-cost route only)`);
+        console.log(`[Auth /send-otp] Triggering iOS Fast2SMS fallback | Provider: Fast2SMS (low-cost route first, Quick route fallback)`);
         smsResult = await SMSService.sendSMS(cleanPhone, plainOtp, clientPlatform);
         if (smsResult.success) {
           methodUsed = 'both';
           console.log(`[Auth /send-otp] Fast2SMS OTP delivered via route "${smsResult.routeUsed || 'otp'}"`);
         } else {
           methodUsed = 'email';
-          console.log(`[Auth /send-otp] Fast2SMS low-cost OTP route failed/rejected (${smsResult.reason}). Quick route (₹7) permanently disabled. Fallback to Email OTP.`);
+          console.log(`[Auth /send-otp] Fast2SMS OTP routes failed (${smsResult.reason}). Fallback to Email OTP.`);
         }
       } else {
         methodUsed = 'email';

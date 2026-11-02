@@ -22,8 +22,8 @@ export class SMSService {
 
   /**
    * Send OTP via Fast2SMS (Instant Indian SMS gateway)
-   * STRICT POLICY: Uses ONLY low-cost DLT/OTP route (₹0.25).
-   * Quick route (route q, ₹7) is permanently disabled.
+   * Priority: Low-cost DLT/OTP route (₹0.25).
+   * Emergency iOS Fallback: Quick route ('q') if low-cost route is rejected.
    */
   public static async sendFast2SmsOtp(
     phoneNumber: string,
@@ -92,12 +92,35 @@ export class SMSService {
         return { success: true, routeUsed: selectedRoute };
       }
 
-      // STRICT PROTECTION: Never fall back to Quick route ('q') which charges ₹7!
-      console.warn(`[Fast2SMS] Low-cost route "${selectedRoute}" rejected by gateway (${statusMsg}). Quick route ('q') is PERMANENTLY DISABLED to prevent ₹7 charges. Returning failure so caller falls back to Email OTP.`);
+      // Emergency fallback for iOS: If low-cost OTP route is rejected (e.g. pending website verification/DLT),
+      // use Fast2SMS Quick route ('q') so paid iOS users 100% receive their SMS verification code.
+      console.warn(`[Fast2SMS] Low-cost route "${selectedRoute}" rejected by gateway (${statusMsg}). Triggering emergency Quick route ('q') fallback for iOS...`);
+
+      const quickResponse = await fetch('https://www.fast2sms.com/dev/bulkV2', {
+        method: 'POST',
+        headers: {
+          'authorization': apiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          route: 'q',
+          message: `Your Mito Reboot verification code is ${otp}. Valid for 10 minutes.`,
+          numbers: cleaned
+        })
+      });
+
+      const quickData: any = await quickResponse.json();
+      const quickStatusMsg = quickData?.message?.[0] || quickData?.message || (quickData?.return ? 'Delivered' : 'Failed');
+      console.log(`[Fast2SMS Quick Route Response] Status: ${quickData?.return ? 'SUCCESS' : 'FAILED'} | Gateway Msg: ${quickStatusMsg}`);
+
+      if (quickData?.return === true || quickData?.status_code === 200) {
+        return { success: true, routeUsed: 'q' };
+      }
+
       return {
         success: false,
-        routeUsed: selectedRoute,
-        reason: statusMsg || 'DLT_TEMPLATE_REQUIRED'
+        routeUsed: 'q',
+        reason: quickStatusMsg || statusMsg || 'DLT_TEMPLATE_REQUIRED'
       };
     } catch (err: any) {
       console.error('[Fast2SMS Exception]:', err?.message || err);
