@@ -1,12 +1,12 @@
 <en-US>
-• Seamless Authentication: Faster, more reliable login with dual SMS & Email OTP verification.
-• Dynamic OTP Screen: Clear real-time delivery status for codes sent to your mobile, email, or both.
-• Health Tracking & Insights: Smoother CGM report uploads and enhanced food logging stability.
-• Performance & Fixes: General stability improvements and faster app navigation.
+• Enhanced Phone Verification: Improved SMS OTP delivery and fallback reliability on iOS and Android.
+• Offline & Sync Stability: Smoother reconnection and notification handling without duplicate alerts.
+• Dynamic App Updates: Accurate version tracking in Profile & Settings.
+• Performance & Bug Fixes: General stability improvements and faster app navigation.
 </en-US>
 <en-IN>
-• Seamless Authentication: Faster, more reliable login with dual SMS & Email OTP verification.
-• Dynamic OTP Screen: Clear real-time delivery status for codes sent to your mobile, email, or both.
-• Health Tracking & Insights: Smoother CGM report uploads and enhanced food logging stability.
-• Performance & Fixes: General stability improvements and faster app navigation.
+• Enhanced Phone Verification: Improved SMS OTP delivery and fallback reliability on iOS and Android.
+• Offline & Sync Stability: Smoother reconnection and notification handling without duplicate alerts.
+• Dynamic App Updates: Accurate version tracking in Profile & Settings.
+• Performance & Bug Fixes: General stability improvements and faster app navigation.
 </en-IN>
