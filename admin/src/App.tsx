@@ -52,7 +52,8 @@ import {
   Smartphone,
   Stethoscope,
   RefreshCw,
-  Package
+  Package,
+  Key
 } from 'lucide-react';
 import {
   BarChart, Bar, PieChart, Pie, Cell,
@@ -76,6 +77,7 @@ import { AdminDailyLoggingWorkflows } from './components/AdminDailyLoggingWorkfl
 import { AdminAskMitoTopics } from './components/AdminAskMitoTopics';
 import { AdminUserFeedback } from './components/AdminUserFeedback';
 import { AdminAppHealth } from './components/AdminAppHealth';
+import { AdminOtpLogs } from './components/AdminOtpLogs';
 import { OrderManagementHub } from './components/orderManagement/OrderManagementHub';
 
 const getCategoryStyle = (score: number) => {
@@ -2264,6 +2266,20 @@ const AdminPanelContent: React.FC = () => {
                       Patients
                     </button>
                     <button 
+                      onClick={() => { setActiveView('otp-logs'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold flex items-center justify-between ${
+                        activeView === 'otp-logs' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <Key className="w-3.5 h-3.5 text-amber-400" />
+                        OTP &amp; Auth Logs
+                      </span>
+                      <span className="bg-amber-500/20 text-amber-300 text-[9px] font-extrabold px-1.5 py-0.5 rounded border border-amber-500/30">
+                        Live
+                      </span>
+                    </button>
+                    <button 
                       onClick={() => { setActiveView('pendingEdits'); setSearchQuery(''); }}
                       className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
                         activeView === 'pendingEdits' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'
@@ -2576,8 +2592,25 @@ const AdminPanelContent: React.FC = () => {
               >
                 <div className="flex items-center gap-3">
                   <Smartphone className="h-4.5 w-4.5 shrink-0" />
-                  {!sidebarCollapsed && <span>App Health & Usage</span>}
+                  {!sidebarCollapsed && <span>App Health &amp; Usage</span>}
                 </div>
+              </button>
+
+              <button 
+                onClick={() => { setActiveView('otp-logs'); setSearchQuery(''); }}
+                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                  activeView === 'otp-logs' ? 'bg-primary text-white shadow-md shadow-primary/20' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Key className="h-4.5 w-4.5 shrink-0 text-amber-400" />
+                  {!sidebarCollapsed && <span>OTP &amp; Auth Logs</span>}
+                </div>
+                {!sidebarCollapsed && (
+                  <span className="bg-amber-500/20 text-amber-300 text-[9px] font-black px-1.5 py-0.5 rounded border border-amber-500/30">
+                    Live
+                  </span>
+                )}
               </button>
             </div>
 
@@ -4239,6 +4272,11 @@ const AdminPanelContent: React.FC = () => {
         {/* APP HEALTH & USAGE VIEW */}
         {activeView === 'app-health' && (
           <AdminAppHealth apiUrl={apiUrl} token={token || ''} />
+        )}
+
+        {/* OTP & AUTH LOGS VIEW */}
+        {activeView === 'otp-logs' && (
+          <AdminOtpLogs apiUrl={apiUrl} token={token || ''} />
         )}
 
         {/* REPORTS & ANALYTICS VIEW */}

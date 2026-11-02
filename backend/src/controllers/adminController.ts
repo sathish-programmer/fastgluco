@@ -25,6 +25,7 @@ import { Vendor } from '../models/Vendor';
 import { Appointment } from '../models/Appointment';
 import ShopOrder from '../models/ShopOrder';
 import ShopProduct from '../models/ShopProduct';
+import { AppOtpTelemetry } from '../models/AppOtpTelemetry';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_12345!';
 
@@ -1224,6 +1225,207 @@ export class AdminController {
     } catch (err: any) {
       console.error('Error in getReportsAnalytics:', err);
       return res.status(500).json({ message: err.message || 'Error fetching reports analytics' });
+    }
+  }
+
+  /**
+   * Dedicated OTP & Authentication Audit Logs
+   * Supports comprehensive search, provider filters (Titan Mail GoDaddy SMTP, Brevo, Fast2SMS Quick, Fast2SMS OTP, Firebase),
+   * real-time delivery and verification status tracking, and latency analytics.
+   */
+  public static async getOtpLogs(req: Request, res: Response) {
+    try {
+      const page = Math.max(1, parseInt(req.query.page as string) || 1);
+      const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 25));
+      const q = ((req.query.q as string) || '').trim();
+      const provider = (req.query.provider as string) || 'all';
+      const status = (req.query.status as string) || 'all';
+      const verificationStatus = (req.query.verificationStatus as string) || 'all';
+      const channel = (req.query.channel as string) || 'all';
+      const platform = (req.query.platform as string) || 'all';
+      const dateRange = (req.query.dateRange as string) || 'all';
+
+      const filter: any = {};
+
+      // Date Range Filter
+      const now = new Date();
+      if (dateRange === 'today') {
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        filter.timestamp = { $gte: startOfDay };
+      } else if (dateRange === '24h') {
+        filter.timestamp = { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) };
+      } else if (dateRange === '7d') {
+        filter.timestamp = { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) };
+      } else if (dateRange === '30d') {
+        filter.timestamp = { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) };
+      }
+
+      // Channel Filter
+      if (channel !== 'all') {
+        filter.channel = channel;
+      }
+
+      // Delivery Status Filter
+      if (status !== 'all') {
+        filter.status = status;
+      }
+
+      // Platform Filter
+      if (platform !== 'all') {
+        filter.platform = platform;
+      }
+
+      // Provider Filter
+      if (provider !== 'all') {
+        if (provider === 'firebase') {
+          filter.$or = [{ smsProvider: 'firebase' }, { channel: 'firebase' }];
+        } else if (provider === 'fast2sms_quick') {
+          filter.smsProvider = 'fast2sms_quick';
+        } else if (provider === 'fast2sms_otp') {
+          filter.smsProvider = 'fast2sms_otp';
+        } else if (provider === 'titan_godaddy_smtp') {
+          filter.emailProvider = 'titan_godaddy_smtp';
+        } else if (provider === 'brevo_smtp') {
+          filter.emailProvider = 'brevo_smtp';
+        }
+      }
+
+      // Verification Status Filter
+      const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+      if (verificationStatus === 'VERIFIED') {
+        filter.verificationStatus = 'VERIFIED';
+      } else if (verificationStatus === 'PENDING') {
+        filter.verificationStatus = 'PENDING';
+        filter.timestamp = filter.timestamp
+          ? { ...filter.timestamp, $gte: tenMinutesAgo }
+          : { $gte: tenMinutesAgo };
+      } else if (verificationStatus === 'EXPIRED') {
+        filter.$or = [
+          { verificationStatus: 'EXPIRED' },
+          { verificationStatus: 'PENDING', timestamp: { $lt: tenMinutesAgo } }
+        ];
+      } else if (verificationStatus === 'FAILED') {
+        filter.verificationStatus = 'FAILED';
+      }
+
+      // Search Query (phone number, email, or masked target)
+      if (q) {
+        const cleanDigits = q.replace(/[^0-9]/g, '');
+        const searchConditions: any[] = [
+          { email: { $regex: q, $options: 'i' } },
+          { maskedTarget: { $regex: q, $options: 'i' } }
+        ];
+        if (cleanDigits.length >= 3) {
+          searchConditions.push({ phoneNumber: { $regex: cleanDigits, $options: 'i' } });
+        }
+        if (filter.$or) {
+          filter.$and = [{ $or: filter.$or }, { $or: searchConditions }];
+          delete filter.$or;
+        } else {
+          filter.$or = searchConditions;
+        }
+      }
+
+      const totalLogs = await AppOtpTelemetry.countDocuments(filter);
+      const rawLogs = await AppOtpTelemetry.find(filter)
+        .sort({ timestamp: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean();
+
+      // Enrich logs with dynamic expiration detection
+      const logs = rawLogs.map((log: any) => {
+        const isExpired = log.verificationStatus === 'PENDING' &&
+          (Date.now() - new Date(log.timestamp).getTime() > 10 * 60 * 1000);
+        return {
+          ...log,
+          effectiveVerificationStatus: isExpired ? 'EXPIRED' : (log.verificationStatus || 'PENDING')
+        };
+      });
+
+      // KPI Aggregations
+      const totalRequests = await AppOtpTelemetry.countDocuments({ eventType: 'REQUEST' });
+      const totalVerifications = await AppOtpTelemetry.countDocuments({ eventType: 'VERIFY' });
+      const totalVerified = await AppOtpTelemetry.countDocuments({ verificationStatus: 'VERIFIED' });
+      const totalPendingActive = await AppOtpTelemetry.countDocuments({
+        verificationStatus: 'PENDING',
+        timestamp: { $gte: tenMinutesAgo }
+      });
+      const totalFailed = await AppOtpTelemetry.countDocuments({
+        $or: [
+          { status: 'FAILED' },
+          { verificationStatus: 'FAILED' }
+        ]
+      });
+
+      // Provider counts
+      const firebaseCount = await AppOtpTelemetry.countDocuments({
+        $or: [{ smsProvider: 'firebase' }, { channel: 'firebase' }]
+      });
+      const fast2smsQuickCount = await AppOtpTelemetry.countDocuments({ smsProvider: 'fast2sms_quick' });
+      const fast2smsOtpCount = await AppOtpTelemetry.countDocuments({ smsProvider: 'fast2sms_otp' });
+      const titanGodaddyCount = await AppOtpTelemetry.countDocuments({ emailProvider: 'titan_godaddy_smtp' });
+      const brevoCount = await AppOtpTelemetry.countDocuments({ emailProvider: 'brevo_smtp' });
+
+      // Delivery channel breakdown
+      const smsDeliveryCount = await AppOtpTelemetry.countDocuments({
+        $or: [
+          { smsStatus: 'DELIVERED' },
+          { channel: 'sms', status: 'SUCCESS' },
+          { channel: 'both', status: 'SUCCESS' }
+        ]
+      });
+      const emailDeliveryCount = await AppOtpTelemetry.countDocuments({
+        $or: [
+          { emailStatus: 'DELIVERED' },
+          { channel: 'email', status: 'SUCCESS' },
+          { channel: 'both', status: 'SUCCESS' }
+        ]
+      });
+
+      const verificationRate = totalRequests > 0
+        ? Number(((totalVerified / totalRequests) * 100).toFixed(1))
+        : 100;
+
+      const smtpHost = process.env.SMTP_HOST || 'smtp-relay.brevo.com';
+      const smtpUser = process.env.SMTP_USER || '';
+      const activeProviderName = EmailService.getSmtpProviderName();
+
+      return res.status(200).json({
+        success: true,
+        logs,
+        pagination: {
+          total: totalLogs,
+          page,
+          limit,
+          totalPages: Math.ceil(totalLogs / limit) || 1
+        },
+        kpis: {
+          totalRequests,
+          totalVerifications,
+          totalVerified,
+          totalPendingActive,
+          totalFailed,
+          verificationRate,
+          emailDeliveryCount,
+          smsDeliveryCount,
+          providerStats: {
+            firebase: firebaseCount,
+            fast2smsQuick: fast2smsQuickCount,
+            fast2smsOtp: fast2smsOtpCount,
+            titanGodaddySmtp: titanGodaddyCount,
+            brevoSmtp: brevoCount
+          },
+          smtpConfig: {
+            host: smtpHost,
+            user: smtpUser ? (smtpUser.includes('@') ? smtpUser.replace(/^(.)(.*)(@.*)$/, '$1***$3') : smtpUser.slice(0, 4) + '***') : 'Not Set',
+            activeProvider: activeProviderName
+          }
+        }
+      });
+    } catch (err: any) {
+      console.error('Error in getOtpLogs:', err);
+      return res.status(500).json({ message: err.message || 'Error fetching OTP logs' });
     }
   }
 }

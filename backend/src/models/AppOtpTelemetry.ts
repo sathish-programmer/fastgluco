@@ -3,21 +3,41 @@ import { Schema, model, Document } from 'mongoose';
 export type OtpEventType = 'REQUEST' | 'VERIFY';
 export type OtpEventStatus = 'SUCCESS' | 'FAILED' | 'RATE_LIMITED';
 export type OtpChannel = 'sms' | 'email' | 'both' | 'mock' | 'firebase';
+export type OtpVerificationStatus = 'PENDING' | 'VERIFIED' | 'EXPIRED' | 'FAILED' | 'CANCELLED';
 
 export interface IAppOtpTelemetry extends Document {
   timestamp: Date;
   eventType: OtpEventType;
   channel: OtpChannel;
   status: OtpEventStatus;
-  errorCategory?: string; // 'COOLDOWN_ACTIVE' | 'HOURLY_LIMIT_EXCEEDED' | 'INVALID_CODE' | 'EXPIRED_CODE' | 'USER_SUSPENDED' | 'PROVIDER_ERROR' | 'INVALID_FORMAT'
+  errorCategory?: string | null;
   platform: 'android' | 'ios' | 'web';
   appVersion: string;
   buildNumber: string;
   osVersion: string;
   deviceModel: string;
-  maskedTarget: string; // e.g. "+91*****4210" or "s***@gmail.com" - strictly masked, no plaintext PII
-  durationMs?: number; // Duration taken to verify if known
+  maskedTarget: string; // e.g. "+91*****4210" or "s***@gmail.com"
+  durationMs?: number; // Duration taken to verify in milliseconds
+
+  // Rich Tracking Fields for Admin Portal
+  phoneNumber?: string; // Full unmasked phone number (e.g. "+919876543210")
+  email?: string; // Full recipient email (e.g. "user@example.com")
+  smsProvider?: string; // 'firebase' | 'fast2sms_quick' | 'fast2sms_otp' | 'none'
+  smsStatus?: string; // 'DELIVERED' | 'FAILED' | 'SKIPPED' | 'NOT_ATTEMPTED'
+  smsGatewayResponse?: any; // Gateway status/requestId/error message
+  emailProvider?: string; // 'titan_godaddy_smtp' | 'brevo_smtp' | 'google_smtp' | 'custom_smtp' | 'none'
+  emailStatus?: string; // 'DELIVERED' | 'FAILED' | 'PENDING' | 'SKIPPED'
+  emailGatewayResponse?: any; // MessageID / SMTP response / error detail
+  verificationStatus?: OtpVerificationStatus; // 'PENDING' | 'VERIFIED' | 'EXPIRED' | 'FAILED'
+  verifiedAt?: Date | null;
+  attemptsCount?: number;
+  ipAddress?: string;
+  userAgent?: string;
+  fallbackReason?: string;
+  failureCategory?: string;
+
   createdAt: Date;
+  updatedAt?: Date;
 }
 
 const appOtpTelemetrySchema = new Schema<IAppOtpTelemetry>(
@@ -33,10 +53,32 @@ const appOtpTelemetrySchema = new Schema<IAppOtpTelemetry>(
     osVersion: { type: String, default: 'Unknown' },
     deviceModel: { type: String, default: 'Unknown' },
     maskedTarget: { type: String, required: true },
-    durationMs: { type: Number, default: 0 }
+    durationMs: { type: Number, default: 0 },
+
+    // Enriched fields for Admin tracking
+    phoneNumber: { type: String, default: null, index: true, trim: true },
+    email: { type: String, default: null, index: true, lowercase: true, trim: true },
+    smsProvider: { type: String, default: 'none', index: true },
+    smsStatus: { type: String, default: 'NOT_ATTEMPTED', index: true },
+    smsGatewayResponse: { type: Schema.Types.Mixed, default: null },
+    emailProvider: { type: String, default: 'none', index: true },
+    emailStatus: { type: String, default: 'NOT_ATTEMPTED', index: true },
+    emailGatewayResponse: { type: Schema.Types.Mixed, default: null },
+    verificationStatus: {
+      type: String,
+      enum: ['PENDING', 'VERIFIED', 'EXPIRED', 'FAILED', 'CANCELLED'],
+      default: 'PENDING',
+      index: true
+    },
+    verifiedAt: { type: Date, default: null },
+    attemptsCount: { type: Number, default: 0 },
+    ipAddress: { type: String, default: null },
+    userAgent: { type: String, default: null },
+    fallbackReason: { type: String, default: null },
+    failureCategory: { type: String, default: null }
   },
   {
-    timestamps: { createdAt: true, updatedAt: false }
+    timestamps: true
   }
 );
 

@@ -40,23 +40,63 @@ const extractTelemetryMeta = (req: Request) => {
   };
 };
 
+interface SafeOtpTelemetryDetails {
+  phoneNumber?: string;
+  email?: string;
+  smsProvider?: string;
+  smsStatus?: string;
+  smsGatewayResponse?: any;
+  emailProvider?: string;
+  emailStatus?: string;
+  emailGatewayResponse?: any;
+  verificationStatus?: 'PENDING' | 'VERIFIED' | 'EXPIRED' | 'FAILED' | 'CANCELLED';
+  verifiedAt?: Date;
+  attemptsCount?: number;
+  durationMs?: number;
+  fallbackReason?: string;
+  failureCategory?: string;
+}
+
 const recordSafeOtpTelemetry = (
   req: Request,
   eventType: 'REQUEST' | 'VERIFY',
   channel: OtpChannel,
   status: OtpEventStatus,
   target: string,
-  errorCategory?: string
+  errorCategory?: string,
+  details?: Partial<SafeOtpTelemetryDetails>
 ) => {
   try {
     const meta = extractTelemetryMeta(req);
+    const ipAddress = ((req.headers['x-forwarded-for'] as string) || req.ip || '').split(',')[0].trim();
+    const userAgent = (req.headers['user-agent'] as string) || '';
+
+    const cleanPhone = details?.phoneNumber || (target && !target.includes('@') ? SMSService.normalizePhoneNumber(target) : undefined);
+    const cleanEmail = details?.email || (target && target.includes('@') ? target.toLowerCase().trim() : undefined);
+
     AppOtpTelemetry.create({
       eventType,
       channel,
       status,
       errorCategory: errorCategory || null,
-      maskedTarget: maskPhoneOrEmail(target),
+      maskedTarget: maskPhoneOrEmail(target || cleanPhone || cleanEmail || 'unknown'),
       timestamp: new Date(),
+      phoneNumber: cleanPhone || null,
+      email: cleanEmail || null,
+      smsProvider: details?.smsProvider || 'none',
+      smsStatus: details?.smsStatus || 'NOT_ATTEMPTED',
+      smsGatewayResponse: details?.smsGatewayResponse || null,
+      emailProvider: details?.emailProvider || 'none',
+      emailStatus: details?.emailStatus || 'NOT_ATTEMPTED',
+      emailGatewayResponse: details?.emailGatewayResponse || null,
+      verificationStatus: details?.verificationStatus || (eventType === 'REQUEST' ? 'PENDING' : 'VERIFIED'),
+      verifiedAt: details?.verifiedAt || null,
+      attemptsCount: details?.attemptsCount || 0,
+      durationMs: details?.durationMs || 0,
+      ipAddress: ipAddress || null,
+      userAgent: userAgent ? userAgent.slice(0, 255) : null,
+      fallbackReason: details?.fallbackReason || (req.body?.fallbackReason || null),
+      failureCategory: details?.failureCategory || (req.body?.failureCategory || null),
       ...meta
     }).catch(e => console.warn('[OTP Telemetry] Log failed:', e));
   } catch (e) {
@@ -170,7 +210,30 @@ export class AuthController {
           console.log(`[Auth /send-otp] iOS Fast2SMS fallback triggered | Reason: "${fallbackReason}" | Failure: "${failureCategory}" | Reusing active OTP (suppressing duplicate email)`);
           const smsResult = await SMSService.sendSMS(cleanPhone, existingPlainOtp, clientPlatform);
           const channelUsed: OtpChannel = smsResult.success ? 'both' : 'email';
-          recordSafeOtpTelemetry(req, 'REQUEST', channelUsed, smsResult.success ? 'SUCCESS' : 'FAILED', cleanPhone, smsResult.reason);
+          
+          recordSafeOtpTelemetry(
+            req,
+            'REQUEST',
+            channelUsed,
+            smsResult.success ? 'SUCCESS' : 'FAILED',
+            cleanPhone,
+            smsResult.reason,
+            {
+              phoneNumber: cleanPhone,
+              email: cleanEmail,
+              smsProvider: smsResult.success
+                ? (smsResult.routeUsed === 'q' ? 'fast2sms_quick' : 'fast2sms_otp')
+                : 'fast2sms_quick',
+              smsStatus: smsResult.success ? 'DELIVERED' : 'FAILED',
+              smsGatewayResponse: smsResult.rawResponse || smsResult.reason || (smsResult.success ? 'Delivered via Quick Route' : 'Delivery Failed'),
+              emailProvider: EmailService.getSmtpProviderName(),
+              emailStatus: 'DELIVERED',
+              emailGatewayResponse: 'Reused active OTP session (duplicate email suppressed)',
+              verificationStatus: 'PENDING',
+              fallbackReason,
+              failureCategory
+            }
+          );
 
           return res.status(200).json({
             success: true,
@@ -250,7 +313,7 @@ export class AuthController {
       // STRICT POLICY: Fast2SMS fallback is exclusively allowed for iOS login/signup.
       // Android, Web, and other platforms NEVER receive SMS via Fast2SMS.
       const shouldSendSms = req.body.sendSms !== false && isIOS;
-      let smsResult: { success: boolean; routeUsed?: string; reason?: string } = { success: false, reason: 'NOT_ATTEMPTED' };
+      let smsResult: { success: boolean; routeUsed?: string; reason?: string; rawResponse?: any } = { success: false, reason: 'NOT_ATTEMPTED' };
 
       if (shouldSendSms) {
         console.log(`[Auth /send-otp] Triggering iOS Fast2SMS fallback | Provider: Fast2SMS (low-cost route first, Quick route fallback)`);
@@ -269,12 +332,50 @@ export class AuthController {
         }
       }
 
-      // 2. ALWAYS send Email via Brevo SMTP / configured email service (Requirement 2)
-      EmailService.sendOtpEmail(cleanEmail, plainOtp).catch(err => {
-        console.error('[Background] Failed to send OTP email via Brevo SMTP:', err);
-      });
+      // 2. ALWAYS send Email via Titan Mail / GoDaddy / Brevo SMTP
+      const emailResult: {
+        success: boolean;
+        provider: string;
+        messageId?: string;
+        response?: string;
+        error?: string;
+      } = await EmailService.sendOtpEmail(cleanEmail, plainOtp).catch(err => ({
+        success: false,
+        provider: EmailService.getSmtpProviderName(),
+        error: err?.message || String(err)
+      }));
 
-      recordSafeOtpTelemetry(req, 'REQUEST', methodUsed, 'SUCCESS', cleanPhone);
+      const resolvedSmsProvider = smsResult.success
+        ? (smsResult.routeUsed === 'q' ? 'fast2sms_quick' : 'fast2sms_otp')
+        : (shouldSendSms ? (smsResult.routeUsed === 'q' ? 'fast2sms_quick' : 'fast2sms_otp') : 'none');
+      const resolvedSmsStatus = smsResult.success
+        ? 'DELIVERED'
+        : (shouldSendSms ? 'FAILED' : 'SKIPPED');
+
+      recordSafeOtpTelemetry(
+        req,
+        'REQUEST',
+        methodUsed,
+        'SUCCESS',
+        cleanPhone,
+        undefined,
+        {
+          phoneNumber: cleanPhone,
+          email: cleanEmail,
+          smsProvider: resolvedSmsProvider,
+          smsStatus: resolvedSmsStatus,
+          smsGatewayResponse: smsResult.rawResponse || smsResult.reason || (smsResult.success ? 'Delivered' : null),
+          emailProvider: emailResult?.provider || EmailService.getSmtpProviderName(),
+          emailStatus: emailResult?.success ? 'DELIVERED' : 'FAILED',
+          emailGatewayResponse: emailResult?.messageId
+            ? `MessageId: ${emailResult.messageId} (${emailResult.response || 'SMTP OK'})`
+            : (emailResult?.error || 'Delivered'),
+          verificationStatus: 'PENDING',
+          fallbackReason,
+          failureCategory
+        }
+      );
+
       const userMessage = methodUsed === 'both'
         ? `Verification code sent to your mobile and ${cleanEmail}.`
         : `Verification code sent to ${cleanEmail}.`;
@@ -356,7 +457,28 @@ export class AuthController {
             otpRecord.blockedUntil = new Date(now.getTime() + 15 * 60 * 1000); // Block for 15 mins
           }
           await otpRecord.save();
-          recordSafeOtpTelemetry(req, 'VERIFY', 'both', 'FAILED', cleanPhone, 'INVALID_OTP_CODE');
+
+          // Update pending telemetry attempts count
+          const pendingTelemetry = await AppOtpTelemetry.findOne({
+            $or: [
+              { phoneNumber: cleanPhone },
+              ...(rawEmail ? [{ email: rawEmail }] : [])
+            ],
+            verificationStatus: 'PENDING'
+          }).sort({ timestamp: -1 });
+          if (pendingTelemetry) {
+            pendingTelemetry.attemptsCount = (pendingTelemetry.attemptsCount || 0) + 1;
+            if (otpRecord.attemptCount >= 3) {
+              pendingTelemetry.verificationStatus = 'FAILED';
+            }
+            await pendingTelemetry.save().catch(() => {});
+          }
+
+          recordSafeOtpTelemetry(req, 'VERIFY', 'both', 'FAILED', cleanPhone, 'INVALID_OTP_CODE', {
+            phoneNumber: cleanPhone,
+            email: rawEmail,
+            attemptsCount: otpRecord.attemptCount
+          });
           return res.status(400).json({ message: 'Invalid OTP.' });
         }
 
@@ -407,12 +529,39 @@ export class AuthController {
       }
 
       if (user.isBlocked) {
-        recordSafeOtpTelemetry(req, 'VERIFY', 'both', 'FAILED', cleanPhone, 'ACCOUNT_BLOCKED_BY_ADMIN');
+        recordSafeOtpTelemetry(req, 'VERIFY', 'both', 'FAILED', cleanPhone, 'ACCOUNT_BLOCKED_BY_ADMIN', {
+          phoneNumber: cleanPhone,
+          email: rawEmail
+        });
         return res.status(403).json({ message: 'Your account has been suspended by an administrator.' });
       }
 
+      // Update pending telemetry to VERIFIED
+      const pendingTelemetry = await AppOtpTelemetry.findOne({
+        $or: [
+          { phoneNumber: cleanPhone },
+          ...(rawEmail ? [{ email: rawEmail }] : [])
+        ],
+        verificationStatus: 'PENDING'
+      }).sort({ timestamp: -1 });
+
+      let timeTakenMs = 0;
+      if (pendingTelemetry) {
+        timeTakenMs = Date.now() - pendingTelemetry.timestamp.getTime();
+        pendingTelemetry.verificationStatus = 'VERIFIED';
+        pendingTelemetry.verifiedAt = new Date();
+        pendingTelemetry.durationMs = timeTakenMs;
+        await pendingTelemetry.save().catch(() => {});
+      }
+
       // Record successful verification telemetry
-      recordSafeOtpTelemetry(req, 'VERIFY', 'both', 'SUCCESS', cleanPhone);
+      recordSafeOtpTelemetry(req, 'VERIFY', 'both', 'SUCCESS', cleanPhone, undefined, {
+        phoneNumber: cleanPhone,
+        email: rawEmail,
+        verificationStatus: 'VERIFIED',
+        verifiedAt: new Date(),
+        durationMs: timeTakenMs
+      });
 
       // Generate App JWT (valid for 365 days)
       const accessToken = jwt.sign({ id: user._id, email: user.email || '', role: 'User' }, JWT_SECRET, { expiresIn: '365d' });
@@ -526,6 +675,52 @@ export class AuthController {
         });
       } catch (cleanupErr) {
         console.warn('Failed to cleanup OTP records after Firebase login:', cleanupErr);
+      }
+
+      // Update pending telemetry if any, or record Firebase Auth success in OTP & Auth audit logs
+      try {
+        const pendingTelemetry = await AppOtpTelemetry.findOne({
+          $or: [
+            ...(cleanPhone ? [{ phoneNumber: cleanPhone }] : []),
+            ...(cleanEmail ? [{ email: cleanEmail }] : [])
+          ],
+          verificationStatus: 'PENDING'
+        }).sort({ timestamp: -1 });
+
+        let timeTakenMs = 0;
+        if (pendingTelemetry) {
+          timeTakenMs = Date.now() - pendingTelemetry.timestamp.getTime();
+          pendingTelemetry.verificationStatus = 'VERIFIED';
+          pendingTelemetry.verifiedAt = new Date();
+          pendingTelemetry.durationMs = timeTakenMs;
+          pendingTelemetry.smsProvider = 'firebase';
+          pendingTelemetry.smsStatus = 'DELIVERED';
+          await pendingTelemetry.save().catch(() => {});
+        }
+
+        recordSafeOtpTelemetry(
+          req,
+          'VERIFY',
+          'firebase',
+          'SUCCESS',
+          cleanPhone || cleanEmail,
+          undefined,
+          {
+            phoneNumber: cleanPhone,
+            email: cleanEmail,
+            smsProvider: 'firebase',
+            smsStatus: 'DELIVERED',
+            emailProvider: 'none',
+            emailStatus: 'SKIPPED',
+            smsGatewayResponse: `Firebase Phone Auth token verified (UID: ${firebaseUid})`,
+            verificationStatus: 'VERIFIED',
+            verifiedAt: new Date(),
+            durationMs: timeTakenMs,
+            attemptsCount: 1
+          }
+        );
+      } catch (telemetryErr) {
+        console.warn('[Firebase Login Telemetry Error]:', telemetryErr);
       }
 
       // Generate App JWT (valid for 365 days)

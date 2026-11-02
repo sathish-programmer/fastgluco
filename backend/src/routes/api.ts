@@ -433,6 +433,7 @@ router.get('/admin/stats', AdminController.getStats);
 router.get('/admin/reports-analytics', AdminController.getReportsAnalytics);
 router.get('/admin/users', AdminController.getUsers);
 router.get('/admin/users/:id/activity', AdminController.getUserActivity);
+router.get('/admin/otp-logs', authenticateToken, requireRole(['SuperAdmin', 'Admin']), AdminController.getOtpLogs);
 router.get('/admin/profile-edits', AdminController.getPendingProfileEdits);
 router.post('/admin/profile-edits/:id/approve', AdminController.approveProfileEdit);
 router.post('/admin/profile-edits/:id/reject', AdminController.rejectProfileEdit);

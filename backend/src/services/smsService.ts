@@ -28,7 +28,7 @@ export class SMSService {
   public static async sendFast2SmsOtp(
     phoneNumber: string,
     otp: string
-  ): Promise<{ success: boolean; routeUsed?: string; reason?: string }> {
+  ): Promise<{ success: boolean; routeUsed?: string; reason?: string; rawResponse?: any }> {
     if (process.env.ENABLE_FAST2SMS !== 'true') {
       console.log('[Fast2SMS] Fast2SMS is explicitly DISABLED on this server (ENABLE_FAST2SMS is not true). Skipping SMS delivery.');
       return { success: false, reason: 'DISABLED' };
@@ -89,7 +89,7 @@ export class SMSService {
       console.log(`[Fast2SMS Response] Route: ${selectedRoute} | Status: ${data?.return ? 'SUCCESS' : 'FAILED'} | Gateway Msg: ${statusMsg}`);
 
       if (data?.return === true || data?.status_code === 200) {
-        return { success: true, routeUsed: selectedRoute };
+        return { success: true, routeUsed: selectedRoute, rawResponse: data };
       }
 
       // Emergency fallback for iOS: If low-cost OTP route is rejected (e.g. pending website verification/DLT),
@@ -114,17 +114,18 @@ export class SMSService {
       console.log(`[Fast2SMS Quick Route Response] Status: ${quickData?.return ? 'SUCCESS' : 'FAILED'} | Gateway Msg: ${quickStatusMsg}`);
 
       if (quickData?.return === true || quickData?.status_code === 200) {
-        return { success: true, routeUsed: 'q' };
+        return { success: true, routeUsed: 'q', rawResponse: quickData };
       }
 
       return {
         success: false,
         routeUsed: 'q',
-        reason: quickStatusMsg || statusMsg || 'DLT_TEMPLATE_REQUIRED'
+        reason: quickStatusMsg || statusMsg || 'DLT_TEMPLATE_REQUIRED',
+        rawResponse: quickData || data
       };
     } catch (err: any) {
       console.error('[Fast2SMS Exception]:', err?.message || err);
-      return { success: false, reason: 'GATEWAY_NETWORK_ERROR' };
+      return { success: false, reason: 'GATEWAY_NETWORK_ERROR', rawResponse: { error: err?.message || String(err) } };
     }
   }
 
@@ -137,7 +138,7 @@ export class SMSService {
     to: string,
     otpCode: string,
     platform?: string
-  ): Promise<{ success: boolean; routeUsed?: string; reason?: string }> {
+  ): Promise<{ success: boolean; routeUsed?: string; reason?: string; rawResponse?: any }> {
     try {
       const normalizedPlatform = (platform || '').toString().toLowerCase().trim();
       if (normalizedPlatform !== 'ios') {

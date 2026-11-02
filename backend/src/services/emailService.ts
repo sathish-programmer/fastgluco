@@ -364,10 +364,30 @@ export class EmailService {
     try { await transporter.sendMail({ from: `"${appName}" <support@mitoreboot.in>`, to: email, subject: `Welcome to ${appName}!`, html }); } catch (err) { console.error(err); }
   }
 
+  public static getSmtpProviderName(): string {
+    const host = (process.env.SMTP_HOST || '').toLowerCase();
+    if (host.includes('titan') || host.includes('godaddy') || host.includes('secureserver')) {
+      return 'titan_godaddy_smtp';
+    }
+    if (host.includes('brevo') || host.includes('sendinblue')) {
+      return 'brevo_smtp';
+    }
+    if (host.includes('gmail') || host.includes('google')) {
+      return 'google_smtp';
+    }
+    return host ? `smtp_${host.replace(/[^a-z0-9]/g, '_')}` : 'titan_godaddy_smtp';
+  }
+
   /**
    * Send OTP Verification Email
    */
-  public static async sendOtpEmail(email: string, otpCode: string) {
+  public static async sendOtpEmail(email: string, otpCode: string): Promise<{
+    success: boolean;
+    provider: string;
+    messageId?: string;
+    response?: string;
+    error?: string;
+  }> {
     const { appName, appTagline } = await EmailService.getBranding();
     const html = generateEmailTemplate(`Your Verification Code`, `
       <p>Hello,</p>
@@ -378,17 +398,28 @@ export class EmailService {
       <p>This code is valid for 10 minutes. If you did not request this, please ignore this email.</p>
     `, appName, appTagline);
     
+    const provider = EmailService.getSmtpProviderName();
     try { 
-      await transporter.sendMail({ 
+      const info: any = await transporter.sendMail({ 
         from: `"${appName} Security" <support@mitoreboot.in>`, 
         to: email, 
         subject: `${otpCode} is your ${appName} verification code`, 
         html 
       }); 
-      console.log(`[EmailService] OTP email sent successfully to ${email}`);
-    } catch (err) { 
-      console.error('[EmailService] Failed to send OTP email:', err); 
-      throw err;
+      console.log(`[EmailService] OTP email sent successfully to ${email} via ${provider}. MessageId: ${info?.messageId || 'ok'}`);
+      return {
+        success: true,
+        provider,
+        messageId: info?.messageId || 'delivered',
+        response: info?.response || 'Accepted by SMTP server'
+      };
+    } catch (err: any) { 
+      console.error('[EmailService] Failed to send OTP email via SMTP:', err); 
+      return {
+        success: false,
+        provider,
+        error: err?.message || String(err)
+      };
     }
   }
 
