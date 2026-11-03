@@ -197,8 +197,8 @@ export class AuthController {
 
       const clientPlatform = (req.body.platform || req.headers['x-platform'] || '').toString().toLowerCase().trim();
       const isIOS = clientPlatform === 'ios';
-      const fallbackReason = (req.body.fallbackReason || 'DIRECT').toString().slice(0, 50);
-      const failureCategory = (req.body.failureCategory || 'NONE').toString().slice(0, 50);
+      const fallbackReason = (req.body.fallbackReason || 'DIRECT').toString().slice(0, 100);
+      const failureCategory = (req.body.failureCategory || 'NONE').toString().slice(0, 250);
       const isFallbackSms = req.body.fallbackSms === true;
 
       // ─── SPECIAL CASE: iOS Fast2SMS Fallback (Reuse existing active OTP without duplicate email) ───
@@ -211,29 +211,56 @@ export class AuthController {
           const smsResult = await SMSService.sendSMS(cleanPhone, existingPlainOtp, clientPlatform);
           const channelUsed: OtpChannel = smsResult.success ? 'both' : 'email';
           
-          recordSafeOtpTelemetry(
-            req,
-            'REQUEST',
-            channelUsed,
-            smsResult.success ? 'SUCCESS' : 'FAILED',
-            cleanPhone,
-            smsResult.reason,
-            {
-              phoneNumber: cleanPhone,
-              email: cleanEmail,
-              smsProvider: smsResult.success
-                ? (smsResult.routeUsed === 'q' ? 'fast2sms_quick' : 'fast2sms_otp')
-                : 'fast2sms_quick',
-              smsStatus: smsResult.success ? 'DELIVERED' : 'FAILED',
-              smsGatewayResponse: smsResult.rawResponse || smsResult.reason || (smsResult.success ? 'Delivered via Quick Route' : 'Delivery Failed'),
-              emailProvider: EmailService.getSmtpProviderName(),
-              emailStatus: 'DELIVERED',
-              emailGatewayResponse: 'Reused active OTP session (duplicate email suppressed)',
-              verificationStatus: 'PENDING',
-              fallbackReason,
-              failureCategory
-            }
-          );
+          const smsProviderName = smsResult.success
+            ? (smsResult.routeUsed === 'q' ? 'fast2sms_quick' : 'fast2sms_otp')
+            : 'fast2sms_quick';
+          const smsStatusVal = smsResult.success ? 'DELIVERED' : 'FAILED';
+          const smsGatewayResp = smsResult.rawResponse || smsResult.reason || (smsResult.success ? 'Delivered via Quick Route' : 'Delivery Failed');
+
+          // CRITICAL DEDUPLICATION FIX: Find existing pending telemetry created during initial dispatch
+          // and update it in-place instead of creating a second duplicate row in the Admin Telemetry Log.
+          const existingTelemetry = await AppOtpTelemetry.findOne({
+            $or: [
+              { phoneNumber: cleanPhone },
+              { email: cleanEmail }
+            ],
+            verificationStatus: 'PENDING',
+            timestamp: { $gte: new Date(now.getTime() - 3 * 60 * 1000) }
+          }).sort({ timestamp: -1 });
+
+          if (existingTelemetry) {
+            existingTelemetry.channel = channelUsed;
+            existingTelemetry.smsProvider = smsProviderName;
+            existingTelemetry.smsStatus = smsStatusVal;
+            existingTelemetry.smsGatewayResponse = smsGatewayResp;
+            existingTelemetry.fallbackReason = fallbackReason;
+            existingTelemetry.failureCategory = failureCategory;
+            if (!existingTelemetry.phoneNumber) existingTelemetry.phoneNumber = cleanPhone;
+            if (!existingTelemetry.email) existingTelemetry.email = cleanEmail;
+            await existingTelemetry.save().catch(() => {});
+          } else {
+            recordSafeOtpTelemetry(
+              req,
+              'REQUEST',
+              channelUsed,
+              smsResult.success ? 'SUCCESS' : 'FAILED',
+              cleanPhone,
+              smsResult.reason,
+              {
+                phoneNumber: cleanPhone,
+                email: cleanEmail,
+                smsProvider: smsProviderName,
+                smsStatus: smsStatusVal,
+                smsGatewayResponse: smsGatewayResp,
+                emailProvider: EmailService.getSmtpProviderName(),
+                emailStatus: 'DELIVERED',
+                emailGatewayResponse: 'Reused active OTP session (duplicate email suppressed)',
+                verificationStatus: 'PENDING',
+                fallbackReason,
+                failureCategory
+              }
+            );
+          }
 
           return res.status(200).json({
             success: true,
@@ -411,6 +438,7 @@ export class AuthController {
       // APPLE APP STORE REVIEWER BYPASS
       const digits = (cleanPhone || '').replace(/[^0-9]/g, '');
       const rawEmail = (email || '').toLowerCase().trim();
+      const cleanEmail = rawEmail;
       const isReviewAccount = (process.env.ENABLE_APPLE_REVIEW_BYPASS !== 'false') &&
         (digits.endsWith('9597042107') ||
           digits.endsWith('9597042108') ||
@@ -554,6 +582,27 @@ export class AuthController {
         if (rawEmail && !pendingTelemetry.email) pendingTelemetry.email = rawEmail;
         if (cleanPhone && !pendingTelemetry.phoneNumber) pendingTelemetry.phoneNumber = cleanPhone;
         await pendingTelemetry.save().catch(() => {});
+
+        // CRITICAL CLEANUP: Also update any other pending telemetry records for this recipient created in the last 15 minutes
+        // so no orphaned record remains "PENDING" and later incorrectly displays as "Expired (>10m)" in Admin logs.
+        await AppOtpTelemetry.updateMany(
+          {
+            $or: [
+              { phoneNumber: cleanPhone },
+              ...(cleanEmail ? [{ email: cleanEmail }] : [])
+            ],
+            _id: { $ne: pendingTelemetry._id },
+            verificationStatus: 'PENDING',
+            timestamp: { $gte: new Date(Date.now() - 15 * 60 * 1000) }
+          },
+          {
+            $set: {
+              verificationStatus: 'VERIFIED',
+              verifiedAt: new Date(),
+              durationMs: timeTakenMs
+            }
+          }
+        ).catch(() => {});
       } else {
         // Fallback for reviewer accounts or direct verified logins
         recordSafeOtpTelemetry(req, 'REQUEST', 'both', 'SUCCESS', cleanPhone, undefined, {
@@ -703,6 +752,27 @@ export class AuthController {
           if (cleanPhone && !pendingTelemetry.phoneNumber) pendingTelemetry.phoneNumber = cleanPhone;
           if (cleanEmail && !pendingTelemetry.email) pendingTelemetry.email = cleanEmail;
           await pendingTelemetry.save().catch(() => {});
+
+        // CRITICAL CLEANUP: Also update any other pending telemetry records for this recipient created in the last 15 minutes
+        // so no orphaned record remains "PENDING" and later incorrectly displays as "Expired (>10m)" in Admin logs.
+        await AppOtpTelemetry.updateMany(
+          {
+            $or: [
+              { phoneNumber: cleanPhone },
+              ...(cleanEmail ? [{ email: cleanEmail }] : [])
+            ],
+            _id: { $ne: pendingTelemetry._id },
+            verificationStatus: 'PENDING',
+            timestamp: { $gte: new Date(Date.now() - 15 * 60 * 1000) }
+          },
+          {
+            $set: {
+              verificationStatus: 'VERIFIED',
+              verifiedAt: new Date(),
+              durationMs: timeTakenMs
+            }
+          }
+        ).catch(() => {});
         } else {
           recordSafeOtpTelemetry(
             req,

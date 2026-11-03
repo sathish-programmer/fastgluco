@@ -223,8 +223,8 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
         iosTimeoutTimerRef.current = null;
       }
       const errorMsg = event.message || 'Firebase phone verification failed.';
-      const errorCode = (event as any).code || 'VERIFICATION_FAILED';
-      console.warn('[Firebase Auth] Native Firebase phoneVerificationFailed:', errorCode, errorMsg);
+      const failureDetail = (event as any).code ? `${(event as any).code}: ${errorMsg}` : errorMsg;
+      console.warn('[Firebase Auth] Native Firebase phoneVerificationFailed:', failureDetail);
       if (!isMounted) return;
 
       // CRITICAL GUARD 1: Only handle if user actually initiated send OTP
@@ -248,7 +248,7 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
         if (e164 && emailRef.current) {
           otpProviderRef.current = 'FAST2SMS';
           setOtpProvider('FAST2SMS');
-          const sendRes = await sendOtp(e164, emailRef.current, isIOS, 'FIREBASE_VERIFICATION_FAILED', errorCode, true);
+          const sendRes = await sendOtp(e164, emailRef.current, isIOS, 'FIREBASE_VERIFICATION_FAILED', failureDetail.slice(0, 200), true);
           if (sendRes.success) {
             codeSentRef.current = true;
             userInitiatedSendRef.current = false;

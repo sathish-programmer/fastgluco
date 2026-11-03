@@ -1519,6 +1519,33 @@ export class AdminController {
         eventType: 'REQUEST'
       };
 
+      // Auto-cleanup: Prune historical precursor INITIAL_DISPATCH rows that were superseded by a fallback dispatch within 120s
+      try {
+        const precursorRows = await AppOtpTelemetry.find({
+          eventType: 'REQUEST',
+          fallbackReason: 'INITIAL_DISPATCH',
+          verificationStatus: { $in: ['PENDING', 'EXPIRED'] }
+        }).select('_id phoneNumber email timestamp').limit(50).lean();
+
+        for (const row of precursorRows) {
+          const rowTime = new Date(row.timestamp).getTime();
+          const hasCompanionSession = await AppOtpTelemetry.exists({
+            _id: { $ne: row._id },
+            $or: [
+              ...(row.phoneNumber ? [{ phoneNumber: row.phoneNumber }] : []),
+              ...(row.email ? [{ email: row.email }] : [])
+            ],
+            timestamp: {
+              $gte: new Date(rowTime - 5000),
+              $lte: new Date(rowTime + 120000)
+            }
+          });
+          if (hasCompanionSession) {
+            await AppOtpTelemetry.deleteOne({ _id: row._id }).catch(() => {});
+          }
+        }
+      } catch (_) {}
+
       const activeProviderName = EmailService.getSmtpProviderName();
       const isBrevoActive = activeProviderName === 'brevo_smtp';
 
