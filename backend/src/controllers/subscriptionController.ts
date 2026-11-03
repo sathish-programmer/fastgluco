@@ -252,7 +252,7 @@ export class SubscriptionController {
 
       if (previousTrial) {
         return res.status(400).json({
-          message: 'You have already used your 48-hour free trial. Please subscribe for ₹1,000/year to continue enjoying full access.',
+          message: 'You have already used your free trial. Please subscribe to continue enjoying full access.',
           hasUsedTrial: true
         });
       }

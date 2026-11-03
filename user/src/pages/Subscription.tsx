@@ -125,6 +125,17 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
   const [couponSuccess, setCouponSuccess] = useState<string | null>(null);
   const [showTrialPopup, setShowTrialPopup] = useState<boolean>(false);
 
+  // Dynamic primary plan calculation from backend/admin (no hardcoded prices)
+  const primaryPlan = plans.length > 0 ? plans[0] : activePlanDetails;
+  const primaryPlanPrice = primaryPlan?.yearlyPrice ?? 999;
+  const primaryOrigPrice = primaryPlan?.originalYearlyPrice && primaryPlan.originalYearlyPrice > primaryPlanPrice
+    ? primaryPlan.originalYearlyPrice
+    : (primaryPlanPrice > 0 ? Math.round(primaryPlanPrice * 3.5) : 3500);
+  const primaryDiscountPct = primaryOrigPrice > primaryPlanPrice
+    ? Math.round(((primaryOrigPrice - primaryPlanPrice) / primaryOrigPrice) * 100)
+    : 71;
+  const primaryTrialHours = primaryPlan?.trialHours || (primaryPlan?.trialDays ? primaryPlan.trialDays * 24 : 48);
+
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
     setCouponLoading(true);
@@ -201,7 +212,12 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
         }
       }
     } catch (err: any) {
-      setError(err.message || 'An error occurred loading subscription details.');
+      const msg = err.message || '';
+      if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || !navigator.onLine) {
+        setError('Unable to load subscription details. Please check your internet connection.');
+      } else {
+        setError(msg || 'An error occurred loading subscription details.');
+      }
     } finally {
       setLoading(false);
     }
@@ -222,7 +238,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to start free trial.');
-      setSuccessMsg(data.message || 'Congratulations! Your 48-hour free trial has been activated.');
+      setSuccessMsg(data.message || `Congratulations! Your ${primaryTrialHours}-hour free trial has been activated.`);
       setShowTrialPopup(false);
       await fetchData();
       if (onSuccess) onSuccess();
@@ -235,6 +251,11 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
 
   useEffect(() => {
     fetchData();
+    const handleOnline = () => {
+      fetchData();
+    };
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
   }, [apiUrl, token]);
 
   const [showCancelConfirmModal, setShowCancelConfirmModal] = useState<boolean>(false);
@@ -535,9 +556,20 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
       </div>
 
       {error && (
-        <div className="mb-4 p-3.5 bg-red-50 text-danger text-xs font-semibold rounded-2xl border border-red-100 flex items-start space-x-2">
-          <AlertTriangle className="h-4 w-4 shrink-0 text-danger mt-0.5" />
-          <span>{error}</span>
+        <div className="mb-4 p-3.5 bg-red-50 dark:bg-red-950/30 text-rose-700 dark:text-rose-300 text-xs font-semibold rounded-2xl border border-red-200 dark:border-red-800/50 flex items-center justify-between gap-2 shadow-xs">
+          <div className="flex items-center space-x-2 min-w-0">
+            <AlertTriangle className="h-4 w-4 shrink-0 text-rose-500" />
+            <span className="truncate">{error}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => fetchData()}
+            disabled={loading}
+            className="px-3 py-1 bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-slate-700 text-[11px] font-bold rounded-lg border border-red-200 dark:border-red-800 transition-all shrink-0 cursor-pointer shadow-2xs flex items-center gap-1"
+          >
+            {loading && <Loader2 className="w-3 h-3 animate-spin" />}
+            <span>Retry</span>
+          </button>
         </div>
       )}
 
@@ -681,14 +713,14 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
               <span>{t('sub.annualMembership', 'Mito_Reboot Annual Membership')}</span>
             </h4>
             <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium mt-0.5">
-              48 Hours Free Trial • ₹1,000 / year thereafter (slashed from ₹3,600)
+              {primaryTrialHours} Hours Free Trial • ₹{primaryPlanPrice.toLocaleString('en-IN')} / year thereafter{primaryOrigPrice > primaryPlanPrice ? ` (slashed from ₹${primaryOrigPrice.toLocaleString('en-IN')})` : ''}
             </p>
           </div>
 
           <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/60 self-start sm:self-auto shadow-2xs">
             <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
             <span className="text-[11px] font-black text-indigo-700 dark:text-indigo-300">
-              72% OFF Special Launch Offer
+              {primaryDiscountPct}% OFF Special Launch Offer
             </span>
           </div>
         </div>
@@ -781,9 +813,10 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
               }
             }
             const finalPrice = parseFloat((price - discount).toFixed(2));
-            const origPrice = plan.originalYearlyPrice || 3600;
+            const origPrice = plan.originalYearlyPrice || (price > 0 ? Math.round(price * 3.5) : 3500);
             const hasOriginalPrice = origPrice > price;
-            const discountPct = hasOriginalPrice ? Math.round(((origPrice - price) / origPrice) * 100) : 72;
+            const discountPct = hasOriginalPrice ? Math.round(((origPrice - price) / origPrice) * 100) : 0;
+            const planTrialHours = plan.trialHours || (plan.trialDays ? plan.trialDays * 24 : 48);
 
             // GST and total calculation
             const effectivePrice = discount > 0 ? finalPrice : price;
@@ -822,7 +855,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                       </span>
                       <span className="text-[10px] font-black px-2.5 py-0.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 rounded-full flex items-center gap-1">
                         <Sparkles className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
-                        <span>48 Hours Free Trial</span>
+                        <span>{planTrialHours} Hours Free Trial</span>
                       </span>
                       {hasOriginalPrice && (
                         <span className="text-[10px] font-black px-2.5 py-0.5 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/60 rounded-full flex items-center gap-1">
@@ -879,7 +912,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                     <div className="pt-1 flex items-center justify-between">
                       <span className="text-[10px] font-extrabold text-blue-700 dark:text-blue-300 bg-blue-50/90 dark:bg-blue-900/30 border border-blue-200/80 dark:border-blue-800/40 px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
                         <Sparkles className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-                        <span>Free for 48 hours • Then {currencySymbol}{price} / year</span>
+                        <span>Free for {planTrialHours} hours • Then {currencySymbol}{price} / year</span>
                       </span>
                     </div>
                   </div>
@@ -935,7 +968,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                             <Sparkles className="h-4.5 w-4.5 text-amber-300 animate-pulse" />
                           )}
                           <span className="text-xs sm:text-sm font-black tracking-wide">
-                            {trialLoading ? 'Activating Free Trial...' : 'Start 48-Hour Free Trial (No Card Needed)'}
+                            {trialLoading ? 'Activating Free Trial...' : `Start ${planTrialHours}-Hour Free Trial (No Card Needed)`}
                           </span>
                         </button>
 
@@ -953,7 +986,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                         {hasUsedTrial && (
                           <div className="p-2.5 bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 text-xs font-semibold rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center gap-1.5">
                             <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
-                            <span>Your 48-hour free trial has ended. Subscribe to unlock all features.</span>
+                            <span>Your {planTrialHours}-hour free trial has ended. Subscribe to unlock all features.</span>
                           </div>
                         )}
                         <button
@@ -1104,11 +1137,11 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
               </div>
               
               <h3 className="text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-tight">
-                Claim 48-Hour Free Trial!
+                Claim {primaryTrialHours}-Hour Free Trial!
               </h3>
               
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 font-medium leading-relaxed">
-                Enjoy complete access to CGM reports, glucose spike analysis, AI food scanner, and coaching. Free for 48 hours, then ₹1,000/year (slashed from ₹3,600). No credit card required!
+                Enjoy complete access to CGM reports, glucose spike analysis, AI food scanner, and coaching. Free for {primaryTrialHours} hours, then ₹{primaryPlanPrice.toLocaleString('en-IN')}/year{primaryOrigPrice > primaryPlanPrice ? ` (slashed from ₹${primaryOrigPrice.toLocaleString('en-IN')})` : ''}. No credit card required!
               </p>
 
               <div className="mt-6 space-y-2">
@@ -1122,7 +1155,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                   ) : (
                     <Sparkles className="w-4 h-4 text-amber-300" />
                   )}
-                  <span>{trialLoading ? 'Activating Trial...' : 'Start 48-Hour Free Trial'}</span>
+                  <span>{trialLoading ? 'Activating Trial...' : `Start ${primaryTrialHours}-Hour Free Trial`}</span>
                 </button>
                 
                 <button

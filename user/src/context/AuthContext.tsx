@@ -131,7 +131,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     cancerPreventionDisclaimer: '',
     enableSubscriptionCoupons: true,
     enableSaferFoodCoupons: true,
-    enableSubscriptions: false,
+    enableSubscriptions: true,
     enableExternalPayments: false
   });
   const [activeMode, _setActiveMode] = useState<FocusModeType>(() => {
