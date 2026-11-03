@@ -637,16 +637,21 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
 
             {activeSub.cancelAtPeriodEnd ? (
               <div className="space-y-2.5 pt-2">
-                <div className="p-3 bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300 text-xs font-bold rounded-2xl border border-amber-100 dark:border-amber-900/30 flex items-start space-x-2">
+                <div className="p-3 bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300 text-xs font-bold rounded-2xl border border-amber-200/80 dark:border-amber-900/40 flex items-start space-x-2">
                   <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-500 mt-0.5" />
-                  <span>{t('sub.autoRenewDisabledExpireOn', { date: new Date(activeSub.endDate).toLocaleDateString(activeLocale), defaultValue: `Auto-renew is disabled. Your access will expire on ${new Date(activeSub.endDate).toLocaleDateString(activeLocale)}.` })}</span>
+                  <div>
+                    <span className="font-extrabold block">Subscription Cancelled</span>
+                    <span className="font-medium text-[11px] block mt-0.5">
+                      Auto-renewal is turned off. Your premium features remain active until {new Date(activeSub.status === 'trialing' && activeSub.trialEndDate ? activeSub.trialEndDate : activeSub.endDate).toLocaleDateString(activeLocale)}.
+                    </span>
+                  </div>
                 </div>
                 <button
                   onClick={handleReactivateSubscription}
                   disabled={actionLoading}
                   className="w-full bg-primary hover:bg-primary-dark text-white text-xs font-bold py-3 rounded-2xl transition-all shadow-sm cursor-pointer"
                 >
-                  {actionLoading ? t('common.processing', 'Processing...') : t('sub.turnOnAutoRenewal', 'Turn On Auto-Renewal')}
+                  {actionLoading ? t('common.processing', 'Processing...') : 'Reactivate Subscription'}
                 </button>
               </div>
             ) : (
@@ -654,9 +659,10 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                 <button
                   onClick={() => setShowCancelConfirmModal(true)}
                   disabled={actionLoading}
-                  className="w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold py-2.5 rounded-2xl transition-all cursor-pointer"
+                  className="w-full bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-900/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60 text-xs font-bold py-2.5 rounded-2xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
                 >
-                  {actionLoading ? 'Processing...' : 'Turn Off Auto-Renewal'}
+                  <X className="w-3.5 h-3.5" />
+                  <span>{actionLoading ? 'Processing...' : (activeSub.status === 'trialing' ? 'Cancel Free Trial' : 'Cancel Subscription')}</span>
                 </button>
               </div>
             )}
@@ -673,15 +679,20 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
       )}
 
       {/* Modern Cancel Auto-Renewal Modal */}
-      {showCancelConfirmModal && (
+      {showCancelConfirmModal && activeSub && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-md animate-fadeIn">
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 w-full max-w-sm border border-slate-150 dark:border-slate-800 shadow-2xl animate-scaleIn text-slate-800 dark:text-slate-100 text-center">
-            <div className="mx-auto w-12 h-12 bg-amber-50 dark:bg-amber-950/30 text-amber-500 rounded-2xl flex items-center justify-center mb-3">
+            <div className="mx-auto w-12 h-12 bg-rose-50 dark:bg-rose-950/30 text-rose-500 rounded-2xl flex items-center justify-center mb-3">
               <AlertTriangle className="h-6 w-6" />
             </div>
-            <h3 className="text-base font-black text-slate-900 dark:text-slate-100 mb-1">{t('sub.disableAutoRenewalQ', 'Disable Auto-Renewal?')}</h3>
-            <p className="text-xs text-slate-400 font-semibold leading-relaxed mb-5">
-              Your premium access will remain fully active until the end of your current billing cycle.
+            <h3 className="text-base font-black text-slate-900 dark:text-slate-100 mb-1">
+              {activeSub.status === 'trialing' ? 'Cancel Free Trial?' : 'Cancel Subscription?'}
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold leading-relaxed mb-5">
+              {activeSub.status === 'trialing'
+                ? 'Your free trial auto-renewal will be cancelled and you will not be billed. You will retain access until the 48-hour trial period finishes.'
+                : `Your subscription auto-renewal will be turned off immediately. You will retain full access until ${new Date(activeSub.endDate).toLocaleDateString(activeLocale)}. After this date, you will not be charged again.`
+              }
             </p>
             <div className="flex space-x-3">
               <button
@@ -694,9 +705,9 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
               <button
                 type="button"
                 onClick={confirmCancelAutoRenew}
-                className="flex-1 bg-amber-500 hover:bg-amber-600 text-white text-xs font-extrabold py-3 rounded-2xl transition-all shadow-md shadow-amber-500/20"
+                className="flex-1 bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold py-3 rounded-2xl transition-all shadow-md shadow-rose-600/20"
               >
-                Turn Off
+                Confirm Cancel
               </button>
             </div>
           </div>

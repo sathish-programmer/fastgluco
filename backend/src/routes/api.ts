@@ -439,6 +439,8 @@ router.post('/admin/profile-edits/:id/approve', AdminController.approveProfileEd
 router.post('/admin/profile-edits/:id/reject', AdminController.rejectProfileEdit);
 router.get('/admin/users/:userId/coaching', CoachingController.getSessionsForUser);
 router.put('/admin/users/:id/block', AdminController.toggleUserBlock);
+router.post('/admin/users/:id/subscription/cancel', AdminController.cancelUserSubscription);
+router.post('/admin/users/:id/subscription/add', AdminController.addUserSubscription);
 
 router.get('/admin/support/tickets', SupportController.getAllTickets);
 router.post('/admin/support/tickets/:id/reply', SupportController.replyToTicket);

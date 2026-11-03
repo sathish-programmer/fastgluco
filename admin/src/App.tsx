@@ -53,7 +53,12 @@ import {
   Stethoscope,
   RefreshCw,
   Package,
-  Key
+  Key,
+  Crown,
+  Clock,
+  AlertTriangle,
+  X,
+  Filter
 } from 'lucide-react';
 import {
   BarChart, Bar, PieChart, Pie, Cell,
@@ -263,6 +268,18 @@ const AdminPanelContent: React.FC = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 10, pages: 1 });
+  const [userPageSize, setUserPageSize] = useState<number>(10);
+  const [userSubFilter, setUserSubFilter] = useState<string>('all');
+  const [usersLoading, setUsersLoading] = useState<boolean>(false);
+  const [subModalUser, setSubModalUser] = useState<any | null>(null);
+  const [subModalMode, setSubModalMode] = useState<'manage' | 'grant' | 'cancel'>('manage');
+  const [subGrantPlanId, setSubGrantPlanId] = useState<string>('');
+  const [subGrantDurationDays, setSubGrantDurationDays] = useState<number>(365);
+  const [subGrantKind, setSubGrantKind] = useState<'paid' | 'trial'>('paid');
+  const [subGrantNote, setSubGrantNote] = useState<string>('');
+  const [subCancelImmediate, setSubCancelImmediate] = useState<boolean>(false);
+  const [subCancelReason, setSubCancelReason] = useState<string>('');
+  const [subActionLoading, setSubActionLoading] = useState<boolean>(false);
   const [foodPagination, setFoodPagination] = useState({ total: 0, page: 1, limit: 10, pages: 1 });
   const [foods, setFoods] = useState<any[]>([]);
   const [videos, setVideos] = useState<any[]>([]);
@@ -568,7 +585,7 @@ const AdminPanelContent: React.FC = () => {
   // User activity modal states
   const [selectedUserActivity, setSelectedUserActivity] = useState<any>(null);
   const [showUserModal, setShowUserModal] = useState<boolean>(false);
-  const [userModalTab, setUserModalTab] = useState<'overview' | 'food' | 'glucose' | 'reports' | 'coaching' | 'notify' | 'habits'>('overview');
+  const [userModalTab, setUserModalTab] = useState<'overview' | 'food' | 'glucose' | 'reports' | 'coaching' | 'notify' | 'habits' | 'subscription'>('overview');
   const [coachingSessions, setCoachingSessions] = useState<any[]>([]);
   const [userModalNotify, setUserModalNotify] = useState({ title: '', body: '' });
 
@@ -928,18 +945,94 @@ const AdminPanelContent: React.FC = () => {
     }
   };
 
-  const fetchUsers = async (page: number = 1) => {
+  const fetchUsers = async (
+    page: number = pagination.page,
+    limit: number = userPageSize,
+    subStatus: string = userSubFilter,
+    q: string = searchQuery
+  ) => {
     try {
-      const res = await fetch(`${apiUrl}/admin/users?page=${page}&limit=10&q=${searchQuery}`, {
+      setUsersLoading(true);
+      const res = await fetch(`${apiUrl}/admin/users?page=${page}&limit=${limit}&q=${encodeURIComponent(q)}&subStatus=${subStatus}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
         const data = await res.json();
         setUsers(data.users || []);
-        setPagination({ total: data.total, page: data.page, limit: data.limit, pages: data.pages });
+        const pag = data.pagination || data;
+        setPagination({
+          total: pag.total ?? 0,
+          page: pag.page ?? page,
+          limit: pag.limit ?? limit,
+          pages: pag.pages ?? 1
+        });
       }
     } catch (e) {
       console.error(e);
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  const handleAdminCancelSubscription = async (userId: string, immediate: boolean = false, reason: string = '') => {
+    const confirmPrompt = immediate
+      ? 'Are you sure you want to CANCEL this subscription IMMEDIATELY? Access will be revoked right now.'
+      : 'Cancel auto-renewal? User access will remain active until their billing period ends.';
+    if (!confirm(confirmPrompt)) return;
+
+    setSubActionLoading(true);
+    try {
+      const res = await fetch(`${apiUrl}/admin/users/${userId}/subscription/cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ immediate, reason })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to cancel subscription.');
+      alert(data.message || 'Subscription cancelled successfully.');
+      setSubModalUser(null);
+      fetchUsers(pagination.page, userPageSize, userSubFilter);
+      if (selectedUserActivity && selectedUserActivity.user?._id === userId) {
+        fetchUserActivity(userId);
+      }
+    } catch (err: any) {
+      alert(err.message || 'Error cancelling subscription.');
+    } finally {
+      setSubActionLoading(false);
+    }
+  };
+
+  const handleAdminGrantSubscription = async (userId: string) => {
+    setSubActionLoading(true);
+    try {
+      const res = await fetch(`${apiUrl}/admin/users/${userId}/subscription/add`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          planId: subGrantPlanId || undefined,
+          durationDays: subGrantDurationDays,
+          type: subGrantKind,
+          note: subGrantNote
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to grant subscription.');
+      alert(data.message || 'Subscription granted successfully!');
+      setSubModalUser(null);
+      fetchUsers(pagination.page, userPageSize, userSubFilter);
+      if (selectedUserActivity && selectedUserActivity.user?._id === userId) {
+        fetchUserActivity(userId);
+      }
+    } catch (err: any) {
+      alert(err.message || 'Error granting subscription.');
+    } finally {
+      setSubActionLoading(false);
     }
   };
 
@@ -994,8 +1087,8 @@ const AdminPanelContent: React.FC = () => {
     }
   };
 
-  const handleSearchUsers = () => {
-    fetchUsers(1);
+  const handleSearchUsers = (q: string = searchQuery, filter: string = userSubFilter, limit: number = userPageSize) => {
+    fetchUsers(1, limit, filter, q);
   };
 
   const fetchPendingEdits = async () => {
@@ -3822,20 +3915,96 @@ const AdminPanelContent: React.FC = () => {
         {/* VIEW 2: USER BASE MANAGEMENT */}
         {activeView === 'users' && (
           <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-slate-800">Patient Directory</h2>
-              <div className="relative w-64">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-                  <Search className="h-4 w-4" />
+            {/* Top Toolbar: Title, Total Badge, Search, Subscription Filter & Page Size */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-soft">
+              <div className="flex items-center gap-3 flex-wrap">
+                <h2 className="text-xl font-bold text-slate-800">Patient Directory</h2>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs">
+                  <Users className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Total: {pagination.total} patients</span>
                 </span>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearchUsers()}
-                  placeholder="Search by name/email..."
-                  className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm bg-white"
-                />
+                {usersLoading && (
+                  <span className="inline-flex items-center gap-1 text-xs text-slate-400 font-semibold animate-pulse">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+                    <span>Loading...</span>
+                  </span>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2.5">
+                {/* Subscription Status Filter */}
+                <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5">
+                  <Filter className="w-3.5 h-3.5 text-slate-400" />
+                  <span className="text-[11px] font-bold text-slate-500 uppercase">Sub:</span>
+                  <select
+                    value={userSubFilter}
+                    onChange={(e) => {
+                      const newFilter = e.target.value;
+                      setUserSubFilter(newFilter);
+                      fetchUsers(1, userPageSize, newFilter, searchQuery);
+                    }}
+                    className="bg-transparent text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
+                  >
+                    <option value="all">All Subscriptions</option>
+                    <option value="active">👑 Active Paid</option>
+                    <option value="trialing">⚡ Free Trial (Active)</option>
+                    <option value="trial_expired">⏳ Trial Expired</option>
+                    <option value="cancelled">⚠️ Cancelled</option>
+                    <option value="none">👤 Free Users (No Sub)</option>
+                  </select>
+                </div>
+
+                {/* Page Size Selector */}
+                <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5">
+                  <span className="text-[11px] font-bold text-slate-500 uppercase">Rows:</span>
+                  <select
+                    value={userPageSize}
+                    onChange={(e) => {
+                      const newSize = parseInt(e.target.value, 10);
+                      setUserPageSize(newSize);
+                      fetchUsers(1, newSize, userSubFilter, searchQuery);
+                    }}
+                    className="bg-transparent text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
+                  >
+                    <option value={10}>10 / page</option>
+                    <option value={25}>25 / page</option>
+                    <option value={50}>50 / page</option>
+                    <option value={100}>100 / page</option>
+                  </select>
+                </div>
+
+                {/* Search Bar */}
+                <div className="relative w-full sm:w-64 flex items-center">
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 pointer-events-none">
+                    <Search className="h-4 w-4" />
+                  </span>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearchUsers(searchQuery, userSubFilter, userPageSize)}
+                    placeholder="Search by name/email/phone..."
+                    className="w-full pl-9 pr-8 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-xs font-medium bg-slate-50 focus:bg-white transition-all"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => {
+                        setSearchQuery('');
+                        handleSearchUsers('', userSubFilter, userPageSize);
+                      }}
+                      className="absolute right-2 text-slate-400 hover:text-slate-600 p-0.5"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                <button
+                  onClick={() => handleSearchUsers(searchQuery, userSubFilter, userPageSize)}
+                  className="px-3.5 py-2 bg-primary hover:bg-primary-dark text-white rounded-xl text-xs font-bold transition-all shadow-xs"
+                >
+                  Search
+                </button>
               </div>
             </div>
 
@@ -3844,110 +4013,503 @@ const AdminPanelContent: React.FC = () => {
               <table className="min-w-full divide-y divide-slate-200">
                 <thead className="bg-slate-50 text-slate-400 text-xs font-bold uppercase tracking-wider text-left">
                   <tr>
-                    <th className="px-6 py-4">Name</th>
-                    <th className="px-6 py-4">Email</th>
-                    <th className="px-6 py-4">Status</th>
-                    <th className="px-6 py-4">Daily Target</th>
-                    <th className="px-6 py-4">Goal</th>
-                    <th className="px-6 py-4 text-center">Action</th>
+                    <th className="px-5 py-3.5">Name &amp; Contact</th>
+                    <th className="px-5 py-3.5">Account Status</th>
+                    <th className="px-5 py-3.5">Subscription Status</th>
+                    <th className="px-5 py-3.5">Daily Target</th>
+                    <th className="px-5 py-3.5">Goal</th>
+                    <th className="px-5 py-3.5 text-center">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 text-sm font-semibold text-slate-700">
+                <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
                   {users.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="text-center py-8 text-slate-400">No users found matching query.</td>
+                      <td colSpan={6} className="text-center py-12 text-slate-400">
+                        <Users className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                        <p className="font-bold">No patients found matching query or filters.</p>
+                        <p className="text-[11px] text-slate-400 mt-0.5">Try clearing your search or selecting 'All Subscriptions'.</p>
+                      </td>
                     </tr>
                   ) : (
-                    users.map((u) => (
-                      <tr key={u._id} className="hover:bg-slate-50/50">
-                        <td className="px-6 py-4 font-bold text-slate-800">
-                          <button
-                            onClick={() => fetchUserActivity(u._id)}
-                            className="hover:underline hover:text-primary text-left font-bold text-slate-800 focus:outline-none"
-                          >
-                            {u.name}
-                          </button>
-                        </td>
-                        <td className="px-6 py-4 text-slate-500 font-medium">{u.email}</td>
-                        <td className="px-6 py-4">
-                          {u.isBlocked ? (
-                            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-50 text-danger border border-red-100">
-                              Blocked
-                            </span>
-                          ) : (
-                            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-50 text-success border border-green-100">
-                              Active
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4">{u.dailyCalorieTarget ? `${u.dailyCalorieTarget} kcal` : '--'}</td>
-                        <td className="px-6 py-4 font-medium text-slate-500">{u.goal || '--'}</td>
-                        <td className="px-6 py-4 text-center">
-                          <div className="flex justify-center space-x-2">
+                    users.map((u) => {
+                      const subSummary = u.subscriptionSummary || { status: 'none', statusLabel: 'Free User', remainingText: '' };
+                      return (
+                        <tr key={u._id} className="hover:bg-slate-50/60 transition-colors">
+                          <td className="px-5 py-3.5">
                             <button
                               onClick={() => fetchUserActivity(u._id)}
-                              className="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all flex items-center space-x-1"
+                              className="hover:underline hover:text-primary text-left font-bold text-slate-900 block"
                             >
-                              <Activity className="h-3.5 w-3.5" />
-                              <span>Details</span>
+                              {u.name || 'Unnamed Patient'}
                             </button>
-                            <button
-                              onClick={() => handleToggleUserBlock(u._id, u.isBlocked)}
-                              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 ${u.isBlocked
-                                ? 'bg-green-50 hover:bg-green-100 text-success border border-green-100'
-                                : 'bg-red-50 hover:bg-red-100 text-danger border border-red-100'
+                            <span className="text-[11px] text-slate-400 block font-normal">{u.email}</span>
+                            {u.phoneNumber && (
+                              <span className="text-[10px] text-slate-400 block font-normal">{u.phoneNumber}</span>
+                            )}
+                          </td>
+                          <td className="px-5 py-3.5">
+                            {u.isBlocked ? (
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-50 text-danger border border-rose-100">
+                                Blocked
+                              </span>
+                            ) : (
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-50 text-success border border-emerald-100">
+                                Active
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-5 py-3.5">
+                            {subSummary.status === 'active' ? (
+                              <div className="inline-flex flex-col items-start gap-0.5">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                  <Crown className="w-3 h-3 text-amber-500 fill-amber-400" />
+                                  <span>Active Paid</span>
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-medium">
+                                  {subSummary.remainingText ? subSummary.remainingText : 'Annual Plan'}
+                                </span>
+                              </div>
+                            ) : subSummary.status === 'trialing' ? (
+                              <div className="inline-flex flex-col items-start gap-0.5">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-50 text-amber-800 border border-amber-200">
+                                  <Sparkles className="w-3 h-3 text-amber-500" />
+                                  <span>Free Trial</span>
+                                </span>
+                                <span className="text-[10px] text-amber-600 font-semibold">
+                                  {subSummary.remainingText || '48h Trial'}
+                                </span>
+                              </div>
+                            ) : subSummary.status === 'trial_expired' ? (
+                              <div className="inline-flex flex-col items-start gap-0.5">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-orange-50 text-orange-700 border border-orange-200">
+                                  <Clock className="w-3 h-3 text-orange-500" />
+                                  <span>Trial Expired</span>
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-medium">No active plan</span>
+                              </div>
+                            ) : subSummary.status === 'cancelled_active' || subSummary.status === 'cancelled' ? (
+                              <div className="inline-flex flex-col items-start gap-0.5">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-200">
+                                  <AlertTriangle className="w-3 h-3 text-rose-500" />
+                                  <span>Cancelled</span>
+                                </span>
+                                {subSummary.remainingText && (
+                                  <span className="text-[10px] text-slate-400 font-medium">
+                                    Active until {subSummary.remainingText}
+                                  </span>
+                                )}
+                              </div>
+                            ) : subSummary.status === 'expired' ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500 border border-slate-200">
+                                Expired
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-400 border border-slate-200">
+                                Free User
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-5 py-3.5 text-slate-600">
+                            {u.dailyCalorieTarget ? `${u.dailyCalorieTarget} kcal` : '--'}
+                          </td>
+                          <td className="px-5 py-3.5 font-medium text-slate-500">
+                            {u.goal ? u.goal.replace('-', ' ') : '--'}
+                          </td>
+                          <td className="px-5 py-3.5 text-center">
+                            <div className="flex justify-center items-center gap-1.5 flex-wrap">
+                              <button
+                                onClick={() => fetchUserActivity(u._id)}
+                                className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all flex items-center space-x-1"
+                                title="View Patient Details & Logs"
+                              >
+                                <Activity className="h-3.5 w-3.5" />
+                                <span>Details</span>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setSubModalUser(u);
+                                  setSubModalMode('manage');
+                                  setSubGrantDurationDays(365);
+                                  setSubGrantKind('paid');
+                                  setSubGrantNote('');
+                                  setSubCancelImmediate(false);
+                                  setSubCancelReason('');
+                                  if (plans.length === 0) fetchPlans();
+                                }}
+                                className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 transition-all flex items-center space-x-1"
+                                title="Manage or Grant Subscription"
+                              >
+                                <CreditCard className="h-3.5 w-3.5 text-indigo-600" />
+                                <span>Sub</span>
+                              </button>
+                              <button
+                                onClick={() => handleToggleUserBlock(u._id, u.isBlocked)}
+                                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1 ${
+                                  u.isBlocked
+                                    ? 'bg-green-50 hover:bg-green-100 text-success border border-green-200'
+                                    : 'bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200'
                                 }`}
-                            >
-                              {u.isBlocked ? (
-                                <>
-                                  <UserCheck className="h-4 w-4" />
-                                  <span>Unblock</span>
-                                </>
-                              ) : (
-                                <>
-                                  <UserX className="h-4 w-4" />
-                                  <span>Block</span>
-                                </>
-                              )}
-                            </button>
-                            <button
-                              onClick={() => handleDeleteUser(u._id)}
-                              className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 bg-red-100 hover:bg-red-200 text-red-700"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              <span>Delete</span>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                              >
+                                {u.isBlocked ? (
+                                  <>
+                                    <UserCheck className="h-3.5 w-3.5" />
+                                    <span>Unblock</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <UserX className="h-3.5 w-3.5" />
+                                    <span>Block</span>
+                                  </>
+                                )}
+                              </button>
+                              <button
+                                onClick={() => handleDeleteUser(u._id)}
+                                className="px-2 py-1.5 rounded-lg text-xs font-bold transition-all text-red-600 hover:bg-red-50"
+                                title="Delete User"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
             </div>
 
-            {/* Pagination Controls */}
-            {pagination.pages > 1 && (
-              <div className="flex justify-between items-center pt-2">
-                <span className="text-xs font-bold text-slate-400">Total: {pagination.total} patients</span>
-                <div className="flex space-x-2">
-                  <button
-                    disabled={pagination.page === 1}
-                    onClick={() => fetchUsers(pagination.page - 1)}
-                    className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold disabled:opacity-50"
-                  >
-                    Prev
-                  </button>
-                  <span className="text-xs font-bold text-slate-600 px-3 py-1">
-                    Page {pagination.page} of {pagination.pages}
+            {/* Comprehensive Pagination Controls */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-soft flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="text-xs font-bold text-slate-500">
+                {pagination.total > 0 ? (
+                  <span>
+                    Showing <span className="text-slate-800">{(pagination.page - 1) * pagination.limit + 1}</span> to{' '}
+                    <span className="text-slate-800">{Math.min(pagination.page * pagination.limit, pagination.total)}</span> of{' '}
+                    <span className="text-primary font-black">{pagination.total}</span> patients
                   </span>
-                  <button
-                    disabled={pagination.page === pagination.pages}
-                    onClick={() => fetchUsers(pagination.page + 1)}
-                    className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold disabled:opacity-50"
-                  >
-                    Next
-                  </button>
+                ) : (
+                  <span>Total: 0 patients</span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <button
+                  disabled={pagination.page <= 1 || usersLoading}
+                  onClick={() => fetchUsers(1, userPageSize, userSubFilter, searchQuery)}
+                  className="px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                  title="First Page"
+                >
+                  &laquo; First
+                </button>
+                <button
+                  disabled={pagination.page <= 1 || usersLoading}
+                  onClick={() => fetchUsers(pagination.page - 1, userPageSize, userSubFilter, searchQuery)}
+                  className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  &lsaquo; Prev
+                </button>
+
+                {/* Page Jump indicator */}
+                <div className="px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-lg text-xs font-black text-primary">
+                  Page {pagination.page} of {Math.max(1, pagination.pages)}
+                </div>
+
+                <button
+                  disabled={pagination.page >= pagination.pages || usersLoading}
+                  onClick={() => fetchUsers(pagination.page + 1, userPageSize, userSubFilter, searchQuery)}
+                  className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  Next &rsaquo;
+                </button>
+                <button
+                  disabled={pagination.page >= pagination.pages || usersLoading}
+                  onClick={() => fetchUsers(pagination.pages, userPageSize, userSubFilter, searchQuery)}
+                  className="px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                  title="Last Page"
+                >
+                  Last &raquo;
+                </button>
+              </div>
+            </div>
+
+            {/* ADMIN MANAGE / GRANT / CANCEL SUBSCRIPTION MODAL */}
+            {subModalUser && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+                <div className="bg-white rounded-3xl p-6 w-full max-w-lg border border-slate-200 shadow-2xl animate-scaleIn text-slate-800 max-h-[90vh] overflow-y-auto">
+                  <div className="flex justify-between items-start mb-4 border-b border-slate-100 pb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2.5 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100">
+                        <CreditCard className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-base font-black text-slate-900">Manage Patient Subscription</h3>
+                        <p className="text-xs text-slate-500 font-semibold">{subModalUser.name} &bull; {subModalUser.email}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setSubModalUser(null)}
+                      className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  {/* Current Subscription Status Overview */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-5">
+                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block mb-1">
+                      Current Subscription Status
+                    </span>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="text-sm font-black text-slate-800 flex items-center gap-1.5">
+                          {subModalUser.subscription?.planName || subModalUser.subscriptionSummary?.planName || 'No Active Plan'}
+                        </h4>
+                        <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                          Status: <span className="font-bold text-slate-700 capitalize">{subModalUser.subscriptionSummary?.statusLabel || 'Free User'}</span>
+                          {subModalUser.subscriptionSummary?.remainingText ? ` (${subModalUser.subscriptionSummary.remainingText})` : ''}
+                        </p>
+                      </div>
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-black ${
+                        subModalUser.subscriptionSummary?.status === 'active'
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                          : subModalUser.subscriptionSummary?.status === 'trialing'
+                          ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                          : 'bg-slate-200 text-slate-600'
+                      }`}>
+                        {subModalUser.subscriptionSummary?.statusLabel || 'Free'}
+                      </span>
+                    </div>
+
+                    {subModalUser.subscription && (
+                      <div className="mt-3 pt-3 border-t border-slate-200 text-[11px] text-slate-600 space-y-1">
+                        <div className="flex justify-between">
+                          <span>Start Date:</span>
+                          <span className="font-bold">{new Date(subModalUser.subscription.startDate).toLocaleDateString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Expiry / End Date:</span>
+                          <span className="font-bold">{new Date(subModalUser.subscription.endDate).toLocaleDateString()}</span>
+                        </div>
+                        {subModalUser.subscription.trialEndDate && (
+                          <div className="flex justify-between text-amber-700">
+                            <span>Trial Ends:</span>
+                            <span className="font-bold">{new Date(subModalUser.subscription.trialEndDate).toLocaleString()}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between">
+                          <span>Auto-Renewal:</span>
+                          <span className={`font-bold ${subModalUser.subscription.cancelAtPeriodEnd ? 'text-rose-600' : 'text-emerald-600'}`}>
+                            {subModalUser.subscription.cancelAtPeriodEnd ? 'Disabled (Cancelled)' : 'Active (Will Renew)'}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Mode Toggles: Grant/Add vs Cancel */}
+                  <div className="flex gap-2 mb-4 border-b border-slate-100 pb-3">
+                    <button
+                      onClick={() => setSubModalMode('grant')}
+                      className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                        subModalMode === 'grant' || subModalMode === 'manage'
+                          ? 'bg-indigo-600 text-white shadow-sm'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      + Grant / Extend Subscription
+                    </button>
+                    {(subModalUser.subscriptionSummary?.status === 'active' || subModalUser.subscriptionSummary?.status === 'trialing') && (
+                      <button
+                        onClick={() => setSubModalMode('cancel')}
+                        className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                          subModalMode === 'cancel'
+                            ? 'bg-rose-600 text-white shadow-sm'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }`}
+                      >
+                        Cancel Subscription
+                      </button>
+                    )}
+                  </div>
+
+                  {/* FORM 1: GRANT / ADD SUBSCRIPTION */}
+                  {(subModalMode === 'grant' || subModalMode === 'manage') && (
+                    <div className="space-y-3.5">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
+                          Subscription Kind
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => { setSubGrantKind('paid'); setSubGrantDurationDays(365); }}
+                            className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all ${
+                              subGrantKind === 'paid'
+                                ? 'bg-primary/10 border-primary text-primary font-black'
+                                : 'bg-slate-50 border-slate-200 text-slate-600'
+                            }`}
+                          >
+                            👑 Paid Membership
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setSubGrantKind('trial'); setSubGrantDurationDays(2); }}
+                            className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all ${
+                              subGrantKind === 'trial'
+                                ? 'bg-amber-50 border-amber-400 text-amber-800 font-black'
+                                : 'bg-slate-50 border-slate-200 text-slate-600'
+                            }`}
+                          >
+                            ⚡ Free Trial (48 Hours)
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
+                          Select Plan
+                        </label>
+                        <select
+                          value={subGrantPlanId}
+                          onChange={(e) => setSubGrantPlanId(e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                          <option value="">Default Primary Plan ({plans[0]?.name || 'Premium Plan'})</option>
+                          {plans.map((p: any) => (
+                            <option key={p._id} value={p._id}>
+                              {p.name} - ₹{p.yearlyPrice} / yr
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
+                          Duration
+                        </label>
+                        <select
+                          value={subGrantDurationDays}
+                          onChange={(e) => setSubGrantDurationDays(parseInt(e.target.value, 10))}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                          <option value={2}>48 Hours (2 Days)</option>
+                          <option value={7}>7 Days (1 Week)</option>
+                          <option value={30}>30 Days (1 Month)</option>
+                          <option value={90}>90 Days (3 Months)</option>
+                          <option value={180}>180 Days (6 Months)</option>
+                          <option value={365}>365 Days (1 Full Year)</option>
+                          <option value={730}>730 Days (2 Years)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
+                          Admin Note / Reason (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={subGrantNote}
+                          onChange={(e) => setSubGrantNote(e.target.value)}
+                          placeholder="e.g. VIP promotion, test access, or offline payment"
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                      </div>
+
+                      <div className="pt-2 flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setSubModalUser(null)}
+                          className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          disabled={subActionLoading}
+                          onClick={() => handleAdminGrantSubscription(subModalUser._id)}
+                          className="px-5 py-2.5 rounded-xl text-xs font-black bg-primary hover:bg-primary-dark text-white transition-all shadow-sm flex items-center gap-1.5"
+                        >
+                          {subActionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                          <span>Grant Subscription</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* FORM 2: CANCEL SUBSCRIPTION */}
+                  {subModalMode === 'cancel' && (
+                    <div className="space-y-4">
+                      <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-2xl text-rose-800 text-xs">
+                        <AlertTriangle className="w-4 h-4 inline mr-1 text-rose-600" />
+                        <strong>Cancelling Subscription:</strong> Choose whether to end auto-renewal at period end or immediately terminate access.
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
+                          Cancellation Type
+                        </label>
+                        <div className="space-y-2">
+                          <label className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50">
+                            <input
+                              type="radio"
+                              name="cancelType"
+                              checked={!subCancelImmediate}
+                              onChange={() => setSubCancelImmediate(false)}
+                            />
+                            <div className="text-xs">
+                              <span className="font-bold block">Cancel at End of Period (Recommended)</span>
+                              <span className="text-[11px] text-slate-500">Auto-renewal is stopped. User keeps full access until expiry date.</span>
+                            </div>
+                          </label>
+                          <label className="flex items-center gap-2 p-2.5 rounded-xl border border-rose-200 bg-rose-50/40 cursor-pointer hover:bg-rose-50">
+                            <input
+                              type="radio"
+                              name="cancelType"
+                              checked={subCancelImmediate}
+                              onChange={() => setSubCancelImmediate(true)}
+                            />
+                            <div className="text-xs">
+                              <span className="font-bold text-rose-700 block">Cancel Immediately</span>
+                              <span className="text-[11px] text-rose-600">Access will be revoked right now. The paywall will block the user immediately.</span>
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
+                          Cancellation Reason
+                        </label>
+                        <input
+                          type="text"
+                          value={subCancelReason}
+                          onChange={(e) => setSubCancelReason(e.target.value)}
+                          placeholder="e.g. User requested via email / Refund issued"
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                        />
+                      </div>
+
+                      <div className="pt-2 flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setSubModalMode('manage')}
+                          className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100"
+                        >
+                          Back
+                        </button>
+                        <button
+                          type="button"
+                          disabled={subActionLoading}
+                          onClick={() => handleAdminCancelSubscription(subModalUser._id, subCancelImmediate, subCancelReason)}
+                          className="px-5 py-2.5 rounded-xl text-xs font-black bg-rose-600 hover:bg-rose-700 text-white transition-all shadow-sm flex items-center gap-1.5"
+                        >
+                          {subActionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
+                          <span>Confirm Cancellation</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -8307,6 +8869,7 @@ const AdminPanelContent: React.FC = () => {
                       { key: 'reports', label: '📄 CGM Reports' },
                       { key: 'coaching', label: '🤖 AI Coaching' },
                       { key: 'notify', label: '🔔 Send Alert' },
+                      { key: 'subscription', label: '💳 Subscription & Billing' },
                     ].map((tab) => (
                       <button
                         key={tab.key}
@@ -8620,44 +9183,167 @@ const AdminPanelContent: React.FC = () => {
                       </div>
                     )}
 
-                    {/* SEND ALERT TAB */}
-                    {userModalTab === 'notify' && (
-                      <form onSubmit={handleSendUserDirectNotification} className="space-y-4 max-w-lg">
-                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 p-4 rounded-2xl">
-                          <p className="text-xs text-primary font-semibold">
-                            📣 This will dispatch a real-time FCM push notification directly to the patient's mobile device. Use this to advise them on glucose spikes or meal timing.
-                          </p>
+                    {/* SUBSCRIPTION & BILLING TAB */}
+                    {userModalTab === 'subscription' && (
+                      <div className="space-y-6">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 p-4 rounded-2xl">
+                          <div>
+                            <h4 className="text-sm font-black text-slate-800 flex items-center gap-2">
+                              <CreditCard className="w-4 h-4 text-primary" />
+                              <span>Patient Subscription &amp; Access Controls</span>
+                            </h4>
+                            <p className="text-xs text-slate-500 font-medium mt-0.5">
+                              View current plan, grant complimentary membership or free trial, or cancel access.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSubModalUser(selectedUserActivity.user);
+                              setSubModalMode('grant');
+                              setSubGrantDurationDays(365);
+                              setSubGrantKind('paid');
+                              setSubGrantNote('');
+                              if (plans.length === 0) fetchPlans();
+                            }}
+                            className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-xl text-xs font-black transition-all shadow-xs flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Grant / Extend Subscription</span>
+                          </button>
                         </div>
-                        <div>
-                          <label className="block text-[10px] font-extrabold text-slate-500 uppercase mb-1.5">Alert Title</label>
-                          <input
-                            type="text"
-                            required
-                            value={userModalNotify.title}
-                            onChange={(e) => setUserModalNotify({ ...userModalNotify, title: e.target.value })}
-                            placeholder="E.G. High Glucose Warning"
-                            className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 font-bold text-xs"
-                          />
+
+                        {/* Active Subscription Overview Card */}
+                        {(() => {
+                          const subs = selectedUserActivity.subscriptions || [];
+                          const now = new Date();
+                          const activeSub = subs.find((s: any) =>
+                            (s.status === 'active' && new Date(s.endDate) > now) ||
+                            (s.status === 'trialing' && s.trialEndDate && new Date(s.trialEndDate) > now) ||
+                            (s.status === 'cancelled' && new Date(s.endDate) > now)
+                          );
+
+                          return (
+                            <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-5 space-y-4">
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">
+                                    Current Plan
+                                  </span>
+                                  <h3 className="text-lg font-black text-slate-900 mt-0.5 flex items-center gap-2">
+                                    {activeSub ? (activeSub.planId?.name || 'Annual Plan') : 'No Active Subscription'}
+                                    {activeSub && (
+                                      <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border ${
+                                        activeSub.status === 'active'
+                                          ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                          : activeSub.status === 'trialing'
+                                          ? 'bg-amber-100 text-amber-800 border-amber-300'
+                                          : 'bg-rose-100 text-rose-800 border-rose-300'
+                                      }`}>
+                                        {activeSub.status === 'active'
+                                          ? '👑 Active Paid'
+                                          : activeSub.status === 'trialing'
+                                          ? '⚡ Free Trial'
+                                          : '⚠️ Cancelled (Active until expiry)'}
+                                      </span>
+                                    )}
+                                  </h3>
+                                </div>
+
+                                {activeSub && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleAdminCancelSubscription(selectedUserActivity.user._id, false, 'Cancelled from Patient Details view')}
+                                    className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                                  >
+                                    Cancel Subscription
+                                  </button>
+                                )}
+                              </div>
+
+                              {activeSub ? (
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-2 border-t border-slate-200 text-xs">
+                                  <div className="bg-white p-3 rounded-xl border border-slate-100">
+                                    <span className="text-[10px] font-extrabold text-slate-400 block uppercase">Start Date</span>
+                                    <span className="font-bold text-slate-800">{new Date(activeSub.startDate).toLocaleDateString()}</span>
+                                  </div>
+                                  <div className="bg-white p-3 rounded-xl border border-slate-100">
+                                    <span className="text-[10px] font-extrabold text-slate-400 block uppercase">Expiry Date</span>
+                                    <span className="font-bold text-slate-800">{new Date(activeSub.endDate).toLocaleDateString()}</span>
+                                  </div>
+                                  <div className="bg-white p-3 rounded-xl border border-slate-100">
+                                    <span className="text-[10px] font-extrabold text-slate-400 block uppercase">Auto-Renewal</span>
+                                    <span className={`font-bold ${activeSub.cancelAtPeriodEnd ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                      {activeSub.cancelAtPeriodEnd ? 'Cancelled' : 'Enabled'}
+                                    </span>
+                                  </div>
+                                  <div className="bg-white p-3 rounded-xl border border-slate-100">
+                                    <span className="text-[10px] font-extrabold text-slate-400 block uppercase">Billing Cycle</span>
+                                    <span className="font-bold text-slate-800 capitalize">{activeSub.billingCycle || 'Yearly'}</span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <p className="text-xs text-slate-400 font-medium pt-1">
+                                  This patient has no active paid subscription or free trial. They will be gated by the paywall in the mobile app.
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })()}
+
+                        {/* Subscription Audit History Table */}
+                        <div className="space-y-3">
+                          <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider">Subscription &amp; Trial History</h4>
+                          <div className="bg-white rounded-2xl border border-slate-200 shadow-soft overflow-hidden">
+                            <table className="min-w-full divide-y divide-slate-100 text-xs">
+                              <thead className="bg-slate-50 text-slate-400 font-bold uppercase text-left">
+                                <tr>
+                                  <th className="px-4 py-3">Plan</th>
+                                  <th className="px-4 py-3">Status</th>
+                                  <th className="px-4 py-3">Cycle</th>
+                                  <th className="px-4 py-3">Start Date</th>
+                                  <th className="px-4 py-3">End Date</th>
+                                  <th className="px-4 py-3">Auto-Renew</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
+                                {!selectedUserActivity.subscriptions || selectedUserActivity.subscriptions.length === 0 ? (
+                                  <tr>
+                                    <td colSpan={6} className="text-center py-6 text-slate-400 font-semibold">
+                                      No subscription history found for this patient.
+                                    </td>
+                                  </tr>
+                                ) : (
+                                  selectedUserActivity.subscriptions.map((sub: any) => (
+                                    <tr key={sub._id} className="hover:bg-slate-50/50">
+                                      <td className="px-4 py-3 font-bold text-slate-800">{sub.planId?.name || 'Annual Plan'}</td>
+                                      <td className="px-4 py-3">
+                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                          sub.status === 'active'
+                                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                            : sub.status === 'trialing'
+                                            ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                            : 'bg-slate-100 text-slate-500 border border-slate-200'
+                                        }`}>
+                                          {sub.status}
+                                        </span>
+                                      </td>
+                                      <td className="px-4 py-3 capitalize">{sub.billingCycle}</td>
+                                      <td className="px-4 py-3">{new Date(sub.startDate).toLocaleDateString()}</td>
+                                      <td className="px-4 py-3">{new Date(sub.endDate).toLocaleDateString()}</td>
+                                      <td className="px-4 py-3">
+                                        <span className={sub.cancelAtPeriodEnd ? 'text-rose-500 font-bold' : 'text-emerald-600 font-bold'}>
+                                          {sub.cancelAtPeriodEnd ? 'Off' : 'On'}
+                                        </span>
+                                      </td>
+                                    </tr>
+                                  ))
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
                         </div>
-                        <div>
-                          <label className="block text-[10px] font-extrabold text-slate-500 uppercase mb-1.5">Message Content</label>
-                          <textarea
-                            required
-                            rows={4}
-                            value={userModalNotify.body}
-                            onChange={(e) => setUserModalNotify({ ...userModalNotify, body: e.target.value })}
-                            placeholder="Enter the alert advice..."
-                            className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 font-semibold text-xs resize-none"
-                          />
-                        </div>
-                        <button
-                          type="submit"
-                          className="bg-gradient-to-r from-primary to-indigo-600 hover:from-primary-dark hover:to-indigo-700 text-white font-bold px-6 py-3 rounded-xl shadow-lg flex items-center space-x-2 transition-all text-xs"
-                        >
-                          <Send className="h-4 w-4" />
-                          <span>Dispatch Alert to Patient</span>
-                        </button>
-                      </form>
+                      </div>
                     )}
 
                   </div>

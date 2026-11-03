@@ -696,28 +696,32 @@ export class SubscriptionController {
       const subscription = await UserSubscription.findOne({
         userId,
         status: { $in: ['active', 'trialing'] },
-        endDate: { $gte: now }
+        $or: [
+          { status: 'trialing', trialEndDate: { $gte: now } },
+          { status: 'active', endDate: { $gte: now } }
+        ]
       });
 
       if (!subscription) {
-        return res.status(404).json({ message: 'No active subscription found to cancel.' });
+        return res.status(404).json({ message: 'No active subscription or free trial found to cancel.' });
       }
 
       subscription.cancelAtPeriodEnd = true;
-      await subscription.save();
-
-      // Set status to cancelled but active until period ends
       subscription.status = 'cancelled';
       await subscription.save();
 
       // Send Cancellation Email
       const user = await mongoose.model('User').findById(userId);
+      const expDate = subscription.trialEndDate && new Date(subscription.trialEndDate) > now
+        ? subscription.trialEndDate
+        : subscription.endDate;
+
       if (user && user.email) {
-        EmailService.sendCancellationEmail(user.email, user.name || 'Mito_Reboot User', subscription.endDate.toISOString()).catch(console.error);
+        EmailService.sendCancellationEmail(user.email, user.name || 'Mito_Reboot User', new Date(expDate).toISOString()).catch(console.error);
       }
 
       return res.status(200).json({
-        message: 'Auto-renewal disabled successfully. Subscription remains active until expiry date.',
+        message: `Subscription auto-renewal has been cancelled. Your access remains active until ${new Date(expDate).toLocaleDateString('en-IN')}.`,
         subscription
       });
     } catch (error: any) {

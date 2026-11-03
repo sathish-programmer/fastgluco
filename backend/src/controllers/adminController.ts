@@ -26,6 +26,8 @@ import { Appointment } from '../models/Appointment';
 import ShopOrder from '../models/ShopOrder';
 import ShopProduct from '../models/ShopProduct';
 import { AppOtpTelemetry } from '../models/AppOtpTelemetry';
+import { UserSubscription } from '../models/UserSubscription';
+import { SubscriptionPlan } from '../models/SubscriptionPlan';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_12345!';
 
@@ -253,11 +255,11 @@ export class AdminController {
   }
 
   /**
-   * List Users (Paginated & Searchable)
+   * List Users (Paginated & Searchable with Subscription Status)
    */
   public static async getUsers(req: AuthRequest, res: Response) {
     try {
-      const { q, page = '1', limit = '10', cancerJourney } = req.query;
+      const { q, page = '1', limit = '10', cancerJourney, subStatus } = req.query;
       const filter: any = {};
 
       if (cancerJourney) {
@@ -267,13 +269,75 @@ export class AdminController {
       if (q) {
         filter.$or = [
           { name: { $regex: q as string, $options: 'i' } },
-          { email: { $regex: q as string, $options: 'i' } }
+          { email: { $regex: q as string, $options: 'i' } },
+          { phoneNumber: { $regex: q as string, $options: 'i' } }
         ];
       }
 
-      const p = parseInt(page as string, 10);
-      const l = parseInt(limit as string, 10);
+      const p = Math.max(1, parseInt(page as string, 10) || 1);
+      const l = Math.max(1, parseInt(limit as string, 10) || 10);
       const skip = (p - 1) * l;
+      const now = new Date();
+
+      // Subscription status filtering
+      if (subStatus && subStatus !== 'all') {
+        let matchingUserIds: any[] = [];
+        if (subStatus === 'active') {
+          const subs = await UserSubscription.find({
+            status: 'active',
+            endDate: { $gte: now },
+            isDeleted: false
+          }).select('userId');
+          matchingUserIds = subs.map(s => s.userId);
+        } else if (subStatus === 'trialing') {
+          const subs = await UserSubscription.find({
+            status: 'trialing',
+            trialEndDate: { $gte: now },
+            isDeleted: false
+          }).select('userId');
+          matchingUserIds = subs.map(s => s.userId);
+        } else if (subStatus === 'trial_expired') {
+          const activeSubs = await UserSubscription.find({
+            status: 'active',
+            endDate: { $gte: now },
+            isDeleted: false
+          }).select('userId');
+          const activeUserIds = new Set(activeSubs.map(s => s.userId.toString()));
+
+          const trialSubs = await UserSubscription.find({
+            trialStartDate: { $exists: true, $ne: null },
+            $or: [
+              { trialEndDate: { $lt: now } },
+              { status: { $in: ['trialing', 'expired'] } }
+            ],
+            isDeleted: false
+          }).select('userId');
+
+          matchingUserIds = trialSubs
+            .map(s => s.userId)
+            .filter(id => !activeUserIds.has(id.toString()));
+        } else if (subStatus === 'cancelled') {
+          const subs = await UserSubscription.find({
+            status: 'cancelled',
+            isDeleted: false
+          }).select('userId');
+          matchingUserIds = subs.map(s => s.userId);
+        } else if (subStatus === 'none') {
+          const anySubs = await UserSubscription.find({
+            isDeleted: false
+          }).select('userId');
+          const subUserIds = anySubs.map(s => s.userId);
+          filter._id = { $nin: subUserIds };
+        }
+
+        if (subStatus !== 'none') {
+          if (filter._id) {
+            filter._id = { $in: matchingUserIds, ...filter._id };
+          } else {
+            filter._id = { $in: matchingUserIds };
+          }
+        }
+      }
 
       const users = await User.find(filter)
         .select('-passwordHash')
@@ -283,17 +347,219 @@ export class AdminController {
 
       const total = await User.countDocuments(filter);
 
+      // Attach populated subscription details for each listed user
+      const userIds = users.map(u => u._id);
+      const subscriptions = await UserSubscription.find({
+        userId: { $in: userIds },
+        isDeleted: false
+      }).populate('planId', 'name yearlyPrice code trialHours trialDays badge color').sort({ createdAt: -1 });
+
+      const subMap = new Map();
+      for (const sub of subscriptions) {
+        if (!subMap.has(sub.userId.toString())) {
+          subMap.set(sub.userId.toString(), sub);
+        }
+      }
+
+      const usersWithSub = users.map(u => {
+        const sub: any = subMap.get(u._id.toString());
+        const uObj = u.toObject();
+        let status = 'none';
+        let statusLabel = 'Free User';
+        let remainingText = '';
+
+        if (sub) {
+          if (sub.status === 'active' && new Date(sub.endDate) > now) {
+            status = 'active';
+            const daysLeft = Math.max(0, Math.ceil((new Date(sub.endDate).getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+            statusLabel = 'Active Paid';
+            remainingText = `${daysLeft} days left`;
+          } else if (sub.status === 'trialing' && sub.trialEndDate && new Date(sub.trialEndDate) > now) {
+            status = 'trialing';
+            const hoursLeft = Math.max(0, Math.ceil((new Date(sub.trialEndDate).getTime() - now.getTime()) / (1000 * 60 * 60)));
+            statusLabel = 'Free Trial';
+            remainingText = `${hoursLeft}h left`;
+          } else if (sub.status === 'trialing' || (sub.trialStartDate && (!sub.endDate || new Date(sub.endDate) <= now))) {
+            status = 'trial_expired';
+            statusLabel = 'Trial Expired';
+          } else if (sub.status === 'cancelled') {
+            const isActivePeriod = new Date(sub.endDate) > now;
+            status = isActivePeriod ? 'cancelled_active' : 'cancelled';
+            statusLabel = isActivePeriod ? 'Cancelled (Active)' : 'Cancelled';
+            if (isActivePeriod) {
+              const daysLeft = Math.max(0, Math.ceil((new Date(sub.endDate).getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+              remainingText = `${daysLeft} days left`;
+            }
+          } else {
+            status = 'expired';
+            statusLabel = 'Expired';
+          }
+        }
+
+        return {
+          ...uObj,
+          subscription: sub ? {
+            _id: sub._id,
+            planName: sub.planId?.name || 'Annual Plan',
+            planCode: sub.planId?.code || 'yearly',
+            status: sub.status,
+            billingCycle: sub.billingCycle,
+            startDate: sub.startDate,
+            endDate: sub.endDate,
+            trialStartDate: sub.trialStartDate,
+            trialEndDate: sub.trialEndDate,
+            cancelAtPeriodEnd: sub.cancelAtPeriodEnd
+          } : null,
+          subscriptionSummary: {
+            status,
+            statusLabel,
+            remainingText,
+            planName: sub?.planId?.name || (status === 'none' ? 'None' : 'Standard')
+          }
+        };
+      });
+
+      const pages = Math.ceil(total / l) || 1;
+
       return res.status(200).json({
-        users,
+        users: usersWithSub,
+        total,
+        page: p,
+        limit: l,
+        pages,
         pagination: {
           total,
           page: p,
           limit: l,
-          pages: Math.ceil(total / l)
+          pages
         }
       });
     } catch (error: any) {
       return res.status(500).json({ message: error.message || 'Error listing users.' });
+    }
+  }
+
+  /**
+   * Cancel User Subscription as Admin
+   */
+  public static async cancelUserSubscription(req: AuthRequest, res: Response) {
+    try {
+      const { id } = req.params;
+      const { immediate = false, reason = 'Cancelled by Admin' } = req.body;
+      const adminEmail = req.user?.email || 'admin';
+      const now = new Date();
+
+      const user = await User.findById(id);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found.' });
+      }
+
+      const subscription = await UserSubscription.findOne({
+        userId: id,
+        status: { $in: ['active', 'trialing'] },
+        $or: [
+          { status: 'trialing', trialEndDate: { $gte: now } },
+          { status: 'active', endDate: { $gte: now } }
+        ],
+        isDeleted: false
+      });
+
+      if (!subscription) {
+        return res.status(404).json({ message: 'No active or trialing subscription found for this user.' });
+      }
+
+      if (immediate) {
+        subscription.status = 'cancelled';
+        subscription.cancelAtPeriodEnd = true;
+        subscription.endDate = now;
+        if (subscription.trialEndDate) {
+          subscription.trialEndDate = now;
+        }
+      } else {
+        subscription.status = 'cancelled';
+        subscription.cancelAtPeriodEnd = true;
+      }
+
+      await subscription.save();
+
+      await AuditLog.create({
+        adminEmail,
+        action: 'CANCEL_USER_SUBSCRIPTION',
+        target: `User: ${user.email} (${user._id})`,
+        details: `Cancelled subscription. Immediate: ${immediate}. Reason: ${reason}`
+      }).catch(console.error);
+
+      return res.status(200).json({
+        message: immediate ? 'Subscription cancelled immediately.' : 'Subscription cancelled. Access remains active until billing period ends.',
+        subscription
+      });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message || 'Error cancelling subscription.' });
+    }
+  }
+
+  /**
+   * Add / Grant / Extend User Subscription as Admin
+   */
+  public static async addUserSubscription(req: AuthRequest, res: Response) {
+    try {
+      const { id } = req.params;
+      const { planId, durationDays = 365, type = 'paid', note = 'Granted by Admin' } = req.body;
+      const adminEmail = req.user?.email || 'admin';
+      const now = new Date();
+
+      const user = await User.findById(id);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found.' });
+      }
+
+      let plan = null;
+      if (planId) {
+        plan = await SubscriptionPlan.findById(planId);
+      }
+      if (!plan) {
+        plan = await SubscriptionPlan.findOne({ isActive: true, isDeleted: false }).sort({ displayOrder: 1 });
+      }
+      if (!plan) {
+        return res.status(404).json({ message: 'No active subscription plan found in system.' });
+      }
+
+      // Mark any prior active or trialing records as expired
+      await UserSubscription.updateMany(
+        { userId: id, status: { $in: ['active', 'trialing'] } },
+        { $set: { status: 'expired' } }
+      );
+
+      const days = parseInt(durationDays as any, 10) || (type === 'trial' ? 2 : 365);
+      const endDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+
+      const newSub = new UserSubscription({
+        userId: user._id,
+        planId: plan._id,
+        billingCycle: days >= 365 ? 'yearly' : 'monthly',
+        status: type === 'trial' ? 'trialing' : 'active',
+        startDate: now,
+        endDate,
+        trialStartDate: type === 'trial' ? now : undefined,
+        trialEndDate: type === 'trial' ? endDate : undefined,
+        cancelAtPeriodEnd: false
+      });
+
+      await newSub.save();
+
+      await AuditLog.create({
+        adminEmail,
+        action: 'GRANT_USER_SUBSCRIPTION',
+        target: `User: ${user.email} (${user._id})`,
+        details: `Granted ${type} subscription for ${days} days (${plan.name}). Note: ${note}`
+      }).catch(console.error);
+
+      return res.status(200).json({
+        message: `Successfully granted ${type === 'trial' ? 'free trial' : 'subscription'} for ${days} days!`,
+        subscription: newSub
+      });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message || 'Error granting subscription.' });
     }
   }
 
@@ -825,13 +1091,17 @@ export class AdminController {
       const glucoseReadings = await mongoose.model('GlucoseReading').find({ userId: id }).sort({ timestamp: -1 }).limit(100);
       const cgmReports = await mongoose.model('CGMReport').find({ userId: id }).sort({ createdAt: -1 }).limit(10);
       const habitLogs = await mongoose.model('HabitLog').find({ userId: id }).sort({ timestamp: -1 }).limit(100);
+      const subscriptions = await UserSubscription.find({ userId: id, isDeleted: false })
+        .populate('planId', 'name yearlyPrice code trialHours trialDays')
+        .sort({ createdAt: -1 });
 
       return res.status(200).json({
         user,
         foodLogs,
         glucoseReadings,
         cgmReports,
-        habitLogs
+        habitLogs,
+        subscriptions
       });
     } catch (error: any) {
       return res.status(500).json({ message: error.message || 'Error fetching user activity details.' });
