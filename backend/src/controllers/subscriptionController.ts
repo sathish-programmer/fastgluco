@@ -157,20 +157,25 @@ export class SubscriptionController {
 
       // Find active user subscription:
       // If trialing: trialEndDate must be in the future.
-      // If active or cancelled: endDate must be in the future.
+      // If active: endDate must be in the future.
       const subscription = await UserSubscription.findOne({
         userId,
-        status: { $in: ['active', 'trialing', 'cancelled'] },
+        status: { $in: ['active', 'trialing'] },
         $or: [
           { status: 'trialing', trialEndDate: { $gte: now } },
-          { status: { $in: ['active', 'cancelled'] }, endDate: { $gte: now } }
+          { status: 'active', endDate: { $gte: now } }
         ]
-      });
+      }).sort({ createdAt: -1 });
 
       let planDetails = null;
       if (subscription) {
         planDetails = await SubscriptionPlan.findById(subscription.planId);
       }
+
+      // Check if user has a cancelled subscription
+      const cancelledSubscription = !subscription
+        ? await UserSubscription.findOne({ userId, status: 'cancelled' }).sort({ createdAt: -1 })
+        : null;
 
       // Check if user has already used their 48-hour free trial
       const previousTrial = await UserSubscription.findOne({
@@ -198,6 +203,7 @@ export class SubscriptionController {
 
       return res.status(200).json({
         subscription,
+        cancelledSubscription: cancelledSubscription || null,
         plan: planDetails,
         invoices,
         transactions,
@@ -708,20 +714,21 @@ export class SubscriptionController {
 
       subscription.cancelAtPeriodEnd = true;
       subscription.status = 'cancelled';
+      subscription.endDate = now;
+      if (subscription.trialEndDate) {
+        subscription.trialEndDate = now;
+      }
       await subscription.save();
 
       // Send Cancellation Email
       const user = await mongoose.model('User').findById(userId);
-      const expDate = subscription.trialEndDate && new Date(subscription.trialEndDate) > now
-        ? subscription.trialEndDate
-        : subscription.endDate;
 
       if (user && user.email) {
-        EmailService.sendCancellationEmail(user.email, user.name || 'Mito_Reboot User', new Date(expDate).toISOString()).catch(console.error);
+        EmailService.sendCancellationEmail(user.email, user.name || 'Mito_Reboot User', now.toISOString()).catch(console.error);
       }
 
       return res.status(200).json({
-        message: `Subscription auto-renewal has been cancelled. Your access remains active until ${new Date(expDate).toLocaleDateString('en-IN')}.`,
+        message: 'Subscription has been cancelled. Access has been deactivated.',
         subscription
       });
     } catch (error: any) {
@@ -739,21 +746,27 @@ export class SubscriptionController {
 
       const subscription = await UserSubscription.findOne({
         userId,
-        status: 'cancelled',
-        endDate: { $gte: now }
-      });
+        status: 'cancelled'
+      }).sort({ createdAt: -1 });
 
       if (!subscription) {
-        return res.status(404).json({ message: 'No cancelled active subscription found to reactivate.' });
+        return res.status(404).json({ message: 'No cancelled subscription found to reactivate.' });
       }
 
+      const plan = await SubscriptionPlan.findById(subscription.planId);
+      const isYearly = subscription.billingCycle === 'yearly';
+      const days = isYearly ? 365 : 30;
+
       subscription.cancelAtPeriodEnd = false;
-      subscription.status = 'active'; // Revert back to active status
+      subscription.status = 'active';
+      subscription.startDate = now;
+      subscription.endDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
       await subscription.save();
 
       return res.status(200).json({
-        message: 'Auto-renewal enabled successfully.',
-        subscription
+        message: 'Subscription reactivated successfully!',
+        subscription,
+        plan
       });
     } catch (error: any) {
       return res.status(500).json({ message: error.message || 'Error reactivating subscription.' });
@@ -768,18 +781,15 @@ export class SubscriptionController {
     cycle: 'monthly' | 'yearly',
     couponCode?: string
   ): Promise<any> {
-    // Disable any existing active/trialing subscriptions to prevent overlap conflicts
-    const activeSubs = await UserSubscription.find({ userId, status: { $in: ['active', 'trialing'] } });
-    if (activeSubs.length > 0) {
-      await UserSubscription.updateMany(
-        { userId, status: { $in: ['active', 'trialing'] } },
-        { $set: { status: 'expired' } }
-      );
-      // Send Plan Change Email asynchronously
-      const user = await mongoose.model('User').findById(userId);
-      if (user && user.email) {
-        EmailService.sendPlanChangeEmail(user.email, user.name || 'Mito_Reboot User', plan.name).catch(console.error);
-      }
+    // Disable any existing active, trialing, OR cancelled subscriptions to prevent overlap conflicts
+    await UserSubscription.updateMany(
+      { userId, status: { $in: ['active', 'trialing', 'cancelled'] } },
+      { $set: { status: 'expired' } }
+    );
+    // Send Plan Change Email asynchronously
+    const user = await mongoose.model('User').findById(userId);
+    if (user && user.email) {
+      EmailService.sendPlanChangeEmail(user.email, user.name || 'Mito_Reboot User', plan.name).catch(console.error);
     }
 
     const now = new Date();

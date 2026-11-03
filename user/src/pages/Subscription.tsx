@@ -121,6 +121,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
     discountType: 'percentage' | 'fixed';
     discountValue: number;
   } | null>(null);
+  const [cancelledSub, setCancelledSub] = useState<any>(null);
   const [couponLoading, setCouponLoading] = useState<boolean>(false);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [couponSuccess, setCouponSuccess] = useState<string | null>(null);
@@ -270,6 +271,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
           const subData = await subRes.json();
           setActiveSub(subData.subscription);
           setActivePlanDetails(subData.plan);
+          setCancelledSub(subData.cancelledSubscription || null);
           setInvoices(subData.invoices || []);
           if (subData.gstPercentage !== undefined) {
             setGstPercentage(subData.gstPercentage);
@@ -356,10 +358,11 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
         }
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to cancel auto-renewal.');
+      if (!res.ok) throw new Error(data.message || 'Failed to cancel subscription.');
 
-      setSuccessMsg(t('sub.autoRenewTurnedOffUntil', { date: new Date(data.subscription.endDate).toLocaleDateString(activeLocale), defaultValue: 'Auto-renewal turned off. Your subscription is active until ' + new Date(data.subscription.endDate).toLocaleDateString(activeLocale) }));
+      setSuccessMsg(data.message || 'Subscription has been cancelled. Access has been deactivated.');
       await fetchData();
+      window.dispatchEvent(new CustomEvent('subscription-updated'));
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -381,10 +384,12 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
         }
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to reactivate auto-renewal.');
+      if (!res.ok) throw new Error(data.message || 'Failed to reactivate subscription.');
 
-      setSuccessMsg('Auto-renewal enabled successfully.');
+      setSuccessMsg(data.message || 'Subscription reactivated successfully!');
       await fetchData();
+      window.dispatchEvent(new CustomEvent('subscription-updated'));
+      if (onSuccess) onSuccess();
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -441,8 +446,11 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
         setAppliedCoupon(null);
         setCouponCode('');
         setCouponSuccess(null);
+        setActionLoading(false);
         await fetchData();
+        window.dispatchEvent(new CustomEvent('subscription-updated'));
         if (onSuccess) onSuccess();
+        return;
       } else if (orderData.gateway === 'mock') {
         // Handle mock payment verification immediately
         const verifyRes = await fetch(`${apiUrl}/subscriptions/mock-verify`, {
@@ -458,8 +466,11 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
         if (!verifyRes.ok) throw new Error(verifyData.message || 'Mock payment verification failed.');
 
         setSuccessMsg(`Congratulations! Your subscription to ${orderData.planName} has been successfully activated.`);
+        setActionLoading(false);
         await fetchData();
+        window.dispatchEvent(new CustomEvent('subscription-updated'));
         if (onSuccess) onSuccess();
+        return;
       } else if (orderData.gateway === 'razorpay') {
         // Handle real Razorpay Checkout modal
         const options = {
@@ -490,6 +501,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
 
               setSuccessMsg(`Congratulations! Your payment has been verified and your subscription to ${orderData.planName} is now active.`);
               await fetchData();
+              window.dispatchEvent(new CustomEvent('subscription-updated'));
               if (onSuccess) onSuccess();
             } catch (err: any) {
               setError(err.message || 'Error verifying Razorpay payment signature.');
@@ -771,13 +783,38 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
           </div>
         </div>
       ) : (
-        <div className="bg-primary/5 border border-primary/10 dark:bg-primary/10 dark:border-primary/20 rounded-3xl p-5 mb-6 text-center">
-          <Sparkles className="h-8 w-8 text-primary mx-auto mb-2 animate-bounce" />
-          <h3 className="text-sm font-extrabold text-slate-800 dark:text-slate-100">Unlock Full {branding.appName} Access</h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
-            Choose a premium tier to upload CGM reports, calculate insights, and receive spike alerts.
-          </p>
-        </div>
+        <>
+          {cancelledSub && (
+            <div className="mb-6 p-4 bg-rose-50 dark:bg-rose-950/20 text-rose-900 dark:text-rose-200 rounded-3xl border border-rose-200/80 dark:border-rose-900/40 flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black uppercase tracking-wider text-rose-800 dark:text-rose-300">Subscription Cancelled</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 bg-rose-200/60 dark:bg-rose-900/50 text-rose-800 dark:text-rose-200 rounded-full">Inactive</span>
+                </div>
+                <p className="text-xs font-medium mt-1 text-rose-700/90 dark:text-rose-300/80">
+                  Your subscription has been cancelled and access is deactivated. Choose a plan below or apply a promo coupon code to reactivate your access.
+                </p>
+                <div className="mt-3">
+                  <button
+                    onClick={handleReactivateSubscription}
+                    disabled={actionLoading}
+                    className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition shadow-sm cursor-pointer disabled:opacity-50"
+                  >
+                    {actionLoading ? 'Processing...' : 'Reactivate Subscription'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          <div className="bg-primary/5 border border-primary/10 dark:bg-primary/10 dark:border-primary/20 rounded-3xl p-5 mb-6 text-center">
+            <Sparkles className="h-8 w-8 text-primary mx-auto mb-2 animate-bounce" />
+            <h3 className="text-sm font-extrabold text-slate-800 dark:text-slate-100">Unlock Full {branding.appName} Access</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
+              Choose a premium tier to upload CGM reports, calculate insights, and receive spike alerts.
+            </p>
+          </div>
+        </>
       )}
 
       {/* Modern Cancel Auto-Renewal Modal */}

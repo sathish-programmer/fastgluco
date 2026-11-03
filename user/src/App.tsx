@@ -593,8 +593,7 @@ const MainAppContent: React.FC = () => {
 
         const hasActive = isAppleReviewer || (sub && (
           (sub.status === 'active' && new Date(sub.endDate) > now) ||
-          (sub.status === 'trialing' && sub.trialEndDate && new Date(sub.trialEndDate) > now) ||
-          (sub.status === 'cancelled' && new Date(sub.endDate) > now)
+          (sub.status === 'trialing' && sub.trialEndDate && new Date(sub.trialEndDate) > now)
         ));
 
         // Track exact expiration timestamp in ref for real-time live blocking
@@ -673,8 +672,15 @@ const MainAppContent: React.FC = () => {
     const handleOnline = () => {
       checkSubscription();
     };
+    const handleSubUpdate = () => {
+      checkSubscription();
+    };
     window.addEventListener('online', handleOnline);
-    return () => window.removeEventListener('online', handleOnline);
+    window.addEventListener('subscription-updated', handleSubUpdate);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('subscription-updated', handleSubUpdate);
+    };
   }, [checkSubscription]);
 
   // Active real-time subscription & trial expiration monitor
