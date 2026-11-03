@@ -28,6 +28,7 @@ import ShopProduct from '../models/ShopProduct';
 import { AppOtpTelemetry } from '../models/AppOtpTelemetry';
 import { UserSubscription } from '../models/UserSubscription';
 import { SubscriptionPlan } from '../models/SubscriptionPlan';
+import { Coupon } from '../models/Coupon';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_12345!';
 
@@ -504,7 +505,7 @@ export class AdminController {
   public static async addUserSubscription(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
-      const { planId, durationDays = 365, type = 'paid', note = 'Granted by Admin' } = req.body;
+      const { planId, durationDays = 365, type = 'paid', note = 'Granted by Admin', customEndDate } = req.body;
       const adminEmail = req.user?.email || 'admin';
       const now = new Date();
 
@@ -530,13 +531,23 @@ export class AdminController {
         { $set: { status: 'expired' } }
       );
 
-      const days = parseInt(durationDays as any, 10) || (type === 'trial' ? 2 : 365);
-      const endDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+      let endDate: Date;
+      if (customEndDate) {
+        endDate = new Date(customEndDate);
+        if (isNaN(endDate.getTime()) || endDate.getTime() <= now.getTime()) {
+          return res.status(400).json({ message: 'Custom end date must be a valid future date and time.' });
+        }
+      } else {
+        const days = parseInt(durationDays as any, 10) || (type === 'trial' ? 2 : 365);
+        endDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+      }
+
+      const effectiveDays = Math.max(1, Math.ceil((endDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)));
 
       const newSub = new UserSubscription({
         userId: user._id,
         planId: plan._id,
-        billingCycle: days >= 365 ? 'yearly' : 'monthly',
+        billingCycle: effectiveDays >= 365 ? 'yearly' : 'monthly',
         status: type === 'trial' ? 'trialing' : 'active',
         startDate: now,
         endDate,
@@ -551,15 +562,102 @@ export class AdminController {
         adminEmail,
         action: 'GRANT_USER_SUBSCRIPTION',
         target: `User: ${user.email} (${user._id})`,
-        details: `Granted ${type} subscription for ${days} days (${plan.name}). Note: ${note}`
+        details: `Granted ${type} subscription until ${endDate.toISOString()} (${effectiveDays} days, ${plan.name}). Note: ${note}`
       }).catch(console.error);
 
       return res.status(200).json({
-        message: `Successfully granted ${type === 'trial' ? 'free trial' : 'subscription'} for ${days} days!`,
+        message: `Successfully granted ${type === 'trial' ? 'free trial' : 'subscription'} until ${endDate.toLocaleDateString()} (${effectiveDays} days)!`,
         subscription: newSub
       });
     } catch (error: any) {
       return res.status(500).json({ message: error.message || 'Error granting subscription.' });
+    }
+  }
+
+  /**
+   * Send Exclusive Subscription Coupon to User via Email
+   */
+  public static async sendCouponToUser(req: AuthRequest, res: Response) {
+    try {
+      const { id } = req.params;
+      const {
+        code,
+        discountType = 'percentage',
+        discountValue = 100,
+        expiryDate,
+        message
+      } = req.body;
+      const adminEmail = req.user?.email || 'admin';
+
+      const user = await User.findById(id);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found.' });
+      }
+      if (!user.email) {
+        return res.status(400).json({ message: 'Target user does not have an email address.' });
+      }
+
+      // Clean or auto-generate unique coupon code
+      let cleanCode = (code || '').toString().trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+      if (!cleanCode) {
+        cleanCode = `MITO-VIP-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+      }
+
+      const numValue = Math.max(0, parseFloat(discountValue) || 100);
+      const type = discountType === 'fixed' ? 'fixed' : 'percentage';
+
+      let parsedExpiry: Date | undefined = undefined;
+      if (expiryDate) {
+        parsedExpiry = new Date(expiryDate);
+        if (isNaN(parsedExpiry.getTime())) {
+          return res.status(400).json({ message: 'Invalid expiry date format.' });
+        }
+      }
+
+      // Create or update coupon in DB
+      const coupon = await Coupon.findOneAndUpdate(
+        { code: cleanCode },
+        {
+          code: cleanCode,
+          discountType: type,
+          discountValue: numValue,
+          expiryDate: parsedExpiry,
+          maxRedemptions: 1,
+          redemptionsCount: 0,
+          isActive: true,
+          isGlobal: true,
+          isDeleted: false
+        },
+        { upsert: true, new: true }
+      );
+
+      const discountText = type === 'percentage'
+        ? (numValue >= 100 ? '100% Free Access (Full 1-Year Membership)' : `${numValue}% OFF`)
+        : `₹${numValue} OFF`;
+
+      // Dispatch customized branded email
+      await EmailService.sendIndividualCouponEmail({
+        email: user.email,
+        name: user.name || 'Valued Member',
+        couponCode: cleanCode,
+        discountText,
+        expiryDate: parsedExpiry,
+        customMessage: message
+      });
+
+      await AuditLog.create({
+        adminEmail,
+        action: 'SEND_USER_COUPON',
+        target: `User: ${user.email} (${user._id})`,
+        details: `Sent individual coupon ${cleanCode} (${discountText}) expiring ${parsedExpiry ? parsedExpiry.toISOString() : 'Never'}`
+      }).catch(console.error);
+
+      return res.status(200).json({
+        message: `Coupon code '${cleanCode}' successfully emailed to ${user.email}!`,
+        coupon
+      });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message || 'Error generating and sending coupon.' });
     }
   }
 

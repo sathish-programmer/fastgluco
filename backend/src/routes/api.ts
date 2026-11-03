@@ -441,6 +441,7 @@ router.get('/admin/users/:userId/coaching', CoachingController.getSessionsForUse
 router.put('/admin/users/:id/block', AdminController.toggleUserBlock);
 router.post('/admin/users/:id/subscription/cancel', AdminController.cancelUserSubscription);
 router.post('/admin/users/:id/subscription/add', AdminController.addUserSubscription);
+router.post('/admin/users/:id/subscription/send-coupon', AdminController.sendCouponToUser);
 
 router.get('/admin/support/tickets', SupportController.getAllTickets);
 router.post('/admin/support/tickets/:id/reply', SupportController.replyToTicket);

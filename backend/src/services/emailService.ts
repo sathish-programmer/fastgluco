@@ -596,6 +596,79 @@ export class EmailService {
   }
 
   /**
+   * Send Exclusive Subscription Coupon Email to Individual User
+   */
+  public static async sendIndividualCouponEmail(params: {
+    email: string;
+    name: string;
+    couponCode: string;
+    discountText: string;
+    expiryDate?: Date;
+    customMessage?: string;
+  }) {
+    const { email, name, couponCode, discountText, expiryDate, customMessage } = params;
+    const { appName, appTagline } = await EmailService.getBranding();
+
+    const expiryString = expiryDate 
+      ? new Date(expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+      : 'No Expiration Date';
+
+    const html = generateEmailTemplate(`Special Gift: Your Exclusive ${appName} Coupon`, `
+      <p style="font-size: 16px; color: #1e293b;">Hi <strong>${name || 'Valued Member'}</strong>,</p>
+      <p style="color: #475569; font-size: 14px; line-height: 1.6;">
+        We're pleased to share an exclusive subscription promo code created just for you to unlock complete premium access to ${appName}!
+      </p>
+
+      ${customMessage ? `
+        <div style="background-color: #f8fafc; border-left: 4px solid #3b82f6; padding: 14px 18px; border-radius: 8px; margin: 20px 0;">
+          <p style="margin: 0; color: #1e293b; font-size: 13.5px; font-style: italic;">"${customMessage}"</p>
+        </div>
+      ` : ''}
+
+      <div style="background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%); border: 2px dashed #0284c7; border-radius: 16px; padding: 24px; text-align: center; margin: 25px 0;">
+        <span style="font-size: 12px; font-weight: 800; color: #0369a1; text-transform: uppercase; letter-spacing: 1px;">Your Exclusive Promo Code</span>
+        <div style="font-size: 28px; font-weight: 900; color: #0f172a; letter-spacing: 3px; margin: 12px 0; background: #ffffff; padding: 12px 20px; border-radius: 12px; display: inline-block; border: 1px solid #cbd5e1; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+          ${couponCode}
+        </div>
+        <p style="margin: 8px 0 0; font-size: 15px; font-weight: 800; color: #16a34a;">
+          🎁 Offer: ${discountText}
+        </p>
+        <p style="margin: 4px 0 0; font-size: 12px; color: #64748b; font-weight: 600;">
+          ⏳ Valid until: ${expiryString}
+        </p>
+      </div>
+
+      <div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px 20px; margin: 24px 0;">
+        <h4 style="margin: 0 0 10px; font-size: 13px; font-weight: 800; color: #1e293b; text-transform: uppercase; letter-spacing: 0.5px;">
+          How to Redeem in 3 Simple Steps:
+        </h4>
+        <ol style="margin: 0; padding-left: 20px; color: #334155; font-size: 13.5px; line-height: 1.7;">
+          <li>Open the <strong>${appName}</strong> app on your phone.</li>
+          <li>Go to <strong>Profile &rarr; Subscription & Plans</strong> (or tap any upgrade banner).</li>
+          <li>In the <em>"Have a Promo Coupon Code?"</em> box, enter <strong>${couponCode}</strong> and tap <strong>Apply</strong>.</li>
+        </ol>
+      </div>
+
+      <p style="color: #64748b; font-size: 12.5px; margin-top: 24px;">
+        If you have any questions or require assistance, simply reply to this email or reach out through the in-app help desk.
+      </p>
+    `, appName, appTagline);
+
+    try {
+      await transporter.sendMail({
+        from: `"${appName} Concierge" <support@mitoreboot.in>`,
+        to: email,
+        subject: `🎁 Exclusive Subscription Voucher: ${couponCode} (${discountText})`,
+        html
+      });
+      console.log(`[EmailService] Individual coupon email sent successfully to ${email}`);
+    } catch (err: any) {
+      console.error('[EmailService] Error sending individual coupon email:', err?.message || err);
+      throw err;
+    }
+  }
+
+  /**
    * Send Manual Admin Email to User
    */
   public static async sendManualAdminEmail(email: string, title: string, body: string) {

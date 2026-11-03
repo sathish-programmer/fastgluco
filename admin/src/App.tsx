@@ -57,6 +57,7 @@ import {
   Crown,
   Clock,
   AlertTriangle,
+  Mail,
   X,
   Filter
 } from 'lucide-react';
@@ -272,11 +273,19 @@ const AdminPanelContent: React.FC = () => {
   const [userSubFilter, setUserSubFilter] = useState<string>('all');
   const [usersLoading, setUsersLoading] = useState<boolean>(false);
   const [subModalUser, setSubModalUser] = useState<any | null>(null);
-  const [subModalMode, setSubModalMode] = useState<'manage' | 'grant' | 'cancel'>('manage');
+  const [subModalMode, setSubModalMode] = useState<'manage' | 'grant' | 'cancel' | 'coupon'>('grant');
   const [subGrantPlanId, setSubGrantPlanId] = useState<string>('');
   const [subGrantDurationDays, setSubGrantDurationDays] = useState<number>(365);
+  const [subGrantCustomDate, setSubGrantCustomDate] = useState<string>('');
   const [subGrantKind, setSubGrantKind] = useState<'paid' | 'trial'>('paid');
   const [subGrantNote, setSubGrantNote] = useState<string>('');
+  const [couponCodeInput, setCouponCodeInput] = useState<string>('');
+  const [couponDiscountType, setCouponDiscountType] = useState<'percentage' | 'fixed'>('percentage');
+  const [couponDiscountValue, setCouponDiscountValue] = useState<number>(100);
+  const [couponExpiryPreset, setCouponExpiryPreset] = useState<string>('30d');
+  const [couponCustomExpiryDate, setCouponCustomExpiryDate] = useState<string>('');
+  const [couponMessage, setCouponMessage] = useState<string>('');
+  const [couponActionLoading, setCouponActionLoading] = useState<boolean>(false);
   const [subCancelImmediate, setSubCancelImmediate] = useState<boolean>(false);
   const [subCancelReason, setSubCancelReason] = useState<string>('');
   const [subActionLoading, setSubActionLoading] = useState<boolean>(false);
@@ -1006,6 +1015,10 @@ const AdminPanelContent: React.FC = () => {
   };
 
   const handleAdminGrantSubscription = async (userId: string) => {
+    if (subGrantDurationDays === -1 && !subGrantCustomDate) {
+      alert('Please select a custom end date and time.');
+      return;
+    }
     setSubActionLoading(true);
     try {
       const res = await fetch(`${apiUrl}/admin/users/${userId}/subscription/add`, {
@@ -1016,7 +1029,8 @@ const AdminPanelContent: React.FC = () => {
         },
         body: JSON.stringify({
           planId: subGrantPlanId || undefined,
-          durationDays: subGrantDurationDays,
+          durationDays: subGrantDurationDays === -1 ? undefined : subGrantDurationDays,
+          customEndDate: subGrantDurationDays === -1 ? new Date(subGrantCustomDate).toISOString() : undefined,
           type: subGrantKind,
           note: subGrantNote
         })
@@ -1033,6 +1047,54 @@ const AdminPanelContent: React.FC = () => {
       alert(err.message || 'Error granting subscription.');
     } finally {
       setSubActionLoading(false);
+    }
+  };
+
+  const handleAdminSendCoupon = async (userId: string) => {
+    if (!subModalUser?.email) {
+      alert('This user does not have an email address to receive the coupon voucher.');
+      return;
+    }
+    setCouponActionLoading(true);
+    try {
+      let expiryDate: string | undefined = undefined;
+      if (couponExpiryPreset === '7d') {
+        expiryDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+      } else if (couponExpiryPreset === '14d') {
+        expiryDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+      } else if (couponExpiryPreset === '30d') {
+        expiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      } else if (couponExpiryPreset === 'custom') {
+        if (!couponCustomExpiryDate) {
+          alert('Please pick a custom expiration date & time.');
+          setCouponActionLoading(false);
+          return;
+        }
+        expiryDate = new Date(couponCustomExpiryDate).toISOString();
+      }
+
+      const res = await fetch(`${apiUrl}/admin/users/${userId}/subscription/send-coupon`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          code: couponCodeInput.trim().toUpperCase() || undefined,
+          discountType: couponDiscountType,
+          discountValue: couponDiscountValue,
+          expiryDate,
+          message: couponMessage.trim() || undefined
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to send coupon email.');
+      alert(data.message || 'Coupon voucher successfully generated and emailed to user!');
+      setSubModalUser(null);
+    } catch (err: any) {
+      alert(err.message || 'Error sending coupon.');
+    } finally {
+      setCouponActionLoading(false);
     }
   };
 
@@ -4307,7 +4369,7 @@ const AdminPanelContent: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Mode Toggles: Grant/Add vs Cancel */}
+                  {/* Mode Toggles: Grant/Add vs Send Coupon vs Cancel */}
                   <div className="flex gap-2 mb-4 border-b border-slate-100 pb-3">
                     <button
                       onClick={() => setSubModalMode('grant')}
@@ -4317,7 +4379,23 @@ const AdminPanelContent: React.FC = () => {
                           : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                       }`}
                     >
-                      + Grant / Extend Subscription
+                      + Grant Direct
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSubModalMode('coupon');
+                        if (!couponCodeInput) {
+                          const userDigits = (subModalUser.mobileNumber || '').replace(/[^0-9]/g, '').slice(-4);
+                          setCouponCodeInput(`MITO-VIP-${userDigits || Math.random().toString(36).substring(2, 6).toUpperCase()}`);
+                        }
+                      }}
+                      className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                        subModalMode === 'coupon'
+                          ? 'bg-emerald-600 text-white shadow-sm'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      🎟️ Send Coupon Email
                     </button>
                     {(subModalUser.subscriptionSummary?.status === 'active' || subModalUser.subscriptionSummary?.status === 'trialing') && (
                       <button
@@ -4328,7 +4406,7 @@ const AdminPanelContent: React.FC = () => {
                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                         }`}
                       >
-                        Cancel Subscription
+                        Cancel Sub
                       </button>
                     )}
                   </div>
@@ -4386,7 +4464,7 @@ const AdminPanelContent: React.FC = () => {
 
                       <div>
                         <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
-                          Duration
+                          Duration / Validity Period
                         </label>
                         <select
                           value={subGrantDurationDays}
@@ -4400,8 +4478,28 @@ const AdminPanelContent: React.FC = () => {
                           <option value={180}>180 Days (6 Months)</option>
                           <option value={365}>365 Days (1 Full Year)</option>
                           <option value={730}>730 Days (2 Years)</option>
+                          <option value={-1}>📅 Custom Date & Time (Exact Timestamp)</option>
                         </select>
                       </div>
+
+                      {/* Custom Date & Time Picker */}
+                      {subGrantDurationDays === -1 && (
+                        <div className="p-3 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-1.5">
+                          <label className="block text-[11px] font-bold text-indigo-900 uppercase">
+                            Pick Custom End Date & Time
+                          </label>
+                          <input
+                            type="datetime-local"
+                            value={subGrantCustomDate}
+                            onChange={(e) => setSubGrantCustomDate(e.target.value)}
+                            min={new Date().toISOString().slice(0, 16)}
+                            className="w-full px-3 py-2 border border-indigo-200 rounded-lg text-xs font-bold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          />
+                          <p className="text-[10px] text-indigo-600 font-semibold">
+                            User subscription will remain active until this exact local timestamp.
+                          </p>
+                        </div>
+                      )}
 
                       <div>
                         <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
@@ -4432,6 +4530,180 @@ const AdminPanelContent: React.FC = () => {
                         >
                           {subActionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
                           <span>Grant Subscription</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* FORM 3: SEND INDIVIDUAL COUPON VIA EMAIL */}
+                  {subModalMode === 'coupon' && (
+                    <div className="space-y-3.5">
+                      <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 text-xs flex items-center justify-between">
+                        <div>
+                          <p className="font-extrabold text-[12px] flex items-center gap-1">
+                            <span>🎟️ Send Subscription Coupon Voucher</span>
+                          </p>
+                          <p className="text-[11px] text-emerald-700 mt-0.5">
+                            Delivers directly to <strong>{subModalUser.email}</strong> via Brevo/Titan SMTP.
+                          </p>
+                        </div>
+                        <span className="text-[10px] font-black uppercase bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded-md">
+                          1-Time Use
+                        </span>
+                      </div>
+
+                      {/* Coupon Code Input & Generator */}
+                      <div>
+                        <div className="flex justify-between items-center mb-1">
+                          <label className="text-[11px] font-bold text-slate-500 uppercase">
+                            Promo Coupon Code
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const rnd = Math.random().toString(36).substring(2, 6).toUpperCase();
+                              const userDigits = (subModalUser.mobileNumber || '').replace(/[^0-9]/g, '').slice(-4);
+                              setCouponCodeInput(`MITO-VIP-${userDigits || rnd}`);
+                            }}
+                            className="text-[10.5px] font-bold text-primary hover:underline"
+                          >
+                            Auto-Generate Code
+                          </button>
+                        </div>
+                        <input
+                          type="text"
+                          value={couponCodeInput}
+                          onChange={(e) => setCouponCodeInput(e.target.value.toUpperCase())}
+                          placeholder="e.g. MITO-FREE-8754"
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-black tracking-wider uppercase text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
+                        />
+                      </div>
+
+                      {/* Discount Selection */}
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
+                          Discount / Benefit
+                        </label>
+                        <div className="grid grid-cols-3 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => { setCouponDiscountType('percentage'); setCouponDiscountValue(100); }}
+                            className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all text-center ${
+                              couponDiscountType === 'percentage' && couponDiscountValue === 100
+                                ? 'bg-emerald-50 border-emerald-500 text-emerald-700 font-black'
+                                : 'bg-slate-50 border-slate-200 text-slate-600'
+                            }`}
+                          >
+                            🎁 100% Free
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setCouponDiscountType('percentage'); setCouponDiscountValue(50); }}
+                            className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all text-center ${
+                              couponDiscountType === 'percentage' && couponDiscountValue === 50
+                                ? 'bg-emerald-50 border-emerald-500 text-emerald-700 font-black'
+                                : 'bg-slate-50 border-slate-200 text-slate-600'
+                            }`}
+                          >
+                            🏷️ 50% OFF
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setCouponDiscountType('percentage'); setCouponDiscountValue(75); }}
+                            className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all text-center ${
+                              couponDiscountType === 'percentage' && couponDiscountValue === 75
+                                ? 'bg-emerald-50 border-emerald-500 text-emerald-700 font-black'
+                                : 'bg-slate-50 border-slate-200 text-slate-600'
+                            }`}
+                          >
+                            ⚡ 75% OFF
+                          </button>
+                        </div>
+
+                        {couponDiscountValue !== 100 && couponDiscountValue !== 50 && couponDiscountValue !== 75 && (
+                          <div className="mt-2 flex gap-2">
+                            <select
+                              value={couponDiscountType}
+                              onChange={(e) => setCouponDiscountType(e.target.value as any)}
+                              className="px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs font-bold bg-white text-slate-700"
+                            >
+                              <option value="percentage">Percentage (%)</option>
+                              <option value="fixed">Flat Amount (₹)</option>
+                            </select>
+                            <input
+                              type="number"
+                              value={couponDiscountValue}
+                              onChange={(e) => setCouponDiscountValue(parseFloat(e.target.value) || 0)}
+                              placeholder="Discount Value"
+                              className="flex-1 px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold bg-white text-slate-800"
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Expiration Preset */}
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
+                          Coupon Validity / Expiry
+                        </label>
+                        <select
+                          value={couponExpiryPreset}
+                          onChange={(e) => setCouponExpiryPreset(e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        >
+                          <option value="7d">7 Days</option>
+                          <option value="14d">14 Days (2 Weeks)</option>
+                          <option value="30d">30 Days (1 Month)</option>
+                          <option value="custom">📅 Custom Expiry Date & Time</option>
+                          <option value="never">No Expiration Date</option>
+                        </select>
+                      </div>
+
+                      {couponExpiryPreset === 'custom' && (
+                        <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+                          <label className="block text-[10.5px] font-bold text-slate-600 mb-1">
+                            Custom Expiry Date & Time
+                          </label>
+                          <input
+                            type="datetime-local"
+                            value={couponCustomExpiryDate}
+                            onChange={(e) => setCouponCustomExpiryDate(e.target.value)}
+                            min={new Date().toISOString().slice(0, 16)}
+                            className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold bg-white text-slate-800"
+                          />
+                        </div>
+                      )}
+
+                      {/* Custom Note/Message to User */}
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
+                          Personalized Message in Email (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={couponMessage}
+                          onChange={(e) => setCouponMessage(e.target.value)}
+                          placeholder="e.g. Here is a complimentary annual subscription on behalf of Mito Reboot team!"
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                      </div>
+
+                      <div className="pt-2 flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setSubModalUser(null)}
+                          className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          disabled={couponActionLoading || !subModalUser.email}
+                          onClick={() => handleAdminSendCoupon(subModalUser._id)}
+                          className="px-5 py-2.5 rounded-xl text-xs font-black bg-emerald-600 hover:bg-emerald-700 text-white transition-all shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                        >
+                          {couponActionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                          <span>Send Coupon to {subModalUser.email}</span>
                         </button>
                       </div>
                     </div>

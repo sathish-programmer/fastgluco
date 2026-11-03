@@ -124,6 +124,34 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
   const [couponError, setCouponError] = useState<string | null>(null);
   const [couponSuccess, setCouponSuccess] = useState<string | null>(null);
   const [showTrialPopup, setShowTrialPopup] = useState<boolean>(false);
+  const [liveTrialText, setLiveTrialText] = useState<string>('');
+
+  useEffect(() => {
+    const updateCountdown = () => {
+      if (activeSub && activeSub.status === 'trialing' && activeSub.trialEndDate) {
+        const diffMs = new Date(activeSub.trialEndDate).getTime() - Date.now();
+        if (diffMs > 0) {
+          const totalHours = Math.floor(diffMs / (1000 * 60 * 60));
+          const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+          if (totalHours >= 24) {
+            setLiveTrialText(`${totalHours}h remaining`);
+          } else if (totalHours >= 1) {
+            setLiveTrialText(`${totalHours}h ${mins}m remaining`);
+          } else {
+            setLiveTrialText(`${Math.max(1, mins)}m remaining`);
+          }
+        } else {
+          setLiveTrialText('Trial Expired');
+        }
+      } else {
+        setLiveTrialText('');
+      }
+    };
+
+    updateCountdown();
+    const timer = setInterval(updateCountdown, 10000);
+    return () => clearInterval(timer);
+  }, [activeSub]);
 
   // Dynamic primary plan calculation from backend/admin (no hardcoded prices)
   const primaryPlan = plans.length > 0 ? plans[0] : activePlanDetails;
@@ -555,6 +583,24 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
         )}
       </div>
 
+      {/* Blocking Paywall Alert Banner */}
+      {isBlocking && (
+        <div className="mb-5 p-5 rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-primary text-white shadow-lg relative overflow-hidden border border-indigo-800/40">
+          <div className="relative z-10">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-[11px] font-black uppercase tracking-wider mb-2.5 text-amber-300">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Full Access Locked</span>
+            </div>
+            <h2 className="text-base sm:text-lg font-black tracking-tight leading-snug">
+              Unlock Unlimited Mito Reboot Access
+            </h2>
+            <p className="text-xs text-indigo-100/90 mt-1 leading-relaxed">
+              Your free trial has ended. Subscribe or apply a promo coupon below to access your daily habits, CGM reports, and food scanner.
+            </p>
+          </div>
+        </div>
+      )}
+
       {error && (
         <div className="mb-4 p-3.5 bg-red-50 dark:bg-red-950/30 text-rose-700 dark:text-rose-300 text-xs font-semibold rounded-2xl border border-red-200 dark:border-red-800/50 flex items-center justify-between gap-2 shadow-xs">
           <div className="flex items-center space-x-2 min-w-0">
@@ -945,7 +991,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                         <div className="p-3 bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300 text-xs font-bold rounded-2xl border border-amber-200/70 dark:border-amber-900/30 flex items-center justify-between">
                           <span className="flex items-center gap-1.5">
                             <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
-                            <span>Free Trial Active ({trialHoursRemaining}h remaining)</span>
+                            <span>Free Trial Active ({liveTrialText || `${trialHoursRemaining}h remaining`})</span>
                           </span>
                           <span className="text-[10px] font-extrabold bg-amber-200/60 dark:bg-amber-900/60 px-2 py-0.5 rounded-md">
                             48h SLA
@@ -958,7 +1004,9 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                         >
                           <CreditCard className="h-4.5 w-4.5" />
                           <span className="text-xs sm:text-sm font-black tracking-wide">
-                            Upgrade Now to Annual Plan ({currencySymbol}{totalToPay.toFixed(2)}/yr)
+                            {totalToPay <= 0
+                              ? '🎁 Activate Free 1-Year Membership'
+                              : `Upgrade Now to Annual Plan (${currencySymbol}${totalToPay.toFixed(2)}/yr)`}
                           </span>
                         </button>
                       </div>

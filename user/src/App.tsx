@@ -37,6 +37,7 @@ import {
   Crown,
   ShieldCheck,
   WifiOff,
+  X,
   ShoppingBag
 } from 'lucide-react';
 import { AskMitoDrawer } from './components/AskMitoDrawer';
@@ -568,6 +569,8 @@ const MainAppContent: React.FC = () => {
   const [checkingSub, setCheckingSub] = useState<boolean>(false);
   const [basicPlan, setBasicPlan] = useState<string>('Basic');
   const [planFeatures, setPlanFeatures] = useState<any>(null);
+  const [trialEndingHours, setTrialEndingHours] = useState<number | null>(null);
+  const [showTrialEndingAlert, setShowTrialEndingAlert] = useState<boolean>(true);
 
   const checkSubscription = useCallback(async () => {
     if (!isAuthenticated || !token) {
@@ -583,41 +586,50 @@ const MainAppContent: React.FC = () => {
       if (response.ok) {
         const data = await response.json();
         const isAppleReviewer = user?.email === 'review@mitoreboot.in' || (user?.email && user.email.endsWith('@apple.com'));
+        const sub = data.subscription;
+        const now = new Date();
 
-        if (data.subscriptionsRequired) {
-          const sub = data.subscription;
-          const hasActive = sub && (
-            (sub.status === 'active' && new Date(sub.endDate) > new Date()) ||
-            (sub.status === 'trialing' && sub.trialEndDate && new Date(sub.trialEndDate) > new Date()) ||
-            (sub.status === 'cancelled' && new Date(sub.endDate) > new Date())
-          );
+        const hasActive = isAppleReviewer || (sub && (
+          (sub.status === 'active' && new Date(sub.endDate) > now) ||
+          (sub.status === 'trialing' && sub.trialEndDate && new Date(sub.trialEndDate) > now) ||
+          (sub.status === 'cancelled' && new Date(sub.endDate) > now)
+        ));
 
-          if (isAppleReviewer) {
-            setIsSubscribed(true);
-            setBasicPlan(data.plan?.name || 'Premium Plan');
-            setPlanFeatures(data.plan?.features || {
-              unlimitedReports: true,
-              advancedAnalysis: true,
-              premiumVideos: true,
-              foodInsights: true,
-              exportReports: true,
-              notifications: true,
-              aiCoaching: true,
-              foodScanner: true
-            });
-          } else if (hasActive) {
-            setIsSubscribed(true);
-            setBasicPlan(data.plan?.name || 'Premium Plan');
-            setPlanFeatures(data.plan?.features || null);
+        // Check if free trial is active and expiring within 24 hours
+        if (sub && sub.status === 'trialing' && sub.trialEndDate) {
+          const msLeft = new Date(sub.trialEndDate).getTime() - now.getTime();
+          if (msLeft > 0 && msLeft <= 24 * 60 * 60 * 1000) {
+            setTrialEndingHours(Math.max(1, Math.ceil(msLeft / (1000 * 60 * 60))));
           } else {
-            setIsSubscribed(false);
-            setBasicPlan('Expired');
-            setPlanFeatures(null);
+            setTrialEndingHours(null);
           }
         } else {
+          setTrialEndingHours(null);
+        }
+
+        if (isAppleReviewer) {
           setIsSubscribed(true);
-          setBasicPlan(data.plan?.name || 'Standard');
+          setBasicPlan(data.plan?.name || 'Premium Plan');
+          setPlanFeatures(data.plan?.features || {
+            unlimitedReports: true,
+            advancedAnalysis: true,
+            premiumVideos: true,
+            foodInsights: true,
+            exportReports: true,
+            notifications: true,
+            aiCoaching: true,
+            foodScanner: true
+          });
+        } else if (hasActive) {
+          setIsSubscribed(true);
+          setBasicPlan(data.plan?.name || 'Premium Plan');
           setPlanFeatures(data.plan?.features || null);
+        } else {
+          // STRICT ACCESS CONTROL: User has neither an active subscription nor an active trial.
+          // Gate the entire app so only the subscription screen is accessible.
+          setIsSubscribed(false);
+          setBasicPlan('Expired');
+          setPlanFeatures(null);
         }
       } else {
         const isAppleReviewer = user?.email === 'review@mitoreboot.in' || (user?.email && user.email.endsWith('@apple.com'));
@@ -635,7 +647,9 @@ const MainAppContent: React.FC = () => {
       if (isAppleReviewer) {
         setIsSubscribed(true);
       } else {
-        setIsSubscribed(prev => (prev === true ? true : false));
+        setIsSubscribed(false);
+        setBasicPlan('Expired');
+        setPlanFeatures(null);
       }
     } finally {
       setCheckingSub(false);
@@ -723,7 +737,7 @@ const MainAppContent: React.FC = () => {
     return <TermsAndConditionsAcceptancePage />;
   }
 
-  if (isSubscribed === false && branding.enableSubscriptions !== false) {
+  if (isSubscribed === false) {
     return (
       <Subscription
         onBack={logout}
@@ -743,6 +757,32 @@ const MainAppContent: React.FC = () => {
         <div className="bg-amber-500/95 text-amber-950 dark:bg-amber-900/95 dark:text-amber-100 text-[11.5px] font-extrabold px-3 pt-[max(0.5rem,calc(env(safe-area-inset-top,0px)+6px))] pb-2 text-center flex items-center justify-center gap-1.5 sticky top-0 z-50 backdrop-blur-md transition-all shadow-xs">
           <WifiOff className="h-3.5 w-3.5 shrink-0" />
           <span>{t('network.offlineBanner', 'You are currently offline. Changes will sync once reconnected.')}</span>
+        </div>
+      )}
+
+      {/* Free Trial Ending Soon Top Banner Alert */}
+      {trialEndingHours !== null && showTrialEndingAlert && (
+        <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white text-[11.5px] font-bold px-3.5 py-2.5 flex items-center justify-between sticky top-0 z-50 shadow-md">
+          <div className="flex items-center gap-2 min-w-0">
+            <Sparkles className="h-4 w-4 shrink-0 text-amber-200 animate-pulse" />
+            <span className="truncate">
+              Your 48-Hour Free Trial ends in {trialEndingHours} hours! Upgrade now to keep unlimited access.
+            </span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setActiveTab('Subscription')}
+              className="px-2.5 py-1 bg-white text-amber-900 rounded-lg text-[10.5px] font-black hover:bg-amber-50 transition shadow-2xs cursor-pointer"
+            >
+              Upgrade Now
+            </button>
+            <button
+              onClick={() => setShowTrialEndingAlert(false)}
+              className="text-white/80 hover:text-white p-0.5 cursor-pointer"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
         </div>
       )}
 
@@ -899,12 +939,12 @@ const MainAppContent: React.FC = () => {
         {activeTab === 'Profile' && <Profile onNavigateToTab={setActiveTab} />}
         {activeTab === 'Subscription' && (
           <Subscription 
-            onBack={isSubscribed === false ? logout : () => setActiveTab('Home')} 
+            onBack={() => setActiveTab('Home')} 
             onSuccess={() => {
               checkSubscription();
               setActiveTab('Home');
             }}
-            isBlocking={isSubscribed === false}
+            isBlocking={false}
           />
         )}
         {activeTab === 'Educational' && <Educational />}
