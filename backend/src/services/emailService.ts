@@ -654,12 +654,37 @@ export class EmailService {
       </p>
     `, appName, appTagline);
 
+    const plainText = [
+      `Hello ${name || 'Valued Member'},`,
+      '',
+      `Here is your ${appName} subscription promo code: ${couponCode}`,
+      `Offer: ${discountText}`,
+      `Valid until: ${expiryString}`,
+      customMessage ? `Note: "${customMessage}"` : '',
+      '',
+      'How to Redeem:',
+      `1. Open the ${appName} app on your phone.`,
+      '2. Go to Profile -> Subscription & Plans.',
+      `3. Enter your code ${couponCode} and tap Apply.`,
+      '',
+      `If you need any assistance, reply directly to this email.`,
+      '',
+      `Best regards,`,
+      `The ${appName} Team`
+    ].filter(Boolean).join('\n');
+
     try {
       await transporter.sendMail({
         from: `"${appName} Concierge" <support@mitoreboot.in>`,
+        replyTo: 'support@mitoreboot.in',
         to: email,
-        subject: `🎁 Exclusive Subscription Voucher: ${couponCode} (${discountText})`,
-        html
+        subject: `Your ${appName} Membership Activation Code: ${couponCode}`,
+        text: plainText,
+        html,
+        headers: {
+          'X-Entity-Ref-ID': couponCode,
+          'X-Auto-Response-Suppress': 'OOF, AutoReply'
+        }
       });
       console.log(`[EmailService] Individual coupon email sent successfully to ${email}`);
     } catch (err: any) {
