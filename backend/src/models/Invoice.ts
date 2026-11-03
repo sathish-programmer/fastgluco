@@ -13,6 +13,9 @@ export interface IInvoice extends Document {
   totalAmount: number;
   billingName: string;
   billingEmail: string;
+  subscriptionPeriodStart?: Date;
+  subscriptionPeriodEnd?: Date;
+  billingCycle?: string;
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -32,6 +35,9 @@ const invoiceSchema = new Schema<IInvoice>(
     totalAmount: { type: Number, required: true, min: 0 },
     billingName: { type: String, required: true, trim: true },
     billingEmail: { type: String, required: true, lowercase: true, trim: true },
+    subscriptionPeriodStart: { type: Date },
+    subscriptionPeriodEnd: { type: Date },
+    billingCycle: { type: String },
     isDeleted: { type: Boolean, default: false }
   },
   {

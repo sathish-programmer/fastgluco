@@ -426,25 +426,80 @@ export class EmailService {
   /**
    * Send Subscription Invoice and Details
    */
-  public static async sendSubscriptionInvoiceEmail(email: string, name: string, planName: string, amount: number, currency: 'INR' | 'USD' = 'INR', pdfBuffer?: Buffer, invoiceNumber?: string) {
+  public static async sendSubscriptionInvoiceEmail(
+    email: string,
+    name: string,
+    planName: string,
+    amount: number,
+    currency: 'INR' | 'USD' = 'INR',
+    pdfBuffer?: Buffer,
+    invoiceNumber?: string,
+    periodDetails?: {
+      startDate?: Date | string;
+      endDate?: Date | string;
+      billingCycle?: string;
+    }
+  ) {
     const { appName, appTagline } = await EmailService.getBranding();
     const symbol = currency === 'USD' ? '$' : '₹';
+
+    const formatDate = (d: any) => {
+      if (!d) return 'N/A';
+      try {
+        const date = new Date(d);
+        return date.toLocaleDateString('en-IN', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric'
+        });
+      } catch {
+        return String(d);
+      }
+    };
+
+    const cycleText = periodDetails?.billingCycle === 'yearly'
+      ? 'Annual (1 Year)'
+      : (periodDetails?.billingCycle === 'monthly' ? 'Monthly (30 Days)' : 'Active Plan');
+    const startStr = periodDetails?.startDate ? formatDate(periodDetails.startDate) : formatDate(new Date());
+    const endStr = periodDetails?.endDate ? formatDate(periodDetails.endDate) : 'N/A';
+
     const html = generateEmailTemplate('Payment Confirmation', `
       <p>Hi ${name},</p>
       <p>Thank you for subscribing to the <strong>${planName}</strong> plan.</p>
-      <div style="background-color: #f1f5f9; padding: 20px; border-radius: 12px; margin: 24px 0;">
-        <p style="margin: 0; font-size: 14px; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;">Transaction Details</p>
-        <p style="margin: 4px 0 0 0; color: #1d4ed8;">Amount Processed: ${symbol}${amount.toFixed(2)}</p>
+      <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; margin: 24px 0;">
+        <p style="margin: 0 0 14px 0; font-size: 13px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;">Subscription & Billing Details</p>
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+          <tr>
+            <td style="padding: 6px 0; color: #475569;">Plan:</td>
+            <td style="padding: 6px 0; color: #0f172a; font-weight: 700; text-align: right;">${planName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #475569;">Billing Cycle:</td>
+            <td style="padding: 6px 0; color: #0f172a; font-weight: 600; text-align: right;">${cycleText}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #475569;">Start Date:</td>
+            <td style="padding: 6px 0; color: #0f172a; font-weight: 600; text-align: right;">${startStr}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #475569;">Subscription Period End (Valid Till):</td>
+            <td style="padding: 6px 0; color: #16a34a; font-weight: 700; text-align: right;">${endStr}</td>
+          </tr>
+          <tr style="border-top: 1px solid #e2e8f0;">
+            <td style="padding: 10px 0 0 0; color: #475569; font-weight: 700;">Amount Processed:</td>
+            <td style="padding: 10px 0 0 0; color: #1d4ed8; font-weight: 800; font-size: 16px; text-align: right;">${symbol}${amount.toFixed(2)}</td>
+          </tr>
+        </table>
       </div>
-      <p>We have attached your invoice PDF to this email.</p>
-      <p>You can also view your full invoice details and manage your subscription in your ${appName} Profile under "Billing".</p>
+      <p>We have attached your official invoice PDF (<strong>${invoiceNumber || 'Invoice'}</strong>) to this email with full billing and subscription period breakdown.</p>
+      <p>You can also view your complete invoice details and manage your subscription anytime in your ${appName} Profile under "Billing".</p>
       <p>Enjoy your premium features!</p>
     `, appName, appTagline);
 
     const mailOptions: any = {
       from: `"${appName} Billing" <support@mitoreboot.in>`,
       to: email,
-      subject: `Your ${appName} Subscription Confirmed`,
+      subject: `Your ${appName} Subscription Confirmed (${planName})`,
       html
     };
 

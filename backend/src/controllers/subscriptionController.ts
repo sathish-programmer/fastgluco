@@ -415,7 +415,7 @@ export class SubscriptionController {
         }
 
         // Write Invoice
-        await SubscriptionController.generateInvoice(userId!, transaction, plan);
+        await SubscriptionController.generateInvoice(userId!, transaction, plan, subscription);
 
         // FCM Alerts
         await FCMService.sendPushNotification(
@@ -600,7 +600,7 @@ export class SubscriptionController {
       await transaction.save();
 
       // Write Invoice
-      await SubscriptionController.generateInvoice(userId!, transaction, plan);
+      await SubscriptionController.generateInvoice(userId!, transaction, plan, subscription);
 
       // Dispatch alert
       await FCMService.sendPushNotification(
@@ -673,7 +673,7 @@ export class SubscriptionController {
       transaction.subscriptionId = subscription._id as any;
       await transaction.save();
 
-      await SubscriptionController.generateInvoice(userId!, transaction, plan);
+      await SubscriptionController.generateInvoice(userId!, transaction, plan, subscription);
 
       await FCMService.sendPushNotification(
         userId!,
@@ -822,7 +822,7 @@ export class SubscriptionController {
     return subscription;
   }
 
-  public static async generateInvoice(userId: string, transaction: any, plan: any) {
+  public static async generateInvoice(userId: string, transaction: any, plan: any, subscription?: any) {
     const user = await mongoose.model('User').findById(userId);
     const invoiceNumber = `INV-${new Date().getFullYear()}-${Math.round(Math.random() * 899999 + 100000)}`;
 
@@ -834,6 +834,14 @@ export class SubscriptionController {
 
     const amountWithoutTax = parseFloat((total / (1 + gstPercent / 100)).toFixed(2));
     const tax = parseFloat((total - amountWithoutTax).toFixed(2));
+
+    let subRecord = subscription;
+    if (!subRecord && transaction.subscriptionId) {
+      subRecord = await UserSubscription.findById(transaction.subscriptionId);
+    }
+    if (!subRecord) {
+      subRecord = await UserSubscription.findOne({ userId }).sort({ createdAt: -1 });
+    }
 
     const invoice = new Invoice({
       userId,
@@ -847,7 +855,10 @@ export class SubscriptionController {
       taxAmount: tax,
       totalAmount: total,
       billingName: user?.name || 'Mito_Reboot Patient',
-      billingEmail: user?.email || 'patient@mitoreboot.com'
+      billingEmail: user?.email || 'patient@mitoreboot.com',
+      subscriptionPeriodStart: subRecord?.startDate || new Date(),
+      subscriptionPeriodEnd: subRecord?.endDate,
+      billingCycle: subRecord?.billingCycle || 'yearly'
     });
 
     await invoice.save();
@@ -864,7 +875,12 @@ export class SubscriptionController {
             total,
             user.currency || 'INR',
             pdfBuffer,
-            invoice.invoiceNumber
+            invoice.invoiceNumber,
+            {
+              startDate: invoice.subscriptionPeriodStart,
+              endDate: invoice.subscriptionPeriodEnd,
+              billingCycle: invoice.billingCycle
+            }
           );
         })
         .catch(err => console.error('Error generating/sending attached invoice email:', err));
@@ -917,21 +933,24 @@ export class SubscriptionController {
 
       doc.fillColor('#1E293B').fontSize(20).font('Helvetica-Bold').text('INVOICE', 400, 50, { align: 'right' });
       doc.fillColor('#64748B').fontSize(10).font('Helvetica').text(`Invoice #: ${invoice.invoiceNumber}`, 400, 75, { align: 'right' });
-      doc.text(`Date: ${new Date(invoice.createdAt).toLocaleDateString()}`, 400, 90, { align: 'right' });
+      doc.text(`Date: ${new Date(invoice.createdAt || Date.now()).toLocaleDateString('en-IN')}`, 400, 90, { align: 'right' });
+      if (invoice.subscriptionPeriodEnd) {
+        doc.text(`Valid Until: ${new Date(invoice.subscriptionPeriodEnd).toLocaleDateString('en-IN')}`, 400, 105, { align: 'right' });
+      }
 
       // Horizontal Line divider
-      doc.moveTo(50, 115).lineTo(550, 115).strokeColor('#E2E8F0').lineWidth(1).stroke();
+      doc.moveTo(50, 125).lineTo(550, 125).strokeColor('#E2E8F0').lineWidth(1).stroke();
 
       // Bill To details
-      doc.fillColor('#1E293B').fontSize(12).font('Helvetica-Bold').text('Billed To:', 50, 135);
-      doc.fillColor('#334155').fontSize(10).font('Helvetica').text(invoice.billingName, 50, 155);
-      doc.text(invoice.billingEmail, 50, 170);
+      doc.fillColor('#1E293B').fontSize(12).font('Helvetica-Bold').text('Billed To:', 50, 140);
+      doc.fillColor('#334155').fontSize(10).font('Helvetica').text(invoice.billingName, 50, 160);
+      doc.text(invoice.billingEmail, 50, 175);
 
       // Issued By details
-      doc.fillColor('#1E293B').fontSize(12).font('Helvetica-Bold').text('Issued By:', 300, 135);
-      doc.fillColor('#334155').fontSize(10).font('Helvetica').text('Mito_Reboot Platform Inc.', 300, 155);
-      doc.text('support@mitoreboot.in', 300, 170);
-      doc.text('Bangalore, Karnataka, India', 300, 185);
+      doc.fillColor('#1E293B').fontSize(12).font('Helvetica-Bold').text('Issued By:', 300, 140);
+      doc.fillColor('#334155').fontSize(10).font('Helvetica').text('Mito_Reboot Platform Inc.', 300, 160);
+      doc.text('support@mitoreboot.in', 300, 175);
+      doc.text('Bangalore, Karnataka, India', 300, 190);
 
       // Table Header
       const tableTop = 230;
@@ -941,14 +960,27 @@ export class SubscriptionController {
 
       // Table Row
       const rowTop = tableTop + 25;
-      doc.fillColor('#1E293B').fontSize(10).font('Helvetica').text(`Mito_Reboot Premium Subscription - ${planName}`, 60, rowTop + 10);
-      doc.text(`Rs.${fmt(invoice.originalAmount, safeNum(invoice.totalAmount))}`, 450, rowTop + 10, { align: 'right' });
+      doc.fillColor('#1E293B').fontSize(10).font('Helvetica-Bold').text(`Mito_Reboot Premium Subscription - ${planName}`, 60, rowTop + 6);
+
+      const startStr = invoice.subscriptionPeriodStart
+        ? new Date(invoice.subscriptionPeriodStart).toLocaleDateString('en-IN')
+        : new Date(invoice.createdAt || Date.now()).toLocaleDateString('en-IN');
+      const endStr = invoice.subscriptionPeriodEnd
+        ? new Date(invoice.subscriptionPeriodEnd).toLocaleDateString('en-IN')
+        : 'N/A';
+      const cycleStr = invoice.billingCycle === 'yearly'
+        ? 'Annual (1 Year)'
+        : (invoice.billingCycle === 'monthly' ? 'Monthly (30 Days)' : 'Active Plan');
+
+      doc.fillColor('#64748B').fontSize(8.5).font('Helvetica').text(`Subscription Period: ${startStr} to ${endStr} (${cycleStr})`, 60, rowTop + 20);
+
+      doc.fillColor('#1E293B').fontSize(10).font('Helvetica').text(`Rs.${fmt(invoice.originalAmount, safeNum(invoice.totalAmount))}`, 450, rowTop + 8, { align: 'right' });
 
       // Table Row underline
-      doc.moveTo(50, rowTop + 30).lineTo(550, rowTop + 30).strokeColor('#F1F5F9').lineWidth(1).stroke();
+      doc.moveTo(50, rowTop + 36).lineTo(550, rowTop + 36).strokeColor('#F1F5F9').lineWidth(1).stroke();
 
       // Calculation breakdown
-      const calcTop = rowTop + 45;
+      const calcTop = rowTop + 48;
       doc.fillColor('#64748B').fontSize(10).text('Subtotal:', 350, calcTop);
       doc.fillColor('#1E293B').text(`Rs.${fmt(invoice.originalAmount, safeNum(invoice.totalAmount))}`, 450, calcTop, { align: 'right' });
 
@@ -1012,21 +1044,24 @@ export class SubscriptionController {
 
       doc.fillColor('#1E293B').fontSize(20).font('Helvetica-Bold').text('INVOICE', 400, 50, { align: 'right' });
       doc.fillColor('#64748B').fontSize(10).font('Helvetica').text(`Invoice #: ${invoice.invoiceNumber}`, 400, 75, { align: 'right' });
-      doc.text(`Date: ${new Date(invoice.createdAt).toLocaleDateString()}`, 400, 90, { align: 'right' });
+      doc.text(`Date: ${new Date(invoice.createdAt || Date.now()).toLocaleDateString('en-IN')}`, 400, 90, { align: 'right' });
+      if (invoice.subscriptionPeriodEnd) {
+        doc.text(`Valid Until: ${new Date(invoice.subscriptionPeriodEnd).toLocaleDateString('en-IN')}`, 400, 105, { align: 'right' });
+      }
 
       // Horizontal Line divider
-      doc.moveTo(50, 115).lineTo(550, 115).strokeColor('#E2E8F0').lineWidth(1).stroke();
+      doc.moveTo(50, 125).lineTo(550, 125).strokeColor('#E2E8F0').lineWidth(1).stroke();
 
       // Bill To details
-      doc.fillColor('#1E293B').fontSize(12).font('Helvetica-Bold').text('Billed To:', 50, 135);
-      doc.fillColor('#334155').fontSize(10).font('Helvetica').text(invoice.billingName, 50, 155);
-      doc.text(invoice.billingEmail, 50, 170);
+      doc.fillColor('#1E293B').fontSize(12).font('Helvetica-Bold').text('Billed To:', 50, 140);
+      doc.fillColor('#334155').fontSize(10).font('Helvetica').text(invoice.billingName, 50, 160);
+      doc.text(invoice.billingEmail, 50, 175);
 
       // Issued By details
-      doc.fillColor('#1E293B').fontSize(12).font('Helvetica-Bold').text('Issued By:', 300, 135);
-      doc.fillColor('#334155').fontSize(10).font('Helvetica').text('Mito_Reboot Platform Inc.', 300, 155);
-      doc.text('support@mitoreboot.in', 300, 170);
-      doc.text('Bangalore, Karnataka, India', 300, 185);
+      doc.fillColor('#1E293B').fontSize(12).font('Helvetica-Bold').text('Issued By:', 300, 140);
+      doc.fillColor('#334155').fontSize(10).font('Helvetica').text('Mito_Reboot Platform Inc.', 300, 160);
+      doc.text('support@mitoreboot.in', 300, 175);
+      doc.text('Bangalore, Karnataka, India', 300, 190);
 
       // Table Header
       const tableTop = 230;
@@ -1036,14 +1071,27 @@ export class SubscriptionController {
 
       // Table Row
       const rowTop = tableTop + 25;
-      doc.fillColor('#1E293B').fontSize(10).font('Helvetica').text(`Mito_Reboot Premium Subscription - ${planName}`, 60, rowTop + 10);
-      doc.text(`Rs.${fmt(invoice.originalAmount, safeNum(invoice.totalAmount))}`, 450, rowTop + 10, { align: 'right' });
+      doc.fillColor('#1E293B').fontSize(10).font('Helvetica-Bold').text(`Mito_Reboot Premium Subscription - ${planName}`, 60, rowTop + 6);
+
+      const startStr = invoice.subscriptionPeriodStart
+        ? new Date(invoice.subscriptionPeriodStart).toLocaleDateString('en-IN')
+        : new Date(invoice.createdAt || Date.now()).toLocaleDateString('en-IN');
+      const endStr = invoice.subscriptionPeriodEnd
+        ? new Date(invoice.subscriptionPeriodEnd).toLocaleDateString('en-IN')
+        : 'N/A';
+      const cycleStr = invoice.billingCycle === 'yearly'
+        ? 'Annual (1 Year)'
+        : (invoice.billingCycle === 'monthly' ? 'Monthly (30 Days)' : 'Active Plan');
+
+      doc.fillColor('#64748B').fontSize(8.5).font('Helvetica').text(`Subscription Period: ${startStr} to ${endStr} (${cycleStr})`, 60, rowTop + 20);
+
+      doc.fillColor('#1E293B').fontSize(10).font('Helvetica').text(`Rs.${fmt(invoice.originalAmount, safeNum(invoice.totalAmount))}`, 450, rowTop + 8, { align: 'right' });
 
       // Table Row underline
-      doc.moveTo(50, rowTop + 30).lineTo(550, rowTop + 30).strokeColor('#F1F5F9').lineWidth(1).stroke();
+      doc.moveTo(50, rowTop + 36).lineTo(550, rowTop + 36).strokeColor('#F1F5F9').lineWidth(1).stroke();
 
       // Calculation breakdown
-      const calcTop = rowTop + 45;
+      const calcTop = rowTop + 48;
       doc.fillColor('#64748B').fontSize(10).text('Subtotal:', 350, calcTop);
       doc.fillColor('#1E293B').text(`Rs.${fmt(invoice.originalAmount, safeNum(invoice.totalAmount))}`, 450, calcTop, { align: 'right' });
 
