@@ -613,56 +613,58 @@ export class EmailService {
       ? new Date(expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
       : 'No Expiration Date';
 
-    const html = generateEmailTemplate(`Special Gift: Your Exclusive ${appName} Coupon`, `
-      <p style="font-size: 16px; color: #1e293b;">Hi <strong>${name || 'Valued Member'}</strong>,</p>
-      <p style="color: #475569; font-size: 14px; line-height: 1.6;">
-        We're pleased to share an exclusive subscription promo code created just for you to unlock complete premium access to ${appName}!
+    const subject = `${appName} Account Membership Voucher: ${couponCode}`;
+
+    const html = generateEmailTemplate(`${appName} Membership Voucher`, `
+      <p style="font-size: 15px; color: #1e293b;">Hello <strong>${name || 'Valued Member'}</strong>,</p>
+      <p style="color: #334155; font-size: 14px; line-height: 1.6;">
+        Your subscription access code is <strong>${couponCode}</strong>. Redeem it in your ${appName} App Profile under Subscriptions.
       </p>
 
       ${customMessage ? `
-        <div style="background-color: #f8fafc; border-left: 4px solid #3b82f6; padding: 14px 18px; border-radius: 8px; margin: 20px 0;">
-          <p style="margin: 0; color: #1e293b; font-size: 13.5px; font-style: italic;">"${customMessage}"</p>
+        <div style="background-color: #f8fafc; border-left: 4px solid #2563eb; padding: 12px 16px; border-radius: 6px; margin: 16px 0;">
+          <p style="margin: 0; color: #1e293b; font-size: 13px; font-style: italic;">"${customMessage}"</p>
         </div>
       ` : ''}
 
-      <div style="background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%); border: 2px dashed #0284c7; border-radius: 16px; padding: 24px; text-align: center; margin: 25px 0;">
-        <span style="font-size: 12px; font-weight: 800; color: #0369a1; text-transform: uppercase; letter-spacing: 1px;">Your Exclusive Promo Code</span>
-        <div style="font-size: 28px; font-weight: 900; color: #0f172a; letter-spacing: 3px; margin: 12px 0; background: #ffffff; padding: 12px 20px; border-radius: 12px; display: inline-block; border: 1px solid #cbd5e1; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+      <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 20px; text-align: center; margin: 20px 0;">
+        <span style="font-size: 11px; font-weight: 700; color: #15803d; text-transform: uppercase; letter-spacing: 1px;">Access Voucher Code</span>
+        <div style="font-size: 26px; font-weight: 800; color: #0f172a; letter-spacing: 2px; margin: 10px 0; background: #ffffff; padding: 10px 18px; border-radius: 8px; display: inline-block; border: 1px solid #cbd5e1;">
           ${couponCode}
         </div>
-        <p style="margin: 8px 0 0; font-size: 15px; font-weight: 800; color: #16a34a;">
-          🎁 Offer: ${discountText}
+        <p style="margin: 6px 0 0; font-size: 14px; font-weight: 700; color: #16a34a;">
+          Offer: ${discountText}
         </p>
-        <p style="margin: 4px 0 0; font-size: 12px; color: #64748b; font-weight: 600;">
-          ⏳ Valid until: ${expiryString}
+        <p style="margin: 4px 0 0; font-size: 12px; color: #64748b;">
+          Valid until: ${expiryString}
         </p>
       </div>
 
-      <div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px 20px; margin: 24px 0;">
-        <h4 style="margin: 0 0 10px; font-size: 13px; font-weight: 800; color: #1e293b; text-transform: uppercase; letter-spacing: 0.5px;">
-          How to Redeem in 3 Simple Steps:
-        </h4>
-        <ol style="margin: 0; padding-left: 20px; color: #334155; font-size: 13.5px; line-height: 1.7;">
+      <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 20px 0;">
+        <p style="margin: 0 0 8px; font-size: 13px; font-weight: 700; color: #1e293b;">
+          Redeem it in your ${appName} App Profile under Subscriptions:
+        </p>
+        <ol style="margin: 0; padding-left: 18px; color: #475569; font-size: 13px; line-height: 1.6;">
           <li>Open the <strong>${appName}</strong> app on your phone.</li>
-          <li>Go to <strong>Profile &rarr; Subscription & Plans</strong> (or tap any upgrade banner).</li>
-          <li>In the <em>"Have a Promo Coupon Code?"</em> box, enter <strong>${couponCode}</strong> and tap <strong>Apply</strong>.</li>
+          <li>Go to <strong>Profile &rarr; Subscription & Plans</strong>.</li>
+          <li>Enter promo code <strong>${couponCode}</strong> and tap <strong>Apply</strong>.</li>
         </ol>
       </div>
 
-      <p style="color: #64748b; font-size: 12.5px; margin-top: 24px;">
-        If you have any questions or require assistance, simply reply to this email or reach out through the in-app help desk.
+      <p style="color: #64748b; font-size: 12px; margin-top: 20px;">
+        If you have any questions or require assistance, simply reply directly to this email.
       </p>
     `, appName, appTagline);
 
     const plainText = [
       `Hello ${name || 'Valued Member'},`,
       '',
-      `Here is your ${appName} subscription promo code: ${couponCode}`,
+      `Your subscription access code is ${couponCode}. Redeem it in your ${appName} App Profile under Subscriptions.`,
       `Offer: ${discountText}`,
       `Valid until: ${expiryString}`,
       customMessage ? `Note: "${customMessage}"` : '',
       '',
-      'How to Redeem:',
+      `How to Redeem:`,
       `1. Open the ${appName} app on your phone.`,
       '2. Go to Profile -> Subscription & Plans.',
       `3. Enter your code ${couponCode} and tap Apply.`,
@@ -675,15 +677,14 @@ export class EmailService {
 
     try {
       await transporter.sendMail({
-        from: `"${appName} Concierge" <support@mitoreboot.in>`,
+        from: `"${appName}" <support@mitoreboot.in>`,
         replyTo: 'support@mitoreboot.in',
         to: email,
-        subject: `Your ${appName} Membership Activation Code: ${couponCode}`,
+        subject,
         text: plainText,
         html,
         headers: {
-          'X-Entity-Ref-ID': couponCode,
-          'X-Auto-Response-Suppress': 'OOF, AutoReply'
+          'X-Entity-Ref-ID': couponCode
         }
       });
       console.log(`[EmailService] Individual coupon email sent successfully to ${email}`);
