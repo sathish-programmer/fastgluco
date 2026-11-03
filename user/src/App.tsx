@@ -571,14 +571,16 @@ const MainAppContent: React.FC = () => {
   const [planFeatures, setPlanFeatures] = useState<any>(null);
   const [trialEndingHours, setTrialEndingHours] = useState<number | null>(null);
   const [showTrialEndingAlert, setShowTrialEndingAlert] = useState<boolean>(true);
+  const subExpiryRef = useRef<number | null>(null);
 
-  const checkSubscription = useCallback(async () => {
+  const checkSubscription = useCallback(async (silent: boolean = false) => {
     if (!isAuthenticated || !token) {
       setIsSubscribed(null);
-      setCheckingSub(false);
+      subExpiryRef.current = null;
+      if (!silent) setCheckingSub(false);
       return;
     }
-    setCheckingSub(true);
+    if (!silent) setCheckingSub(true);
     try {
       const response = await fetch(`${apiUrl}/subscriptions/current`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -594,6 +596,16 @@ const MainAppContent: React.FC = () => {
           (sub.status === 'trialing' && sub.trialEndDate && new Date(sub.trialEndDate) > now) ||
           (sub.status === 'cancelled' && new Date(sub.endDate) > now)
         ));
+
+        // Track exact expiration timestamp in ref for real-time live blocking
+        if (hasActive && sub && !isAppleReviewer) {
+          const expiry = (sub.status === 'trialing' && sub.trialEndDate)
+            ? new Date(sub.trialEndDate).getTime()
+            : new Date(sub.endDate).getTime();
+          subExpiryRef.current = expiry;
+        } else if (!isAppleReviewer) {
+          subExpiryRef.current = null;
+        }
 
         // Check if free trial is active and expiring within 24 hours
         if (sub && sub.status === 'trialing' && sub.trialEndDate) {
@@ -652,7 +664,7 @@ const MainAppContent: React.FC = () => {
         setPlanFeatures(null);
       }
     } finally {
-      setCheckingSub(false);
+      if (!silent) setCheckingSub(false);
     }
   }, [isAuthenticated, token, apiUrl, user?.email]);
 
@@ -664,6 +676,62 @@ const MainAppContent: React.FC = () => {
     window.addEventListener('online', handleOnline);
     return () => window.removeEventListener('online', handleOnline);
   }, [checkSubscription]);
+
+  // Active real-time subscription & trial expiration monitor
+  useEffect(() => {
+    if (!isAuthenticated || isSubscribed !== true) return;
+    const isAppleReviewer = user?.email === 'review@mitoreboot.in' || (user?.email && user.email.endsWith('@apple.com'));
+    if (isAppleReviewer) return;
+
+    const evaluateRealtimeExpiration = () => {
+      if (subExpiryRef.current && Date.now() >= subExpiryRef.current) {
+        console.warn('[Live Gating] Subscription/Trial reached zero in real-time. Immediately locking access to subscription screen.');
+        setIsSubscribed(false);
+        setBasicPlan('Expired');
+        setPlanFeatures(null);
+        subExpiryRef.current = null;
+      }
+    };
+
+    // Immediate check
+    evaluateRealtimeExpiration();
+
+    // Check every 2 seconds for instant cutoff without needing page refresh
+    const liveTicker = setInterval(evaluateRealtimeExpiration, 2000);
+
+    // Background sync with server every 25 seconds (detects admin-side actions, cancellations, additions)
+    const bgSync = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        checkSubscription(true);
+      }
+    }, 25000);
+
+    // Precision timer targeting the exact expiration millisecond
+    let precisionTimer: any = null;
+    if (subExpiryRef.current) {
+      const msLeft = subExpiryRef.current - Date.now();
+      if (msLeft > 0 && msLeft < 24 * 60 * 60 * 1000) {
+        precisionTimer = setTimeout(() => {
+          evaluateRealtimeExpiration();
+        }, msLeft);
+      }
+    }
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        evaluateRealtimeExpiration();
+        checkSubscription(true);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      clearInterval(liveTicker);
+      clearInterval(bgSync);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      if (precisionTimer) clearTimeout(precisionTimer);
+    };
+  }, [isAuthenticated, isSubscribed, checkSubscription, user?.email]);
 
   useEffect(() => {
     if (branding.enableExternalPayments || branding.enableSubscriptions) {

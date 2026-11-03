@@ -18,7 +18,8 @@ import {
   Ticket,
   Loader2,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Clock
 } from 'lucide-react';
 
 import { Capacitor } from '@capacitor/core';
@@ -152,6 +153,58 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
     const timer = setInterval(updateCountdown, 10000);
     return () => clearInterval(timer);
   }, [activeSub]);
+
+  const formatSubscriptionDateTime = (dateVal: string | Date | undefined) => {
+    if (!dateVal) return 'N/A';
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return 'N/A';
+    const dateStr = d.toLocaleDateString(activeLocale, {
+      day: 'numeric',
+      month: 'numeric',
+      year: 'numeric'
+    });
+    const timeStr = d.toLocaleTimeString(activeLocale, {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+    return `${dateStr} at ${timeStr}`;
+  };
+
+  const getRemainingTimeBadge = (dateVal: string | Date | undefined) => {
+    if (!dateVal) return null;
+    const diffMs = new Date(dateVal).getTime() - Date.now();
+    if (diffMs <= 0) {
+      return (
+        <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded-full border border-rose-200/60 dark:border-rose-900/40">
+          Expired
+        </span>
+      );
+    }
+    const totalHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const days = Math.floor(totalHours / 24);
+    if (days >= 2) {
+      return (
+        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-900/40">
+          in {days}d
+        </span>
+      );
+    }
+    if (totalHours >= 1) {
+      const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      return (
+        <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-full border border-amber-200/60 dark:border-amber-900/40">
+          in {totalHours}h {mins}m
+        </span>
+      );
+    }
+    const mins = Math.max(1, Math.floor(diffMs / (1000 * 60)));
+    return (
+      <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded-full border border-rose-200/60 dark:border-rose-900/40 animate-pulse">
+        in {mins}m
+      </span>
+    );
+  };
 
   // Dynamic primary plan calculation from backend/admin (no hardcoded prices)
   const primaryPlan = plans.length > 0 ? plans[0] : activePlanDetails;
@@ -664,21 +717,24 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
             <div className="flex justify-between items-center text-xs font-semibold text-slate-600 dark:text-slate-400">
               <span className="flex items-center space-x-1.5">
                 <Calendar className="h-4 w-4 text-slate-400 dark:text-slate-500" />
-                <span>{t('startDateLabel')}</span>
+                <span>{t('startDateLabel', 'Start Date')}</span>
               </span>
               <span className="text-slate-800 dark:text-slate-100 font-bold">
-                {new Date(activeSub.startDate).toLocaleDateString(activeLocale)}
+                {formatSubscriptionDateTime(activeSub.startDate)}
               </span>
             </div>
 
             <div className="flex justify-between items-center text-xs font-semibold text-slate-600 dark:text-slate-400">
               <span className="flex items-center space-x-1.5">
-                <Calendar className="h-4 w-4 text-slate-400 dark:text-slate-500" />
-                <span>{activeSub.status === 'trialing' ? t('sub.trialExpiry', 'Trial Expiry') : activeSub.cancelAtPeriodEnd ? t('sub.expiryDate', 'Expiry Date') : t('sub.renewalDate', 'Renewal Date')}</span>
+                <Clock className="h-4 w-4 text-slate-400 dark:text-slate-500" />
+                <span>{activeSub.status === 'trialing' ? t('sub.trialExpiry', 'Trial Expiry') : activeSub.cancelAtPeriodEnd ? t('sub.expiryDate', 'Expiry Date') : t('sub.renewalDate', 'Renewal Timing')}</span>
               </span>
-              <span className="text-slate-800 dark:text-slate-100 font-bold">
-                {new Date(activeSub.status === 'trialing' && activeSub.trialEndDate ? activeSub.trialEndDate : activeSub.endDate).toLocaleDateString(activeLocale)}
-              </span>
+              <div className="flex items-center space-x-2 text-right">
+                <span className="text-slate-800 dark:text-slate-100 font-bold">
+                  {formatSubscriptionDateTime(activeSub.status === 'trialing' && activeSub.trialEndDate ? activeSub.trialEndDate : activeSub.endDate)}
+                </span>
+                {getRemainingTimeBadge(activeSub.status === 'trialing' && activeSub.trialEndDate ? activeSub.trialEndDate : activeSub.endDate)}
+              </div>
             </div>
 
             {activeSub.cancelAtPeriodEnd ? (
@@ -688,7 +744,7 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                   <div>
                     <span className="font-extrabold block">Subscription Cancelled</span>
                     <span className="font-medium text-[11px] block mt-0.5">
-                      Auto-renewal is turned off. Your premium features remain active until {new Date(activeSub.status === 'trialing' && activeSub.trialEndDate ? activeSub.trialEndDate : activeSub.endDate).toLocaleDateString(activeLocale)}.
+                      Auto-renewal is turned off. Your premium features remain active until {formatSubscriptionDateTime(activeSub.status === 'trialing' && activeSub.trialEndDate ? activeSub.trialEndDate : activeSub.endDate)}.
                     </span>
                   </div>
                 </div>

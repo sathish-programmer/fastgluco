@@ -483,12 +483,23 @@ export class AdminController {
 
       await subscription.save();
 
-      await AuditLog.create({
-        adminEmail,
-        action: 'CANCEL_USER_SUBSCRIPTION',
-        target: `User: ${user.email} (${user._id})`,
-        details: `Cancelled subscription. Immediate: ${immediate}. Reason: ${reason}`
-      }).catch(console.error);
+      let adminId = req.user?.id;
+      if (!adminId) {
+        const fallbackAdmin = await AdminUser.findOne().select('_id');
+        adminId = fallbackAdmin?._id?.toString();
+      }
+
+      if (adminId) {
+        await AuditLog.create({
+          adminId,
+          adminEmail,
+          adminName: (req.user as any)?.name || 'Admin',
+          action: 'CANCEL_USER_SUBSCRIPTION',
+          entityType: 'Settings',
+          entityId: user._id.toString(),
+          details: `Cancelled subscription. Immediate: ${immediate}. Reason: ${reason || 'N/A'}`
+        }).catch((err) => console.warn('[AuditLog Error]:', err.message));
+      }
 
       return res.status(200).json({
         message: immediate ? 'Subscription cancelled immediately.' : 'Subscription cancelled. Access remains active until billing period ends.',
@@ -558,12 +569,23 @@ export class AdminController {
 
       await newSub.save();
 
-      await AuditLog.create({
-        adminEmail,
-        action: 'GRANT_USER_SUBSCRIPTION',
-        target: `User: ${user.email} (${user._id})`,
-        details: `Granted ${type} subscription until ${endDate.toISOString()} (${effectiveDays} days, ${plan.name}). Note: ${note}`
-      }).catch(console.error);
+      let adminId = req.user?.id;
+      if (!adminId) {
+        const fallbackAdmin = await AdminUser.findOne().select('_id');
+        adminId = fallbackAdmin?._id?.toString();
+      }
+
+      if (adminId) {
+        await AuditLog.create({
+          adminId,
+          adminEmail,
+          adminName: (req.user as any)?.name || 'Admin',
+          action: 'GRANT_USER_SUBSCRIPTION',
+          entityType: 'Settings',
+          entityId: user._id.toString(),
+          details: `Granted ${type} subscription until ${endDate.toISOString()} (${effectiveDays} days, ${plan.name}). Note: ${note}`
+        }).catch((err) => console.warn('[AuditLog Error]:', err.message));
+      }
 
       return res.status(200).json({
         message: `Successfully granted ${type === 'trial' ? 'free trial' : 'subscription'} until ${endDate.toLocaleDateString()} (${effectiveDays} days)!`,
@@ -645,12 +667,23 @@ export class AdminController {
         customMessage: message
       });
 
-      await AuditLog.create({
-        adminEmail,
-        action: 'SEND_USER_COUPON',
-        target: `User: ${user.email} (${user._id})`,
-        details: `Sent individual coupon ${cleanCode} (${discountText}) expiring ${parsedExpiry ? parsedExpiry.toISOString() : 'Never'}`
-      }).catch(console.error);
+      let adminId = req.user?.id;
+      if (!adminId) {
+        const fallbackAdmin = await AdminUser.findOne().select('_id');
+        adminId = fallbackAdmin?._id?.toString();
+      }
+
+      if (adminId) {
+        await AuditLog.create({
+          adminId,
+          adminEmail,
+          adminName: (req.user as any)?.name || 'Admin',
+          action: 'SEND_USER_COUPON',
+          entityType: 'Settings',
+          entityId: user._id.toString(),
+          details: `Sent individual coupon ${cleanCode} (${discountText}) expiring ${parsedExpiry ? parsedExpiry.toISOString() : 'Never'}`
+        }).catch((err) => console.warn('[AuditLog Error]:', err.message));
+      }
 
       return res.status(200).json({
         message: `Coupon code '${cleanCode}' successfully emailed to ${user.email}!`,
