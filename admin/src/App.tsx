@@ -61,7 +61,8 @@ import {
   X,
   Filter,
   Download,
-  Receipt
+  Receipt,
+  TrendingUp
 } from 'lucide-react';
 import {
   BarChart, Bar, PieChart, Pie, Cell,
@@ -87,6 +88,7 @@ import { AdminUserFeedback } from './components/AdminUserFeedback';
 import { AdminAppHealth } from './components/AdminAppHealth';
 import { AdminOtpLogs } from './components/AdminOtpLogs';
 import { OrderManagementHub } from './components/orderManagement/OrderManagementHub';
+import { RevenueAnalyticsHub } from './components/revenueAnalytics/RevenueAnalyticsHub';
 
 const getCategoryStyle = (score: number) => {
   if (score <= 15) return 'bg-emerald-50 text-emerald-700 border-emerald-250';
@@ -208,6 +210,7 @@ const AdminPanelContent: React.FC = () => {
     appointments: true,
     diagnostics: true,
     store: true,
+    revenueAnalytics: true,
     orderSupport: true,
     reports: true,
     settings: false
@@ -2799,6 +2802,116 @@ const AdminPanelContent: React.FC = () => {
               </button>
             </div>
 
+            {/* CATEGORY: REVENUE & BUSINESS ANALYTICS */}
+            <div className="space-y-1">
+              {!sidebarCollapsed && <p className="px-4 text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-2">Revenue & Analytics</p>}
+
+              <div className="space-y-1">
+                <button 
+                  onClick={() => toggleGroup('revenueAnalytics')}
+                  className="w-full flex items-center justify-between px-4 py-2 text-slate-400 hover:text-white transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <TrendingUp className="h-4.5 w-4.5 shrink-0 text-emerald-400" />
+                    {!sidebarCollapsed && <span className="text-[10px] font-black uppercase tracking-wider">Revenue & Analytics</span>}
+                  </div>
+                  {!sidebarCollapsed && (openGroups.revenueAnalytics ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />)}
+                </button>
+                {openGroups.revenueAnalytics && !sidebarCollapsed && (
+                  <div className="pl-6 space-y-1 border-l border-slate-800 ml-6">
+                    <button 
+                      onClick={() => { setActiveView('revenue-overview'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'revenue-overview' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      1. Revenue Overview
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('revenue-transactions'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'revenue-transactions' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      2. All Transactions
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('revenue-subscriptions'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'revenue-subscriptions' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      3. Subscriptions
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('revenue-user-payments'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'revenue-user-payments' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      4. User Payments
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('revenue-ask-mito'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'revenue-ask-mito' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      5. Ask Mito Revenue
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('revenue-shop-sales'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'revenue-shop-sales' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      6. Shop & Product Sales
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('revenue-departments'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'revenue-departments' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      7. Department-wise Revenue
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('revenue-payment-methods'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'revenue-payment-methods' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      8. Payment Methods
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('revenue-refunds'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'revenue-refunds' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      9. Refunds &amp; Failed
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('revenue-reports'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'revenue-reports' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      10. Revenue Reports
+                    </button>
+                    <button 
+                      onClick={() => { setActiveView('revenue-settings'); setSearchQuery(''); }}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-xs font-semibold ${
+                        activeView === 'revenue-settings' ? 'text-white bg-slate-800 font-bold' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      11. Payment Settings
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* CATEGORY: ORDER & SUPPORT MANAGEMENT */}
             <div className="space-y-1">
               {!sidebarCollapsed && <p className="px-4 text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-2">Order & Support Management</p>}
@@ -4651,6 +4764,33 @@ const AdminPanelContent: React.FC = () => {
         {/* OTP & AUTH LOGS VIEW */}
         {activeView === 'otp-logs' && (
           <AdminOtpLogs apiUrl={apiUrl} token={token || ''} />
+        )}
+
+        {/* REVENUE & BUSINESS ANALYTICS MODULE */}
+        {(activeView.startsWith('revenue-') || activeView === 'revenue-analytics') && (
+          <RevenueAnalyticsHub
+            apiUrl={apiUrl}
+            token={token || ''}
+            initialSubmenu={
+              activeView === 'revenue-overview' ? 'overview' :
+              activeView === 'revenue-transactions' ? 'transactions' :
+              activeView === 'revenue-subscriptions' ? 'subscriptions' :
+              activeView === 'revenue-user-payments' ? 'user-payments' :
+              activeView === 'revenue-ask-mito' ? 'ask-mito' :
+              activeView === 'revenue-shop-sales' ? 'shop-sales' :
+              activeView === 'revenue-departments' ? 'departments' :
+              activeView === 'revenue-payment-methods' ? 'payment-methods' :
+              activeView === 'revenue-refunds' ? 'refunds-failed' :
+              activeView === 'revenue-reports' ? 'reports' :
+              activeView === 'revenue-settings' ? 'settings' : 'overview'
+            }
+            onOpenOrder={() => {
+              setActiveView('store-orders');
+            }}
+            onOpenUser={(userId) => {
+              fetchUserActivity(userId);
+            }}
+          />
         )}
 
         {/* REPORTS & ANALYTICS VIEW */}

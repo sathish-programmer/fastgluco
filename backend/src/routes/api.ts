@@ -43,6 +43,7 @@ import { AppHealthController } from '../controllers/appHealthController';
 import { OrderManagementController } from '../controllers/orderManagementController';
 import { MotivationController } from '../controllers/motivationController';
 import * as EducationalVideoController from '../controllers/educationalVideoController';
+import { RevenueAnalyticsController } from '../controllers/revenueAnalyticsController';
 
 const router = Router();
 
@@ -498,6 +499,24 @@ router.delete('/admin/payments/coupons/:id', CouponAdminController.deleteCoupon)
 router.post('/admin/payments/subscriptions/:id/cancel', PaymentAdminController.forceCancelSubscription);
 router.post('/admin/payments/subscriptions/:id/extend', PaymentAdminController.extendSubscription);
 router.post('/admin/payments/subscriptions/:id/change-plan', PaymentAdminController.changeUserPlan);
+
+// ─── REVENUE & BUSINESS ANALYTICS MODULE ROUTES ─────────────────────────────
+router.get('/admin/revenue-analytics/overview', authenticateToken, requireRole(['SuperAdmin', 'Admin']), RevenueAnalyticsController.getOverview);
+router.get('/admin/revenue-analytics/transactions', authenticateToken, requireRole(['SuperAdmin', 'Admin']), RevenueAnalyticsController.getTransactions);
+router.get('/admin/revenue-analytics/subscriptions', authenticateToken, requireRole(['SuperAdmin', 'Admin']), RevenueAnalyticsController.getSubscriptions);
+router.get('/admin/revenue-analytics/user-payments', authenticateToken, requireRole(['SuperAdmin', 'Admin']), RevenueAnalyticsController.getUserPayments);
+router.get('/admin/revenue-analytics/user-payments/:userId', authenticateToken, requireRole(['SuperAdmin', 'Admin']), RevenueAnalyticsController.getUserPaymentDetails);
+router.get('/admin/revenue-analytics/ask-mito', authenticateToken, requireRole(['SuperAdmin', 'Admin']), RevenueAnalyticsController.getAskMito);
+router.get('/admin/revenue-analytics/shop-sales', authenticateToken, requireRole(['SuperAdmin', 'Admin']), RevenueAnalyticsController.getShopSales);
+router.get('/admin/revenue-analytics/departments', authenticateToken, requireRole(['SuperAdmin', 'Admin']), RevenueAnalyticsController.getDepartments);
+router.get('/admin/revenue-analytics/payment-methods', authenticateToken, requireRole(['SuperAdmin', 'Admin']), RevenueAnalyticsController.getPaymentMethods);
+router.get('/admin/revenue-analytics/refunds', authenticateToken, requireRole(['SuperAdmin', 'Admin']), RevenueAnalyticsController.getRefunds);
+router.get('/admin/revenue-analytics/reports/export', authenticateToken, requireRole(['SuperAdmin', 'Admin']), RevenueAnalyticsController.exportReport);
+router.get('/admin/revenue-analytics/settings', authenticateToken, requireRole(['SuperAdmin', 'Admin']), RevenueAnalyticsController.getSettings);
+router.post('/admin/revenue-analytics/sync-razorpay', authenticateToken, requireRole(['SuperAdmin', 'Admin']), RevenueAnalyticsController.syncRazorpay);
+
+// Public Razorpay Webhook
+router.post('/payments/razorpay/webhook', RevenueAnalyticsController.handleRazorpayWebhook);
 
 // Food template management
 router.get('/admin/food-library', AdminController.getFoods);
