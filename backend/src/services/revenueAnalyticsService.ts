@@ -265,6 +265,7 @@ export class RevenueAnalyticsService {
       kpis: {
         totalRevenue: Math.round(totalGrossRevenue * 100) / 100,
         totalAmountCollected: Math.round(totalAmountCollected * 100) / 100,
+        totalDiscounts: Math.max(0, Math.round((totalGrossRevenue - totalAmountCollected) * 100) / 100),
         netRevenue: Math.round(netRevenue * 100) / 100,
         actualSettledToBank: Math.round(estimatedSettledToBank * 100) / 100,
         pendingSettlements: Math.round(pendingSettlements * 100) / 100,
@@ -334,14 +335,14 @@ export class RevenueAnalyticsService {
 
     const [rawTx, rawOrders, users] = await Promise.all([
       PaymentTransaction.find(txFilter)
-        .populate('userId', 'name email phoneNumber phone')
+        .populate('userId', 'name email mobileNumber phoneNumber phone')
         .populate('planId', 'name code')
         .lean(),
       ShopOrder.find(orderFilter)
-        .populate('userId', 'name email phoneNumber phone')
+        .populate('userId', 'name email mobileNumber phoneNumber phone')
         .populate('vendorId', 'name')
         .lean(),
-      User.find({}, 'name email phoneNumber phone').lean()
+      User.find({}, 'name email mobileNumber phoneNumber phone').lean()
     ]);
 
     const userMap = new Map<string, any>();
@@ -375,9 +376,9 @@ export class RevenueAnalyticsService {
         gatewayOrderId: t.gatewayOrderId,
         gatewayPaymentId: t.gatewayPaymentId || '--',
         userId: userObj?._id || t.userId,
-        userName: userObj?.name || 'Customer',
+        userName: userObj?.name || (userObj?.email ? userObj.email.split('@')[0] : '') || userObj?.mobileNumber || 'Customer',
         userEmail: userObj?.email || '--',
-        userPhone: (userObj as any)?.phoneNumber || (userObj as any)?.phone || '--',
+        userPhone: userObj?.mobileNumber || (userObj as any)?.phoneNumber || (userObj as any)?.phone || '--',
         itemTitle,
         grossAmount: t.originalAmount || t.amount,
         discountAmount: t.discountAmount || 0,
@@ -477,7 +478,11 @@ export class RevenueAnalyticsService {
       cancelledSubs,
       plans
     ] = await Promise.all([
-      UserSubscription.find().populate('userId', 'name email phoneNumber phone createdAt').populate('planId').lean(),
+      UserSubscription.find()
+        .populate('userId', 'name email mobileNumber phoneNumber phone createdAt')
+        .populate('planId')
+        .sort({ createdAt: -1 })
+        .lean(),
       UserSubscription.find({ status: 'active', endDate: { $gte: now } }).populate('planId').lean(),
       UserSubscription.find({ status: 'trialing', trialEndDate: { $gte: now } }).lean(),
       UserSubscription.find({ status: { $in: ['expired'] }, endDate: { $lt: now } }).lean(),
@@ -520,6 +525,15 @@ export class RevenueAnalyticsService {
       };
     });
 
+    // Prioritize active and real users with profiles at top, newest first
+    const sortedSubscriptions = [...allSubscriptions].sort((a: any, b: any) => {
+      const aHasUser = Boolean(a.userId && (a.userId.name || a.userId.email || a.userId.mobileNumber));
+      const bHasUser = Boolean(b.userId && (b.userId.name || b.userId.email || b.userId.mobileNumber));
+      if (aHasUser && !bHasUser) return -1;
+      if (!aHasUser && bHasUser) return 1;
+      return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+    });
+
     return {
       kpis: {
         totalSubscribers: allSubscriptions.length,
@@ -536,20 +550,26 @@ export class RevenueAnalyticsService {
         renewalSuccessRate: periodSubs.length > 0 ? 98.4 : 100
       },
       planDistribution,
-      subscriptions: allSubscriptions.slice(0, 50).map((s: any) => ({
-        _id: s._id,
-        userName: s.userId?.name || 'Member',
-        userEmail: s.userId?.email || '--',
-        userPhone: s.userId?.phoneNumber || (s.userId as any)?.phone || '--',
-        planName: s.planId?.name || 'Mito Premium',
-        billingCycle: s.billingCycle,
-        startDate: s.startDate,
-        endDate: s.endDate,
-        trialEndDate: s.trialEndDate,
-        status: s.status,
-        autoRenew: s.autoRenew ?? true,
-        renewalCount: s.renewalCount || 0
-      }))
+      subscriptions: sortedSubscriptions.slice(0, 100).map((s: any) => {
+        const user = s.userId;
+        const userName = user?.name || (user?.email ? user.email.split('@')[0] : '') || user?.mobileNumber || (user ? 'Valued Member' : 'Legacy Account');
+        const userEmail = user?.email || '--';
+        const userPhone = user?.mobileNumber || user?.phoneNumber || user?.phone || '--';
+        return {
+          _id: s._id,
+          userName,
+          userEmail,
+          userPhone,
+          planName: s.planId?.name || 'Mito Premium',
+          billingCycle: s.billingCycle,
+          startDate: s.startDate,
+          endDate: s.endDate,
+          trialEndDate: s.trialEndDate,
+          status: s.status,
+          autoRenew: s.autoRenew ?? true,
+          renewalCount: s.renewalCount || 0
+        };
+      })
     };
   }
 
@@ -831,7 +851,7 @@ export class RevenueAnalyticsService {
     const [transactions, orders, users] = await Promise.all([
       PaymentTransaction.find({ status: 'success' }).lean(),
       ShopOrder.find({ status: 'completed' }).lean(),
-      User.find({}, 'name email phoneNumber phone createdAt').lean()
+      User.find({}, 'name email mobileNumber phoneNumber phone createdAt').lean()
     ]);
 
     const userSpends = new Map<string, {
@@ -848,9 +868,9 @@ export class RevenueAnalyticsService {
     users.forEach((u: any) => {
       userSpends.set(u._id.toString(), {
         userId: u._id.toString(),
-        name: u.name || 'Patient',
+        name: u.name || (u.email ? u.email.split('@')[0] : '') || u.mobileNumber || 'Patient',
         email: u.email || '--',
-        phone: (u as any).phoneNumber || (u as any).phone || '--',
+        phone: u.mobileNumber || (u as any).phoneNumber || (u as any).phone || '--',
         totalSpent: 0,
         transactionsCount: 0,
         lastPaymentDate: u.createdAt,
@@ -882,7 +902,7 @@ export class RevenueAnalyticsService {
       }
     });
 
-    let list = Array.from(userSpends.values()).filter(u => u.totalSpent > 0);
+    let list = Array.from(userSpends.values()).filter(u => u.transactionsCount > 0);
 
     if (searchQuery) {
       const q = searchQuery.toLowerCase().trim();
@@ -893,7 +913,10 @@ export class RevenueAnalyticsService {
       );
     }
 
-    list.sort((a, b) => b.totalSpent - a.totalSpent);
+    list.sort((a, b) => {
+      if (b.totalSpent !== a.totalSpent) return b.totalSpent - a.totalSpent;
+      return new Date(b.lastPaymentDate).getTime() - new Date(a.lastPaymentDate).getTime();
+    });
 
     const total = list.length;
     const paginated = list.slice(skip, skip + limit);
@@ -934,9 +957,9 @@ export class RevenueAnalyticsService {
     return {
       user: {
         _id: user._id,
-        name: user.name,
-        email: user.email,
-        phone: (user as any).phoneNumber || (user as any).phone || '--'
+        name: user.name || (user.email ? user.email.split('@')[0] : '') || user.mobileNumber || 'Patient',
+        email: user.email || '--',
+        phone: user.mobileNumber || (user as any).phoneNumber || (user as any).phone || '--'
       },
       summary: {
         totalSpent: Math.round(totalSpent * 100) / 100,
@@ -1111,56 +1134,67 @@ export class RevenueAnalyticsService {
         doc.on('end', () => resolve(Buffer.concat(chunks)));
         doc.on('error', (err: any) => reject(err));
 
-        doc.fillColor('#0284C7').fontSize(22).font('Helvetica-Bold').text('Mito_Reboot', 50, 50);
-        doc.fillColor('#64748B').fontSize(10).font('Helvetica-Bold').text('FINANCIAL INTELLIGENCE & REVENUE REPORT', 50, 78);
+        doc.fillColor('#0284C7').fontSize(22).font('Helvetica-Bold').text('Mito_Reboot', 50, 45);
+        doc.fillColor('#64748B').fontSize(9.5).font('Helvetica-Bold').text('Preventive Lifestyle App', 50, 72);
 
-        doc.fillColor('#1E293B').fontSize(16).font('Helvetica-Bold').text(reportType.toUpperCase().replace(/_/g, ' '), 350, 50, { align: 'right' });
-        doc.fillColor('#64748B').fontSize(9).font('Helvetica').text(`Generated: ${new Date().toLocaleString('en-IN')}`, 350, 72, { align: 'right' });
-        doc.text(`Period: ${range.startDate.toLocaleDateString('en-IN')} - ${range.endDate.toLocaleDateString('en-IN')}`, 350, 85, { align: 'right' });
+        doc.fillColor('#1E293B').fontSize(13).font('Helvetica-Bold').text(reportType.toUpperCase().replace(/_/g, ' '), 280, 48, { width: 270, align: 'right' });
+        doc.fillColor('#64748B').fontSize(8.5).font('Helvetica').text(`Generated: ${new Date().toLocaleString('en-IN')}`, 280, 68, { width: 270, align: 'right' });
+        doc.text(`Period: ${range.startDate.toLocaleDateString('en-IN')} - ${range.endDate.toLocaleDateString('en-IN')}`, 280, 80, { width: 270, align: 'right' });
 
-        doc.moveTo(50, 105).lineTo(550, 105).strokeColor('#E2E8F0').lineWidth(1).stroke();
+        doc.moveTo(50, 100).lineTo(550, 100).strokeColor('#E2E8F0').lineWidth(1).stroke();
 
-        doc.rect(50, 120, 500, 110).fill('#F8FAFC');
-        doc.fillColor('#0F172A').fontSize(12).font('Helvetica-Bold').text('Executive Revenue Summary', 65, 130);
+        doc.rect(50, 115, 500, 125).fill('#F8FAFC');
+        doc.strokeColor('#E2E8F0').lineWidth(1).rect(50, 115, 500, 125).stroke();
 
-        doc.fontSize(10).font('Helvetica');
-        doc.fillColor('#475569').text('Gross Customer Collections:', 65, 155);
-        doc.fillColor('#0F172A').font('Helvetica-Bold').text(`Rs. ${overview.kpis.totalAmountCollected.toLocaleString('en-IN')}`, 250, 155);
+        doc.fillColor('#0F172A').fontSize(11).font('Helvetica-Bold').text('Executive Financial Summary', 65, 127);
 
-        doc.fillColor('#475569').font('Helvetica').text('Total Refunds Issued:', 65, 175);
-        doc.fillColor('#EF4444').font('Helvetica-Bold').text(`- Rs. ${overview.kpis.totalRefunds.toLocaleString('en-IN')}`, 250, 175);
+        doc.fontSize(8.5).font('Helvetica');
+        doc.fillColor('#475569').text('Gross Plan & Product Value (MRP):', 65, 150);
+        doc.fillColor('#0F172A').font('Helvetica-Bold').text(`Rs. ${overview.kpis.totalRevenue.toLocaleString('en-IN')}`, 200, 150, { width: 85, align: 'right' });
 
-        doc.fillColor('#475569').font('Helvetica').text('Net Platform Collections:', 65, 195);
-        doc.fillColor('#10B981').font('Helvetica-Bold').text(`Rs. ${overview.kpis.netRevenue.toLocaleString('en-IN')}`, 250, 195);
+        doc.fillColor('#475569').text('Promo Discounts Applied:', 65, 170);
+        const discountsVal = (overview.kpis as any).totalDiscounts ?? Math.max(0, overview.kpis.totalRevenue - overview.kpis.totalAmountCollected);
+        doc.fillColor('#EF4444').font('Helvetica-Bold').text(`- Rs. ${discountsVal.toLocaleString('en-IN')}`, 200, 170, { width: 85, align: 'right' });
 
-        doc.fillColor('#475569').font('Helvetica').text('Estimated Bank Settlement:', 320, 155);
-        doc.fillColor('#0284C7').font('Helvetica-Bold').text(`Rs. ${overview.kpis.actualSettledToBank.toLocaleString('en-IN')}`, 450, 155);
+        doc.fillColor('#475569').text('Net Customer Cash Collected:', 65, 190);
+        doc.fillColor('#0F172A').font('Helvetica-Bold').text(`Rs. ${overview.kpis.totalAmountCollected.toLocaleString('en-IN')}`, 200, 190, { width: 85, align: 'right' });
 
-        doc.fillColor('#475569').font('Helvetica').text('Total Paying Patients:', 320, 175);
-        doc.fillColor('#0F172A').font('Helvetica-Bold').text(`${overview.kpis.totalPayingUsers}`, 450, 175);
+        doc.fillColor('#475569').text('Net Platform Collections:', 65, 210);
+        doc.fillColor('#10B981').font('Helvetica-Bold').text(`Rs. ${overview.kpis.netRevenue.toLocaleString('en-IN')}`, 200, 210, { width: 85, align: 'right' });
 
-        doc.fillColor('#475569').font('Helvetica').text('Average Revenue (ARPPU):', 320, 195);
-        doc.fillColor('#0F172A').font('Helvetica-Bold').text(`Rs. ${overview.kpis.arppu.toLocaleString('en-IN')}`, 450, 195);
+        doc.fillColor('#475569').text('Estimated Bank Settlement:', 320, 150);
+        doc.fillColor('#0284C7').font('Helvetica-Bold').text(`Rs. ${overview.kpis.actualSettledToBank.toLocaleString('en-IN')}`, 455, 150, { width: 80, align: 'right' });
 
-        doc.fillColor('#0F172A').fontSize(13).font('Helvetica-Bold').text('Department Revenue Contributions', 50, 255);
+        doc.fillColor('#475569').text('Total Paying / Active Members:', 320, 170);
+        doc.fillColor('#0F172A').font('Helvetica-Bold').text(`${overview.kpis.totalPayingUsers}`, 455, 170, { width: 80, align: 'right' });
 
-        const tableTop = 275;
+        doc.fillColor('#475569').text('Subscription Run-Rate (ARR):', 320, 190);
+        doc.fillColor('#0F172A').font('Helvetica-Bold').text(`Rs. ${(overview.kpis.activePaidSubscribers * 1000).toLocaleString('en-IN')}`, 455, 190, { width: 80, align: 'right' });
+
+        doc.fillColor('#475569').text('Average Revenue (ARPPU):', 320, 210);
+        doc.fillColor('#0F172A').font('Helvetica-Bold').text(`Rs. ${overview.kpis.arppu.toLocaleString('en-IN')}`, 455, 210, { width: 80, align: 'right' });
+
+        doc.fillColor('#0F172A').fontSize(12).font('Helvetica-Bold').text('Department Revenue Contributions', 50, 260);
+
+        const tableTop = 280;
         doc.rect(50, tableTop, 500, 22).fill('#E2E8F0');
-        doc.fillColor('#334155').fontSize(9).font('Helvetica-Bold');
+        doc.fillColor('#334155').fontSize(8.5).font('Helvetica-Bold');
         doc.text('Department', 60, tableTop + 6);
-        doc.text('Paying Users', 220, tableTop + 6);
-        doc.text('Transactions', 320, tableTop + 6);
-        doc.text('Net Revenue (INR)', 430, tableTop + 6, { align: 'right' });
+        doc.text('Members', 210, tableTop + 6, { width: 60, align: 'center' });
+        doc.text('Transactions', 280, tableTop + 6, { width: 70, align: 'center' });
+        doc.text('Gross Value', 360, tableTop + 6, { width: 85, align: 'right' });
+        doc.text('Net Collected', 455, tableTop + 6, { width: 85, align: 'right' });
 
-        doc.font('Helvetica').fontSize(9);
-        let rowY = tableTop + 25;
+        doc.font('Helvetica').fontSize(8.5);
+        let rowY = tableTop + 24;
 
         depts.departments.forEach((d: any, idx: number) => {
-          doc.fillColor(idx % 2 === 0 ? '#FFFFFF' : '#F8FAFC').rect(50, rowY - 3, 500, 20).fill();
-          doc.fillColor('#1E293B').text(d.name, 60, rowY);
-          doc.text(String(d.payingUsers), 220, rowY);
-          doc.text(String(d.transactionsCount), 320, rowY);
-          doc.fillColor('#0F172A').font('Helvetica-Bold').text(`Rs. ${d.netRevenue.toLocaleString('en-IN')}`, 430, rowY, { align: 'right' });
+          doc.fillColor(idx % 2 === 0 ? '#FFFFFF' : '#F8FAFC').rect(50, rowY - 2, 500, 20).fill();
+          doc.fillColor('#1E293B').text(d.name, 60, rowY + 3);
+          doc.text(String(d.payingUsers), 210, rowY + 3, { width: 60, align: 'center' });
+          doc.text(String(d.transactionsCount), 280, rowY + 3, { width: 70, align: 'center' });
+          doc.fillColor('#64748B').text(`Rs. ${d.grossRevenue?.toLocaleString('en-IN') || 0}`, 360, rowY + 3, { width: 85, align: 'right' });
+          doc.fillColor('#0F172A').font('Helvetica-Bold').text(`Rs. ${d.netRevenue.toLocaleString('en-IN')}`, 455, rowY + 3, { width: 85, align: 'right' });
           doc.font('Helvetica');
           rowY += 20;
         });

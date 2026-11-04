@@ -12,6 +12,7 @@ import { Invoice } from '../models/Invoice';
 import { FCMService } from '../services/fcmService';
 import { Coupon } from '../models/Coupon';
 import { EmailService } from '../services/emailService';
+import { User } from '../models/User';
 
 export class SubscriptionController {
   /**
@@ -943,9 +944,9 @@ export class SubscriptionController {
       doc.fillColor('#0284C7').fontSize(24).font('Helvetica-Bold').text('Mito_Reboot', 50, 50);
       doc.fillColor('#64748B').fontSize(10).font('Helvetica-Bold').text('Preventive Lifestyle App', 50, 78);
 
-      doc.fillColor('#1E293B').fontSize(20).font('Helvetica-Bold').text('INVOICE', 400, 50, { align: 'right' });
-      doc.fillColor('#64748B').fontSize(10).font('Helvetica').text(`Invoice #: ${invoice.invoiceNumber}`, 400, 75, { align: 'right' });
-      doc.text(`Date: ${new Date(invoice.createdAt || Date.now()).toLocaleDateString('en-IN')}`, 400, 90, { align: 'right' });
+      doc.fillColor('#1E293B').fontSize(20).font('Helvetica-Bold').text('INVOICE', 390, 50, { width: 160, align: 'right' });
+      doc.fillColor('#64748B').fontSize(10).font('Helvetica').text(`Invoice #: ${invoice.invoiceNumber}`, 390, 75, { width: 160, align: 'right' });
+      doc.text(`Date: ${new Date(invoice.createdAt || Date.now()).toLocaleDateString('en-IN')}`, 390, 90, { width: 160, align: 'right' });
 
       // Resolve subscription period end if missing
       let subEnd = invoice.subscriptionPeriodEnd;
@@ -966,16 +967,30 @@ export class SubscriptionController {
       }
 
       if (subEnd) {
-        doc.text(`Valid Until: ${new Date(subEnd).toLocaleDateString('en-IN')}`, 400, 105, { align: 'right' });
+        doc.text(`Valid Until: ${new Date(subEnd).toLocaleDateString('en-IN')}`, 390, 105, { width: 160, align: 'right' });
       }
 
       // Horizontal Line divider
       doc.moveTo(50, 125).lineTo(550, 125).strokeColor('#E2E8F0').lineWidth(1).stroke();
 
+      // Resolve patient name & email if missing or generic
+      let billingName = invoice.billingName;
+      let billingEmail = invoice.billingEmail;
+      if (!billingName || billingName === 'Mito_Reboot Patient' || billingName === 'Patient' || !billingEmail) {
+        const u = await User.findById(invoice.userId);
+        if (u) {
+          billingName = u.name || (u.email ? u.email.split('@')[0] : '') || u.mobileNumber || 'Valued Patient';
+          billingEmail = u.email || billingEmail || '--';
+          invoice.billingName = billingName;
+          invoice.billingEmail = billingEmail;
+          invoice.save().catch(() => {});
+        }
+      }
+
       // Bill To details
       doc.fillColor('#1E293B').fontSize(11).font('Helvetica-Bold').text('Billed To:', 50, 138);
-      doc.fillColor('#334155').fontSize(9.5).font('Helvetica').text(invoice.billingName, 50, 155);
-      doc.text(invoice.billingEmail, 50, 169);
+      doc.fillColor('#334155').fontSize(9.5).font('Helvetica').text(billingName, 50, 155);
+      doc.text(billingEmail, 50, 169);
 
       // Issued By details (Registered Corporate Office)
       doc.fillColor('#1E293B').fontSize(11).font('Helvetica-Bold').text('Issued By:', 280, 138);
