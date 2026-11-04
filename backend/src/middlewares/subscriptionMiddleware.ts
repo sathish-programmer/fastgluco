@@ -28,10 +28,10 @@ export const requireSubscriptionFeature = (featureKey: 'unlimitedReports' | 'adv
       const now = new Date();
       const activeSubscription = await UserSubscription.findOne({
         userId,
-        status: { $in: ['active', 'trialing', 'cancelled'] },
+        status: { $in: ['active', 'trialing'] },
         $or: [
           { status: 'trialing', trialEndDate: { $gte: now } },
-          { status: { $in: ['active', 'cancelled'] }, endDate: { $gte: now } }
+          { status: 'active', endDate: { $gte: now } }
         ]
       });
 
