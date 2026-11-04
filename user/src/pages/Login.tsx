@@ -145,6 +145,8 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
   const [deliveryMethod, setDeliveryMethod] = useState<'sms' | 'email' | 'sms_and_email' | 'mock'>('sms_and_email');
   const [_otpProvider, setOtpProvider] = useState<'FIREBASE' | 'FAST2SMS' | null>(null);
   const [isAutoVerifying, setIsAutoVerifying] = useState<boolean>(false);
+  const [isInputFocused, setIsInputFocused] = useState<boolean>(true);
+  const [autoFillStep, setAutoFillStep] = useState<number>(0);
 
   const mobileNumberRef = useRef(mobileNumber);
   const emailRef = useRef(email);
@@ -192,15 +194,22 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
       setTimeout(() => otpInputRef.current?.focus(), 100);
     });
 
-    const completedSub = FirebaseAuthentication.addListener('phoneVerificationCompleted', async (event) => {
+    const completedSub = FirebaseAuthentication.addListener('phoneVerificationCompleted', async (event: any) => {
       console.log('[Native Firebase] phoneVerificationCompleted automatically!', event);
       if (!isMounted) return;
       setIsAutoVerifying(true);
       setLoading(true);
       userInitiatedSendRef.current = false;
       try {
+        if (event?.code) {
+          const code = String(event.code).replace(/[^0-9]/g, '').slice(0, 6);
+          for (let i = 1; i <= code.length; i++) {
+            await new Promise(r => setTimeout(r, 70));
+            setOtpCode(code.slice(0, i));
+          }
+        }
         // Give the user a moment to see the SMS auto-detected animation
-        await new Promise(r => setTimeout(r, 700));
+        await new Promise(r => setTimeout(r, 900));
         const idTokenRes = await FirebaseAuthentication.getIdToken();
         const e164 = buildE164(mobileNumberRef.current);
         if (idTokenRes.token && e164) {
@@ -305,6 +314,26 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
     return () => clearInterval(interval);
   }, [timer]);
 
+  // Smooth cascading animation when auto-verifying SMS
+  useEffect(() => {
+    if (isAutoVerifying) {
+      setAutoFillStep(0);
+      const timerIds: Array<ReturnType<typeof setTimeout>> = [];
+      for (let i = 1; i <= 6; i++) {
+        timerIds.push(
+          setTimeout(() => {
+            setAutoFillStep(i);
+          }, i * 85)
+        );
+      }
+      return () => {
+        timerIds.forEach(clearTimeout);
+      };
+    } else {
+      setAutoFillStep(0);
+    }
+  }, [isAutoVerifying]);
+
   // WebOTP API — auto-read OTP from SMS on web (Chrome / Edge)
   useEffect(() => {
     if (screen !== 'otp' || !('OTPCredential' in window)) return;
@@ -314,10 +343,14 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
       .then(async (otp: any) => {
         if (otp?.code) {
           setIsAutoVerifying(true);
-          setOtpCode(otp.code);
+          const cleanCode = String(otp.code).replace(/[^0-9]/g, '').slice(0, 6);
+          for (let i = 1; i <= cleanCode.length; i++) {
+            await new Promise(r => setTimeout(r, 70));
+            setOtpCode(cleanCode.slice(0, i));
+          }
           showToast('OTP auto-filled from SMS!', 'success');
-          await new Promise(r => setTimeout(r, 600));
-          submitOtp(otp.code);
+          await new Promise(r => setTimeout(r, 450));
+          submitOtp(cleanCode);
         }
       })
       .catch(() => { });
@@ -958,15 +991,18 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
 
             {/* Live Auto-Reading SMS / Email Delivery Banner */}
             {isAutoVerifying ? (
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-2xl flex items-center space-x-3 text-slate-800 shadow-sm animate-pulse">
-                <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                  <CheckCircle2 className="h-5 w-5 text-primary" />
+              <div className="p-3 bg-gradient-to-r from-emerald-50 via-teal-50 to-blue-50 border border-emerald-200/80 rounded-2xl flex items-center space-x-3 text-slate-800 shadow-sm animate-pulse">
+                <div className="h-8 w-8 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-600" />
                 </div>
-                <div className="text-left flex-1">
-                  <p className="text-xs font-bold text-slate-900">SMS Detected Automatically!</p>
+                <div className="text-left flex-1 min-w-0">
+                  <p className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                    SMS Detected Automatically!
+                    <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500 animate-ping"></span>
+                  </p>
                   <p className="text-[11px] text-slate-600 font-medium">Verifying code and logging you in...</p>
                 </div>
-                <RefreshCw className="h-4 w-4 text-primary animate-spin shrink-0" />
+                <RefreshCw className="h-4 w-4 text-emerald-600 animate-spin shrink-0" />
               </div>
             ) : deliveryMethod === 'email' ? (
               <div className="p-3 bg-emerald-50/70 border border-emerald-150 rounded-2xl flex items-center space-x-3 text-slate-700">
@@ -1001,28 +1037,82 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
             ) : null}
 
             <div>
-              <input
-                id="otp-input"
-                ref={otpInputRef}
-                type="text"
-                inputMode="numeric"
-                required
-                maxLength={6}
-                value={otpCode}
-                onChange={(e) => { setOtpCode(e.target.value.replace(/[^0-9]/g, '')); setOtpError(''); }}
-                placeholder="• • • • • •"
-                autoComplete="one-time-code"
-                className={`w-full py-3.5 text-center rounded-2xl border focus:outline-none focus:ring-2 focus:border-transparent font-extrabold text-2xl tracking-widest transition-all ${isAutoVerifying
-                  ? 'border-primary bg-blue-50/40 text-primary ring-2 ring-primary/20'
-                  : otpError
-                    ? 'border-red-400 bg-red-50 text-slate-800 focus:ring-red-400'
-                    : 'border-slate-200 bg-slate-50/50 focus:bg-white text-slate-800 focus:ring-primary/20 focus:border-primary'
-                  }`}
-                autoFocus
-              />
+              {/* Modern 6-Box Segmented OTP Input */}
+              <div
+                className="relative my-4 cursor-pointer"
+                onClick={() => otpInputRef.current?.focus()}
+              >
+                {/* Native input overlay for keyboard, autofill, paste, and screen readers */}
+                <input
+                  id="otp-input"
+                  ref={otpInputRef}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  required
+                  maxLength={6}
+                  value={otpCode}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 6);
+                    setOtpCode(val);
+                    setOtpError('');
+                    if (val.length === 6) {
+                      submitOtp(val);
+                    }
+                  }}
+                  onFocus={() => setIsInputFocused(true)}
+                  onBlur={() => setIsInputFocused(false)}
+                  autoComplete="one-time-code"
+                  disabled={isAutoVerifying || loading}
+                  className="absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer caret-transparent"
+                  autoFocus
+                />
+
+                {/* 6 Visual Segmented Boxes */}
+                <div className="flex items-center justify-between gap-2 sm:gap-2.5 max-w-[340px] mx-auto select-none">
+                  {[0, 1, 2, 3, 4, 5].map((index) => {
+                    const digit = otpCode[index] || '';
+                    const isFilled = Boolean(digit);
+                    const isAutoFilled = isAutoVerifying && (index < autoFillStep || isFilled);
+                    const isActive = isInputFocused && !isAutoVerifying && (otpCode.length === index || (otpCode.length === 6 && index === 5));
+
+                    let boxClass = 'border-slate-200 bg-slate-50/70 text-slate-400';
+                    if (otpError) {
+                      boxClass = 'border-red-400 bg-red-50/50 text-red-600 ring-2 ring-red-400/20';
+                    } else if (isAutoFilled) {
+                      boxClass = 'border-emerald-500 bg-emerald-50 text-emerald-600 ring-2 ring-emerald-500/25 shadow-md shadow-emerald-500/10 scale-105';
+                    } else if (isActive) {
+                      boxClass = 'border-primary bg-white text-slate-900 ring-4 ring-primary/20 shadow-md shadow-primary/15 scale-105';
+                    } else if (isFilled) {
+                      boxClass = 'border-slate-300 bg-white text-slate-900 shadow-sm';
+                    }
+
+                    return (
+                      <div
+                        key={index}
+                        className={`h-14 flex-1 rounded-2xl border flex items-center justify-center font-black text-2xl transition-all duration-200 relative ${boxClass}`}
+                      >
+                        {isAutoFilled ? (
+                          digit ? (
+                            <span className="animate-in zoom-in-75 duration-150">{digit}</span>
+                          ) : (
+                            <CheckCircle2 className="h-6 w-6 text-emerald-500 animate-in zoom-in-50 duration-200" />
+                          )
+                        ) : digit ? (
+                          <span className="text-slate-900 animate-in zoom-in-90 duration-100">{digit}</span>
+                        ) : isActive ? (
+                          <span className="w-0.5 h-6 bg-primary rounded-full animate-pulse" />
+                        ) : (
+                          <span className="w-2 h-2 rounded-full bg-slate-300/80" />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
 
               {otpError && (
-                <p className="mt-2 text-xs text-red-600 font-semibold flex items-center gap-1">
+                <p className="mt-2 text-xs text-red-600 font-semibold flex items-center justify-center gap-1">
                   <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                   {otpError}
                 </p>
