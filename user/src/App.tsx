@@ -683,6 +683,13 @@ const MainAppContent: React.FC = () => {
     };
   }, [checkSubscription]);
 
+  // Re-check subscription when onboarding is completed or profile vitals initialized
+  useEffect(() => {
+    if (isAuthenticated && user?.name && isSubscribed === false) {
+      checkSubscription();
+    }
+  }, [isAuthenticated, user?.name, user?.termsAccepted, isSubscribed, checkSubscription]);
+
   // Active real-time subscription & trial expiration monitor
   useEffect(() => {
     if (!isAuthenticated || isSubscribed !== true) return;

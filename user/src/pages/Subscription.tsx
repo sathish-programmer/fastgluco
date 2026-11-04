@@ -9,6 +9,7 @@ import {
   Calendar,
   FileText,
   ArrowLeft,
+  ArrowRight,
   AlertTriangle,
   Award,
   Percent,
@@ -127,6 +128,13 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
   const [couponSuccess, setCouponSuccess] = useState<string | null>(null);
   const [showTrialPopup, setShowTrialPopup] = useState<boolean>(false);
   const [liveTrialText, setLiveTrialText] = useState<string>('');
+
+  const isTrialActive = Boolean(
+    activeSub &&
+    activeSub.status === 'trialing' &&
+    activeSub.trialEndDate &&
+    new Date(activeSub.trialEndDate).getTime() > Date.now()
+  );
 
   useEffect(() => {
     const updateCountdown = () => {
@@ -286,11 +294,13 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
           // Show popup if the user can start a trial and does not have an active subscription
           const hasActive = subData.subscription && (
             (subData.subscription.status === 'active' && new Date(subData.subscription.endDate) > new Date()) ||
-            (subData.subscription.status === 'trialing' && subData.subscription.trialEndDate && new Date(subData.subscription.trialEndDate) > new Date()) ||
-            (subData.subscription.status === 'cancelled' && new Date(subData.subscription.endDate) > new Date())
+            (subData.subscription.status === 'trialing' && subData.subscription.trialEndDate && new Date(subData.subscription.trialEndDate) > new Date())
           );
           if (!hasActive && subData.canStartTrial) {
             setShowTrialPopup(true);
+          }
+          if (hasActive && isBlocking) {
+            window.dispatchEvent(new CustomEvent('subscription-updated'));
           }
         }
       }
@@ -638,18 +648,80 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
             </p>
           </div>
         </div>
-        {isBlocking && (
-          <button
-            onClick={onBack}
-            className="text-xs font-extrabold text-rose-600 hover:text-rose-700 flex items-center space-x-1 px-3.5 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300 rounded-full border border-rose-200 dark:border-rose-800/50 transition-all cursor-pointer shadow-xs"
-          >
-            <span>{t('signOutAction')}</span>
-          </button>
-        )}
+        <div className="flex items-center space-x-2">
+          {isTrialActive && (
+            <button
+              onClick={() => {
+                if (onSuccess) onSuccess();
+                else if (onBack) onBack();
+              }}
+              className="text-xs font-black text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 rounded-full border border-emerald-200 dark:border-emerald-800/60 transition-all cursor-pointer shadow-xs active:scale-95"
+            >
+              <span>Explore App</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          )}
+          {isBlocking && (
+            <button
+              onClick={onBack}
+              className="text-xs font-extrabold text-rose-600 hover:text-rose-700 flex items-center space-x-1 px-3.5 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300 rounded-full border border-rose-200 dark:border-rose-800/50 transition-all cursor-pointer shadow-xs"
+            >
+              <span>{t('signOutAction')}</span>
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Blocking Paywall Alert Banner */}
-      {isBlocking && (
+      {/* Dynamic Top Banner: Trial Active Welcome vs. Full Access Locked */}
+      {isTrialActive ? (
+        <div className="mb-6 p-6 rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-900 text-white shadow-xl relative overflow-hidden border border-indigo-500/30">
+          {/* Ambient Glow */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="relative z-10">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-[11px] font-black uppercase tracking-wider text-emerald-300">
+                <Sparkles className="w-3.5 h-3.5 text-emerald-300 animate-pulse" />
+                <span>48-Hour Free Trial Active</span>
+              </div>
+              <span className="text-xs font-bold px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-emerald-200 border border-emerald-400/20 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5" />
+                <span>{liveTrialText || `${trialHoursRemaining}h remaining`}</span>
+              </span>
+            </div>
+
+            <h2 className="text-lg sm:text-xl font-black tracking-tight leading-snug">
+              Welcome to {branding.appName}! You&apos;re on Free Trial
+            </h2>
+
+            <p className="text-xs sm:text-sm text-slate-200 mt-2 leading-relaxed">
+              You currently have full, complimentary access to explore all premium features—CGM spike analysis, meal logs, food scanner, and doctor consultations.
+            </p>
+
+            <div className="mt-3.5 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-400/20 text-amber-200 text-xs leading-relaxed flex items-start gap-2.5">
+              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <span className="font-bold">Important: </span>
+                Once your 48-hour trial ends, you will need an active subscription plan to continue accessing the app. You can subscribe to an annual plan below anytime to keep uninterrupted access.
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="mt-5 flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => {
+                  if (onSuccess) onSuccess();
+                  else if (onBack) onBack();
+                }}
+                className="flex-1 py-3.5 px-5 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-600 hover:to-teal-600 text-white text-xs sm:text-sm font-black rounded-2xl shadow-lg hover:shadow-xl active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Sparkles className="w-4 h-4 text-amber-200" />
+                <span>Explore App Now (Free Access)</span>
+                <ArrowRight className="w-4 h-4 ml-0.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : isBlocking ? (
         <div className="mb-5 p-5 rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-primary text-white shadow-lg relative overflow-hidden border border-indigo-800/40">
           <div className="relative z-10">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-[11px] font-black uppercase tracking-wider mb-2.5 text-amber-300">
@@ -657,14 +729,14 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
               <span>Full Access Locked</span>
             </div>
             <h2 className="text-base sm:text-lg font-black tracking-tight leading-snug">
-              Unlock Unlimited Mito Reboot Access
+              Unlock Unlimited {branding.appName} Access
             </h2>
             <p className="text-xs text-indigo-100/90 mt-1 leading-relaxed">
               Your free trial has ended. Subscribe or apply a promo coupon below to access your daily habits, CGM reports, and food scanner.
             </p>
           </div>
         </div>
-      )}
+      ) : null}
 
       {error && (
         <div className="mb-4 p-3.5 bg-red-50 dark:bg-red-950/30 text-rose-700 dark:text-rose-300 text-xs font-semibold rounded-2xl border border-red-200 dark:border-red-800/50 flex items-center justify-between gap-2 shadow-xs">
@@ -769,7 +841,20 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
                 </button>
               </div>
             ) : (
-              <div className="pt-2">
+              <div className="pt-2 space-y-2">
+                {activeSub.status === 'trialing' && (
+                  <button
+                    onClick={() => {
+                      if (onSuccess) onSuccess();
+                      else if (onBack) onBack();
+                    }}
+                    className="w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-600 hover:to-teal-600 text-white text-xs sm:text-sm font-black py-3 rounded-2xl transition-all shadow-md hover:shadow-lg active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <Sparkles className="w-4 h-4 text-amber-200" />
+                    <span>Explore App Now (Trial Active)</span>
+                    <ArrowRight className="w-4 h-4 ml-0.5" />
+                  </button>
+                )}
                 <button
                   onClick={() => setShowCancelConfirmModal(true)}
                   disabled={actionLoading}

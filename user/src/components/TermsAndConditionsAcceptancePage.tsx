@@ -79,6 +79,7 @@ export const TermsAndConditionsAcceptancePage: React.FC<TermsAndConditionsAccept
     try {
       const success = await acceptTerms(CURRENT_TERMS_VERSION);
       if (success) {
+        window.dispatchEvent(new CustomEvent('subscription-updated'));
         if (onAccepted) {
           onAccepted();
         }

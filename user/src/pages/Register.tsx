@@ -143,6 +143,7 @@ export const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
     });
 
     if (success) {
+      window.dispatchEvent(new CustomEvent('subscription-updated'));
       showToast(t('auth.onboardingSuccess', 'Health profile initialized successfully!'), 'success');
     }
   };
