@@ -578,9 +578,27 @@ export class EmailService {
         <p style="margin: 0; color: #991b1b; font-weight: 600;">Reason for Suspension:</p>
         <p style="margin: 8px 0 0 0; color: #b91c1c;">${reason}</p>
       </div>
-      <p>If you believe this is a mistake or have questions, please contact our support team.</p>
+      <p>If you believe this is a mistake or have questions, please contact our support team at support@mitoreboot.in.</p>
     `, appName, appTagline);
     try { await transporter.sendMail({ from: `"${appName} Security" <support@mitoreboot.in>`, to: email, subject: `${appName} Account Suspended`, html }); } catch (err) { console.error(err); }
+  }
+
+  /**
+   * Send Account Unblocked / Reactivated Notification Email
+   */
+  public static async sendUnblockNotificationEmail(email: string, name: string) {
+    const { appName, appTagline } = await EmailService.getBranding();
+    const html = generateEmailTemplate('Account Reactivated', `
+      <p>Hi ${name},</p>
+      <p>Great news! Your <strong>${appName}</strong> account has been reviewed and successfully reactivated by our administration team.</p>
+      <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #16a34a; padding: 16px; border-radius: 8px; margin: 20px 0;">
+        <p style="margin: 0; color: #15803d; font-weight: 600;">Account Status: Active</p>
+        <p style="margin: 8px 0 0 0; color: #166534;">You now have full access to your health metrics, habit tracking, meal logs, and premium features.</p>
+      </div>
+      <p>You can now open the ${appName} app and log in using your registered mobile number or email.</p>
+      <p>If you have any questions or require assistance, our support team is always here to help at support@mitoreboot.in.</p>
+    `, appName, appTagline);
+    try { await transporter.sendMail({ from: `"${appName} Support" <support@mitoreboot.in>`, to: email, subject: `${appName} Account Reactivated - Welcome Back`, html }); } catch (err) { console.error(err); }
   }
 
   /**

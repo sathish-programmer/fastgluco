@@ -16,7 +16,7 @@ import { AppTelemetrySession } from '../models/AppTelemetrySession';
 // Throttling map to update DB at most once every 5 minutes per user/device
 const userActivityThrottle = new Map<string, number>();
 
-export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers['authorization'];
   let token = authHeader && authHeader.split(' ')[1]; // Authorization: Bearer <token>
 
@@ -31,10 +31,8 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
 
   const secret = process.env.JWT_SECRET || 'fallback_secret_key_12345!';
 
-  jwt.verify(token, secret, (err, decoded: any) => {
-    if (err) {
-      return res.status(401).json({ message: 'Invalid or expired token.', tokenExpired: true });
-    }
+  try {
+    const decoded: any = jwt.verify(token, secret);
 
     req.user = {
       id: decoded.id,
@@ -42,6 +40,22 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
       role: decoded.role || 'User',
       laboratoryId: decoded.laboratoryId
     };
+
+    // Immediate check if user has been suspended or blocked by administrator
+    if (req.user && req.user.role === 'User') {
+      try {
+        const dbUser = await User.findById(req.user.id).select('isBlocked isDeleted').lean();
+        if (!dbUser || dbUser.isBlocked || dbUser.isDeleted) {
+          return res.status(403).json({
+            message: 'Your account has been suspended by an administrator. Please contact support.',
+            isBlocked: true,
+            isSuspended: true
+          });
+        }
+      } catch (dbErr) {
+        // Safe fallback in case of transient DB connectivity issue
+      }
+    }
 
     // Safe, non-blocking telemetry update (throttled to once every 5 minutes)
     if (req.user && req.user.role === 'User') {
@@ -114,7 +128,9 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
     }
 
     next();
-  });
+  } catch (err: any) {
+    return res.status(401).json({ message: 'Invalid or expired token.', tokenExpired: true });
+  }
 };
 
 type AllowedRole = 'User' | 'Vendor' | 'SuperAdmin' | 'Admin' | 'Editor' | 'Doctor' | 'LabPartner';

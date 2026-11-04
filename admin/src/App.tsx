@@ -59,7 +59,9 @@ import {
   AlertTriangle,
   Mail,
   X,
-  Filter
+  Filter,
+  Download,
+  Receipt
 } from 'lucide-react';
 import {
   BarChart, Bar, PieChart, Pie, Cell,
@@ -4295,496 +4297,6 @@ const AdminPanelContent: React.FC = () => {
               </div>
             </div>
 
-            {/* ADMIN MANAGE / GRANT / CANCEL SUBSCRIPTION MODAL */}
-            {subModalUser && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
-                <div className="bg-white rounded-3xl p-6 w-full max-w-lg border border-slate-200 shadow-2xl animate-scaleIn text-slate-800 max-h-[90vh] overflow-y-auto">
-                  <div className="flex justify-between items-start mb-4 border-b border-slate-100 pb-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="p-2.5 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100">
-                        <CreditCard className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h3 className="text-base font-black text-slate-900">Manage Patient Subscription</h3>
-                        <p className="text-xs text-slate-500 font-semibold">{subModalUser.name} &bull; {subModalUser.email}</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => setSubModalUser(null)}
-                      className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-
-                  {/* Current Subscription Status Overview */}
-                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-5">
-                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block mb-1">
-                      Current Subscription Status
-                    </span>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="text-sm font-black text-slate-800 flex items-center gap-1.5">
-                          {subModalUser.subscription?.planName || subModalUser.subscriptionSummary?.planName || 'No Active Plan'}
-                        </h4>
-                        <p className="text-[11px] text-slate-500 font-medium mt-0.5">
-                          Status: <span className="font-bold text-slate-700 capitalize">{subModalUser.subscriptionSummary?.statusLabel || 'Free User'}</span>
-                          {subModalUser.subscriptionSummary?.remainingText ? ` (${subModalUser.subscriptionSummary.remainingText})` : ''}
-                        </p>
-                      </div>
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-black ${
-                        subModalUser.subscriptionSummary?.status === 'active'
-                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                          : subModalUser.subscriptionSummary?.status === 'trialing'
-                          ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                          : 'bg-slate-200 text-slate-600'
-                      }`}>
-                        {subModalUser.subscriptionSummary?.statusLabel || 'Free'}
-                      </span>
-                    </div>
-
-                    {subModalUser.subscription && (
-                      <div className="mt-3 pt-3 border-t border-slate-200 text-[11px] text-slate-600 space-y-1">
-                        <div className="flex justify-between">
-                          <span>Start Date:</span>
-                          <span className="font-bold">{new Date(subModalUser.subscription.startDate).toLocaleDateString()}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Expiry / End Date:</span>
-                          <span className="font-bold">{new Date(subModalUser.subscription.endDate).toLocaleDateString()}</span>
-                        </div>
-                        {subModalUser.subscription.trialEndDate && (
-                          <div className="flex justify-between text-amber-700">
-                            <span>Trial Ends:</span>
-                            <span className="font-bold">{new Date(subModalUser.subscription.trialEndDate).toLocaleString()}</span>
-                          </div>
-                        )}
-                        <div className="flex justify-between">
-                          <span>Auto-Renewal:</span>
-                          <span className={`font-bold ${subModalUser.subscription.cancelAtPeriodEnd ? 'text-rose-600' : 'text-emerald-600'}`}>
-                            {subModalUser.subscription.cancelAtPeriodEnd ? 'Disabled (Cancelled)' : 'Active (Will Renew)'}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Mode Toggles: Grant/Add vs Send Coupon vs Cancel */}
-                  <div className="flex gap-2 mb-4 border-b border-slate-100 pb-3">
-                    <button
-                      onClick={() => setSubModalMode('grant')}
-                      className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
-                        subModalMode === 'grant' || subModalMode === 'manage'
-                          ? 'bg-indigo-600 text-white shadow-sm'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                      }`}
-                    >
-                      + Grant Direct
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSubModalMode('coupon');
-                        if (!couponCodeInput) {
-                          const userDigits = (subModalUser.mobileNumber || '').replace(/[^0-9]/g, '').slice(-4);
-                          setCouponCodeInput(`MITO-VIP-${userDigits || Math.random().toString(36).substring(2, 6).toUpperCase()}`);
-                        }
-                      }}
-                      className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
-                        subModalMode === 'coupon'
-                          ? 'bg-emerald-600 text-white shadow-sm'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                      }`}
-                    >
-                      🎟️ Send Coupon Email
-                    </button>
-                    {(subModalUser.subscriptionSummary?.status === 'active' || subModalUser.subscriptionSummary?.status === 'trialing') && (
-                      <button
-                        onClick={() => setSubModalMode('cancel')}
-                        className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
-                          subModalMode === 'cancel'
-                            ? 'bg-rose-600 text-white shadow-sm'
-                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                        }`}
-                      >
-                        Cancel Sub
-                      </button>
-                    )}
-                  </div>
-
-                  {/* FORM 1: GRANT / ADD SUBSCRIPTION */}
-                  {(subModalMode === 'grant' || subModalMode === 'manage') && (
-                    <div className="space-y-3.5">
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
-                          Subscription Kind
-                        </label>
-                        <div className="grid grid-cols-2 gap-2">
-                          <button
-                            type="button"
-                            onClick={() => { setSubGrantKind('paid'); setSubGrantDurationDays(365); }}
-                            className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all ${
-                              subGrantKind === 'paid'
-                                ? 'bg-primary/10 border-primary text-primary font-black'
-                                : 'bg-slate-50 border-slate-200 text-slate-600'
-                            }`}
-                          >
-                            👑 Paid Membership
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => { setSubGrantKind('trial'); setSubGrantDurationDays(2); }}
-                            className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all ${
-                              subGrantKind === 'trial'
-                                ? 'bg-amber-50 border-amber-400 text-amber-800 font-black'
-                                : 'bg-slate-50 border-slate-200 text-slate-600'
-                            }`}
-                          >
-                            ⚡ Free Trial (48 Hours)
-                          </button>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
-                          Select Plan
-                        </label>
-                        <select
-                          value={subGrantPlanId}
-                          onChange={(e) => setSubGrantPlanId(e.target.value)}
-                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary"
-                        >
-                          <option value="">Default Primary Plan ({plans[0]?.name || 'Premium Plan'})</option>
-                          {plans.map((p: any) => (
-                            <option key={p._id} value={p._id}>
-                              {p.name} - ₹{p.yearlyPrice} / yr
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
-                          Duration / Validity Period
-                        </label>
-                        <select
-                          value={subGrantDurationDays}
-                          onChange={(e) => setSubGrantDurationDays(parseInt(e.target.value, 10))}
-                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary"
-                        >
-                          <option value={2}>48 Hours (2 Days)</option>
-                          <option value={7}>7 Days (1 Week)</option>
-                          <option value={30}>30 Days (1 Month)</option>
-                          <option value={90}>90 Days (3 Months)</option>
-                          <option value={180}>180 Days (6 Months)</option>
-                          <option value={365}>365 Days (1 Full Year)</option>
-                          <option value={730}>730 Days (2 Years)</option>
-                          <option value={-1}>📅 Custom Date & Time (Exact Timestamp)</option>
-                        </select>
-                      </div>
-
-                      {/* Custom Date & Time Picker */}
-                      {subGrantDurationDays === -1 && (
-                        <div className="p-3 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-1.5">
-                          <label className="block text-[11px] font-bold text-indigo-900 uppercase">
-                            Pick Custom End Date & Time
-                          </label>
-                          <input
-                            type="datetime-local"
-                            value={subGrantCustomDate}
-                            onChange={(e) => setSubGrantCustomDate(e.target.value)}
-                            min={new Date().toISOString().slice(0, 16)}
-                            className="w-full px-3 py-2 border border-indigo-200 rounded-lg text-xs font-bold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                          />
-                          <p className="text-[10px] text-indigo-600 font-semibold">
-                            User subscription will remain active until this exact local timestamp.
-                          </p>
-                        </div>
-                      )}
-
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
-                          Admin Note / Reason (Optional)
-                        </label>
-                        <input
-                          type="text"
-                          value={subGrantNote}
-                          onChange={(e) => setSubGrantNote(e.target.value)}
-                          placeholder="e.g. VIP promotion, test access, or offline payment"
-                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary"
-                        />
-                      </div>
-
-                      <div className="pt-2 flex justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setSubModalUser(null)}
-                          className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="button"
-                          disabled={subActionLoading}
-                          onClick={() => handleAdminGrantSubscription(subModalUser._id)}
-                          className="px-5 py-2.5 rounded-xl text-xs font-black bg-primary hover:bg-primary-dark text-white transition-all shadow-sm flex items-center gap-1.5"
-                        >
-                          {subActionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-                          <span>Grant Subscription</span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* FORM 3: SEND INDIVIDUAL COUPON VIA EMAIL */}
-                  {subModalMode === 'coupon' && (
-                    <div className="space-y-3.5">
-                      <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 text-xs flex items-center justify-between">
-                        <div>
-                          <p className="font-extrabold text-[12px] flex items-center gap-1">
-                            <span>🎟️ Send Subscription Coupon Voucher</span>
-                          </p>
-                          <p className="text-[11px] text-emerald-700 mt-0.5">
-                            Delivers directly to <strong>{subModalUser.email}</strong> via Brevo/Titan SMTP.
-                          </p>
-                        </div>
-                        <span className="text-[10px] font-black uppercase bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded-md">
-                          1-Time Use
-                        </span>
-                      </div>
-
-                      {/* Coupon Code Input & Generator */}
-                      <div>
-                        <div className="flex justify-between items-center mb-1">
-                          <label className="text-[11px] font-bold text-slate-500 uppercase">
-                            Promo Coupon Code
-                          </label>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const rnd = Math.random().toString(36).substring(2, 6).toUpperCase();
-                              const userDigits = (subModalUser.mobileNumber || '').replace(/[^0-9]/g, '').slice(-4);
-                              setCouponCodeInput(`MITO-VIP-${userDigits || rnd}`);
-                            }}
-                            className="text-[10.5px] font-bold text-primary hover:underline"
-                          >
-                            Auto-Generate Code
-                          </button>
-                        </div>
-                        <input
-                          type="text"
-                          value={couponCodeInput}
-                          onChange={(e) => setCouponCodeInput(e.target.value.toUpperCase())}
-                          placeholder="e.g. MITO-FREE-8754"
-                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-black tracking-wider uppercase text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
-                        />
-                      </div>
-
-                      {/* Discount Selection */}
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
-                          Discount / Benefit
-                        </label>
-                        <div className="grid grid-cols-3 gap-2">
-                          <button
-                            type="button"
-                            onClick={() => { setCouponDiscountType('percentage'); setCouponDiscountValue(100); }}
-                            className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all text-center ${
-                              couponDiscountType === 'percentage' && couponDiscountValue === 100
-                                ? 'bg-emerald-50 border-emerald-500 text-emerald-700 font-black'
-                                : 'bg-slate-50 border-slate-200 text-slate-600'
-                            }`}
-                          >
-                            🎁 100% Free
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => { setCouponDiscountType('percentage'); setCouponDiscountValue(50); }}
-                            className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all text-center ${
-                              couponDiscountType === 'percentage' && couponDiscountValue === 50
-                                ? 'bg-emerald-50 border-emerald-500 text-emerald-700 font-black'
-                                : 'bg-slate-50 border-slate-200 text-slate-600'
-                            }`}
-                          >
-                            🏷️ 50% OFF
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => { setCouponDiscountType('percentage'); setCouponDiscountValue(75); }}
-                            className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all text-center ${
-                              couponDiscountType === 'percentage' && couponDiscountValue === 75
-                                ? 'bg-emerald-50 border-emerald-500 text-emerald-700 font-black'
-                                : 'bg-slate-50 border-slate-200 text-slate-600'
-                            }`}
-                          >
-                            ⚡ 75% OFF
-                          </button>
-                        </div>
-
-                        {couponDiscountValue !== 100 && couponDiscountValue !== 50 && couponDiscountValue !== 75 && (
-                          <div className="mt-2 flex gap-2">
-                            <select
-                              value={couponDiscountType}
-                              onChange={(e) => setCouponDiscountType(e.target.value as any)}
-                              className="px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs font-bold bg-white text-slate-700"
-                            >
-                              <option value="percentage">Percentage (%)</option>
-                              <option value="fixed">Flat Amount (₹)</option>
-                            </select>
-                            <input
-                              type="number"
-                              value={couponDiscountValue}
-                              onChange={(e) => setCouponDiscountValue(parseFloat(e.target.value) || 0)}
-                              placeholder="Discount Value"
-                              className="flex-1 px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold bg-white text-slate-800"
-                            />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Expiration Preset */}
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
-                          Coupon Validity / Expiry
-                        </label>
-                        <select
-                          value={couponExpiryPreset}
-                          onChange={(e) => setCouponExpiryPreset(e.target.value)}
-                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                        >
-                          <option value="7d">7 Days</option>
-                          <option value="14d">14 Days (2 Weeks)</option>
-                          <option value="30d">30 Days (1 Month)</option>
-                          <option value="custom">📅 Custom Expiry Date & Time</option>
-                          <option value="never">No Expiration Date</option>
-                        </select>
-                      </div>
-
-                      {couponExpiryPreset === 'custom' && (
-                        <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
-                          <label className="block text-[10.5px] font-bold text-slate-600 mb-1">
-                            Custom Expiry Date & Time
-                          </label>
-                          <input
-                            type="datetime-local"
-                            value={couponCustomExpiryDate}
-                            onChange={(e) => setCouponCustomExpiryDate(e.target.value)}
-                            min={new Date().toISOString().slice(0, 16)}
-                            className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold bg-white text-slate-800"
-                          />
-                        </div>
-                      )}
-
-                      {/* Custom Note/Message to User */}
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
-                          Personalized Message in Email (Optional)
-                        </label>
-                        <input
-                          type="text"
-                          value={couponMessage}
-                          onChange={(e) => setCouponMessage(e.target.value)}
-                          placeholder="e.g. Here is a complimentary annual subscription on behalf of Mito Reboot team!"
-                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                        />
-                      </div>
-
-                      <div className="pt-2 flex justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setSubModalUser(null)}
-                          className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="button"
-                          disabled={couponActionLoading || !subModalUser.email}
-                          onClick={() => handleAdminSendCoupon(subModalUser._id)}
-                          className="px-5 py-2.5 rounded-xl text-xs font-black bg-emerald-600 hover:bg-emerald-700 text-white transition-all shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                        >
-                          {couponActionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
-                          <span>Send Coupon to {subModalUser.email}</span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* FORM 2: CANCEL SUBSCRIPTION */}
-                  {subModalMode === 'cancel' && (
-                    <div className="space-y-4">
-                      <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-2xl text-rose-800 text-xs">
-                        <AlertTriangle className="w-4 h-4 inline mr-1 text-rose-600" />
-                        <strong>Cancelling Subscription:</strong> Choose whether to end auto-renewal at period end or immediately terminate access.
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
-                          Cancellation Type
-                        </label>
-                        <div className="space-y-2">
-                          <label className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50">
-                            <input
-                              type="radio"
-                              name="cancelType"
-                              checked={!subCancelImmediate}
-                              onChange={() => setSubCancelImmediate(false)}
-                            />
-                            <div className="text-xs">
-                              <span className="font-bold block">Cancel at End of Period (Recommended)</span>
-                              <span className="text-[11px] text-slate-500">Auto-renewal is stopped. User keeps full access until expiry date.</span>
-                            </div>
-                          </label>
-                          <label className="flex items-center gap-2 p-2.5 rounded-xl border border-rose-200 bg-rose-50/40 cursor-pointer hover:bg-rose-50">
-                            <input
-                              type="radio"
-                              name="cancelType"
-                              checked={subCancelImmediate}
-                              onChange={() => setSubCancelImmediate(true)}
-                            />
-                            <div className="text-xs">
-                              <span className="font-bold text-rose-700 block">Cancel Immediately</span>
-                              <span className="text-[11px] text-rose-600">Access will be revoked right now. The paywall will block the user immediately.</span>
-                            </div>
-                          </label>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
-                          Cancellation Reason
-                        </label>
-                        <input
-                          type="text"
-                          value={subCancelReason}
-                          onChange={(e) => setSubCancelReason(e.target.value)}
-                          placeholder="e.g. User requested via email / Refund issued"
-                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500"
-                        />
-                      </div>
-
-                      <div className="pt-2 flex justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setSubModalMode('manage')}
-                          className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100"
-                        >
-                          Back
-                        </button>
-                        <button
-                          type="button"
-                          disabled={subActionLoading}
-                          onClick={() => handleAdminCancelSubscription(subModalUser._id, subCancelImmediate, subCancelReason)}
-                          className="px-5 py-2.5 rounded-xl text-xs font-black bg-rose-600 hover:bg-rose-700 text-white transition-all shadow-sm flex items-center gap-1.5"
-                        >
-                          {subActionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
-                          <span>Confirm Cancellation</span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         )}
 
@@ -9455,6 +8967,108 @@ const AdminPanelContent: React.FC = () => {
                       </div>
                     )}
 
+                    {/* TAB: SEND ALERT */}
+                    {userModalTab === 'notify' && (
+                      <div className="space-y-6">
+                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 p-5 rounded-2xl flex items-start gap-3.5">
+                          <div className="p-2.5 rounded-xl bg-white border border-blue-200 text-primary shadow-xs">
+                            <Bell className="w-5 h-5 text-primary" />
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-black text-slate-800">Dispatch Push Alert to Patient</h4>
+                            <p className="text-xs text-slate-600 mt-0.5">
+                              This notification will be dispatched instantly to <strong>{selectedUserActivity.user.name || 'Patient'}</strong>'s mobile device via Firebase Cloud Messaging (FCM). Use this to send personalized medical advice, glucose warnings, habit reminders, or subscription notifications.
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Quick Presets */}
+                        <div className="bg-slate-50 border border-slate-200/80 p-4 rounded-2xl space-y-2">
+                          <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">
+                            Quick Notification Presets
+                          </span>
+                          <div className="flex flex-wrap gap-2">
+                            {[
+                              {
+                                label: '🩸 High Glucose Warning',
+                                title: 'High Glucose Warning',
+                                body: `Hi ${selectedUserActivity.user.name || 'Patient'}, we noticed a recent spike in your glucose readings. Please review your last meal and stay hydrated.`
+                              },
+                              {
+                                label: '🥗 Log Meal Reminder',
+                                title: 'Log Your Meal',
+                                body: `Hi ${selectedUserActivity.user.name || 'Patient'}, don't forget to take a picture and log your meal today for accurate metabolic coaching.`
+                              },
+                              {
+                                label: '🌱 Habit Check-in',
+                                title: 'Daily Habit Check-in',
+                                body: `Hi ${selectedUserActivity.user.name || 'Patient'}, you're making great progress! Complete today's circadian habits to maintain optimal health.`
+                              },
+                              {
+                                label: '👑 Membership Active',
+                                title: 'Premium Access Unlocked',
+                                body: `Hi ${selectedUserActivity.user.name || 'Patient'}, your Mito_Reboot premium membership has been updated and is fully active. Enjoy your health insights!`
+                              },
+                              {
+                                label: '🩺 Clinical Consultation',
+                                title: 'Doctor Consultation Reminder',
+                                body: `Hi ${selectedUserActivity.user.name || 'Patient'}, your upcoming doctor consultation is scheduled. Please ensure your recent reports are uploaded.`
+                              }
+                            ].map((preset) => (
+                              <button
+                                key={preset.label}
+                                type="button"
+                                onClick={() => setUserModalNotify({ title: preset.title, body: preset.body })}
+                                className="px-3 py-1.5 bg-white hover:bg-primary/5 hover:border-primary/40 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all shadow-2xs cursor-pointer"
+                              >
+                                {preset.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <form onSubmit={handleSendUserDirectNotification} className="space-y-4 max-w-2xl bg-white border border-slate-200/80 p-5 rounded-2xl shadow-soft">
+                          <div>
+                            <label className="block text-[11px] font-extrabold text-slate-500 uppercase tracking-wider mb-1.5">
+                              Alert Title *
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              value={userModalNotify.title}
+                              onChange={(e) => setUserModalNotify({ ...userModalNotify, title: e.target.value })}
+                              placeholder="e.g. High Glucose Warning / Meal Log Reminder"
+                              className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary font-bold text-xs bg-slate-50/50"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-extrabold text-slate-500 uppercase tracking-wider mb-1.5">
+                              Alert Message Content *
+                            </label>
+                            <textarea
+                              required
+                              rows={4}
+                              value={userModalNotify.body}
+                              onChange={(e) => setUserModalNotify({ ...userModalNotify, body: e.target.value })}
+                              placeholder="Enter the alert instructions or clinical advice..."
+                              className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary font-medium text-xs bg-slate-50/50"
+                            />
+                          </div>
+
+                          <div className="pt-2">
+                            <button
+                              type="submit"
+                              className="bg-primary hover:bg-primary-dark text-white font-black px-6 py-2.5 rounded-xl shadow-sm flex items-center space-x-2 transition-all text-xs cursor-pointer"
+                            >
+                              <Send className="h-4 w-4" />
+                              <span>Dispatch Alert Push Notification</span>
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    )}
+
                     {/* SUBSCRIPTION & BILLING TAB */}
                     {userModalTab === 'subscription' && (
                       <div className="space-y-6">
@@ -9465,13 +9079,28 @@ const AdminPanelContent: React.FC = () => {
                               <span>Patient Subscription &amp; Access Controls</span>
                             </h4>
                             <p className="text-xs text-slate-500 font-medium mt-0.5">
-                              View current plan, grant complimentary membership or free trial, or cancel access.
+                              View full payment records, promo coupons used, Razorpay transaction IDs, grant complimentary membership, or cancel access.
                             </p>
                           </div>
                           <button
                             type="button"
                             onClick={() => {
-                              setSubModalUser(selectedUserActivity.user);
+                              const subs = selectedUserActivity.subscriptions || [];
+                              const now = new Date();
+                              const activeSub = subs.find((s: any) =>
+                                (s.status === 'active' && new Date(s.endDate) > now) ||
+                                (s.status === 'trialing' && s.trialEndDate && new Date(s.trialEndDate) > now) ||
+                                (s.status === 'cancelled' && new Date(s.endDate) > now)
+                              );
+                              setSubModalUser({
+                                ...selectedUserActivity.user,
+                                subscription: activeSub,
+                                subscriptionSummary: activeSub ? {
+                                  planName: activeSub.planId?.name || 'Annual Plan',
+                                  status: activeSub.status,
+                                  statusLabel: activeSub.status === 'active' ? 'Active Paid' : activeSub.status === 'trialing' ? 'Free Trial' : 'Cancelled'
+                                } : undefined
+                              });
                               setSubModalMode('grant');
                               setSubGrantDurationDays(365);
                               setSubGrantKind('paid');
@@ -9488,12 +9117,17 @@ const AdminPanelContent: React.FC = () => {
                         {/* Active Subscription Overview Card */}
                         {(() => {
                           const subs = selectedUserActivity.subscriptions || [];
+                          const transactions = selectedUserActivity.paymentTransactions || [];
+                          const invoices = selectedUserActivity.invoices || [];
                           const now = new Date();
                           const activeSub = subs.find((s: any) =>
                             (s.status === 'active' && new Date(s.endDate) > now) ||
                             (s.status === 'trialing' && s.trialEndDate && new Date(s.trialEndDate) > now) ||
                             (s.status === 'cancelled' && new Date(s.endDate) > now)
                           );
+                          const latestTx = transactions[0];
+                          const latestInv = invoices[0];
+                          const couponCode = activeSub?.couponCode || latestTx?.couponCode || latestInv?.couponCode;
 
                           return (
                             <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-5 space-y-4">
@@ -9534,7 +9168,7 @@ const AdminPanelContent: React.FC = () => {
                               </div>
 
                               {activeSub ? (
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-2 border-t border-slate-200 text-xs">
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 pt-2 border-t border-slate-200 text-xs">
                                   <div className="bg-white p-3 rounded-xl border border-slate-100">
                                     <span className="text-[10px] font-extrabold text-slate-400 block uppercase">Start Date</span>
                                     <span className="font-bold text-slate-800">{new Date(activeSub.startDate).toLocaleDateString()}</span>
@@ -9544,14 +9178,36 @@ const AdminPanelContent: React.FC = () => {
                                     <span className="font-bold text-slate-800">{new Date(activeSub.endDate).toLocaleDateString()}</span>
                                   </div>
                                   <div className="bg-white p-3 rounded-xl border border-slate-100">
-                                    <span className="text-[10px] font-extrabold text-slate-400 block uppercase">Auto-Renewal</span>
-                                    <span className={`font-bold ${activeSub.cancelAtPeriodEnd ? 'text-rose-600' : 'text-emerald-600'}`}>
-                                      {activeSub.cancelAtPeriodEnd ? 'Cancelled' : 'Enabled'}
+                                    <span className="text-[10px] font-extrabold text-slate-400 block uppercase">Billing Cycle</span>
+                                    <span className="font-bold text-slate-800 capitalize">{activeSub.billingCycle || 'Yearly'}</span>
+                                  </div>
+                                  <div className="bg-white p-3 rounded-xl border border-slate-100">
+                                    <span className="text-[10px] font-extrabold text-slate-400 block uppercase">Payment Method</span>
+                                    <span className="font-bold text-slate-800">
+                                      {latestTx?.gateway === 'razorpay'
+                                        ? '💳 Razorpay Gateway'
+                                        : couponCode
+                                        ? '🎟️ Coupon Bypass'
+                                        : '🎁 Admin Grant'}
                                     </span>
                                   </div>
                                   <div className="bg-white p-3 rounded-xl border border-slate-100">
-                                    <span className="text-[10px] font-extrabold text-slate-400 block uppercase">Billing Cycle</span>
-                                    <span className="font-bold text-slate-800 capitalize">{activeSub.billingCycle || 'Yearly'}</span>
+                                    <span className="text-[10px] font-extrabold text-slate-400 block uppercase">Promo Coupon</span>
+                                    <span className="font-bold text-emerald-600">
+                                      {couponCode ? (
+                                        <span className="px-2 py-0.5 bg-emerald-50 border border-emerald-200 rounded-md font-mono text-[10px] uppercase font-black">
+                                          {couponCode}
+                                        </span>
+                                      ) : (
+                                        'None'
+                                      )}
+                                    </span>
+                                  </div>
+                                  <div className="bg-white p-3 rounded-xl border border-slate-100">
+                                    <span className="text-[10px] font-extrabold text-slate-400 block uppercase">Net Paid</span>
+                                    <span className="font-black text-slate-900">
+                                      ₹{latestTx ? latestTx.amount.toFixed(2) : (latestInv ? latestInv.totalAmount.toFixed(2) : (activeSub.status === 'trialing' ? '0.00' : '1000.00'))}
+                                    </span>
                                   </div>
                                 </div>
                               ) : (
@@ -9562,6 +9218,245 @@ const AdminPanelContent: React.FC = () => {
                             </div>
                           );
                         })()}
+
+                        {/* Payment & Invoice Breakdown Summary Card */}
+                        {(() => {
+                          const transactions = selectedUserActivity.paymentTransactions || [];
+                          const invoices = selectedUserActivity.invoices || [];
+                          const latestTx = transactions[0];
+                          const latestInv = invoices[0];
+                          if (!latestTx && !latestInv) return null;
+
+                          const orig = latestTx?.originalAmount ?? latestInv?.originalAmount ?? 1000;
+                          const disc = latestTx?.discountAmount ?? latestInv?.discountAmount ?? 0;
+                          const total = latestTx?.amount ?? latestInv?.totalAmount ?? 0;
+                          const coupon = latestTx?.couponCode || latestInv?.couponCode;
+
+                          return (
+                            <div className="bg-gradient-to-br from-slate-900 to-indigo-950 text-white rounded-2xl p-5 shadow-sm space-y-4">
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-3">
+                                <div className="flex items-center gap-2.5">
+                                  <div className="p-2 rounded-xl bg-white/10 text-emerald-400">
+                                    <Receipt className="w-5 h-5" />
+                                  </div>
+                                  <div>
+                                    <h4 className="text-sm font-black">Latest Payment &amp; Invoice Breakdown</h4>
+                                    <p className="text-xs text-white/60">
+                                      Detailed financial record of how this patient paid for their membership.
+                                    </p>
+                                  </div>
+                                </div>
+                                {latestInv && (
+                                  <a
+                                    href={`${apiUrl.endsWith('/api') ? apiUrl : apiUrl + '/api'}/subscriptions/invoices/${latestInv._id}/download?token=${token}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
+                                  >
+                                    <Download className="w-3.5 h-3.5" />
+                                    <span>Download PDF Invoice</span>
+                                  </a>
+                                )}
+                              </div>
+
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                                <div className="bg-white/5 border border-white/10 p-3 rounded-xl">
+                                  <span className="text-[10px] text-white/50 uppercase font-extrabold block">Original Plan Price</span>
+                                  <span className="text-base font-bold text-white">₹{orig.toFixed(2)}</span>
+                                </div>
+                                <div className="bg-white/5 border border-white/10 p-3 rounded-xl">
+                                  <span className="text-[10px] text-emerald-400 uppercase font-extrabold block">Coupon Discount Applied</span>
+                                  <span className="text-base font-bold text-emerald-400">
+                                    -₹{disc.toFixed(2)} {coupon ? `(${coupon})` : ''}
+                                  </span>
+                                </div>
+                                <div className="bg-white/5 border border-white/10 p-3 rounded-xl">
+                                  <span className="text-[10px] text-white/50 uppercase font-extrabold block">GST (18% Included)</span>
+                                  <span className="text-base font-bold text-white">₹{(total * 0.18 / 1.18).toFixed(2)}</span>
+                                </div>
+                                <div className="bg-white/10 border border-white/20 p-3 rounded-xl">
+                                  <span className="text-[10px] text-emerald-300 uppercase font-extrabold block">Net Paid by Patient</span>
+                                  <span className="text-lg font-black text-emerald-300">₹{total.toFixed(2)}</span>
+                                </div>
+                              </div>
+
+                              {latestTx && (
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 text-[11px] text-white/70 border-t border-white/10">
+                                  <div>
+                                    <span className="text-white/40 block">Payment Gateway:</span>
+                                    <span className="font-semibold text-white capitalize">{latestTx.gateway} {latestTx.amount === 0 ? '(100% Promo Bypass)' : ''}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-white/40 block">Gateway Order ID:</span>
+                                    <span className="font-mono text-white/90">{latestTx.gatewayOrderId || '--'}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-white/40 block">Gateway Payment ID:</span>
+                                    <span className="font-mono text-white/90">{latestTx.gatewayPaymentId || '--'}</span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
+
+                        {/* PAYMENT TRANSACTIONS DIRECTORY TABLE */}
+                        <div className="space-y-3">
+                          <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider">
+                            Payment Transactions History ({selectedUserActivity.paymentTransactions?.length ?? 0})
+                          </h4>
+                          <div className="bg-white rounded-2xl border border-slate-200 shadow-soft overflow-hidden">
+                            <table className="min-w-full divide-y divide-slate-100 text-xs">
+                              <thead className="bg-slate-50 text-slate-400 font-bold uppercase text-left">
+                                <tr>
+                                  <th className="px-4 py-3">Date</th>
+                                  <th className="px-4 py-3">Plan</th>
+                                  <th className="px-4 py-3">Original Price</th>
+                                  <th className="px-4 py-3">Coupon Code</th>
+                                  <th className="px-4 py-3">Discount</th>
+                                  <th className="px-4 py-3">Total Paid</th>
+                                  <th className="px-4 py-3">Gateway / Ref</th>
+                                  <th className="px-4 py-3">Status</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
+                                {!selectedUserActivity.paymentTransactions || selectedUserActivity.paymentTransactions.length === 0 ? (
+                                  <tr>
+                                    <td colSpan={8} className="text-center py-6 text-slate-400 font-semibold">
+                                      No payment transaction records found for this patient.
+                                    </td>
+                                  </tr>
+                                ) : (
+                                  selectedUserActivity.paymentTransactions.map((tx: any) => (
+                                    <tr key={tx._id} className="hover:bg-slate-50/50">
+                                      <td className="px-4 py-3 text-slate-500">
+                                        {new Date(tx.createdAt).toLocaleDateString([], { dateStyle: 'short' })}
+                                        <span className="block text-[10px] text-slate-400">
+                                          {new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </span>
+                                      </td>
+                                      <td className="px-4 py-3 font-bold text-slate-800">
+                                        {tx.planId?.name || 'Annual Plan'}
+                                      </td>
+                                      <td className="px-4 py-3 font-semibold text-slate-500">
+                                        ₹{(tx.originalAmount ?? 1000).toFixed(2)}
+                                      </td>
+                                      <td className="px-4 py-3">
+                                        {tx.couponCode ? (
+                                          <span className="px-2 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded font-mono font-bold text-[10px]">
+                                            {tx.couponCode}
+                                          </span>
+                                        ) : (
+                                          <span className="text-slate-400">None</span>
+                                        )}
+                                      </td>
+                                      <td className="px-4 py-3 text-emerald-600 font-semibold">
+                                        {tx.discountAmount ? `-₹${tx.discountAmount.toFixed(2)}` : '₹0.00'}
+                                      </td>
+                                      <td className="px-4 py-3 font-extrabold text-slate-900">
+                                        ₹{tx.amount.toFixed(2)}
+                                      </td>
+                                      <td className="px-4 py-3">
+                                        <span className="font-semibold text-slate-700 capitalize block">
+                                          {tx.gateway} {tx.amount === 0 ? '(Free Bypass)' : ''}
+                                        </span>
+                                        <span className="font-mono text-[9px] text-slate-400 block truncate max-w-[140px]" title={tx.gatewayPaymentId || tx.gatewayOrderId}>
+                                          {tx.gatewayPaymentId || tx.gatewayOrderId || '--'}
+                                        </span>
+                                      </td>
+                                      <td className="px-4 py-3">
+                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                                          tx.status === 'success'
+                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                            : tx.status === 'pending'
+                                            ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                            : 'bg-rose-50 text-rose-700 border-rose-200'
+                                        }`}>
+                                          {tx.status}
+                                        </span>
+                                      </td>
+                                    </tr>
+                                  ))
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+
+                        {/* INVOICES DIRECTORY TABLE */}
+                        <div className="space-y-3">
+                          <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider">
+                            Invoices &amp; Billing Receipts ({selectedUserActivity.invoices?.length ?? 0})
+                          </h4>
+                          <div className="bg-white rounded-2xl border border-slate-200 shadow-soft overflow-hidden">
+                            <table className="min-w-full divide-y divide-slate-100 text-xs">
+                              <thead className="bg-slate-50 text-slate-400 font-bold uppercase text-left">
+                                <tr>
+                                  <th className="px-4 py-3">Invoice Number</th>
+                                  <th className="px-4 py-3">Date</th>
+                                  <th className="px-4 py-3">Coverage Period</th>
+                                  <th className="px-4 py-3">Plan</th>
+                                  <th className="px-4 py-3">Subtotal</th>
+                                  <th className="px-4 py-3">Discount</th>
+                                  <th className="px-4 py-3">Total Paid</th>
+                                  <th className="px-4 py-3 text-center">Action</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
+                                {!selectedUserActivity.invoices || selectedUserActivity.invoices.length === 0 ? (
+                                  <tr>
+                                    <td colSpan={8} className="text-center py-6 text-slate-400 font-semibold">
+                                      No invoices generated for this patient yet.
+                                    </td>
+                                  </tr>
+                                ) : (
+                                  selectedUserActivity.invoices.map((inv: any) => (
+                                    <tr key={inv._id} className="hover:bg-slate-50/50">
+                                      <td className="px-4 py-3 font-mono font-bold text-primary">
+                                        {inv.invoiceNumber}
+                                      </td>
+                                      <td className="px-4 py-3 text-slate-500">
+                                        {new Date(inv.createdAt).toLocaleDateString()}
+                                      </td>
+                                      <td className="px-4 py-3 text-slate-600">
+                                        {inv.subscriptionPeriodStart && inv.subscriptionPeriodEnd ? (
+                                          <span>
+                                            {new Date(inv.subscriptionPeriodStart).toLocaleDateString()} &rarr; {new Date(inv.subscriptionPeriodEnd).toLocaleDateString()}
+                                          </span>
+                                        ) : (
+                                          '1 Year Coverage'
+                                        )}
+                                      </td>
+                                      <td className="px-4 py-3 font-semibold text-slate-800">
+                                        {inv.planId?.name || 'Premium Plan'}
+                                      </td>
+                                      <td className="px-4 py-3 text-slate-500">
+                                        ₹{(inv.originalAmount ?? inv.amount).toFixed(2)}
+                                      </td>
+                                      <td className="px-4 py-3 text-emerald-600 font-semibold">
+                                        {inv.discountAmount ? `-₹${inv.discountAmount.toFixed(2)}` : '₹0.00'}
+                                      </td>
+                                      <td className="px-4 py-3 font-extrabold text-slate-900">
+                                        ₹{inv.totalAmount.toFixed(2)}
+                                      </td>
+                                      <td className="px-4 py-3 text-center">
+                                        <a
+                                          href={`${apiUrl.endsWith('/api') ? apiUrl : apiUrl + '/api'}/subscriptions/invoices/${inv._id}/download?token=${token}`}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-primary hover:text-white text-slate-700 rounded-lg text-[11px] font-bold transition-all cursor-pointer"
+                                        >
+                                          <Download className="w-3 h-3" />
+                                          <span>PDF</span>
+                                        </a>
+                                      </td>
+                                    </tr>
+                                  ))
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
 
                         {/* Subscription Audit History Table */}
                         <div className="space-y-3">
@@ -9772,6 +9667,497 @@ const AdminPanelContent: React.FC = () => {
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ADMIN MANAGE / GRANT / CANCEL SUBSCRIPTION MODAL (GLOBAL) */}
+        {subModalUser && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+            <div className="bg-white rounded-3xl p-6 w-full max-w-lg border border-slate-200 shadow-2xl animate-scaleIn text-slate-800 max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-start mb-4 border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2.5 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100">
+                    <CreditCard className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-slate-900">Manage Patient Subscription</h3>
+                    <p className="text-xs text-slate-500 font-semibold">{subModalUser.name} &bull; {subModalUser.email}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSubModalUser(null)}
+                  className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Current Subscription Status Overview */}
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-5">
+                <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block mb-1">
+                  Current Subscription Status
+                </span>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-black text-slate-800 flex items-center gap-1.5">
+                      {subModalUser.subscription?.planName || subModalUser.subscriptionSummary?.planName || 'No Active Plan'}
+                    </h4>
+                    <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                      Status: <span className="font-bold text-slate-700 capitalize">{subModalUser.subscriptionSummary?.statusLabel || 'Free User'}</span>
+                      {subModalUser.subscriptionSummary?.remainingText ? ` (${subModalUser.subscriptionSummary.remainingText})` : ''}
+                    </p>
+                  </div>
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-black ${
+                    subModalUser.subscriptionSummary?.status === 'active'
+                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                      : subModalUser.subscriptionSummary?.status === 'trialing'
+                      ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                      : 'bg-slate-200 text-slate-600'
+                  }`}>
+                    {subModalUser.subscriptionSummary?.statusLabel || 'Free'}
+                  </span>
+                </div>
+
+                {subModalUser.subscription && (
+                  <div className="mt-3 pt-3 border-t border-slate-200 text-[11px] text-slate-600 space-y-1">
+                    <div className="flex justify-between">
+                      <span>Start Date:</span>
+                      <span className="font-bold">{new Date(subModalUser.subscription.startDate).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Expiry / End Date:</span>
+                      <span className="font-bold">{new Date(subModalUser.subscription.endDate).toLocaleDateString()}</span>
+                    </div>
+                    {subModalUser.subscription.trialEndDate && (
+                      <div className="flex justify-between text-amber-700">
+                        <span>Trial Ends:</span>
+                        <span className="font-bold">{new Date(subModalUser.subscription.trialEndDate).toLocaleString()}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span>Auto-Renewal:</span>
+                      <span className={`font-bold ${subModalUser.subscription.cancelAtPeriodEnd ? 'text-rose-600' : 'text-emerald-600'}`}>
+                        {subModalUser.subscription.cancelAtPeriodEnd ? 'Disabled (Cancelled)' : 'Active (Will Renew)'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Mode Toggles: Grant/Add vs Send Coupon vs Cancel */}
+              <div className="flex gap-2 mb-4 border-b border-slate-100 pb-3">
+                <button
+                  onClick={() => setSubModalMode('grant')}
+                  className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                    subModalMode === 'grant' || subModalMode === 'manage'
+                      ? 'bg-indigo-600 text-white shadow-sm'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  + Grant Direct
+                </button>
+                <button
+                  onClick={() => {
+                    setSubModalMode('coupon');
+                    if (!couponCodeInput) {
+                      const userDigits = (subModalUser.mobileNumber || '').replace(/[^0-9]/g, '').slice(-4);
+                      setCouponCodeInput(`MITO-VIP-${userDigits || Math.random().toString(36).substring(2, 6).toUpperCase()}`);
+                    }
+                  }}
+                  className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                    subModalMode === 'coupon'
+                      ? 'bg-emerald-600 text-white shadow-sm'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  🎟️ Send Coupon Email
+                </button>
+                {(subModalUser.subscriptionSummary?.status === 'active' || subModalUser.subscriptionSummary?.status === 'trialing' || subModalUser.subscription) && (
+                  <button
+                    onClick={() => setSubModalMode('cancel')}
+                    className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                      subModalMode === 'cancel'
+                        ? 'bg-rose-600 text-white shadow-sm'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    Cancel Sub
+                  </button>
+                )}
+              </div>
+
+              {/* FORM 1: GRANT / ADD SUBSCRIPTION */}
+              {(subModalMode === 'grant' || subModalMode === 'manage') && (
+                <div className="space-y-3.5">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
+                      Subscription Kind
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => { setSubGrantKind('paid'); setSubGrantDurationDays(365); }}
+                        className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all ${
+                          subGrantKind === 'paid'
+                            ? 'bg-primary/10 border-primary text-primary font-black'
+                            : 'bg-slate-50 border-slate-200 text-slate-600'
+                        }`}
+                      >
+                        👑 Paid Membership
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setSubGrantKind('trial'); setSubGrantDurationDays(2); }}
+                        className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all ${
+                          subGrantKind === 'trial'
+                            ? 'bg-amber-50 border-amber-400 text-amber-800 font-black'
+                            : 'bg-slate-50 border-slate-200 text-slate-600'
+                        }`}
+                      >
+                        ⚡ Free Trial (48 Hours)
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
+                      Select Plan
+                    </label>
+                    <select
+                      value={subGrantPlanId}
+                      onChange={(e) => setSubGrantPlanId(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                      <option value="">Default Primary Plan ({plans[0]?.name || 'Premium Plan'})</option>
+                      {plans.map((p: any) => (
+                        <option key={p._id} value={p._id}>
+                          {p.name} - ₹{p.yearlyPrice} / yr
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
+                      Duration / Validity Period
+                    </label>
+                    <select
+                      value={subGrantDurationDays}
+                      onChange={(e) => setSubGrantDurationDays(parseInt(e.target.value, 10))}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                      <option value={2}>48 Hours (2 Days)</option>
+                      <option value={7}>7 Days (1 Week)</option>
+                      <option value={30}>30 Days (1 Month)</option>
+                      <option value={90}>90 Days (3 Months)</option>
+                      <option value={180}>180 Days (6 Months)</option>
+                      <option value={365}>365 Days (1 Full Year)</option>
+                      <option value={730}>730 Days (2 Years)</option>
+                      <option value={-1}>📅 Custom Date & Time (Exact Timestamp)</option>
+                    </select>
+                  </div>
+
+                  {/* Custom Date & Time Picker */}
+                  {subGrantDurationDays === -1 && (
+                    <div className="p-3 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-1.5">
+                      <label className="block text-[11px] font-bold text-indigo-900 uppercase">
+                        Pick Custom End Date & Time
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={subGrantCustomDate}
+                        onChange={(e) => setSubGrantCustomDate(e.target.value)}
+                        min={new Date().toISOString().slice(0, 16)}
+                        className="w-full px-3 py-2 border border-indigo-200 rounded-lg text-xs font-bold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                      <p className="text-[10px] text-indigo-600 font-semibold">
+                        User subscription will remain active until this exact local timestamp.
+                      </p>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
+                      Admin Note / Reason (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={subGrantNote}
+                      onChange={(e) => setSubGrantNote(e.target.value)}
+                      placeholder="e.g. VIP promotion, test access, or offline payment"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
+
+                  <div className="pt-2 flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSubModalUser(null)}
+                      className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={subActionLoading}
+                      onClick={() => handleAdminGrantSubscription(subModalUser._id)}
+                      className="px-5 py-2.5 rounded-xl text-xs font-black bg-primary hover:bg-primary-dark text-white transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
+                    >
+                      {subActionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                      <span>Grant Subscription</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* FORM 3: SEND INDIVIDUAL COUPON VIA EMAIL */}
+              {subModalMode === 'coupon' && (
+                <div className="space-y-3.5">
+                  <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 text-xs flex items-center justify-between">
+                    <div>
+                      <p className="font-extrabold text-[12px] flex items-center gap-1">
+                        <span>🎟️ Send Subscription Coupon Voucher</span>
+                      </p>
+                      <p className="text-[11px] text-emerald-700 mt-0.5">
+                        Delivers directly to <strong>{subModalUser.email}</strong> via Brevo/Titan SMTP.
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-black uppercase bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded-md">
+                      1-Time Use
+                    </span>
+                  </div>
+
+                  {/* Coupon Code Input & Generator */}
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="text-[11px] font-bold text-slate-500 uppercase">
+                        Promo Coupon Code
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const rnd = Math.random().toString(36).substring(2, 6).toUpperCase();
+                          const userDigits = (subModalUser.mobileNumber || '').replace(/[^0-9]/g, '').slice(-4);
+                          setCouponCodeInput(`MITO-VIP-${userDigits || rnd}`);
+                        }}
+                        className="text-[10.5px] font-bold text-primary hover:underline cursor-pointer"
+                      >
+                        Auto-Generate Code
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      value={couponCodeInput}
+                      onChange={(e) => setCouponCodeInput(e.target.value.toUpperCase())}
+                      placeholder="e.g. MITO-FREE-8754"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-black tracking-wider uppercase text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
+                    />
+                  </div>
+
+                  {/* Discount Selection */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
+                      Discount / Benefit
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => { setCouponDiscountType('percentage'); setCouponDiscountValue(100); }}
+                        className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all text-center ${
+                          couponDiscountType === 'percentage' && couponDiscountValue === 100
+                            ? 'bg-emerald-50 border-emerald-500 text-emerald-700 font-black'
+                            : 'bg-slate-50 border-slate-200 text-slate-600'
+                        }`}
+                      >
+                        🎁 100% Free
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setCouponDiscountType('percentage'); setCouponDiscountValue(50); }}
+                        className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all text-center ${
+                          couponDiscountType === 'percentage' && couponDiscountValue === 50
+                            ? 'bg-emerald-50 border-emerald-500 text-emerald-700 font-black'
+                            : 'bg-slate-50 border-slate-200 text-slate-600'
+                        }`}
+                      >
+                        🏷️ 50% OFF
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setCouponDiscountType('percentage'); setCouponDiscountValue(75); }}
+                        className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all text-center ${
+                          couponDiscountType === 'percentage' && couponDiscountValue === 75
+                            ? 'bg-emerald-50 border-emerald-500 text-emerald-700 font-black'
+                            : 'bg-slate-50 border-slate-200 text-slate-600'
+                        }`}
+                      >
+                        ⚡ 75% OFF
+                      </button>
+                    </div>
+
+                    {couponDiscountValue !== 100 && couponDiscountValue !== 50 && couponDiscountValue !== 75 && (
+                      <div className="mt-2 flex gap-2">
+                        <select
+                          value={couponDiscountType}
+                          onChange={(e) => setCouponDiscountType(e.target.value as any)}
+                          className="px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs font-bold bg-white text-slate-700"
+                        >
+                          <option value="percentage">Percentage (%)</option>
+                          <option value="fixed">Flat Amount (₹)</option>
+                        </select>
+                        <input
+                          type="number"
+                          value={couponDiscountValue}
+                          onChange={(e) => setCouponDiscountValue(parseFloat(e.target.value) || 0)}
+                          placeholder="Discount Value"
+                          className="flex-1 px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold bg-white text-slate-800"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Expiration Preset */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
+                      Coupon Validity / Expiry
+                    </label>
+                    <select
+                      value={couponExpiryPreset}
+                      onChange={(e) => setCouponExpiryPreset(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    >
+                      <option value="7d">7 Days</option>
+                      <option value="14d">14 Days (2 Weeks)</option>
+                      <option value="30d">30 Days (1 Month)</option>
+                      <option value="custom">📅 Custom Expiry Date & Time</option>
+                      <option value="never">No Expiration Date</option>
+                    </select>
+                  </div>
+
+                  {couponExpiryPreset === 'custom' && (
+                    <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+                      <label className="block text-[10.5px] font-bold text-slate-600 mb-1">
+                        Custom Expiry Date & Time
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={couponCustomExpiryDate}
+                        onChange={(e) => setCouponCustomExpiryDate(e.target.value)}
+                        min={new Date().toISOString().slice(0, 16)}
+                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold bg-white text-slate-800"
+                      />
+                    </div>
+                  )}
+
+                  {/* Custom Note/Message to User */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
+                      Personalized Message in Email (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={couponMessage}
+                      onChange={(e) => setCouponMessage(e.target.value)}
+                      placeholder="e.g. Here is a complimentary annual subscription on behalf of Mito Reboot team!"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+
+                  <div className="pt-2 flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSubModalUser(null)}
+                      className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={couponActionLoading || !subModalUser.email}
+                      onClick={() => handleAdminSendCoupon(subModalUser._id)}
+                      className="px-5 py-2.5 rounded-xl text-xs font-black bg-emerald-600 hover:bg-emerald-700 text-white transition-all shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      {couponActionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                      <span>Send Coupon to {subModalUser.email}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* FORM 2: CANCEL SUBSCRIPTION */}
+              {subModalMode === 'cancel' && (
+                <div className="space-y-4">
+                  <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-2xl text-rose-800 text-xs">
+                    <AlertTriangle className="w-4 h-4 inline mr-1 text-rose-600" />
+                    <strong>Cancelling Subscription:</strong> Choose whether to end auto-renewal at period end or immediately terminate access.
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
+                      Cancellation Type
+                    </label>
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50">
+                        <input
+                          type="radio"
+                          name="cancelType"
+                          checked={!subCancelImmediate}
+                          onChange={() => setSubCancelImmediate(false)}
+                        />
+                        <div className="text-xs">
+                          <span className="font-bold block">Cancel at End of Period (Recommended)</span>
+                          <span className="text-[11px] text-slate-500">Auto-renewal is stopped. User keeps full access until expiry date.</span>
+                        </div>
+                      </label>
+                      <label className="flex items-center gap-2 p-2.5 rounded-xl border border-rose-200 bg-rose-50/40 cursor-pointer hover:bg-rose-50">
+                        <input
+                          type="radio"
+                          name="cancelType"
+                          checked={subCancelImmediate}
+                          onChange={() => setSubCancelImmediate(true)}
+                        />
+                        <div className="text-xs">
+                          <span className="font-bold text-rose-700 block">Cancel Immediately</span>
+                          <span className="text-[11px] text-rose-600">Access will be revoked right now. The paywall will block the user immediately.</span>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
+                      Cancellation Reason
+                    </label>
+                    <input
+                      type="text"
+                      value={subCancelReason}
+                      onChange={(e) => setSubCancelReason(e.target.value)}
+                      placeholder="e.g. User requested via email / Refund issued"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                    />
+                  </div>
+
+                  <div className="pt-2 flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSubModalMode('manage')}
+                      className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100"
+                    >
+                      Back
+                    </button>
+                    <button
+                      type="button"
+                      disabled={subActionLoading}
+                      onClick={() => handleAdminCancelSubscription(subModalUser._id, subCancelImmediate, subCancelReason)}
+                      className="px-5 py-2.5 rounded-xl text-xs font-black bg-rose-600 hover:bg-rose-700 text-white transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
+                    >
+                      {subActionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
+                      <span>Confirm Cancellation</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

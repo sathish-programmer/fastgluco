@@ -29,6 +29,8 @@ import { AppOtpTelemetry } from '../models/AppOtpTelemetry';
 import { UserSubscription } from '../models/UserSubscription';
 import { SubscriptionPlan } from '../models/SubscriptionPlan';
 import { Coupon } from '../models/Coupon';
+import { PaymentTransaction } from '../models/PaymentTransaction';
+import { Invoice } from '../models/Invoice';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_12345!';
 
@@ -717,6 +719,8 @@ export class AdminController {
       if (isBlocked && user.email) {
         const blockReason = reason || 'Account policy violation or administrative action.';
         EmailService.sendBlockNotificationEmail(user.email, user.name || 'User', blockReason).catch(console.error);
+      } else if (!isBlocked && user.email) {
+        EmailService.sendUnblockNotificationEmail(user.email, user.name || 'User').catch(console.error);
       }
 
       // Log the activity to administrative audit logs
@@ -1218,13 +1222,23 @@ export class AdminController {
         return res.status(404).json({ message: 'User not found.' });
       }
 
-      const foodLogs = await FoodLog.find({ userId: id }).sort({ loggedAt: -1 }).limit(100);
-      const glucoseReadings = await mongoose.model('GlucoseReading').find({ userId: id }).sort({ timestamp: -1 }).limit(100);
-      const cgmReports = await mongoose.model('CGMReport').find({ userId: id }).sort({ createdAt: -1 }).limit(10);
-      const habitLogs = await mongoose.model('HabitLog').find({ userId: id }).sort({ timestamp: -1 }).limit(100);
-      const subscriptions = await UserSubscription.find({ userId: id, isDeleted: false })
-        .populate('planId', 'name yearlyPrice code trialHours trialDays')
-        .sort({ createdAt: -1 });
+      const [foodLogs, glucoseReadings, cgmReports, habitLogs, subscriptions, paymentTransactions, invoices] = await Promise.all([
+        FoodLog.find({ userId: id }).sort({ loggedAt: -1 }).limit(100),
+        mongoose.model('GlucoseReading').find({ userId: id }).sort({ timestamp: -1 }).limit(100),
+        mongoose.model('CGMReport').find({ userId: id }).sort({ createdAt: -1 }).limit(10),
+        mongoose.model('HabitLog').find({ userId: id }).sort({ timestamp: -1 }).limit(100),
+        UserSubscription.find({ userId: id, isDeleted: false })
+          .populate('planId', 'name yearlyPrice code trialHours trialDays')
+          .sort({ createdAt: -1 }),
+        PaymentTransaction.find({ userId: id, isDeleted: false })
+          .populate('planId', 'name yearlyPrice code')
+          .sort({ createdAt: -1 })
+          .limit(50),
+        Invoice.find({ userId: id, isDeleted: false })
+          .populate('planId', 'name code')
+          .sort({ createdAt: -1 })
+          .limit(50)
+      ]);
 
       return res.status(200).json({
         user,
@@ -1232,7 +1246,9 @@ export class AdminController {
         glucoseReadings,
         cgmReports,
         habitLogs,
-        subscriptions
+        subscriptions,
+        paymentTransactions,
+        invoices
       });
     } catch (error: any) {
       return res.status(500).json({ message: error.message || 'Error fetching user activity details.' });

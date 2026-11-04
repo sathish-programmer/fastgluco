@@ -140,7 +140,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5001/api' : 'https://api.mitoreboot.in/api');
 
-  // Monitor network connectivity
+  // Monitor network connectivity & app foreground visibility
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
@@ -151,24 +151,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const handleOffline = () => {
       setIsOnline(false);
     };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && token) {
+        loadProfile();
+      }
+    };
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [token]);
 
-  // Listen to global session expired events
+  // Listen to global session expired and account blocked events
   useEffect(() => {
     const handleSessionExpired = () => {
       logout();
       setError('Session expired. Please log in again.');
     };
+    const handleAccountBlocked = (e: any) => {
+      logout();
+      const msg = e?.detail?.message || 'Your account has been suspended by an administrator. Please contact support.';
+      setError(msg);
+    };
+
+    // Install lightweight fetch interceptor once to detect immediate 403 suspension
+    const originalFetch = window.fetch;
+    window.fetch = async (...args) => {
+      const response = await originalFetch(...args);
+      if (response.status === 403) {
+        try {
+          const clone = response.clone();
+          const data = await clone.json();
+          if (data?.isBlocked || data?.isSuspended) {
+            window.dispatchEvent(new CustomEvent('account_blocked', { detail: data }));
+          }
+        } catch {
+          // non-json 403
+        }
+      }
+      return response;
+    };
+
     window.addEventListener('session_expired', handleSessionExpired);
+    window.addEventListener('account_blocked', handleAccountBlocked);
     return () => {
       window.removeEventListener('session_expired', handleSessionExpired);
+      window.removeEventListener('account_blocked', handleAccountBlocked);
+      window.fetch = originalFetch;
     };
   }, []);
 
@@ -231,7 +265,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       });
 
-      if (response.status === 401 || response.status === 403) {
+      if (response.status === 403) {
+        try {
+          const errData = await response.json();
+          logout();
+          setError(errData.message || 'Your account has been suspended by an administrator. Please contact support.');
+          return;
+        } catch {
+          logout();
+          setError('Your account has been suspended by an administrator. Please contact support.');
+          return;
+        }
+      }
+
+      if (response.status === 401) {
         const refreshToken = localStorage.getItem('fastgluco_refresh_token');
         let refreshed = false;
         if (refreshToken) {
