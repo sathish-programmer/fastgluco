@@ -917,29 +917,29 @@ const MainAppContent: React.FC = () => {
       />
       {/* Dynamic Header with safe area padding for mobile notches */}
       {!isSubScreenActive && (
-        <header className={`sticky top-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-100 dark:border-slate-800/80 z-20 px-2.5 sm:px-4 ${
-          !isOnline ? 'pt-2.5' : 'pt-[calc(env(safe-area-inset-top,0px)+10px)]'
-        } pb-2.5 max-w-5xl w-full mx-auto flex items-center justify-between gap-1.5 sm:gap-3 transition-all duration-300`}>
+        <header className={`sticky top-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-100 dark:border-slate-800/80 z-20 px-2 sm:px-4 pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))] ${
+          !isOnline ? 'pt-2.5' : 'pt-[calc(env(safe-area-inset-top,0px)+8px)]'
+        } pb-2 max-w-5xl w-full mx-auto flex items-center justify-between gap-1 sm:gap-3 transition-all duration-300`}>
           {/* Brand Identity */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 min-w-0">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
             {branding.appLogoUrl ? (
               <img
                 src={branding.appLogoUrl.startsWith('http') ? branding.appLogoUrl : `${apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl}${branding.appLogoUrl.startsWith('/') ? '' : '/'}${branding.appLogoUrl}`}
                 alt={branding.appName}
-                className="h-5.5 sm:h-6 w-auto object-contain max-w-[32px] sm:max-w-[36px] shrink-0"
+                className="h-5 sm:h-6 w-auto object-contain max-w-[28px] sm:max-w-[36px] shrink-0"
               />
             ) : (
-              <Heart className="h-5 w-5 sm:h-5.5 sm:w-5.5 fill-primary text-primary shrink-0" />
+              <Heart className="h-4.5 w-4.5 sm:h-5.5 sm:w-5.5 fill-primary text-primary shrink-0" />
             )}
-            <div className="flex flex-col justify-center shrink-0">
-              <div className="flex items-center gap-1.5 sm:gap-2 leading-none">
-                <span className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white tracking-tight leading-none whitespace-nowrap shrink-0">
+            <div className="flex flex-col justify-center min-w-0">
+              <div className="flex items-center gap-1 sm:gap-2 leading-none">
+                <span className="text-xs min-[360px]:text-sm sm:text-base font-extrabold text-slate-900 dark:text-white tracking-tight leading-none whitespace-nowrap">
                   {branding.appName ? branding.appName.replace(/_/g, ' ') : 'Mito Reboot'}
                 </span>
                 {branding.enableSubscriptions !== false && (
                   <button
                     onClick={() => setActiveTab('Subscription')}
-                    className={`text-[8.5px] sm:text-[9px] font-bold uppercase tracking-wider px-1.5 sm:px-2 py-0.5 rounded-full inline-flex items-center gap-1 border shadow-2xs shrink-0 leading-none cursor-pointer hover:opacity-95 active:scale-95 transition-all ${
+                    className={`text-[8px] sm:text-[9px] font-bold uppercase tracking-wider px-1.5 sm:px-2 py-0.5 rounded-full inline-flex items-center gap-0.5 sm:gap-1 border shadow-2xs shrink-0 leading-none cursor-pointer hover:opacity-95 active:scale-95 transition-all ${
                       /premium|pro/i.test(basicPlan)
                         ? 'bg-gradient-to-r from-amber-500/15 via-amber-400/20 to-yellow-500/15 dark:from-amber-500/25 dark:via-amber-400/30 dark:to-yellow-500/25 text-amber-700 dark:text-amber-300 border-amber-300/80 dark:border-amber-600/70 shadow-amber-500/10'
                         : 'bg-gradient-to-r from-emerald-500/15 via-teal-500/20 to-emerald-500/15 dark:from-emerald-500/25 dark:via-teal-500/30 dark:to-emerald-500/25 text-emerald-700 dark:text-emerald-300 border-emerald-300/80 dark:border-emerald-600/70 shadow-emerald-500/10'
@@ -951,14 +951,14 @@ const MainAppContent: React.FC = () => {
                     ) : (
                       <ShieldCheck className="h-2.5 w-2.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                     )}
-                    <span className="whitespace-nowrap hidden min-[360px]:inline">
+                    <span className="whitespace-nowrap hidden min-[440px]:inline">
                       {basicPlan.replace(/\s*plan\s*/i, '').trim()}
                     </span>
                   </button>
                 )}
               </div>
               {branding.appTagline && (
-                <span className="text-[9px] sm:text-[9.5px] text-slate-400 dark:text-slate-500 font-medium leading-none truncate max-w-[120px] min-[380px]:max-w-[170px] sm:max-w-[240px] mt-1">
+                <span className="text-[8.5px] sm:text-[9.5px] text-slate-400 dark:text-slate-500 font-medium leading-none truncate max-w-[110px] min-[360px]:max-w-[140px] sm:max-w-[240px] mt-0.5">
                   {branding.appTagline}
                 </span>
               )}
@@ -970,18 +970,18 @@ const MainAppContent: React.FC = () => {
             {/* Ask Mito Button */}
             <button
               onClick={() => setShowAskMitoDrawer(true)}
-              className="px-2.5 py-1 sm:py-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:opacity-95 active:scale-95 text-white rounded-xl transition-all flex items-center gap-1.5 shadow-sm border border-white/20 cursor-pointer shrink-0"
+              className="px-2 py-1 sm:px-2.5 sm:py-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:opacity-95 active:scale-95 text-white rounded-xl transition-all flex items-center gap-1 sm:gap-1.5 shadow-sm border border-white/20 cursor-pointer shrink-0"
               title="Ask expert your medical query at 100 rupees"
             >
-              <Sparkles className="h-3.5 w-3.5 text-amber-300 fill-amber-300 shrink-0 animate-pulse" />
+              <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-amber-300 fill-amber-300 shrink-0 animate-pulse" />
               <div className="flex flex-col items-start leading-tight text-left">
                 <div className="flex items-center gap-1">
-                  <span className="text-[10.5px] sm:text-xs font-black tracking-tight">{t('nav.askMito', 'Ask Expert')}</span>
-                  <span className="text-[8px] font-black px-1.5 py-0.2 bg-amber-400 text-slate-950 rounded font-mono shadow-2xs">
+                  <span className="text-[10px] sm:text-xs font-black tracking-tight">{t('nav.askMito', 'Ask Expert')}</span>
+                  <span className="text-[7.5px] sm:text-[8px] font-black px-1.5 py-0.2 bg-amber-400 text-slate-950 rounded font-mono shadow-2xs">
                     ₹100
                   </span>
                 </div>
-                <span className="text-[7.5px] text-blue-100 font-semibold tracking-tight hidden min-[390px]:inline">
+                <span className="text-[7.5px] text-blue-100 font-semibold tracking-tight hidden min-[500px]:inline">
                   Ask expert @ ₹100
                 </span>
               </div>
@@ -990,11 +990,11 @@ const MainAppContent: React.FC = () => {
             {/* Support / Help */}
             <button
               onClick={() => setShowHelpModal(true)}
-              className="h-8 w-8 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0 flex items-center justify-center"
+              className="h-7.5 w-7.5 sm:h-8 sm:w-8 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0 flex items-center justify-center"
               title={t('modals.helpSupport', 'Help & Support')}
               aria-label={t('modals.helpSupport', 'Help & Support')}
             >
-              <Headphones className="h-4.5 w-4.5" />
+              <Headphones className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
             </button>
 
             {/* Notification Bell */}
