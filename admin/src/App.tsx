@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 
@@ -62,7 +62,10 @@ import {
   Filter,
   Download,
   Receipt,
-  TrendingUp
+  TrendingUp,
+  Layers,
+  ArrowUpRight,
+  Compass
 } from 'lucide-react';
 import {
   BarChart, Bar, PieChart, Pie, Cell,
@@ -158,6 +161,256 @@ const StainTrendChart: React.FC<{ patientId: string }> = ({ patientId }) => {
   );
 };
 
+interface AdminNavCatalogItem {
+  id: string;
+  title: string;
+  subtitle: string;
+  category: 'System & Apps' | 'Finance & Analytics' | 'Patients' | 'Clinical' | 'Store & Products' | 'Navigation';
+  keywords: string[];
+  icon: string;
+  view: string;
+  badge?: string;
+}
+
+const ADMIN_NAV_PAGES: AdminNavCatalogItem[] = [
+  {
+    id: 'app-health-versions',
+    title: 'Version Enforcement Rules',
+    subtitle: 'Configure minimum required versions & force update locks for Android & iOS',
+    category: 'System & Apps',
+    keywords: ['app health', 'version rules', 'force update', 'versions', 'v6.1.9', 'minimum version', 'google play', 'app store', 'update url', 'block outdated'],
+    icon: 'Layers',
+    view: 'app-health',
+    badge: 'v6.1.9'
+  },
+  {
+    id: 'app-health-crashes',
+    title: 'Crash & ANR Diagnostics',
+    subtitle: 'Real-time crash dumps, stack traces, and App Store / Play Store ANR tracking',
+    category: 'System & Apps',
+    keywords: ['app health', 'crash', 'anr', 'crashes', 'freeze', 'exceptions', 'stack trace', 'sigabrt', 'error logs'],
+    icon: 'ShieldAlert',
+    view: 'app-health'
+  },
+  {
+    id: 'app-health-telemetry',
+    title: 'Mobile Telemetry & Device Stats',
+    subtitle: 'Live device models, active OS versions, and SMS delivery latency analytics',
+    category: 'System & Apps',
+    keywords: ['app health', 'telemetry', 'device', 'android', 'ios', 'sms logs', 'otp delivery', 'fast2sms', 'firebase auth'],
+    icon: 'Smartphone',
+    view: 'app-health'
+  },
+  {
+    id: 'app-health-overview',
+    title: 'App Health Engine Overview',
+    subtitle: 'Central hub for version gating, crashes, telemetry, and store credentials',
+    category: 'System & Apps',
+    keywords: ['app health', 'health engine', 'system status', 'mobile app health', 'performance', 'production status'],
+    icon: 'Activity',
+    view: 'app-health',
+    badge: 'Live'
+  },
+  {
+    id: 'revenue-overview',
+    title: 'Revenue & Business Analytics',
+    subtitle: 'Real-time ARR, MRR, churn rate, gross collections, and bank settlements',
+    category: 'Finance & Analytics',
+    keywords: ['revenue', 'business analytics', 'finance', 'mrr', 'arr', 'churn', 'collections', 'bank settlement', 'gross revenue'],
+    icon: 'TrendingUp',
+    view: 'revenue-overview',
+    badge: 'Real-Time'
+  },
+  {
+    id: 'revenue-subscriptions',
+    title: 'Subscriptions & Churn Intelligence',
+    subtitle: 'Active premium members, auto-renewal rates, and subscription cycle history',
+    category: 'Finance & Analytics',
+    keywords: ['subscriptions', 'membership', 'premium plan', 'renewal', 'churn rate', 'annual plan', 'monthly plan', 'subscriber'],
+    icon: 'Crown',
+    view: 'revenue-subscriptions'
+  },
+  {
+    id: 'revenue-transactions',
+    title: 'All Revenue Transactions',
+    subtitle: 'Consolidated transaction ledger across shop, appointments, and subscriptions',
+    category: 'Finance & Analytics',
+    keywords: ['transactions', 'payments', 'refunds', 'settlements', 'razorpay', 'cashfree', 'transaction id'],
+    icon: 'CreditCard',
+    view: 'revenue-transactions'
+  },
+  {
+    id: 'revenue-user-payments',
+    title: 'User Payments & Invoices',
+    subtitle: 'Patient payment history, GST breakdown, and PDF tax invoice generation',
+    category: 'Finance & Analytics',
+    keywords: ['user payments', 'invoices', 'receipts', 'tax invoices', 'billing', 'gst', 'download invoice'],
+    icon: 'Receipt',
+    view: 'revenue-user-payments'
+  },
+  {
+    id: 'revenue-ask-mito',
+    title: 'Ask Mito AI Consultations Revenue',
+    subtitle: 'Micro-consultation revenue generated via the AI lifestyle assistant',
+    category: 'Finance & Analytics',
+    keywords: ['ask mito revenue', 'ai consultations', 'ask expert', 'micro consultation', 'tokens'],
+    icon: 'Bot',
+    view: 'revenue-ask-mito'
+  },
+  {
+    id: 'dashboard',
+    title: 'System Dashboard',
+    subtitle: 'Real-time overview of active patients, revenue, meal logs, and bookings',
+    category: 'Navigation',
+    keywords: ['dashboard', 'home', 'overview', 'system stats', 'patient counter', 'today schedule'],
+    icon: 'LayoutDashboard',
+    view: 'dashboard'
+  },
+  {
+    id: 'users',
+    title: 'Users & Patients Directory',
+    subtitle: 'Search, inspect patient health files, grant subscriptions, and manage accounts',
+    category: 'Patients',
+    keywords: ['users', 'patients', 'patient list', 'members', 'accounts', 'user directory', 'grant subscription', 'phone search'],
+    icon: 'Users',
+    view: 'users'
+  },
+  {
+    id: 'patient-activity',
+    title: 'Live Patient Activity Feed',
+    subtitle: 'Real-time continuous stream of glucose readings, meals, and symptom logs',
+    category: 'Patients',
+    keywords: ['patient activity', 'glucose', 'food log', 'meal photos', 'live activity', 'symptoms', 'fasting timer'],
+    icon: 'Utensils',
+    view: 'patient-activity'
+  },
+  {
+    id: 'doctors-management',
+    title: 'Specialist Doctors & Clinicians',
+    subtitle: 'Manage specialist directory, approval states, schedules, and clinical notes',
+    category: 'Clinical',
+    keywords: ['doctors', 'specialists', 'physicians', 'clinical roster', 'consultants', 'doctor management', 'add doctor'],
+    icon: 'Stethoscope',
+    view: 'doctors-management'
+  },
+  {
+    id: 'appointments-calendar',
+    title: 'Appointments Calendar',
+    subtitle: 'Interactive monthly, weekly, and daily view of booked doctor consultations',
+    category: 'Clinical',
+    keywords: ['calendar', 'appointments calendar', 'schedule', 'doctor bookings', 'consultation slots'],
+    icon: 'Calendar',
+    view: 'appointments-calendar'
+  },
+  {
+    id: 'appointments-upcoming',
+    title: 'Upcoming Consultations',
+    subtitle: 'Confirmed appointments scheduled for today and future clinical slots',
+    category: 'Clinical',
+    keywords: ['upcoming appointments', 'pending visits', 'scheduled sessions', 'google meet'],
+    icon: 'Clock',
+    view: 'appointments-upcoming'
+  },
+  {
+    id: 'store-products',
+    title: 'Health Store Catalog & Products',
+    subtitle: 'CGM sensors, dietary supplements, test kits, and inventory management',
+    category: 'Store & Products',
+    keywords: ['products', 'store', 'shop catalog', 'cgm sensor', 'supplements', 'pricing', 'inventory', 'add product'],
+    icon: 'Package',
+    view: 'store-products'
+  },
+  {
+    id: 'store-orders',
+    title: 'Customer Orders Management',
+    subtitle: 'Track order fulfillment, payment status, dispatch, and delivery tracking',
+    category: 'Store & Products',
+    keywords: ['store orders', 'orders', 'shipping', 'customer orders', 'dispatch', 'tracking', 'delivered'],
+    icon: 'ShoppingCart',
+    view: 'store-orders'
+  },
+  {
+    id: 'vendors-management',
+    title: 'Suppliers & Vendors Directory',
+    subtitle: 'Vendor credentials, order dispatch assignments, and settlement history',
+    category: 'Store & Products',
+    keywords: ['vendors', 'suppliers', 'merchants', 'fulfillment partners', 'vendor management'],
+    icon: 'Users',
+    view: 'vendors-management'
+  },
+  {
+    id: 'partner-labs',
+    title: 'Partner Diagnostic Labs',
+    subtitle: 'Diagnostic lab network for home blood collections and lab test bookings',
+    category: 'Clinical',
+    keywords: ['partner labs', 'diagnostics', 'blood test', 'pathology labs', 'lab bookings'],
+    icon: 'Activity',
+    view: 'partner-labs'
+  },
+  {
+    id: 'screening-tests',
+    title: 'Cancer Screening Packages',
+    subtitle: 'Configured preventive cancer screening blood markers and packages',
+    category: 'Clinical',
+    keywords: ['cancer screening', 'screening tests', 'preventive blood tests', 'lab tests'],
+    icon: 'ShieldAlert',
+    view: 'screening-tests'
+  },
+  {
+    id: 'indian-cancers',
+    title: 'Cancer Prevention Protocols',
+    subtitle: 'Clinical guidelines, organ-specific symptoms, and restorative lifestyle tips',
+    category: 'Clinical',
+    keywords: ['cancer protocols', 'oncology', 'indian cancers', 'preventive lifestyle', 'tumor markers'],
+    icon: 'FileText',
+    view: 'indian-cancers'
+  },
+  {
+    id: 'reports-analytics',
+    title: 'Clinical Reports & Population Health',
+    subtitle: 'Patient glucose variance, adherence distributions, and clinical trends',
+    category: 'Finance & Analytics',
+    keywords: ['reports analytics', 'clinical reports', 'population health', 'glucose variance', 'fasting trends'],
+    icon: 'BarChart3',
+    view: 'reports-analytics'
+  },
+  {
+    id: 'otp-logs',
+    title: 'OTP & Authentication Logs',
+    subtitle: 'SMS verification logs, latency metrics, and failure diagnostics',
+    category: 'System & Apps',
+    keywords: ['otp logs', 'sms logs', 'verification codes', 'auth logs', 'login attempts'],
+    icon: 'History',
+    view: 'otp-logs'
+  }
+];
+
+const renderSearchNavIcon = (icon: string, className: string = "w-4 h-4") => {
+  switch (icon) {
+    case 'Layers': return <Layers className={className} />;
+    case 'ShieldAlert': return <ShieldAlert className={className} />;
+    case 'Smartphone': return <Smartphone className={className} />;
+    case 'Activity': return <Activity className={className} />;
+    case 'TrendingUp': return <TrendingUp className={className} />;
+    case 'Crown': return <Crown className={className} />;
+    case 'CreditCard': return <CreditCard className={className} />;
+    case 'Receipt': return <Receipt className={className} />;
+    case 'Bot': return <Bot className={className} />;
+    case 'LayoutDashboard': return <LayoutDashboard className={className} />;
+    case 'Users': return <Users className={className} />;
+    case 'Utensils': return <Utensils className={className} />;
+    case 'Stethoscope': return <Stethoscope className={className} />;
+    case 'Calendar': return <Calendar className={className} />;
+    case 'Clock': return <Clock className={className} />;
+    case 'Package': return <Package className={className} />;
+    case 'ShoppingCart': return <ShoppingCart className={className} />;
+    case 'FileText': return <FileText className={className} />;
+    case 'BarChart3': return <BarChart3 className={className} />;
+    case 'History': return <History className={className} />;
+    default: return <Compass className={className} />;
+  }
+};
+
 const AdminPanelContent: React.FC = () => {
   const { admin, token, isAuthenticated, login, register, logout, error, clearError, apiUrl } = useAdminAuth();
 
@@ -229,6 +482,75 @@ const AdminPanelContent: React.FC = () => {
   const [showGlobalSearchModal, setShowGlobalSearchModal] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showNotificationCenter, setShowNotificationCenter] = useState(false);
+  const [globalSearchCategory, setGlobalSearchCategory] = useState<'all' | 'pages' | 'patients' | 'doctors' | 'products' | 'orders' | 'appointments'>('all');
+
+  const matchedNavPages = useMemo(() => {
+    const query = globalSearchQuery.trim().toLowerCase();
+    if (!query) return [];
+    return ADMIN_NAV_PAGES.filter(p => 
+      p.title.toLowerCase().includes(query) ||
+      p.subtitle.toLowerCase().includes(query) ||
+      p.category.toLowerCase().includes(query) ||
+      p.keywords.some(k => k.toLowerCase().includes(query))
+    );
+  }, [globalSearchQuery]);
+
+  const popularNavPages = useMemo(() => {
+    return [
+      ADMIN_NAV_PAGES.find(p => p.id === 'app-health-versions')!,
+      ADMIN_NAV_PAGES.find(p => p.id === 'revenue-overview')!,
+      ADMIN_NAV_PAGES.find(p => p.id === 'users')!,
+      ADMIN_NAV_PAGES.find(p => p.id === 'doctors-management')!,
+      ADMIN_NAV_PAGES.find(p => p.id === 'store-products')!,
+      ADMIN_NAV_PAGES.find(p => p.id === 'appointments-calendar')!,
+    ].filter(Boolean);
+  }, []);
+
+  const handleSelectPatientFromSearch = (patient: any) => {
+    setShowGlobalSearchModal(false);
+    setGlobalSearchQuery('');
+    fetchUserActivity(patient._id);
+  };
+
+  const handleFilterPatientInUsersTable = (patient: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowGlobalSearchModal(false);
+    setGlobalSearchQuery('');
+    setActiveView('users');
+    setSearchQuery(patient.name || patient.email || patient.mobileNumber || '');
+    fetchUsers(1, userPageSize, userSubFilter, patient.name || patient.email || patient.mobileNumber || '');
+  };
+
+  const handleSelectDoctorFromSearch = (_doctor: any) => {
+    setShowGlobalSearchModal(false);
+    setGlobalSearchQuery('');
+    setActiveView('doctors-management');
+    fetchActiveDoctors();
+  };
+
+  const handleSelectProductFromSearch = (_product: any) => {
+    setShowGlobalSearchModal(false);
+    setGlobalSearchQuery('');
+    setActiveView('store-products');
+  };
+
+  const handleSelectOrderFromSearch = (_order: any) => {
+    setShowGlobalSearchModal(false);
+    setGlobalSearchQuery('');
+    setActiveView('store-orders');
+  };
+
+  const handleSelectAppointmentFromSearch = (_appointment: any) => {
+    setShowGlobalSearchModal(false);
+    setGlobalSearchQuery('');
+    setActiveView('appointments-upcoming');
+  };
+
+  const handleSelectNavPage = (navItem: AdminNavCatalogItem) => {
+    setShowGlobalSearchModal(false);
+    setGlobalSearchQuery('');
+    setActiveView(navItem.view);
+  };
 
 
   useEffect(() => {
@@ -9685,153 +10007,404 @@ const AdminPanelContent: React.FC = () => {
             )}
           </div>
         )}
-        {/* Global Search Dialog Modal (Command Palette) */}
+        {/* Futuristic Global Search & Command Palette Modal */}
         {showGlobalSearchModal && (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl border border-slate-200 flex flex-col max-h-[80vh]">
-              {/* Search input header */}
-              <div className="p-4 border-b border-slate-100 flex items-center gap-3">
-                <Search className="h-5 w-5 text-slate-400" />
+          <div 
+            className="fixed inset-0 bg-slate-950/75 backdrop-blur-md z-50 flex items-start justify-center p-3 sm:p-4 pt-12 sm:pt-20 animate-fadeIn"
+            onClick={() => { setShowGlobalSearchModal(false); setGlobalSearchQuery(''); }}
+          >
+            <div 
+              className="relative bg-slate-900 border border-slate-700/80 rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh] text-slate-100 ring-1 ring-white/10"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Top Ambient Glow */}
+              <div className="absolute -top-28 left-1/2 -translate-x-1/2 w-96 h-36 bg-primary/25 blur-3xl pointer-events-none rounded-full" />
+
+              {/* Search Input Bar */}
+              <div className="relative p-4 sm:p-5 border-b border-slate-800 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center shrink-0 text-primary shadow-sm shadow-primary/20">
+                  <Search className="h-4.5 w-4.5" />
+                </div>
                 <input 
                   type="text"
                   autoFocus
-                  placeholder="Search patients, doctors, vendors, products, orders, appointments..."
+                  placeholder="Search pages, patients, doctors, orders, revenue, app health..."
                   value={globalSearchQuery}
                   onChange={e => setGlobalSearchQuery(e.target.value)}
-                  className="flex-1 focus:outline-none text-sm font-semibold text-slate-800"
+                  className="flex-1 focus:outline-none text-sm sm:text-base font-bold text-white placeholder-slate-400 bg-transparent"
                 />
-                <button 
-                  onClick={() => { setShowGlobalSearchModal(false); setGlobalSearchQuery(''); }}
-                  className="text-xs font-bold text-slate-400 hover:text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg"
-                >
-                  ESC
-                </button>
+                {globalSearchQuery && (
+                  <button
+                    onClick={() => setGlobalSearchQuery('')}
+                    className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 text-xs transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="hidden sm:inline-block px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-[10px] font-mono text-slate-400">
+                    Ctrl+K
+                  </span>
+                  <button 
+                    onClick={() => { setShowGlobalSearchModal(false); setGlobalSearchQuery(''); }}
+                    className="text-[11px] font-bold text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                  >
+                    ESC
+                  </button>
+                </div>
               </div>
 
-              {/* Search results body */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-[200px]">
+              {/* Category Filter Chips */}
+              <div className="px-4 py-2 bg-slate-900/90 border-b border-slate-800/80 flex items-center gap-1.5 overflow-x-auto text-xs no-scrollbar">
+                {[
+                  { id: 'all', label: 'All Results' },
+                  { id: 'pages', label: 'Pages & Menus' },
+                  { id: 'patients', label: 'Patients' },
+                  { id: 'doctors', label: 'Doctors' },
+                  { id: 'products', label: 'Products' },
+                  { id: 'orders', label: 'Orders' },
+                  { id: 'appointments', label: 'Appointments' }
+                ].map(cat => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setGlobalSearchCategory(cat.id as any)}
+                    className={`px-3 py-1 rounded-xl text-[11px] font-bold transition-all shrink-0 cursor-pointer ${
+                      globalSearchCategory === cat.id
+                        ? 'bg-primary text-white shadow-sm shadow-primary/40'
+                        : 'bg-slate-800/60 text-slate-400 hover:text-white hover:bg-slate-800'
+                    }`}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Results & Destination Body */}
+              <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-5 min-h-[220px]">
+                {/* When Search is Empty: Show Popular Quick Destinations */}
+                {!globalSearchQuery.trim() && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-primary" />
+                        Quick Jump & Core Portals
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-medium">Instant 0ms Jump</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {popularNavPages.map(page => (
+                        <div
+                          key={page.id}
+                          onClick={() => handleSelectNavPage(page)}
+                          className="p-3 bg-slate-800/40 hover:bg-slate-800 border border-slate-700/60 hover:border-primary/50 rounded-2xl cursor-pointer transition-all flex items-start gap-3 group"
+                        >
+                          <div className="p-2 rounded-xl bg-slate-800 border border-slate-700 text-primary group-hover:bg-primary group-hover:text-white transition-all shrink-0">
+                            {renderSearchNavIcon(page.icon, 'w-4 h-4')}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-1">
+                              <span className="text-xs font-bold text-white truncate group-hover:text-primary transition-colors">
+                                {page.title}
+                              </span>
+                              {page.badge && (
+                                <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-primary/20 text-primary border border-primary/30 shrink-0">
+                                  {page.badge}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-slate-400 line-clamp-1 mt-0.5">
+                              {page.subtitle}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Loading Indicator */}
                 {globalSearchLoading && (
-                  <div className="flex items-center justify-center py-10">
-                    <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+                  <div className="flex items-center justify-center py-10 space-x-2">
+                    <div className="animate-spin h-5 w-5 border-2 border-primary border-t-transparent rounded-full" />
+                    <span className="text-xs text-slate-400 font-semibold">Searching system...</span>
                   </div>
                 )}
 
-                {!globalSearchLoading && !globalSearchResults && (
-                  <div className="text-center py-12 text-slate-450 italic text-xs">
-                    Start typing to search across the entire health platform...
+                {/* 1. Matched Navigation & System Menus */}
+                {matchedNavPages.length > 0 && (globalSearchCategory === 'all' || globalSearchCategory === 'pages') && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-primary flex items-center gap-1.5">
+                        <Layers className="w-3.5 h-3.5" />
+                        System Pages & Menus ({matchedNavPages.length})
+                      </span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {matchedNavPages.map(page => (
+                        <div
+                          key={page.id}
+                          onClick={() => handleSelectNavPage(page)}
+                          className="p-3 bg-slate-800/50 hover:bg-slate-800 border border-slate-700/60 hover:border-primary/60 rounded-2xl cursor-pointer transition-all flex items-center justify-between group"
+                        >
+                          <div className="flex items-center gap-3 min-w-0 flex-1 pr-3">
+                            <div className="p-2 rounded-xl bg-slate-800 text-primary border border-slate-700 group-hover:bg-primary group-hover:text-white transition-all shrink-0">
+                              {renderSearchNavIcon(page.icon, 'w-4 h-4')}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-xs font-bold text-white group-hover:text-primary transition-colors">
+                                  {page.title}
+                                </span>
+                                <span className="text-[9px] font-semibold px-2 py-0.2 rounded-full bg-slate-700/80 text-slate-300 border border-slate-600">
+                                  {page.category}
+                                </span>
+                                {page.badge && (
+                                  <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-primary/20 text-primary border border-primary/30">
+                                    {page.badge}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                                {page.subtitle}
+                              </p>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-bold text-slate-400 group-hover:text-white px-2 py-1 rounded-lg bg-slate-800 group-hover:bg-primary transition-all flex items-center gap-1 shrink-0">
+                            Jump <ArrowUpRight className="w-3 h-3" />
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 
-                {globalSearchResults && (
-                  <div className="space-y-4">
-                    {/* Patients */}
-                    {globalSearchResults.patients?.length > 0 && (
-                      <div className="space-y-1.5">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block text-left">Patients</span>
-                        <div className="space-y-1">
-                          {globalSearchResults.patients.map((p: any) => (
-                            <div 
-                              key={p._id} 
-                              onClick={() => { setActiveView('users'); setSearchQuery(p.name); handleSearchUsers(); setShowGlobalSearchModal(false); }}
-                              className="p-2.5 hover:bg-slate-50 rounded-xl cursor-pointer flex justify-between items-center text-xs font-bold text-slate-700 border border-slate-100 bg-white"
-                            >
-                              <span>{p.name}</span>
-                              <span className="text-[10px] text-slate-400 font-semibold">{p.email}</span>
+                {/* 2. Matched Patients */}
+                {globalSearchResults?.patients?.length > 0 && (globalSearchCategory === 'all' || globalSearchCategory === 'patients') && (
+                  <div className="space-y-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                      <Users className="w-3.5 h-3.5" />
+                      Patients & Users ({globalSearchResults.patients.length})
+                    </span>
+                    <div className="space-y-1.5">
+                      {globalSearchResults.patients.map((p: any) => {
+                        const isSubscribed = Boolean(p.subscription?.planId || p.subscription?.status === 'active');
+                        return (
+                          <div 
+                            key={p._id} 
+                            onClick={() => handleSelectPatientFromSearch(p)}
+                            className="p-3 bg-slate-800/50 hover:bg-slate-800 border border-slate-700/60 hover:border-emerald-500/50 rounded-2xl cursor-pointer flex items-center justify-between text-xs font-bold transition-all group"
+                          >
+                            <div className="flex items-center gap-3 min-w-0 flex-1 pr-3">
+                              <div className="w-8 h-8 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center font-black text-xs shrink-0">
+                                {p.name ? p.name.charAt(0).toUpperCase() : 'U'}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-white group-hover:text-emerald-400 transition-colors">
+                                    {p.name || 'Unnamed User'}
+                                  </span>
+                                  {isSubscribed ? (
+                                    <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                      PREMIUM
+                                    </span>
+                                  ) : (
+                                    <span className="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-slate-700 text-slate-400">
+                                      FREE
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-[11px] text-slate-400 font-medium flex items-center gap-2 mt-0.5 truncate">
+                                  <span>{p.email}</span>
+                                  {(p.mobileNumber || p.mobile) && (
+                                    <>
+                                      <span>&bull;</span>
+                                      <span className="font-mono text-slate-300">{p.mobileNumber || p.mobile}</span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Doctors */}
-                    {globalSearchResults.doctors?.length > 0 && (
-                      <div className="space-y-1.5">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block text-left">Doctors</span>
-                        <div className="space-y-1">
-                          {globalSearchResults.doctors.map((d: any) => (
-                            <div 
-                              key={d._id} 
-                              onClick={() => { setActiveView('doctors-management'); setShowGlobalSearchModal(false); }}
-                              className="p-2.5 hover:bg-slate-50 rounded-xl cursor-pointer flex justify-between items-center text-xs font-bold text-slate-700 border border-slate-100 bg-white"
-                            >
-                              <span>Dr. {d.name}</span>
-                              <span className="text-[10px] text-primary font-bold">{d.specialty}</span>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <button
+                                onClick={(e) => handleFilterPatientInUsersTable(p, e)}
+                                title="Filter in Users Table"
+                                className="px-2 py-1 text-[10px] font-bold text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
+                              >
+                                Filter Table ↗
+                              </button>
+                              <span className="px-2.5 py-1 text-[10px] font-black text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg transition-all flex items-center gap-1 shadow-sm shadow-emerald-600/30">
+                                Health Dossier →
+                              </span>
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Products */}
-                    {globalSearchResults.products?.length > 0 && (
-                      <div className="space-y-1.5">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block text-left">Health Store Products</span>
-                        <div className="space-y-1">
-                          {globalSearchResults.products.map((pr: any) => (
-                            <div 
-                              key={pr._id} 
-                              onClick={() => { setActiveView('store-products'); setShowGlobalSearchModal(false); }}
-                              className="p-2.5 hover:bg-slate-50 rounded-xl cursor-pointer flex justify-between items-center text-xs font-bold text-slate-700 border border-slate-100 bg-white"
-                            >
-                              <span>{pr.name}</span>
-                              <span className="text-[10px] text-indigo-650 font-bold">Base: Rs.{pr.basePrice}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Orders */}
-                    {globalSearchResults.orders?.length > 0 && (
-                      <div className="space-y-1.5">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block text-left">Store Orders</span>
-                        <div className="space-y-1">
-                          {globalSearchResults.orders.map((o: any) => (
-                            <div 
-                              key={o._id} 
-                              onClick={() => { setActiveView('store-orders'); setShowGlobalSearchModal(false); }}
-                              className="p-2.5 hover:bg-slate-50 rounded-xl cursor-pointer flex justify-between items-center text-xs font-bold text-slate-700 border border-slate-100 bg-white"
-                            >
-                              <span>ID: {o.orderId}</span>
-                              <span className={`text-[9px] px-2 py-0.5 rounded border uppercase ${o.status === 'delivered' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>{o.status}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Appointments */}
-                    {globalSearchResults.appointments?.length > 0 && (
-                      <div className="space-y-1.5">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block text-left">Appointments</span>
-                        <div className="space-y-1">
-                          {globalSearchResults.appointments.map((ap: any) => (
-                            <div 
-                              key={ap._id} 
-                              onClick={() => { setActiveView('appointments-upcoming'); setShowGlobalSearchModal(false); }}
-                              className="p-2.5 hover:bg-slate-50 rounded-xl cursor-pointer flex justify-between items-center text-xs font-bold text-slate-700 border border-slate-100 bg-white"
-                            >
-                              <span>{ap.userId?.name} with Dr. {ap.doctorId?.name}</span>
-                              <span className="text-[10px] text-slate-400 font-semibold">{ap.date}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Empty search results fallback */}
-                    {globalSearchResults.patients?.length === 0 &&
-                     globalSearchResults.doctors?.length === 0 &&
-                     globalSearchResults.vendors?.length === 0 &&
-                     globalSearchResults.products?.length === 0 &&
-                     globalSearchResults.appointments?.length === 0 &&
-                     globalSearchResults.orders?.length === 0 && (
-                      <div className="text-center py-10 text-xs italic text-slate-400">
-                        No matches found for "{globalSearchQuery}"
-                      </div>
-                    )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
+
+                {/* 3. Matched Doctors */}
+                {globalSearchResults?.doctors?.length > 0 && (globalSearchCategory === 'all' || globalSearchCategory === 'doctors') && (
+                  <div className="space-y-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
+                      <Stethoscope className="w-3.5 h-3.5" />
+                      Doctors & Specialists ({globalSearchResults.doctors.length})
+                    </span>
+                    <div className="space-y-1.5">
+                      {globalSearchResults.doctors.map((d: any) => (
+                        <div 
+                          key={d._id} 
+                          onClick={() => handleSelectDoctorFromSearch(d)}
+                          className="p-3 bg-slate-800/50 hover:bg-slate-800 border border-slate-700/60 hover:border-indigo-500/50 rounded-2xl cursor-pointer flex justify-between items-center text-xs font-bold transition-all group"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-xs shrink-0">
+                              🩺
+                            </div>
+                            <div>
+                              <span className="text-white group-hover:text-indigo-400 transition-colors">Dr. {d.name}</span>
+                              <p className="text-[11px] text-slate-400">{d.email}</p>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-bold text-indigo-300 px-2.5 py-1 rounded-lg bg-indigo-500/20 border border-indigo-500/30">
+                            {d.specialty || 'Specialist'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 4. Matched Products */}
+                {globalSearchResults?.products?.length > 0 && (globalSearchCategory === 'all' || globalSearchCategory === 'products') && (
+                  <div className="space-y-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                      <Package className="w-3.5 h-3.5" />
+                      Health Store Products ({globalSearchResults.products.length})
+                    </span>
+                    <div className="space-y-1.5">
+                      {globalSearchResults.products.map((pr: any) => (
+                        <div 
+                          key={pr._id} 
+                          onClick={() => handleSelectProductFromSearch(pr)}
+                          className="p-3 bg-slate-800/50 hover:bg-slate-800 border border-slate-700/60 hover:border-amber-500/50 rounded-2xl cursor-pointer flex justify-between items-center text-xs font-bold transition-all group"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                              <Package className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <span className="text-white group-hover:text-amber-400 transition-colors">{pr.name}</span>
+                              <p className="text-[11px] text-slate-400">{pr.category || 'Health Store'}</p>
+                            </div>
+                          </div>
+                          <span className="text-[10px] text-amber-300 font-mono font-black px-2.5 py-1 rounded-lg bg-amber-500/20 border border-amber-500/30">
+                            ₹{pr.basePrice || pr.price || 0}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 5. Matched Orders */}
+                {globalSearchResults?.orders?.length > 0 && (globalSearchCategory === 'all' || globalSearchCategory === 'orders') && (
+                  <div className="space-y-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
+                      <ShoppingCart className="w-3.5 h-3.5" />
+                      Store Orders ({globalSearchResults.orders.length})
+                    </span>
+                    <div className="space-y-1.5">
+                      {globalSearchResults.orders.map((o: any) => (
+                        <div 
+                          key={o._id} 
+                          onClick={() => handleSelectOrderFromSearch(o)}
+                          className="p-3 bg-slate-800/50 hover:bg-slate-800 border border-slate-700/60 hover:border-cyan-500/50 rounded-2xl cursor-pointer flex justify-between items-center text-xs font-bold transition-all group"
+                        >
+                          <div>
+                            <span className="text-white group-hover:text-cyan-400 transition-colors">Order #{o.orderId}</span>
+                            <p className="text-[11px] text-slate-400">Total: ₹{o.totalAmount || 0}</p>
+                          </div>
+                          <span className={`text-[9px] px-2.5 py-1 rounded-lg uppercase font-black border ${
+                            o.status === 'delivered' 
+                              ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' 
+                              : 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                          }`}>
+                            {o.status}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 6. Matched Appointments */}
+                {globalSearchResults?.appointments?.length > 0 && (globalSearchCategory === 'all' || globalSearchCategory === 'appointments') && (
+                  <div className="space-y-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-rose-400 flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5" />
+                      Appointments ({globalSearchResults.appointments.length})
+                    </span>
+                    <div className="space-y-1.5">
+                      {globalSearchResults.appointments.map((ap: any) => (
+                        <div 
+                          key={ap._id} 
+                          onClick={() => handleSelectAppointmentFromSearch(ap)}
+                          className="p-3 bg-slate-800/50 hover:bg-slate-800 border border-slate-700/60 hover:border-rose-500/50 rounded-2xl cursor-pointer flex justify-between items-center text-xs font-bold transition-all group"
+                        >
+                          <div>
+                            <span className="text-white group-hover:text-rose-400 transition-colors">
+                              {ap.userId?.name || 'Patient'} with Dr. {ap.doctorId?.name || 'Specialist'}
+                            </span>
+                            <p className="text-[11px] text-slate-400">{ap.reason || 'Consultation'}</p>
+                          </div>
+                          <span className="text-[10px] text-rose-300 font-mono px-2 py-1 rounded-lg bg-rose-500/20 border border-rose-500/30">
+                            {ap.date}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Fallback when search has no matches anywhere */}
+                {globalSearchQuery.trim() && 
+                 matchedNavPages.length === 0 && 
+                 (!globalSearchResults || (
+                   (!globalSearchResults.patients || globalSearchResults.patients.length === 0) &&
+                   (!globalSearchResults.doctors || globalSearchResults.doctors.length === 0) &&
+                   (!globalSearchResults.vendors || globalSearchResults.vendors.length === 0) &&
+                   (!globalSearchResults.products || globalSearchResults.products.length === 0) &&
+                   (!globalSearchResults.appointments || globalSearchResults.appointments.length === 0) &&
+                   (!globalSearchResults.orders || globalSearchResults.orders.length === 0)
+                 )) && (
+                  <div className="text-center py-12 space-y-2">
+                    <Compass className="w-8 h-8 text-slate-600 mx-auto" />
+                    <p className="text-xs font-bold text-slate-300">
+                      No matches found for "{globalSearchQuery}"
+                    </p>
+                    <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+                      Try searching for a page name like <span className="text-primary font-semibold">"app health"</span>, <span className="text-primary font-semibold">"revenue"</span>, or search users by name or phone.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Futuristic Footer Bar */}
+              <div className="p-3 bg-slate-950/90 border-t border-slate-800 text-[11px] text-slate-400 flex items-center justify-between flex-wrap gap-2 px-5">
+                <div className="flex items-center gap-3">
+                  <span className="flex items-center gap-1">
+                    <span className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[9px] border border-slate-700">↵</span> Select
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[9px] border border-slate-700">ESC</span> Close
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 text-primary text-[10px] font-bold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Mito Reboot Platform Command Intelligence
+                </div>
               </div>
             </div>
           </div>

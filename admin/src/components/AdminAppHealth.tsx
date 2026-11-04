@@ -179,6 +179,10 @@ export const AdminAppHealth: React.FC<AdminAppHealthProps> = ({ apiUrl, token })
   // Fetch data based on active tab and filters
   useEffect(() => {
     fetchCurrentTabData();
+    // Proactively fetch version monitoring rules on initial load so header badge is dynamic
+    if (!versionData) {
+      fetchVersionMonitoring().catch(() => {});
+    }
   }, [activeTab, platformFilter, timeRangeDays]);
 
   const fetchCurrentTabData = async () => {
@@ -625,7 +629,7 @@ export const AdminAppHealth: React.FC<AdminAppHealthProps> = ({ apiUrl, token })
                   activeTab === 'versions' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
                 }`}
               >
-                v5.26.0
+                v{versionData?.android?.rules?.latestReleasedVersion || versionData?.ios?.rules?.latestReleasedVersion || '6.1.9'}
               </span>
             </button>
 
@@ -1303,8 +1307,6 @@ export const AdminAppHealth: React.FC<AdminAppHealthProps> = ({ apiUrl, token })
                           <td className="py-2.5 px-3">
                             {u.lastAppVersion ? (
                               <span className="font-mono font-extrabold text-slate-800">v{u.lastAppVersion}</span>
-                            ) : u.hasLiveSession ? (
-                              <span className="font-mono font-extrabold text-slate-800">v5.26.0</span>
                             ) : (
                               <span className="text-slate-400 italic">—</span>
                             )}
@@ -1509,7 +1511,7 @@ export const AdminAppHealth: React.FC<AdminAppHealthProps> = ({ apiUrl, token })
                           {isFixedInCurrent ? (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200">
                               <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
-                              Fixed in v5.26.0
+                              Fixed in v{versionData?.ios?.rules?.latestReleasedVersion || '6.1.9'}
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">
@@ -1608,10 +1610,10 @@ export const AdminAppHealth: React.FC<AdminAppHealthProps> = ({ apiUrl, token })
                     <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
                     <div>
                       <strong className="block font-black text-emerald-900">
-                        Fixed in iOS Current Production Release (v5.26.0 / Build 92)
+                        Fixed in iOS Current Production Release (v{versionData?.ios?.rules?.latestReleasedVersion || '6.1.9'} / Build 119)
                       </strong>
                       <span className="text-emerald-800/90 mt-0.5 block leading-relaxed">
-                        This SIGABRT (Abort trap 6) crash occurred strictly on <strong>iOS 5.22.0</strong> in background thread 4 when legacy HealthKit observation code delivered unexpected sample formats. In the current production release (5.26.0), Capacitor 6 handles CGM syncing via modern authenticated API endpoints with full safety checks. App Store Connect confirms <strong>0 crashes</strong> in v5.26.0.
+                        This SIGABRT (Abort trap 6) crash occurred strictly on <strong>iOS 5.22.0</strong> in background thread 4 when legacy HealthKit observation code delivered unexpected sample formats. In the current production release (v{versionData?.ios?.rules?.latestReleasedVersion || '6.1.9'}), Capacitor 6 handles CGM syncing via modern authenticated API endpoints with full safety checks. App Store Connect confirms <strong>0 crashes</strong> in v{versionData?.ios?.rules?.latestReleasedVersion || '6.1.9'}.
                       </span>
                     </div>
                   </div>

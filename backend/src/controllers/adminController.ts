@@ -1520,14 +1520,15 @@ export class AdminController {
       if (!q) {
         return res.status(200).json({ patients: [], doctors: [], vendors: [], products: [], appointments: [], orders: [] });
       }
-      const regex = new RegExp(q, 'i');
+      const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(escaped, 'i');
       const [patients, doctors, vendors, products, appointments, orders] = await Promise.all([
-        User.find({ $or: [{ name: regex }, { email: regex }] }).limit(5).lean(),
-        Doctor.find({ $or: [{ name: regex }, { specialty: regex }] }).limit(5).lean(),
-        Vendor.find({ $or: [{ name: regex }, { email: regex }, { businessName: regex }] }).limit(5).lean(),
-        ShopProduct.find({ name: regex }).limit(5).lean(),
-        Appointment.find({ reason: regex }).populate('userId', 'name').populate('doctorId', 'name').limit(5).lean(),
-        ShopOrder.find({ $or: [{ orderId: regex }, { paymentStatus: regex }, { status: regex }] }).limit(5).lean(),
+        User.find({ $or: [{ name: regex }, { email: regex }, { mobileNumber: regex }, { mobile: regex }] }).select('_id name email mobileNumber subscription role createdAt').limit(8).lean(),
+        Doctor.find({ $or: [{ name: regex }, { specialty: regex }, { email: regex }] }).limit(8).lean(),
+        Vendor.find({ $or: [{ name: regex }, { email: regex }, { businessName: regex }] }).limit(8).lean(),
+        ShopProduct.find({ $or: [{ name: regex }, { category: regex }] }).limit(8).lean(),
+        Appointment.find({ $or: [{ reason: regex }, { status: regex }] }).populate('userId', 'name email mobileNumber').populate('doctorId', 'name specialty').limit(8).lean(),
+        ShopOrder.find({ $or: [{ orderId: regex }, { paymentStatus: regex }, { status: regex }] }).limit(8).lean(),
       ]);
       return res.status(200).json({ patients, doctors, vendors, products, appointments, orders });
     } catch (err: any) {
