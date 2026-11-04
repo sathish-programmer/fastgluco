@@ -35,6 +35,9 @@ export interface IAppOtpTelemetry extends Document {
   userAgent?: string;
   fallbackReason?: string;
   failureCategory?: string;
+  verifiedVia?: string; // 'FIREBASE_PHONE' | 'FAST2SMS_SMS' | 'BREVO_EMAIL' | 'MOCK'
+  apnsStatus?: string; // 'DELIVERED' | 'FAILED' | 'FALLBACK_TO_RECAPTCHA'
+  recaptchaStatus?: string; // 'SUCCESS' | 'NOT_LINKED' | 'FAILED' | 'SKIPPED'
 
   createdAt: Date;
   updatedAt?: Date;
@@ -75,7 +78,10 @@ const appOtpTelemetrySchema = new Schema<IAppOtpTelemetry>(
     ipAddress: { type: String, default: null },
     userAgent: { type: String, default: null },
     fallbackReason: { type: String, default: null },
-    failureCategory: { type: String, default: null }
+    failureCategory: { type: String, default: null },
+    verifiedVia: { type: String, default: null },
+    apnsStatus: { type: String, default: null },
+    recaptchaStatus: { type: String, default: null }
   },
   {
     timestamps: true

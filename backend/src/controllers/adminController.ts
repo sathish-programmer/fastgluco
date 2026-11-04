@@ -1821,13 +1821,28 @@ export class AdminController {
           }
         }
 
+        const effectiveStatus = isExpired ? 'EXPIRED' : (log.verificationStatus || 'PENDING');
+        let resolvedVerifiedVia = log.verifiedVia;
+        if (!resolvedVerifiedVia && effectiveStatus === 'VERIFIED') {
+          if (log.fallbackReason) {
+            resolvedVerifiedVia = 'FAST2SMS_FALLBACK';
+          } else if (log.channel === 'firebase') {
+            resolvedVerifiedVia = 'FIREBASE_PHONE';
+          } else {
+            resolvedVerifiedVia = 'BACKEND_OTP';
+          }
+        }
+
         return {
           ...log,
           emailProvider: resolvedEmailProvider,
           emailStatus: resolvedEmailStatus,
           emailGatewayResponse: resolvedEmailGatewayResponse,
           smsGatewayResponse: resolvedSmsGatewayResponse,
-          effectiveVerificationStatus: isExpired ? 'EXPIRED' : (log.verificationStatus || 'PENDING')
+          effectiveVerificationStatus: effectiveStatus,
+          verifiedVia: resolvedVerifiedVia,
+          apnsStatus: log.apnsStatus || (log.platform === 'ios' && log.fallbackReason ? 'TIMEOUT_OR_UNAVAILABLE' : null),
+          recaptchaStatus: log.recaptchaStatus || (log.fallbackReason === 'FIREBASE_VERIFICATION_FAILED' ? 'SDK_NOT_LINKED_OR_FAILED' : null)
         };
       });
 

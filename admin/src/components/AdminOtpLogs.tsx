@@ -57,6 +57,9 @@ interface OtpLogItem {
   userAgent?: string | null;
   fallbackReason?: string | null;
   failureCategory?: string | null;
+  verifiedVia?: string | null;
+  apnsStatus?: string | null;
+  recaptchaStatus?: string | null;
 }
 
 interface OtpLogResponse {
@@ -367,6 +370,39 @@ export const AdminOtpLogs: React.FC<AdminOtpLogsProps> = ({ apiUrl, token }) => 
           </span>
         );
     }
+  };
+
+  const getVerifiedViaBadge = (via?: string | null, fallbackReason?: string | null) => {
+    if (via === 'FIREBASE_PHONE') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">
+          <Smartphone className="w-3 h-3 text-emerald-600" />
+          via Firebase Native
+        </span>
+      );
+    }
+    if (via === 'FAST2SMS_FALLBACK' || fallbackReason) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 text-[10px] font-bold">
+          <Zap className="w-3 h-3 text-purple-600" />
+          via Fast2SMS Fallback
+        </span>
+      );
+    }
+    if (via === 'EMAIL_OTP') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold">
+          <Mail className="w-3 h-3 text-blue-600" />
+          via Email OTP
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 text-[10px] font-bold">
+        <Check className="w-3 h-3 text-slate-600" />
+        via Backend OTP
+      </span>
+    );
   };
 
   return (
@@ -836,12 +872,19 @@ export const AdminOtpLogs: React.FC<AdminOtpLogsProps> = ({ apiUrl, token }) => 
 
                       {/* Verification Status */}
                       <td className="py-3.5 px-4">
-                        {getVerificationBadge(effectiveStatus, log.durationMs)}
-                        {log.attemptsCount && log.attemptsCount > 0 ? (
-                          <div className="text-[10px] text-slate-400 mt-0.5">
-                            Attempts: {log.attemptsCount}
-                          </div>
-                        ) : null}
+                        <div className="space-y-1">
+                          {getVerificationBadge(effectiveStatus, log.durationMs)}
+                          {effectiveStatus === 'VERIFIED' && (
+                            <div>
+                              {getVerifiedViaBadge(log.verifiedVia, log.fallbackReason)}
+                            </div>
+                          )}
+                          {log.attemptsCount && log.attemptsCount > 0 ? (
+                            <div className="text-[10px] text-slate-400">
+                              Attempts: {log.attemptsCount}
+                            </div>
+                          ) : null}
+                        </div>
                       </td>
 
                       {/* Device & Client */}
@@ -1037,14 +1080,35 @@ export const AdminOtpLogs: React.FC<AdminOtpLogsProps> = ({ apiUrl, token }) => 
                 </div>
               </div>
 
-              {/* Verification Lifecycle */}
+              {/* Verification Lifecycle & Succeeded Channel */}
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
-                <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Authentication Lifecycle</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">
+                    Authentication Lifecycle &amp; Succeeded Channel
+                  </span>
+                  {selectedLog.effectiveVerificationStatus === 'VERIFIED' && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      Backend Verified
+                    </span>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div>
                     <span className="text-slate-500 block text-[11px]">Lifecycle Status</span>
                     <div className="mt-1">
                       {getVerificationBadge(selectedLog.effectiveVerificationStatus || selectedLog.verificationStatus, selectedLog.durationMs)}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-[11px]">Succeeded Channel</span>
+                    <div className="mt-1">
+                      {selectedLog.effectiveVerificationStatus === 'VERIFIED' ? (
+                        getVerifiedViaBadge(selectedLog.verifiedVia, selectedLog.fallbackReason)
+                      ) : (
+                        <span className="text-slate-400 text-xs italic">Awaiting Verification</span>
+                      )}
                     </div>
                   </div>
                   <div>
@@ -1059,11 +1123,99 @@ export const AdminOtpLogs: React.FC<AdminOtpLogsProps> = ({ apiUrl, token }) => 
                       {selectedLog.verifiedAt ? new Date(selectedLog.verifiedAt).toLocaleString() : 'Pending'}
                     </span>
                   </div>
-                  <div>
-                    <span className="text-slate-500 block text-[11px]">Verification Latency</span>
-                    <span className="font-bold text-slate-900 block mt-1">
-                      {selectedLog.durationMs ? `${Math.round(selectedLog.durationMs / 1000)} seconds` : 'N/A'}
+                </div>
+
+                {selectedLog.effectiveVerificationStatus === 'VERIFIED' && (
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 text-[11px] text-slate-600 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>
+                      <strong>Verification Resolution:</strong> Succeeded via{' '}
+                      <span className="font-bold text-slate-900">
+                        {selectedLog.verifiedVia === 'FIREBASE_PHONE'
+                          ? 'Firebase Native Phone Auth'
+                          : (selectedLog.fallbackReason ? 'Fast2SMS SMS Fallback OTP' : 'Backend OTP')}
+                      </span>{' '}
+                      and successfully validated by the backend authentication server.
                     </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Verification Pipeline: Initial Attempt vs Fallback */}
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+                <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">
+                  Verification Pipeline &amp; Channel Disambiguation
+                </span>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {/* Step 1: Initial Attempt */}
+                  <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-black uppercase text-slate-400 tracking-wider">1. Initial Attempt</span>
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">
+                        {selectedLog.platform === 'ios' ? 'iOS Firebase' : selectedLog.platform === 'android' ? 'Android Firebase' : 'Web'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block uppercase font-bold">Silent APNs:</span>
+                      <span className="text-[11px] font-medium text-slate-700">
+                        {selectedLog.apnsStatus || (selectedLog.platform === 'ios' && selectedLog.fallbackReason ? 'Timed out / Unavailable' : 'Token Active')}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block uppercase font-bold">reCAPTCHA Enterprise:</span>
+                      <span className={`text-[11px] font-bold ${selectedLog.fallbackReason === 'FIREBASE_VERIFICATION_FAILED' ? 'text-amber-700' : 'text-slate-700'}`}>
+                        {selectedLog.recaptchaStatus || (selectedLog.fallbackReason === 'FIREBASE_VERIFICATION_FAILED' ? 'SDK not linked in build (Fixed in v6.1.8+)' : 'Verified / Not Needed')}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Step 2: Fallback Route */}
+                  <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-black uppercase text-slate-400 tracking-wider">2. Fallback Route</span>
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${selectedLog.fallbackReason ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-500'}`}>
+                        {selectedLog.fallbackReason ? 'Triggered' : 'Not Needed'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block uppercase font-bold">Trigger Reason:</span>
+                      <span className="text-[11px] font-bold text-slate-800 truncate block" title={selectedLog.fallbackReason || 'None'}>
+                        {selectedLog.fallbackReason || 'Direct Authentication Succeeded'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block uppercase font-bold">Dispatched Providers:</span>
+                      <span className="text-[11px] font-medium text-slate-700">
+                        {selectedLog.fallbackReason ? 'Fast2SMS (SMS) + Brevo (Email)' : 'Direct Firebase Channel'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Step 3: Final Authentication */}
+                  <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-black uppercase text-slate-400 tracking-wider">3. Succeeded Channel</span>
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${selectedLog.effectiveVerificationStatus === 'VERIFIED' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}`}>
+                        {selectedLog.effectiveVerificationStatus === 'VERIFIED' ? 'Verified' : 'Pending'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block uppercase font-bold">Winning Channel:</span>
+                      <span className="text-[11px] font-black text-slate-900 block mt-0.5">
+                        {selectedLog.effectiveVerificationStatus === 'VERIFIED' ? (
+                          selectedLog.verifiedVia === 'FIREBASE_PHONE'
+                            ? 'Firebase Native Phone Auth'
+                            : (selectedLog.fallbackReason ? 'Fast2SMS SMS Fallback OTP' : 'Backend OTP')
+                        ) : 'Not Yet Verified'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block uppercase font-bold">Backend Confirmation:</span>
+                      <span className="text-[11px] font-medium text-emerald-700">
+                        {selectedLog.effectiveVerificationStatus === 'VERIFIED' ? '✅ Confirmed by API' : '⏳ Pending confirmation'}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>

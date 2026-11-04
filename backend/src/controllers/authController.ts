@@ -579,6 +579,7 @@ export class AuthController {
         pendingTelemetry.verificationStatus = 'VERIFIED';
         pendingTelemetry.verifiedAt = new Date();
         pendingTelemetry.durationMs = timeTakenMs;
+        pendingTelemetry.verifiedVia = pendingTelemetry.fallbackReason ? 'FAST2SMS_FALLBACK' : 'BACKEND_OTP';
         if (rawEmail && !pendingTelemetry.email) pendingTelemetry.email = rawEmail;
         if (cleanPhone && !pendingTelemetry.phoneNumber) pendingTelemetry.phoneNumber = cleanPhone;
         await pendingTelemetry.save().catch(() => {});
@@ -748,6 +749,7 @@ export class AuthController {
           pendingTelemetry.durationMs = timeTakenMs;
           pendingTelemetry.smsProvider = 'firebase';
           pendingTelemetry.smsStatus = 'DELIVERED';
+          pendingTelemetry.verifiedVia = 'FIREBASE_PHONE';
           pendingTelemetry.smsGatewayResponse = `Firebase Phone Auth token verified (UID: ${firebaseUid})`;
           if (cleanPhone && !pendingTelemetry.phoneNumber) pendingTelemetry.phoneNumber = cleanPhone;
           if (cleanEmail && !pendingTelemetry.email) pendingTelemetry.email = cleanEmail;
