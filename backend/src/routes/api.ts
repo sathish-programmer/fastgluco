@@ -281,6 +281,10 @@ By continuing to use this application, you confirm that you have read, understoo
 // Public plans listing
 router.get('/subscriptions/plans', SubscriptionController.listActivePlans);
 
+// Invoice download (accessible by both the patient/User and Administrators/Doctors)
+router.get('/subscriptions/invoices/:id/download', authenticateToken, requireRole(['User', 'SuperAdmin', 'Admin', 'Editor', 'Doctor']), SubscriptionController.downloadInvoicePdf);
+router.get('/admin/invoices/:id/download', authenticateToken, requireRole(['SuperAdmin', 'Admin', 'Editor', 'Doctor']), SubscriptionController.downloadInvoicePdf);
+
 // User-protected subscription routes
 router.use('/subscriptions', authenticateToken, requireRole(['User']));
 router.get('/subscriptions/current', SubscriptionController.getCurrentSubscription);
@@ -291,7 +295,6 @@ router.post('/subscriptions/verify-payment', SubscriptionController.verifyPaymen
 router.post('/subscriptions/mock-verify', SubscriptionController.verifyMockPayment);
 router.post('/subscriptions/cancel', SubscriptionController.cancelSubscription);
 router.post('/subscriptions/reactivate', SubscriptionController.reactivateSubscription);
-router.get('/subscriptions/invoices/:id/download', SubscriptionController.downloadInvoicePdf);
 
 // ==========================================
 // 2. PATIENT PROTECTED ENDPOINTS (JWT required)

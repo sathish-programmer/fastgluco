@@ -1263,6 +1263,34 @@ const AdminPanelContent: React.FC = () => {
     }
   };
 
+  const handleDownloadInvoicePdf = async (invId: string, invoiceNumber?: string) => {
+    try {
+      const endpoint = `${apiUrl.endsWith('/api') ? apiUrl : apiUrl + '/api'}/subscriptions/invoices/${invId}/download?token=${token}`;
+      const res = await fetch(endpoint, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!res.ok) {
+        const errorJson = await res.json().catch(() => ({}));
+        alert(errorJson.message || `Failed to download invoice (HTTP ${res.status}).`);
+        return;
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Invoice-${invoiceNumber || invId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      console.error('Invoice download error:', err);
+      window.open(`${apiUrl.endsWith('/api') ? apiUrl : apiUrl + '/api'}/subscriptions/invoices/${invId}/download?token=${token}`, '_blank');
+    }
+  };
+
   const fetchFoods = async (pageNumber = 1) => {
     try {
       const res = await fetch(`${apiUrl}/admin/food-library?q=${encodeURIComponent(searchQuery)}&page=${pageNumber}`, {
@@ -9247,15 +9275,14 @@ const AdminPanelContent: React.FC = () => {
                                   </div>
                                 </div>
                                 {latestInv && (
-                                  <a
-                                    href={`${apiUrl.endsWith('/api') ? apiUrl : apiUrl + '/api'}/subscriptions/invoices/${latestInv._id}/download?token=${token}`}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDownloadInvoicePdf(latestInv._id, latestInv.invoiceNumber)}
+                                    className="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 self-start sm:self-auto cursor-pointer shadow-xs active:scale-95"
                                   >
                                     <Download className="w-3.5 h-3.5" />
                                     <span>Download PDF Invoice</span>
-                                  </a>
+                                  </button>
                                 )}
                               </div>
 
@@ -9440,15 +9467,14 @@ const AdminPanelContent: React.FC = () => {
                                         ₹{inv.totalAmount.toFixed(2)}
                                       </td>
                                       <td className="px-4 py-3 text-center">
-                                        <a
-                                          href={`${apiUrl.endsWith('/api') ? apiUrl : apiUrl + '/api'}/subscriptions/invoices/${inv._id}/download?token=${token}`}
-                                          target="_blank"
-                                          rel="noreferrer"
-                                          className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-primary hover:text-white text-slate-700 rounded-lg text-[11px] font-bold transition-all cursor-pointer"
+                                        <button
+                                          type="button"
+                                          onClick={() => handleDownloadInvoicePdf(inv._id, inv.invoiceNumber)}
+                                          className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-primary hover:text-white text-slate-700 rounded-lg text-[11px] font-bold transition-all cursor-pointer shadow-2xs active:scale-95"
                                         >
                                           <Download className="w-3 h-3" />
                                           <span>PDF</span>
-                                        </a>
+                                        </button>
                                       </td>
                                     </tr>
                                   ))
