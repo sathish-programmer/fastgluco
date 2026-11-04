@@ -15,7 +15,7 @@ export class AppHealthController {
    * Helper: Compare semver strings (e.g. '5.26.0' vs '5.20.0')
    * Returns: 1 if v1 > v2, -1 if v1 < v2, 0 if equal
    */
-  private static compareVersions(v1: string = '0.0.0', v2: string = '0.0.0'): number {
+  public static compareVersions(v1: string = '0.0.0', v2: string = '0.0.0'): number {
     const clean1 = v1.replace(/^v/, '').split('.').map(Number);
     const clean2 = v2.replace(/^v/, '').split('.').map(Number);
     for (let i = 0; i < Math.max(clean1.length, clean2.length); i++) {

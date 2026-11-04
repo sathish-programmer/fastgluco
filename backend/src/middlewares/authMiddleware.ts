@@ -12,6 +12,8 @@ export interface AuthRequest extends Request {
 
 import { User } from '../models/User';
 import { AppTelemetrySession } from '../models/AppTelemetrySession';
+import { AppHealthSyncService } from '../services/appHealthSyncService';
+import { AppHealthController } from '../controllers/appHealthController';
 
 // Throttling map to update DB at most once every 5 minutes per user/device
 const userActivityThrottle = new Map<string, number>();
@@ -44,13 +46,40 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
     // Immediate check if user has been suspended or blocked by administrator
     if (req.user && req.user.role === 'User') {
       try {
-        const dbUser = await User.findById(req.user.id).select('isBlocked isDeleted').lean();
+        const dbUser = await User.findById(req.user.id).select('isBlocked isDeleted lastAppVersion lastPlatform').lean();
         if (!dbUser || dbUser.isBlocked || dbUser.isDeleted) {
           return res.status(403).json({
             message: 'Your account has been suspended by an administrator. Please contact support.',
             isBlocked: true,
             isSuspended: true
           });
+        }
+
+        // Enforce Minimum Version Rule for mobile clients when forceUpdate is enabled
+        const clientPlatformHeader = req.headers['x-app-platform'] as string;
+        const clientVersionHeader = (req.headers['x-app-version'] as string) || (req.query.version as string);
+        const ua = (req.headers['user-agent'] as string) || '';
+        const detectedPlatform: 'android' | 'ios' | 'web' =
+          ['android', 'ios'].includes(clientPlatformHeader) ? (clientPlatformHeader as any)
+          : dbUser.lastPlatform ? dbUser.lastPlatform
+          : /iPad|iPhone|iPod/i.test(ua) ? 'ios'
+          : /android/i.test(ua) ? 'android'
+          : 'web';
+
+        const detectedVersion = clientVersionHeader || dbUser.lastAppVersion;
+
+        if (detectedPlatform !== 'web' && detectedVersion) {
+          const config = await AppHealthSyncService.getOrCreateConfig();
+          const rules = detectedPlatform === 'ios' ? config.iosVersionRules : config.androidVersionRules;
+          if (rules?.forceUpdate && rules.minSupportedVersion && AppHealthController.compareVersions(rules.minSupportedVersion, detectedVersion) > 0) {
+            return res.status(403).json({
+              message: `App Update Required: Your app version (${detectedVersion}) is outdated. Please update to version ${rules.minSupportedVersion} or higher from the ${detectedPlatform === 'ios' ? 'Apple App Store' : 'Google Play Store'} to continue.`,
+              isUpdateRequired: true,
+              minSupportedVersion: rules.minSupportedVersion,
+              latestVersion: rules.latestReleasedVersion,
+              updateUrl: rules.updateUrl
+            });
+          }
         }
       } catch (dbErr) {
         // Safe fallback in case of transient DB connectivity issue

@@ -131,3 +131,4 @@ export const ForceUpdateModal: React.FC<ForceUpdateModalProps> = ({
     </AnimatePresence>
   );
 };
+

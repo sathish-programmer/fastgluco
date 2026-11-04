@@ -15,6 +15,8 @@ import { PaymentGatewayConfig } from '../models/PaymentGatewayConfig';
 import { AppOtpTelemetry, OtpChannel, OtpEventStatus } from '../models/AppOtpTelemetry';
 import { UserSubscription } from '../models/UserSubscription';
 import { SubscriptionPlan } from '../models/SubscriptionPlan';
+import { AppHealthSyncService } from '../services/appHealthSyncService';
+import { AppHealthController } from './appHealthController';
 
 const maskPhoneOrEmail = (identifier: string): string => {
   if (!identifier) return '***';
@@ -38,6 +40,26 @@ const extractTelemetryMeta = (req: Request) => {
     osVersion,
     deviceModel
   };
+};
+
+const checkForceUpdate = async (req: Request): Promise<{ isBlocked: boolean; message?: string } | null> => {
+  try {
+    const meta = extractTelemetryMeta(req);
+    if (meta.platform === 'web') return null;
+
+    const config = await AppHealthSyncService.getOrCreateConfig();
+    const rules = meta.platform === 'ios' ? config.iosVersionRules : config.androidVersionRules;
+
+    if (rules?.forceUpdate && rules.minSupportedVersion && meta.appVersion && AppHealthController.compareVersions(rules.minSupportedVersion, meta.appVersion) > 0) {
+      return {
+        isBlocked: true,
+        message: `App Update Required: Your app version (${meta.appVersion}) is outdated. Please update to version ${rules.minSupportedVersion} or higher from the ${meta.platform === 'ios' ? 'Apple App Store' : 'Google Play Store'} to continue.`
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
 };
 
 interface SafeOtpTelemetryDetails {
@@ -136,6 +158,16 @@ export class AuthController {
       if (!mobileNumber || !email) {
         recordSafeOtpTelemetry(req, 'REQUEST', 'both', 'FAILED', 'unknown', 'MISSING_REQUIRED_FIELDS');
         return res.status(400).json({ message: 'Mobile number and email are required.' });
+      }
+
+      // Check minimum app version enforcement
+      const updateCheck = await checkForceUpdate(req);
+      if (updateCheck?.isBlocked) {
+        return res.status(403).json({
+          success: false,
+          message: updateCheck.message,
+          isUpdateRequired: true
+        });
       }
 
       // Normalize phone number to E.164 (+91 for 10-digit Indian numbers)
@@ -433,6 +465,16 @@ export class AuthController {
         return res.status(400).json({ message: 'Mobile number, email and OTP are required.' });
       }
 
+      // Check minimum app version enforcement
+      const updateCheck = await checkForceUpdate(req);
+      if (updateCheck?.isBlocked) {
+        return res.status(403).json({
+          success: false,
+          message: updateCheck.message,
+          isUpdateRequired: true
+        });
+      }
+
       const cleanPhone = SMSService.normalizePhoneNumber(mobileNumber);
 
       // APPLE APP STORE REVIEWER BYPASS
@@ -659,6 +701,16 @@ export class AuthController {
       const { idToken, email, mobileNumber } = req.body;
       if (!idToken) {
         return res.status(400).json({ message: 'Firebase ID Token is required.' });
+      }
+
+      // Check minimum app version enforcement
+      const updateCheck = await checkForceUpdate(req);
+      if (updateCheck?.isBlocked) {
+        return res.status(403).json({
+          success: false,
+          message: updateCheck.message,
+          isUpdateRequired: true
+        });
       }
 
       // Verify the ID token using Firebase Admin SDK
