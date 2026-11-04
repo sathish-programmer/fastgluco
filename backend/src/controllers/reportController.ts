@@ -463,7 +463,7 @@ export class ReportController {
       // --- PAGE 1: TITLE & USER METRICS ---
       // Logo Header
       doc.fillColor('#0284C7').fontSize(22).font('Helvetica-Bold').text('Mito_Reboot', 40, 35);
-      doc.fillColor('#64748B').fontSize(8.5).font('Helvetica-Bold').text('PREVENTIVE LIFESTYLE & METABOLIC ONCOLOGY CARE', 40, 60);
+      doc.fillColor('#64748B').fontSize(8.5).font('Helvetica-Bold').text('Preventive Lifestyle App', 40, 60);
 
       doc.fillColor('#0F172A').fontSize(14).font('Helvetica-Bold').text('Doctor & Clinical Consultation Summary', 200, 35, { align: 'right' });
       doc.fillColor('#64748B').fontSize(8.5).font('Helvetica').text(`Generated: ${new Date().toLocaleDateString()}`, 200, 52, { align: 'right' });
@@ -615,7 +615,7 @@ export class ReportController {
           { width: 495, lineGap: 1.2 }
         );
 
-        pageDoc.fillColor('#94A3B8').fontSize(7.5).font('Helvetica').text(`Mito_Reboot Healthcare Platform — Page ${pageNum}`, 40, 792, { align: 'center', width: 515 });
+        pageDoc.fillColor('#94A3B8').fontSize(7.2).font('Helvetica').text(`MITOREBOOT PRIVATE LIMITED • Preventive Lifestyle App — Page ${pageNum}`, 40, 792, { align: 'center', width: 515 });
       };
 
       // SECTION 5: Medical Disclaimer Box on Page 1

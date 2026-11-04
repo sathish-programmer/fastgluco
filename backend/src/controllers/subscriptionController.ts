@@ -843,6 +843,18 @@ export class SubscriptionController {
       subRecord = await UserSubscription.findOne({ userId }).sort({ createdAt: -1 });
     }
 
+    const startDate = subRecord?.startDate || new Date();
+    let endDate = subRecord?.endDate;
+    if (!endDate) {
+      const d = new Date(startDate);
+      if (plan.durationInMonths) {
+        d.setMonth(d.getMonth() + plan.durationInMonths);
+      } else {
+        d.setFullYear(d.getFullYear() + 1);
+      }
+      endDate = d;
+    }
+
     const invoice = new Invoice({
       userId,
       transactionId: transaction._id,
@@ -856,9 +868,9 @@ export class SubscriptionController {
       totalAmount: total,
       billingName: user?.name || 'Mito_Reboot Patient',
       billingEmail: user?.email || 'patient@mitoreboot.com',
-      subscriptionPeriodStart: subRecord?.startDate || new Date(),
-      subscriptionPeriodEnd: subRecord?.endDate,
-      billingCycle: subRecord?.billingCycle || 'yearly'
+      subscriptionPeriodStart: startDate,
+      subscriptionPeriodEnd: endDate,
+      billingCycle: subRecord?.billingCycle || (plan.durationInMonths === 1 ? 'monthly' : 'yearly')
     });
 
     await invoice.save();
@@ -929,28 +941,49 @@ export class SubscriptionController {
       // --- PDF DRAWING ---
       // Logo / Title Header
       doc.fillColor('#0284C7').fontSize(24).font('Helvetica-Bold').text('Mito_Reboot', 50, 50);
-      doc.fillColor('#64748B').fontSize(10).font('Helvetica-Bold').text('PREVENTIVE LIFESTYLE & METABOLIC HEALTH', 50, 78);
+      doc.fillColor('#64748B').fontSize(10).font('Helvetica-Bold').text('Preventive Lifestyle App', 50, 78);
 
       doc.fillColor('#1E293B').fontSize(20).font('Helvetica-Bold').text('INVOICE', 400, 50, { align: 'right' });
       doc.fillColor('#64748B').fontSize(10).font('Helvetica').text(`Invoice #: ${invoice.invoiceNumber}`, 400, 75, { align: 'right' });
       doc.text(`Date: ${new Date(invoice.createdAt || Date.now()).toLocaleDateString('en-IN')}`, 400, 90, { align: 'right' });
-      if (invoice.subscriptionPeriodEnd) {
-        doc.text(`Valid Until: ${new Date(invoice.subscriptionPeriodEnd).toLocaleDateString('en-IN')}`, 400, 105, { align: 'right' });
+
+      // Resolve subscription period end if missing
+      let subEnd = invoice.subscriptionPeriodEnd;
+      let cycle = invoice.billingCycle;
+      if (!subEnd) {
+        const userSub = await UserSubscription.findOne({ userId: invoice.userId }).sort({ createdAt: -1 });
+        if (userSub?.endDate) {
+          subEnd = userSub.endDate;
+          if (!cycle && userSub.billingCycle) cycle = userSub.billingCycle;
+        } else {
+          const d = new Date(invoice.subscriptionPeriodStart || invoice.createdAt || Date.now());
+          d.setFullYear(d.getFullYear() + 1);
+          subEnd = d;
+        }
+        invoice.subscriptionPeriodEnd = subEnd;
+        if (!invoice.billingCycle) invoice.billingCycle = cycle || 'yearly';
+        invoice.save().catch(() => {});
+      }
+
+      if (subEnd) {
+        doc.text(`Valid Until: ${new Date(subEnd).toLocaleDateString('en-IN')}`, 400, 105, { align: 'right' });
       }
 
       // Horizontal Line divider
       doc.moveTo(50, 125).lineTo(550, 125).strokeColor('#E2E8F0').lineWidth(1).stroke();
 
       // Bill To details
-      doc.fillColor('#1E293B').fontSize(12).font('Helvetica-Bold').text('Billed To:', 50, 140);
-      doc.fillColor('#334155').fontSize(10).font('Helvetica').text(invoice.billingName, 50, 160);
-      doc.text(invoice.billingEmail, 50, 175);
+      doc.fillColor('#1E293B').fontSize(11).font('Helvetica-Bold').text('Billed To:', 50, 138);
+      doc.fillColor('#334155').fontSize(9.5).font('Helvetica').text(invoice.billingName, 50, 155);
+      doc.text(invoice.billingEmail, 50, 169);
 
-      // Issued By details
-      doc.fillColor('#1E293B').fontSize(12).font('Helvetica-Bold').text('Issued By:', 300, 140);
-      doc.fillColor('#334155').fontSize(10).font('Helvetica').text('Mito_Reboot Platform Inc.', 300, 160);
-      doc.text('support@mitoreboot.in', 300, 175);
-      doc.text('Bangalore, Karnataka, India', 300, 190);
+      // Issued By details (Registered Corporate Office)
+      doc.fillColor('#1E293B').fontSize(11).font('Helvetica-Bold').text('Issued By:', 280, 138);
+      doc.fillColor('#0F172A').fontSize(9.5).font('Helvetica-Bold').text('MITOREBOOT PRIVATE LIMITED', 280, 155);
+      doc.fillColor('#475569').fontSize(8.5).font('Helvetica').text('No 11/7, Krishna Residency, Flat No B-1,', 280, 169);
+      doc.text('Basavanagudi, Bangalore South,', 280, 180);
+      doc.text('Bangalore- 560004, Karnataka', 280, 191);
+      doc.text('Email: support@mitoreboot.in', 280, 202);
 
       // Table Header
       const tableTop = 230;
@@ -965,12 +998,12 @@ export class SubscriptionController {
       const startStr = invoice.subscriptionPeriodStart
         ? new Date(invoice.subscriptionPeriodStart).toLocaleDateString('en-IN')
         : new Date(invoice.createdAt || Date.now()).toLocaleDateString('en-IN');
-      const endStr = invoice.subscriptionPeriodEnd
-        ? new Date(invoice.subscriptionPeriodEnd).toLocaleDateString('en-IN')
-        : 'N/A';
-      const cycleStr = invoice.billingCycle === 'yearly'
-        ? 'Annual (1 Year)'
-        : (invoice.billingCycle === 'monthly' ? 'Monthly (30 Days)' : 'Active Plan');
+      const endStr = subEnd
+        ? new Date(subEnd).toLocaleDateString('en-IN')
+        : '';
+      const cycleStr = (cycle === 'monthly' || invoice.billingCycle === 'monthly')
+        ? 'Monthly (30 Days)'
+        : 'Annual (1 Year)';
 
       doc.fillColor('#64748B').fontSize(8.5).font('Helvetica').text(`Subscription Period: ${startStr} to ${endStr} (${cycleStr})`, 60, rowTop + 20);
 
@@ -1009,8 +1042,9 @@ export class SubscriptionController {
       doc.fillColor('#0284C7').fontSize(14).text(`Rs.${fmt(invoice.totalAmount)}`, 450, nextCalcTop + 44, { align: 'right' });
 
       // Footer notice
-      doc.fillColor('#94A3B8').fontSize(9).font('Helvetica').text('This is a computer generated invoice and does not require a signature.', 50, 480, { align: 'center', width: 500 });
-      doc.text('Mito_Reboot Platform - Preventive Lifestyle & Metabolic Monitoring', 50, 495, { align: 'center', width: 500 });
+      doc.fillColor('#94A3B8').fontSize(8.5).font('Helvetica').text('This is a computer generated invoice and does not require a physical signature.', 50, 480, { align: 'center', width: 500 });
+      doc.text('MITOREBOOT PRIVATE LIMITED • Preventive Lifestyle App', 50, 495, { align: 'center', width: 500 });
+      doc.text('No 11/7, Krishna Residency, Flat No B-1, Basavanagudi, Bangalore South, Bangalore- 560004, Karnataka', 50, 507, { align: 'center', width: 500 });
 
       // End document
       doc.end();
@@ -1025,6 +1059,24 @@ export class SubscriptionController {
   }
 
   private static async generateInvoicePdfBuffer(invoice: any, planName: string): Promise<Buffer> {
+    // Resolve subscription period end if missing
+    let subEnd = invoice.subscriptionPeriodEnd;
+    let cycle = invoice.billingCycle;
+    if (!subEnd) {
+      const userSub = await UserSubscription.findOne({ userId: invoice.userId }).sort({ createdAt: -1 });
+      if (userSub?.endDate) {
+        subEnd = userSub.endDate;
+        if (!cycle && userSub.billingCycle) cycle = userSub.billingCycle;
+      } else {
+        const d = new Date(invoice.subscriptionPeriodStart || invoice.createdAt || Date.now());
+        d.setFullYear(d.getFullYear() + 1);
+        subEnd = d;
+      }
+      invoice.subscriptionPeriodEnd = subEnd;
+      if (!invoice.billingCycle) invoice.billingCycle = cycle || 'yearly';
+      invoice.save().catch(() => {});
+    }
+
     return new Promise((resolve, reject) => {
       const doc = new PDFDocument({ margin: 50 });
       const chunks: Buffer[] = [];
@@ -1040,28 +1092,30 @@ export class SubscriptionController {
 
       // Logo / Title Header
       doc.fillColor('#0284C7').fontSize(24).font('Helvetica-Bold').text('Mito_Reboot', 50, 50);
-      doc.fillColor('#64748B').fontSize(10).font('Helvetica-Bold').text('PREVENTIVE LIFESTYLE & METABOLIC HEALTH', 50, 78);
+      doc.fillColor('#64748B').fontSize(10).font('Helvetica-Bold').text('Preventive Lifestyle App', 50, 78);
 
       doc.fillColor('#1E293B').fontSize(20).font('Helvetica-Bold').text('INVOICE', 400, 50, { align: 'right' });
       doc.fillColor('#64748B').fontSize(10).font('Helvetica').text(`Invoice #: ${invoice.invoiceNumber}`, 400, 75, { align: 'right' });
       doc.text(`Date: ${new Date(invoice.createdAt || Date.now()).toLocaleDateString('en-IN')}`, 400, 90, { align: 'right' });
-      if (invoice.subscriptionPeriodEnd) {
-        doc.text(`Valid Until: ${new Date(invoice.subscriptionPeriodEnd).toLocaleDateString('en-IN')}`, 400, 105, { align: 'right' });
+      if (subEnd) {
+        doc.text(`Valid Until: ${new Date(subEnd).toLocaleDateString('en-IN')}`, 400, 105, { align: 'right' });
       }
 
       // Horizontal Line divider
       doc.moveTo(50, 125).lineTo(550, 125).strokeColor('#E2E8F0').lineWidth(1).stroke();
 
       // Bill To details
-      doc.fillColor('#1E293B').fontSize(12).font('Helvetica-Bold').text('Billed To:', 50, 140);
-      doc.fillColor('#334155').fontSize(10).font('Helvetica').text(invoice.billingName, 50, 160);
-      doc.text(invoice.billingEmail, 50, 175);
+      doc.fillColor('#1E293B').fontSize(11).font('Helvetica-Bold').text('Billed To:', 50, 138);
+      doc.fillColor('#334155').fontSize(9.5).font('Helvetica').text(invoice.billingName, 50, 155);
+      doc.text(invoice.billingEmail, 50, 169);
 
-      // Issued By details
-      doc.fillColor('#1E293B').fontSize(12).font('Helvetica-Bold').text('Issued By:', 300, 140);
-      doc.fillColor('#334155').fontSize(10).font('Helvetica').text('Mito_Reboot Platform Inc.', 300, 160);
-      doc.text('support@mitoreboot.in', 300, 175);
-      doc.text('Bangalore, Karnataka, India', 300, 190);
+      // Issued By details (Registered Corporate Office)
+      doc.fillColor('#1E293B').fontSize(11).font('Helvetica-Bold').text('Issued By:', 280, 138);
+      doc.fillColor('#0F172A').fontSize(9.5).font('Helvetica-Bold').text('MITOREBOOT PRIVATE LIMITED', 280, 155);
+      doc.fillColor('#475569').fontSize(8.5).font('Helvetica').text('No 11/7, Krishna Residency, Flat No B-1,', 280, 169);
+      doc.text('Basavanagudi, Bangalore South,', 280, 180);
+      doc.text('Bangalore- 560004, Karnataka', 280, 191);
+      doc.text('Email: support@mitoreboot.in', 280, 202);
 
       // Table Header
       const tableTop = 230;
@@ -1076,12 +1130,12 @@ export class SubscriptionController {
       const startStr = invoice.subscriptionPeriodStart
         ? new Date(invoice.subscriptionPeriodStart).toLocaleDateString('en-IN')
         : new Date(invoice.createdAt || Date.now()).toLocaleDateString('en-IN');
-      const endStr = invoice.subscriptionPeriodEnd
-        ? new Date(invoice.subscriptionPeriodEnd).toLocaleDateString('en-IN')
-        : 'N/A';
-      const cycleStr = invoice.billingCycle === 'yearly'
-        ? 'Annual (1 Year)'
-        : (invoice.billingCycle === 'monthly' ? 'Monthly (30 Days)' : 'Active Plan');
+      const endStr = subEnd
+        ? new Date(subEnd).toLocaleDateString('en-IN')
+        : '';
+      const cycleStr = (cycle === 'monthly' || invoice.billingCycle === 'monthly')
+        ? 'Monthly (30 Days)'
+        : 'Annual (1 Year)';
 
       doc.fillColor('#64748B').fontSize(8.5).font('Helvetica').text(`Subscription Period: ${startStr} to ${endStr} (${cycleStr})`, 60, rowTop + 20);
 
@@ -1120,8 +1174,9 @@ export class SubscriptionController {
       doc.fillColor('#0284C7').fontSize(14).text(`Rs.${fmt(invoice.totalAmount)}`, 450, nextCalcTop + 44, { align: 'right' });
 
       // Footer notice
-      doc.fillColor('#94A3B8').fontSize(9).font('Helvetica').text('This is a computer generated invoice and does not require a signature.', 50, 480, { align: 'center', width: 500 });
-      doc.text('Mito_Reboot Platform - Preventive Lifestyle & Metabolic Monitoring', 50, 495, { align: 'center', width: 500 });
+      doc.fillColor('#94A3B8').fontSize(8.5).font('Helvetica').text('This is a computer generated invoice and does not require a physical signature.', 50, 480, { align: 'center', width: 500 });
+      doc.text('MITOREBOOT PRIVATE LIMITED • Preventive Lifestyle App', 50, 495, { align: 'center', width: 500 });
+      doc.text('No 11/7, Krishna Residency, Flat No B-1, Basavanagudi, Bangalore South, Bangalore- 560004, Karnataka', 50, 507, { align: 'center', width: 500 });
 
       doc.end();
     });

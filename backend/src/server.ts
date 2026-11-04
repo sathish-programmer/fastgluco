@@ -18,6 +18,9 @@ import { DailyMotivationCron } from './cron/dailyMotivationCron';
 import { seedWorkflows } from './utils/seedWorkflows';
 import { seedAskMitoTopics } from './utils/seedAskMitoTopics';
 import { AppHealthSyncService } from './services/appHealthSyncService';
+import { PaymentGatewayConfig } from './models/PaymentGatewayConfig';
+import { Invoice } from './models/Invoice';
+import { UserSubscription } from './models/UserSubscription';
 
 const PORT = process.env.PORT || 5001;
 
@@ -33,6 +36,52 @@ const bootstrap = async () => {
 
     // Verify Brevo SMTP connection
     await EmailService.verifyConnection();
+
+    // Ensure PaymentGatewayConfig has the official registered corporate address and official tagline
+    try {
+      const pgConfig = await PaymentGatewayConfig.findOne();
+      if (pgConfig) {
+        let needsSave = false;
+        if (!pgConfig.appTagline || pgConfig.appTagline === 'The circadian fasting app' || pgConfig.appTagline.includes('METABOLIC HEALTH') || pgConfig.appTagline.includes('Cellular Health')) {
+          pgConfig.appTagline = 'Preventive Lifestyle App';
+          needsSave = true;
+        }
+        if (needsSave) {
+          await pgConfig.save();
+          console.log('[Init] Updated PaymentGatewayConfig tagline to Preventive Lifestyle App');
+        }
+      }
+    } catch (cfgErr) {
+      console.error('[Init] Error validating PaymentGatewayConfig:', cfgErr);
+    }
+
+    // Backfill any legacy invoices that lack subscriptionPeriodEnd
+    try {
+      const pendingInvoices = await Invoice.find({
+        $or: [
+          { subscriptionPeriodEnd: { $exists: false } },
+          { subscriptionPeriodEnd: null }
+        ]
+      });
+      if (pendingInvoices.length > 0) {
+        for (const inv of pendingInvoices) {
+          const userSub = await UserSubscription.findOne({ userId: inv.userId }).sort({ createdAt: -1 });
+          if (userSub?.endDate) {
+            inv.subscriptionPeriodEnd = userSub.endDate;
+            if (!inv.billingCycle) inv.billingCycle = userSub.billingCycle || 'yearly';
+          } else {
+            const fallbackEnd = new Date(inv.subscriptionPeriodStart || inv.createdAt || Date.now());
+            fallbackEnd.setFullYear(fallbackEnd.getFullYear() + 1);
+            inv.subscriptionPeriodEnd = fallbackEnd;
+            if (!inv.billingCycle) inv.billingCycle = 'yearly';
+          }
+          await inv.save();
+        }
+        console.log(`[Init] Backfilled subscriptionPeriodEnd for ${pendingInvoices.length} invoices.`);
+      }
+    } catch (invErr) {
+      console.error('[Init] Error backfilling invoices:', invErr);
+    }
 
     app.listen(PORT, () => {
       console.log(`===================================================`);

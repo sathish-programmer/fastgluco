@@ -497,6 +497,8 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
                 </a>
 
                 <div className="pt-4 border-t border-slate-200/80 dark:border-slate-800 text-[11px] text-slate-400 space-y-1 font-medium">
+                  <p className="font-extrabold text-slate-700 dark:text-slate-200">MITOREBOOT PRIVATE LIMITED</p>
+                  <p>No 11/7, Krishna Residency, Flat No B-1, Basavanagudi, Bangalore South, Bangalore- 560004, Karnataka</p>
                   <p>{t('responseTimeLabel')}</p>
                   <p>{t('availableHoursLabel')}</p>
                 </div>

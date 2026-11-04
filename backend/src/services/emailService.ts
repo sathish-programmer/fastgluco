@@ -83,8 +83,10 @@ const generateEmailTemplate = (title: string, contentHTML: string, appName: stri
         ${contentHTML}
       </div>
       <div style="background-color: #f8fafc; padding: 24px 30px; text-align: center; color: #64748b; font-size: 13px; border-top: 1px solid #e2e8f0;">
-        <p style="margin: 0;">&copy; ${new Date().getFullYear()} ${appName}. All rights reserved.</p>
-        <p style="margin: 8px 0 0 0;">You are receiving this email because you are a registered user of ${appName}.</p>
+        <p style="margin: 0; font-weight: 700; color: #1e293b; font-size: 13px;">MITOREBOOT PRIVATE LIMITED</p>
+        <p style="margin: 4px 0 0 0; font-size: 11px; color: #64748b;">No 11/7, Krishna Residency, Flat No B-1, Basavanagudi, Bangalore South, Bangalore- 560004, Karnataka</p>
+        <p style="margin: 8px 0 0 0; font-size: 12px;">&copy; ${new Date().getFullYear()} ${appName} &bull; Preventive Lifestyle App. All rights reserved.</p>
+        <p style="margin: 4px 0 0 0; font-size: 11px; color: #94a3b8;">You are receiving this email because you are a registered user of ${appName}.</p>
       </div>
     </div>
   </div>

@@ -488,8 +488,8 @@ export const TermsAndConditionsAcceptancePage: React.FC<TermsAndConditionsAccept
         <p style="font-size: 0.875rem; margin-bottom: 1rem;">Any disputes shall be subject to the jurisdiction of the courts having appropriate jurisdiction over the Company, unless otherwise required by applicable law.</p>
 
         <h4 style="font-size: 0.95rem; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem;">32. PRIVACY AND GRIEVANCE CONTACT</h4>
-        <p style="font-size: 0.875rem; margin-bottom: 0.5rem;"><strong>MitoReboot Private Limited</strong></p>
-        <p style="font-size: 0.875rem; margin-bottom: 0.35rem;">Registered Office: MitoReboot Private Limited, Tamil Nadu, India</p>
+        <p style="font-size: 0.875rem; margin-bottom: 0.5rem;"><strong>MITOREBOOT PRIVATE LIMITED</strong></p>
+        <p style="font-size: 0.875rem; margin-bottom: 0.35rem;">Registered Office: No 11/7, Krishna Residency, Flat No B-1, Basavanagudi, Bangalore South, Bangalore- 560004, Karnataka, India</p>
         <p style="font-size: 0.875rem; margin-bottom: 0.35rem;">Email: privacy@mitoreboot.in / support@mitoreboot.in</p>
         <p style="font-size: 0.875rem; margin-bottom: 0.35rem;">Privacy/Grievance Officer: Grievance Officer, MitoReboot Private Limited</p>
         <p style="font-size: 0.875rem; margin-bottom: 1.5rem;">Contact: +91-9597042107 / privacy@mitoreboot.in</p>

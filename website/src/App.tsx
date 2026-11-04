@@ -169,7 +169,7 @@ export default function App() {
 
   const [branding, setBranding] = useState({
     appName: 'Mito_Reboot',
-    appTagline: 'Preventive Lifestyle & Cellular Health',
+    appTagline: 'Preventive Lifestyle App',
     appLogoUrl: ''
   });
 
@@ -193,7 +193,7 @@ export default function App() {
         setVideosData(webVideos.length > 0 ? webVideos : vid);
         if (config.appName) {
           const formattedName = config.appName.replace(/_/g, ' ');
-          const tagline = (!config.appTagline || config.appTagline === 'The circadian fasting app') ? 'Preventive Lifestyle & Cellular Health' : config.appTagline;
+          const tagline = (!config.appTagline || config.appTagline === 'The circadian fasting app' || config.appTagline === 'Preventive Lifestyle & Cellular Health') ? 'Preventive Lifestyle App' : config.appTagline;
           setBranding({
             appName: config.appName,
             appTagline: tagline,
@@ -2337,10 +2337,15 @@ const Footer: React.FC<{
             <p className="text-slate-400 text-xs leading-relaxed font-medium">
               A science-driven cellular health and chronic disease reversal platform. Empowering individuals with continuous glucose telemetry, vagus breathwork, verified doctor video consults, and environmental carcinogen auditing.
             </p>
-            {/* Trademark Legal Notice */}
+            {/* Trademark Legal Notice & Corporate Registered Address */}
             <p className="text-[11px] text-slate-500 font-bold">
               © 2026 <BrandName appName={branding.appName} className="text-slate-300" supClassName="text-[0.6em] text-blue-400 -top-1 relative" />. All rights reserved. Mito Reboot™ is a registered trademark.
             </p>
+            <div className="pt-2 text-[11px] text-slate-400 border-t border-slate-900/80 space-y-0.5">
+              <span className="block font-black text-slate-300">MITOREBOOT PRIVATE LIMITED</span>
+              <p>No 11/7, Krishna Residency, Flat No B-1, Basavanagudi, Bangalore South, Bangalore- 560004, Karnataka</p>
+              <p className="text-slate-500 text-[10px]">CIN / Registered Healthcare &amp; Wellness Platform &bull; support@mitoreboot.in</p>
+            </div>
           </div>
 
           <div className="flex flex-wrap gap-8 text-left font-semibold">

@@ -64,8 +64,10 @@ export class InvoiceService {
           if (vendor.licenseNumber) doc.text(`License No: ${vendor.licenseNumber}`, 320, 172);
           if (vendor.taxId) doc.text(`GSTIN/Tax ID: ${vendor.taxId}`, 320, 184);
         } else {
-          doc.text('Mito_Reboot Health Store', 320, 148);
-          doc.text('support@mitoreboot.in', 320, 160);
+          doc.text('MITOREBOOT PRIVATE LIMITED', 320, 148);
+          doc.text('No 11/7, Krishna Residency, Flat No B-1,', 320, 160);
+          doc.text('Basavanagudi, Bangalore South, Bangalore- 560004', 320, 172);
+          doc.text('support@mitoreboot.in', 320, 184);
         }
 
         // Table Header
@@ -113,7 +115,7 @@ export class InvoiceService {
         }
 
         // Footer Notice
-        doc.fillColor('#94A3B8').fontSize(8).font('Helvetica-Oblique').text('This is a computer generated document and does not require a physical signature.', 50, 720, { align: 'center' });
+        doc.fillColor('#94A3B8').fontSize(7.5).font('Helvetica-Oblique').text('MITOREBOOT PRIVATE LIMITED • Preventive Lifestyle App • No 11/7, Krishna Residency, Flat No B-1, Basavanagudi, Bangalore South, Bangalore- 560004, Karnataka', 50, 720, { align: 'center', width: 500 });
 
         doc.end();
 
@@ -215,7 +217,7 @@ export class InvoiceService {
         }
 
         // Footer Notice
-        doc.fillColor('#94A3B8').fontSize(8).font('Helvetica-Oblique').text('This is a computer generated document and does not require a physical signature.', 50, 720, { align: 'center' });
+        doc.fillColor('#94A3B8').fontSize(7.5).font('Helvetica-Oblique').text('MITOREBOOT PRIVATE LIMITED • Preventive Lifestyle App • No 11/7, Krishna Residency, Flat No B-1, Basavanagudi, Bangalore South, Bangalore- 560004, Karnataka', 50, 720, { align: 'center', width: 500 });
 
         doc.end();
 
@@ -321,7 +323,7 @@ export class InvoiceService {
         }
 
         // Footer Notice
-        doc.fillColor('#94A3B8').fontSize(8).font('Helvetica-Oblique').text('This is a computer generated document and does not require a physical signature.', 50, 720, { align: 'center' });
+        doc.fillColor('#94A3B8').fontSize(7.5).font('Helvetica-Oblique').text('MITOREBOOT PRIVATE LIMITED • Preventive Lifestyle App • No 11/7, Krishna Residency, Flat No B-1, Basavanagudi, Bangalore South, Bangalore- 560004, Karnataka', 50, 720, { align: 'center', width: 500 });
 
         doc.end();
 
