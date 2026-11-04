@@ -13,6 +13,7 @@ export interface TelemetryMeta {
 export interface VersionCheckResult {
   isUpdateAvailable: boolean;
   isUpdateRequired: boolean;
+  clientVersion?: string;
   latestReleasedVersion: string;
   latestBuildNumber: string;
   minSupportedVersion: string;

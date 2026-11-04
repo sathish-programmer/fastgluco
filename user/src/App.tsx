@@ -48,8 +48,10 @@ import { TermsAndConditionsAcceptancePage, CURRENT_TERMS_VERSION } from './compo
 import { DeleteAccount } from './pages/DeleteAccount';
 import { OfflineScreen } from './components/OfflineScreen';
 import { WhatsNewModal } from './components/WhatsNewModal';
+import { ForceUpdateModal } from './components/ForceUpdateModal';
 import { DailyMotivationModal } from './components/DailyMotivationModal';
 import { MotivationService } from './services/motivationService';
+import { telemetryService } from './services/telemetryService';
 import { initNotificationScheduler } from './utils/notificationScheduler';
 
 const MainAppContent: React.FC = () => {
@@ -231,6 +233,45 @@ const MainAppContent: React.FC = () => {
   const [showDailyMotivation, setShowDailyMotivation] = useState<boolean>(false);
   const [dailyMotivationData, setDailyMotivationData] = useState<{ dayNumber: number; message: string }>({ dayNumber: 1, message: '' });
   const [inAppReminder, setInAppReminder] = useState<{ title: string; body: string; type?: string } | null>(null);
+
+  const [versionCheckData, setVersionCheckData] = useState<{
+    isOpen: boolean;
+    isMandatory: boolean;
+    latestVersion: string;
+    currentVersion: string;
+    updateUrl: string;
+    releaseNotes?: string;
+  }>({
+    isOpen: false,
+    isMandatory: false,
+    latestVersion: '',
+    currentVersion: '',
+    updateUrl: '',
+    releaseNotes: ''
+  });
+
+  // App Version & Force Update Check
+  useEffect(() => {
+    let isMounted = true;
+    telemetryService.checkVersion(apiUrl).then((res) => {
+      if (isMounted && res && (res.isUpdateRequired || res.isUpdateAvailable)) {
+        setVersionCheckData({
+          isOpen: true,
+          isMandatory: !!res.isUpdateRequired,
+          latestVersion: res.latestReleasedVersion || res.recommendedVersion || '',
+          currentVersion: res.clientVersion || '',
+          updateUrl: res.updateUrl || '',
+          releaseNotes: res.releaseNotes || ''
+        });
+      }
+    }).catch((err) => {
+      console.warn('[VersionCheck] Background check failed:', err);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [apiUrl]);
 
   // Daily Motivation: check if viewed today on app launch / login
   useEffect(() => {
@@ -904,6 +945,16 @@ const MainAppContent: React.FC = () => {
             setActiveTab('Store');
           }
         }}
+      />
+
+      <ForceUpdateModal
+        isOpen={versionCheckData.isOpen}
+        isMandatory={versionCheckData.isMandatory}
+        latestVersion={versionCheckData.latestVersion}
+        currentVersion={versionCheckData.currentVersion}
+        updateUrl={versionCheckData.updateUrl}
+        releaseNotes={versionCheckData.releaseNotes}
+        onDismiss={() => setVersionCheckData((prev) => ({ ...prev, isOpen: false }))}
       />
 
       <DailyMotivationModal
