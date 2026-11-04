@@ -58,22 +58,14 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
         // Enforce Minimum Version Rule for mobile clients when forceUpdate is enabled
         const clientPlatformHeader = req.headers['x-app-platform'] as string;
         const clientVersionHeader = (req.headers['x-app-version'] as string) || (req.query.version as string);
-        const ua = (req.headers['user-agent'] as string) || '';
-        const detectedPlatform: 'android' | 'ios' | 'web' =
-          ['android', 'ios'].includes(clientPlatformHeader) ? (clientPlatformHeader as any)
-          : dbUser.lastPlatform ? dbUser.lastPlatform
-          : /iPad|iPhone|iPod/i.test(ua) ? 'ios'
-          : /android/i.test(ua) ? 'android'
-          : 'web';
 
-        const detectedVersion = clientVersionHeader || dbUser.lastAppVersion;
-
-        if (detectedPlatform !== 'web' && detectedVersion) {
+        // ONLY enforce if client explicitly reports its platform and version, and ignore obsolete dummy fallback 5.28.0
+        if (clientPlatformHeader && ['android', 'ios'].includes(clientPlatformHeader) && clientVersionHeader && clientVersionHeader !== '5.28.0') {
           const config = await AppHealthSyncService.getOrCreateConfig();
-          const rules = detectedPlatform === 'ios' ? config.iosVersionRules : config.androidVersionRules;
-          if (rules?.forceUpdate && rules.minSupportedVersion && AppHealthController.compareVersions(rules.minSupportedVersion, detectedVersion) > 0) {
+          const rules = clientPlatformHeader === 'ios' ? config.iosVersionRules : config.androidVersionRules;
+          if (rules?.forceUpdate && rules.minSupportedVersion && AppHealthController.compareVersions(rules.minSupportedVersion, clientVersionHeader) > 0) {
             return res.status(403).json({
-              message: `App Update Required: Your app version (${detectedVersion}) is outdated. Please update to version ${rules.minSupportedVersion} or higher from the ${detectedPlatform === 'ios' ? 'Apple App Store' : 'Google Play Store'} to continue.`,
+              message: `App Update Required: Your app version (${clientVersionHeader}) is outdated. Please update to version ${rules.minSupportedVersion} or higher from the ${clientPlatformHeader === 'ios' ? 'Apple App Store' : 'Google Play Store'} to continue.`,
               isUpdateRequired: true,
               minSupportedVersion: rules.minSupportedVersion,
               latestVersion: rules.latestReleasedVersion,
@@ -97,8 +89,8 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
 
         const platformHeader = req.headers['x-app-platform'] as string;
         let platform = (['android', 'ios', 'web'].includes(platformHeader) ? platformHeader : 'android') as 'android' | 'ios' | 'web';
-        const appVersion = (req.headers['x-app-version'] as string) || '5.28.0';
-        const buildNumber = (req.headers['x-app-build'] as string) || '92';
+        const rawAppVersion = (req.headers['x-app-version'] as string) || (req.body?.appVersion as string);
+        const rawBuildNumber = (req.headers['x-app-build'] as string) || (req.body?.buildNumber as string);
         let osVersion = (req.headers['x-os-version'] as string) || 'Unknown';
         let deviceModel = (req.headers['x-device-model'] as string) || 'Unknown';
         const deviceId = (req.headers['x-device-id'] as string) || `user_${userId}`;
@@ -126,24 +118,26 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
           }
         }
 
-        // Fire and forget non-blocking updates
+        // Fire and forget non-blocking updates without corrupting version with dummy fallbacks
+        const userUpdate: any = {
+          lastActiveAt: new Date(),
+          lastPlatform: platform,
+          lastOsVersion: osVersion,
+          lastDeviceModel: deviceModel
+        };
+        if (rawAppVersion && rawAppVersion !== '5.28.0') userUpdate.lastAppVersion = rawAppVersion;
+        if (rawBuildNumber && rawBuildNumber !== '92') userUpdate.lastBuildNumber = rawBuildNumber;
+
         Promise.all([
-          User.findByIdAndUpdate(userId, {
-            lastActiveAt: new Date(),
-            lastPlatform: platform,
-            lastAppVersion: appVersion,
-            lastBuildNumber: buildNumber,
-            lastOsVersion: osVersion,
-            lastDeviceModel: deviceModel
-          }).catch(() => {}),
+          User.findByIdAndUpdate(userId, userUpdate).catch(() => {}),
           AppTelemetrySession.findOneAndUpdate(
             { deviceId, sessionDate },
             {
               userId: userId as any,
               deviceId,
               platform,
-              appVersion,
-              buildNumber,
+              ...(rawAppVersion && rawAppVersion !== '5.28.0' ? { appVersion: rawAppVersion } : {}),
+              ...(rawBuildNumber && rawBuildNumber !== '92' ? { buildNumber: rawBuildNumber } : {}),
               osVersion,
               deviceModel,
               sessionDate,

@@ -448,10 +448,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     setError(null);
     try {
+      const meta = await telemetryService.getTelemetryMeta();
       const response = await fetch(`${apiUrl}/auth/firebase-login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken, email, mobileNumber }),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-app-platform': meta.platform,
+          'x-app-version': meta.appVersion,
+          'x-app-build': meta.buildNumber
+        },
+        body: JSON.stringify({
+          idToken,
+          email,
+          mobileNumber,
+          platform: meta.platform,
+          appVersion: meta.appVersion,
+          buildNumber: meta.buildNumber,
+          deviceId: meta.deviceId
+        }),
       });
 
       const contentType = response.headers.get('content-type') || '';

@@ -28,13 +28,14 @@ const maskPhoneOrEmail = (identifier: string): string => {
 };
 
 const extractTelemetryMeta = (req: Request) => {
-  const platform = (req.headers['x-app-platform'] as string) || req.body?.platform || 'android';
-  const appVersion = (req.headers['x-app-version'] as string) || req.body?.appVersion || '5.28.0';
-  const buildNumber = (req.headers['x-app-build'] as string) || req.body?.buildNumber || '92';
+  const platform = (req.headers['x-app-platform'] as string) || req.body?.platform;
+  const rawVersion = (req.headers['x-app-version'] as string) || req.body?.appVersion;
+  const appVersion = (rawVersion && rawVersion !== '5.28.0') ? rawVersion : undefined;
+  const buildNumber = (req.headers['x-app-build'] as string) || req.body?.buildNumber;
   const osVersion = (req.headers['x-os-version'] as string) || req.body?.osVersion || 'Unknown';
   const deviceModel = (req.headers['x-device-model'] as string) || req.body?.deviceModel || 'Unknown';
   return {
-    platform: (['android', 'ios', 'web'].includes(platform) ? platform : 'android') as 'android' | 'ios' | 'web',
+    platform: (['android', 'ios', 'web'].includes(platform) ? platform : undefined) as 'android' | 'ios' | 'web' | undefined,
     appVersion,
     buildNumber,
     osVersion,
@@ -45,12 +46,13 @@ const extractTelemetryMeta = (req: Request) => {
 const checkForceUpdate = async (req: Request): Promise<{ isBlocked: boolean; message?: string } | null> => {
   try {
     const meta = extractTelemetryMeta(req);
-    if (meta.platform === 'web') return null;
+    // Never block if version is not explicitly reported by client
+    if (!meta.platform || meta.platform === 'web' || !meta.appVersion) return null;
 
     const config = await AppHealthSyncService.getOrCreateConfig();
     const rules = meta.platform === 'ios' ? config.iosVersionRules : config.androidVersionRules;
 
-    if (rules?.forceUpdate && rules.minSupportedVersion && meta.appVersion && AppHealthController.compareVersions(rules.minSupportedVersion, meta.appVersion) > 0) {
+    if (rules?.forceUpdate && rules.minSupportedVersion && AppHealthController.compareVersions(rules.minSupportedVersion, meta.appVersion) > 0) {
       return {
         isBlocked: true,
         message: `App Update Required: Your app version (${meta.appVersion}) is outdated. Please update to version ${rules.minSupportedVersion} or higher from the ${meta.platform === 'ios' ? 'Apple App Store' : 'Google Play Store'} to continue.`
