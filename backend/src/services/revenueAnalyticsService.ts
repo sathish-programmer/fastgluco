@@ -1134,49 +1134,58 @@ export class RevenueAnalyticsService {
         doc.on('end', () => resolve(Buffer.concat(chunks)));
         doc.on('error', (err: any) => reject(err));
 
-        doc.fillColor('#0284C7').fontSize(22).font('Helvetica-Bold').text('Mito_Reboot', 50, 45);
-        doc.fillColor('#64748B').fontSize(9.5).font('Helvetica-Bold').text('Preventive Lifestyle App', 50, 72);
+        // Header Branding
+        doc.fillColor('#0284C7').fontSize(22).font('Helvetica-Bold').text('Mito_Reboot', 50, 40);
+        doc.fillColor('#64748B').fontSize(9).font('Helvetica-Bold').text('Preventive Lifestyle App', 50, 66);
+        doc.fillColor('#94A3B8').fontSize(7.5).font('Helvetica').text('MITOREBOOT PRIVATE LIMITED', 50, 80);
 
-        doc.fillColor('#1E293B').fontSize(13).font('Helvetica-Bold').text(reportType.toUpperCase().replace(/_/g, ' '), 280, 48, { width: 270, align: 'right' });
-        doc.fillColor('#64748B').fontSize(8.5).font('Helvetica').text(`Generated: ${new Date().toLocaleString('en-IN')}`, 280, 68, { width: 270, align: 'right' });
-        doc.text(`Period: ${range.startDate.toLocaleDateString('en-IN')} - ${range.endDate.toLocaleDateString('en-IN')}`, 280, 80, { width: 270, align: 'right' });
+        // Header Title & Timestamps with guaranteed non-overlapping dynamic flow
+        const reportTitle = (reportType || 'EXECUTIVE REVENUE REPORT').toUpperCase().replace(/_/g, ' ');
+        doc.fillColor('#0F172A').fontSize(12).font('Helvetica-Bold').text(reportTitle, 220, 40, { width: 330, align: 'right' });
 
-        doc.moveTo(50, 100).lineTo(550, 100).strokeColor('#E2E8F0').lineWidth(1).stroke();
+        const currentTitleBottom = Math.max(doc.y + 4, 58);
+        doc.fillColor('#64748B').fontSize(8).font('Helvetica').text(`Generated: ${new Date().toLocaleString('en-IN')}`, 220, currentTitleBottom, { width: 330, align: 'right' });
+        doc.text(`Reporting Period: ${range.startDate.toLocaleDateString('en-IN')} – ${range.endDate.toLocaleDateString('en-IN')}`, 220, doc.y + 3, { width: 330, align: 'right' });
 
-        doc.rect(50, 115, 500, 125).fill('#F8FAFC');
-        doc.strokeColor('#E2E8F0').lineWidth(1).rect(50, 115, 500, 125).stroke();
+        const dividerY = Math.max(doc.y + 12, 102);
+        doc.moveTo(50, dividerY).lineTo(550, dividerY).strokeColor('#E2E8F0').lineWidth(1).stroke();
 
-        doc.fillColor('#0F172A').fontSize(11).font('Helvetica-Bold').text('Executive Financial Summary', 65, 127);
+        const cardY = dividerY + 12;
+        doc.rect(50, cardY, 500, 125).fill('#F8FAFC');
+        doc.strokeColor('#E2E8F0').lineWidth(1).rect(50, cardY, 500, 125).stroke();
+
+        doc.fillColor('#0F172A').fontSize(11).font('Helvetica-Bold').text('Executive Financial Summary', 65, cardY + 12);
 
         doc.fontSize(8.5).font('Helvetica');
-        doc.fillColor('#475569').text('Gross Plan & Product Value (MRP):', 65, 150);
-        doc.fillColor('#0F172A').font('Helvetica-Bold').text(`Rs. ${overview.kpis.totalRevenue.toLocaleString('en-IN')}`, 200, 150, { width: 85, align: 'right' });
+        doc.fillColor('#475569').text('Gross Plan & Product Value (MRP):', 65, cardY + 35);
+        doc.fillColor('#0F172A').font('Helvetica-Bold').text(`Rs. ${overview.kpis.totalRevenue.toLocaleString('en-IN')}`, 200, cardY + 35, { width: 85, align: 'right' });
 
-        doc.fillColor('#475569').text('Promo Discounts Applied:', 65, 170);
+        doc.fillColor('#475569').text('Promo Discounts Applied:', 65, cardY + 55);
         const discountsVal = (overview.kpis as any).totalDiscounts ?? Math.max(0, overview.kpis.totalRevenue - overview.kpis.totalAmountCollected);
-        doc.fillColor('#EF4444').font('Helvetica-Bold').text(`- Rs. ${discountsVal.toLocaleString('en-IN')}`, 200, 170, { width: 85, align: 'right' });
+        doc.fillColor('#EF4444').font('Helvetica-Bold').text(`- Rs. ${discountsVal.toLocaleString('en-IN')}`, 200, cardY + 55, { width: 85, align: 'right' });
 
-        doc.fillColor('#475569').text('Net Customer Cash Collected:', 65, 190);
-        doc.fillColor('#0F172A').font('Helvetica-Bold').text(`Rs. ${overview.kpis.totalAmountCollected.toLocaleString('en-IN')}`, 200, 190, { width: 85, align: 'right' });
+        doc.fillColor('#475569').text('Net Customer Cash Collected:', 65, cardY + 75);
+        doc.fillColor('#0F172A').font('Helvetica-Bold').text(`Rs. ${overview.kpis.totalAmountCollected.toLocaleString('en-IN')}`, 200, cardY + 75, { width: 85, align: 'right' });
 
-        doc.fillColor('#475569').text('Net Platform Collections:', 65, 210);
-        doc.fillColor('#10B981').font('Helvetica-Bold').text(`Rs. ${overview.kpis.netRevenue.toLocaleString('en-IN')}`, 200, 210, { width: 85, align: 'right' });
+        doc.fillColor('#475569').text('Net Platform Collections:', 65, cardY + 95);
+        doc.fillColor('#10B981').font('Helvetica-Bold').text(`Rs. ${overview.kpis.netRevenue.toLocaleString('en-IN')}`, 200, cardY + 95, { width: 85, align: 'right' });
 
-        doc.fillColor('#475569').text('Estimated Bank Settlement:', 320, 150);
-        doc.fillColor('#0284C7').font('Helvetica-Bold').text(`Rs. ${overview.kpis.actualSettledToBank.toLocaleString('en-IN')}`, 455, 150, { width: 80, align: 'right' });
+        doc.fillColor('#475569').text('Estimated Bank Settlement:', 320, cardY + 35);
+        doc.fillColor('#0284C7').font('Helvetica-Bold').text(`Rs. ${overview.kpis.actualSettledToBank.toLocaleString('en-IN')}`, 455, cardY + 35, { width: 80, align: 'right' });
 
-        doc.fillColor('#475569').text('Total Paying / Active Members:', 320, 170);
-        doc.fillColor('#0F172A').font('Helvetica-Bold').text(`${overview.kpis.totalPayingUsers}`, 455, 170, { width: 80, align: 'right' });
+        doc.fillColor('#475569').text('Total Paying / Active Members:', 320, cardY + 55);
+        doc.fillColor('#0F172A').font('Helvetica-Bold').text(`${overview.kpis.totalPayingUsers}`, 455, cardY + 55, { width: 80, align: 'right' });
 
-        doc.fillColor('#475569').text('Subscription Run-Rate (ARR):', 320, 190);
-        doc.fillColor('#0F172A').font('Helvetica-Bold').text(`Rs. ${(overview.kpis.activePaidSubscribers * 1000).toLocaleString('en-IN')}`, 455, 190, { width: 80, align: 'right' });
+        doc.fillColor('#475569').text('Subscription Run-Rate (ARR):', 320, cardY + 75);
+        doc.fillColor('#0F172A').font('Helvetica-Bold').text(`Rs. ${(overview.kpis.activePaidSubscribers * 1000).toLocaleString('en-IN')}`, 455, cardY + 75, { width: 80, align: 'right' });
 
-        doc.fillColor('#475569').text('Average Revenue (ARPPU):', 320, 210);
-        doc.fillColor('#0F172A').font('Helvetica-Bold').text(`Rs. ${overview.kpis.arppu.toLocaleString('en-IN')}`, 455, 210, { width: 80, align: 'right' });
+        doc.fillColor('#475569').text('Average Revenue (ARPPU):', 320, cardY + 95);
+        doc.fillColor('#0F172A').font('Helvetica-Bold').text(`Rs. ${overview.kpis.arppu.toLocaleString('en-IN')}`, 455, cardY + 95, { width: 80, align: 'right' });
 
-        doc.fillColor('#0F172A').fontSize(12).font('Helvetica-Bold').text('Department Revenue Contributions', 50, 260);
+        const deptsHeaderY = cardY + 142;
+        doc.fillColor('#0F172A').fontSize(12).font('Helvetica-Bold').text('Department Revenue Contributions', 50, deptsHeaderY);
 
-        const tableTop = 280;
+        const tableTop = deptsHeaderY + 18;
         doc.rect(50, tableTop, 500, 22).fill('#E2E8F0');
         doc.fillColor('#334155').fontSize(8.5).font('Helvetica-Bold');
         doc.text('Department', 60, tableTop + 6);
