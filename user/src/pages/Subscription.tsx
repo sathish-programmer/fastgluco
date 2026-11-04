@@ -771,8 +771,12 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
 
           <div className="flex justify-between items-start mb-3 relative z-10">
             <div>
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-full border border-slate-200/60 dark:border-slate-700">
-                {t('sub.yourCurrentTier', 'Your Current Tier')}
+              <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border ${
+                activeSub.status === 'trialing'
+                  ? 'text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60'
+                  : 'text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 border-slate-200/60 dark:border-slate-700'
+              }`}>
+                {activeSub.status === 'trialing' ? '✨ 48-Hour Free Trial Active' : t('sub.yourCurrentTier', 'Your Current Tier')}
               </span>
               <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100 mt-2 flex items-center gap-2">
                 <span style={{ color: activePlanDetails.color }}>{activePlanDetails.name}</span>
@@ -784,17 +788,32 @@ export const Subscription: React.FC<SubscriptionPageProps> = ({ onBack, onSucces
               </h3>
             </div>
             <div className="text-right">
-              <span className="text-lg font-black text-slate-900 dark:text-slate-100">
-                ₹{activeSub.billingCycle === 'yearly' ? activePlanDetails.yearlyPrice : activePlanDetails.monthlyPrice}
-              </span>
-              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold block">
-                / {activeSub.billingCycle}
-              </span>
+              {activeSub.status === 'trialing' ? (
+                <>
+                  <span className="text-xl font-black text-emerald-600 dark:text-emerald-400">
+                    ₹0
+                  </span>
+                  <span className="text-[10px] text-emerald-700 dark:text-emerald-300 font-extrabold block">
+                    Free (48 Hours)
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="text-lg font-black text-slate-900 dark:text-slate-100">
+                    ₹{activeSub.billingCycle === 'yearly' ? activePlanDetails.yearlyPrice : activePlanDetails.monthlyPrice}
+                  </span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold block">
+                    / {activeSub.billingCycle}
+                  </span>
+                </>
+              )}
             </div>
           </div>
 
           <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed mb-4">
-            {activePlanDetails.description}
+            {activeSub.status === 'trialing'
+              ? `You are currently in your 48-Hour Free Trial period with complimentary access to ${activePlanDetails.name} features. No payment was charged. You may explore the app freely, or subscribe below to keep uninterrupted access once your trial ends.`
+              : activePlanDetails.description}
           </p>
 
           <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-2.5">
