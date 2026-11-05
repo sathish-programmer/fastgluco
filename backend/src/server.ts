@@ -66,16 +66,20 @@ const bootstrap = async () => {
       if (pendingInvoices.length > 0) {
         for (const inv of pendingInvoices) {
           const userSub = await UserSubscription.findOne({ userId: inv.userId }).sort({ createdAt: -1 });
-          if (userSub?.endDate) {
-            inv.subscriptionPeriodEnd = userSub.endDate;
-            if (!inv.billingCycle) inv.billingCycle = userSub.billingCycle || 'yearly';
-          } else {
+          let periodEnd = userSub?.endDate;
+          if (!periodEnd) {
             const fallbackEnd = new Date(inv.subscriptionPeriodStart || inv.createdAt || Date.now());
             fallbackEnd.setFullYear(fallbackEnd.getFullYear() + 1);
-            inv.subscriptionPeriodEnd = fallbackEnd;
-            if (!inv.billingCycle) inv.billingCycle = 'yearly';
+            periodEnd = fallbackEnd;
           }
-          await inv.save();
+          const updateFields: any = {
+            subscriptionPeriodEnd: periodEnd,
+            billingCycle: inv.billingCycle || userSub?.billingCycle || 'yearly'
+          };
+          if (inv.originalAmount === undefined || inv.originalAmount === null) {
+            updateFields.originalAmount = inv.amount || 0;
+          }
+          await Invoice.updateOne({ _id: inv._id }, { $set: updateFields });
         }
         console.log(`[Init] Backfilled subscriptionPeriodEnd for ${pendingInvoices.length} invoices.`);
       }

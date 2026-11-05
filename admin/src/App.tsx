@@ -9131,9 +9131,14 @@ const AdminPanelContent: React.FC = () => {
                         <h3 className="text-xl font-black">{selectedUserActivity.user.name || 'Unknown Patient'}</h3>
                         <p className="text-white/70 text-xs font-semibold">{selectedUserActivity.user.email}</p>
                         <div className="flex items-center space-x-2 mt-1.5">
-                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black ${selectedUserActivity.user.isBlocked ? 'bg-red-400/30 text-red-100' : 'bg-green-400/30 text-green-100'}`}>
-                            {selectedUserActivity.user.isBlocked ? '⛔ Blocked' : '✅ Active'}
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black ${selectedUserActivity.user.isDeleted ? 'bg-rose-500/40 text-rose-100 border border-rose-300/40' : selectedUserActivity.user.isBlocked ? 'bg-red-400/30 text-red-100' : 'bg-green-400/30 text-green-100'}`}>
+                            {selectedUserActivity.user.isDeleted ? '🗑️ Deleted (30d Grace)' : selectedUserActivity.user.isBlocked ? '⛔ Blocked' : '✅ Active'}
                           </span>
+                          {selectedUserActivity.user.isDeleted && selectedUserActivity.user.deletionScheduledFor && (
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-500/30 text-rose-100">
+                              {Math.max(0, Math.ceil((new Date(selectedUserActivity.user.deletionScheduledFor).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))}d left
+                            </span>
+                          )}
                           <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-white/20 text-white">
                             ID: {selectedUserActivity.user._id?.slice(-8)}
                           </span>
