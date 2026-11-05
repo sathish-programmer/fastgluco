@@ -4062,8 +4062,16 @@ const AdminPanelContent: React.FC = () => {
                         <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#94A3B8', fontWeight: 600 }} axisLine={false} tickLine={false} />
                         <YAxis tick={{ fontSize: 11, fill: '#94A3B8', fontWeight: 600 }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${v}`} />
                         <Tooltip
-                          contentStyle={{ backgroundColor: '#0F172A', borderRadius: '12px', border: 'none', color: '#FFF', fontSize: '12px', fontWeight: 'bold' }}
-                          formatter={(value: any) => [`₹${Number(value).toLocaleString('en-IN')}`, 'Amount']}
+                          contentStyle={{ 
+                            backgroundColor: '#0F172A', 
+                            borderRadius: '12px', 
+                            border: '1px solid #334155', 
+                            padding: '8px 12px',
+                            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.4)' 
+                          }}
+                          itemStyle={{ color: '#FFFFFF', fontWeight: 'bold', fontSize: '12px' }}
+                          labelStyle={{ color: '#94A3B8', fontWeight: 'bold', fontSize: '12px', marginBottom: '2px' }}
+                          formatter={(value: any, name: any) => [`₹${Number(value).toLocaleString('en-IN')}`, name === 'gross' ? 'Gross Billing' : name === 'net' ? 'Net Collected' : name]}
                         />
                         <Area type="monotone" dataKey="gross" stroke="#10B981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorGross)" name="Gross Billing" />
                         <Area type="monotone" dataKey="net" stroke="#3B82F6" strokeWidth={2} fillOpacity={1} fill="url(#colorNet)" name="Net Collected" />
@@ -4120,7 +4128,16 @@ const AdminPanelContent: React.FC = () => {
                         <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748B', fontWeight: 600 }} axisLine={false} tickLine={false} />
                         <YAxis tick={{ fontSize: 11, fill: '#64748B', fontWeight: 600 }} axisLine={false} tickLine={false} />
                         <Tooltip
-                          contentStyle={{ backgroundColor: '#0F172A', borderRadius: '12px', border: 'none', color: '#FFF', fontSize: '12px', fontWeight: 'bold' }}
+                          contentStyle={{ 
+                            backgroundColor: '#0F172A', 
+                            borderRadius: '12px', 
+                            border: '1px solid #334155', 
+                            padding: '8px 12px',
+                            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.4)' 
+                          }}
+                          itemStyle={{ color: '#FFFFFF', fontWeight: 'bold', fontSize: '12px' }}
+                          labelStyle={{ color: '#F8FAFC', fontWeight: 'bold', fontSize: '12px' }}
+                          formatter={(value: any, name: any) => [`${value} meals logged`, `${name}`]}
                         />
                         <Bar dataKey="count" radius={[10, 10, 0, 0]}>
                           <Cell fill="#3B82F6" />
@@ -4189,7 +4206,16 @@ const AdminPanelContent: React.FC = () => {
                           ))}
                         </Pie>
                         <Tooltip
-                          contentStyle={{ backgroundColor: '#0F172A', borderRadius: '12px', border: 'none', color: '#FFF', fontSize: '12px', fontWeight: 'bold' }}
+                          contentStyle={{ 
+                            backgroundColor: '#0F172A', 
+                            borderRadius: '12px', 
+                            border: '1px solid #334155', 
+                            padding: '8px 12px',
+                            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.4)' 
+                          }}
+                          itemStyle={{ color: '#FFFFFF', fontWeight: 'bold', fontSize: '12px' }}
+                          labelStyle={{ color: '#F8FAFC', fontWeight: 'bold', fontSize: '12px' }}
+                          formatter={(value: any, name: any) => [`${value} meals logged`, `${name}`]}
                         />
                       </PieChart>
                     </ResponsiveContainer>
