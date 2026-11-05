@@ -391,6 +391,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (data?.isUpdateRequired) {
           window.dispatchEvent(new CustomEvent('app_update_required', { detail: data }));
         }
+        if (data?.isAccountDeleted) {
+          const delErr: any = new Error(data.message || 'Account was deleted.');
+          delErr.isAccountDeleted = true;
+          delErr.daysLeft = data.daysLeft;
+          throw delErr;
+        }
         return { success: false, message: data.message || 'Failed to send OTP.' };
       }
       return {
@@ -441,6 +447,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (data?.isUpdateRequired) {
           window.dispatchEvent(new CustomEvent('app_update_required', { detail: data }));
         }
+        if (data?.isAccountDeleted) {
+          const delErr: any = new Error(data.message || 'Account was deleted.');
+          delErr.isAccountDeleted = true;
+          delErr.daysLeft = data.daysLeft;
+          throw delErr;
+        }
         throw new Error(data.message || 'OTP verification failed.');
       }
 
@@ -452,6 +464,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err: any) {
       console.error('[Auth] verifyOtp error:', err);
       setError(err.message || 'An error occurred during OTP verification.');
+      if (err.isAccountDeleted) throw err;
       return null;
     } finally {
       setIsLoading(false);
@@ -492,6 +505,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const data = await response.json();
 
       if (!response.ok) {
+        if (data?.isUpdateRequired) {
+          window.dispatchEvent(new CustomEvent('app_update_required', { detail: data }));
+        }
+        if (data?.isAccountDeleted) {
+          const delErr: any = new Error(data.message || 'Account was deleted.');
+          delErr.isAccountDeleted = true;
+          delErr.daysLeft = data.daysLeft;
+          throw delErr;
+        }
         throw new Error(data.message || 'Firebase login verification failed.');
       }
 
@@ -503,6 +525,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err: any) {
       console.error('[Auth] loginWithFirebaseToken error:', err);
       setError(err.message || 'An error occurred during verification.');
+      if (err.isAccountDeleted) throw err;
       return null;
     } finally {
       setIsLoading(false);

@@ -125,6 +125,7 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
 
   const [screen, setScreen] = useState<'phone' | 'otp'>('phone');
   const [loading, setLoading] = useState(false);
+  const [accountDeletedInfo, setAccountDeletedInfo] = useState<{ isDeleted: boolean; daysLeft: number; message: string } | null>(null);
 
   // Phone input
   const [country, setCountry] = useState<Country>(() => detectCountryFromTimezone());
@@ -433,6 +434,14 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
           setPhoneError(sendRes.message || t('auth.sendOtpFailed', 'Unable to send verification code. Please try again.'));
         }
       } catch (err: any) {
+        if (err?.isAccountDeleted || err?.message?.includes('quarantine') || err?.message?.includes('deleted and is')) {
+          setAccountDeletedInfo({
+            isDeleted: true,
+            daysLeft: err.daysLeft || 30,
+            message: err.message
+          });
+          return;
+        }
         setPhoneError(err?.message || t('auth.sendOtpFailed', 'Unable to send verification code. Please try again.'));
       } finally {
         setLoading(false);
@@ -686,6 +695,15 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
       }
     } catch (err: any) {
       console.error('verifyOtp error:', err);
+      if (err?.isAccountDeleted || err?.message?.includes('quarantine') || err?.message?.includes('deleted and is')) {
+        setScreen('phone');
+        setAccountDeletedInfo({
+          isDeleted: true,
+          daysLeft: err.daysLeft || 30,
+          message: err.message
+        });
+        return;
+      }
       setOtpError(err.message || 'Verification failed. Please try again.');
     } finally {
       setLoading(false);
@@ -754,7 +772,33 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
         </div>
 
         {/* Global Auth Error */}
-        {error && (
+        {accountDeletedInfo && (
+          <div className="mb-5 p-4 bg-amber-50 text-amber-950 rounded-2xl flex items-start space-x-3 text-xs font-medium border border-amber-200 animate-shake shadow-xs">
+            <AlertCircle className="h-5 w-5 shrink-0 mt-0.5 text-amber-600" />
+            <div className="flex-1">
+              <p className="font-bold text-amber-950 mb-1 text-sm">Account In 30-Day Quarantine</p>
+              <p className="leading-relaxed text-amber-900">{accountDeletedInfo.message}</p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <a
+                  href={`mailto:support@mitoreboot.in?subject=Revoke%20and%20Restore%20Deleted%20Account%20Request&body=Hi%20MitoReboot%20Support%20Team%2C%0A%0AI%20recently%20deleted%20my%20account%20associated%20with%20mobile%20${encodeURIComponent(mobileNumber)}%20and%20email%20${encodeURIComponent(email)}.%20Please%20revoke%20the%20deletion%20and%20restore%20my%20account.%0A%0AThank%20you.`}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 text-white font-bold text-[11px] shadow-xs hover:bg-blue-700 transition-colors"
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>Email Support to Restore</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setAccountDeletedInfo(null)}
+                  className="px-2.5 py-1.5 text-amber-800 hover:text-amber-950 text-xs font-semibold cursor-pointer"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {error && !accountDeletedInfo && (
           <div className="mb-5 p-3.5 bg-red-50 text-danger rounded-2xl flex items-start space-x-3 text-xs font-medium border border-red-100 animate-shake">
             <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-danger" />
             <div className="flex-1">
