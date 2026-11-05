@@ -1,0 +1,61 @@
+export const OFFICIAL_TERMS_HTML = `
+<div style="font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; color: #334155; max-width: 100%;">
+  <div style="text-align: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 1.25rem; margin-bottom: 1.5rem;">
+    <h2 style="font-size: 1.5rem; font-weight: 900; color: #0f172a; margin: 0 0 0.25rem 0; letter-spacing: -0.02em;">MITOREBOOT PRIVATE LIMITED</h2>
+    <h3 style="font-size: 1.25rem; font-weight: 800; color: #1e293b; margin: 0 0 0.5rem 0;">MASTER DISCLAIMER, PRIVACY NOTICE & TERMS OF USE</h3>
+    <p style="font-size: 0.875rem; color: #64748b; font-weight: 600; margin: 0;">For the MitoReboot Application, Website and Related Services</p>
+    <p style="font-size: 0.8125rem; color: #475569; font-weight: 600; margin-top: 0.35rem;">Effective Date: August 23, 2026 &nbsp;|&nbsp; Last Updated: August 23, 2026</p>
+  </div>
+
+  <div style="margin-bottom: 1.5rem;">
+    <h4 style="font-size: 1.1rem; font-weight: 800; color: #0f172a; margin-top: 1.25rem; margin-bottom: 0.5rem;">1. INTRODUCTION</h4>
+    <p style="font-size: 0.875rem; margin-bottom: 0.75rem;">MitoReboot is a digital health, wellness, lifestyle and health-awareness platform developed and operated by <strong>MitoReboot Private Limited</strong> ("MitoReboot", "Company", "we", "us" or "our").</p>
+    <p style="font-size: 0.875rem; margin-bottom: 0.75rem;">The Platform may provide users with tools for recording, organising and analysing information relating to lifestyle, nutrition, fasting, glucose patterns, environmental exposures, stress, wellness and other health-related parameters.</p>
+    <p style="font-size: 0.875rem; margin-bottom: 0.75rem;">Certain features may generate scores, trends, insights, reports, educational information or recommendations based on information supplied by the user, information obtained from connected devices or third-party services, and/or algorithms developed or used by MitoReboot.</p>
+    <p style="font-size: 0.875rem; margin-bottom: 0.75rem;">This document applies to all three modes of MitoReboot and to all related features, services, websites, applications, dashboards, reports and digital communications unless a specific additional notice is provided.</p>
+    <p style="font-size: 0.875rem; margin-bottom: 1.5rem;">By accessing, registering for or using MitoReboot, you acknowledge that you have read and understood this document and agree to be bound by its terms.</p>
+  </div>
+
+  <div style="margin-bottom: 1.5rem;">
+    <h3 style="font-size: 1.15rem; font-weight: 800; color: #0f172a; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.35rem; margin-top: 1.5rem; margin-bottom: 0.75rem;">PART A – MEDICAL AND HEALTH DISCLAIMER</h3>
+    <h4 style="font-size: 1rem; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem;">2. NOT A SUBSTITUTE FOR MEDICAL CARE</h4>
+    <p style="font-size: 0.875rem; margin-bottom: 0.75rem;">MitoReboot is intended primarily as a health-awareness, wellness, educational and informational platform.</p>
+    <p style="font-size: 0.875rem; margin-bottom: 0.75rem;">Unless a specific feature has been expressly identified and appropriately validated and authorised for a particular medical purpose, MitoReboot is not a medical device, diagnostic service, emergency medical service or substitute for consultation with a qualified healthcare professional.</p>
+    <p style="font-size: 0.875rem; margin-bottom: 0.75rem;">Information, scores, graphs, reports, recommendations and other outputs provided by MitoReboot should not be considered a diagnosis, prognosis, prescription or definitive medical opinion.</p>
+    <p style="font-size: 0.875rem; font-weight: 700; margin-bottom: 0.5rem; color: #0f172a;">Users should not:</p>
+    <ul style="font-size: 0.875rem; margin-left: 1.25rem; margin-bottom: 1.25rem; list-style-type: disc; padding-left: 1rem;">
+      <li style="margin-bottom: 0.35rem;">Start, stop or alter medication based solely on MitoReboot.</li>
+      <li style="margin-bottom: 0.35rem;">Change cancer treatment based solely on MitoReboot.</li>
+      <li style="margin-bottom: 0.35rem;">Delay seeking urgent medical care.</li>
+      <li style="margin-bottom: 0.35rem;">Ignore advice given by an oncologist, physician, surgeon or other qualified clinician.</li>
+    </ul>
+    <p style="font-size: 0.875rem; margin-bottom: 1.25rem;">Always consult your physician, oncologist, endocrinologist or qualified healthcare provider regarding symptoms, treatment, medications, diagnostic tests or medical emergencies.</p>
+
+    <h4 style="font-size: 1rem; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem;">3. EMERGENCY MEDICAL SITUATIONS</h4>
+    <p style="font-size: 0.875rem; margin-bottom: 0.75rem;">MitoReboot does not provide real-time clinical monitoring or emergency triage services.</p>
+    <p style="font-size: 0.875rem; margin-bottom: 0.75rem;">If you experience severe pain, high fever, sudden shortness of breath, chest pain, uncontrolled bleeding, severe dizziness, altered consciousness, severe allergic reaction or other medical emergencies, contact emergency medical services immediately or attend the nearest hospital emergency department.</p>
+    <p style="font-size: 0.875rem; margin-bottom: 1.25rem;">Do not wait for a response through MitoReboot.</p>
+
+    <h4 style="font-size: 1rem; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem;">4. USER RESPONSIBILITY FOR HEALTH DECISIONS</h4>
+    <p style="font-size: 0.875rem; margin-bottom: 0.75rem;">All decisions concerning nutrition, fasting, exercise, supplements, complementary therapies, medical tests, cancer treatments and conventional medical management remain the sole responsibility of the user in consultation with their treating healthcare team.</p>
+    <p style="font-size: 0.875rem; margin-bottom: 1.25rem;">MitoReboot does not accept responsibility for health outcomes, disease progression, treatment failure, adverse drug interactions or complications arising from independent lifestyle changes or failure to follow professional clinical advice.</p>
+  </div>
+
+  <div style="margin-bottom: 1.5rem;">
+    <h3 style="font-size: 1.15rem; font-weight: 800; color: #0f172a; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.35rem; margin-top: 1.5rem; margin-bottom: 0.75rem;">PART B – PRIVACY NOTICE & DATA PROTECTION</h3>
+    <h4 style="font-size: 1rem; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem;">5. INFORMATION WE COLLECT</h4>
+    <p style="font-size: 0.875rem; margin-bottom: 0.75rem;">We collect information that users provide directly, including account information (name, email, phone number), profile information (age, biological sex, health conditions), health and lifestyle data (fasting windows, meals, activity, sleep, stress), and biomarker records.</p>
+    <p style="font-size: 0.875rem; margin-bottom: 1.25rem;">All sensitive personal data is encrypted in transit and at rest using industry-standard protocols.</p>
+
+    <h4 style="font-size: 1rem; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem;">6. HOW WE USE YOUR INFORMATION</h4>
+    <p style="font-size: 0.875rem; margin-bottom: 0.75rem;">We use collected information solely to provide, personalize, maintain and improve our health awareness and wellness features, verify accounts, process subscriptions, and communicate with users.</p>
+    <p style="font-size: 0.875rem; margin-bottom: 1.25rem;">We do not sell user health data to third-party data brokers or advertisers.</p>
+  </div>
+
+  <div style="background-color: #fffbeb; border: 1px solid #fde68a; padding: 1rem; border-radius: 0.75rem; margin-top: 1.5rem; text-align: center;">
+    <p style="font-size: 0.875rem; font-weight: 800; color: #92400e; margin: 0 0 0.35rem 0;">IMPORTANT NOTICE</p>
+    <p style="font-size: 0.8125rem; color: #78350f; margin: 0 0 0.5rem 0; line-height: 1.5;">MitoReboot is intended to support health awareness, education and informed engagement with healthcare. It is not intended to replace qualified medical care.<br/>Do not use MitoReboot as the sole basis for diagnosing, preventing or treating cancer or any other medical condition.</p>
+    <p style="font-size: 0.75rem; color: #92400e; font-weight: 700; margin: 0;">© ${new Date().getFullYear()} MitoReboot Private Limited. All Rights Reserved.</p>
+  </div>
+</div>
+`;

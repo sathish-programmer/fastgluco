@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { LegalDocument } from '../models/LegalDocument';
-import { OFFICIAL_TERMS_HTML } from '../updateTermsDoc';
+import { OFFICIAL_TERMS_HTML } from '../constants/legalTerms';
 
 const router = Router();
 
