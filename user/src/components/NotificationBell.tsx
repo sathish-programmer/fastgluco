@@ -226,13 +226,13 @@ export const NotificationBell: React.FC = () => {
     <div className="relative shrink-0" ref={dropdownRef}>
       <button
         onClick={handleToggleDropdown}
-        className="h-8 w-8 flex items-center justify-center text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer relative focus:outline-none shrink-0"
+        className="h-8.5 w-8.5 sm:h-9 sm:w-9 flex items-center justify-center text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white rounded-full bg-slate-100/80 hover:bg-slate-200/80 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 border border-slate-200/60 dark:border-slate-750 transition-all cursor-pointer relative focus:outline-none shrink-0 active:scale-95 shadow-2xs"
         title={t('navigation.notifications')}
         aria-label={t('navigation.notifications')}
       >
-        <Bell className="h-4.5 w-4.5" />
+        <Bell className="h-4.5 w-4.5 sm:h-5 sm:w-5 stroke-[2.2]" />
         {unreadCount > 0 && (
-          <span className="absolute top-0 right-0 bg-rose-500 text-white font-black text-[7.5px] h-3.5 min-w-3.5 px-0.5 rounded-full flex items-center justify-center border border-white dark:border-slate-800 shadow-xs animate-pulse">
+          <span className="absolute -top-1 -right-1 bg-rose-500 text-white font-black text-[7.5px] h-3.5 min-w-3.5 px-0.5 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900 shadow-xs animate-pulse">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}

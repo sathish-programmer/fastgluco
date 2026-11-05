@@ -1088,11 +1088,11 @@ const MainAppContent: React.FC = () => {
             {/* Support / Help */}
             <button
               onClick={() => setShowHelpModal(true)}
-              className="h-7.5 w-7.5 sm:h-8 sm:w-8 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0 flex items-center justify-center"
+              className="h-8.5 w-8.5 sm:h-9 sm:w-9 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white rounded-full bg-slate-100/80 hover:bg-slate-200/80 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 border border-slate-200/60 dark:border-slate-750 transition-all cursor-pointer shrink-0 flex items-center justify-center active:scale-95 shadow-2xs"
               title={t('modals.helpSupport', 'Help & Support')}
               aria-label={t('modals.helpSupport', 'Help & Support')}
             >
-              <Headphones className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
+              <Headphones className="h-4.5 w-4.5 sm:h-5 sm:w-5 stroke-[2.2]" />
             </button>
 
             {/* Notification Bell */}

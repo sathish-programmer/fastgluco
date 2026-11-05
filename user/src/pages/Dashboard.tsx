@@ -2321,7 +2321,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab, features,
     </motion.div>
 
       {/* ── Floating AI Check-in FAB Trigger Button & Callout ── */}
-      <div className="fixed bottom-20 right-3.5 sm:right-6 z-40 flex items-center gap-2 select-none pointer-events-auto">
+      <div className="fixed bottom-24 sm:bottom-22 right-3.5 sm:right-6 z-40 flex items-center gap-2 select-none pointer-events-auto">
         {/* Floating Speech Callout beside Robo */}
         <div
           onClick={() => setShowChatbotModal(true)}
