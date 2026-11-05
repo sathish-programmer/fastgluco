@@ -82,6 +82,7 @@ import labRoutes from './routes/labRoutes';
 import orderBridgeRoutes from './routes/orderBridgeRoutes';
 import legalPublicRoutes from './routes/legalPublicRoutes';
 app.use('/', orderBridgeRoutes);
+app.use('/api', orderBridgeRoutes);
 app.use('/', legalPublicRoutes);
 app.use('/api', legalPublicRoutes);
 app.use('/api/labs', labRoutes);

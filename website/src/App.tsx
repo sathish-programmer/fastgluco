@@ -82,6 +82,16 @@ export default function App() {
     }
   }, [activeTab]);
 
+  // Deep-link auto launcher if arriving on /open, /open-app, or /app
+  useEffect(() => {
+    const p = window.location.pathname.toLowerCase();
+    if (p.includes('/open') || p === '/app') {
+      const searchParams = new URLSearchParams(window.location.search);
+      const target = searchParams.get('target') || searchParams.get('screen') || searchParams.get('tab') || searchParams.get('path') || '';
+      openAppOrStore(target);
+    }
+  }, []);
+
   // Dynamic Data States
   const [privacyData, setPrivacyData] = useState<string>('Loading privacy policy...');
   const [termsData, setTermsData] = useState<string>('Loading terms of service...');
@@ -122,7 +132,7 @@ export default function App() {
     const isAndroid = /Android/.test(navigator.userAgent);
 
     const appSchemeUrl = cleanPath ? `mitoreboot://${cleanPath}` : 'mitoreboot://home';
-    const appStoreUrl = 'https://apps.apple.com/in/app/mito-reboot/id6742055660';
+    const appStoreUrl = 'https://apps.apple.com/in/app/mito-reboot/id6783705985';
     const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.mitoreboot.app';
 
     if (isAndroid) {

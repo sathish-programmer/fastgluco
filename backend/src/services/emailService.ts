@@ -361,7 +361,8 @@ export class EmailService {
           <li>Upload your Abbott CGM report to see your analysis!</li>
         </ul>
       </div>
-      <p>If you have any questions, feel free to contact our support team.</p>
+      <p style="margin-top: 24px;"><a href="https://api.mitoreboot.in/open-app?screen=home" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Open ${appName} App</a></p>
+      <p style="color: #64748b; font-size: 13px; margin-top: 16px;">If you have any questions, feel free to contact our support team at support@mitoreboot.in.</p>
     `, appName, appTagline);
     try { await transporter.sendMail({ from: `"${appName}" <support@mitoreboot.in>`, to: email, subject: `Welcome to ${appName}!`, html }); } catch (err) { console.error(err); }
   }
@@ -1474,7 +1475,7 @@ export class EmailService {
           <li>Maintain your wellness and longevity streak</li>
         </ul>
       </div>
-      <p><a href="https://app.mitoreboot.in" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Open Daily Check-in</a></p>
+      <p><a href="https://api.mitoreboot.in/open-app?screen=habits" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Open Daily Check-in</a></p>
     `, appName, appTagline);
     try {
       await transporter.sendMail({
@@ -1504,7 +1505,7 @@ export class EmailService {
           <li>Biomarker Trends & Metrics: <strong>Updated</strong></li>
         </ul>
       </div>
-      <p><a href="https://app.mitoreboot.in" style="background-color: #059669; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">View Biomarker Insights</a></p>
+      <p><a href="https://api.mitoreboot.in/open-app?screen=glucose" style="background-color: #059669; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">View Biomarker Insights</a></p>
     `, appName, appTagline);
     try {
       await transporter.sendMail({
@@ -1570,7 +1571,7 @@ export class EmailService {
           All your historical biomarker logs, habits, and subscription status are completely intact. You can now log in using your registered mobile number and OTP.
         </p>
       </div>
-      <p><a href="https://app.mitoreboot.in" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Open ${appName} App</a></p>
+      <p><a href="https://api.mitoreboot.in/open-app?screen=home" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Open ${appName} App</a></p>
     `, appName, appTagline);
 
     try {
