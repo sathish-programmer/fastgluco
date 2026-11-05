@@ -1402,22 +1402,9 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
         <span>{t('profile.requestAccountDeletion', 'Request Account Deletion')}</span>
       </motion.button>
 
-      {/* Trademark, Company Name, Address & Copyright Modern Footer */}
+      {/* Company Name, Address & Copyright Modern Footer */}
       <div className="mt-2 mb-8 text-center px-1">
         <div className="p-4 rounded-3xl bg-gradient-to-b from-slate-50 to-slate-100/60 dark:from-slate-900/70 dark:to-slate-950/70 border border-slate-200/70 dark:border-slate-800 shadow-2xs text-center space-y-1.5">
-          <div className="flex items-center justify-center gap-1.5">
-            <span className="font-extrabold text-xs text-slate-800 dark:text-slate-100 tracking-tight">
-              {branding.appName ? branding.appName.replace(/_/g, ' ') : 'Mito Reboot'}
-            </span>
-            <sup className="text-[7px] font-black text-slate-400 dark:text-slate-500 select-none leading-none">
-              TM
-            </sup>
-            <span className="text-slate-300 dark:text-slate-700">•</span>
-            <span className="text-[9px] font-mono font-black px-2 py-0.5 rounded-full bg-slate-200/80 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-300/40 dark:border-slate-700/50">
-              {CURRENT_APP_VERSION}
-            </span>
-          </div>
-
           <p className="font-bold text-[11px] text-slate-700 dark:text-slate-300 tracking-tight">
             MitoReboot Private Limited
           </p>

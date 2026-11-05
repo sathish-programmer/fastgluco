@@ -1100,13 +1100,19 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
   };
 
   const getFastingScore = () => {
-    const latest = getLatestLogForTypes('FASTING', 'REPAIR');
+    const latest = getLatestLogForTypes('FASTING');
     if (!latest) return null;
     const val = latest.value;
     const optStr = (typeof val === 'object' ? (val.option || val.notes || '') : `${val}`).toLowerCase();
     const isExplicitNo = optStr.includes('no') || optStr.includes('skip') || optStr.includes('not today') || val?.completed === false || (typeof val?.hours === 'number' && val.hours < 12 && !val?.completed);
     if (isExplicitNo) return 0;
-    if (val === 1 || (typeof val?.hours === 'number' && val.hours >= 12) || val?.completed === true || optStr.includes('yes') || optStr.includes('16') || optStr.includes('12') || (val?.started && val?.ended)) return 1;
+    if (val === 1 || (typeof val?.hours === 'number' && val.hours >= 12) || optStr.includes('yes') || optStr.includes('16') || optStr.includes('12')) return 1;
+    if (val?.started && val?.ended && val.started !== val.ended) {
+      const diffHours = (new Date(val.ended).getTime() - new Date(val.started).getTime()) / (1000 * 60 * 60);
+      if (diffHours >= 12) return 1;
+      return 0;
+    }
+    if (val?.completed === true && (val?.hours === undefined || val.hours >= 12)) return 1;
     return 0;
   };
 
@@ -1388,9 +1394,20 @@ export const NonCancerDashboard: React.FC<NonCancerDashboardProps> = ({
       const val = latest.value;
       const optStr = (typeof val === 'object' ? (val.option || val.notes || val.faceId || val.technique || '') : `${val}`).toLowerCase();
 
-      if (typeUpper.includes('FASTING')) {
+      if (typeUpper === 'FASTING' || typeUpper.includes('FASTING')) {
         const isExplicitNo = optStr.includes('no') || optStr.includes('skip') || optStr.includes('not today') || val?.completed === false || (typeof val?.hours === 'number' && val.hours < 12 && !val?.completed);
-        if (!isExplicitNo && (val === 1 || (typeof val?.hours === 'number' && val.hours >= 12) || val?.completed === true || optStr.includes('yes') || optStr.includes('16') || optStr.includes('12') || (val?.started && val?.ended))) {
+        let isValidFasting = false;
+        if (!isExplicitNo) {
+          if (val === 1 || (typeof val?.hours === 'number' && val.hours >= 12) || optStr.includes('yes') || optStr.includes('16') || optStr.includes('12')) {
+            isValidFasting = true;
+          } else if (val?.started && val?.ended && val.started !== val.ended) {
+            const diffHours = (new Date(val.ended).getTime() - new Date(val.started).getTime()) / (1000 * 60 * 60);
+            if (diffHours >= 12) isValidFasting = true;
+          } else if (val?.completed === true && (val?.hours === undefined || val.hours >= 12)) {
+            isValidFasting = true;
+          }
+        }
+        if (isValidFasting) {
           repair += 1;
         }
       }

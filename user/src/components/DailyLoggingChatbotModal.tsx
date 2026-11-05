@@ -2086,11 +2086,11 @@ export const DailyLoggingChatbotModal: React.FC<DailyLoggingChatbotModalProps> =
         habitType = 'DAMAGE_HABIT';
         habitValue = { isExposure: !lowerVal.includes('clean'), score: lowerVal.includes('clean') ? 0 : -1, notes: valueStr };
       } else if (stepId === 'repair_habits') {
-        habitType = 'REPAIR_HABIT';
-        habitValue = { isCompleted: isYes, score: isYes ? 1 : 0, notes: valueStr };
+        habitType = 'Antioxidants';
+        habitValue = { consumed: isYes, score: isYes ? 1 : 0, notes: valueStr };
       } else if (stepId === 'nutrition') {
-        habitType = 'REPAIR_HABIT';
-        habitValue = { isCompleted: isYes, score: isYes ? 1 : 0, notes: `Nutrition: ${valueStr}` };
+        habitType = 'Diet';
+        habitValue = { score: isYes ? 1 : 0, balancedDiet: isYes, notes: `Nutrition: ${valueStr}` };
       } else if (stepId === 'medication') {
         habitType = 'Medication';
         habitValue = { taken: isYes, notes: valueStr };
