@@ -1,12 +1,14 @@
 <en-US>
-• Enhanced Phone Verification: Improved SMS OTP delivery and fallback reliability on iOS and Android.
-• Offline & Sync Stability: Smoother reconnection and notification handling without duplicate alerts.
-• Dynamic App Updates: Accurate version tracking in Profile & Settings.
-• Performance & Bug Fixes: General stability improvements and faster app navigation.
+• Account Privacy & Security: Added a 30-day account security quarantine with direct rollback and restore support to protect against accidental account deletion.
+• Streamlined Authentication: Enhanced phone and email OTP verification with automated fallback delivery.
+• Terms & Legal Transparency: Updated in-app access to Terms and Conditions and comprehensive privacy policies.
+• Health Data Synchronization: Smoother telemetry sync for CGM glucose reports, food logs, and active subscriptions.
+• Bug Fixes & Performance: General stability enhancements and faster screen transitions across devices.
 </en-US>
 <en-IN>
-• Enhanced Phone Verification: Improved SMS OTP delivery and fallback reliability on iOS and Android.
-• Offline & Sync Stability: Smoother reconnection and notification handling without duplicate alerts.
-• Dynamic App Updates: Accurate version tracking in Profile & Settings.
-• Performance & Bug Fixes: General stability improvements and faster app navigation.
+• Account Privacy & Security: Added a 30-day account security quarantine with direct rollback and restore support to protect against accidental account deletion.
+• Streamlined Authentication: Enhanced phone and email OTP verification with automated fallback delivery.
+• Terms & Legal Transparency: Updated in-app access to Terms and Conditions and comprehensive privacy policies.
+• Health Data Synchronization: Smoother telemetry sync for CGM glucose reports, food logs, and active subscriptions.
+• Bug Fixes & Performance: General stability enhancements and faster screen transitions across devices.
 </en-IN>
