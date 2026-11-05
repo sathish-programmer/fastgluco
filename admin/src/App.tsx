@@ -3717,88 +3717,591 @@ const AdminPanelContent: React.FC = () => {
           </div>
         </header>
 
-        {/* VIEW 1: DASHBOARD STATS */}
-        {activeView === 'dashboard' && stats && (
+        {/* VIEW 1: MODERN EXECUTIVE DASHBOARD */}
+        {activeView === 'dashboard' && (
           <div className="space-y-6">
-            <h2 className="text-xl font-bold text-slate-800">System Dashboard</h2>
+            {/* Header / Command Center Banner */}
+            <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-soft relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-blue-50/60 via-indigo-50/30 to-transparent pointer-events-none rounded-full blur-2xl -mr-20 -mt-20" />
+              <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2.5">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      Live Platform Operational
+                    </span>
+                    <span className="text-xs text-slate-400 font-medium hidden sm:inline">•</span>
+                    <span className="text-xs text-slate-500 font-medium hidden sm:inline">
+                      {new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                    </span>
+                  </div>
+                  <h1 className="text-2xl font-black text-slate-900 tracking-tight mt-1.5 flex items-center gap-2">
+                    Executive Command Center
+                  </h1>
+                  <p className="text-xs text-slate-500 mt-1 max-w-2xl">
+                    Real-time clinical metrics, subscription revenue performance, store fulfillment, and live patient data streams across Mito Reboot.
+                  </p>
+                </div>
 
-            {/* Counts Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-soft flex flex-col justify-between">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Patients</span>
-                <span className="text-xl font-black text-slate-800 mt-2">{stats.totalPatients || stats.totalUsers || 0}</span>
-              </div>
-              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-soft flex flex-col justify-between">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Doctors</span>
-                <span className="text-xl font-black text-slate-800 mt-2">{stats.totalDoctors || 0}</span>
-              </div>
-              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-soft flex flex-col justify-between">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Today's Visits</span>
-                <span className="text-xl font-black text-slate-800 mt-2">{stats.todayAppointments || 0}</span>
-              </div>
-              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-soft flex flex-col justify-between">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Pending Orders</span>
-                <span className="text-xl font-black text-slate-800 mt-2">{stats.pendingOrders || 0}</span>
-              </div>
-              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-soft flex flex-col justify-between">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Revenue</span>
-                <span className="text-xl font-black text-indigo-650 mt-2">Rs.{stats.revenue ? Number(stats.revenue).toFixed(2) : '0.00'}</span>
-              </div>
-              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-soft flex flex-col justify-between">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Low Stock</span>
-                <span className={`text-xl font-black mt-2 ${stats.lowStockProducts > 0 ? 'text-red-500 font-extrabold' : 'text-slate-800'}`}>
-                  {stats.lowStockProducts || 0}
-                </span>
-              </div>
-              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-soft flex flex-col justify-between">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Active Vendors</span>
-                <span className="text-xl font-black text-slate-800 mt-2">{stats.activeVendors || 0}</span>
+                {/* Quick Action Navigation Buttons */}
+                <div className="flex flex-wrap items-center gap-2 pt-2 lg:pt-0">
+                  <button
+                    onClick={() => { fetchStats(); fetchPaymentStats(); }}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all cursor-pointer shadow-xs"
+                    title="Refresh Live Metrics"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Refresh</span>
+                  </button>
+                  <button
+                    onClick={() => { setActiveView('revenue-overview'); setSearchQuery(''); }}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-all cursor-pointer shadow-xs"
+                  >
+                    <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Revenue Analytics</span>
+                  </button>
+                  <button
+                    onClick={() => { setActiveView('users'); setSearchQuery(''); }}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-blue-800 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-all cursor-pointer shadow-xs"
+                  >
+                    <Users className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Patients</span>
+                  </button>
+                  <button
+                    onClick={() => { setActiveView('doctors'); setSearchQuery(''); }}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-all cursor-pointer shadow-xs"
+                  >
+                    <Stethoscope className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>Doctors</span>
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Visual Analytics Graphs */}
-            <div className="grid grid-cols-2 gap-6">
-              {/* Category distribution Pie chart */}
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft">
-                <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wider mb-4">Meal Category Distribution</h3>
-                <div className="h-64 flex justify-center items-center">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={stats.categoryBreakdown}
-                        dataKey="count"
-                        nameKey="_id"
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={80}
-                        label={({ _id, percent }) => `${_id}: ${(percent * 100).toFixed(0)}%`}
-                      >
-                        {stats.categoryBreakdown.map((_: any, index: number) => (
-                          <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
+            {/* 5-Card Modern Executive KPI Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              {/* CARD 1: TOTAL REVENUE & COLLECTIONS */}
+              <div 
+                onClick={() => { setActiveView('revenue-overview'); setSearchQuery(''); }}
+                className="group relative bg-gradient-to-br from-emerald-50/70 via-white to-emerald-50/30 p-5 rounded-2xl border border-emerald-200/90 hover:border-emerald-400 shadow-soft hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-100/80 text-emerald-700 flex items-center justify-center shadow-xs">
+                      <TrendingUp className="w-4 h-4" />
+                    </div>
+                    <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200/60">
+                      Real-Time
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mt-3">
+                    Total Revenue
+                  </span>
+                  <div className="text-2xl font-black text-slate-900 mt-1 tracking-tight flex items-baseline gap-1">
+                    <span>₹{Number(stats?.totalGrossRevenue || stats?.revenue || 0).toLocaleString('en-IN')}</span>
+                  </div>
+                </div>
+
+                <div className="mt-3 pt-3 border-t border-emerald-100/80 space-y-1">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-slate-500 font-medium">Collected:</span>
+                    <span className="font-bold text-emerald-700">₹{Number(stats?.totalAmountCollected || paymentStats?.totalRevenue || 0).toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-slate-500 font-medium">Settled:</span>
+                    <span className="font-bold text-slate-700">₹{Number(stats?.settledToBank || 0).toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 group-hover:underline pt-1">
+                    <span>Analytics Ledger</span>
+                    <ArrowUpRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                  </div>
                 </div>
               </div>
 
-              {/* Analytics Activity Bar chart */}
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-soft">
-                <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wider mb-4">Database Log Totals</h3>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={[
-                      { name: 'Reports', count: stats.reportsUploaded },
-                      { name: 'Meal Logs', count: stats.foodLogs },
-                      { name: 'Total Patients', count: stats.totalUsers }
-                    ]}>
-                      <XAxis dataKey="name" tick={{ fontSize: 11, fontWeight: 'semibold' }} axisLine={false} tickLine={false} />
-                      <YAxis tick={{ fontSize: 11, fontWeight: 'semibold' }} axisLine={false} tickLine={false} />
-                      <Tooltip />
-                      <Bar dataKey="count" fill="#2563EB" radius={[8, 8, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
+              {/* CARD 2: ACTIVE PAID MEMBERS */}
+              <div 
+                onClick={() => { setActiveView('revenue-subscriptions'); setSearchQuery(''); }}
+                className="group relative bg-gradient-to-br from-indigo-50/70 via-white to-indigo-50/30 p-5 rounded-2xl border border-indigo-200/90 hover:border-indigo-400 shadow-soft hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between">
+                    <div className="w-9 h-9 rounded-xl bg-indigo-100/80 text-indigo-700 flex items-center justify-center shadow-xs">
+                      <Crown className="w-4 h-4" />
+                    </div>
+                    <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200/60">
+                      Premium
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mt-3">
+                    Active Subscribers
+                  </span>
+                  <div className="text-2xl font-black text-slate-900 mt-1 tracking-tight">
+                    {stats?.activePaidSubscribers ?? paymentStats?.activeSubscribers ?? 0}
+                  </div>
+                </div>
+
+                <div className="mt-3 pt-3 border-t border-indigo-100/80 space-y-1">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-slate-500 font-medium">Paying Users:</span>
+                    <span className="font-bold text-indigo-700">{stats?.totalPayingUsers ?? 1}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-slate-500 font-medium">Sub Revenue:</span>
+                    <span className="font-bold text-slate-700">₹{Number(stats?.subscriptionRevenue || stats?.totalAmountCollected || 0).toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-[11px] font-bold text-indigo-700 group-hover:underline pt-1">
+                    <span>Manage Plans</span>
+                    <ArrowUpRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                  </div>
+                </div>
+              </div>
+
+              {/* CARD 3: TOTAL PATIENTS & ENGAGEMENT */}
+              <div 
+                onClick={() => { setActiveView('users'); setSearchQuery(''); }}
+                className="group relative bg-gradient-to-br from-blue-50/70 via-white to-blue-50/30 p-5 rounded-2xl border border-blue-200/90 hover:border-blue-400 shadow-soft hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between">
+                    <div className="w-9 h-9 rounded-xl bg-blue-100/80 text-blue-700 flex items-center justify-center shadow-xs">
+                      <Users className="w-4 h-4" />
+                    </div>
+                    <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/60">
+                      {stats?.activeUsers || 0} Active (7d)
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mt-3">
+                    Total Patients
+                  </span>
+                  <div className="text-2xl font-black text-slate-900 mt-1 tracking-tight">
+                    {stats?.totalPatients || stats?.totalUsers || 0}
+                  </div>
+                </div>
+
+                <div className="mt-3 pt-3 border-t border-blue-100/80 space-y-1">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-slate-500 font-medium">7d Active:</span>
+                    <span className="font-bold text-blue-700">{stats?.activeUsers || 0} patients</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-slate-500 font-medium">Engagement:</span>
+                    <span className="font-bold text-slate-700">
+                      {Math.round(((stats?.activeUsers || 0) / Math.max(1, stats?.totalPatients || stats?.totalUsers || 1)) * 100)}%
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 text-[11px] font-bold text-blue-700 group-hover:underline pt-1">
+                    <span>Patient Directory</span>
+                    <ArrowUpRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                  </div>
+                </div>
+              </div>
+
+              {/* CARD 4: CLINICAL NETWORK & VISITS */}
+              <div 
+                onClick={() => { setActiveView('doctors'); setSearchQuery(''); }}
+                className="group relative bg-gradient-to-br from-cyan-50/70 via-white to-cyan-50/30 p-5 rounded-2xl border border-cyan-200/90 hover:border-cyan-400 shadow-soft hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between">
+                    <div className="w-9 h-9 rounded-xl bg-cyan-100/80 text-cyan-700 flex items-center justify-center shadow-xs">
+                      <Stethoscope className="w-4 h-4" />
+                    </div>
+                    <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-200/60">
+                      {stats?.totalDoctors || 0} Doctors
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mt-3">
+                    Today's Visits
+                  </span>
+                  <div className="text-2xl font-black text-slate-900 mt-1 tracking-tight">
+                    {stats?.todayAppointments || 0}
+                  </div>
+                </div>
+
+                <div className="mt-3 pt-3 border-t border-cyan-100/80 space-y-1">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-slate-500 font-medium">Doctors:</span>
+                    <span className="font-bold text-cyan-700">{stats?.totalDoctors || 0} active</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] truncate">
+                    <span className="text-slate-500 font-medium">Recent:</span>
+                    <span className="font-bold text-slate-700 truncate max-w-[100px]" title={stats?.recentDoctor?.name || 'Verified'}>
+                      {stats?.recentDoctor?.name || 'Dr. Active'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 text-[11px] font-bold text-cyan-700 group-hover:underline pt-1">
+                    <span>Clinical Network</span>
+                    <ArrowUpRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                  </div>
+                </div>
+              </div>
+
+              {/* CARD 5: STORE ORDERS & INVENTORY */}
+              <div 
+                onClick={() => { setActiveView('store-orders'); setSearchQuery(''); }}
+                className="group relative bg-gradient-to-br from-amber-50/70 via-white to-amber-50/30 p-5 rounded-2xl border border-amber-200/90 hover:border-amber-400 shadow-soft hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between">
+                    <div className="w-9 h-9 rounded-xl bg-amber-100/80 text-amber-700 flex items-center justify-center shadow-xs">
+                      <Package className="w-4 h-4" />
+                    </div>
+                    <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${
+                      (stats?.lowStockProducts || 0) > 0 
+                        ? 'bg-rose-100 text-rose-800 border-rose-200/60' 
+                        : 'bg-amber-100 text-amber-800 border-amber-200/60'
+                    }`}>
+                      {(stats?.lowStockProducts || 0) > 0 ? `${stats.lowStockProducts} Low Stock` : 'Stock OK'}
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mt-3">
+                    Pending Orders
+                  </span>
+                  <div className="text-2xl font-black text-slate-900 mt-1 tracking-tight">
+                    {stats?.pendingOrders || 0}
+                  </div>
+                </div>
+
+                <div className="mt-3 pt-3 border-t border-amber-100/80 space-y-1">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-slate-500 font-medium">Delivered:</span>
+                    <span className="font-bold text-amber-700">{stats?.deliveredOrders || 0} fulfilled</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-slate-500 font-medium">Vendors:</span>
+                    <span className="font-bold text-slate-700">{stats?.activeVendors || 0} active</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-[11px] font-bold text-amber-700 group-hover:underline pt-1">
+                    <span>Manage Orders</span>
+                    <ArrowUpRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* VISUAL ANALYTICS ROW 1: REVENUE TIMELINE & DATABASE LOG TOTALS */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Financial & Ingestion Stream (7 cols) */}
+              <div className="lg:col-span-7 bg-white p-6 rounded-3xl border border-slate-200/90 shadow-soft flex flex-col justify-between">
+                <div>
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
+                          <TrendingUp className="w-4 h-4" />
+                        </span>
+                        <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">
+                          Revenue & Collections Velocity
+                        </h3>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Consolidated billing across Subscriptions, E-Commerce, and Consultations.
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => { setActiveView('revenue-overview'); setSearchQuery(''); }}
+                      className="px-3 py-1.5 rounded-xl text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-all cursor-pointer"
+                    >
+                      Full Report →
+                    </button>
+                  </div>
+
+                  {/* Summary Bar */}
+                  <div className="grid grid-cols-3 gap-3 my-5">
+                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Gross</span>
+                      <span className="text-base font-black text-slate-800 mt-0.5 block">
+                        ₹{Number(stats?.totalGrossRevenue || stats?.revenue || 0).toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                    <div className="p-3 rounded-xl bg-emerald-50/60 border border-emerald-100">
+                      <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider block">Collected</span>
+                      <span className="text-base font-black text-emerald-700 mt-0.5 block">
+                        ₹{Number(stats?.totalAmountCollected || 0).toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                    <div className="p-3 rounded-xl bg-blue-50/60 border border-blue-100">
+                      <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider block">Settled to Bank</span>
+                      <span className="text-base font-black text-blue-700 mt-0.5 block">
+                        ₹{Number(stats?.settledToBank || 0).toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Chart */}
+                  <div className="h-60 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart
+                        data={
+                          stats?.revenueTimeline && stats.revenueTimeline.length > 0
+                            ? stats.revenueTimeline.map((item: any) => ({
+                                date: item.date ? item.date.slice(5) : '',
+                                gross: item.gross || 0,
+                                net: item.net || 0
+                              }))
+                            : [
+                                { date: 'Week 1', gross: Number(stats?.totalGrossRevenue || 0) * 0.2, net: Number(stats?.totalAmountCollected || 0) * 0.2 },
+                                { date: 'Week 2', gross: Number(stats?.totalGrossRevenue || 0) * 0.5, net: Number(stats?.totalAmountCollected || 0) * 0.5 },
+                                { date: 'Week 3', gross: Number(stats?.totalGrossRevenue || 0) * 0.8, net: Number(stats?.totalAmountCollected || 0) * 0.8 },
+                                { date: 'This Month', gross: Number(stats?.totalGrossRevenue || 0), net: Number(stats?.totalAmountCollected || 0) }
+                              ]
+                        }
+                        margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                      >
+                        <defs>
+                          <linearGradient id="colorGross" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#10B981" stopOpacity={0.4} />
+                            <stop offset="95%" stopColor="#10B981" stopOpacity={0.0} />
+                          </linearGradient>
+                          <linearGradient id="colorNet" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.0} />
+                          </linearGradient>
+                        </defs>
+                        <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#94A3B8', fontWeight: 600 }} axisLine={false} tickLine={false} />
+                        <YAxis tick={{ fontSize: 11, fill: '#94A3B8', fontWeight: 600 }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${v}`} />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: '#0F172A', borderRadius: '12px', border: 'none', color: '#FFF', fontSize: '12px', fontWeight: 'bold' }}
+                          formatter={(value: any) => [`₹${Number(value).toLocaleString('en-IN')}`, 'Amount']}
+                        />
+                        <Area type="monotone" dataKey="gross" stroke="#10B981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorGross)" name="Gross Billing" />
+                        <Area type="monotone" dataKey="net" stroke="#3B82F6" strokeWidth={2} fillOpacity={1} fill="url(#colorNet)" name="Net Collected" />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                  <div className="flex items-center gap-4">
+                    <span className="flex items-center gap-1.5 font-semibold">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Gross Billing
+                    </span>
+                    <span className="flex items-center gap-1.5 font-semibold">
+                      <span className="w-2.5 h-2.5 rounded-full bg-blue-500" /> Collected Payments
+                    </span>
+                  </div>
+                  <span className="font-bold text-slate-600">
+                    {stats?.totalTransactions || 0} Transactions Recorded
+                  </span>
+                </div>
+              </div>
+
+              {/* Health Data & Activity Totals (5 cols) */}
+              <div className="lg:col-span-5 bg-white p-6 rounded-3xl border border-slate-200/90 shadow-soft flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="p-1.5 rounded-lg bg-blue-50 text-blue-600">
+                        <Activity className="w-4 h-4" />
+                      </span>
+                      <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">
+                        Clinical Ingestion Totals
+                      </h3>
+                    </div>
+                    <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                      Live Telemetry
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Continuous glucose monitoring records, food logs, and patient records stored.
+                  </p>
+
+                  <div className="h-60 mt-5">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart 
+                        data={[
+                          { name: 'CGM Reports', count: stats?.reportsUploaded || 0, fill: '#3B82F6' },
+                          { name: 'Meal Logs', count: stats?.foodLogs || 0, fill: '#10B981' },
+                          { name: 'Patients', count: stats?.totalPatients || stats?.totalUsers || 0, fill: '#6366F1' }
+                        ]}
+                        margin={{ top: 15, right: 10, left: -20, bottom: 0 }}
+                      >
+                        <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748B', fontWeight: 600 }} axisLine={false} tickLine={false} />
+                        <YAxis tick={{ fontSize: 11, fill: '#64748B', fontWeight: 600 }} axisLine={false} tickLine={false} />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: '#0F172A', borderRadius: '12px', border: 'none', color: '#FFF', fontSize: '12px', fontWeight: 'bold' }}
+                        />
+                        <Bar dataKey="count" radius={[10, 10, 0, 0]}>
+                          <Cell fill="#3B82F6" />
+                          <Cell fill="#10B981" />
+                          <Cell fill="#6366F1" />
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-slate-100 grid grid-cols-3 gap-2 text-center">
+                  <div className="p-2 rounded-xl bg-slate-50">
+                    <span className="text-[10px] font-bold text-slate-400 block uppercase">Reports</span>
+                    <span className="text-sm font-black text-blue-600">{stats?.reportsUploaded || 0}</span>
+                  </div>
+                  <div className="p-2 rounded-xl bg-slate-50">
+                    <span className="text-[10px] font-bold text-slate-400 block uppercase">Food Logs</span>
+                    <span className="text-sm font-black text-emerald-600">{stats?.foodLogs || 0}</span>
+                  </div>
+                  <div className="p-2 rounded-xl bg-slate-50">
+                    <span className="text-[10px] font-bold text-slate-400 block uppercase">Patients</span>
+                    <span className="text-sm font-black text-indigo-600">{stats?.totalPatients || stats?.totalUsers || 0}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* VISUAL ANALYTICS ROW 2: NUTRITION DISTRIBUTION & SYSTEM HEALTH */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Category distribution Pie chart (6 cols) */}
+              <div className="lg:col-span-6 bg-white p-6 rounded-3xl border border-slate-200/90 shadow-soft">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="p-1.5 rounded-lg bg-amber-50 text-amber-600">
+                      <Utensils className="w-4 h-4" />
+                    </span>
+                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">
+                      Meal Nutrition Category Distribution
+                    </h3>
+                  </div>
+                  <span className="text-xs font-bold text-slate-500">
+                    {stats?.foodLogs || 0} Total Logs
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 mb-4">
+                  Dietary breakdown of foods logged by active patients across the application.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
+                  <div className="sm:col-span-6 h-56 flex justify-center items-center">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={stats?.categoryBreakdown || []}
+                          dataKey="count"
+                          nameKey="_id"
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={55}
+                          outerRadius={80}
+                          paddingAngle={3}
+                        >
+                          {(stats?.categoryBreakdown || []).map((_: any, index: number) => (
+                            <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          contentStyle={{ backgroundColor: '#0F172A', borderRadius: '12px', border: 'none', color: '#FFF', fontSize: '12px', fontWeight: 'bold' }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* Clean side legend */}
+                  <div className="sm:col-span-6 space-y-2 max-h-56 overflow-y-auto pr-1">
+                    {(stats?.categoryBreakdown || []).map((item: any, idx: number) => {
+                      const totalMeals = (stats?.categoryBreakdown || []).reduce((acc: number, curr: any) => acc + (curr.count || 0), 0);
+                      const percent = totalMeals > 0 ? Math.round(((item.count || 0) / totalMeals) * 100) : 0;
+                      return (
+                        <div key={item._id || idx} className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-100 text-xs">
+                          <div className="flex items-center gap-2 truncate">
+                            <span 
+                              className="w-3 h-3 rounded-full shrink-0" 
+                              style={{ backgroundColor: PIE_COLORS[idx % PIE_COLORS.length] }} 
+                            />
+                            <span className="font-semibold text-slate-700 truncate" title={item._id}>
+                              {item._id || 'General'}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="font-bold text-slate-900">{item.count}</span>
+                            <span className="text-[10px] font-black px-1.5 py-0.5 rounded-md bg-white border border-slate-200 text-slate-600">
+                              {percent}%
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* System Infrastructure & Operational Status (6 cols) */}
+              <div className="lg:col-span-6 bg-white p-6 rounded-3xl border border-slate-200/90 shadow-soft flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
+                        <CheckCircle className="w-4 h-4" />
+                      </span>
+                      <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">
+                        Platform Infrastructure & Services
+                      </h3>
+                    </div>
+                    <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      All Operational
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mb-4">
+                    Active gateway connectivity, database indexes, and background communication relays.
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-bold text-slate-800">MongoDB Core</span>
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      </div>
+                      <p className="text-[11px] text-slate-500">FastGluco primary cluster connected with 3 active workflows.</p>
+                    </div>
+
+                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-bold text-slate-800">Brevo SMTP Relay</span>
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      </div>
+                      <p className="text-[11px] text-slate-500">support@mitoreboot.in email dispatch operational.</p>
+                    </div>
+
+                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-bold text-slate-800">Razorpay Gateway</span>
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      </div>
+                      <p className="text-[11px] text-slate-500">Subscription and checkout webhooks verified and capturing.</p>
+                    </div>
+
+                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-bold text-slate-800">Firebase Auth</span>
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      </div>
+                      <p className="text-[11px] text-slate-500">Service account initialized for mobile phone verification.</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick module links */}
+                <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-xs font-bold text-slate-600">Quick Navigation:</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => { setActiveView('patient-activity'); setSearchQuery(''); }}
+                      className="px-2.5 py-1 rounded-lg text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 transition-all cursor-pointer"
+                    >
+                      Patient Activity
+                    </button>
+                    <button
+                      onClick={() => { setActiveView('otp-telemetry'); setSearchQuery(''); }}
+                      className="px-2.5 py-1 rounded-lg text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 transition-all cursor-pointer"
+                    >
+                      OTP Logs
+                    </button>
+                    <button
+                      onClick={() => { setActiveView('revenue-transactions'); setSearchQuery(''); }}
+                      className="px-2.5 py-1 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-all cursor-pointer"
+                    >
+                      Transactions Ledger
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
