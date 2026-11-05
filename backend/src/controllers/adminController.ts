@@ -487,7 +487,7 @@ export class AdminController {
       const adminEmail = req.user?.email || 'admin';
       const now = new Date();
 
-      const user = await User.findById(id);
+      const user = await User.findById(id).setOptions({ includeDeleted: true });
       if (!user) {
         return res.status(404).json({ message: 'User not found.' });
       }
@@ -557,7 +557,7 @@ export class AdminController {
       const adminEmail = req.user?.email || 'admin';
       const now = new Date();
 
-      const user = await User.findById(id);
+      const user = await User.findById(id).setOptions({ includeDeleted: true });
       if (!user) {
         return res.status(404).json({ message: 'User not found.' });
       }
@@ -648,7 +648,7 @@ export class AdminController {
       } = req.body;
       const adminEmail = req.user?.email || 'admin';
 
-      const user = await User.findById(id);
+      const user = await User.findById(id).setOptions({ includeDeleted: true });
       if (!user) {
         return res.status(404).json({ message: 'User not found.' });
       }
@@ -743,7 +743,7 @@ export class AdminController {
         return res.status(400).json({ message: 'isBlocked status is required.' });
       }
 
-      const user = await User.findById(id);
+      const user = await User.findById(id).setOptions({ includeDeleted: true });
       if (!user) {
         return res.status(404).json({ message: 'User not found.' });
       }
@@ -826,7 +826,7 @@ export class AdminController {
   public static async deleteUser(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
-      const user = await User.findById(id);
+      const user = await User.findById(id).setOptions({ includeDeleted: true });
       if (!user) {
         return res.status(404).json({ message: 'User not found.' });
       }
@@ -1297,7 +1297,7 @@ export class AdminController {
     try {
       const { id } = req.params;
 
-      const user = await User.findById(id).select('-passwordHash');
+      const user = await User.findById(id).select('-passwordHash').setOptions({ includeDeleted: true });
       if (!user) {
         return res.status(404).json({ message: 'User not found.' });
       }
@@ -1603,7 +1603,7 @@ export class AdminController {
       const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const regex = new RegExp(escaped, 'i');
       const [patients, doctors, vendors, products, appointments, orders] = await Promise.all([
-        User.find({ $or: [{ name: regex }, { email: regex }, { mobileNumber: regex }, { mobile: regex }] }).select('_id name email mobileNumber subscription role createdAt').limit(8).lean(),
+        User.find({ $or: [{ name: regex }, { email: regex }, { mobileNumber: regex }, { mobile: regex }] }).select('_id name email mobileNumber subscription role createdAt isDeleted deletionScheduledFor').setOptions({ includeDeleted: true }).limit(8).lean(),
         Doctor.find({ $or: [{ name: regex }, { specialty: regex }, { email: regex }] }).limit(8).lean(),
         Vendor.find({ $or: [{ name: regex }, { email: regex }, { businessName: regex }] }).limit(8).lean(),
         ShopProduct.find({ $or: [{ name: regex }, { category: regex }] }).limit(8).lean(),
