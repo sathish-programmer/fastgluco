@@ -47,6 +47,7 @@ import { WelcomeOnboardingModal } from './components/WelcomeOnboardingModal';
 import { TermsAndConditionsAcceptancePage, CURRENT_TERMS_VERSION } from './components/TermsAndConditionsAcceptancePage';
 import { DeleteAccount } from './pages/DeleteAccount';
 import { OfflineScreen } from './components/OfflineScreen';
+import { ServerUnavailableScreen } from './components/ServerUnavailableScreen';
 import { WhatsNewModal } from './components/WhatsNewModal';
 import { ForceUpdateModal } from './components/ForceUpdateModal';
 import { DailyMotivationModal } from './components/DailyMotivationModal';
@@ -635,8 +636,13 @@ const MainAppContent: React.FC = () => {
   }, []);
 
 
-  const [isSubscribed, setIsSubscribed] = useState<boolean | null>(null);
+  const [isSubscribed, setIsSubscribed] = useState<boolean | null>(() => {
+    // Optimistically initialize from cached subscription state to prevent flicker
+    const cached = localStorage.getItem('mito_cached_is_subscribed');
+    return cached === 'true' ? true : (cached === 'false' ? false : null);
+  });
   const [checkingSub, setCheckingSub] = useState<boolean>(false);
+  const [serverUnavailableError, setServerUnavailableError] = useState<{ message?: string } | null>(null);
   const [basicPlan, setBasicPlan] = useState<string>('Basic');
   const [planFeatures, setPlanFeatures] = useState<any>(null);
   const [trialEndingHours, setTrialEndingHours] = useState<number | null>(null);
@@ -656,6 +662,7 @@ const MainAppContent: React.FC = () => {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
+        setServerUnavailableError(null);
         const data = await response.json();
         const isAppleReviewer = user?.email === 'review@mitoreboot.in' || (user?.email && user.email.endsWith('@apple.com'));
         const sub = data.subscription;
@@ -690,6 +697,7 @@ const MainAppContent: React.FC = () => {
 
         if (isAppleReviewer) {
           setIsSubscribed(true);
+          localStorage.setItem('mito_cached_is_subscribed', 'true');
           setBasicPlan(data.plan?.name || 'Premium Plan');
           setPlanFeatures(data.plan?.features || {
             unlimitedReports: true,
@@ -703,34 +711,64 @@ const MainAppContent: React.FC = () => {
           });
         } else if (hasActive) {
           setIsSubscribed(true);
+          localStorage.setItem('mito_cached_is_subscribed', 'true');
           setBasicPlan(data.plan?.name || 'Premium Plan');
           setPlanFeatures(data.plan?.features || null);
         } else {
-          // STRICT ACCESS CONTROL: User has neither an active subscription nor an active trial.
-          // Gate the entire app so only the subscription screen is accessible.
+          // STRICT ACCESS CONTROL: User has neither an active subscription nor an active trial confirmed by server.
           setIsSubscribed(false);
+          localStorage.setItem('mito_cached_is_subscribed', 'false');
           setBasicPlan('Expired');
           setPlanFeatures(null);
         }
+      } else if (response.status >= 500) {
+        // Server Error (500, 502 Bad Gateway, 503 Service Unavailable, 504 Gateway Timeout)
+        console.warn(`Server returned ${response.status}. Retaining offline session or showing Server Down screen.`);
+        const isAppleReviewer = user?.email === 'review@mitoreboot.in' || (user?.email && user.email.endsWith('@apple.com'));
+        if (isAppleReviewer) {
+          setIsSubscribed(true);
+        } else {
+          const cachedActive = localStorage.getItem('mito_cached_is_subscribed') === 'true';
+          if (cachedActive) {
+            // Keep user logged in and active; do not kick to subscription purchase screen
+            setIsSubscribed(true);
+            setServerUnavailableError(null);
+          } else {
+            // Show dedicated Server Unavailable screen instead of confusing subscription paywall
+            setServerUnavailableError({
+              message: `Our application servers returned temporary status ${response.status}. Please reconnect shortly.`
+            });
+          }
+        }
       } else {
+        // Explicit 401, 403, 404 response
         const isAppleReviewer = user?.email === 'review@mitoreboot.in' || (user?.email && user.email.endsWith('@apple.com'));
         if (isAppleReviewer) {
           setIsSubscribed(true);
         } else {
           setIsSubscribed(false);
+          localStorage.setItem('mito_cached_is_subscribed', 'false');
           setBasicPlan('Expired');
           setPlanFeatures(null);
         }
       }
-    } catch (err) {
-      console.error('Subscription check error:', err);
+    } catch (err: any) {
+      console.error('Subscription check connection error:', err);
       const isAppleReviewer = user?.email === 'review@mitoreboot.in' || (user?.email && user.email.endsWith('@apple.com'));
       if (isAppleReviewer) {
         setIsSubscribed(true);
       } else {
-        setIsSubscribed(false);
-        setBasicPlan('Expired');
-        setPlanFeatures(null);
+        const cachedActive = localStorage.getItem('mito_cached_is_subscribed') === 'true';
+        if (cachedActive) {
+          // Retain active subscription locally during transient network outages
+          setIsSubscribed(true);
+          setServerUnavailableError(null);
+        } else {
+          // Show dedicated Server Unavailable screen instead of confusing subscription paywall
+          setServerUnavailableError({
+            message: 'Unable to connect to the server (connection refused or network offline). Please check your internet connection.'
+          });
+        }
       }
     } finally {
       if (!silent) setCheckingSub(false);
@@ -904,6 +942,24 @@ const MainAppContent: React.FC = () => {
   const hasAcceptedTerms = user?.termsAccepted === true && user?.acceptedTermsVersion === CURRENT_TERMS_VERSION;
   if (isAuthenticated && !hasAcceptedTerms) {
     return <TermsAndConditionsAcceptancePage />;
+  }
+
+  // Dedicated Screen for Server Outages / Connection Refused errors
+  if (serverUnavailableError && isSubscribed !== true) {
+    return (
+      <ServerUnavailableScreen
+        onRetry={async () => {
+          setServerUnavailableError(null);
+          await checkSubscription();
+          refreshProfile();
+        }}
+        onContactSupport={() => setShowHelpModal(true)}
+        onLogout={logout}
+        appName={branding.appName}
+        logoUrl={branding.appLogoUrl}
+        errorMessage={serverUnavailableError.message}
+      />
+    );
   }
 
   if (isSubscribed === false) {

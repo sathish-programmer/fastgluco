@@ -1402,23 +1402,17 @@ export const Profile: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({
         <span>{t('profile.requestAccountDeletion', 'Request Account Deletion')}</span>
       </motion.button>
 
-      {/* Company Name, Address & Copyright Modern Footer */}
-      <div className="mt-2 mb-8 text-center px-1">
-        <div className="p-4 rounded-3xl bg-gradient-to-b from-slate-50 to-slate-100/60 dark:from-slate-900/70 dark:to-slate-950/70 border border-slate-200/70 dark:border-slate-800 shadow-2xs text-center space-y-1.5">
-          <p className="font-bold text-[11px] text-slate-700 dark:text-slate-300 tracking-tight">
-            MitoReboot Private Limited
-          </p>
-
-          <p className="text-[9.5px] text-slate-500 dark:text-slate-400 leading-relaxed max-w-xs mx-auto">
-            No 11/7, Krishna Residency, Flat No B-1, Basavanagudi, Bangalore South, Bangalore - 560004, Karnataka, India
-          </p>
-
-          <div className="h-px bg-slate-200/70 dark:bg-slate-800/80 my-2 mx-4" />
-
-          <p className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">
-            © {new Date().getFullYear()} MitoReboot Private Limited. All rights reserved.
-          </p>
-        </div>
+      {/* Company Name, Address & Copyright Clean Modern Footer */}
+      <div className="mt-4 mb-8 text-center px-4 space-y-1">
+        <p className="font-bold text-[11px] text-slate-500 dark:text-slate-400 tracking-tight">
+          MitoReboot Private Limited
+        </p>
+        <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-relaxed max-w-xs mx-auto">
+          No 11/7, Krishna Residency, Flat No B-1, Basavanagudi, Bangalore South, Bangalore - 560004, Karnataka, India
+        </p>
+        <p className="text-[9.5px] text-slate-400/80 dark:text-slate-600 font-medium pt-1">
+          © {new Date().getFullYear()} MitoReboot Private Limited. All rights reserved.
+        </p>
       </div>
 
       {/* Disclaimer Modal Overlay */}
