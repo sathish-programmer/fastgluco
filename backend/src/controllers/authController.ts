@@ -28,7 +28,18 @@ const maskPhoneOrEmail = (identifier: string): string => {
 };
 
 const extractTelemetryMeta = (req: Request) => {
-  const platform = (req.headers['x-app-platform'] as string) || req.body?.platform;
+  const origin = ((req.headers['origin'] as string) || '').toLowerCase();
+  const referer = ((req.headers['referer'] as string) || '').toLowerCase();
+  const isWebOrigin = origin.includes('mitoreboot.in') ||
+    referer.includes('mitoreboot.in') ||
+    origin.includes('localhost:5173') ||
+    referer.includes('localhost:5173') ||
+    origin.includes('localhost:3000') ||
+    referer.includes('localhost:3000');
+
+  const rawPlatform = ((req.headers['x-app-platform'] as string) || (req.headers['x-platform'] as string) || req.body?.platform || '').toLowerCase();
+  const platform = (isWebOrigin || rawPlatform === 'web') ? 'web' : rawPlatform;
+
   const rawVersion = (req.headers['x-app-version'] as string) || req.body?.appVersion;
   const appVersion = (rawVersion && rawVersion !== '5.28.0') ? rawVersion : undefined;
   const buildNumber = (req.headers['x-app-build'] as string) || req.body?.buildNumber;

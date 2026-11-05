@@ -55,43 +55,42 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
           });
         }
 
-        // Enforce Minimum Version Rule for mobile clients when forceUpdate is enabled
-        const clientPlatform = (req.headers['x-app-platform'] as string)
+        // Enforce Minimum Version Rule strictly for mobile clients when forceUpdate is enabled
+        const origin = ((req.headers['origin'] as string) || '').toLowerCase();
+        const referer = ((req.headers['referer'] as string) || '').toLowerCase();
+        const rawPlatformHeader = ((req.headers['x-app-platform'] as string)
           || (req.headers['x-platform'] as string)
           || req.body?.platform
-          || dbUser?.lastPlatform;
+          || '').toLowerCase();
 
-        let clientVersion = (req.headers['x-app-version'] as string)
-          || (req.query.version as string)
-          || req.body?.appVersion
-          || (dbUser?.lastAppVersion && dbUser.lastAppVersion !== '5.28.0' ? dbUser.lastAppVersion : undefined);
+        const isWebTraffic = rawPlatformHeader === 'web' ||
+          origin.includes('mitoreboot.in') ||
+          referer.includes('mitoreboot.in') ||
+          origin.includes('localhost:5173') ||
+          referer.includes('localhost:5173') ||
+          origin.includes('localhost:3000') ||
+          referer.includes('localhost:3000');
 
-        // Fallback to active AppTelemetrySession for this user if version not yet on dbUser
-        if (!clientVersion && req.user?.id) {
-          const session = await AppTelemetrySession.findOne({
-            $or: [
-              { userId: req.user.id },
-              { deviceId: `user_${req.user.id}` }
-            ],
-            appVersion: { $nin: ['5.28.0', null, ''] }
-          }).sort({ lastActiveAt: -1 }).lean();
-          if (session?.appVersion) {
-            clientVersion = session.appVersion;
-          }
-        }
+        // Web clients must NEVER be blocked by native mobile app version rules
+        if (!isWebTraffic) {
+          const clientPlatform = ['android', 'ios'].includes(rawPlatformHeader) ? (rawPlatformHeader as 'android' | 'ios') : null;
+          const clientVersion = (req.headers['x-app-version'] as string)
+            || (req.query.version as string)
+            || req.body?.appVersion;
 
-        // ONLY enforce if mobile platform is detected and valid client version is resolved
-        if (clientPlatform && ['android', 'ios'].includes(clientPlatform) && clientVersion && clientVersion !== '5.28.0') {
-          const config = await AppHealthSyncService.getOrCreateConfig();
-          const rules = clientPlatform === 'ios' ? config.iosVersionRules : config.androidVersionRules;
-          if (rules?.forceUpdate && rules.minSupportedVersion && AppHealthController.compareVersions(rules.minSupportedVersion, clientVersion) > 0) {
-            return res.status(403).json({
-              message: `App Update Required: Your app version (${clientVersion}) is outdated. Please update to version ${rules.minSupportedVersion} or higher from the ${clientPlatform === 'ios' ? 'Apple App Store' : 'Google Play Store'} to continue.`,
-              isUpdateRequired: true,
-              minSupportedVersion: rules.minSupportedVersion,
-              latestVersion: rules.latestReleasedVersion,
-              updateUrl: rules.updateUrl
-            });
+          // ONLY enforce if mobile platform is detected and valid client version is resolved
+          if (clientPlatform && clientVersion && clientVersion !== '5.28.0') {
+            const config = await AppHealthSyncService.getOrCreateConfig();
+            const rules = clientPlatform === 'ios' ? config.iosVersionRules : config.androidVersionRules;
+            if (rules?.forceUpdate && rules.minSupportedVersion && AppHealthController.compareVersions(rules.minSupportedVersion, clientVersion) > 0) {
+              return res.status(403).json({
+                message: `App Update Required: Your app version (${clientVersion}) is outdated. Please update to version ${rules.minSupportedVersion} or higher from the ${clientPlatform === 'ios' ? 'Apple App Store' : 'Google Play Store'} to continue.`,
+                isUpdateRequired: true,
+                minSupportedVersion: rules.minSupportedVersion,
+                latestVersion: rules.latestReleasedVersion,
+                updateUrl: rules.updateUrl
+              });
+            }
           }
         }
       } catch (dbErr) {
@@ -108,8 +107,28 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
       if (now - lastRecorded > 5 * 60 * 1000) {
         userActivityThrottle.set(userId, now);
 
-        const platformHeader = req.headers['x-app-platform'] as string;
-        let platform = (['android', 'ios', 'web'].includes(platformHeader) ? platformHeader : 'android') as 'android' | 'ios' | 'web';
+        const origin = ((req.headers['origin'] as string) || '').toLowerCase();
+        const referer = ((req.headers['referer'] as string) || '').toLowerCase();
+        const platformHeader = (req.headers['x-app-platform'] as string) || (req.headers['x-platform'] as string);
+        const isWeb = platformHeader === 'web' ||
+          origin.includes('mitoreboot.in') ||
+          referer.includes('mitoreboot.in') ||
+          origin.includes('localhost:5173') ||
+          referer.includes('localhost:5173') ||
+          origin.includes('localhost:3000') ||
+          referer.includes('localhost:3000');
+
+        let platform: 'android' | 'ios' | 'web' = isWeb ? 'web' : 'android';
+        if (platformHeader && ['android', 'ios', 'web'].includes(platformHeader)) {
+          platform = platformHeader as 'android' | 'ios' | 'web';
+        } else if (!isWeb) {
+          const ua = (req.headers['user-agent'] as string) || '';
+          if (/android/i.test(ua)) {
+            platform = 'android';
+          } else if (/iPad|iPhone|iPod/.test(ua)) {
+            platform = 'ios';
+          }
+        }
         const rawAppVersion = (req.headers['x-app-version'] as string) || (req.body?.appVersion as string);
         const rawBuildNumber = (req.headers['x-app-build'] as string) || (req.body?.buildNumber as string);
         let osVersion = (req.headers['x-os-version'] as string) || 'Unknown';

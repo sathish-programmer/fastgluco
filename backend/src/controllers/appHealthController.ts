@@ -963,14 +963,42 @@ export class AppHealthController {
    */
   public static async checkVersion(req: Request, res: Response) {
     try {
-      const platform = (req.query.platform as string) || 'android';
+      const origin = ((req.headers['origin'] as string) || '').toLowerCase();
+      const referer = ((req.headers['referer'] as string) || '').toLowerCase();
+      const rawPlatform = ((req.query.platform as string) || (req.headers['x-app-platform'] as string) || '').toLowerCase();
+
+      const isWeb = rawPlatform === 'web' ||
+        origin.includes('mitoreboot.in') ||
+        referer.includes('mitoreboot.in') ||
+        origin.includes('localhost:5173') ||
+        referer.includes('localhost:5173') ||
+        origin.includes('localhost:3000') ||
+        referer.includes('localhost:3000');
+
+      if (isWeb) {
+        return res.status(200).json({
+          success: true,
+          platform: 'web',
+          clientVersion: (req.query.version as string) || '6.1.9',
+          latestReleasedVersion: '6.1.9',
+          latestBuildNumber: '116',
+          minSupportedVersion: '1.0.0',
+          recommendedVersion: '6.1.9',
+          isUpdateAvailable: false,
+          isUpdateRequired: false,
+          updateUrl: '',
+          releaseNotes: ''
+        });
+      }
+
+      const platform = rawPlatform === 'ios' ? 'ios' : 'android';
       const clientVersion = (req.query.version as string) || '1.0.0';
 
       const config = await AppHealthSyncService.getOrCreateConfig();
       const rules = platform === 'ios' ? config.iosVersionRules : config.androidVersionRules;
 
       const isUpdateAvailable = AppHealthController.compareVersions(rules.latestReleasedVersion, clientVersion) > 0;
-      const isUpdateRequired = rules.forceUpdate && AppHealthController.compareVersions(rules.minSupportedVersion, clientVersion) > 0;
+      const isUpdateRequired = !!(rules.forceUpdate && AppHealthController.compareVersions(rules.minSupportedVersion, clientVersion) > 0);
 
       res.status(200).json({
         success: true,
