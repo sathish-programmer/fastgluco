@@ -52,7 +52,7 @@ export const Legal: React.FC<LegalProps> = ({ type, onBack }) => {
     ? new Date(user.termsAcceptedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
     : new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
-  const rawContent = (content && content.trim().length > 200 && !content.includes('Test Terms'))
+  const rawContent = (content && content.trim().length > 0)
     ? content
     : isTerms
     ? `

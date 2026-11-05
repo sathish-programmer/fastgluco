@@ -30,7 +30,7 @@ export const TermsAndConditionsAcceptancePage: React.FC<TermsAndConditionsAccept
         const res = await fetch(`${apiUrl}/legal/TermsOfService`);
         if (res.ok) {
           const data = await res.json();
-          if (isMounted && data.content && data.content.trim().length > 200 && !data.content.includes('Test Terms')) {
+          if (isMounted && data.content && data.content.trim().length > 0) {
             setDocumentContent(data.content);
           }
         }
