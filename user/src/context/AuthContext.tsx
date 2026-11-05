@@ -179,7 +179,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setError(msg);
     };
 
-    // Install lightweight fetch interceptor once to detect immediate 403 suspension
+    // Install lightweight fetch interceptor once to detect immediate 403 suspension or version updates
     const originalFetch = window.fetch;
     window.fetch = async (...args) => {
       const response = await originalFetch(...args);
@@ -187,7 +187,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
           const clone = response.clone();
           const data = await clone.json();
-          if (data?.isBlocked || data?.isSuspended) {
+          if (data?.isUpdateRequired) {
+            window.dispatchEvent(new CustomEvent('app_update_required', { detail: data }));
+          } else if (data?.isBlocked || data?.isSuspended) {
             window.dispatchEvent(new CustomEvent('account_blocked', { detail: data }));
           }
         } catch {
@@ -268,6 +270,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (response.status === 403) {
         try {
           const errData = await response.json();
+          if (errData?.isUpdateRequired) {
+            // Keep user session intact and trigger dedicated Force Update screen
+            window.dispatchEvent(new CustomEvent('app_update_required', { detail: errData }));
+            setIsLoading(false);
+            return;
+          }
           logout();
           setError(errData.message || 'Your account has been suspended by an administrator. Please contact support.');
           return;
@@ -380,6 +388,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const data = await response.json();
       if (!response.ok) {
+        if (data?.isUpdateRequired) {
+          window.dispatchEvent(new CustomEvent('app_update_required', { detail: data }));
+        }
         return { success: false, message: data.message || 'Failed to send OTP.' };
       }
       return {
@@ -427,6 +438,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const data = await response.json();
 
       if (!response.ok) {
+        if (data?.isUpdateRequired) {
+          window.dispatchEvent(new CustomEvent('app_update_required', { detail: data }));
+        }
         throw new Error(data.message || 'OTP verification failed.');
       }
 

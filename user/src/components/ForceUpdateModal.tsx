@@ -11,6 +11,7 @@ export interface ForceUpdateModalProps {
   updateUrl: string;
   releaseNotes?: string;
   onDismiss?: () => void;
+  onRetry?: () => void;
 }
 
 export const ForceUpdateModal: React.FC<ForceUpdateModalProps> = ({
@@ -20,8 +21,11 @@ export const ForceUpdateModal: React.FC<ForceUpdateModalProps> = ({
   currentVersion,
   updateUrl,
   releaseNotes,
-  onDismiss
+  onDismiss,
+  onRetry
 }) => {
+  const [isChecking, setIsChecking] = React.useState(false);
+
   if (!isOpen) return null;
 
   const handleOpenStore = async () => {
@@ -33,6 +37,17 @@ export const ForceUpdateModal: React.FC<ForceUpdateModalProps> = ({
       }
     } catch {
       window.open(updateUrl, '_system');
+    }
+  };
+
+  const handleRetry = async () => {
+    if (onRetry) {
+      setIsChecking(true);
+      try {
+        await onRetry();
+      } finally {
+        setTimeout(() => setIsChecking(false), 800);
+      }
     }
   };
 
@@ -103,11 +118,23 @@ export const ForceUpdateModal: React.FC<ForceUpdateModalProps> = ({
             <button
               type="button"
               onClick={handleOpenStore}
-              className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:opacity-95 active:scale-98 text-white rounded-2xl font-black text-xs transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-3.5 px-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:opacity-95 active:scale-98 text-white rounded-2xl font-black text-xs transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span>Update App Now</span>
+              <span>Update App from Store</span>
               <ArrowRight className="w-4 h-4" />
             </button>
+
+            {onRetry && (
+              <button
+                type="button"
+                onClick={handleRetry}
+                disabled={isChecking}
+                className="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 rounded-2xl font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isChecking ? 'animate-spin' : ''}`} />
+                <span>{isChecking ? 'Checking version...' : "I've Updated • Re-check"}</span>
+              </button>
+            )}
 
             {!isMandatory && onDismiss && (
               <button

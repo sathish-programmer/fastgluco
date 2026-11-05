@@ -157,10 +157,20 @@ class TelemetryService {
   }
 
   /**
+   * Clears cached device telemetry metadata to force fresh evaluation.
+   */
+  public clearCache(): void {
+    this.cachedMeta = null;
+  }
+
+  /**
    * Checks with backend if minimum version rules require an update.
    */
-  public async checkVersion(apiUrl: string): Promise<VersionCheckResult | null> {
+  public async checkVersion(apiUrl: string, forceFresh = false): Promise<VersionCheckResult | null> {
     try {
+      if (forceFresh) {
+        this.clearCache();
+      }
       const meta = await this.getTelemetryMeta();
       const res = await fetch(
         `${apiUrl}/config/version-check?platform=${meta.platform}&version=${meta.appVersion}&build=${meta.buildNumber}`

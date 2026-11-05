@@ -251,10 +251,10 @@ const MainAppContent: React.FC = () => {
   });
 
   // App Version & Force Update Check
-  useEffect(() => {
-    let isMounted = true;
-    telemetryService.checkVersion(apiUrl).then((res) => {
-      if (isMounted && res && (res.isUpdateRequired || res.isUpdateAvailable)) {
+  const checkAppVersion = React.useCallback(async (forceFresh = false) => {
+    try {
+      const res = await telemetryService.checkVersion(apiUrl, forceFresh);
+      if (res && (res.isUpdateRequired || res.isUpdateAvailable)) {
         setVersionCheckData({
           isOpen: true,
           isMandatory: !!res.isUpdateRequired,
@@ -263,15 +263,44 @@ const MainAppContent: React.FC = () => {
           updateUrl: res.updateUrl || '',
           releaseNotes: res.releaseNotes || ''
         });
+      } else if (res && !res.isUpdateRequired) {
+        setVersionCheckData((prev) => ({ ...prev, isOpen: false, isMandatory: false }));
       }
-    }).catch((err) => {
+    } catch (err) {
       console.warn('[VersionCheck] Background check failed:', err);
-    });
-
-    return () => {
-      isMounted = false;
-    };
+    }
   }, [apiUrl]);
+
+  useEffect(() => {
+    checkAppVersion();
+
+    // Re-check when user switches back to app (e.g. from Google Play Store / App Store)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkAppVersion(true);
+      }
+    };
+
+    // Global event listener triggered by 403 update responses across all services
+    const handleUpdateRequired = (e: any) => {
+      const data = e.detail;
+      setVersionCheckData((prev) => ({
+        isOpen: true,
+        isMandatory: true,
+        latestVersion: data.latestVersion || data.minSupportedVersion || prev.latestVersion,
+        currentVersion: data.clientVersion || prev.currentVersion,
+        updateUrl: data.updateUrl || prev.updateUrl,
+        releaseNotes: data.releaseNotes || prev.releaseNotes
+      }));
+    };
+
+    window.addEventListener('app_update_required', handleUpdateRequired);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      window.removeEventListener('app_update_required', handleUpdateRequired);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [checkAppVersion]);
 
   // Daily Motivation: check if viewed today on app launch / login
   useEffect(() => {
@@ -798,6 +827,24 @@ const MainAppContent: React.FC = () => {
       }
     }
   }, [branding.enableExternalPayments, branding.enableSubscriptions]);
+
+  // PRIORITY 1: Mandatory App Version Update Gate
+  // When force update is required by admin, block ALL usage and display dedicated Update screen
+  if (versionCheckData.isOpen && versionCheckData.isMandatory) {
+    return (
+      <ForceUpdateModal
+        isOpen={true}
+        isMandatory={true}
+        latestVersion={versionCheckData.latestVersion}
+        currentVersion={versionCheckData.currentVersion}
+        updateUrl={versionCheckData.updateUrl}
+        releaseNotes={versionCheckData.releaseNotes}
+        onRetry={async () => {
+          await checkAppVersion(true);
+        }}
+      />
+    );
+  }
 
   // If completely offline and no authenticated session, show modern OfflineScreen
   if (!isOnline && !isAuthenticated) {
