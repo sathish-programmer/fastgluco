@@ -758,8 +758,17 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
           <div className="mb-5 p-3.5 bg-red-50 text-danger rounded-2xl flex items-start space-x-3 text-xs font-medium border border-red-100 animate-shake">
             <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-danger" />
             <div className="flex-1">
-              <span>{error}</span>
-              <button onClick={clearError} className="block mt-1 underline hover:text-red-700 text-[11px] cursor-pointer">{t('auth.dismiss', 'Dismiss')}</button>
+              <span className="leading-relaxed">{error}</span>
+              {error.includes('support@mitoreboot.in') && (
+                <a
+                  href="mailto:support@mitoreboot.in?subject=Restore%20Deleted%20Account%20Request"
+                  className="inline-flex items-center gap-1.5 mt-2.5 px-3 py-1.5 rounded-xl bg-red-600 text-white font-bold text-[11px] shadow-xs hover:bg-red-700 transition-colors"
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>Email Support to Restore Account</span>
+                </a>
+              )}
+              <button onClick={clearError} className="block mt-1.5 underline hover:text-red-700 text-[11px] cursor-pointer">{t('auth.dismiss', 'Dismiss')}</button>
             </div>
           </div>
         )}
@@ -837,10 +846,21 @@ export const Login: React.FC<LoginProps> = ({ resetToken: _resetToken, onClearRe
               </div>
 
               {phoneError && (
-                <p className="mt-1.5 text-xs text-red-600 font-semibold flex items-center gap-1">
-                  <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                  {phoneError}
-                </p>
+                <div className="mt-2 p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
+                  <div className="flex items-start gap-2 font-semibold">
+                    <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-rose-600" />
+                    <span className="leading-relaxed">{phoneError}</span>
+                  </div>
+                  {phoneError.includes('support@mitoreboot.in') && (
+                    <a
+                      href="mailto:support@mitoreboot.in?subject=Restore%20Deleted%20Account%20Request"
+                      className="inline-flex items-center gap-1.5 mt-2.5 px-3 py-1.5 rounded-xl bg-rose-600 text-white font-bold text-[11px] shadow-xs hover:bg-rose-700 transition-colors"
+                    >
+                      <Mail className="w-3.5 h-3.5" />
+                      <span>Contact Support to Restore</span>
+                    </a>
+                  )}
+                </div>
               )}
             </div>
 

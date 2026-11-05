@@ -1517,4 +1517,71 @@ export class EmailService {
       console.error('[EmailService] Report processed email error:', err);
     }
   }
+
+  /**
+   * Send Account Deletion Notice with 30-Day Recovery Period
+   */
+  public static async sendAccountDeletionNoticeEmail(email: string, name: string, scheduledDateStr: string) {
+    const { appName, appTagline } = await EmailService.getBranding();
+    const html = generateEmailTemplate('Account Deletion Notice (30-Day Grace Period)', `
+      <p>Hi ${name || 'User'},</p>
+      <p>We received a request to delete your <strong>${appName}</strong> account.</p>
+      <div style="background-color: #fff1f2; border: 1px solid #fecdd3; border-left: 4px solid #e11d48; padding: 16px; border-radius: 8px; margin: 20px 0;">
+        <p style="margin: 0; color: #9f1239; font-weight: bold; font-size: 15px;">30-Day Recovery Quarantine</p>
+        <p style="margin: 8px 0 0 0; color: #be123c; font-size: 13.5px; line-height: 1.5;">
+          Your account is now deactivated. In accordance with security and privacy policies, your account is held in a <strong>30-day grace period</strong> until <strong>${scheduledDateStr}</strong> before permanent purging.
+        </p>
+      </div>
+
+      <h3 style="font-size: 15px; color: #1e293b; margin-top: 20px;">Want to restore or rollback your account?</h3>
+      <p style="font-size: 13.5px; color: #475569; line-height: 1.6;">
+        If this deletion was done by mistake or you change your mind within the next 30 days, please email our support team at <a href="mailto:support@mitoreboot.in" style="color: #2563eb; font-weight: bold;">support@mitoreboot.in</a> with your registered phone number/email and a brief reason. Our clinical admin team will review and restore your account.
+      </p>
+
+      <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 14px; border-radius: 8px; margin: 20px 0; font-size: 12.5px; color: #64748b;">
+        <strong>Important:</strong> After 30 days (${scheduledDateStr}), your personal profile, biomarker logs, and medical history will be permanently and irreversibly purged from our systems.
+      </div>
+    `, appName, appTagline);
+
+    try {
+      await transporter.sendMail({
+        from: `"${appName} Support" <support@mitoreboot.in>`,
+        replyTo: 'support@mitoreboot.in',
+        to: email,
+        subject: `Your ${appName} Account Deletion Request (30-Day Recovery Period)`,
+        html
+      });
+    } catch (err) {
+      console.error('[EmailService] Account deletion notice error:', err);
+    }
+  }
+
+  /**
+   * Send Account Restored Email
+   */
+  public static async sendAccountRestoredEmail(email: string, name: string) {
+    const { appName, appTagline } = await EmailService.getBranding();
+    const html = generateEmailTemplate('Account Successfully Restored', `
+      <p>Hi ${name || 'User'},</p>
+      <p>Great news! Your <strong>${appName}</strong> account has been reviewed and successfully restored by our support team.</p>
+      <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #16a34a; padding: 16px; border-radius: 8px; margin: 20px 0;">
+        <p style="margin: 0; color: #15803d; font-weight: bold; font-size: 15px;">Full Access Re-enabled</p>
+        <p style="margin: 8px 0 0 0; color: #166534; font-size: 13.5px; line-height: 1.5;">
+          All your historical biomarker logs, habits, and subscription status are completely intact. You can now log in using your registered mobile number and OTP.
+        </p>
+      </div>
+      <p><a href="https://app.mitoreboot.in" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Open ${appName} App</a></p>
+    `, appName, appTagline);
+
+    try {
+      await transporter.sendMail({
+        from: `"${appName} Support" <support@mitoreboot.in>`,
+        to: email,
+        subject: `Your ${appName} Account Has Been Restored`,
+        html
+      });
+    } catch (err) {
+      console.error('[EmailService] Account restored email error:', err);
+    }
+  }
 }

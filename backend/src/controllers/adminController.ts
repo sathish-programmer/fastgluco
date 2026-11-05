@@ -331,9 +331,11 @@ export class AdminController {
           }).select('userId');
           const subUserIds = anySubs.map(s => s.userId);
           filter._id = { $nin: subUserIds };
+        } else if (subStatus === 'deleted') {
+          filter.isDeleted = true;
         }
 
-        if (subStatus !== 'none') {
+        if (subStatus !== 'none' && subStatus !== 'deleted') {
           if (filter._id) {
             filter._id = { $in: matchingUserIds, ...filter._id };
           } else {
@@ -342,13 +344,27 @@ export class AdminController {
         }
       }
 
-      const users = await User.find(filter)
+      const shouldIncludeDeleted = Boolean(q || subStatus === 'deleted');
+      if (subStatus === 'deleted') {
+        filter.isDeleted = true;
+      }
+
+      const usersQuery = User.find(filter)
         .select('-passwordHash')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(l);
 
-      const total = await User.countDocuments(filter);
+      if (shouldIncludeDeleted) {
+        usersQuery.setOptions({ includeDeleted: true });
+      }
+      const users = await usersQuery;
+
+      const countQuery = User.countDocuments(filter);
+      if (shouldIncludeDeleted) {
+        countQuery.setOptions({ includeDeleted: true });
+      }
+      const total = await countQuery;
 
       // Attach populated subscription details for each listed user
       const userIds = users.map(u => u._id);
@@ -737,6 +753,51 @@ export class AdminController {
       });
     } catch (error: any) {
       return res.status(500).json({ message: error.message || 'Error updating user status.' });
+    }
+  }
+
+  /**
+   * Restore Deleted User (Revoke Deletion Request)
+   */
+  public static async restoreUser(req: AuthRequest, res: Response) {
+    try {
+      const { id } = req.params;
+      const user = await User.findById(id).setOptions({ includeDeleted: true });
+      if (!user) {
+        return res.status(404).json({ message: 'User not found.' });
+      }
+
+      if (!user.isDeleted) {
+        return res.status(400).json({ message: 'This user account is active and not marked as deleted.' });
+      }
+
+      user.isDeleted = false;
+      user.deletedAt = null;
+      user.deletionScheduledFor = null;
+      user.deletionReason = '';
+      await user.save();
+
+      // Log to administrative audit log
+      await AuditLog.create({
+        adminId: req.user?.id,
+        action: 'RESTORE_USER',
+        details: `Restored deleted account for user: ${user.email || user.mobileNumber}`,
+        ipAddress: req.ip
+      }).catch(console.error);
+
+      // Email the user notifying them that their account has been restored
+      if (user.email) {
+        EmailService.sendAccountRestoredEmail(user.email, user.name || 'User').catch((e) => {
+          console.error('[AdminController] Failed to send account restored email:', e);
+        });
+      }
+
+      return res.status(200).json({
+        message: 'Account successfully restored! The user can now log in normally.',
+        user: { id: user._id, name: user.name, email: user.email, isDeleted: false }
+      });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message || 'Error restoring user account.' });
     }
   }
 

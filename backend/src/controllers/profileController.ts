@@ -3,6 +3,7 @@ import { AuthRequest } from '../middlewares/authMiddleware';
 import { User } from '../models/User';
 import { AuthController } from './authController';
 import { LibreSyncService } from '../services/libreSyncService';
+import { EmailService } from '../services/emailService';
 
 export class ProfileController {
   /**
@@ -216,7 +217,7 @@ export class ProfileController {
   }
 
   /**
-   * Delete Own Account
+   * Delete Own Account (30-Day Recovery Period with Rollback Capability)
    */
   public static async deleteOwnAccount(req: AuthRequest, res: Response) {
     try {
@@ -226,16 +227,28 @@ export class ProfileController {
         return res.status(404).json({ message: 'User not found.' });
       }
 
-      // Instead of hard-deleting the user immediately, we anonymize or remove their data.
-      // For App Store guidelines (5.1.1v), deleting the user record completely is required if possible.
-      // We will perform a hard delete here. 
-      await User.findByIdAndDelete(userId);
+      const scheduledPurge = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      user.isDeleted = true;
+      user.deletedAt = new Date();
+      user.deletionScheduledFor = scheduledPurge;
+      user.deletionReason = req.body?.reason || 'User initiated account deletion';
+      user.fcmTokens = [];
+      user.fcmToken = undefined;
+      await user.save();
 
-      // (Optional) Here you would also delete the user from Firebase Auth using the Admin SDK, 
-      // but since Firebase allows self-deletion from the client SDK (which we'll do in the frontend),
-      // just deleting the MongoDB record is sufficient for the backend's responsibility.
+      // Send deletion notice email with rollback instructions
+      if (user.email) {
+        const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+        const scheduledDateStr = scheduledPurge.toLocaleDateString('en-US', dateOptions);
+        EmailService.sendAccountDeletionNoticeEmail(user.email, user.name || 'User', scheduledDateStr).catch((e) => {
+          console.error('[ProfileController] Failed to send account deletion email:', e);
+        });
+      }
 
-      return res.status(200).json({ message: 'Account successfully deleted.' });
+      return res.status(200).json({
+        message: 'Account scheduled for deletion. You have a 30-day grace period to rollback your account by emailing support@mitoreboot.in.',
+        deletionScheduledFor: scheduledPurge
+      });
     } catch (error: any) {
       return res.status(500).json({ message: error.message || 'Error deleting account.' });
     }

@@ -443,6 +443,7 @@ router.post('/admin/profile-edits/:id/approve', AdminController.approveProfileEd
 router.post('/admin/profile-edits/:id/reject', AdminController.rejectProfileEdit);
 router.get('/admin/users/:userId/coaching', CoachingController.getSessionsForUser);
 router.put('/admin/users/:id/block', AdminController.toggleUserBlock);
+router.post('/admin/users/:id/restore', AdminController.restoreUser);
 router.post('/admin/users/:id/subscription/cancel', AdminController.cancelUserSubscription);
 router.post('/admin/users/:id/subscription/add', AdminController.addUserSubscription);
 router.post('/admin/users/:id/subscription/send-coupon', AdminController.sendCouponToUser);

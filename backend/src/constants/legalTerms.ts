@@ -59,3 +59,4 @@ export const OFFICIAL_TERMS_HTML = `
   </div>
 </div>
 `;
+

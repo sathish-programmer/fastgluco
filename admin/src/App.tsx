@@ -65,6 +65,7 @@ import {
   TrendingUp,
   Layers,
   ArrowUpRight,
+  RotateCcw,
   Compass
 } from 'lucide-react';
 import {
@@ -1473,6 +1474,28 @@ const AdminPanelContent: React.FC = () => {
       }
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const handleRestoreUser = async (userId: string, userName?: string) => {
+    if (!confirm(`Are you sure you want to restore the account for ${userName || 'this patient'}? This will revoke the 30-day deletion quarantine and allow them to log in immediately.`)) return;
+    try {
+      const response = await fetch(`${apiUrl}/admin/users/${userId}/restore`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        alert('User account successfully restored! The user has been emailed and can now log in.');
+        fetchUsers(pagination.page);
+      } else {
+        const err = await response.json();
+        alert(err.message || 'Error restoring user.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error connecting to server.');
     }
   };
 
@@ -4478,6 +4501,7 @@ const AdminPanelContent: React.FC = () => {
                     <option value="trial_expired">⏳ Trial Expired</option>
                     <option value="cancelled">⚠️ Cancelled</option>
                     <option value="none">👤 Free Users (No Sub)</option>
+                    <option value="deleted">🗑️ Deleted (30d Quarantine)</option>
                   </select>
                 </div>
 
@@ -4575,7 +4599,18 @@ const AdminPanelContent: React.FC = () => {
                             )}
                           </td>
                           <td className="px-5 py-3.5">
-                            {u.isBlocked ? (
+                            {u.isDeleted ? (
+                              <div className="inline-flex flex-col items-start gap-0.5">
+                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-200">
+                                  Deleted (30d Grace)
+                                </span>
+                                {u.deletionScheduledFor && (
+                                  <span className="text-[10px] text-slate-400 font-medium">
+                                    {Math.max(0, Math.ceil((new Date(u.deletionScheduledFor).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))}d left
+                                  </span>
+                                )}
+                              </div>
+                            ) : u.isBlocked ? (
                               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-50 text-danger border border-rose-100">
                                 Blocked
                               </span>
@@ -4689,6 +4724,16 @@ const AdminPanelContent: React.FC = () => {
                                   </>
                                 )}
                               </button>
+                              {u.isDeleted && (
+                                <button
+                                  onClick={() => handleRestoreUser(u._id, u.name || u.email)}
+                                  className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-all flex items-center space-x-1"
+                                  title="Revoke Deletion & Restore Patient Account"
+                                >
+                                  <RotateCcw className="h-3.5 w-3.5" />
+                                  <span>Restore</span>
+                                </button>
+                              )}
                               <button
                                 onClick={() => handleDeleteUser(u._id)}
                                 className="px-2 py-1.5 rounded-lg text-xs font-bold transition-all text-red-600 hover:bg-red-50"

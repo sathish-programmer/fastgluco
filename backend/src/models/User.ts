@@ -34,6 +34,9 @@ export interface IUser extends Document {
   libreLastSyncAt?: Date;
   isBlocked: boolean;
   isDeleted: boolean;
+  deletedAt?: Date | null;
+  deletionScheduledFor?: Date | null;
+  deletionReason?: string;
   cancerJourney?: 'PREVENTION' | 'TREATMENT' | 'SECONDARY_PREVENTION' | 'AGEING' | 'PCOD' | 'DIABETES' | 'HYPERTENSION' | 'PARKINSON' | 'CARDIAC';
   cancerDisclaimerAccepted?: boolean;
   cancerDisclaimerAcceptedAt?: Date;
@@ -104,6 +107,9 @@ const userSchema = new Schema<IUser>(
     libreLastSyncAt: { type: Date },
     isBlocked: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },
+    deletedAt: { type: Date, default: null },
+    deletionScheduledFor: { type: Date, default: null },
+    deletionReason: { type: String, default: '' },
     cancerJourney: { 
       type: String, 
       enum: ['PREVENTION', 'TREATMENT', 'SECONDARY_PREVENTION', 'AGEING', 'PCOD', 'DIABETES', 'HYPERTENSION', 'PARKINSON', 'CARDIAC'], 
@@ -141,12 +147,18 @@ const userSchema = new Schema<IUser>(
   }
 );
 
-// Query middleware to filter out soft deleted records
+// Query middleware to filter out soft deleted records unless includeDeleted is explicitly passed
 userSchema.pre('find', function () {
-  this.where({ isDeleted: false });
+  const opts = this.getOptions();
+  if (!opts || !opts.includeDeleted) {
+    this.where({ isDeleted: false });
+  }
 });
 userSchema.pre('findOne', function () {
-  this.where({ isDeleted: false });
+  const opts = this.getOptions();
+  if (!opts || !opts.includeDeleted) {
+    this.where({ isDeleted: false });
+  }
 });
 
 export const User = model<IUser>('User', userSchema);

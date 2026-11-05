@@ -218,6 +218,32 @@ export class AuthController {
 
       const cleanEmail = email.toLowerCase().trim();
 
+      // Check if this account is in 30-day deletion recovery quarantine
+      const deletedUser = await User.findOne({
+        $or: [
+          { mobileNumber: cleanPhone },
+          { email: cleanEmail }
+        ]
+      }).setOptions({ includeDeleted: true });
+
+      if (deletedUser && deletedUser.isDeleted) {
+        const scheduledDate = deletedUser.deletionScheduledFor || new Date(new Date(deletedUser.deletedAt || Date.now()).getTime() + 30 * 24 * 60 * 60 * 1000);
+        const msRemaining = scheduledDate.getTime() - Date.now();
+        if (msRemaining > 0) {
+          const daysLeft = Math.max(1, Math.ceil(msRemaining / (1000 * 60 * 60 * 24)));
+          recordSafeOtpTelemetry(req, 'REQUEST', 'both', 'FAILED', cleanPhone, 'ACCOUNT_DELETED_QUARANTINE');
+          return res.status(403).json({
+            success: false,
+            isAccountDeleted: true,
+            daysLeft,
+            message: `This account was deleted and is held in a 30-day security quarantine (${daysLeft} days remaining). If you wish to restore/rollback your account, please email support@mitoreboot.in with your reason. To create a fresh new account with these details, please try again after 30 days.`
+          });
+        } else {
+          // 30 days have elapsed: permanently purge the old record so user can register fresh
+          await User.findByIdAndDelete(deletedUser._id);
+        }
+      }
+
       // Check if user exists with this phone but different email
       const existingUserByPhone = await User.findOne({ mobileNumber: cleanPhone });
       if (existingUserByPhone && existingUserByPhone.email?.toLowerCase().trim() !== cleanEmail) {
@@ -567,6 +593,31 @@ export class AuthController {
 
         // Valid OTP, delete record
         await Otp.deleteOne({ _id: otpRecord._id });
+      }
+
+      // Check if user is in 30-day deletion recovery quarantine
+      const deletedUser = await User.findOne({
+        $or: [
+          { mobileNumber: cleanPhone },
+          ...(email ? [{ email: email.toLowerCase().trim() }] : [])
+        ]
+      }).setOptions({ includeDeleted: true });
+
+      if (deletedUser && deletedUser.isDeleted) {
+        const scheduledDate = deletedUser.deletionScheduledFor || new Date(new Date(deletedUser.deletedAt || Date.now()).getTime() + 30 * 24 * 60 * 60 * 1000);
+        const msRemaining = scheduledDate.getTime() - Date.now();
+        if (msRemaining > 0) {
+          const daysLeft = Math.max(1, Math.ceil(msRemaining / (1000 * 60 * 60 * 24)));
+          return res.status(403).json({
+            message: `This account was deleted and is in a 30-day security quarantine (${daysLeft} days remaining). If you wish to restore/rollback your account, please email support@mitoreboot.in with your reason. To create a fresh account with these details, please try again after 30 days.`,
+            isAccountDeleted: true,
+            daysLeft,
+            supportEmail: 'support@mitoreboot.in'
+          });
+        } else {
+          // 30 days have elapsed: permanently purge the old record
+          await User.findByIdAndDelete(deletedUser._id);
+        }
       }
 
       // Find user by mobileNumber or email
