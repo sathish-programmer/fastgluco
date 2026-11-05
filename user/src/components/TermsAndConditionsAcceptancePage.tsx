@@ -490,9 +490,9 @@ export const TermsAndConditionsAcceptancePage: React.FC<TermsAndConditionsAccept
         <h4 style="font-size: 0.95rem; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem;">32. PRIVACY AND GRIEVANCE CONTACT</h4>
         <p style="font-size: 0.875rem; margin-bottom: 0.5rem;"><strong>MITOREBOOT PRIVATE LIMITED</strong></p>
         <p style="font-size: 0.875rem; margin-bottom: 0.35rem;">Registered Office: No 11/7, Krishna Residency, Flat No B-1, Basavanagudi, Bangalore South, Bangalore- 560004, Karnataka, India</p>
-        <p style="font-size: 0.875rem; margin-bottom: 0.35rem;">Email: privacy@mitoreboot.in / support@mitoreboot.in</p>
+        <p style="font-size: 0.875rem; margin-bottom: 0.35rem;">Email: support@mitoreboot.in</p>
         <p style="font-size: 0.875rem; margin-bottom: 0.35rem;">Privacy/Grievance Officer: Grievance Officer, MitoReboot Private Limited</p>
-        <p style="font-size: 0.875rem; margin-bottom: 1.5rem;">Contact: +91-9597042107 / privacy@mitoreboot.in</p>
+        <p style="font-size: 0.875rem; margin-bottom: 1.5rem;">Contact: +91-9597042107 / support@mitoreboot.in</p>
       </div>
 
       <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 1.25rem; border-radius: 0.875rem; margin-top: 1.5rem; margin-bottom: 1.5rem;">

@@ -103,7 +103,7 @@ const renderHtmlPage = (title: string, bodyContent: string) => {
     <div class="footer-bar">
       <p><strong>MitoReboot Private Limited</strong></p>
       <p>No 11/7, Krishna Residency, Flat No B-1, Basavanagudi, Bangalore South, Bangalore - 560004, Karnataka, India</p>
-      <p style="margin-top: 8px;">Contact: <a href="mailto:support@mitoreboot.in">support@mitoreboot.in</a> &bull; <a href="mailto:privacy@mitoreboot.in">privacy@mitoreboot.in</a></p>
+      <p style="margin-top: 8px;">Contact: <a href="mailto:support@mitoreboot.in">support@mitoreboot.in</a></p>
       <p style="margin-top: 8px;">&copy; ${new Date().getFullYear()} MitoReboot Private Limited. All rights reserved.</p>
     </div>
   </div>

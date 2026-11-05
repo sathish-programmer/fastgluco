@@ -413,9 +413,9 @@ export const OFFICIAL_TERMS_HTML = `
     <h4 style="font-size: 1rem; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem;">32. PRIVACY AND GRIEVANCE CONTACT</h4>
     <p style="font-size: 0.875rem; margin-bottom: 0.5rem;"><strong>MitoReboot Private Limited</strong></p>
     <p style="font-size: 0.875rem; margin-bottom: 0.35rem;">Registered Office: MitoReboot Private Limited, Tamil Nadu, India</p>
-    <p style="font-size: 0.875rem; margin-bottom: 0.35rem;">Email: support@gmail.com / mitoreboot@gmail.com</p>
+    <p style="font-size: 0.875rem; margin-bottom: 0.35rem;">Email: support@mitoreboot.in</p>
     <p style="font-size: 0.875rem; margin-bottom: 0.35rem;">Privacy/Grievance Officer: Grievance Officer, MitoReboot Private Limited</p>
-    <p style="font-size: 0.875rem; margin-bottom: 1.5rem;">Contact: support@gmail.com / mitoreboot@gmail.com</p>
+    <p style="font-size: 0.875rem; margin-bottom: 1.5rem;">Contact: +91-9597042107 / support@mitoreboot.in</p>
   </div>
 
   <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 1.25rem; border-radius: 0.875rem; margin-top: 1.5rem; margin-bottom: 1.5rem;">
