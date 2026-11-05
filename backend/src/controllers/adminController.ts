@@ -270,11 +270,28 @@ export class AdminController {
       }
 
       if (q) {
-        filter.$or = [
-          { name: { $regex: q as string, $options: 'i' } },
-          { email: { $regex: q as string, $options: 'i' } },
-          { phoneNumber: { $regex: q as string, $options: 'i' } }
+        const cleanQ = (q as string).trim();
+        const digitsQ = cleanQ.replace(/[^0-9]/g, '');
+        const orConditions: any[] = [
+          { name: { $regex: cleanQ, $options: 'i' } },
+          { email: { $regex: cleanQ, $options: 'i' } },
+          { mobileNumber: { $regex: cleanQ, $options: 'i' } }
         ];
+
+        // Also match clean digits for phone numbers (e.g. 9597042107)
+        if (digitsQ.length >= 4) {
+          orConditions.push({ mobileNumber: { $regex: digitsQ, $options: 'i' } });
+        }
+
+        // Fuzzy helper for email typos (e.g. sathishkumarksk vs sathishkumarsk)
+        if (cleanQ.includes('@')) {
+          const emailPrefix = cleanQ.split('@')[0];
+          if (emailPrefix.length >= 6) {
+            orConditions.push({ email: { $regex: emailPrefix.slice(0, 8), $options: 'i' } });
+          }
+        }
+
+        filter.$or = orConditions;
       }
 
       const p = Math.max(1, parseInt(page as string, 10) || 1);
@@ -344,7 +361,9 @@ export class AdminController {
         }
       }
 
-      const shouldIncludeDeleted = Boolean(q || subStatus === 'deleted');
+      // In Admin patient directory, ALWAYS allow deleted records to be queried so administrators
+      // can review soft-deleted accounts in 30-day quarantine, inspect their data, and 1-click restore them.
+      const shouldIncludeDeleted = true;
       if (subStatus === 'deleted') {
         filter.isDeleted = true;
       }

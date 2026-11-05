@@ -4594,8 +4594,8 @@ const AdminPanelContent: React.FC = () => {
                               {u.name || 'Unnamed Patient'}
                             </button>
                             <span className="text-[11px] text-slate-400 block font-normal">{u.email}</span>
-                            {u.phoneNumber && (
-                              <span className="text-[10px] text-slate-400 block font-normal">{u.phoneNumber}</span>
+                            {(u.mobileNumber || u.phoneNumber) && (
+                              <span className="text-[10px] text-slate-400 block font-normal">{u.mobileNumber || u.phoneNumber}</span>
                             )}
                           </td>
                           <td className="px-5 py-3.5">
