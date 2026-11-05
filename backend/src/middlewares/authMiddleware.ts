@@ -56,16 +56,37 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
         }
 
         // Enforce Minimum Version Rule for mobile clients when forceUpdate is enabled
-        const clientPlatformHeader = req.headers['x-app-platform'] as string;
-        const clientVersionHeader = (req.headers['x-app-version'] as string) || (req.query.version as string);
+        const clientPlatform = (req.headers['x-app-platform'] as string)
+          || (req.headers['x-platform'] as string)
+          || req.body?.platform
+          || dbUser?.lastPlatform;
 
-        // ONLY enforce if client explicitly reports its platform and version, and ignore obsolete dummy fallback 5.28.0
-        if (clientPlatformHeader && ['android', 'ios'].includes(clientPlatformHeader) && clientVersionHeader && clientVersionHeader !== '5.28.0') {
+        let clientVersion = (req.headers['x-app-version'] as string)
+          || (req.query.version as string)
+          || req.body?.appVersion
+          || (dbUser?.lastAppVersion && dbUser.lastAppVersion !== '5.28.0' ? dbUser.lastAppVersion : undefined);
+
+        // Fallback to active AppTelemetrySession for this user if version not yet on dbUser
+        if (!clientVersion && req.user?.id) {
+          const session = await AppTelemetrySession.findOne({
+            $or: [
+              { userId: req.user.id },
+              { deviceId: `user_${req.user.id}` }
+            ],
+            appVersion: { $nin: ['5.28.0', null, ''] }
+          }).sort({ lastActiveAt: -1 }).lean();
+          if (session?.appVersion) {
+            clientVersion = session.appVersion;
+          }
+        }
+
+        // ONLY enforce if mobile platform is detected and valid client version is resolved
+        if (clientPlatform && ['android', 'ios'].includes(clientPlatform) && clientVersion && clientVersion !== '5.28.0') {
           const config = await AppHealthSyncService.getOrCreateConfig();
-          const rules = clientPlatformHeader === 'ios' ? config.iosVersionRules : config.androidVersionRules;
-          if (rules?.forceUpdate && rules.minSupportedVersion && AppHealthController.compareVersions(rules.minSupportedVersion, clientVersionHeader) > 0) {
+          const rules = clientPlatform === 'ios' ? config.iosVersionRules : config.androidVersionRules;
+          if (rules?.forceUpdate && rules.minSupportedVersion && AppHealthController.compareVersions(rules.minSupportedVersion, clientVersion) > 0) {
             return res.status(403).json({
-              message: `App Update Required: Your app version (${clientVersionHeader}) is outdated. Please update to version ${rules.minSupportedVersion} or higher from the ${clientPlatformHeader === 'ios' ? 'Apple App Store' : 'Google Play Store'} to continue.`,
+              message: `App Update Required: Your app version (${clientVersion}) is outdated. Please update to version ${rules.minSupportedVersion} or higher from the ${clientPlatform === 'ios' ? 'Apple App Store' : 'Google Play Store'} to continue.`,
               isUpdateRequired: true,
               minSupportedVersion: rules.minSupportedVersion,
               latestVersion: rules.latestReleasedVersion,

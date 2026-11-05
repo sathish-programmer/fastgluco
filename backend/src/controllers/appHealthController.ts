@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
 import { AppHealthConfig } from '../models/AppHealthConfig';
 import { AppTelemetrySession } from '../models/AppTelemetrySession';
 import { AppOtpTelemetry } from '../models/AppOtpTelemetry';
@@ -876,8 +877,8 @@ export class AppHealthController {
     try {
       const {
         platform = 'android',
-        appVersion = '5.28.0',
-        buildNumber = '92',
+        appVersion,
+        buildNumber,
         osVersion = 'Unknown',
         deviceModel = 'Unknown',
         deviceId
@@ -887,18 +888,30 @@ export class AppHealthController {
         return res.status(400).json({ success: false, message: 'deviceId is required' });
       }
 
+      // Extract userId from Authorization header if present
+      let authenticatedUserId = req.user?.id;
+      if (!authenticatedUserId && req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+        try {
+          const token = req.headers.authorization.split(' ')[1];
+          const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fastgluco_secret') as any;
+          if (decoded && decoded.id) {
+            authenticatedUserId = decoded.id;
+          }
+        } catch {}
+      }
+
       const todayStr = new Date().toISOString().split('T')[0];
       const now = new Date();
 
-      // Upsert daily telemetry session
+      // Upsert daily telemetry session without corrupting with dummy versions
       await AppTelemetrySession.findOneAndUpdate(
         { deviceId, sessionDate: todayStr },
         {
-          userId: req.user?.id || undefined,
+          userId: authenticatedUserId || undefined,
           deviceId,
           platform,
-          appVersion,
-          buildNumber,
+          ...(appVersion ? { appVersion } : {}),
+          ...(buildNumber ? { buildNumber } : {}),
           osVersion,
           deviceModel,
           sessionDate: todayStr,
@@ -909,15 +922,32 @@ export class AppHealthController {
       );
 
       // If user is authenticated, update user model last activity
-      if (req.user?.id) {
-        await User.findByIdAndUpdate(req.user.id, {
+      if (authenticatedUserId) {
+        const updatePayload: any = {
           lastActiveAt: now,
           lastPlatform: platform,
-          lastAppVersion: appVersion,
-          lastBuildNumber: buildNumber,
           lastOsVersion: osVersion,
           lastDeviceModel: deviceModel
-        });
+        };
+        if (appVersion) updatePayload.lastAppVersion = appVersion;
+        if (buildNumber) updatePayload.lastBuildNumber = buildNumber;
+        await User.findByIdAndUpdate(authenticatedUserId, updatePayload);
+      }
+
+      // Enforce version rules immediately on heartbeat
+      if (appVersion && ['android', 'ios'].includes(platform)) {
+        const config = await AppHealthSyncService.getOrCreateConfig();
+        const rules = platform === 'ios' ? config.iosVersionRules : config.androidVersionRules;
+        if (rules?.forceUpdate && rules.minSupportedVersion && AppHealthController.compareVersions(rules.minSupportedVersion, appVersion) > 0) {
+          return res.status(403).json({
+            success: false,
+            isUpdateRequired: true,
+            minSupportedVersion: rules.minSupportedVersion,
+            latestVersion: rules.latestReleasedVersion,
+            updateUrl: rules.updateUrl,
+            message: `App Update Required: Your app version (${appVersion}) is outdated. Please update to version ${rules.minSupportedVersion} or higher from the ${platform === 'ios' ? 'Apple App Store' : 'Google Play Store'} to continue.`
+          });
+        }
       }
 
       res.status(200).json({ success: true, timestamp: now });
