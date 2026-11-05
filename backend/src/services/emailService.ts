@@ -70,8 +70,32 @@ const generateEmailTemplate = (title: string, contentHTML: string, appName: stri
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="format-detection" content="telephone=no, address=no, email=no, date=no">
+  <style>
+    /* Prevent Gmail, iOS Mail, Apple Mail, and Outlook from auto-linking addresses in blue */
+    a[x-apple-data-detectors] {
+      color: inherit !important;
+      text-decoration: none !important;
+      font-size: inherit !important;
+      font-family: inherit !important;
+      font-weight: inherit !important;
+      line-height: inherit !important;
+    }
+    u + #body a {
+      color: inherit !important;
+      text-decoration: none !important;
+      font-size: inherit !important;
+      font-family: inherit !important;
+      font-weight: inherit !important;
+      line-height: inherit !important;
+    }
+    .footer-address, .footer-address a, .footer-address font {
+      color: #64748b !important;
+      text-decoration: none !important;
+    }
+  </style>
 </head>
-<body style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 0; -webkit-font-smoothing: antialiased;">
+<body id="body" style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 0; -webkit-font-smoothing: antialiased;">
   <div style="padding: 20px;">
     <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
       <div style="background-color: #2563eb; padding: 30px; text-align: center;">
@@ -84,8 +108,14 @@ const generateEmailTemplate = (title: string, contentHTML: string, appName: stri
       </div>
       <div style="background-color: #f8fafc; padding: 24px 30px; text-align: center; color: #64748b; font-size: 13px; border-top: 1px solid #e2e8f0;">
         <p style="margin: 0; font-weight: 700; color: #1e293b; font-size: 13px;">MITOREBOOT PRIVATE LIMITED</p>
-        <p style="margin: 4px 0 0 0; font-size: 11px; color: #64748b;">No 11/7, Krishna Residency, Flat No B-1, Basavanagudi, Bangalore South, Bangalore- 560004, Karnataka</p>
-        <p style="margin: 8px 0 0 0; font-size: 12px;">&copy; ${new Date().getFullYear()} ${appName} &bull; Preventive Lifestyle App. All rights reserved.</p>
+        <p class="footer-address" style="margin: 4px 0 0 0; font-size: 11px; color: #64748b; line-height: 1.5;">
+          <span style="color: #64748b !important; text-decoration: none !important;">
+            <a href="https://www.mitoreboot.in" style="color: #64748b !important; text-decoration: none !important; pointer-events: none; cursor: default;">
+              <font color="#64748b">No 11/7, Krishna Residency, Flat No B-1, Basavanagudi, Bangalore South, Bangalore- 560004, Karnataka</font>
+            </a>
+          </span>
+        </p>
+        <p style="margin: 8px 0 0 0; font-size: 12px; color: #64748b;">&copy; ${new Date().getFullYear()} ${appName} &bull; Preventive Lifestyle App. All rights reserved.</p>
         <p style="margin: 4px 0 0 0; font-size: 11px; color: #94a3b8;">You are receiving this email because you are a registered user of ${appName}.</p>
       </div>
     </div>
@@ -144,8 +174,27 @@ export const generateShopCoBrandedEmailTemplate = ({
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="format-detection" content="telephone=no, address=no, email=no, date=no">
+  <style>
+    a[x-apple-data-detectors] {
+      color: inherit !important;
+      text-decoration: none !important;
+      font-size: inherit !important;
+      font-family: inherit !important;
+      font-weight: inherit !important;
+      line-height: inherit !important;
+    }
+    u + #body a {
+      color: inherit !important;
+      text-decoration: none !important;
+      font-size: inherit !important;
+      font-family: inherit !important;
+      font-weight: inherit !important;
+      line-height: inherit !important;
+    }
+  </style>
 </head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 20px; -webkit-font-smoothing: antialiased;">
+<body id="body" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 20px; -webkit-font-smoothing: antialiased;">
   <div style="max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;">
     
     <!-- Top Co-Branded Header: Mito_Reboot FIRST, then Vendor -->
